@@ -226,9 +226,17 @@ const MYLAR = `linear-gradient(190deg,
  * tel quel : une bande sombre au bord de chaque sachet, du côté où le dégradé
  * redescend vers son extrémité.
  *
- * Transparent, le calque est sûr dans les deux cas. En fusion il éclaircit, et
- * sans fusion il ne pose que des teintes claires : aucune des deux voies ne
- * peut assombrir.
+ * Il ne porte par ailleurs **aucune teinte de booster**, et c'est le point qui a
+ * fini par régler l'affaire. Il en portait une, et la mesure a montré que le
+ * reflet retirait de la lumière au milieu du sachet — ce qu'un `screen` ne peut
+ * pas faire. La fusion ne s'appliquait donc pas partout, et l'accent du booster
+ * s'y peignait tel quel : l'ambre d'Everest ou le violet de Hors-Piste, posés
+ * sur un ciel clair, l'assombrissent.
+ *
+ * Toutes les teintes sont donc plus claires que ce qu'elles recouvrent. Le
+ * calque devient alors sûr quoi qu'il arrive : en fusion il éclaircit, et sans
+ * fusion il ne pose que du presque-blanc. Ni l'une ni l'autre voie ne peut
+ * assombrir. La couleur du booster, elle, reste portée par le halo.
  *
  * Il ne bouge pas tout seul : sa position vient de `--balayage`, animée une
  * fois pour toutes sur le sachet, si bien que les tuiles se déplacent d'un
@@ -236,11 +244,11 @@ const MYLAR = `linear-gradient(190deg,
  */
 const ECLAT = `linear-gradient(102deg,
   rgb(255 255 255 / 0) 0%,
-  color-mix(in srgb, var(--p1) 20%, transparent) 26%,
-  rgb(196 224 246 / 0.34) 44%,
-  rgb(236 248 255 / 0.46) 50%,
-  rgb(196 224 246 / 0.34) 56%,
-  color-mix(in srgb, var(--p1) 20%, transparent) 74%,
+  rgb(222 238 252 / 0.09) 26%,
+  rgb(233 245 255 / 0.3) 44%,
+  rgb(247 252 255 / 0.44) 50%,
+  rgb(233 245 255 / 0.3) 56%,
+  rgb(222 238 252 / 0.09) 74%,
   rgb(255 255 255 / 0) 100%)`;
 
 /**
