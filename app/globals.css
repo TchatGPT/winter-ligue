@@ -1856,17 +1856,11 @@
     perspective: 1500px;
     perspective-origin: 50% 45%;
     touch-action: none;
-    cursor: grab;
     user-select: none;
-  }
-
-  .sachet-scene:active {
-    cursor: grabbing;
   }
 
   .sachet {
     position: relative;
-    transform-style: preserve-3d;
     transform: rotateX(var(--rx3, -9deg)) rotateY(var(--ry3, -20deg));
     will-change: transform;
   }
@@ -1877,7 +1871,23 @@
     overflow: hidden;
     /* De quoi adoucir l'angle du film, pas un coin de carte de visite. */
     border-radius: 2px;
-    backface-visibility: hidden;
+    /* Les sachets qu'on n'a pas retenus s'effacent, et progressivement : c'est
+       ce qui les fait s'illuminer à leur passage devant le centre au lieu de
+       s'allumer d'un coup une fois choisis. `--voile` est écrit par le
+       carrousel, entre 0 au centre et son maximum sur les bords. */
+    filter: brightness(calc(1 - var(--voile, 0) * 1.4))
+      saturate(calc(1 - var(--voile, 0) * 0.4));
+  }
+
+  /* La planche, et le titre imprimé dessus. */
+  .sachet-planche {
+    position: absolute;
+    inset: 0;
+    background-repeat: no-repeat;
+    background-size:
+      100% 100%,
+      100% 100%;
+    pointer-events: none;
   }
 
   /* -- Le carrousel de sachets -------------------------------------------- */
@@ -1942,20 +1952,6 @@
     cursor: inherit;
   }
 
-  /* Le repli dessiné, quand un booster n'a pas encore sa planche, reste un
-     plan unique : lui seul a encore besoin de ce filtre pour s'assombrir. Les
-     vignettes illustrées portent leur voile en couche de fond, un `filter`
-     aplatissant la 3D de ce qu'il touche. */
-  .carrousel-case:not(.carrousel-case-actif) .sachet-face {
-    filter: brightness(0.6) saturate(0.88);
-  }
-
-  .sachet-vignette {
-    position: absolute;
-    inset: 0;
-    background-repeat: no-repeat;
-    background-size: 100% 100%;
-  }
 
   /* -- Le halo et le reflet balayant ---------------------------------------- */
 
@@ -2050,81 +2046,6 @@
     mix-blend-mode: screen;
     background-repeat: no-repeat;
     background-position: var(--balayage) 0;
-  }
-
-  /* -- La coque galbée ---------------------------------------------------- */
-
-  /* Une tuile du maillage : un morceau plat de la planche, placé à sa
-     profondeur et incliné selon la pente locale du film. Le décalage du fond
-     fait que la planche traverse les tuiles sans couture. */
-  /* Les tuiles restent visibles par leur dos.
-
-     Le sachet n'a plus de verso : il n'etait jamais vu depuis que le
-     retournement a disparu, et il pesait la moitie du maillage. Reste que la
-     colonne la plus extreme s'incline de soixante-dix degres, et qu'au bout du
-     balancement elle depasse les quatre-vingt-dix : masquee par son dos, elle
-     s'effacerait et ouvrirait un trou dans la silhouette. A cet angle elle ne
-     fait qu'un ou deux pixels — ce qu'on y voit de l'illustration en miroir ne
-     se distingue pas. */
-  .sachet-tuile {
-    position: absolute;
-    background-repeat: no-repeat;
-    pointer-events: none;
-  }
-
-  /* -- Le verso ----------------------------------------------------------- */
-
-  /* Sur un vrai sachet, seul le recto est imprimé : le dos ne porte qu'un
-     mylar brossé, avec le même bombement et les mêmes soudures. */
-  .sachet-dos {
-    position: absolute;
-    inset: 0;
-    background-repeat: no-repeat;
-  }
-
-  /* Les deux soudures, striées comme celles du recto. */
-  .sachet-dos::before,
-  .sachet-dos::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    right: 0;
-    height: 7.3%;
-    background-image:
-      repeating-linear-gradient(
-        90deg,
-        rgb(255 255 255 / 0.44) 0 1px,
-        rgb(0 0 0 / 0.34) 1px 2px,
-        rgb(255 255 255 / 0.14) 2px 3px
-      ),
-      linear-gradient(180deg, #eef5fc 0%, #9db2c7 34%, #dde8f3 58%, #5f7489 100%);
-    box-shadow: 0 1px 0 rgb(4 10 20 / 0.5);
-  }
-
-  .sachet-dos::before {
-    top: 0;
-  }
-
-  .sachet-dos::after {
-    bottom: 0;
-    transform: scaleY(-1);
-  }
-
-  /* -- Le reflet ---------------------------------------------------------- */
-
-  /* La seule chose que le code ajoute à la planche, et volontairement peu : une
-     image est fixe, ce balayage lui rend la lumière qui change quand on tourne
-     l'objet. Il éclaire, il ne repeint pas. */
-  .sachet-reflet {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    background: linear-gradient(
-      104deg,
-      transparent 33%,
-      rgb(255 255 255 / 0.13) 47%,
-      transparent 61%
-    );
   }
 
   /* -- Ombre au sol ------------------------------------------------------- */

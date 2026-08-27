@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo } from 'react';
 import { PackArtwork } from './PackArtwork';
 
 /**
@@ -14,390 +14,17 @@ const W = 200;
 const H = 340;
 
 /**
- * Demi-épaisseur du sachet en son point le plus gonflé.
+ * Le reflet qui balaie le sachet.
  *
- * 44 px pour 200 px de large, soit 88 px d'épaisseur totale — presque la moitié
- * de la largeur. C'est très au-dessus de ce que donneraient cinq à huit cartes
- * dans un sachet de 67 mm, et c'est assumé : à l'échelle où le sachet est
- * affiché, une épaisseur physiquement juste ne se lit tout simplement pas. On
- * dessine ce qui se voit, pas ce qui se mesure.
+ * Uniquement du presque-blanc : la teinte du booster n'y entre pas. Elle y est
+ * entrée un temps, par `color-mix`, et deux des quatre accents sont sombres —
+ * un ambre et un violet. Là où le mode de fusion `screen` ne s'appliquait pas,
+ * ils se peignaient tels quels sur un ciel clair et traçaient un trait noir le
+ * long du sachet. La couleur du booster est portée par le halo, pas par la
+ * lumière qui le traverse.
  *
- * 28 px ne suffisaient pas. Vus de trois quarts dans le carrousel, les voisins
- * gardaient un profil de feuille : l'épaisseur ne devient lisible qu'une fois
- * comparable au raccourci de la largeur.
- */
-const T = 44;
-
-/** Ce qu'il reste d'épaisseur au ras des soudures : presque rien. */
-const SOUDURE = 0.05;
-
-/** Longueur de la reprise entre soudure et corps, en fraction de la hauteur. */
-const REPRISE = 0.115;
-
-/**
- * Découpage du maillage.
- *
- * Les colonnes sont resserrées près des bords et les rangées près des
- * soudures : c'est là que le film tourne le plus vite, donc là qu'une tuile
- * plate s'écarte le plus de la vraie courbe.
- *
- * Deux colonnes larges d'un pixel avaient été ajoutées aux extrémités quand le
- * profil s'y repliait à sept degrés de la verticale. Le plancher `BORD` a
- * supprimé ce repli — la colonne de bord ne s'incline plus que de 65° — et ces
- * deux colonnes ne servaient plus qu'à coûter quatorze tuiles animées.
- */
-const COLS = [0, 0.022, 0.05, 0.1, 0.175, 0.29, 0.5, 0.71, 0.825, 0.9, 0.95, 0.978, 1];
-const ROWS = [0, 0.034, 0.07, 0.115, 0.885, 0.93, 0.966, 1];
-
-/**
- * Chevauchement des tuiles, **mesuré à l'écran** et non dans le plan de la tuile.
- *
- * C'est toute la difficulté. Une tuile inclinée se projette plus étroite qu'elle
- * n'est : aux colonnes de bord, inclinées de 47°, un chevauchement de 1,3 px
- * dans le plan n'en donnait plus que 0,9 à l'écran. Insuffisant pour survivre à
- * la rastérisation — chaque tuile est composée séparément, avec ses bords
- * adoucis, et deux bords adoucis qui se rejoignent laissent passer le fond.
- *
- * D'où des coutures sombres d'un pixel le long des deux bords du sachet, qui se
- * déplaçaient avec le balancement. Elles ne se voyaient qu'à 100 % : à tout
- * autre facteur de zoom, la grille de pixels retombe ailleurs et le trou se
- * referme. C'est aussi pourquoi elles n'apparaissaient sur aucune de nos
- * captures, toutes prises en facteur 2.
- *
- * En divisant par le cosinus **avec** le chevauchement, celui-ci vaut 2,4 px à
- * l'écran quelle que soit l'inclinaison.
- */
-const CHEV = 2.4;
-
-/**
- * Marge de sécurité sur les fonds, en pixels de sachet.
- *
- * Les tuiles du pourtour débordent du sachet — leur chevauchement et la
- * correction d'inclinaison les élargissent des deux côtés, y compris vers
- * l'extérieur, là où il n'y a pas de voisine. Sans marge, elles échantillonnent
- * au-delà de la planche, et `background-repeat: no-repeat` n'y laisse rien : on
- * voyait le fond de page à travers, sous la forme d'un filet sombre courant le
- * long des bords.
- *
- * Les fonds sont donc dessinés huit pixels plus grands que le sachet et
- * recalés d'autant. Huit sur deux cents, soit un agrandissement de quatre pour
- * cent : l'illustration est rognée d'autant sur son pourtour, ce qui reste loin
- * du seuil où les plis latéraux seraient entamés.
- *
- * La marge suit l'épaisseur, car une tuile inclinée doit être d'autant plus
- * large pour couvrir sa maille. Le sachet épaissi débordait de 7,5 px avec un
- * galbe qui s'annulait au bord ; le plancher `BORD` a redressé le profil et
- * ramené ce débordement à 4,9 px. Huit laisse de quoi voir venir.
- */
-const MARGE = 8;
-
-const RAD = Math.PI / 180;
-const DEG = 180 / Math.PI;
-
-/** Deux décimales : la précision au-delà ne sert qu'à casser l'hydratation. */
-function arrondi(n: number) {
-  return Math.round(n * 100) / 100;
-}
-
-function lissage(t: number) {
-  const c = Math.min(1, Math.max(0, t));
-  return c * c * (3 - 2 * c);
-}
-
-/**
- * Profil transversal : une lentille.
- *
- * L'exposant en gouverne la forme. Plus il est bas, plus la surface reste
- * épaisse près du bord au lieu de s'y pincer — le sachet paraît alors rempli
- * jusqu'aux plis, comme un vrai sachet bourré de cartes, et non tendu sur une
- * arête. À 0,65 les bords se refermaient trop tôt et le sachet semblait vide
- * sur ses deux tranches.
- *
- * Augmenter la seule épaisseur ne suffisait pas : à 0,5, le dixième de largeur
- * le plus proche du bord n'en garde que la moitié, et c'est précisément ce
- * bord-là qu'on voit de profil. À 0,40 il en garde les deux tiers, et le sachet
- * ne s'affine plus qu'au ras des plis latéraux.
- *
- * Aplatir le galbe ne réglait pourtant pas la tranche : un sinus s'annule à ses
- * deux extrémités, donc l'épaisseur tombait à zéro exactement sur le bord. Le
- * sachet avait beau être bombé, son chant restait une lame — d'où l'impression
- * de feuille, tenace, quand on le regarde de côté dans le carrousel.
- *
- * `BORD` est le plancher qui l'en empêche : le film garde plus de quatre
- * dixièmes de son épaisseur jusqu'au pli latéral, comme un vrai sachet dont la
- * soudure est une languette plate et non une arête. C'est ce plancher que la
- * paroi de tranche vient ensuite fermer.
- *
- * Trois dixièmes n'y suffisaient pas : la paroi ne mesurait que vingt-six
- * pixels d'épaisseur, dont la moitié cachée derrière la coque, et il n'en
- * dépassait que six à l'écran sur un voisin tourné de vingt-six degrés.
- * Au-delà de quatre dixièmes, en revanche, le chant devient plus large que ce
- * qu'un sachet peut avoir et se met à concurrencer la face.
- */
-const BORD = 0.38;
-
-function galbeX(u: number) {
-  return BORD + (1 - BORD) * Math.sin(Math.PI * u) ** 0.4;
-}
-
-/** Profil vertical : nul aux soudures, plein dans le corps. */
-function galbeY(v: number) {
-  const t = v < REPRISE ? v / REPRISE : v > 1 - REPRISE ? (1 - v) / REPRISE : 1;
-  return SOUDURE + (1 - SOUDURE) * lissage(t);
-}
-
-/** L'écart au plan médian, en pixels, en un point de la surface. */
-function prof(u: number, v: number) {
-  return T * galbeX(u) * galbeY(v);
-}
-
-interface Tuile {
-  left: number;
-  top: number;
-  w: number;
-  h: number;
-  z: number;
-  ry: number;
-  rx: number;
-  /** La tuile tombe-t-elle dans une soudure ? */
-  soudure: boolean;
-  /** La tuile touche-t-elle la zone imprimée du recto ? */
-  imprimee: boolean;
-}
-
-/**
- * Le maillage, calculé une fois pour toutes.
- *
- * Chaque tuile est un quadrilatère plat qui approche la surface galbée : on la
- * place à la profondeur du centre de sa maille, puis on l'incline selon les
- * pentes locales en x et en y. Avec des mailles resserrées là où ça tourne, la
- * facettisation ne se voit pas.
- */
-function construireMaillage(cols: number[], rows: number[]): Tuile[] {
-  const tuiles: Tuile[] = [];
-  for (let i = 0; i < cols.length - 1; i += 1) {
-    const u0 = cols[i];
-    const u1 = cols[i + 1];
-    const uc = (u0 + u1) / 2;
-
-    for (let j = 0; j < rows.length - 1; j += 1) {
-      const v0 = rows[j];
-      const v1 = rows[j + 1];
-      const vc = (v0 + v1) / 2;
-
-      const x0 = u0 * W;
-      const y0 = v0 * H;
-      const dx = (u1 - u0) * W;
-      const dy = (v1 - v0) * H;
-
-      // Pentes locales. Le signe de `ry` suit CSS : un `rotateY` positif éloigne
-      // le bord droit du regard, or sur la moitié gauche c'est lui qui avance.
-      const ry = Math.atan2(prof(u0, vc) - prof(u1, vc), dx) * DEG;
-      const rx = Math.atan2(prof(uc, v1) - prof(uc, v0), dy) * DEG;
-
-      /*
-       * Le chevauchement ne va que vers l'intérieur au pourtour du sachet.
-       *
-       * Il sert à masquer les coutures entre tuiles voisines ; au bord, il n'y a
-       * pas de voisine, et déborder n'y sert qu'à faire dépasser l'illustration
-       * de la silhouette — un liseré d'image au-delà du sachet, en haut à droite
-       * notamment, là où la maille est la plus fine.
-       */
-      const gauche = i > 0 ? CHEV / 2 : 0;
-      const droite = i < cols.length - 2 ? CHEV / 2 : 0;
-      const haut = j > 0 ? CHEV / 2 : 0;
-      const bas = j < rows.length - 2 ? CHEV / 2 : 0;
-
-      // Ce que la tuile doit couvrir une fois projetée à l'écran.
-      const largeurVue = dx + gauche + droite;
-      const hauteurVue = dy + haut + bas;
-
-      // Une tuile inclinée doit être plus grande pour couvrir la même maille — et
-      // le chevauchement passe dans la division, sans quoi il rétrécirait avec
-      // l'inclinaison au lieu de rester constant à l'écran.
-      const w = largeurVue / Math.cos(ry * RAD);
-      const h = hauteurVue / Math.cos(rx * RAD);
-
-      // Arrondi obligatoire, et pas cosmétique.
-      //
-      // `Math.sin` et `**` ne sont pas tenus de rendre le même bit de poids
-      // faible d'un moteur à l'autre. Le maillage est calculé au rendu serveur
-      // puis recalculé dans le navigateur : sans arrondi, deux styles écartés
-      // d'un ULP suffisaient à déclencher une erreur d'hydratation React.
-      tuiles.push({
-        left: arrondi(x0 - gauche - (w - largeurVue) / 2),
-        top: arrondi(y0 - haut - (h - hauteurVue) / 2),
-        w: arrondi(w),
-        h: arrondi(h),
-        z: arrondi(prof(uc, vc)),
-        ry: arrondi(ry),
-        rx: arrondi(rx),
-        soudure: vc < 0.075 || vc > 0.925,
-        // Le texte du recto tient entre 15 % et 55 % de la hauteur. Le poser
-        // sur toutes les tuiles coûtait treize images par seconde pour rien :
-        // seules celles qui le traversent le portent.
-        imprimee: v1 > 0.12 && v0 < 0.62,
-      });
-    }
-  }
-  return tuiles;
-}
-
-/** Le maillage du sachet mis en avant : celui qu'on regarde de près. */
-const TUILES = construireMaillage(COLS, ROWS);
-
-/**
- * Le maillage des voisins, quatre fois plus grossier.
- *
- * Ils étaient auparavant de simples plans — une seule face, sans épaisseur. Vus
- * de trois quarts ça passait ; au bout du carrousel, où ils sont tournés de
- * près de quatre-vingts degrés, ils se lisaient comme des feuilles de papier.
- *
- * Il leur faut donc une vraie coque, mais pas la même : ils sont petits,
- * assombris, et jamais retournés. Vingt-quatre tuiles de recto suffisent à leur
- * donner un galbe, là où les cent quatre-vingt-seize du sachet de tête,
- * multipliées par trois, feraient chuter la page.
- */
-const COLS_LEGER = [0, 0.03, 0.1, 0.26, 0.5, 0.74, 0.9, 0.97, 1];
-const ROWS_LEGER = [0, 0.09, 0.91, 1];
-const TUILES_LEGERES = construireMaillage(COLS_LEGER, ROWS_LEGER);
-
-/** Une bande de tranche : le chant du sachet, sur un côté et une rangée. */
-interface Tranche {
-  left: number;
-  top: number;
-  /** L'épaisseur du sachet à cette hauteur — la largeur de la bande. */
-  w: number;
-  h: number;
-  /** −1 à gauche, +1 à droite. */
-  cote: number;
-}
-
-/**
- * Les parois de tranche.
- *
- * La coque n'a qu'une face : elle décrit le dessus du sachet et s'arrête net
- * sur les bords, où il ne reste qu'une arête sans surface. De face on ne voit
- * rien ; de trois quarts, c'est-à-dire partout ailleurs dans le carrousel, le
- * sachet redevient une feuille découpée.
- *
- * Chaque bande ferme ce chant. Elle est posée dans le plan vertical du bord —
- * `rotateY(±90°)` — large de toute l'épaisseur du sachet à cette hauteur, et
- * centrée sur le bord pour s'étendre symétriquement de part et d'autre du plan
- * médian. De face elle est rigoureusement invisible, sa projection étant nulle ;
- * plus le sachet tourne, plus elle s'ouvre. C'est exactement ce qu'on attend
- * d'une tranche.
- *
- * Elle suit les mêmes rangées que la coque, donc le même `galbeY` : elle
- * s'amincit jusqu'à disparaître dans les soudures du haut et du bas, où le
- * sachet est effectivement plat.
- */
-function construireTranches(rows: number[]): Tranche[] {
-  const bandes: Tranche[] = [];
-  for (let j = 0; j < rows.length - 1; j += 1) {
-    const v0 = rows[j];
-    const v1 = rows[j + 1];
-    const vc = (v0 + v1) / 2;
-    // L'épaisseur totale : la coque monte à `prof` au-dessus du plan médian, la
-    // tranche descend d'autant en dessous.
-    const w = 2 * prof(0, vc);
-    // Un poil de recouvrement en hauteur, comme entre deux tuiles : deux bords
-    // adoucis qui se rejoignent laissent passer le fond.
-    const haut = j > 0 ? CHEV / 2 : 0;
-    const bas = j < rows.length - 2 ? CHEV / 2 : 0;
-    for (const cote of [-1, 1]) {
-      bandes.push({
-        // Centrée sur le bord : `rotateY` tourne autour du centre de l'élément,
-        // qui doit donc tomber exactement sur x = 0 ou x = W.
-        left: arrondi((cote < 0 ? 0 : W) - w / 2),
-        top: arrondi(v0 * H - haut),
-        w: arrondi(w),
-        h: arrondi((v1 - v0) * H + haut + bas),
-        cote,
-      });
-    }
-  }
-  return bandes;
-}
-
-const TRANCHES = construireTranches(ROWS);
-const TRANCHES_LEGERES = construireTranches(ROWS_LEGER);
-
-/**
- * L'ombrage, en dégradés à l'échelle du sachet entier.
- *
- * Une première version calculait une teinte plate par tuile. Chaque tuile
- * devenait alors un aplat légèrement différent de sa voisine, et le sachet se
- * couvrait de bandes verticales — le maillage se voyait. Ici les dégradés font
- * la taille du sachet et sont décalés comme la planche : ils traversent les
- * tuiles sans montrer une seule couture.
- *
- * `deg` bascule à 270 pour le verso, dont les tuiles sont retournées.
- *
- * Les extrémités sont volontairement très pâles. Ce dégradé date de l'époque où
- * le sachet était une boîte plate et devait porter toute la rondeur à lui seul :
- * il montait alors à 66 % de noir aux arêtes. La coque tourne désormais pour de
- * bon, la géométrie assombrit déjà les bords, et l'ombre s'y ajoutait en
- * doublon jusqu'à tracer deux barres franches.
- */
-const bombement = (deg: number) =>
-  `linear-gradient(${deg}deg,
-    rgb(0 0 0 / 0.1) 0%,
-    rgb(0 0 0 / 0.05) 8%,
-    rgb(255 255 255 / 0.16) 20%,
-    rgb(255 255 255 / 0.02) 33%,
-    rgb(0 0 0 / 0.06) 48%,
-    rgb(255 255 255 / 0.13) 66%,
-    rgb(255 255 255 / 0.01) 80%,
-    rgb(0 0 0 / 0.06) 93%,
-    rgb(0 0 0 / 0.12) 100%)`;
-
-/** Le creux d'ombre des deux plis, là où la soudure rejoint le corps. */
-const PLIS = `linear-gradient(180deg,
-  rgb(0 0 0 / 0) 5%,
-  rgb(0 0 0 / 0.34) 11.5%,
-  rgb(0 0 0 / 0) 19%,
-  rgb(0 0 0 / 0) 81%,
-  rgb(0 0 0 / 0.34) 88.5%,
-  rgb(0 0 0 / 0) 95%)`;
-
-/** Le mylar brossé du verso, teinté par le booster. */
-const MYLAR = `linear-gradient(190deg,
-  #eaf2fb 0%,
-  color-mix(in srgb, var(--p1) 38%, #bacdde) 21%,
-  #dfeaf5 43%,
-  color-mix(in srgb, var(--p2) 44%, #7e94aa) 68%,
-  #d2e0ef 100%)`;
-
-/**
- * Le reflet, en lumière ajoutée.
- *
- * Le calque est **transparent** là où il n'éclaire pas, et fusionné en `screen`.
- *
- * Deux versions ratées ont précédé, aux défauts opposés. La première posait un
- * gris translucide : un calque semi-opaque assombrit forcément ce qu'il
- * recouvre, quelle que soit sa couleur, et ça ne pouvait donner qu'un voile.
- * La seconde le peignait en noir opaque, ce qui est correct en théorie —
- * `screen` sur du noir ne change rien — mais ne tient que si la fusion
- * s'applique vraiment. Partout où elle ne s'appliquait pas, ce noir se peignait
- * tel quel : une bande sombre au bord de chaque sachet, du côté où le dégradé
- * redescend vers son extrémité.
- *
- * Il ne porte par ailleurs **aucune teinte de booster**, et c'est le point qui a
- * fini par régler l'affaire. Il en portait une, et la mesure a montré que le
- * reflet retirait de la lumière au milieu du sachet — ce qu'un `screen` ne peut
- * pas faire. La fusion ne s'appliquait donc pas partout, et l'accent du booster
- * s'y peignait tel quel : l'ambre d'Everest ou le violet de Hors-Piste, posés
- * sur un ciel clair, l'assombrissent.
- *
- * Toutes les teintes sont donc plus claires que ce qu'elles recouvrent. Le
- * calque devient alors sûr quoi qu'il arrive : en fusion il éclaircit, et sans
- * fusion il ne pose que du presque-blanc. Ni l'une ni l'autre voie ne peut
- * assombrir. La couleur du booster, elle, reste portée par le halo.
- *
- * Il ne bouge pas tout seul : sa position vient de `--balayage`, animée une
- * fois pour toutes sur le sachet, si bien que les tuiles se déplacent d'un
- * bloc et que la lumière traverse la coque sans se briser aux coutures.
+ * Il ne bouge pas tout seul : sa position vient de `--balayage`, animée sur le
+ * sachet.
  */
 const ECLAT = `linear-gradient(102deg,
   rgb(255 255 255 / 0) 0%,
@@ -413,91 +40,22 @@ const ECLAT = `linear-gradient(102deg,
  *
  * Plus du double du sachet, et c'est le point : le dégradé le recouvre alors
  * entièrement quelle que soit sa position, et son déplacement se lit comme une
- * lumière qui se déplace sur toute la surface. Une version antérieure tenait
- * dans la largeur du sachet avec un cœur étroit — on ne voyait qu'une bande
- * passer.
+ * lumière qui parcourt toute la surface. Une version antérieure tenait dans la
+ * largeur du sachet avec un cœur étroit — on ne voyait qu'une bande passer.
  */
 const LARGEUR_ECLAT = Math.round(W * 2.2);
 
 /**
- * Le voile des voisins : ils s'assombrissent pour désigner le sachet retenu.
+ * L'impression du recto, en SVG embarqué.
  *
- * Une couche de fond plutôt qu'un `filter: brightness`, qui aplatirait la 3D de
- * la tuile — et une tuile aplatie ne se galbe plus.
- */
-const VOILE = 'linear-gradient(rgb(0 0 0 / var(--voile, 0)), rgb(0 0 0 / var(--voile, 0)))';
-
-/**
- * Le chant du sachet, vu de côté.
+ * Le titre doit rester lisible sur une illustration très contrastée, tantôt
+ * neige presque blanche, tantôt roche sombre : d'où le contour foncé passé sous
+ * le remplissage. L'effet de glace ensuite — un dégradé du blanc au bleu pâle
+ * du haut vers le bas, plus un doublon décalé d'un pixel qui fait l'arête
+ * givrée.
  *
- * La bande traverse toute l'épaisseur : son début touche la coque, du côté de
- * la face, et sa fin plonge vers l'arrière.
- *
- * Une première version l'assombrissait régulièrement de l'avant vers
- * l'arrière — ce qui paraît juste, et ne l'est pas. Quand le sachet tourne,
- * c'est précisément la **moitié arrière** de la tranche qui dépasse de la
- * silhouette de la face : le seul morceau qu'on voie était donc le plus noir du
- * dégradé, indiscernable du fond. Le sachet gardait son air de feuille.
- *
- * Or un chant de mylar est au contraire ce qu'il y a de plus brillant sur un
- * sachet : le film s'y enroule, et une surface courbe renvoie forcément la
- * lumière quelque part le long de sa courbe. C'est aussi ce que fait tout rendu
- * de produit — une lumière de contre-jour sur l'arête, pour que la silhouette
- * se détache du fond.
- *
- * Le clair occupe donc la moitié arrière, celle qui dépasse, et le sombre est
- * réservé aux tout derniers pour cent : juste de quoi terminer l'arête sans la
- * laisser flotter.
- *
- * Surtout, ce n'est qu'un **ombrage** : les couleurs sont transparentes, et la
- * tranche laisse voir sous elle le bord de la planche, étiré. Peinte en gris
- * plein, elle se lisait comme une plaque rapportée — un bandeau pâle collé le
- * long du sachet, où l'illustration s'arrêtait net avant la silhouette. Une
- * tranche de sachet, c'est le même film qui s'enroule : il porte la même
- * image.
- */
-function chant(sens: string) {
-  return `linear-gradient(${sens},
-    rgb(255 255 255 / 0.26) 0%,
-    rgb(0 0 0 / 0.12) 20%,
-    rgb(0 0 0 / 0.3) 38%,
-    rgb(255 255 255 / 0.2) 58%,
-    rgb(255 255 255 / 0.36) 74%,
-    rgb(255 255 255 / 0.14) 86%,
-    rgb(0 0 0 / 0.34) 95%,
-    rgb(0 0 0 / 0.66) 100%)`;
-}
-
-/**
- * Largeur, sur la planche, de la lisière que la tranche étire.
- *
- * Trois pixels d'illustration répandus sur quarante : c'est très flou, et c'est
- * exactement ce qu'on veut. Un chant de sachet est une surface qui tourne à la
- * verticale — ses détails s'y écrasent, seules restent les masses de couleur.
- */
-const LISIERE = 3;
-
-/** Le vernis : la bande spéculaire large qui fait « feuille brillante ». */
-const VERNIS = `linear-gradient(255deg,
-  rgb(255 255 255 / 0) 24%,
-  rgb(255 255 255 / 0.44) 42%,
-  rgb(255 255 255 / 0.05) 52%,
-  rgb(255 255 255 / 0.3) 61%,
-  rgb(255 255 255 / 0) 76%)`;
-
-/**
- * L'impression du recto : le nom du booster, et la série au-dessus.
- *
- * Même procédé que le verso — une image à la taille du sachet, décalée comme la
- * planche — et pour la même raison : le recto est fait de dizaines de tuiles, un
- * élément de texte y serait découpé en morceaux.
- *
- * Deux contraintes gouvernent le dessin. La lisibilité d'abord : le texte se
- * pose sur une illustration très contrastée, tantôt neige presque blanche,
- * tantôt roche sombre. Un simple remplissage clair disparaîtrait une fois sur
- * deux, d'où le contour foncé passé sous le remplissage. L'effet de glace
- * ensuite : un dégradé du blanc au bleu pâle du haut vers le bas, plus un
- * doublon décalé d'un pixel qui fait l'arête givrée.
+ * Le SVG est un document isolé : les polices du site ne l'atteignent pas, d'où
+ * une pile générique.
  */
 function rectoImprime(nom: string) {
   const police = "font-family='Arial Narrow, Haettenschweiler, Arial, sans-serif'";
@@ -539,81 +97,7 @@ function rectoImprime(nom: string) {
   return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
 }
 
-/**
- * L'impression du verso, en SVG embarqué.
- *
- * Le verso est fait de dizaines de tuiles : y poser un élément de texte le
- * découperait en morceaux. En passant par une image de la taille du sachet,
- * décalée comme les autres couches, le texte traverse les tuiles d'un bloc.
- *
- * Le SVG est un document isolé : les polices du site ne l'atteignent pas, d'où
- * une pile générique. Sur un dos de sachet, une grotesque condensée fait
- * parfaitement l'affaire.
- *
- * Le texte est écrit à l'endroit. Les tuiles du verso sont retournées, mais
- * leur fond est décalé en miroir (voir `px` plus bas) : les deux inversions
- * s'annulent et l'impression se lit correctement quand on regarde le dos.
- */
-function versoImprime(nom: string) {
-  const police = "font-family='Arial Narrow, Haettenschweiler, Arial, sans-serif'";
-
-  // L'Everest : la longue épaule ouest à gauche, le sommet pyramidal décalé à
-  // droite du centre, et une arête d'avant-plan qui donne la profondeur.
-  //
-  // Les massifs descendent sous le bord du sachet et débordent sur les côtés.
-  // Fermer leur contour à l'intérieur du cadre traçait un trait horizontal net
-  // en travers du dos, qui se lisait comme une couture et non comme un relief.
-  const massif =
-    'M-4,380 L-4,250 L28,208 L46,222 L70,180 L86,194 L106,132 L124,168 ' +
-    'L142,156 L162,200 L180,184 L204,252 L204,380 Z';
-  const avant =
-    'M-4,380 L-4,262 L26,238 L50,250 L76,220 L98,238 L120,214 L146,240 ' +
-    'L170,226 L204,262 L204,380 Z';
-  const neige = 'M106,132 L119,160 L110,165 L106,176 L99,162 L93,158 Z';
-
-  /**
-   * Le gaufrage.
-   *
-   * Une copie sombre décalée vers le bas-droite, une copie claire vers le
-   * haut-gauche, et un voile neutre par-dessus l'intérieur. Seuls les liserés
-   * qui dépassent restent visibles : le motif n'est pas posé sur la feuille,
-   * il est frappé dedans.
-   *
-   * Le décalage reste petit — 1,1 px pour un sachet de 200 px de large. Au-delà
-   * les liserés cessent d'être des arêtes et redeviennent un dessin.
-   */
-  const relief = (d: string, force: number) =>
-    `<path d='${d}' transform='translate(1.1,1.1)' fill='#08131f' opacity='${(0.36 * force).toFixed(2)}'/>` +
-    `<path d='${d}' transform='translate(-1.1,-1.1)' fill='#ffffff' opacity='${(0.42 * force).toFixed(2)}'/>` +
-    `<path d='${d}' fill='#8ca4bb' opacity='${(0.12 * force).toFixed(2)}'/>`;
-
-  const svg =
-    `<svg xmlns='http://www.w3.org/2000/svg' width='${W}' height='${H}'>` +
-    relief(massif, 1) +
-    relief(neige, 0.8) +
-    relief(avant, 0.85) +
-    `<g fill='#f4faff' text-anchor='middle' ${police}>` +
-    `<text x='${W / 2}' y='${H * 0.3}' font-size='10' font-weight='700' ` +
-    `letter-spacing='3.2' opacity='0.9'>WINTER LIGUE</text>` +
-    `<text x='${W / 2}' y='${H * 0.86}' font-size='19' font-weight='700' ` +
-    `letter-spacing='4.4' opacity='0.75'>${nom.toUpperCase()}</text>` +
-    `</g>` +
-    `<g fill='#eaf4ff' opacity='0.32'>` +
-    `<rect x='${W * 0.28}' y='${H * 0.325}' width='${W * 0.44}' height='0.8'/>` +
-    `<rect x='${W * 0.36}' y='${H * 0.895}' width='${W * 0.28}' height='0.8'/>` +
-    `</g>` +
-    `</svg>`;
-  return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
-}
-
-/**
- * La teinte du halo, par rareté garantie.
- *
- * Elle est sur le halo et non sur le reflet : le halo est derrière le sachet,
- * sa couleur ne peut donc rien assombrir. Une première version teintait le
- * reflet, posé par-dessus l'illustration — l'ambre d'Everest y noircissait le
- * ciel partout où la fusion ne prenait pas.
- */
+/** La rareté garantie du booster donne sa couleur au halo. */
 const GEMME: Record<string, string> = {
   C: 'var(--ice)',
   PC: 'var(--r-pc)',
@@ -629,52 +113,40 @@ export interface Pack3DProps {
   gradient: [string, string];
   /** Planche peinte du sachet. Absente, on retombe sur le sachet dessiné. */
   art?: string | null;
-  /** Coupe la rotation continue, pendant l'ouverture par exemple. */
+  /** Coupe le balancement, pendant l'ouverture par exemple. */
   frozen?: boolean;
   /** Rareté garantie : elle donne sa couleur au halo. */
   rarete?: string | null;
   /**
-   * Rendu allégé, pour le sélecteur.
+   * Sachet du présentoir plutôt que sachet de tête.
    *
-   * Une vignette n'a ni maillage ni verso : une seule face suffit à
-   * reconnaître un sachet à cette taille. Le maillage coûte cent quarante
-   * tuiles — en afficher un par booster à côté du sachet mis en avant
-   * multiplierait la page par cinq pour un gain nul.
+   * Il se balance plus lentement et de moins loin, et n'a pas de halo : quatre
+   * lueurs colorées de 132 % de large se recouvraient derrière la rangée et
+   * faisaient des taches entre les sachets.
    */
   vignette?: boolean;
-  /**
-   * Le sachet ne capte plus le pointeur.
-   *
-   * Indépendant de `vignette`, et c'est le but : dans le carrousel, le sachet
-   * central garde son maillage complet mais laisse le geste horizontal au rail,
-   * qui s'en sert pour faire tourner la rangée. Deux prises concurrentes sur le
-   * même glissement, et aucune des deux ne marche.
-   */
-  inerte?: boolean;
   className?: string;
 }
 
 /**
- * Le sachet de booster, orientable à 360°.
+ * Le sachet de booster.
  *
  * **La planche EST le sachet** : elle n'est ni recadrée, ni encadrée, ni
- * recouverte. Le code ne fait que lui donner la forme d'un sachet gonflé.
+ * recouverte. On lui pose son titre, une lumière qui la traverse, un halo
+ * derrière, et on la fait respirer.
  *
- * Trois versions ont précédé, et chacune corrigeait la précédente :
+ * Une coque en trois dimensions a précédé, et a été retirée. Elle découpait la
+ * planche en près de deux cents tuiles posées sur un profil en lentille, avec
+ * épaisseur, parois de tranche et maillage allégé pour les voisins. Elle était
+ * juste géométriquement et fausse à l'œil : à la taille où un sachet est
+ * affiché, chaque tuile est un rectangle de quelques pixels dont les bords
+ * adoucis ne se raccordent jamais tout à fait, et le tout se lisait comme une
+ * mosaïque un peu sale plutôt que comme un objet. Elle coûtait par ailleurs
+ * deux cents éléments composités par image.
  *
- *  1. **Une boîte à six faces**, avec la planche collée devant. Épaisseur
- *     constante du haut en bas, arête vive au sommet — ça se lisait comme un
- *     carton. Or un sachet n'a pas d'arête en haut : il y est soudé à plat.
- *  2. **Deux plans sans épaisseur.** Le sommet était réglé, mais l'objet
- *     disparaissait de profil : un sachet plein de cartes est gonflé, il a
- *     une vraie épaisseur au milieu.
- *  3. **La surface galbée**, ici. La planche est découpée en tuiles qui
- *     suivent un profil en lentille : nul aux soudures, maximal au centre.
- *     C'est la forme d'un sachet, sans être une boîte.
- *
- * Au repos le sachet se balance. Dès qu'on l'attrape, la rotation passe sous
- * le doigt avec de l'inertie au relâchement : c'est ce ralentissement
- * progressif qui fait qu'un objet manipulé semble avoir une masse.
+ * La planche, elle, est déjà peinte comme un sachet gonflé : ses plis, son
+ * sertissage et son galbe sont dans l'image. Les redessiner en CSS revenait à
+ * discuter avec le dessin.
  */
 export function BoosterPack3D({
   name,
@@ -684,124 +156,19 @@ export function BoosterPack3D({
   frozen = false,
   rarete = null,
   vignette = false,
-  inerte = false,
   className,
 }: Pack3DProps) {
-  const packRef = useRef<HTMLDivElement>(null);
-  const [grabbed, setGrabbed] = useState(false);
-
-  // L'état de rotation vit dans des refs, pas dans le state : le faire passer
-  // par React déclencherait un rendu par image d'animation.
-  const rot = useRef({ x: -8, y: 0 });
-  const velocity = useRef(0);
-  const dragging = useRef(false);
-  const last = useRef({ x: 0, y: 0, at: 0 });
-  const frame = useRef<number | null>(null);
-
-  const apply = useCallback(() => {
-    const el = packRef.current;
-    if (!el) return;
-    el.style.setProperty('--rx3', `${rot.current.x.toFixed(2)}deg`);
-    el.style.setProperty('--ry3', `${rot.current.y.toFixed(2)}deg`);
-  }, []);
-
-  /**
-   * Inertie : la vitesse décroît jusqu'à devenir imperceptible.
-   *
-   * La boucle est une fonction locale nommée plutôt qu'un `useCallback` qui
-   * s'appellerait lui-même : une fonction déclarée par `useCallback` ne peut
-   * pas se référencer dans sa propre closure sans figer une version périmée
-   * d'elle-même.
-   */
-  const startGlide = useCallback(() => {
-    const step = () => {
-      if (dragging.current) return;
-      velocity.current *= 0.94;
-      if (Math.abs(velocity.current) < 0.02) {
-        velocity.current = 0;
-        frame.current = null;
-        return;
-      }
-      rot.current.y += velocity.current;
-      apply();
-      frame.current = requestAnimationFrame(step);
-    };
-
-    if (frame.current === null) frame.current = requestAnimationFrame(step);
-  }, [apply]);
-
-  useEffect(
-    () => () => {
-      if (frame.current !== null) cancelAnimationFrame(frame.current);
-    },
-    [],
-  );
-
-  const onDown = (event: React.PointerEvent<HTMLDivElement>) => {
-    event.currentTarget.setPointerCapture(event.pointerId);
-    dragging.current = true;
-    setGrabbed(true);
-    velocity.current = 0;
-    last.current = { x: event.clientX, y: event.clientY, at: performance.now() };
-
-    // On repart de l'angle réellement affiché par l'animation CSS, sinon le
-    // sachet saute à zéro au moment où on le saisit.
-    const el = packRef.current;
-    if (el) {
-      const matrix = new DOMMatrixReadOnly(getComputedStyle(el).transform);
-      const yaw = Math.atan2(-matrix.m31, matrix.m11) * DEG;
-      if (Number.isFinite(yaw)) rot.current.y = yaw;
-      apply();
-    }
-  };
-
-  const onMove = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (!dragging.current) return;
-    const now = performance.now();
-    const dx = event.clientX - last.current.x;
-    const dy = event.clientY - last.current.y;
-    const dt = Math.max(1, now - last.current.at);
-
-    rot.current.y += dx * 0.45;
-    // L'axe vertical est bridé : au-delà, on regarde le sachet par la tranche
-    // et l'objet devient illisible.
-    rot.current.x = Math.max(-32, Math.min(32, rot.current.x - dy * 0.28));
-
-    velocity.current = (dx * 0.45 * 16) / dt;
-    last.current = { x: event.clientX, y: event.clientY, at: now };
-    apply();
-  };
-
-  const onUp = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (!dragging.current) return;
-    dragging.current = false;
-    event.currentTarget.releasePointerCapture?.(event.pointerId);
-    // Vitesse bornée : un geste très rapide ne doit pas transformer le sachet
-    // en toupie.
-    velocity.current = Math.max(-9, Math.min(9, velocity.current));
-    startGlide();
-  };
-
-  /**
-   * La coque galbée, portée par la planche.
-   *
-   * Le maillage a besoin d'une image tramée : chaque tuile affiche sa part de
-   * la planche en décalant un fond. Les boosters encore sans planche restent
-   * donc sur deux plans dessinés — un repli, appelé à disparaître dès que
-   * leurs quatre illustrations sont livrées.
-   */
-  // L'impression du verso ne dépend que du nom : inutile de reconstruire le
-  // SVG et de le ré-encoder à chaque image d'animation.
-  const verso = useMemo(() => versoImprime(name), [name]);
+  // L'impression ne dépend que du nom : inutile de reconstruire le SVG et de le
+  // ré-encoder à chaque image d'animation.
   const recto = useMemo(() => rectoImprime(name), [name]);
 
   /*
    * Décalage de la respiration, tiré du nom du booster.
    *
-   * Quatre vignettes qui oscillent à l'unisson se lisent comme un seul
-   * mécanisme, pas comme quatre objets posés là. Un retard négatif démarre
-   * l'animation en cours de route, et le tirer du nom plutôt qu'au hasard
-   * garantit la même valeur au rendu serveur et dans le navigateur.
+   * Quatre sachets qui oscillent à l'unisson se lisent comme un seul mécanisme,
+   * pas comme quatre objets posés là. Un retard négatif démarre l'animation en
+   * cours de route, et le tirer du nom plutôt qu'au hasard garantit la même
+   * valeur au rendu serveur et dans le navigateur.
    */
   const retard = useMemo(() => {
     let somme = 0;
@@ -809,158 +176,9 @@ export function BoosterPack3D({
     return `-${(somme % 97) / 7}s`;
   }, [name]);
 
-  /**
-   * Une tuile de recto.
-   *
-   * Partagée par les deux maillages — celui du sachet mis en avant et celui,
-   * allégé, des voisins. `voile` assombrit ceux qu'on n'a pas choisis : une
-   * couche de plus plutôt qu'un `filter`, qui aplatirait la 3D de la tuile.
-   */
-  const tuileRecto = (t: Tuile, i: number, prefixe: string, reflet: boolean) => {
-    const couches = [
-      ...(reflet ? [ECLAT] : []),
-      VOILE,
-      PLIS,
-      bombement(90),
-      ...(t.imprimee ? [recto] : []),
-      `url("${art}")`,
-    ];
-    // Le reflet est la seule couche qui bouge : sans lui, la tuile n'est plus
-    // réévaluée à chaque image. C'est ce qui permet de galber les voisins sans
-    // tripler le coût de la page.
-    const mobile = reflet ? 1 : 0;
-    return (
-      <span
-        key={`${prefixe}${i}`}
-        className="sachet-tuile"
-        style={{
-          left: t.left,
-          top: t.top,
-          width: t.w,
-          height: t.h,
-          transform: `translateZ(${t.z.toFixed(2)}px) rotateY(${t.ry.toFixed(2)}deg) rotateX(${t.rx.toFixed(2)}deg)`,
-          backgroundImage: couches.join(', '),
-          backgroundSize: couches
-            .map((_, k) =>
-              k === 0 && mobile
-                ? `${LARGEUR_ECLAT}px ${H + MARGE * 2}px`
-                : `${W + MARGE * 2}px ${H + MARGE * 2}px`,
-            )
-            .join(', '),
-          backgroundBlendMode: couches
-            .map((_, k) => (k === 0 && mobile ? 'screen' : 'normal'))
-            .join(', '),
-          // Seul le reflet bouge : sa position part de `--balayage`, les
-          // autres couches restent calées sur la planche.
-          backgroundPosition: couches
-            .map((_, k) =>
-              k === 0 && mobile
-                ? `calc(var(--balayage) - ${t.left.toFixed(2)}px) ${(-t.top - MARGE).toFixed(2)}px`
-                : `${(-t.left - MARGE).toFixed(2)}px ${(-t.top - MARGE).toFixed(2)}px`,
-            )
-            .join(', '),
-        }}
-        aria-hidden="true"
-      />
-    );
-  };
-
-  /**
-   * Une bande de tranche.
-   *
-   * `rotateY(±90°)` la couche dans le plan vertical du bord. Le sens du dégradé
-   * suit le côté : sur les deux tranches, le clair doit tomber du côté de la
-   * face et le noir vers l'arrière — sans quoi l'une des deux paraîtrait
-   * éclairée par-derrière.
-   */
-  const bandeTranche = (t: Tranche, i: number, prefixe: string) => {
-    // La lisière de la planche, étirée sur toute la largeur de la bande.
-    const etire = t.w / LISIERE;
-    const largeurArt = W * etire;
-    // À gauche on part du tout premier pixel de la planche, à droite du dernier.
-    const departArt = t.cote < 0 ? 0 : -(W - LISIERE) * etire;
-    const couches = [VOILE, chant(t.cote < 0 ? 'to left' : 'to right'), `url("${art}")`];
-    return (
-      <span
-        key={`${prefixe}t${i}`}
-        className="sachet-tuile"
-        style={{
-          left: t.left,
-          top: t.top,
-          width: t.w,
-          height: t.h,
-          transform: `rotateY(${t.cote * 90}deg)`,
-          backgroundImage: couches.join(', '),
-          backgroundSize: `${t.w}px ${t.h}px, ${t.w}px ${t.h}px, ${largeurArt.toFixed(1)}px ${H}px`,
-          // La planche garde son calage vertical : la tranche montre bien la
-          // hauteur qui lui correspond, sinon la bande et la coque ne
-          // raconteraient pas la même image au même endroit.
-          backgroundPosition: `0 0, 0 0, ${departArt.toFixed(1)}px ${(-t.top).toFixed(2)}px`,
-        }}
-        aria-hidden="true"
-      />
-    );
-  };
-
-  const coque = vignette ? (
-    art ? (
-      /* Un maillage allégé : les voisins ont besoin d'un galbe, pas du détail
-         du sachet de tête. Sans lui, tournés de quatre-vingts degrés au bout du
-         carrousel, ils se lisaient comme des feuilles de papier. */
-      <>
-        {TUILES_LEGERES.map((t, i) => tuileRecto(t, i, 'lg', false))}
-        {TRANCHES_LEGERES.map((t, i) => bandeTranche(t, i, 'lg'))}
-      </>
-    ) : (
-      <div className="sachet-face">
-        <PackArtwork name={name} cardCount={cardCount} tint={gradient} />
-        <span className="sachet-eclat" aria-hidden="true" />
-      </div>
-    )
-  ) : art ? (
-    <>
-      {TUILES.map((t, i) => tuileRecto(t, i, 'av', true))}
-      {TRANCHES.map((t, i) => bandeTranche(t, i, 'av'))}
-    </>
-  ) : (
-    <>
-      <div className="sachet-face sachet-avant" style={{ transform: 'translateZ(1.5px)' }}>
-        <PackArtwork name={name} cardCount={cardCount} tint={gradient} />
-        <span className="sachet-reflet" aria-hidden="true" />
-        <span className="sachet-eclat" aria-hidden="true" />
-      </div>
-      <div
-        className="sachet-face sachet-arriere"
-        style={{ transform: 'rotateY(180deg) translateZ(1.5px)' }}
-      >
-        {/* Le même verso que la coque galbée : la face pleine largeur est
-            retournée d'un bloc, donc son fond se lit déjà à l'endroit. */}
-        <span
-          className="sachet-dos"
-          style={{
-            backgroundImage: [VERNIS, verso, MYLAR].join(', '),
-            backgroundSize: `${W}px ${H}px, ${W}px ${H}px, ${W}px ${H}px`,
-          }}
-          aria-hidden="true"
-        />
-      </div>
-    </>
-  );
-
-  // La mise à l'échelle est laissée au parent : une transformation CSS sur la
-  // case du carrousel s'anime, là où changer les dimensions ne ferait que
-  // sauter d'une taille à l'autre.
-  /*
-   * La rotation continue est coupée par `vignette`, pas par `inerte`.
-   *
-   * Dans le carrousel, le sachet mis en avant ne capte pas le pointeur — le
-   * glissement horizontal appartient à la rangée — mais il doit continuer de
-   * tourner sur lui-même, puisque c'est le seul moyen de voir son verso. Seules
-   * les vignettes restent immobiles.
-   */
   return (
     <div
-      className={`sachet-scene ${inerte ? 'sachet-scene-fixe' : ''} ${className ?? ''}`}
+      className={`sachet-scene ${className ?? ''}`}
       style={{
         width: W,
         height: H,
@@ -974,50 +192,37 @@ export function BoosterPack3D({
       }}
     >
       {/* Le halo ne tourne pas avec le sachet : c'est un éclairage de vitrine
-          posé derrière lui, pas une propriété de l'objet.
-
-          Sa teinte vient de la rareté garantie du booster. Il ne va qu'au
-          sachet mis en avant : sur les vignettes, quatre lueurs colorées de
-          132 % de large se chevauchaient derrière la rangée et faisaient des
-          taches entre les sachets. Sur la rangée, c'est la lisière qui porte la
-          rareté — voir `app/globals.css`. */}
+          posé derrière lui, pas une propriété de l'objet. */}
       {!vignette && <span className="sachet-halo" aria-hidden="true" />}
       <span className="sachet-lisiere" aria-hidden="true" />
 
       <div
-        ref={packRef}
-        className={`sachet ${grabbed || frozen ? '' : vignette ? 'sachet-veille' : 'sachet-tourne'}`}
+        className={`sachet ${frozen ? '' : vignette ? 'sachet-veille' : 'sachet-tourne'}`}
         style={{
           width: W,
           height: H,
-          // Les teintes viennent de la scène, par héritage.
-          ...(vignette
-            ? {
-                ['--rx3' as string]: '-6deg',
-                ['--ry3' as string]: '-15deg',
-                ['--retard' as string]: retard,
-              }
-            : null),
+          ...(vignette ? { ['--retard' as string]: retard } : null),
         }}
-        {...(inerte
-          ? {}
-          : {
-              onPointerDown: onDown,
-              onPointerMove: onMove,
-              onPointerUp: onUp,
-              onPointerCancel: onUp,
-            })}
         role="img"
-        aria-label={
-          inerte
-            ? `Sachet ${name}`
-            : `Sachet ${name}, ${cardCount} cartes — faites-le tourner`
-        }
+        aria-label={`Sachet ${name}, ${cardCount} cartes`}
       >
-        {coque}
+        <div className="sachet-face">
+          {art ? (
+            // Le titre et la planche dans le même calque : deux fonds d'une
+            // seule boîte se recadrent ensemble, là où deux éléments empilés
+            // peuvent glisser l'un par rapport à l'autre.
+            <span
+              className="sachet-planche"
+              style={{ backgroundImage: `${recto}, url("${art}")` }}
+              aria-hidden="true"
+            />
+          ) : (
+            <PackArtwork name={name} cardCount={cardCount} tint={gradient} />
+          )}
+          <span className="sachet-eclat" aria-hidden="true" />
+        </div>
         <span className="sachet-ombre" aria-hidden="true" />
       </div>
     </div>
   );
-
 }

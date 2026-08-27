@@ -481,7 +481,6 @@ export function BoosterOpening({
                             frozen={busy}
                             rarete={b.guaranteed}
                             vignette={!actif}
-                            inerte
                           />
                           {actif && phase === 'eclat' && (
                             <span className="shockwave" aria-hidden="true" />
