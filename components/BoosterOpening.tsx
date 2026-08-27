@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BoosterPack3D } from '@/components/BoosterPack3D';
+import { bruitDeDechirure } from '@/components/bruitage';
 import { TradingCard } from '@/components/TradingCard';
 import { Notice, RarityChip, flakes, rarityMeta } from '@/components/ui';
 import { boosterArt, boosterSize, cardArt } from '@/lib/domain/catalog';
@@ -97,8 +98,6 @@ export function BoosterOpening({
   const [pulled, setPulled] = useState<Pulled[]>([]);
   const [spent, setSpent] = useState<number | null>(null);
   const [newBalance, setNewBalance] = useState<number | null>(null);
-  /** Quel sachet est présenté par son verso — nul si tous sont à l'endroit. */
-  const [verso, setVerso] = useState<string | null>(null);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const rail = useRef<HTMLDivElement>(null);
 
@@ -363,7 +362,7 @@ export function BoosterOpening({
                   quatre coûterait cher pour un gain nul à cette taille. */}
               <div
                 ref={rail}
-                className="carrousel"
+                className={`carrousel ${busy ? 'carrousel-gros-plan' : ''}`}
                 onPointerDown={onDown}
                 onPointerMove={onMove}
                 onPointerUp={onUp}
@@ -391,17 +390,30 @@ export function BoosterOpening({
                         type="button"
                         className="carrousel-prise"
                         disabled={busy}
-                        aria-label={`Choisir le booster ${b.name}`}
+                        aria-label={
+                          actif
+                            ? `Ouvrir le booster ${b.name} — double-clic`
+                            : `Choisir le booster ${b.name}`
+                        }
                         onClick={() => {
                           // Un glissement se termine aussi par un clic : sans ce
                           // garde-fou, faire tourner la rangée sélectionnerait
                           // le sachet sous le doigt au relâchement.
                           if (busy || geste.current.parcouru > 6) return;
-                          // Cliquer le sachet déjà choisi le retourne : c'est le
-                          // seul moyen de voir son verso depuis que la pose au
-                          // repos ne fait plus le tour complet.
-                          if (actif) setVerso((v) => (v === b.id ? null : b.id));
-                          else setSelected(b.id);
+                          // Un clic sur le sachet déjà retenu ne fait rien : il
+                          // n'y a qu'un seul geste sur cet objet, le double-clic
+                          // qui l'ouvre. Un simple clic qui agirait aussi
+                          // déclencherait l'ouverture au premier des deux.
+                          if (!actif) setSelected(b.id);
+                        }}
+                        onDoubleClick={() => {
+                          // Les mêmes conditions que le bouton : sans ça, un
+                          // double-clic hors connexion ou à découvert partait
+                          // en requête vouée à revenir en erreur.
+                          if (geste.current.parcouru > 6) return;
+                          if (!actif || busy || !connected || !shopOpen || !affordable) return;
+                          bruitDeDechirure();
+                          void open();
                         }}
                       >
                         <div
@@ -422,7 +434,6 @@ export function BoosterOpening({
                             art={boosterArt(b.id)}
                             frozen={busy}
                             vignette={!actif}
-                            retourne={actif && verso === b.id}
                             inerte
                           />
                           {actif && phase === 'eclat' && (

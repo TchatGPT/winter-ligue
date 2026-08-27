@@ -225,11 +225,24 @@ const MYLAR = `linear-gradient(190deg,
  * déplacent d'un bloc et que le reflet traverse la coque sans se briser.
  */
 const ECLAT = `linear-gradient(102deg,
-  rgb(255 255 255 / 0) 42%,
-  color-mix(in srgb, var(--p1) 30%, transparent) 47%,
-  rgb(255 255 255 / 0.3) 50%,
-  color-mix(in srgb, var(--p1) 30%, transparent) 53%,
-  rgb(255 255 255 / 0) 58%)`;
+  rgb(255 255 255 / 0) 3%,
+  color-mix(in srgb, var(--p1) 11%, transparent) 21%,
+  rgb(255 255 255 / 0.11) 38%,
+  rgb(255 255 255 / 0.16) 50%,
+  rgb(255 255 255 / 0.11) 62%,
+  color-mix(in srgb, var(--p1) 11%, transparent) 79%,
+  rgb(255 255 255 / 0) 97%)`;
+
+/**
+ * Largeur du calque de reflet.
+ *
+ * Plus du double du sachet, et c'est le point : le dégradé le recouvre alors
+ * entièrement quelle que soit sa position, et son déplacement se lit comme une
+ * lumière qui se déplace sur toute la surface. Une version antérieure tenait
+ * dans la largeur du sachet avec un cœur étroit — on ne voyait qu'une bande
+ * passer.
+ */
+const LARGEUR_ECLAT = Math.round(W * 2.2);
 
 /** Le vernis : la bande spéculaire large qui fait « feuille brillante ». */
 const VERNIS = `linear-gradient(255deg,
@@ -386,8 +399,6 @@ export interface Pack3DProps {
    * même glissement, et aucune des deux ne marche.
    */
   inerte?: boolean;
-  /** Présente le verso plutôt que le recto. */
-  retourne?: boolean;
   className?: string;
 }
 
@@ -421,7 +432,6 @@ export function BoosterPack3D({
   frozen = false,
   vignette = false,
   inerte = false,
-  retourne = false,
   className,
 }: Pack3DProps) {
   const packRef = useRef<HTMLDivElement>(null);
@@ -564,7 +574,9 @@ export function BoosterPack3D({
               height: t.h,
               transform: `translateZ(${t.z.toFixed(2)}px) rotateY(${t.ry.toFixed(2)}deg) rotateX(${t.rx.toFixed(2)}deg)`,
               backgroundImage: couches.join(', '),
-              backgroundSize: couches.map(() => `${W}px ${H}px`).join(', '),
+              backgroundSize: couches
+                .map((_, k) => (k === 0 ? `${LARGEUR_ECLAT}px ${H}px` : `${W}px ${H}px`))
+                .join(', '),
               // Seul le reflet bouge : sa position part de `--balayage`, les
               // autres couches restent calées sur la planche.
               backgroundPosition: couches
@@ -601,7 +613,9 @@ export function BoosterPack3D({
               height: t.h,
               transform: `translateZ(${(-t.z).toFixed(2)}px) rotateY(${(-t.ry).toFixed(2)}deg) rotateX(${(-t.rx).toFixed(2)}deg) rotateY(180deg)`,
               backgroundImage: couches.join(', '),
-              backgroundSize: couches.map(() => `${W}px ${H}px`).join(', '),
+              backgroundSize: couches
+                .map((_, k) => (k === 0 ? `${LARGEUR_ECLAT}px ${H}px` : `${W}px ${H}px`))
+                .join(', '),
               // Le repère du verso est inversé : le reflet s'y ajoute au lieu de
               // s'y soustraire, pour continuer d'aller dans le même sens que sur
               // le recto quand le sachet tourne.
@@ -671,6 +685,8 @@ export function BoosterPack3D({
         ['--p1' as string]: gradient[0],
         ['--p2' as string]: gradient[1],
         ['--eclat' as string]: ECLAT,
+        ['--largeur-eclat' as string]: `${LARGEUR_ECLAT}px`,
+        ['--largeur-eclat' as string]: `px`,
       }}
     >
       {/* Le halo ne tourne pas avec le sachet : c'est un éclairage de vitrine
@@ -688,9 +704,6 @@ export function BoosterPack3D({
           width: W,
           height: H,
           // Les teintes viennent de la scène, par héritage.
-          // La pose au repos tourne autour de cette valeur ; 180° la fait
-          // basculer sur le verso sans toucher à l'animation elle-même.
-          ['--tour' as string]: retourne ? '180deg' : '0deg',
           ...(vignette ? { ['--rx3' as string]: '-6deg', ['--ry3' as string]: '-15deg' } : null),
         }}
         {...(inerte
