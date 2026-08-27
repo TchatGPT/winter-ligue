@@ -141,66 +141,89 @@ Colle la bible de style, puis le sujet, puis l'accent de rareté correspondant.
 
 ## Les sachets de booster
 
-Même principe que pour les cartes, et pour la même raison : **le cadre est en code,
-l'illustration est une image.**
+**Ici la règle des cartes s'inverse : la planche est composée entière**, sertissages et
+filet compris. Ce n'est pas une incohérence, c'est la même logique appliquée à un objet
+différent.
 
-Ce qui est déjà fait et n'a pas besoin d'être généré :
+Une carte est un gabarit répété 24 fois : son cadre doit être en code pour rester
+rigoureusement identique, sinon la planche de collection part en morceaux. Un sachet
+n'existe qu'en **quatre** exemplaires, jamais côte à côte, et son décor est solidaire de
+sa découpe — le sceau de rareté se pose dans un creux de l'illustration, le filet suit le
+bord du film. Découper ça en deux couches coûterait plus que ça ne rapporte.
 
-- la forme du sachet et ses proportions (1:2,1, comme un booster du commerce) ;
-- les sertissages striés en haut et en bas ;
-- les plis du mylar, le bombement, le reflet mobile ;
-- le cadre ciselé argent, ses volutes d'angle, le nom en haut, le nombre de cartes en
-  bas, et le titre répété verticalement sur les deux montants ;
-- la rotation 360° à la souris, avec inertie.
+Le code s'occupe donc uniquement du **volume** :
 
-Tant qu'aucune image n'est fournie, un décor vectoriel prend le relais — aurore, massif
-enneigé, lac, refuge éclairé, teintés aux couleurs du booster. Il tient la route, mais
-un SVG écrit à la main n'atteindra jamais une illustration peinte.
+- les six faces réelles, l'épaisseur, les tranches et l'opercule ;
+- la rotation 360° à la souris, avec inertie ;
+- le reflet qui balaie la face pendant qu'on tourne le sachet — c'est ce qu'une image
+  fixe ne peut pas faire, et c'est ce qui le fait lire comme un objet ;
+- l'ombre portée.
+
+Quand une planche est présente, les sertissages CSS, le cadre ciselé et les textes sont
+retirés : les redessiner par-dessus donnerait un double sertissage et masquerait le
+sceau.
+
+Tant qu'aucune planche n'est fournie, un décor vectoriel prend le relais — aurore,
+massif enneigé, lac, refuge éclairé, avec son propre cadre ciselé et ses textes. Il tient
+la route et permet de livrer les quatre sachets au fil de l'eau, mais un SVG écrit à la
+main n'atteindra jamais une illustration peinte. Compare `givre` aux trois autres, l'écart
+est net.
 
 ### Gabarit
 
 | | |
 |---|---|
-| Format | **vertical, ratio 1:1,95** |
-| Résolution | 760 × 1480 |
-| Livraison | WebP qualité 84, moins de 250 Ko |
+| Format | **vertical, ratio 1:1,75** — celui d'un booster du commerce (67 × 117 mm) |
+| Résolution | 760 × 1330 |
+| Livraison | JPEG qualité 88 ou WebP 84, moins de 250 Ko |
 | Nom du fichier | l'identifiant du booster : `givre`, `blizzard`, `aurore`, `solstice` |
 | Emplacement | `public/boosters/` |
 
 Puis `npm run cartes` pour rafraîchir l'index.
 
-**Ne fais pas générer le cadre ni le texte.** L'image ne doit contenir que le paysage :
-le cadre argent se pose par-dessus, et il doit rester identique sur les quatre sachets.
-Laisse donc respirer les bords — le cadre mange environ 8 % de chaque côté.
+**Cadrage.** La planche doit contenir le sachet **bord à bord, sans marge ni fond** :
+sertissage haut sur la toute première ligne de pixels, sertissage bas sur la dernière.
+Tout blanc laissé autour se retrouverait imprimé sur la face. Si le générateur pose le
+sachet sur un fond, recadre-le avant de le déposer.
+
+Next convertit et redimensionne à la volée, inutile donc de viser un format exotique :
+un JPEG propre suffit, il sera servi en WebP.
 
 ### Le prompt
 
 ```
-Vertical 1:1.95 illustration, painted digital art, no text, no border, no frame.
+A complete vertical trading card booster pack, product shot, ratio 1:1.75,
+filling the entire frame edge to edge with no background and no margin.
 
-A vast aurora borealis sweeping diagonally across a deep indigo starfield,
-vivid emerald green shading into violet, with fine luminous filaments and
-soft glowing draperies. Below it, a single snow-capped volcanic peak painted
-with visible rock ridges, couloirs and snowfields, standing over a still
-frozen lake that mirrors the aurora. On the right shore, one tiny tent lit
-warm amber — the only warm light in the picture.
+Glossy silver mylar foil packaging. A finely serrated crimped seal runs across
+the very top and the very bottom of the pack, bright metallic, horizontally
+ribbed. Between them, a full-bleed painted illustration framed by a thin white
+keyline.
 
-Rich saturated colour, cinematic depth, high detail, crisp starfield.
-Composition: aurora occupies the upper half, the peak the middle, the lake
-the lower quarter. Generous empty margin on all four edges.
+The illustration: <SUJET>
+
+Bottom right of the illustration, a small round embossed gold foil seal
+reading <RARETE>.
+
+Painted digital art, cold desaturated winter palette, cinematic, high detail.
+No other text anywhere on the pack.
 ```
 
 ### La variante par booster
 
-Garde le prompt, change la dominante de l'aurore — c'est ce qui distingue les quatre
+Garde la structure, change le sujet et le sceau — c'est ce qui distingue les quatre
 sachets tout en gardant la gamme cohérente :
 
-| Booster | Dominante à demander |
-|---|---|
-| `givre` | `pale cyan and white aurora, coldest scene, thin ice on the lake` |
-| `blizzard` | `deep blue aurora, snow falling, wind-blown spindrift off the ridge` |
-| `aurore` | `emerald green and violet aurora, the most spectacular display` |
-| `solstice` | `golden and amber aurora, warm light on the snowfields` |
+| Booster | Sujet | Sceau |
+|---|---|---|
+| `givre` | ✅ **fait** — un tireur d'élite en tenue de camouflage neige, à plat ventre dans la poudreuse, sa section avançant derrière lui dans la tempête | `COMMON` |
+| `blizzard` | une escouade progressant contre un vent de face, la neige rayant l'image à l'horizontale, silhouettes à peine lisibles | `RARE` |
+| `aurore` | une aurore boréale verte et violette au-dessus d'un lac gelé, un observateur seul de dos sur la rive | `SUPER RARE` |
+| `solstice` | un opérateur au sommet d'une crête au soleil rasant, l'ombre longue, la lumière dorée sur les névés | `ULTRA RARE` |
+
+Le sujet de `givre` est là comme étalon : c'est la planche de référence, les trois autres
+doivent tenir à côté d'elle — même palette froide, même niveau de détail, même traitement
+du sertissage.
 
 ---
 

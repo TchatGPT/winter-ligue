@@ -2104,6 +2104,36 @@
     border-radius: 6px;
   }
 
+  /**
+   * Face portant une planche peinte.
+   *
+   * Une planche photographie un sachet réel : ses plis, son bombement et son
+   * reflet sont déjà dans l'image, avec la lumière qui va avec. Y superposer
+   * les mêmes effets à pleine puissance les compte deux fois — le visage part
+   * dans la boue et les stries du sertissage peint se dédoublent.
+   *
+   * On garde donc les calques, mais très en retrait : juste assez pour que la
+   * lumière bouge pendant la rotation, ce qu'une image fixe ne peut pas faire.
+   */
+  .pack3d-illustre .pack3d-print {
+    top: 0;
+    bottom: 0;
+    /* Bord à bord : le rayon suit celui de la face, pas celui de la fenêtre. */
+    border-radius: 3px;
+  }
+
+  .pack3d-illustre .pack3d-froisse {
+    opacity: 0.12;
+  }
+
+  .pack3d-illustre::after {
+    opacity: 0.34;
+  }
+
+  .pack3d-illustre::before {
+    opacity: 0.45;
+  }
+
   /* Encoche de déchirure, juste sous le sertissage haut. */
   .pack3d-notch {
     position: absolute;

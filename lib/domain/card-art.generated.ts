@@ -11,5 +11,5 @@ export const CARD_ART: Record<string, string> = {
 };
 
 export const BOOSTER_ART: Record<string, string> = {
-
+  'givre': '/boosters/givre.jpg',
 };

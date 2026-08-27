@@ -6,13 +6,14 @@ import { PackArtwork } from './PackArtwork';
 /**
  * Dimensions du sachet, en pixels.
  *
- * Le ratio compte plus que les valeurs : un vrai sachet de cartes est élancé,
- * autour de 1:2,1 (63 × 130 mm pour un booster du commerce). Une première
- * version à 250 × 368 donnait 1:1,47 — ça se lisait comme un carré, pas comme
- * un sachet.
+ * Le ratio compte plus que les valeurs. Il est calé sur **1:1,75**, mesuré sur
+ * la planche de référence — et c'est aussi celui d'un booster du commerce
+ * (67 × 117 mm). Deux versions ont précédé : 250 × 368 donnait 1:1,47, qui se
+ * lisait comme un carré ; la correction est partie trop loin jusqu'à 1:2,1, où
+ * le sachet s'étirait et déformait l'illustration de 20 % en hauteur.
  */
-const W = 188;
-const H = 396;
+const W = 200;
+const H = 350;
 /** Épaisseur du film, gonflé par les cartes. */
 const D = 13;
 /** Hauteur du sertissage, en haut comme en bas. */
@@ -151,16 +152,23 @@ export function BoosterPack3D({
   };
 
   /**
+   * Une planche peinte porte ses propres sertissages, puisqu'elle photographie
+   * un sachet entier. Le sertissage CSS et l'encoche de déchirure sont alors
+   * retirés, et l'impression va d'un bord à l'autre : les redessiner par-dessus
+   * donnerait un double sertissage.
+   */
+  const illustre = Boolean(art);
+
+  /**
    * L'impression du sachet.
    *
-   * L'illustration occupe toute la face, entre les deux sertissages — comme
-   * sur un vrai sachet, où le décor va bord à bord et où seul le film écrasé
-   * reste nu.
+   * Le décor va bord à bord et seul le film écrasé reste nu — comme sur un vrai
+   * sachet, où l'impression précède le pliage.
    */
   const artwork = (variant = 0) => (
     <div
       className="pack3d-print"
-      style={{ top: CRIMP, bottom: CRIMP }}
+      style={illustre ? { top: 0, bottom: 0 } : { top: CRIMP, bottom: CRIMP }}
     >
       <PackArtwork
         name={name}
@@ -171,6 +179,16 @@ export function BoosterPack3D({
       />
     </div>
   );
+
+  /** Sertissages et encoche : le film écrasé, absent des planches peintes. */
+  const sertissages = (notch = false) =>
+    illustre ? null : (
+      <>
+        <span className="pack3d-crimp pack3d-crimp-top" aria-hidden="true" />
+        <span className="pack3d-crimp pack3d-crimp-bottom" aria-hidden="true" />
+        {notch ? <span className="pack3d-notch" aria-hidden="true" /> : null}
+      </>
+    );
 
   return (
     <div className={`pack3d-scene ${className ?? ''}`} style={{ width: W, height: H }}>
@@ -213,25 +231,22 @@ export function BoosterPack3D({
       >
         {/* Face avant */}
         <div
-          className="pack3d-face pack3d-front"
+          className={`pack3d-face pack3d-front ${illustre ? 'pack3d-illustre' : ''}`}
           style={{ width: W, height: H, transform: `translateZ(${D / 2}px)` }}
         >
           {artwork(0)}
           <span className="pack3d-froisse" aria-hidden="true" />
-          <span className="pack3d-crimp pack3d-crimp-top" aria-hidden="true" />
-          <span className="pack3d-crimp pack3d-crimp-bottom" aria-hidden="true" />
-          <span className="pack3d-notch" aria-hidden="true" />
+          {sertissages(true)}
         </div>
 
         {/* Face arrière, retournée pour que l'impression reste lisible */}
         <div
-          className="pack3d-face pack3d-back"
+          className={`pack3d-face pack3d-back ${illustre ? 'pack3d-illustre' : ''}`}
           style={{ width: W, height: H, transform: `rotateY(180deg) translateZ(${D / 2}px)` }}
         >
           {artwork(1)}
           <span className="pack3d-froisse" aria-hidden="true" />
-          <span className="pack3d-crimp pack3d-crimp-top" aria-hidden="true" />
-          <span className="pack3d-crimp pack3d-crimp-bottom" aria-hidden="true" />
+          {sertissages()}
         </div>
 
         {/* Tranche gauche */}

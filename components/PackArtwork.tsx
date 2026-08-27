@@ -1,18 +1,30 @@
+import Image from 'next/image';
+
 /**
  * L'impression d'un sachet de booster.
  *
- * Tout est en SVG inline plutôt qu'en image : le décor se teinte avec les
- * couleurs du booster, reste net à toutes les tailles, se rend côté serveur et
- * ne pèse rien. Les quatre sachets partagent donc la même composition — c'est
- * ce qui fait qu'ils se lisent comme une gamme — mais chacun a sa palette.
+ * Deux régimes, selon qu'une planche peinte est fournie ou non.
  *
- * La composition reprend celle d'un vrai sachet de cartes : un cadre ciselé,
- * le nom de la série en haut, la mention d'édition en bas, et le titre répété
- * verticalement sur les deux montants.
+ * **Avec planche** — elle est posée bord à bord et rien ne vient dessus. Une
+ * planche de sachet est livrée composée : filet, sceau de rareté et
+ * sertissages y sont déjà peints.
+ *
+ * **Sans planche** — un décor vectoriel prend le relais, teinté aux couleurs du
+ * booster : cadre ciselé, nom de la série en haut, mention d'édition en bas et
+ * titre répété verticalement sur les montants. Il se rend côté serveur, reste
+ * net à toutes les tailles et ne pèse rien, ce qui permet de livrer les quatre
+ * illustrations au fil de l'eau sans jamais montrer un sachet vide.
  */
 
-const W = 188;
-const H = 366;
+/**
+ * Le repère du décor vectoriel.
+ *
+ * Il doit garder le ratio de la face du sachet (1:1,75, voir `BoosterPack3D`) :
+ * le SVG est tracé en `preserveAspectRatio="none"`, donc tout écart entre les
+ * deux se paie en étirement du massif et du cadre.
+ */
+const W = 200;
+const H = 350;
 
 /** Marges du cadre, à l'intérieur des sertissages. */
 const PAD = 9;
@@ -149,6 +161,34 @@ function VectorScene({ uid, aurora, variant }: { uid: string; aurora: string; va
 export function PackArtwork({ name, cardCount, tint, variant = 0, art }: PackArtworkProps) {
   const [aurora, deep] = tint;
   const uid = `pk${variant}-${name.replace(/[^a-zA-Z]/g, '')}`;
+
+  /**
+   * Sachet illustré : la planche EST l'impression, on ne dessine rien dessus.
+   *
+   * C'est l'inverse de la règle des cartes, et pour une raison concrète : une
+   * carte est un gabarit répété 24 fois, donc son cadre doit être en code pour
+   * rester rigoureusement identique. Un sachet, lui, arrive déjà composé — son
+   * filet, son sceau de rareté et ses sertissages sont peints dedans, calés sur
+   * l'illustration. Reposer le cadre ciselé par-dessus doublerait le filet et
+   * masquerait le sceau.
+   *
+   * `object-cover` plutôt que `fill` : si une planche arrive avec un ratio un
+   * peu différent du sachet, mieux vaut la recadrer que déformer un visage.
+   */
+  if (art) {
+    return (
+      <Image
+        src={art}
+        alt=""
+        aria-hidden="true"
+        draggable={false}
+        fill
+        sizes="260px"
+        className="pointer-events-none select-none object-cover"
+        priority
+      />
+    );
+  }
 
   return (
     <svg
