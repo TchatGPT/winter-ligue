@@ -62,10 +62,71 @@ export function BoosterOpening({
   const [spent, setSpent] = useState<number | null>(null);
   const [newBalance, setNewBalance] = useState<number | null>(null);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const rail = useRef<HTMLDivElement>(null);
+  const arret = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const booster = useMemo(
     () => boosters.find((b) => b.id === selected) ?? boosters[0],
     [boosters, selected],
+  );
+
+  /** Amène un sachet au centre du rail. */
+  const centrer = useCallback((index: number, doux = true) => {
+    const piste = rail.current;
+    const case_ = piste?.children[index] as HTMLElement | undefined;
+    if (!piste || !case_) return;
+    piste.scrollTo({
+      left: case_.offsetLeft + case_.offsetWidth / 2 - piste.clientWidth / 2,
+      behavior: doux ? 'smooth' : 'auto',
+    });
+  }, []);
+
+  /**
+   * Le défilement fait foi.
+   *
+   * On attend l'arrêt plutôt que de suivre chaque événement : pendant un
+   * défilement fluide, le sachet le plus proche du centre change plusieurs fois
+   * par seconde, et changer de sélection à chaque fois ferait clignoter la
+   * scène et le prix.
+   */
+  const onScroll = useCallback(() => {
+    if (arret.current) clearTimeout(arret.current);
+    arret.current = setTimeout(() => {
+      const piste = rail.current;
+      if (!piste) return;
+      const centre = piste.scrollLeft + piste.clientWidth / 2;
+      let proche = 0;
+      let ecart = Infinity;
+      Array.from(piste.children).forEach((el, i) => {
+        const c = (el as HTMLElement).offsetLeft + (el as HTMLElement).offsetWidth / 2;
+        const d = Math.abs(c - centre);
+        if (d < ecart) {
+          ecart = d;
+          proche = i;
+        }
+      });
+      const cible = boosters[proche];
+      if (cible) setSelected((actuel) => (cible.id === actuel ? actuel : cible.id));
+    }, 130);
+  }, [boosters]);
+
+  // Au premier rendu, le sachet retenu doit déjà être au centre — sans
+  // animation, sinon la page s'ouvre sur un défilement qu'on n'a pas demandé.
+  const monte = useRef(false);
+  useEffect(() => {
+    if (monte.current) return;
+    monte.current = true;
+    centrer(
+      boosters.findIndex((b) => b.id === selected),
+      false,
+    );
+  }, [boosters, selected, centrer]);
+
+  useEffect(
+    () => () => {
+      if (arret.current) clearTimeout(arret.current);
+    },
+    [],
   );
 
   // Les minuteries de l'animation doivent mourir avec le composant, sinon un
@@ -164,42 +225,6 @@ export function BoosterOpening({
       )}
       {error && <Notice kind="error">{error}</Notice>}
 
-      {/* ------------------------ Choix du booster ---------------------- */}
-      {/* Les sachets tiennent lieu de sélecteur : on choisit un booster en
-          regardant l'objet, pas en lisant une fiche. Le détail du booster
-          retenu est donné sous la scène, où il sert vraiment. */}
-      <div className="scroll-x-clean -mx-4 px-4 sm:mx-0 sm:px-0">
-        <div className="flex min-w-max items-start justify-center gap-4 py-2 sm:gap-8">
-          {boosters.map((b) => {
-            const active = b.id === booster.id;
-            return (
-              <button
-                key={b.id}
-                type="button"
-                onClick={() => !busy && setSelected(b.id)}
-                disabled={busy}
-                aria-pressed={active}
-                aria-label={`Choisir le booster ${b.name}`}
-                className={`choix-sachet ${active ? 'choix-sachet-actif' : ''}`}
-              >
-                <BoosterPack3D
-                  name={b.name}
-                  cardCount={boosterSize(b)}
-                  gradient={b.gradient}
-                  art={boosterArt(b.id)}
-                  vignette
-                  taille={0.5}
-                />
-                <span className="mt-3 block font-display text-sm leading-tight font-black tracking-wide uppercase">
-                  {b.name}
-                </span>
-                <span className="num block text-[13px] text-ice">❄ {flakes(b.finalPrice)}</span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
       {/* ------------------------- Scène 3D ------------------------------ */}
       <div className="glass relative overflow-hidden">
         <div
@@ -231,23 +256,70 @@ export function BoosterOpening({
                 )}
               </div>
 
+              {/* Les sachets sont alignés dans la scène : on fait défiler le
+                  rail, ou on clique sur un voisin. Le sachet centré est celui
+                  qu'on ouvre — le choix et la mise en scène sont le même geste,
+                  au lieu d'être une rangée de fiches en haut de page.
+
+                  Seul le sachet centré porte le maillage complet. Les voisins
+                  sont des vignettes : cent quarante tuiles chacun, en afficher
+                  quatre coûterait cher pour un gain nul à cette taille. */}
               <div
-                className={`scene ${phase === 'secousse' ? 'pack-shake' : ''} ${
-                  phase === 'eclat' ? 'pack-burst' : ''
-                }`}
+                ref={rail}
+                className="carrousel"
+                onScroll={onScroll}
+                role="listbox"
+                aria-label="Choix du booster"
               >
-                {/* Le sachet tourne librement : on le prend, on le retourne,
-                    on regarde ses tranches. L'ouverture se déclenche par le
-                    bouton, pas par le clic sur le sachet — sinon chaque
-                    tentative de le faire pivoter dépenserait des flocons. */}
-                <BoosterPack3D
-                  name={booster.name}
-                  cardCount={boosterSize(booster)}
-                  gradient={booster.gradient}
-                  art={boosterArt(booster.id)}
-                  frozen={busy}
-                />
-                {phase === 'eclat' && <span className="shockwave" aria-hidden="true" />}
+                {boosters.map((b, i) => {
+                  const actif = b.id === booster.id;
+                  return (
+                    <div
+                      key={b.id}
+                      className={`carrousel-case ${actif ? 'carrousel-case-actif' : ''}`}
+                      role="option"
+                      aria-selected={actif}
+                    >
+                      <button
+                        type="button"
+                        className="carrousel-prise"
+                        disabled={busy}
+                        aria-label={`Choisir le booster ${b.name}`}
+                        onClick={() => !busy && !actif && centrer(i)}
+                      >
+                        <div
+                          className={`scene ${actif && phase === 'secousse' ? 'pack-shake' : ''} ${
+                            actif && phase === 'eclat' ? 'pack-burst' : ''
+                          }`}
+                        >
+                          {/* Le sachet centré tourne librement : on le prend, on
+                              le retourne, on regarde ses tranches. L'ouverture
+                              se déclenche par le bouton, jamais par le clic sur
+                              le sachet — sinon chaque tentative de le faire
+                              pivoter dépenserait des flocons. */}
+                          <BoosterPack3D
+                            name={b.name}
+                            cardCount={boosterSize(b)}
+                            gradient={b.gradient}
+                            art={boosterArt(b.id)}
+                            frozen={busy}
+                            vignette={!actif}
+                          />
+                          {actif && phase === 'eclat' && (
+                            <span className="shockwave" aria-hidden="true" />
+                          )}
+                        </div>
+                        {/* Nom et prix ne servent qu'aux voisins : pour le
+                            sachet centré, ils sont déjà au-dessus de la scène
+                            et sur le bouton d'ouverture. */}
+                        <span className="carrousel-etiquette">
+                          <span className="carrousel-nom">{b.name}</span>
+                          <span className="num carrousel-prix">❄ {flakes(b.finalPrice)}</span>
+                        </span>
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
 
               <div className="flex flex-col items-center gap-2">

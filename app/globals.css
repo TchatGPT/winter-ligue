@@ -1866,42 +1866,95 @@
     backface-visibility: hidden;
   }
 
-  /* -- Le sélecteur ------------------------------------------------------- */
+  /* -- Le carrousel de sachets -------------------------------------------- */
 
-  /* Les sachets alignés servent de sélecteur. Celui qui est choisi remonte et
-     reprend sa pleine opacité ; les autres s'effacent sans disparaître, pour
-     rester cliquables d'un coup d'œil. */
-  .choix-sachet {
-    flex-shrink: 0;
-    text-align: center;
+  /* Les sachets vivent dans la scène, alignés. On fait défiler le rail ou on
+     clique un voisin ; le sachet centré est celui qu'on ouvre. Le choix et la
+     mise en scène deviennent le même geste.
+
+     L'accrochage se fait au centre, et les cases gardent toutes la même
+     largeur : c'est ce qui rend le calcul du sachet le plus proche du centre
+     fiable, quelle que soit la taille à laquelle il est affiché. */
+  .carrousel {
+    display: flex;
+    width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    /* De quoi amener le premier et le dernier sachet jusqu'au centre. */
+    padding-inline: calc(50% - 115px);
+    scrollbar-width: none;
+  }
+
+  .carrousel::-webkit-scrollbar {
+    display: none;
+  }
+
+  .carrousel-case {
+    flex: 0 0 230px;
+    display: flex;
+    height: 400px;
+    align-items: center;
+    justify-content: center;
+    scroll-snap-align: center;
+  }
+
+  /* Le voisin est réduit et effacé, sans disparaître : il faut qu'on voie
+     qu'il y a autre chose à côté, sinon on ne pense pas à faire défiler. */
+  .carrousel-prise {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
     color: var(--muted);
-    opacity: 0.5;
+    opacity: 0.45;
+    transform: scale(0.6);
     transition:
-      transform 200ms ease,
-      opacity 200ms ease,
-      color 200ms ease;
+      transform 260ms cubic-bezier(0.22, 1, 0.36, 1),
+      opacity 260ms ease,
+      color 260ms ease;
   }
 
-  .choix-sachet:hover:not(:disabled) {
-    opacity: 0.82;
+  .carrousel-prise:hover:not(:disabled) {
+    opacity: 0.72;
   }
 
-  .choix-sachet-actif,
-  .choix-sachet-actif:hover:not(:disabled) {
+  .carrousel-case-actif .carrousel-prise,
+  .carrousel-case-actif .carrousel-prise:hover:not(:disabled) {
     opacity: 1;
     color: var(--ink);
-    transform: translateY(-6px);
-  }
-
-  .choix-sachet:disabled {
+    transform: scale(1);
+    /* Le sachet centré se prend à la souris pour tourner ; c'est le seul du
+       rail dont le clic ne sert pas à changer de sélection. */
     cursor: default;
   }
 
-  /* Une vignette ne se prend pas à la souris : c'est le bouton qui l'entoure
-     qui reçoit le clic. Sans ça, la scène avalerait l'événement. */
-  .sachet-scene-fixe {
-    cursor: inherit;
-    pointer-events: none;
+  .carrousel-etiquette {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.15rem;
+    /* Le nom et le prix du sachet centré sont déjà écrits au-dessus de la
+       scène et sur le bouton : les répéter ici ferait doublon. */
+    transition: opacity 200ms ease;
+  }
+
+  .carrousel-case-actif .carrousel-etiquette {
+    opacity: 0;
+  }
+
+  .carrousel-nom {
+    font-family: var(--font-display);
+    font-size: 0.95rem;
+    font-weight: 900;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    line-height: 1;
+  }
+
+  .carrousel-prix {
+    font-size: 0.85rem;
+    color: var(--ice);
   }
 
   .sachet-vignette {

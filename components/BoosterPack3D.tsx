@@ -293,8 +293,6 @@ export interface Pack3DProps {
    * multiplierait la page par cinq pour un gain nul.
    */
   vignette?: boolean;
-  /** Facteur d'échelle. La géométrie reste la même, seul l'affichage change. */
-  taille?: number;
   className?: string;
 }
 
@@ -327,7 +325,6 @@ export function BoosterPack3D({
   art,
   frozen = false,
   vignette = false,
-  taille = 1,
   className,
 }: Pack3DProps) {
   const packRef = useRef<HTMLDivElement>(null);
@@ -537,21 +534,13 @@ export function BoosterPack3D({
     </>
   );
 
-  // La mise à l'échelle porte sur la scène, pas sur la géométrie : le maillage
-  // est calculé une fois pour toutes et reste juste à toutes les tailles.
-  const boite =
-    taille === 1
-      ? undefined
-      : { width: Math.round(W * taille), height: Math.round(H * taille) };
-
-  const scene = (
+  // La mise à l'échelle est laissée au parent : une transformation CSS sur la
+  // case du carrousel s'anime, là où changer les dimensions ne ferait que
+  // sauter d'une taille à l'autre.
+  return (
     <div
-      className={`sachet-scene ${vignette ? 'sachet-scene-fixe' : ''} ${boite ? '' : (className ?? '')}`}
-      style={{
-        width: W,
-        height: H,
-        ...(boite ? { transform: `scale(${taille})`, transformOrigin: 'top left' } : null),
-      }}
+      className={`sachet-scene ${vignette ? 'sachet-scene-fixe' : ''} ${className ?? ''}`}
+      style={{ width: W, height: H }}
     >
       <div
         ref={packRef}
@@ -584,13 +573,4 @@ export function BoosterPack3D({
     </div>
   );
 
-  // Un conteneur à la taille réduite, sinon la scène occuperait toujours sa
-  // place d'origine dans la mise en page malgré le `scale`.
-  return boite ? (
-    <div className={className} style={{ ...boite, overflow: 'visible' }}>
-      {scene}
-    </div>
-  ) : (
-    scene
-  );
 }
