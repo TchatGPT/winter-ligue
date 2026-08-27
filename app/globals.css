@@ -8,7 +8,7 @@
  * entraine alors d'un bloc les cent quarante tuiles qui la lisent.
  */
 @property --balayage {
-  syntax: '<length>';
+  syntax: '<length-percentage>';
   inherits: true;
   initial-value: 0px;
 }
@@ -1859,18 +1859,20 @@
     user-select: none;
   }
 
+  /* Le sachet remplit la boîte que la rangée lui donne : tout ce qu'il
+     contient est en position absolue, et se rabattrait sur une boîte vide. */
   .sachet {
     position: relative;
-    transform: rotateX(var(--rx3, -9deg)) rotateY(var(--ry3, -20deg));
+    width: 100%;
+    height: 100%;
     will-change: transform;
   }
 
+  /* Rien n'est rogné ici : la planche est détourée, elle porte sa propre
+     silhouette, et la lueur qu'elle projette doit pouvoir en déborder. */
   .sachet-face {
     position: absolute;
     inset: 0;
-    overflow: hidden;
-    /* De quoi adoucir l'angle du film, pas un coin de carte de visite. */
-    border-radius: 2px;
     /* Les sachets qu'on n'a pas retenus s'effacent, et progressivement : c'est
        ce qui les fait s'illuminer à leur passage devant le centre au lieu de
        s'allumer d'un coup une fois choisis. `--voile` est écrit par le
@@ -1879,79 +1881,203 @@
       saturate(calc(1 - var(--voile, 0) * 0.4));
   }
 
-  /* La planche, et le titre imprimé dessus. */
+  /* La planche : le sachet lui-même. */
   .sachet-planche {
     position: absolute;
     inset: 0;
+    background-image: var(--planche);
     background-repeat: no-repeat;
-    background-size:
-      100% 100%,
-      100% 100%;
+    background-size: 100% 100%;
     pointer-events: none;
   }
 
-  /* -- Le carrousel de sachets -------------------------------------------- */
-
-  /* Les sachets sont serrés les uns contre les autres et la rangée tourne :
-     celui du centre fait face, ses voisins s'effacent de profil. On fait
-     glisser pour choisir, ou on clique un voisin.
-
-     Un défilement plat avait précédé. Il fonctionnait, mais des sachets alignés
-     à plat se lisent comme une étagère ; c'est la rotation qui donne
-     l'impression de tourner autour d'un présentoir, et qui laisse tenir quatre
-     sachets dans la largeur sans les éloigner. */
-  .carrousel {
-    position: relative;
-    width: 100%;
-    height: 430px;
-    /* Assez courte pour que le recul sur le cercle se voie : c'est elle,
-       et non une mise a l'echelle, qui retrecit les sachets eloignes. */
-    perspective: 900px;
-    perspective-origin: 50% 48%;
-    /* Le geste horizontal nous revient, le vertical reste à la page : sans ça,
-       sur mobile, on ne pourrait plus faire défiler la page depuis le sachet. */
-    touch-action: pan-y;
-    cursor: grab;
-    user-select: none;
-  }
-
-  .carrousel:active {
-    cursor: grabbing;
-  }
-
-  .carrousel-case {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 200px;
-    height: 340px;
-    margin: -170px 0 0 -100px;
-    will-change: transform;
-    transition:
-      transform 400ms cubic-bezier(0.22, 1, 0.36, 1),
-      opacity 320ms ease;
-  }
-
-  /* Pendant le glissement la rangée suit le doigt : la moindre transition la
-     ferait traîner d'une image sur l'autre. */
-  .carrousel-glisse .carrousel-case {
-    transition: none;
-  }
-
-  .carrousel-prise {
+  /* La lueur derrière le sachet.
+     C'est la planche, floutée et légèrement agrandie : elle épouse donc la
+     silhouette réelle, coins transparents compris, là où un halo en forme de
+     boîte se voyait au travers comme un cadre gris. L'ombre portée en couleur
+     y ajoute la rareté garantie du booster — `drop-shadow` suit l'alpha, ce
+     qu'un `box-shadow` ne saurait faire. */
+  .sachet-lueur {
     position: absolute;
     inset: 0;
+    background-image: var(--planche);
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
+    transform: scale(1.04);
+    filter: blur(22px) saturate(1.35) drop-shadow(0 0 11px var(--gemme, #8fdcff));
+    pointer-events: none;
+    --duree-lueur: 9s;
+    animation: sachet-lueur var(--duree-lueur) ease-in-out infinite;
+  }
+
+  /* Les voisins gardent une lueur, plus discrète : elle dit leur rareté sans
+     venir concurrencer le sachet de tête. */
+  .sachet-lueur-voisin {
+    filter: blur(15px) saturate(1.2) drop-shadow(0 0 7px var(--gemme, #8fdcff));
+    --lueur-bas: 0.13;
+    --lueur-haut: 0.2;
+  }
+
+  @keyframes sachet-lueur {
+    0%,
+    100% {
+      opacity: var(--lueur-bas, 0.26);
+      transform: scale(1.04);
+    }
+    50% {
+      opacity: var(--lueur-haut, 0.4);
+      transform: scale(1.08);
+    }
+  }
+
+  /* -- La rangée de sachets ---------------------------------------------- */
+
+  /* Les quatre sachets côte à côte, sans rotation.
+
+     Un présentoir tournant a précédé : les sachets étaient répartis sur un
+     cercle et s'inclinaient à mesure qu'ils s'en éloignaient. Les planches sont
+     désormais peintes en perspective trois quarts, et cette rotation venait
+     s'ajouter à celle du dessin — les sachets s'écrasaient de profil au lieu de
+     tourner. Une rangée plate laisse voir les quatre illustrations.
+
+     Quand elles ne tiennent plus dans la largeur, la rangée défile : au doigt,
+     par les flèches, ou aux touches du clavier. */
+  .rangee-cadre {
+    position: relative;
+    width: 100%;
+  }
+
+  .rangee {
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    /* Le geste horizontal revient à la rangée, le vertical reste à la page :
+       sans ça, on ne pourrait plus faire défiler la page depuis un sachet. */
+    touch-action: pan-x pan-y;
+    scrollbar-width: none;
+  }
+
+  .rangee::-webkit-scrollbar {
+    display: none;
+  }
+
+  .rangee:focus-visible {
+    outline: 2px solid var(--ice);
+    outline-offset: 6px;
+    border-radius: 12px;
+  }
+
+  /* La piste se centre elle-même.
+
+     Un `justify-content: center` posé sur la boîte qui défile rogne le premier
+     sachet dès que le contenu déborde — la marge de départ devient négative et
+     rien ne permet de l'atteindre. Une marge automatique sur une piste aussi
+     large que son contenu centre quand ça rentre, et laisse défiler sinon. */
+  .rangee-piste {
+    display: flex;
+    align-items: center;
+    gap: clamp(8px, 1.5vw, 18px);
+    width: max-content;
+    margin-inline: auto;
+    /* De quoi loger la lueur, la lévitation et l'agrandissement du sachet
+       retenu sans que rien ne soit rogné par le défilement. */
+    padding: 34px 10px 44px;
+  }
+
+  /* La taille du sachet vit ici, et nulle part ailleurs.
+
+     Elle décroît par paliers : quatre sachets de 210 px tiennent dans la
+     colonne d'un ordinateur, pas dans un téléphone. Le composant, lui, remplit
+     simplement la boîte qu'on lui donne. */
+  .rangee-piste {
+    --l-sachet: 210px;
+  }
+
+  @media (max-width: 900px) {
+    .rangee-piste {
+      --l-sachet: 168px;
+    }
+  }
+
+  @media (max-width: 560px) {
+    .rangee-piste {
+      --l-sachet: 132px;
+    }
+  }
+
+  .rangee-case {
+    flex: 0 0 auto;
+    width: var(--l-sachet);
+    scroll-snap-align: center;
+    /* Les sachets qu'on n'a pas retenus s'assombrissent. La valeur est lue par
+       `.sachet-face`, qui la traduit en luminosité. */
+    --voile: 0.28;
+    transform: scale(0.93);
+    transition:
+      transform 380ms cubic-bezier(0.22, 1, 0.36, 1),
+      --voile 380ms ease;
+  }
+
+  .rangee-case-actif {
+    --voile: 0;
+    transform: scale(1);
+  }
+
+  .rangee-prise {
     display: block;
+    width: 100%;
     padding: 0;
     border: 0;
     background: none;
+    cursor: pointer;
   }
 
-  .carrousel-case-actif .carrousel-prise {
-    /* Le sachet du centre est déjà choisi : son clic n'a rien à faire. */
+  .rangee-case-actif .rangee-prise {
+    /* Le sachet retenu est déjà choisi : son clic simple n'a rien à faire. */
     cursor: inherit;
   }
 
+  /* Les flèches n'apparaissent que si la rangée déborde — c'est mesuré, pas
+     supposé : quatre sachets peuvent déborder sur un ordinateur à fenêtre
+     étroite comme tenir sur une tablette large. */
+  .rangee-fleche {
+    position: absolute;
+    top: 50%;
+    z-index: 5;
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    margin-top: -22px;
+    border: 1px solid var(--bord);
+    border-radius: 999px;
+    background: rgb(10 18 32 / 0.82);
+    color: var(--texte);
+    font-size: 26px;
+    line-height: 1;
+    cursor: pointer;
+    backdrop-filter: blur(6px);
+    transition:
+      background 160ms ease,
+      opacity 160ms ease;
+  }
+
+  .rangee-fleche:hover:not(:disabled) {
+    background: rgb(22 38 60 / 0.92);
+  }
+
+  .rangee-fleche:disabled {
+    opacity: 0.3;
+    cursor: default;
+  }
+
+  .rangee-fleche-avant {
+    left: 4px;
+  }
+
+  .rangee-fleche-apres {
+    right: 4px;
+  }
 
   /* -- Le halo et le reflet balayant ---------------------------------------- */
 
@@ -1965,75 +2091,6 @@
      franchement visible à côté du sachet. Le halo doit décoller l'objet de son
      fond, pas se faire remarquer — il reste donc froid, l'accent du booster n'y
      entrant qu'au quart, et il ne déborde plus que d'un tiers. */
-  /* La lisière : une lueur serrée, juste autour de la silhouette.
-
-     Le halo est flou de quarante-quatre pixels — assez large pour décoller le
-     sachet du fond, bien trop pour le border. Or le sachet est clair et le
-     panneau presque noir : leur rencontre tient en un pixel, et une transition
-     aussi raide se lit comme un trait sombre plutôt que comme un bord.
-
-     Cette seconde lueur, à peine plus grande que le sachet et floue de douze
-     pixels, éclaire le fond immédiatement autour de lui. La marche disparaît.
-
-     C'est elle, et non le halo, qui porte la couleur de rareté sur toute la
-     rangée. Le halo est large et flou : sur un voisin incliné de soixante-dix
-     degrés, la rotation du présentoir l'écrase dans le plan du sachet, où il ne
-     mesure plus que quelques pixels — entièrement cachés derrière le sachet
-     lui-même. La lisière, elle, épouse la silhouette : elle subit le même
-     raccourci que le sachet et reste donc toujours visible tout autour, quel
-     que soit l'angle. Son cœur reste clair, sans quoi elle ne masquerait plus
-     la marche de contraste qui est sa raison d'être ; la teinte n'intervient
-     qu'en s'éloignant du bord. */
-  .sachet-lisiere {
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    width: 112%;
-    height: 106%;
-    transform: translate(-50%, -50%);
-    pointer-events: none;
-    background: radial-gradient(
-      ellipse at 50% 50%,
-      rgb(216 236 253 / 0.46) 0%,
-      color-mix(in srgb, var(--gemme, #8fdcff) 34%, transparent) 60%,
-      color-mix(in srgb, var(--gemme, #8fdcff) 22%, transparent) 74%,
-      transparent 88%
-    );
-    filter: blur(15px);
-  }
-  .sachet-halo {
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    width: 132%;
-    height: 112%;
-    pointer-events: none;
-    background: radial-gradient(
-      ellipse at 50% 50%,
-      color-mix(in srgb, var(--gemme, #8fdcff) 42%, transparent) 0%,
-      color-mix(in srgb, var(--gemme, #8fdcff) 20%, transparent) 48%,
-      transparent 74%
-    );
-    filter: blur(44px);
-    --duree-halo: 9s;
-    animation: sachet-halo var(--duree-halo) ease-in-out infinite;
-  }
-
-
-  /* L'intensité passe par des variables : une `opacity` posée sur le modificateur
-     serait perdue, les keyframes ayant la priorité sur les règles ordinaires. */
-  @keyframes sachet-halo {
-    0%,
-    100% {
-      opacity: var(--halo-bas, 0.5);
-      transform: translate(-50%, -50%) scale(0.97);
-    }
-    50% {
-      opacity: var(--halo-haut, 0.78);
-      transform: translate(-50%, -50%) scale(1.03);
-    }
-  }
-
   /* Le reflet balayant, pour les sachets qui n'ont pas de maillage — vignettes
      et repli dessiné. Sur la coque galbée, il est une couche de fond de plus
      sur chaque tuile : voir `BoosterPack3D`. */
@@ -2042,10 +2099,22 @@
     inset: 0;
     pointer-events: none;
     background-image: var(--eclat);
-    background-size: var(--largeur-eclat, 440px) 100%;
+    background-size: var(--largeur-eclat, 220%) 100%;
     mix-blend-mode: screen;
     background-repeat: no-repeat;
     background-position: var(--balayage) 0;
+  }
+
+  /* Sur une planche détourée, le reflet doit être découpé à sa forme : sans
+     masque, il peint une bande claire par-dessus les coins transparents et le
+     sachet se retrouve inscrit dans un rectangle lumineux. */
+  .sachet-eclat-decoupe {
+    -webkit-mask-image: var(--planche);
+    mask-image: var(--planche);
+    -webkit-mask-size: 100% 100%;
+    mask-size: 100% 100%;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
   }
 
   /* -- Ombre au sol ------------------------------------------------------- */
@@ -2062,79 +2131,59 @@
     pointer-events: none;
   }
 
-  /* Au repos, le sachet reste tourné d'une vingtaine de degrés et oscille
-     autour de cette pose. Il ne se présente jamais de face.
+  /* Au repos, le sachet lévite : il monte et redescend de quelques pixels.
 
-     De face, une coque galbée se lit exactement comme une image plate : le
-     bombement se voit à peine, l'épaisseur pas du tout. C'est de trois quarts
-     que le volume apparaît, et il faut donc qu'il y reste.
+     C'est tout ce qui lui reste de mouvement propre. Il tournait auparavant sur
+     deux axes, ce qui avait un sens quand le sachet était une coque construite
+     en CSS — la rotation était le seul moyen de montrer qu'il avait un volume.
+     Les planches portent maintenant leur perspective dans le dessin : les faire
+     tourner par-dessus ne montrait plus rien, ça les déformait.
 
-     Un tour complet occupait cette place auparavant. Il montrait le verso,
-     mais passait par la pose de face deux fois par révolution — c'est ce
-     moment-là qui donnait l'impression d'un sachet plat. Le verso reste
-     accessible en cliquant le sachet mis en avant, qui bascule alors sur
-     `--tour: 180deg`. */
+     Le déplacement est vertical, lent, et décalé d'un sachet à l'autre. */
   .sachet {
-    --duree-pose: 9s;
-    --duree-veille: 9.5s;
+    --duree-levite: 4.6s;
     --duree-reflet: 7.5s;
-    animation: sachet-balayage var(--duree-reflet) ease-in-out infinite alternate;
-  }
-
-  .sachet-tourne {
     animation:
-      sachet-pose var(--duree-pose) ease-in-out infinite,
-      sachet-balayage var(--duree-reflet) ease-in-out infinite alternate;
-  }
-
-  /* Les sachets qu'on n'a pas choisis respirent aussi.
-
-     Plus lentement et de moins loin que celui de tête — c'est ce qui les
-     distingue sans avoir à les éteindre. Un présentoir dont seul l'objet
-     retenu bouge se lit comme trois images posées autour d'un objet ; ici
-     les quatre sont vivants, et l'ampleur dit lequel est choisi.
-
-     Le retard vient du nom du booster : à l'unisson, quatre oscillations se
-     liraient comme un seul mécanisme. */
-  .sachet-veille {
-    animation:
-      sachet-veille var(--duree-veille) ease-in-out infinite alternate,
+      sachet-levite var(--duree-levite) ease-in-out infinite alternate,
       sachet-balayage var(--duree-reflet) ease-in-out infinite alternate;
     animation-delay: var(--retard, 0s), var(--retard, 0s);
   }
 
-  /* Le calque fait 440 px pour un sachet de 200 : entre -235 et -5, il le
-     recouvre entièrement d'un bout à l'autre de la course. La lumière se
-     déplace donc sur toute la surface au lieu de la traverser, et le sachet
-     n'est jamais éclairé qu'à moitié.
+  /* Les voisins lévitent aussi, plus lentement et de moins haut : un présentoir
+     dont seul l'objet retenu bouge se lit comme trois images posées autour d'un
+     objet. Ici les quatre sont vivants, et l'ampleur dit lequel est choisi. */
+  .sachet-veille {
+    --duree-levite: 5.8s;
+    --amplitude-levite: 5px;
+  }
 
-     L'aller-retour est indispensable avec un calque aussi large : en boucle,
-     le retour au point de départ serait un saut de lumière bien visible. */
+  /* Le calque du reflet fait 440 px pour un sachet de 200 : entre -220 et -20,
+     il le recouvre entièrement d'un bout à l'autre de la course. La lumière se
+     déplace donc sur toute la surface au lieu de la traverser.
+
+     L'aller-retour est indispensable avec un calque aussi large : en boucle, le
+     retour au point de départ serait un saut de lumière bien visible. */
   @keyframes sachet-balayage {
     from {
-      --balayage: -220px;
+      --balayage: -120%;
     }
     to {
-      --balayage: -20px;
+      --balayage: -10%;
     }
   }
 
-  @keyframes sachet-veille {
+  /* Pendant l'ouverture le sachet est secoué puis éclate : sa lévitation
+     entrerait en concurrence avec ces deux animations sur la même propriété. */
+  .sachet-fige {
+    animation: sachet-balayage var(--duree-reflet) ease-in-out infinite alternate;
+  }
+
+  @keyframes sachet-levite {
     from {
-      transform: rotateX(-7deg) rotateY(-27deg);
+      transform: translateY(calc(var(--amplitude-levite, 8px) * -1));
     }
     to {
-      transform: rotateX(-3deg) rotateY(-5deg);
-    }
-  }
-
-  @keyframes sachet-pose {
-    0%,
-    100% {
-      transform: rotateX(-9deg) rotateY(-31deg);
-    }
-    50% {
-      transform: rotateX(-5deg) rotateY(-9deg);
+      transform: translateY(var(--amplitude-levite, 8px));
     }
   }
 
@@ -2161,25 +2210,21 @@
    * deux exemplaires qui divergeraient.
    */
   @media (prefers-reduced-motion: reduce) {
+    /* La lévitation, elle, s'arrête : elle déplace l'objet, et c'est
+       exactement ce que ce réglage demande d'éviter. Seules les lumières
+       reprennent — le reflet qui balaie et la lueur qui respire ne déplacent
+       rien.
+
+       Deux animations, deux durées : la liste doit suivre celle de la propriété
+       `animation`, sinon le reflet hériterait de la durée de la lévitation. */
     .sachet {
-      animation-duration: var(--duree-reflet) !important;
+      --amplitude-levite: 3px;
+      animation-duration: var(--duree-levite), var(--duree-reflet) !important;
       animation-iteration-count: infinite !important;
     }
 
-    /* Deux animations, deux durées : la liste doit suivre celle de la propriété
-       `animation`, sinon le balancement hériterait de la durée du reflet. */
-    .sachet-tourne {
-      animation-duration: var(--duree-pose), var(--duree-reflet) !important;
-      animation-iteration-count: infinite !important;
-    }
-
-    .sachet-veille {
-      animation-duration: var(--duree-veille), var(--duree-reflet) !important;
-      animation-iteration-count: infinite !important;
-    }
-
-    .sachet-halo {
-      animation-duration: var(--duree-halo) !important;
+    .sachet-lueur {
+      animation-duration: var(--duree-lueur) !important;
       animation-iteration-count: infinite !important;
     }
   }

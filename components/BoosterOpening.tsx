@@ -11,42 +11,6 @@ import type { BoosterDefinition, Rarity } from '@/lib/domain/types';
 
 const RARITY_LADDER: Rarity[] = ['C', 'PC', 'R', 'SR', 'UR', 'L'];
 
-/**
- * Géométrie du carrousel.
- *
- * Les sachets sont posés sur un **cercle**, pas sur une ligne. Une première
- * version les décalait latéralement d'un pas fixe en leur appliquant une
- * inclinaison plafonnée : ça donnait des sachets collés les uns aux autres,
- * tous penchés du même angle, sans courbe — un jeu de cartes en éventail, pas
- * un présentoir tournant.
- *
- * Ici chaque sachet occupe une position angulaire sur un cylindre de rayon
- * `RAYON`. Son écartement, son recul et son inclinaison découlent tous du même
- * angle, donc ils s'accordent forcément. La perspective suffit alors à le
- * rétrécir : aucune mise à l'échelle n'est appliquée à la main.
- */
-const RAYON = 560;
-const PAS = 26;
-
-/**
- * De combien le sachet de tête avance vers le regard.
- *
- * Sur le seul cercle, il n'était devant son voisin que de cinquante pixels : la
- * perspective ne le grossissait presque pas et la rangée se lisait comme un
- * paravent. Ce pas en avant lui donne un cinquième de taille de plus que ses
- * voisins, et c'est ce qui désigne le sachet choisi sans avoir à l'écrire.
- */
-const AVANCEE = 110;
-
-/**
- * Combien de pixels de glissement valent un sachet.
- *
- * C'est l'écartement réel de deux sachets voisins sur le cercle,
- * `RAYON · sin(PAS)`, pour que le rail suive le doigt au lieu de le devancer
- * ou de traîner derrière.
- */
-const GLISSE = Math.round(RAYON * Math.sin((PAS * Math.PI) / 180));
-
 export interface ShopBooster extends BoosterDefinition {
   finalPrice: number;
 }
@@ -99,7 +63,6 @@ export function BoosterOpening({
   const [spent, setSpent] = useState<number | null>(null);
   const [newBalance, setNewBalance] = useState<number | null>(null);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
-  const rail = useRef<HTMLDivElement>(null);
 
   const booster = useMemo(
     () => boosters.find((b) => b.id === selected) ?? boosters[0],
@@ -111,68 +74,33 @@ export function BoosterOpening({
     boosters.findIndex((b) => b.id === (booster?.id ?? selected)),
   );
 
-  // Position continue de la rangée, en numéros de sachet. Elle vit dans une ref
-  // parce qu'elle change à chaque image pendant le glissement : la faire passer
-  // par le state déclencherait un rendu React par image.
-  const pos = useRef(rang);
+  // Déclaré ici, et non plus bas avec le reste de l'ouverture : la rangée
+  // s'en sert pour neutraliser la navigation pendant qu'un sachet s'ouvre.
+  const busy = phase !== 'repos' && phase !== 'reveal';
+
+  const rangee = useRef<HTMLDivElement>(null);
   const cases = useRef<(HTMLDivElement | null)[]>([]);
-  const geste = useRef({ actif: false, capture: false, x0: 0, pos0: 0, parcouru: 0 });
 
-  /** Où se place un sachet, selon son écart au sachet de tête. */
-  const place = useCallback((i: number, p: number) => {
-    const d = i - p;
+  /**
+   * La rangée déborde-t-elle de sa boîte ?
+   *
+   * C'est ce qui décide de l'affichage des flèches. Une requête de média sur
+   * la largeur de l'écran s'en approcherait, sans jamais tomber juste : ce qui
+   * compte est de savoir si les quatre sachets tiennent côte à côte, ce qui
+   * dépend aussi de la largeur de la fenêtre sur un ordinateur, et du niveau
+   * de zoom.
+   */
+  const [deborde, setDeborde] = useState(false);
 
-    /*
-     * Le sachet est envoyé sur le cercle, puis le cercle est ramené devant.
-     *
-     * `translateZ(RAYON)` l'éloigne le long du rayon, `rotateY` le fait tourner
-     * autour de l'axe du présentoir, et `translateZ(-RAYON)` remet le sachet de
-     * tête à sa place. Son centre se retrouve en (R·sin θ, R·cos θ − R) et il
-     * regarde vers l'extérieur — la courbe, l'écartement et l'inclinaison
-     * viennent tous du même angle.
-     */
-    const theta = d * PAS;
-    // L'avancée s'éteint sur le premier voisin, et progressivement : pendant le
-    // glissement, le sachet qui arrive grandit à mesure qu'il prend la tête.
-    const avant = AVANCEE * Math.max(0, 1 - Math.abs(d));
-
-    return {
-      transform:
-        `translateZ(${(-RAYON + avant).toFixed(1)}px) ` +
-        `rotateY(${theta.toFixed(2)}deg) translateZ(${RAYON}px)`,
-      // Sans `preserve-3d` sur le rail, le navigateur ne trie pas les sachets
-      // par profondeur : c'est l'ordre de peinture qui décide, donc le z-index.
-      zIndex: 40 - Math.round(Math.abs(d) * 10),
-      // Le voile s'efface à mesure qu'un sachet approche du centre : ils
-      // s'illuminent donc à leur passage, au lieu de s'allumer d'un coup une
-      // fois retenus.
-      //
-      // Il est resté longtemps à 0,42, et c'est ce qui faisait passer les
-      // voisins pour des feuilles : un noir plat posé par-dessus rabote tous
-      // les écarts de luminosité de la même fraction, or c'est précisément
-      // l'écart entre le creux et la crête du galbe qui donne le volume. Le
-      // sachet gardait sa forme et perdait son relief. À 0,28 il s'efface
-      // toujours nettement au profit du sachet de tête, sans écraser son
-      // modelé.
-      voile: (0.28 * Math.min(1, Math.abs(d))).toFixed(3),
-    };
-  }, []);
-
-  const applique = useCallback(() => {
-    cases.current.forEach((el, i) => {
-      if (!el) return;
-      const s = place(i, pos.current);
-      el.style.transform = s.transform;
-      el.style.zIndex = String(s.zIndex);
-      el.style.setProperty('--voile', s.voile);
-    });
-  }, [place]);
-
-  // Un choix venu d'ailleurs — un clic sur un voisin — doit recaler la position
-  // continue, sinon le glissement suivant repartirait de l'ancien sachet.
   useEffect(() => {
-    pos.current = rang;
-  }, [rang]);
+    const el = rangee.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const mesure = () => setDeborde(el.scrollWidth > el.clientWidth + 4);
+    mesure();
+    const observateur = new ResizeObserver(mesure);
+    observateur.observe(el);
+    return () => observateur.disconnect();
+  }, [boosters.length]);
 
   /** Retient un booster, et le fait entendre. */
   const choisir = useCallback((id: string) => {
@@ -183,90 +111,64 @@ export function BoosterOpening({
     });
   }, []);
 
-  const onDown = (event: React.PointerEvent<HTMLDivElement>) => {
+  /**
+   * Le sachet le plus proche du centre de la rangée devient le sachet retenu.
+   *
+   * C'est ce qui rend le balayage tactile équivalent au clic : on pousse la
+   * rangée, et chaque sachet qui passe devant marque son passage — il
+   * s'illumine, et on l'entend. Sur un écran large la rangée ne défile pas, et
+   * ce gestionnaire ne se déclenche jamais.
+   */
+  const onScroll = () => {
     if (busy) return;
-    geste.current = {
-      actif: true,
-      capture: false,
-      x0: event.clientX,
-      pos0: pos.current,
-      parcouru: 0,
-    };
-  };
-
-  const onMove = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (!geste.current.actif) return;
-    const dx = event.clientX - geste.current.x0;
-    geste.current.parcouru = Math.max(geste.current.parcouru, Math.abs(dx));
-
-    /*
-     * La capture n'est prise qu'une fois le glissement avéré.
-     *
-     * La prendre dès l'appui paraissait plus simple, mais un pointeur capturé
-     * redirige aussi le `click` vers l'élément qui capture : le clic n'arrivait
-     * jamais au sachet visé, et cliquer un voisin ne le sélectionnait pas.
-     */
-    if (!geste.current.capture) {
-      if (geste.current.parcouru <= 6) return;
-      // La capture est un confort — elle garde le glissement vivant quand le
-      // doigt sort du rail. Si le navigateur la refuse, le glissement doit
-      // continuer sans elle, pas s'interrompre sur une exception.
-      try {
-        event.currentTarget.setPointerCapture(event.pointerId);
-      } catch {
-        /* pointeur déjà relâché : on glisse sans capture. */
+    const el = rangee.current;
+    if (!el) return;
+    const milieu = el.scrollLeft + el.clientWidth / 2;
+    let plusProche = 0;
+    let ecart = Infinity;
+    cases.current.forEach((c, i) => {
+      if (!c) return;
+      const centre = c.offsetLeft + c.offsetWidth / 2;
+      const d = Math.abs(centre - milieu);
+      if (d < ecart) {
+        ecart = d;
+        plusProche = i;
       }
-      rail.current?.classList.add('carrousel-glisse');
-      geste.current.capture = true;
-    }
-
-    const avant = Math.round(pos.current);
-    pos.current = Math.max(
-      0,
-      Math.min(boosters.length - 1, geste.current.pos0 - dx / GLISSE),
-    );
-
-    // Un cran par sachet franchi, pendant le glissement lui-même.
-    //
-    // Le son ne partait qu'au relâchement : traverser le rail d'un bout à
-    // l'autre d'un seul geste ne s'entendait donc qu'une fois, à l'arrivée.
-    // Ici chaque sachet qui passe devant marque son passage.
-    if (Math.round(pos.current) !== avant) bruitDeSelection();
-
-    applique();
-  };
-
-  const onUp = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (!geste.current.actif) return;
-    geste.current.actif = false;
-    // Sans glissement, rien à conclure : c'est un clic, le bouton s'en charge.
-    if (!geste.current.capture) return;
-
-    geste.current.capture = false;
-    try {
-      event.currentTarget.releasePointerCapture?.(event.pointerId);
-    } catch {
-      /* jamais capturé : rien à relâcher. */
-    }
-    rail.current?.classList.remove('carrousel-glisse');
-
-    // On s'arrête sur un sachet, jamais entre deux.
-    const cible = Math.max(0, Math.min(boosters.length - 1, Math.round(pos.current)));
-    pos.current = cible;
-    applique();
-    const b = boosters[cible];
+    });
+    const b = boosters[plusProche];
     if (b) choisir(b.id);
   };
 
+  /** Amène un sachet au centre de la rangée, quand elle défile. */
+  const defileVers = (i: number) => {
+    const el = rangee.current;
+    const c = cases.current[i];
+    if (!el || !c) return;
+    el.scrollTo({
+      left: c.offsetLeft + c.offsetWidth / 2 - el.clientWidth / 2,
+      behavior: 'smooth',
+    });
+  };
+
+  /** Un cran à gauche ou à droite, par les flèches ou par le clavier. */
+  const decale = useCallback(
+    (pas: number) => {
+      if (busy) return;
+      const cible = Math.max(0, Math.min(boosters.length - 1, rang + pas));
+      const b = boosters[cible];
+      if (!b) return;
+      choisir(b.id);
+      defileVers(cible);
+    },
+    [boosters, busy, choisir, rang],
+  );
+
   const onKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
-    if (busy) return;
     const pas = event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowRight' ? 1 : 0;
     if (!pas) return;
     event.preventDefault();
-    const b = boosters[Math.max(0, Math.min(boosters.length - 1, rang + pas))];
-    if (b) choisir(b.id);
+    decale(pas);
   };
-
   // Les minuteries de l'animation doivent mourir avec le composant, sinon un
   // changement de page en cours d'ouverture déclencherait un setState fantôme.
   useEffect(
@@ -281,7 +183,6 @@ export function BoosterOpening({
   }, []);
 
   const affordable = balance !== null && booster !== undefined && balance >= booster.finalPrice;
-  const busy = phase !== 'repos' && phase !== 'reveal';
 
   async function open() {
     if (!booster || busy) return;
@@ -394,102 +295,123 @@ export function BoosterOpening({
                 )}
               </div>
 
-              {/* Les sachets sont alignés dans la scène : on fait défiler le
-                  rail, ou on clique sur un voisin. Le sachet centré est celui
-                  qu'on ouvre — le choix et la mise en scène sont le même geste,
-                  au lieu d'être une rangée de fiches en haut de page.
+              {/* Les sachets sont posés côte à côte, sans rotation.
 
-                  Seul le sachet centré porte le maillage complet. Les voisins
-                  sont des vignettes : cent quarante tuiles chacun, en afficher
-                  quatre coûterait cher pour un gain nul à cette taille. */}
-              <div
-                ref={rail}
-                className={`carrousel ${busy ? 'carrousel-gros-plan' : ''}`}
-                onPointerDown={onDown}
-                onPointerMove={onMove}
-                onPointerUp={onUp}
-                onPointerCancel={onUp}
-                onKeyDown={onKeyDown}
-                role="listbox"
-                aria-label="Choix du booster"
-                tabIndex={0}
-              >
-                {boosters.map((b, i) => {
-                  const actif = b.id === booster.id;
-                  const assise = place(i, rang);
-                  return (
-                    <div
-                      key={b.id}
-                      ref={(el) => {
-                        cases.current[i] = el;
-                      }}
-                      className={`carrousel-case ${actif ? 'carrousel-case-actif' : ''}`}
-                      style={{
-                        transform: assise.transform,
-                        zIndex: assise.zIndex,
-                        ['--voile' as string]: assise.voile,
-                      }}
-                      role="option"
-                      aria-selected={actif}
-                    >
-                      <button
-                        type="button"
-                        className="carrousel-prise"
-                        disabled={busy}
-                        aria-label={
-                          actif
-                            ? `Ouvrir le booster ${b.name} — double-clic`
-                            : `Choisir le booster ${b.name}`
-                        }
-                        onClick={() => {
-                          // Un glissement se termine aussi par un clic : sans ce
-                          // garde-fou, faire tourner la rangée sélectionnerait
-                          // le sachet sous le doigt au relâchement.
-                          if (busy || geste.current.parcouru > 6) return;
-                          // Un clic sur le sachet déjà retenu ne fait rien : il
-                          // n'y a qu'un seul geste sur cet objet, le double-clic
-                          // qui l'ouvre. Un simple clic qui agirait aussi
-                          // déclencherait l'ouverture au premier des deux.
-                          if (!actif) choisir(b.id);
-                        }}
-                        onDoubleClick={() => {
-                          // Les mêmes conditions que le bouton : sans ça, un
-                          // double-clic hors connexion ou à découvert partait
-                          // en requête vouée à revenir en erreur.
-                          if (geste.current.parcouru > 6) return;
-                          if (!actif || busy || !connected || !shopOpen || !affordable) return;
-                          bruitDeDechirure();
-                          void open();
-                        }}
-                      >
+                  Un présentoir tournant a précédé : les sachets étaient
+                  répartis sur un cercle et s'inclinaient à mesure qu'ils s'en
+                  éloignaient. Les planches sont désormais peintes en
+                  perspective trois quarts — la rotation venait donc se
+                  superposer à celle du dessin, et les sachets s'écrasaient de
+                  profil. Une rangée plate laisse voir les quatre illustrations
+                  pour ce qu'elles sont.
+
+                  Quand les quatre ne tiennent plus dans la largeur, la rangée
+                  défile : au doigt, ou par les deux flèches. */}
+              <div className="rangee-cadre">
+                {deborde && (
+                  <button
+                    type="button"
+                    className="rangee-fleche rangee-fleche-avant"
+                    onClick={() => decale(-1)}
+                    disabled={busy || rang === 0}
+                    aria-label="Booster précédent"
+                  >
+                    <span aria-hidden="true">‹</span>
+                  </button>
+                )}
+
+                <div
+                  ref={rangee}
+                  className={`rangee ${busy ? 'rangee-gros-plan' : ''}`}
+                  onScroll={onScroll}
+                  onKeyDown={onKeyDown}
+                  role="listbox"
+                  aria-label="Choix du booster"
+                  tabIndex={0}
+                >
+                  {/* La piste porte les sachets et se centre elle-même : un
+                      `justify-content: center` sur la boîte qui défile rogne le
+                      premier sachet dès que le contenu déborde, alors qu'une
+                      marge automatique sur une piste aussi large que son contenu
+                      reste centrée sans jamais rogner. */}
+                  <div className="rangee-piste">
+                    {boosters.map((b, i) => {
+                      const actif = b.id === booster.id;
+                      return (
                         <div
-                          className={`scene ${actif && phase === 'secousse' ? 'pack-shake' : ''} ${
-                            actif && phase === 'eclat' ? 'pack-burst' : ''
-                          }`}
+                          key={b.id}
+                          ref={(el) => {
+                            cases.current[i] = el;
+                          }}
+                          className={`rangee-case ${actif ? 'rangee-case-actif' : ''}`}
+                          role="option"
+                          aria-selected={actif}
                         >
-                          {/* Le sachet du centre tourne sur lui-même pour
-                              montrer son verso, mais ne capte pas le pointeur :
-                              le glissement horizontal appartient à la rangée.
-                              L'ouverture passe par le bouton, jamais par le clic
-                              sur le sachet — sinon la moindre manipulation
-                              dépenserait des flocons. */}
-                          <BoosterPack3D
-                            name={b.name}
-                            cardCount={boosterSize(b)}
-                            gradient={b.gradient}
-                            art={boosterArt(b.id)}
-                            frozen={busy}
-                            rarete={b.guaranteed}
-                            vignette={!actif}
-                          />
-                          {actif && phase === 'eclat' && (
-                            <span className="shockwave" aria-hidden="true" />
-                          )}
+                          <button
+                            type="button"
+                            className="rangee-prise"
+                            disabled={busy}
+                            aria-label={
+                              actif
+                                ? `Ouvrir le booster ${b.name} — double-clic`
+                                : `Choisir le booster ${b.name}`
+                            }
+                            onClick={() => {
+                              if (busy) return;
+                              // Un clic sur le sachet déjà retenu ne fait rien :
+                              // il n'y a qu'un seul geste sur cet objet, le
+                              // double-clic qui l'ouvre. Un simple clic qui
+                              // agirait aussi déclencherait l'ouverture au
+                              // premier des deux.
+                              if (actif) return;
+                              choisir(b.id);
+                              defileVers(i);
+                            }}
+                            onDoubleClick={() => {
+                              // Les mêmes conditions que le bouton : sans ça, un
+                              // double-clic hors connexion ou à découvert partait
+                              // en requête vouée à revenir en erreur.
+                              if (!actif || busy || !connected || !shopOpen || !affordable) return;
+                              bruitDeDechirure();
+                              void open();
+                            }}
+                          >
+                            <div
+                              className={`scene ${actif && phase === 'secousse' ? 'pack-shake' : ''} ${
+                                actif && phase === 'eclat' ? 'pack-burst' : ''
+                              }`}
+                            >
+                              <BoosterPack3D
+                                name={b.name}
+                                cardCount={boosterSize(b)}
+                                gradient={b.gradient}
+                                art={boosterArt(b.id)}
+                                frozen={busy}
+                                rarete={b.guaranteed}
+                                vignette={!actif}
+                              />
+                              {actif && phase === 'eclat' && (
+                                <span className="shockwave" aria-hidden="true" />
+                              )}
+                            </div>
+                          </button>
                         </div>
-                      </button>
-                    </div>
-                  );
-                })}
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {deborde && (
+                  <button
+                    type="button"
+                    className="rangee-fleche rangee-fleche-apres"
+                    onClick={() => decale(1)}
+                    disabled={busy || rang === boosters.length - 1}
+                    aria-label="Booster suivant"
+                  >
+                    <span aria-hidden="true">›</span>
+                  </button>
+                )}
               </div>
 
               <div className="flex flex-col items-center gap-2">
