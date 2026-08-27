@@ -322,6 +322,8 @@ export interface Pack3DProps {
    * même glissement, et aucune des deux ne marche.
    */
   inerte?: boolean;
+  /** Présente le verso plutôt que le recto. */
+  retourne?: boolean;
   className?: string;
 }
 
@@ -355,6 +357,7 @@ export function BoosterPack3D({
   frozen = false,
   vignette = false,
   inerte = false,
+  retourne = false,
   className,
 }: Pack3DProps) {
   const packRef = useRef<HTMLDivElement>(null);
@@ -614,6 +617,9 @@ export function BoosterPack3D({
           width: W,
           height: H,
           // Les teintes viennent de la scène, par héritage.
+          // La pose au repos tourne autour de cette valeur ; 180° la fait
+          // basculer sur le verso sans toucher à l'animation elle-même.
+          ['--tour' as string]: retourne ? '180deg' : '0deg',
           ...(vignette ? { ['--rx3' as string]: '-6deg', ['--ry3' as string]: '-15deg' } : null),
         }}
         {...(inerte

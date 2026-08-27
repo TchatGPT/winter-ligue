@@ -1867,7 +1867,7 @@
   .sachet {
     position: relative;
     transform-style: preserve-3d;
-    transform: rotateX(var(--rx3, -8deg)) rotateY(var(--ry3, 0deg));
+    transform: rotateX(var(--rx3, -9deg)) rotateY(var(--ry3, -20deg));
     will-change: transform;
   }
 
@@ -2100,19 +2100,25 @@
     pointer-events: none;
   }
 
-  /* Au repos, le sachet centre fait un tour complet, lentement.
+  /* Au repos, le sachet reste tourné d'une vingtaine de degrés et oscille
+     autour de cette pose. Il ne se présente jamais de face.
 
-     Un balancement l'avait remplace au moment ou le sachet n'etait que deux
-     plans : vu a 90 degres il se reduisait a un trait et disparaissait deux
-     fois par revolution. La coque galbee a une vraie coupe, le tour complet
-     redevient lisible — et c'est le seul moyen de voir le verso. */
+     De face, une coque galbée se lit exactement comme une image plate : le
+     bombement se voit à peine, l'épaisseur pas du tout. C'est de trois quarts
+     que le volume apparaît, et il faut donc qu'il y reste.
+
+     Un tour complet occupait cette place auparavant. Il montrait le verso,
+     mais passait par la pose de face deux fois par révolution — c'est ce
+     moment-là qui donnait l'impression d'un sachet plat. Le verso reste
+     accessible en cliquant le sachet mis en avant, qui bascule alors sur
+     `--tour: 180deg`. */
   .sachet {
     animation: sachet-balayage 4.6s linear infinite;
   }
 
   .sachet-tourne {
     animation:
-      sachet-tour 18s linear infinite,
+      sachet-pose 7s ease-in-out infinite,
       sachet-balayage 4.6s linear infinite;
   }
 
@@ -2127,12 +2133,13 @@
     }
   }
 
-  @keyframes sachet-tour {
-    from {
-      transform: rotateX(-8deg) rotateY(0deg);
+  @keyframes sachet-pose {
+    0%,
+    100% {
+      transform: rotateX(-9deg) rotateY(calc(var(--tour, 0deg) - 31deg));
     }
-    to {
-      transform: rotateX(-8deg) rotateY(360deg);
+    50% {
+      transform: rotateX(-5deg) rotateY(calc(var(--tour, 0deg) - 9deg));
     }
   }
 

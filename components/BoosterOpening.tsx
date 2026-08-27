@@ -97,6 +97,8 @@ export function BoosterOpening({
   const [pulled, setPulled] = useState<Pulled[]>([]);
   const [spent, setSpent] = useState<number | null>(null);
   const [newBalance, setNewBalance] = useState<number | null>(null);
+  /** Quel sachet est présenté par son verso — nul si tous sont à l'endroit. */
+  const [verso, setVerso] = useState<string | null>(null);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const rail = useRef<HTMLDivElement>(null);
 
@@ -394,8 +396,12 @@ export function BoosterOpening({
                           // Un glissement se termine aussi par un clic : sans ce
                           // garde-fou, faire tourner la rangée sélectionnerait
                           // le sachet sous le doigt au relâchement.
-                          if (busy || actif || geste.current.parcouru > 6) return;
-                          setSelected(b.id);
+                          if (busy || geste.current.parcouru > 6) return;
+                          // Cliquer le sachet déjà choisi le retourne : c'est le
+                          // seul moyen de voir son verso depuis que la pose au
+                          // repos ne fait plus le tour complet.
+                          if (actif) setVerso((v) => (v === b.id ? null : b.id));
+                          else setSelected(b.id);
                         }}
                       >
                         <div
@@ -416,6 +422,7 @@ export function BoosterOpening({
                             art={boosterArt(b.id)}
                             frozen={busy}
                             vignette={!actif}
+                            retourne={actif && verso === b.id}
                             inerte
                           />
                           {actif && phase === 'eclat' && (
