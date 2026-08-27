@@ -1,20 +1,29 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { PackArtwork } from './PackArtwork';
 
-/** Dimensions du sachet, en pixels. Le conteneur le met ensuite à l'échelle. */
-const W = 250;
-const H = 368;
-// Un sachet de cartes est fin : à 22 px il faisait boîte à chaussures.
-const D = 15;
+/**
+ * Dimensions du sachet, en pixels.
+ *
+ * Le ratio compte plus que les valeurs : un vrai sachet de cartes est élancé,
+ * autour de 1:2,1 (63 × 130 mm pour un booster du commerce). Une première
+ * version à 250 × 368 donnait 1:1,47 — ça se lisait comme un carré, pas comme
+ * un sachet.
+ */
+const W = 188;
+const H = 396;
+/** Épaisseur du film, gonflé par les cartes. */
+const D = 13;
 /** Hauteur du sertissage, en haut comme en bas. */
-const CRIMP = 22;
+const CRIMP = 15;
 
 export interface Pack3DProps {
   name: string;
-  glyph: string;
   cardCount: number;
   gradient: [string, string];
+  /** Illustration peinte du sachet. Absente, on retombe sur le décor vectoriel. */
+  art?: string | null;
   /** Coupe la rotation continue, pendant l'ouverture par exemple. */
   frozen?: boolean;
   className?: string;
@@ -35,9 +44,9 @@ export interface Pack3DProps {
  */
 export function BoosterPack3D({
   name,
-  glyph,
   cardCount,
   gradient,
+  art,
   frozen = false,
   className,
 }: Pack3DProps) {
@@ -141,36 +150,25 @@ export function BoosterPack3D({
     ['--p2' as string]: gradient[1],
   };
 
-  /** Contenu imprimé, repris à l'identique sur les deux grandes faces. */
-  const artwork = (mirrored = false) => (
+  /**
+   * L'impression du sachet.
+   *
+   * L'illustration occupe toute la face, entre les deux sertissages — comme
+   * sur un vrai sachet, où le décor va bord à bord et où seul le film écrasé
+   * reste nu.
+   */
+  const artwork = (variant = 0) => (
     <div
-      className="relative flex h-full flex-col items-center justify-center gap-3 px-4"
-      style={{
-        // On dégage la zone des sertissages : l'impression s'arrête où le film
-        // est écrasé.
-        paddingTop: CRIMP + 8,
-        paddingBottom: CRIMP + 8,
-        ...(mirrored ? { transform: 'scaleX(-1)' } : {}),
-      }}
+      className="pack3d-print"
+      style={{ top: CRIMP, bottom: CRIMP }}
     >
-      {/* Les deux sertissages. N'en mettre qu'en haut faisait « sachet ouvert
-          par le bas » : le film est écrasé à ses deux extrémités. */}
-      <span className="pack3d-crimp pack3d-crimp-top" aria-hidden="true" />
-      <span className="pack3d-crimp pack3d-crimp-bottom" aria-hidden="true" />
-      <span className="relative text-5xl drop-shadow-lg" aria-hidden="true">
-        {glyph}
-      </span>
-      <div className="relative text-center">
-        <div className="font-display text-[11px] font-bold tracking-[0.3em] text-white/55 uppercase">
-          Winter Ligue
-        </div>
-        <div className="font-display text-[27px] leading-none font-black tracking-wide text-white uppercase drop-shadow">
-          {name}
-        </div>
-        <div className="mt-1.5 font-display text-[11px] font-bold tracking-[0.2em] text-white/65 uppercase">
-          {cardCount} cartes
-        </div>
-      </div>
+      <PackArtwork
+        name={name}
+        cardCount={cardCount}
+        tint={gradient}
+        variant={variant}
+        art={art}
+      />
     </div>
   );
 
@@ -218,8 +216,11 @@ export function BoosterPack3D({
           className="pack3d-face pack3d-front"
           style={{ width: W, height: H, transform: `translateZ(${D / 2}px)` }}
         >
+          {artwork(0)}
           <span className="pack3d-froisse" aria-hidden="true" />
-          {artwork()}
+          <span className="pack3d-crimp pack3d-crimp-top" aria-hidden="true" />
+          <span className="pack3d-crimp pack3d-crimp-bottom" aria-hidden="true" />
+          <span className="pack3d-notch" aria-hidden="true" />
         </div>
 
         {/* Face arrière, retournée pour que l'impression reste lisible */}
@@ -227,8 +228,10 @@ export function BoosterPack3D({
           className="pack3d-face pack3d-back"
           style={{ width: W, height: H, transform: `rotateY(180deg) translateZ(${D / 2}px)` }}
         >
+          {artwork(1)}
           <span className="pack3d-froisse" aria-hidden="true" />
-          {artwork(true)}
+          <span className="pack3d-crimp pack3d-crimp-top" aria-hidden="true" />
+          <span className="pack3d-crimp pack3d-crimp-bottom" aria-hidden="true" />
         </div>
 
         {/* Tranche gauche */}

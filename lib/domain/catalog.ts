@@ -6,7 +6,7 @@
  * envoyée par le navigateur n'est qu'un identifiant, jamais un effet.
  */
 
-import { CARD_ART } from './card-art.generated';
+import { BOOSTER_ART, CARD_ART } from './card-art.generated';
 import { RARITY_ORDER, RARITY_WEIGHTS_BASE } from './rules';
 import type {
   BoosterDefinition,
@@ -630,6 +630,18 @@ export const BOOSTERS: readonly BoosterDefinition[] = [
 ];
 
 /** Nombre total de cartes d'un booster, toutes natures confondues. */
+/**
+ * Illustration imprimée d'un sachet, ou null si elle n'existe pas encore.
+ *
+ * Le décor vectoriel de `PackArtwork` sert de repli. Il tient la route, mais
+ * un SVG écrit à la main n'atteindra jamais une illustration peinte : dès
+ * qu'un visuel est déposé dans `public/boosters/`, il prend le dessus.
+ * Voir `docs/DIRECTION-ARTISTIQUE.md` pour le gabarit et le prompt.
+ */
+export function boosterArt(id: string): string | null {
+  return BOOSTER_ART[id] ?? null;
+}
+
 export function boosterSize(booster: BoosterDefinition): number {
   return booster.slots.collection + booster.slots.effet;
 }

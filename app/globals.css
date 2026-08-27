@@ -1862,6 +1862,7 @@
   .pack3d-face {
     position: absolute;
     overflow: hidden;
+    isolation: isolate;
     /* Rayon minimal : un sachet plastique n'a pas de coins arrondis de carte
        de visite, juste des angles légèrement adoucis par le film. */
     border-radius: 3px;
@@ -1982,7 +1983,8 @@
     position: absolute;
     inset: -8%;
     pointer-events: none;
-    opacity: 0.55;
+    opacity: 0.5;
+    /* En fusion : les plis déforment l'illustration au lieu de la recouvrir. */
     mix-blend-mode: overlay;
     filter: url(#froisse-mylar);
     background-image:
@@ -1996,12 +1998,37 @@
       );
   }
 
+  /* Le bombement, par-dessus l'illustration : le film est gonflé par les
+     cartes, il assombrit ses arêtes et éclaire son centre — l'impression
+     comprise. */
+  .pack3d-front::after,
+  .pack3d-back::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(
+      90deg,
+      rgb(0 0 0 / 0.66) 0%,
+      rgb(0 0 0 / 0.26) 5%,
+      rgb(255 255 255 / 0.24) 15%,
+      rgb(255 255 255 / 0.02) 28%,
+      rgb(0 0 0 / 0.16) 45%,
+      rgb(255 255 255 / 0.2) 63%,
+      rgb(255 255 255 / 0.02) 78%,
+      rgb(0 0 0 / 0.28) 92%,
+      rgb(0 0 0 / 0.7) 100%
+    );
+    mix-blend-mode: overlay;
+  }
+
   /* Reflet mobile, qui balaie la face au fil de la rotation. */
   .pack3d-front::before,
   .pack3d-back::before {
     content: '';
     position: absolute;
     inset: 0;
+    z-index: 2;
     background: linear-gradient(
       104deg,
       transparent 0%,
@@ -2030,7 +2057,7 @@
     position: absolute;
     left: 0;
     right: 0;
-    height: 22px;
+    height: 15px;
     pointer-events: none;
     /* Stries fines et irrégulières : le film écrasé par la molette de scellage.
        Deux trames de pas différents évitent l'effet peigne trop régulier. */
@@ -2060,6 +2087,34 @@
     bottom: 0;
     transform: scaleY(-1);
     box-shadow: 0 1px 0 rgb(0 0 0 / 0.55);
+  }
+
+  /**
+   * La zone imprimée, entre les deux sertissages.
+   *
+   * L'illustration passe SOUS le froissage et les sertissages : sur un vrai
+   * sachet, l'impression est faite avant le pliage — les plis déforment donc
+   * le décor, ils ne se posent pas dessus.
+   */
+  .pack3d-print {
+    position: absolute;
+    left: 0;
+    right: 0;
+    overflow: hidden;
+    border-radius: 6px;
+  }
+
+  /* Encoche de déchirure, juste sous le sertissage haut. */
+  .pack3d-notch {
+    position: absolute;
+    top: 15px;
+    right: 14px;
+    width: 9px;
+    height: 9px;
+    pointer-events: none;
+    background: rgb(0 0 0 / 0.55);
+    clip-path: polygon(0 0, 100% 0, 50% 100%);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.3);
   }
 
   /* -- Tranches ----------------------------------------------------------- */

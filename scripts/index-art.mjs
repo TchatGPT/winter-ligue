@@ -1,65 +1,83 @@
 #!/usr/bin/env node
 /**
- * Recense les illustrations présentes dans `public/cartes/` et écrit l'index
- * que le site consulte avant de demander une image.
+ * Recense les illustrations présentes dans `public/` et écrit l'index que le
+ * site consulte avant de demander une image.
  *
  *   npm run cartes
  *
- * Sans cet index, une carte sans visuel déclencherait une requête vouée à un
- * 404 à chaque affichage : bruit dans la console, requête inutile, et une
- * icône d'image cassée le temps que le repli se déclenche. Ici, le site sait
+ * Deux dossiers sont couverts : `public/cartes/` pour les cartes, et
+ * `public/boosters/` pour l'impression des sachets.
+ *
+ * Sans cet index, une carte ou un sachet sans visuel déclencherait une requête
+ * vouée à un 404 à chaque affichage : bruit dans la console, requête inutile,
+ * et une image cassée le temps que le repli se déclenche. Ici, le site sait
  * d'avance ce qui existe.
  *
- * À relancer après avoir déposé de nouvelles illustrations.
+ * À relancer après avoir déposé de nouveaux visuels.
  */
 
 import { readdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
-const DIR = join(process.cwd(), 'public', 'cartes');
 const OUT = join(process.cwd(), 'lib', 'domain', 'card-art.generated.ts');
 const EXTENSIONS = ['.webp', '.avif', '.png', '.jpg', '.jpeg'];
 
-let files = [];
-try {
-  files = await readdir(DIR);
-} catch {
-  // Le dossier peut ne pas exister au premier lancement : ce n'est pas une erreur.
+const SOURCES = [
+  { dir: join(process.cwd(), 'public', 'cartes'), base: '/cartes', name: 'CARD_ART' },
+  { dir: join(process.cwd(), 'public', 'boosters'), base: '/boosters', name: 'BOOSTER_ART' },
+];
+
+/** Fichiers d'un dossier, indexés par identifiant. */
+async function index(source) {
+  let files = [];
+  try {
+    files = await readdir(source.dir);
+  } catch {
+    // Le dossier peut ne pas exister au premier lancement : ce n'est pas une erreur.
+  }
+
+  const found = new Map();
+  for (const file of files.sort()) {
+    const dot = file.lastIndexOf('.');
+    if (dot <= 0) continue;
+    if (!EXTENSIONS.includes(file.slice(dot).toLowerCase())) continue;
+
+    const id = file.slice(0, dot);
+    // Le premier format rencontré gagne, dans l'ordre alphabétique : .avif
+    // passe donc avant .webp.
+    if (!found.has(id)) found.set(id, file);
+  }
+  return found;
 }
 
-/** Associe un identifiant de carte au fichier trouvé pour elle. */
-const found = new Map();
-for (const file of files.sort()) {
-  const dot = file.lastIndexOf('.');
-  if (dot <= 0) continue;
-  const ext = file.slice(dot).toLowerCase();
-  if (!EXTENSIONS.includes(ext)) continue;
+const indexed = await Promise.all(SOURCES.map(index));
 
-  const id = file.slice(0, dot);
-  // Le premier format rencontré gagne : l'ordre d'EXTENSIONS n'intervient pas,
-  // c'est l'ordre alphabétique qui tranche, donc .avif avant .webp.
-  if (!found.has(id)) found.set(id, file);
+const blocks = SOURCES.map((source, i) => {
+  const entries = [...indexed[i].entries()]
+    .map(([id, file]) => `  '${id}': '${source.base}/${file}',`)
+    .join('\n');
+  return `export const ${source.name}: Record<string, string> = {\n${entries}\n};`;
+}).join('\n\n');
+
+const header = [
+  '/**',
+  ' * Index des illustrations disponibles — FICHIER GÉNÉRÉ, ne pas éditer.',
+  ' *',
+  ' * Produit par `npm run cartes`, qui lit `public/cartes/` et',
+  ' * `public/boosters/`. Relancer la commande après avoir ajouté ou retiré un',
+  ' * visuel.',
+  ' */',
+  '',
+  '',
+].join('\n');
+
+await writeFile(OUT, header + blocks + '\n', 'utf8');
+
+for (const [i, source] of SOURCES.entries()) {
+  const found = indexed[i];
+  console.log(
+    found.size === 0
+      ? `public${source.base}/ : aucun visuel — repli sur le rendu vectoriel.`
+      : `public${source.base}/ : ${found.size} visuel(s) — ${[...found.keys()].join(', ')}`,
+  );
 }
-
-const entries = [...found.entries()]
-  .map(([id, file]) => `  '${id}': '/cartes/${file}',`)
-  .join('\n');
-
-const contents = `/**
- * Index des illustrations disponibles — FICHIER GÉNÉRÉ, ne pas éditer.
- *
- * Produit par \`npm run cartes\`, qui lit \`public/cartes/\`. Relancer la commande
- * après avoir ajouté ou retiré un visuel.
- */
-
-export const CARD_ART: Record<string, string> = {
-${entries}
-};
-`;
-
-await writeFile(OUT, contents, 'utf8');
-console.log(
-  found.size === 0
-    ? 'Aucune illustration dans public/cartes/ — les cartes utiliseront leur glyphe.'
-    : `${found.size} illustration(s) indexée(s) : ${[...found.keys()].join(', ')}`,
-);

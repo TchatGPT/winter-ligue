@@ -93,49 +93,114 @@ et fait monter la température visuelle avec la valeur de la carte.
 
 Colle la bible de style, puis le sujet, puis l'accent de rareté correspondant.
 
-### ❄ Glace Éternelle — défense, verrouillage
+### ❄ Glace Éternelle — protéger
 
 | Fichier | Sujet à demander |
 |---|---|
-| `flocon-protecteur.webp` | A single oversized snowflake crystal floating, catching light like cut glass |
+| `congere.webp` | A deep windblown snowdrift curling over a rock, sculpted by wind |
 | `bouclier-givre.webp` | A translucent shield of thick frost, cracks glowing faintly from within |
 | `gel-eternel.webp` | A soldier's silhouette frozen mid-stride inside a block of clear blue ice |
-| `banquise.webp` | A vast fractured ice floe under a low sun, deep crevasse in the foreground |
+| `second-souffle.webp` | A figure rising from the snow, breath steaming, storm clearing behind |
 | `rempart-polaire.webp` | A towering wall of glacial ice, battlements carved by wind, storm behind |
-| `hiver-sans-fin.webp` | A whole valley entombed in ice, everything frozen still, endless white |
+| `sanctuaire.webp` | A cathedral of blue ice pillars, utterly still, light filtering down |
 
-### 🌪 Tempête — multiplicateurs
+### 🌪 Tempête — amplifier
 
 | Fichier | Sujet à demander |
 |---|---|
-| `brise-glacee.webp` | Loose snow lifting off a ridge in a gentle gust, delicate spindrift |
+| `rafale.webp` | Loose snow lifting off a ridge in a sharp gust, delicate spindrift |
 | `vent-du-nord.webp` | A hard crosswind bending a line of frozen pines, snow streaking sideways |
+| `percee.webp` | A breach torn through a wall of snow, tracks driving straight through it |
 | `blizzard.webp` | A whiteout, dense driving snow, a faint silhouette barely visible within |
-| `oeil-du-cyclone.webp` | The calm eye of a polar storm seen from inside, wall of cloud all around |
-| `tempete-blanche.webp` | A catastrophic snow squall tearing across a plain, debris in the air |
+| `sang-froid.webp` | A lone figure standing perfectly still as the storm rages around them |
 | `nuit-polaire.webp` | Total polar night, a black sun eclipse over an ice field, violent wind |
 
-### 🌌 Aurore Boréale — points et flocons
+### 🌌 Aurore Boréale — économie
 
 | Fichier | Sujet à demander |
 |---|---|
 | `etincelle.webp` | A single spark of cold light suspended above snow, tiny and precise |
 | `etoile-polaire.webp` | The pole star burning bright above a frozen horizon, clear night |
 | `pluie-de-flocons.webp` | Thousands of snowflakes falling lit from below, like slow rain of light |
-| `couronne-polaire.webp` | A crown of ice crystals hovering, refracting an aurora behind it |
-| `voile-daurore.webp` | Sweeping curtains of aurora over a glacier, reflected on the ice |
+| `manne.webp` | Light pouring from a rift in the aurora onto the snow, abundant and warm |
+| `mecene.webp` | An ornate ice-carved chest open on a frozen shore, glowing from inside |
 | `aurore-boreale.webp` | An overwhelming aurora filling the whole sky, the landscape lit by it |
 
-### 🎁 Solstice — chaos et malus
+### 🎁 Solstice — interaction
 
 | Fichier | Sujet à demander |
 |---|---|
 | `boule-de-neige.webp` | A snowball rolling downhill, gathering mass, trail carved behind it |
 | `givre-mordant.webp` | Frost creeping fast across a dark surface, sharp needle crystals |
+| `contre-courant.webp` | Two opposing gusts of snow colliding head-on, one cancelling the other |
 | `traineau-perce.webp` | A wrecked wooden sled abandoned in deep snow, runner snapped |
-| `vol-de-traineau.webp` | A sled speeding away through a night forest, cargo spilling behind |
 | `tempete-de-verglas.webp` | An ice storm, everything glazed and cracking, branches breaking |
 | `grand-froid.webp` | A merciless deep freeze, a lone figure lost in a white void |
+
+---
+
+## Les sachets de booster
+
+Même principe que pour les cartes, et pour la même raison : **le cadre est en code,
+l'illustration est une image.**
+
+Ce qui est déjà fait et n'a pas besoin d'être généré :
+
+- la forme du sachet et ses proportions (1:2,1, comme un booster du commerce) ;
+- les sertissages striés en haut et en bas ;
+- les plis du mylar, le bombement, le reflet mobile ;
+- le cadre ciselé argent, ses volutes d'angle, le nom en haut, le nombre de cartes en
+  bas, et le titre répété verticalement sur les deux montants ;
+- la rotation 360° à la souris, avec inertie.
+
+Tant qu'aucune image n'est fournie, un décor vectoriel prend le relais — aurore, massif
+enneigé, lac, refuge éclairé, teintés aux couleurs du booster. Il tient la route, mais
+un SVG écrit à la main n'atteindra jamais une illustration peinte.
+
+### Gabarit
+
+| | |
+|---|---|
+| Format | **vertical, ratio 1:1,95** |
+| Résolution | 760 × 1480 |
+| Livraison | WebP qualité 84, moins de 250 Ko |
+| Nom du fichier | l'identifiant du booster : `givre`, `blizzard`, `aurore`, `solstice` |
+| Emplacement | `public/boosters/` |
+
+Puis `npm run cartes` pour rafraîchir l'index.
+
+**Ne fais pas générer le cadre ni le texte.** L'image ne doit contenir que le paysage :
+le cadre argent se pose par-dessus, et il doit rester identique sur les quatre sachets.
+Laisse donc respirer les bords — le cadre mange environ 8 % de chaque côté.
+
+### Le prompt
+
+```
+Vertical 1:1.95 illustration, painted digital art, no text, no border, no frame.
+
+A vast aurora borealis sweeping diagonally across a deep indigo starfield,
+vivid emerald green shading into violet, with fine luminous filaments and
+soft glowing draperies. Below it, a single snow-capped volcanic peak painted
+with visible rock ridges, couloirs and snowfields, standing over a still
+frozen lake that mirrors the aurora. On the right shore, one tiny tent lit
+warm amber — the only warm light in the picture.
+
+Rich saturated colour, cinematic depth, high detail, crisp starfield.
+Composition: aurora occupies the upper half, the peak the middle, the lake
+the lower quarter. Generous empty margin on all four edges.
+```
+
+### La variante par booster
+
+Garde le prompt, change la dominante de l'aurore — c'est ce qui distingue les quatre
+sachets tout en gardant la gamme cohérente :
+
+| Booster | Dominante à demander |
+|---|---|
+| `givre` | `pale cyan and white aurora, coldest scene, thin ice on the lake` |
+| `blizzard` | `deep blue aurora, snow falling, wind-blown spindrift off the ridge` |
+| `aurore` | `emerald green and violet aurora, the most spectacular display` |
+| `solstice` | `golden and amber aurora, warm light on the snowfields` |
 
 ---
 
@@ -149,8 +214,8 @@ avec les 23 autres.
 **Générateurs 3D (Kling, Meshy, Tripo).** Inutiles ici. Le maillage qu'ils produisent est
 trop désordonné pour un rendu propre, et de toute façon le sachet est une boîte : sa
 géométrie est déjà écrite dans `components/BoosterPack3D.tsx`, avec ses six vraies faces.
-Si un jour tu veux habiller le sachet, ce dont tu as besoin est une **texture**, pas un
-modèle — génère une image verticale 5:7,4 et on la posera sur les faces.
+Ce dont tu as besoin, c'est une **illustration plate** au gabarit ci-dessus — le volume,
+les plis et les sertissages sont déjà là.
 
 **Générateurs vidéo (Seedance, Kling vidéo).** Excellents pour un **trailer de saison ou
 un habillage de stream**, à garder hors du site. En revanche, ne les utilise pas pour

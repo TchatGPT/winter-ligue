@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BoosterPack3D } from '@/components/BoosterPack3D';
 import { TradingCard } from '@/components/TradingCard';
 import { Notice, RarityChip, flakes, rarityMeta } from '@/components/ui';
-import { boosterSize, cardArt } from '@/lib/domain/catalog';
+import { boosterArt, boosterSize, cardArt } from '@/lib/domain/catalog';
 import { atLeastOnePercent, rarityPercent } from '@/lib/domain/rules';
 import type { BoosterDefinition, Rarity } from '@/lib/domain/types';
 
@@ -236,9 +236,9 @@ export function BoosterOpening({
                     tentative de le faire pivoter dépenserait des flocons. */}
                 <BoosterPack3D
                   name={booster.name}
-                  glyph={booster.glyph}
                   cardCount={boosterSize(booster)}
                   gradient={booster.gradient}
+                  art={boosterArt(booster.id)}
                   frozen={busy}
                 />
                 {phase === 'eclat' && <span className="shockwave" aria-hidden="true" />}
