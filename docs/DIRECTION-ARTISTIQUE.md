@@ -234,20 +234,18 @@ No other text anywhere on the pack.
 Garde la structure, change le sujet et le sceau — c'est ce qui distingue les quatre
 sachets tout en gardant la gamme cohérente :
 
-**Les quatre boosters partagent aujourd'hui la même planche** — une escouade progressant
-au milieu de séracs géants. C'est un choix assumé et provisoire : il vaut mieux quatre
-sachets identiques et beaux que deux peints et deux dessinés, l'écart entre les deux
-sautant aux yeux dès qu'ils sont côte à côte dans le carrousel.
+Trois boosters sur quatre ont leur planche. Seul **Everest** partage encore celle des
+séracs, servie par défaut au moment où les quatre étaient identiques.
 
-La contrepartie est réelle : **rien ne distingue visuellement un Givre d'un Everest**,
-sauf son nom, son prix et la teinte de son halo. Le jour où les quatre planches propres
-existent, elles remplacent simplement les fichiers.
+Le fichier garde le nom de l'identifiant — `aurore.jpg` pour Hors-Piste, `solstice.jpg`
+pour Everest — parce que l'identifiant n'a pas suivi le renommage : il est écrit dans
+l'historique d'ouverture et dans le grand livre.
 
 | Booster | Sujet à demander | Sceau |
 |---|---|---|
 | `givre` | un tireur d'élite en tenue de camouflage neige, à plat ventre dans la poudreuse, sa section avançant derrière lui dans la tempête | `COMMON` |
-| `blizzard` | une escouade progressant contre un vent de face, la neige rayant l'image à l'horizontale, silhouettes à peine lisibles | `RARE` |
-| `aurore` — **Hors-Piste** | un skieur seul hors des traces, la pente vierge sous lui, une trace unique derrière | `SUPER RARE` |
+| `blizzard` | ✅ **fait** — un opérateur avançant seul de face dans la poudreuse, la glace occupant tout le fond | `RARE` |
+| `aurore` — **Hors-Piste** | ✅ **fait** — un opérateur à ski dans une pente vierge, gerbe de neige, sommet au fond | `SUPER RARE` |
 | `solstice` — **Everest** | l'arête sommitale au soleil rasant, la cordée minuscule sur le fil, la lumière dorée sur les névés | `ULTRA RARE` |
 
 La planche partagée sert d'étalon : les quatre définitives doivent tenir à côté d'elle —
