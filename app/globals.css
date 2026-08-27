@@ -1,5 +1,19 @@
 @import 'tailwindcss';
 
+/**
+ * Le balayage du reflet des sachets.
+ *
+ * Declaree comme une longueur, elle s'interpole : une propriete personnalisee
+ * ordinaire s'animerait par sauts. Une seule animation, portee par le sachet,
+ * entraine alors d'un bloc les cent quarante tuiles qui la lisent.
+ */
+@property --balayage {
+  syntax: '<length>';
+  inherits: true;
+  initial-value: 0px;
+}
+
+
 /* ==========================================================================
    WINTER LIGUE — verre liquide
    ==========================================================================
@@ -1900,8 +1914,8 @@
     top: 50%;
     left: 50%;
     width: 200px;
-    height: 355px;
-    margin: -177px 0 0 -100px;
+    height: 331px;
+    margin: -165px 0 0 -100px;
     will-change: transform;
     transition: transform 400ms cubic-bezier(0.22, 1, 0.36, 1);
   }
@@ -1939,6 +1953,53 @@
     inset: 0;
     background-repeat: no-repeat;
     background-size: 100% 100%;
+  }
+
+  /* -- Le halo et le reflet balayant ---------------------------------------- */
+
+  /* Le halo : une lueur posée derrière le sachet, à sa couleur.
+     Elle ne tourne pas avec lui — c'est un éclairage de vitrine, pas une
+     propriété de l'objet — et elle respire lentement. */
+  .sachet-halo {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 165%;
+    height: 125%;
+    pointer-events: none;
+    background: radial-gradient(
+      ellipse at 50% 50%,
+      color-mix(in srgb, var(--p1, #2b4a63) 62%, transparent) 0%,
+      color-mix(in srgb, var(--p2, #0e1c2a) 34%, transparent) 40%,
+      transparent 70%
+    );
+    filter: blur(38px);
+    animation: sachet-halo 5.5s ease-in-out infinite;
+  }
+
+  @keyframes sachet-halo {
+    0%,
+    100% {
+      opacity: 0.38;
+      transform: translate(-50%, -50%) scale(0.93);
+    }
+    50% {
+      opacity: 0.7;
+      transform: translate(-50%, -50%) scale(1.07);
+    }
+  }
+
+  /* Le reflet balayant, pour les sachets qui n'ont pas de maillage — vignettes
+     et repli dessiné. Sur la coque galbée, il est une couche de fond de plus
+     sur chaque tuile : voir `BoosterPack3D`. */
+  .sachet-eclat {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image: var(--eclat);
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    background-position: var(--balayage) 0;
   }
 
   /* -- La coque galbée ---------------------------------------------------- */
@@ -2045,8 +2106,25 @@
      plans : vu a 90 degres il se reduisait a un trait et disparaissait deux
      fois par revolution. La coque galbee a une vraie coupe, le tour complet
      redevient lisible — et c'est le seul moyen de voir le verso. */
+  .sachet {
+    animation: sachet-balayage 4.6s linear infinite;
+  }
+
   .sachet-tourne {
-    animation: sachet-tour 18s linear infinite;
+    animation:
+      sachet-tour 18s linear infinite,
+      sachet-balayage 4.6s linear infinite;
+  }
+
+  /* Le reflet part avant le bord gauche et sort après le bord droit : sa pointe
+     se place en « balayage + 100 », le sachet occupant 0 à 200. */
+  @keyframes sachet-balayage {
+    from {
+      --balayage: -240px;
+    }
+    to {
+      --balayage: 260px;
+    }
   }
 
   @keyframes sachet-tour {
@@ -2059,9 +2137,19 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
+    .sachet,
     .sachet-tourne,
+    .sachet-halo,
     .tc-foil-gold .tc-holo {
       animation: none;
+    }
+
+    /* L'animation arrêtée, le reflet se figerait sur sa valeur initiale — une
+       barre claire posée en travers du sachet. On l'envoie hors du cadre : une
+       seule déclaration suffit, la coque galbée comme les vignettes lisant la
+       même variable. */
+    .sachet {
+      --balayage: -420px;
     }
   }
 }

@@ -233,15 +233,24 @@ No other text anywhere on the pack.
 Garde la structure, change le sujet et le sceau — c'est ce qui distingue les quatre
 sachets tout en gardant la gamme cohérente :
 
-| Booster | Sujet | Sceau |
+**Les quatre boosters partagent aujourd'hui la même planche** — une escouade progressant
+au milieu de séracs géants. C'est un choix assumé et provisoire : il vaut mieux quatre
+sachets identiques et beaux que deux peints et deux dessinés, l'écart entre les deux
+sautant aux yeux dès qu'ils sont côte à côte dans le carrousel.
+
+La contrepartie est réelle : **rien ne distingue visuellement un Givre d'un Solstice**,
+sauf son nom, son prix et la teinte de son halo. Le jour où les quatre planches propres
+existent, elles remplacent simplement les fichiers.
+
+| Booster | Sujet à demander | Sceau |
 |---|---|---|
-| `givre` | ✅ **fait** — un tireur d'élite en tenue de camouflage neige, à plat ventre dans la poudreuse, sa section avançant derrière lui dans la tempête | `COMMON` |
-| `blizzard` | ✅ **fait** — une colonne prise sous des séracs géants, véhicules à l'arrêt, l'échelle donnée par les silhouettes minuscules au pied de la glace | `RARE` |
+| `givre` | un tireur d'élite en tenue de camouflage neige, à plat ventre dans la poudreuse, sa section avançant derrière lui dans la tempête | `COMMON` |
+| `blizzard` | une escouade progressant contre un vent de face, la neige rayant l'image à l'horizontale, silhouettes à peine lisibles | `RARE` |
 | `aurore` | une aurore boréale verte et violette au-dessus d'un lac gelé, un observateur seul de dos sur la rive | `SUPER RARE` |
 | `solstice` | un opérateur au sommet d'une crête au soleil rasant, l'ombre longue, la lumière dorée sur les névés | `ULTRA RARE` |
 
-`givre` et `blizzard` sont les étalons : les deux qui restent doivent tenir à côté
-d'elles — même palette froide, même niveau de détail, même traitement du sertissage.
+La planche partagée sert d'étalon : les quatre définitives doivent tenir à côté d'elle —
+même palette froide, même niveau de détail, même traitement du sertissage.
 
 ### Si le générateur rend le sachet de trois quarts
 

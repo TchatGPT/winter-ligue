@@ -11,6 +11,8 @@ export const CARD_ART: Record<string, string> = {
 };
 
 export const BOOSTER_ART: Record<string, string> = {
+  'aurore': '/boosters/aurore.jpg',
   'blizzard': '/boosters/blizzard.jpg',
   'givre': '/boosters/givre.jpg',
+  'solstice': '/boosters/solstice.jpg',
 };

@@ -6,11 +6,12 @@ import { PackArtwork } from './PackArtwork';
 /**
  * Dimensions d'affichage, en pixels.
  *
- * Elles suivent le ratio de la planche détourée — 1117 × 1981, soit **1:1,774**,
- * qui est aussi celui d'un booster du commerce (67 × 117 mm).
+ * Elles suivent le ratio de la planche détourée — 1295 × 2142, soit **1:1,654**.
+ * Un booster du commerce est un peu plus élancé (1:1,75), mais c'est la planche
+ * qui fait foi : l'écart se paierait en visages étirés.
  */
 const W = 200;
-const H = 355;
+const H = 331;
 
 /**
  * Demi-épaisseur du sachet en son point le plus gonflé.
@@ -200,6 +201,25 @@ const MYLAR = `linear-gradient(190deg,
   #dfeaf5 43%,
   color-mix(in srgb, var(--p2) 44%, #7e94aa) 68%,
   #d2e0ef 100%)`;
+
+/**
+ * Le reflet balayant, teinté par le booster.
+ *
+ * Un cœur blanc bordé de deux flancs à la couleur du sachet : c'est ce que
+ * renvoie un film métallisé, qui ne réfléchit jamais un blanc pur mais un blanc
+ * coloré par ce qu'il y a dessous. `color-mix` avec `transparent` sert
+ * uniquement à obtenir la teinte à l'opacité voulue.
+ *
+ * Il ne bouge pas tout seul : sa position vient de `--balayage`, animée une
+ * fois pour toutes sur le sachet, si bien que les cent quarante tuiles se
+ * déplacent d'un bloc et que le reflet traverse la coque sans se briser.
+ */
+const ECLAT = `linear-gradient(102deg,
+  rgb(255 255 255 / 0) 42%,
+  color-mix(in srgb, var(--p1) 30%, transparent) 47%,
+  rgb(255 255 255 / 0.3) 50%,
+  color-mix(in srgb, var(--p1) 30%, transparent) 53%,
+  rgb(255 255 255 / 0) 58%)`;
 
 /** Le vernis : la bande spéculaire large qui fait « feuille brillante ». */
 const VERNIS = `linear-gradient(255deg,
@@ -457,11 +477,12 @@ export function BoosterPack3D({
       ) : (
         <PackArtwork name={name} cardCount={cardCount} tint={gradient} />
       )}
+      <span className="sachet-eclat" aria-hidden="true" />
     </div>
   ) : art ? (
     <>
       {TUILES.map((t, i) => {
-        const couches = [PLIS, bombement(90), `url("${art}")`];
+        const couches = [ECLAT, PLIS, bombement(90), `url("${art}")`];
         return (
           <span
             key={`av${i}`}
@@ -474,8 +495,14 @@ export function BoosterPack3D({
               transform: `translateZ(${t.z.toFixed(2)}px) rotateY(${t.ry.toFixed(2)}deg) rotateX(${t.rx.toFixed(2)}deg)`,
               backgroundImage: couches.join(', '),
               backgroundSize: couches.map(() => `${W}px ${H}px`).join(', '),
+              // Seul le reflet bouge : sa position part de `--balayage`, les
+              // autres couches restent calées sur la planche.
               backgroundPosition: couches
-                .map(() => `${(-t.left).toFixed(2)}px ${(-t.top).toFixed(2)}px`)
+                .map((_, k) =>
+                  k === 0
+                    ? `calc(var(--balayage) - ${t.left.toFixed(2)}px) ${(-t.top).toFixed(2)}px`
+                    : `${(-t.left).toFixed(2)}px ${(-t.top).toFixed(2)}px`,
+                )
                 .join(', '),
             }}
             aria-hidden="true"
@@ -487,8 +514,8 @@ export function BoosterPack3D({
         // L'ordre compte : le vernis passe par-dessus l'impression, comme sur
         // une vraie feuille brillante où le texte est sous le brillant.
         const couches = t.soudure
-          ? [PLIS, bombement(270), STRIES, MYLAR]
-          : [PLIS, bombement(270), VERNIS, verso, MYLAR];
+          ? [ECLAT, PLIS, bombement(270), STRIES, MYLAR]
+          : [ECLAT, PLIS, bombement(270), VERNIS, verso, MYLAR];
         // Les tuiles du verso sont retournées sur elles-mêmes : leur repère
         // horizontal est inversé. Sans ce décalage miroir, chaque tuile
         // redémarrerait le dégradé pour son compte et le maillage réapparaîtrait.
@@ -505,8 +532,15 @@ export function BoosterPack3D({
               transform: `translateZ(${(-t.z).toFixed(2)}px) rotateY(${(-t.ry).toFixed(2)}deg) rotateX(${(-t.rx).toFixed(2)}deg) rotateY(180deg)`,
               backgroundImage: couches.join(', '),
               backgroundSize: couches.map(() => `${W}px ${H}px`).join(', '),
+              // Le repère du verso est inversé : le reflet s'y ajoute au lieu de
+              // s'y soustraire, pour continuer d'aller dans le même sens que sur
+              // le recto quand le sachet tourne.
               backgroundPosition: couches
-                .map(() => `${px}px ${(-t.top).toFixed(2)}px`)
+                .map((_, k) =>
+                  k === 0
+                    ? `calc(${px}px + var(--balayage)) ${(-t.top).toFixed(2)}px`
+                    : `${px}px ${(-t.top).toFixed(2)}px`,
+                )
                 .join(', '),
             }}
             aria-hidden="true"
@@ -525,6 +559,7 @@ export function BoosterPack3D({
       <div className="sachet-face sachet-avant" style={{ transform: 'translateZ(1.5px)' }}>
         <PackArtwork name={name} cardCount={cardCount} tint={gradient} />
         <span className="sachet-reflet" aria-hidden="true" />
+        <span className="sachet-eclat" aria-hidden="true" />
       </div>
       <div
         className="sachet-face sachet-arriere"
@@ -558,16 +593,27 @@ export function BoosterPack3D({
   return (
     <div
       className={`sachet-scene ${inerte ? 'sachet-scene-fixe' : ''} ${className ?? ''}`}
-      style={{ width: W, height: H }}
+      style={{
+        width: W,
+        height: H,
+        // Les teintes sont posées ici et non sur le sachet : le halo, qui vit
+        // en dehors de la boîte qui tourne, doit les lire lui aussi.
+        ['--p1' as string]: gradient[0],
+        ['--p2' as string]: gradient[1],
+        ['--eclat' as string]: ECLAT,
+      }}
     >
+      {/* Le halo ne tourne pas avec le sachet : c'est un éclairage de vitrine
+          posé derrière lui, pas une propriété de l'objet. */}
+      <span className="sachet-halo" aria-hidden="true" />
+
       <div
         ref={packRef}
         className={`sachet ${vignette || grabbed || frozen ? '' : 'sachet-tourne'}`}
         style={{
           width: W,
           height: H,
-          ['--p1' as string]: gradient[0],
-          ['--p2' as string]: gradient[1],
+          // Les teintes viennent de la scène, par héritage.
           ...(vignette ? { ['--rx3' as string]: '-6deg', ['--ry3' as string]: '-15deg' } : null),
         }}
         {...(inerte
