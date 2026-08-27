@@ -1821,26 +1821,24 @@
   }
 
   /* ========================================================================
-     SACHET DE BOOSTER, EN VOLUME
+     SACHET DE BOOSTER
      ========================================================================
-     Six faces en CSS 3D. Un sachet de cartes est une boîte très plate : la
-     géométrie ne justifiait pas un moteur WebGL, mais la rotation, elle, doit
-     être vraie — d'où six faces réelles plutôt qu'une simulation.
+     La planche peinte EST le sachet. Elle est affichée telle quelle, sans
+     cadre, sans sertissage et sans plis posés par-dessus.
 
-     Ce qui fait lire « mylar » et non « carton », dans l'ordre d'importance :
+     Une version précédente montait six faces en CSS 3D — avant, arrière, deux
+     tranches, un opercule, un fond — et plaquait l'illustration sur la face
+     avant. Ça se lisait exactement pour ce que c'était : un bloc à épaisseur
+     constante, arête vive au sommet, image collée dessus. Or un vrai sachet
+     n'a pas d'arête en haut, il y est soudé à plat.
 
-       1. **Le bombement.** Un sachet est gonflé par les cartes : il est plus
-          épais au milieu qu'aux bords. C'est un dégradé horizontal à fort
-          contraste, sombre aux arêtes, éclatant au centre.
-       2. **Les plis.** Des bandes claires et sombres légèrement obliques, de
-          largeurs irrégulières. La régularité tue l'effet — du métal froissé
-          n'a pas de rythme.
-       3. **Les sertissages, en haut ET en bas.** Le film est écrasé et
-          strié à ses deux extrémités. Ne le mettre qu'en haut faisait
-          « paquet ouvert par le bas ».
+     Il ne reste donc que deux plans, ce qu'est physiquement un sachet : deux
+     films de mylar soudés sur leurs quatre bords. Le bombement, les plis et le
+     sertissage vivent dans la planche, où ils ont toujours mieux rendu que des
+     dégradés CSS.
      ====================================================================== */
 
-  .pack3d-scene {
+  .sachet-scene {
     perspective: 1500px;
     perspective-origin: 50% 45%;
     touch-action: none;
@@ -1848,349 +1846,161 @@
     user-select: none;
   }
 
-  .pack3d-scene:active {
+  .sachet-scene:active {
     cursor: grabbing;
   }
 
-  .pack3d {
+  .sachet {
     position: relative;
     transform-style: preserve-3d;
     transform: rotateX(var(--rx3, -8deg)) rotateY(var(--ry3, 0deg));
     will-change: transform;
   }
 
-  .pack3d-face {
+  .sachet-face {
     position: absolute;
+    inset: 0;
     overflow: hidden;
-    isolation: isolate;
-    /* Rayon minimal : un sachet plastique n'a pas de coins arrondis de carte
-       de visite, juste des angles légèrement adoucis par le film. */
-    border-radius: 3px;
-    background: linear-gradient(160deg, var(--p1, #2b4a63), var(--p2, #0e1c2a));
+    /* De quoi adoucir l'angle du film, pas un coin de carte de visite. */
+    border-radius: 2px;
     backface-visibility: hidden;
   }
 
-  /* -- Le bombement et les plis, sur les deux grandes faces --------------- */
-
-  .pack3d-front,
-  .pack3d-back {
-    /* Les plis sont des stries QUASI VERTICALES, à peine penchées.
-       Une première version les traçait à 172°, donc presque à l'horizontale :
-       croisées avec le bombement vertical, elles dessinaient une grille de
-       rectangles au lieu d'un film froissé. Du mylar se plie dans le sens de
-       la longueur.
-
-       Les transitions sont larges et les positions irrégulières : une strie
-       nette et régulière fait tôle ondulée, pas aluminium. */
-    background-image:
-      linear-gradient(
-        99deg,
-        transparent 6%,
-        rgb(255 255 255 / 0.13) 11%,
-        transparent 17%
-      ),
-      linear-gradient(94deg, transparent 22%, rgb(0 0 0 / 0.34) 29%, transparent 35%),
-      linear-gradient(
-        104deg,
-        transparent 37%,
-        rgb(255 255 255 / 0.2) 43%,
-        rgb(255 255 255 / 0.05) 48%,
-        transparent 53%
-      ),
-      linear-gradient(91deg, transparent 57%, rgb(0 0 0 / 0.28) 63%, transparent 69%),
-      linear-gradient(
-        108deg,
-        transparent 71%,
-        rgb(255 255 255 / 0.16) 77%,
-        transparent 83%
-      ),
-      linear-gradient(96deg, transparent 86%, rgb(0 0 0 / 0.22) 91%, transparent 96%),
-      /* Le film est tiré vers les sertissages : il s'assombrit aux extrémités. */
-        linear-gradient(
-          180deg,
-          rgb(0 0 0 / 0.4) 0%,
-          transparent 14%,
-          transparent 86%,
-          rgb(0 0 0 / 0.4) 100%
-        ),
-      /* Le bombement. Contraste franc : un mylar est chromé, pas mat. */
-        linear-gradient(
-          90deg,
-          rgb(0 0 0 / 0.72) 0%,
-          rgb(0 0 0 / 0.34) 4%,
-          rgb(255 255 255 / 0.42) 14%,
-          rgb(255 255 255 / 0.06) 26%,
-          rgb(0 0 0 / 0.22) 43%,
-          rgb(255 255 255 / 0.34) 61%,
-          rgb(255 255 255 / 0.04) 76%,
-          rgb(0 0 0 / 0.36) 91%,
-          rgb(0 0 0 / 0.76) 100%
-        ),
-      linear-gradient(165deg, var(--p1, #2b4a63), var(--p2, #0e1c2a));
-    box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / 0.24),
-      inset 0 -1px 0 rgb(0 0 0 / 0.5);
+  /* La planche, bord à bord.
+     `fill` et non `cover` : le cadre a exactement le ratio du fichier, il n'y a
+     donc rien à recadrer — et `cover` rognerait le sertissage. */
+  .sachet-planche {
+    object-fit: fill;
+    -webkit-user-drag: none;
+    user-select: none;
   }
 
-  /* Le dos reçoit ses plis à d'autres positions : la rotation ne doit jamais
-     montrer deux fois exactement la même surface. */
-  .pack3d-back {
+  /* -- Le verso ----------------------------------------------------------- */
+
+  /* Sur un vrai sachet, seul le recto est imprimé : le dos ne porte qu'un
+     mylar brossé, avec le même bombement et les mêmes soudures. */
+  .sachet-dos {
+    position: absolute;
+    inset: 0;
     background-image:
-      linear-gradient(93deg, transparent 9%, rgb(0 0 0 / 0.3) 15%, transparent 21%),
       linear-gradient(
-        106deg,
-        transparent 26%,
-        rgb(255 255 255 / 0.18) 33%,
-        transparent 39%
-      ),
-      linear-gradient(90deg, transparent 46%, rgb(0 0 0 / 0.26) 52%, transparent 58%),
-      linear-gradient(
-        101deg,
-        transparent 63%,
-        rgb(255 255 255 / 0.14) 69%,
-        transparent 76%
-      ),
-      linear-gradient(97deg, transparent 81%, rgb(0 0 0 / 0.24) 87%, transparent 93%),
-      linear-gradient(
-        180deg,
-        rgb(0 0 0 / 0.4) 0%,
-        transparent 14%,
-        transparent 86%,
-        rgb(0 0 0 / 0.4) 100%
+        76deg,
+        transparent 0%,
+        rgb(255 255 255 / 0.1) 30%,
+        transparent 48%,
+        rgb(255 255 255 / 0.07) 70%,
+        transparent 100%
       ),
       linear-gradient(
         90deg,
-        rgb(0 0 0 / 0.72) 0%,
-        rgb(0 0 0 / 0.36) 5%,
-        rgb(255 255 255 / 0.34) 18%,
-        rgb(0 0 0 / 0.2) 41%,
-        rgb(255 255 255 / 0.38) 67%,
-        rgb(0 0 0 / 0.36) 92%,
-        rgb(0 0 0 / 0.76) 100%
+        rgb(0 0 0 / 0.52) 0%,
+        rgb(0 0 0 / 0.14) 11%,
+        rgb(255 255 255 / 0.14) 29%,
+        rgb(0 0 0 / 0.06) 52%,
+        rgb(255 255 255 / 0.11) 73%,
+        rgb(0 0 0 / 0.16) 89%,
+        rgb(0 0 0 / 0.52) 100%
       ),
-      linear-gradient(165deg, var(--p1, #2b4a63), var(--p2, #0e1c2a));
-  }
-
-  /**
-   * Calque de froissage.
-   *
-   * Il reprend les mêmes stries que la face, mais passées à la moulinette
-   * d'une turbulence SVG : les droites deviennent des plis irréguliers. Il est
-   * posé DANS la face plutôt que sur elle, parce qu'un `filter` sur un élément
-   * transformé le sort de la chaîne 3D et annule sa backface-visibility.
-   */
-  .pack3d-froisse {
-    position: absolute;
-    inset: -8%;
-    pointer-events: none;
-    opacity: 0.5;
-    /* En fusion : les plis déforment l'illustration au lieu de la recouvrir. */
-    mix-blend-mode: overlay;
-    filter: url(#froisse-mylar);
-    background-image:
-      repeating-linear-gradient(
-        97deg,
-        rgb(255 255 255 / 0.28) 0%,
-        transparent 3%,
-        rgb(0 0 0 / 0.3) 6%,
-        transparent 9%,
-        rgb(255 255 255 / 0.18) 13%
+      linear-gradient(
+        170deg,
+        color-mix(in srgb, var(--p1, #2b4a63) 55%, #93a8bd),
+        color-mix(in srgb, var(--p2, #0e1c2a) 70%, #485d73)
       );
   }
 
-  /* Le bombement, par-dessus l'illustration : le film est gonflé par les
-     cartes, il assombrit ses arêtes et éclaire son centre — l'impression
-     comprise. */
-  .pack3d-front::after,
-  .pack3d-back::after {
+  /* Les deux soudures, striées comme celles du recto. */
+  .sachet-dos::before,
+  .sachet-dos::after {
     content: '';
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    background: linear-gradient(
-      90deg,
-      rgb(0 0 0 / 0.66) 0%,
-      rgb(0 0 0 / 0.26) 5%,
-      rgb(255 255 255 / 0.24) 15%,
-      rgb(255 255 255 / 0.02) 28%,
-      rgb(0 0 0 / 0.16) 45%,
-      rgb(255 255 255 / 0.2) 63%,
-      rgb(255 255 255 / 0.02) 78%,
-      rgb(0 0 0 / 0.28) 92%,
-      rgb(0 0 0 / 0.7) 100%
-    );
-    mix-blend-mode: overlay;
-  }
-
-  /* Reflet mobile, qui balaie la face au fil de la rotation. */
-  .pack3d-front::before,
-  .pack3d-back::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    z-index: 2;
-    background: linear-gradient(
-      104deg,
-      transparent 0%,
-      rgb(255 255 255 / 0.04) 24%,
-      rgb(255 255 255 / 0.26) 42%,
-      rgb(255 255 255 / 0.05) 58%,
-      transparent 100%
-    );
-    pointer-events: none;
-  }
-
-  .pack3d-back::before {
-    background: linear-gradient(
-      76deg,
-      transparent 0%,
-      rgb(255 255 255 / 0.03) 28%,
-      rgb(255 255 255 / 0.18) 46%,
-      rgb(255 255 255 / 0.03) 64%,
-      transparent 100%
-    );
-  }
-
-  /* -- Les sertissages ---------------------------------------------------- */
-
-  .pack3d-crimp {
     position: absolute;
     left: 0;
     right: 0;
-    height: 15px;
-    pointer-events: none;
-    /* Stries fines et irrégulières : le film écrasé par la molette de scellage.
-       Deux trames de pas différents évitent l'effet peigne trop régulier. */
+    height: 7.3%;
     background-image:
       repeating-linear-gradient(
         90deg,
-        rgb(255 255 255 / 0.34) 0 1px,
-        rgb(0 0 0 / 0.3) 1px 2px,
-        rgb(255 255 255 / 0.16) 2px 3px,
-        rgb(0 0 0 / 0.22) 3px 5px
+        rgb(255 255 255 / 0.44) 0 1px,
+        rgb(0 0 0 / 0.34) 1px 2px,
+        rgb(255 255 255 / 0.14) 2px 3px
       ),
-      linear-gradient(
-        180deg,
-        rgb(255 255 255 / 0.3) 0%,
-        rgb(255 255 255 / 0.06) 38%,
-        rgb(0 0 0 / 0.34) 100%
-      );
+      linear-gradient(180deg, #eef5fc 0%, #9db2c7 34%, #dde8f3 58%, #5f7489 100%);
+    box-shadow: 0 1px 0 rgb(4 10 20 / 0.5);
   }
 
-  .pack3d-crimp-top {
+  .sachet-dos::before {
     top: 0;
-    /* Un liseré sombre marque le pli entre le sertissage et le corps gonflé. */
-    box-shadow: 0 1px 0 rgb(0 0 0 / 0.55);
   }
 
-  .pack3d-crimp-bottom {
+  .sachet-dos::after {
     bottom: 0;
     transform: scaleY(-1);
-    box-shadow: 0 1px 0 rgb(0 0 0 / 0.55);
   }
 
-  /**
-   * La zone imprimée, entre les deux sertissages.
-   *
-   * L'illustration passe SOUS le froissage et les sertissages : sur un vrai
-   * sachet, l'impression est faite avant le pliage — les plis déforment donc
-   * le décor, ils ne se posent pas dessus.
-   */
-  .pack3d-print {
+  .sachet-dos-titre {
     position: absolute;
-    left: 0;
-    right: 0;
-    overflow: hidden;
-    border-radius: 6px;
-  }
-
-  /**
-   * Face portant une planche peinte.
-   *
-   * Une planche photographie un sachet réel : ses plis, son bombement et son
-   * reflet sont déjà dans l'image, avec la lumière qui va avec. Y superposer
-   * les mêmes effets à pleine puissance les compte deux fois — le visage part
-   * dans la boue et les stries du sertissage peint se dédoublent.
-   *
-   * On garde donc les calques, mais très en retrait : juste assez pour que la
-   * lumière bouge pendant la rotation, ce qu'une image fixe ne peut pas faire.
-   */
-  .pack3d-illustre .pack3d-print {
-    top: 0;
-    bottom: 0;
-    /* Bord à bord : le rayon suit celui de la face, pas celui de la fenêtre. */
-    border-radius: 3px;
-  }
-
-  .pack3d-illustre .pack3d-froisse {
-    opacity: 0.12;
-  }
-
-  .pack3d-illustre::after {
-    opacity: 0.34;
-  }
-
-  .pack3d-illustre::before {
-    opacity: 0.45;
-  }
-
-  /* Encoche de déchirure, juste sous le sertissage haut. */
-  .pack3d-notch {
-    position: absolute;
-    top: 15px;
-    right: 14px;
-    width: 9px;
-    height: 9px;
+    inset-inline: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    text-align: center;
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 3px;
+    color: rgb(255 255 255 / 0.45);
     pointer-events: none;
-    background: rgb(0 0 0 / 0.55);
-    clip-path: polygon(0 0, 100% 0, 50% 100%);
-    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.3);
   }
 
-  /* -- Tranches ----------------------------------------------------------- */
+  /* -- Le reflet ---------------------------------------------------------- */
 
-  .pack3d-edge {
+  /* La seule chose que le code ajoute à la planche, et volontairement peu : une
+     image est fixe, ce balayage lui rend la lumière qui change quand on tourne
+     l'objet. Il éclaire, il ne repeint pas. */
+  .sachet-reflet {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
     background: linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--p1, #2b4a63) 40%, #000) 0%,
-      color-mix(in srgb, var(--p2, #0e1c2a) 60%, #000) 50%,
-      color-mix(in srgb, var(--p1, #2b4a63) 34%, #000) 100%
+      104deg,
+      transparent 33%,
+      rgb(255 255 255 / 0.13) 47%,
+      transparent 61%
     );
-    box-shadow:
-      inset 1px 0 0 rgb(255 255 255 / 0.2),
-      inset -1px 0 0 rgb(0 0 0 / 0.5);
   }
 
   /* -- Ombre au sol ------------------------------------------------------- */
 
-  .pack3d-shadow {
+  .sachet-ombre {
     position: absolute;
     left: 50%;
-    bottom: -8%;
-    width: 76%;
-    height: 28px;
+    bottom: -7%;
+    width: 74%;
+    height: 26px;
     transform: translateX(-50%) rotateX(84deg);
-    background: radial-gradient(ellipse, rgb(0 0 0 / 0.62) 0%, transparent 72%);
-    filter: blur(10px);
+    background: radial-gradient(ellipse, rgb(0 0 0 / 0.6) 0%, transparent 72%);
+    filter: blur(11px);
     pointer-events: none;
   }
 
-  /* Rotation continue au repos, coupée dès qu'on attrape le sachet. */
-  .pack3d-spin {
-    animation: pack3d-turn 20s linear infinite;
+  /* Au repos, un balancement — et non plus un tour complet.
+     Le sachet est un plan : vu à 90° il se réduit à un trait. Un tour continu
+     le faisait donc disparaître deux fois par révolution. Le balancement le
+     garde lisible en permanence et suffit à montrer que l'objet a un volume ;
+     le tour complet, lui, reste accessible à la souris. */
+  .sachet-tourne {
+    animation: sachet-balance 9s ease-in-out infinite;
   }
 
-  @keyframes pack3d-turn {
-    from {
-      transform: rotateX(-8deg) rotateY(0deg);
+  @keyframes sachet-balance {
+    0%,
+    100% {
+      transform: rotateX(-8deg) rotateY(-24deg);
     }
-    to {
-      transform: rotateX(-8deg) rotateY(360deg);
+    50% {
+      transform: rotateX(-5deg) rotateY(24deg);
     }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .pack3d-spin,
+    .sachet-tourne,
     .tc-foil-gold .tc-holo {
       animation: none;
     }

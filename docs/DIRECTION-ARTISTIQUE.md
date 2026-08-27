@@ -151,43 +151,52 @@ n'existe qu'en **quatre** exemplaires, jamais côte à côte, et son décor est 
 sa découpe — le sceau de rareté se pose dans un creux de l'illustration, le filet suit le
 bord du film. Découper ça en deux couches coûterait plus que ça ne rapporte.
 
-Le code s'occupe donc uniquement du **volume** :
+Le code ne construit **aucune géométrie**. Il ne fait que :
 
-- les six faces réelles, l'épaisseur, les tranches et l'opercule ;
-- la rotation 360° à la souris, avec inertie ;
-- le reflet qui balaie la face pendant qu'on tourne le sachet — c'est ce qu'une image
-  fixe ne peut pas faire, et c'est ce qui le fait lire comme un objet ;
-- l'ombre portée.
+- présenter la planche sur un plan qu'on peut orienter à la souris, avec de l'inertie ;
+- poser un verso en mylar brossé, comme un vrai sachet dont seul le recto est imprimé ;
+- faire glisser un reflet discret pendant la rotation — c'est la seule chose qu'une
+  image fixe ne peut pas faire toute seule ;
+- porter l'ombre au sol.
 
-Quand une planche est présente, les sertissages CSS, le cadre ciselé et les textes sont
-retirés : les redessiner par-dessus donnerait un double sertissage et masquerait le
-sceau.
+Une version antérieure montait six faces en CSS 3D et plaquait l'illustration sur la
+face avant. Ça se lisait pour ce que c'était : un bloc à épaisseur constante, avec une
+arête vive au sommet et une image collée dessus. Un vrai sachet n'a pas d'arête en
+haut — il y est soudé à plat. **Ne réintroduis pas de boîte** : le bombement, les plis
+et les sertissages appartiennent à la planche, où ils rendent bien mieux que des
+dégradés CSS.
 
-Tant qu'aucune planche n'est fournie, un décor vectoriel prend le relais — aurore,
-massif enneigé, lac, refuge éclairé, avec son propre cadre ciselé et ses textes. Il tient
-la route et permet de livrer les quatre sachets au fil de l'eau, mais un SVG écrit à la
-main n'atteindra jamais une illustration peinte. Compare `givre` aux trois autres, l'écart
-est net.
+Tant qu'aucune planche n'est fournie, un sachet dessiné prend le relais — aurore, massif
+enneigé, lac, refuge éclairé, avec ses propres soudures, son cadre ciselé et ses textes.
+Il tient la route et permet de livrer les quatre sachets au fil de l'eau, mais un SVG
+écrit à la main n'atteindra jamais une illustration peinte. Compare `givre` aux trois
+autres, l'écart est net.
 
 ### Gabarit
 
 | | |
 |---|---|
-| Format | **vertical, ratio 1:1,75** — celui d'un booster du commerce (67 × 117 mm) |
-| Résolution | 760 × 1330 |
-| Livraison | JPEG qualité 88 ou WebP 84, moins de 250 Ko |
+| Format | **vertical, ratio 1:1,774** — celui d'un booster du commerce (67 × 117 mm) |
+| Résolution | 760 × 1348 |
+| Livraison | JPEG qualité 90 ou WebP 84, moins de 250 Ko |
 | Nom du fichier | l'identifiant du booster : `givre`, `blizzard`, `aurore`, `solstice` |
 | Emplacement | `public/boosters/` |
 
 Puis `npm run cartes` pour rafraîchir l'index.
 
-**Cadrage.** La planche doit contenir le sachet **bord à bord, sans marge ni fond** :
-sertissage haut sur la toute première ligne de pixels, sertissage bas sur la dernière.
-Tout blanc laissé autour se retrouverait imprimé sur la face. Si le générateur pose le
-sachet sur un fond, recadre-le avant de le déposer.
+**Cadrage — c'est le point qui compte le plus.** Le fichier ne doit contenir **que le
+sachet**, détouré, bord à bord : sertissage haut sur la toute première ligne de pixels,
+sertissage bas sur la dernière, et rien sur les côtés. Le fichier est affiché tel quel,
+étiré au cadre : tout fond laissé autour s'imprimerait sur le sachet, et toute marge le
+ferait paraître plus petit qu'il ne devrait.
 
-Next convertit et redimensionne à la volée, inutile donc de viser un format exotique :
-un JPEG propre suffit, il sera servi en WebP.
+Un générateur pose presque toujours le sachet sur un fond blanc. Recadre-le au plus
+juste **à l'intérieur** de sa ligne la plus étroite — sur la planche `givre`, les
+sertissages étaient 9 px plus étroits que le corps, et s'arrêter au corps laissait un
+liseré blanc visible en haut et en bas.
+
+Next convertit et redimensionne à la volée : un JPEG propre suffit, il sera servi en
+WebP.
 
 ### Le prompt
 

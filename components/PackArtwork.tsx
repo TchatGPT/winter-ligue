@@ -1,33 +1,34 @@
-import Image from 'next/image';
-
 /**
- * L'impression d'un sachet de booster.
+ * Le sachet dessiné, pour les boosters sans planche peinte.
  *
- * Deux régimes, selon qu'une planche peinte est fournie ou non.
+ * C'est un repli, pas la cible : dès qu'une planche existe, `BoosterPack3D`
+ * l'affiche telle quelle et ce composant n'est plus appelé. Il évite juste de
+ * montrer un sachet vide le temps que les quatre illustrations arrivent.
  *
- * **Avec planche** — elle est posée bord à bord et rien ne vient dessus. Une
- * planche de sachet est livrée composée : filet, sceau de rareté et
- * sertissages y sont déjà peints.
- *
- * **Sans planche** — un décor vectoriel prend le relais, teinté aux couleurs du
- * booster : cadre ciselé, nom de la série en haut, mention d'édition en bas et
- * titre répété verticalement sur les montants. Il se rend côté serveur, reste
- * net à toutes les tailles et ne pèse rien, ce qui permet de livrer les quatre
- * illustrations au fil de l'eau sans jamais montrer un sachet vide.
+ * Il dessine donc le sachet **entier**, sertissages compris — exactement ce
+ * qu'une planche contient. Auparavant les sertissages étaient des calques CSS
+ * posés sur une boîte en volume ; cette boîte a disparu, il n'y a plus qu'un
+ * plan, et ce qui doit ressembler à un sachet doit maintenant être dans le
+ * dessin.
  */
 
 /**
- * Le repère du décor vectoriel.
+ * Le repère du dessin.
  *
- * Il doit garder le ratio de la face du sachet (1:1,75, voir `BoosterPack3D`) :
- * le SVG est tracé en `preserveAspectRatio="none"`, donc tout écart entre les
- * deux se paie en étirement du massif et du cadre.
+ * Il suit le ratio de la planche détourée (1117 × 1981, soit 1:1,774) : le SVG
+ * est tracé en `preserveAspectRatio="none"`, donc tout écart se paierait en
+ * étirement du massif et du cadre.
  */
 const W = 200;
-const H = 350;
+const H = 355;
 
-/** Marges du cadre, à l'intérieur des sertissages. */
-const PAD = 9;
+/** Hauteur du sertissage, en haut comme en bas. */
+const CRIMP = 26;
+
+/** Le cadre, logé entre les deux sertissages. */
+const FX = 8;
+const FY = CRIMP + 4;
+const FH = H - 2 * FY;
 
 export interface PackArtworkProps {
   name: string;
@@ -36,12 +37,6 @@ export interface PackArtworkProps {
   tint: [string, string];
   /** Décale le bruit et les astres, pour que le dos diffère de la face. */
   variant?: number;
-  /**
-   * Illustration peinte. Quand elle existe, elle remplace le décor vectoriel :
-   * le cadre ciselé et les textes, eux, restent en SVG pour rester nets et
-   * identiques d'un sachet à l'autre.
-   */
-  art?: string | null;
 }
 
 /**
@@ -158,37 +153,9 @@ function VectorScene({ uid, aurora, variant }: { uid: string; aurora: string; va
   );
 }
 
-export function PackArtwork({ name, cardCount, tint, variant = 0, art }: PackArtworkProps) {
+export function PackArtwork({ name, cardCount, tint, variant = 0 }: PackArtworkProps) {
   const [aurora, deep] = tint;
   const uid = `pk${variant}-${name.replace(/[^a-zA-Z]/g, '')}`;
-
-  /**
-   * Sachet illustré : la planche EST l'impression, on ne dessine rien dessus.
-   *
-   * C'est l'inverse de la règle des cartes, et pour une raison concrète : une
-   * carte est un gabarit répété 24 fois, donc son cadre doit être en code pour
-   * rester rigoureusement identique. Un sachet, lui, arrive déjà composé — son
-   * filet, son sceau de rareté et ses sertissages sont peints dedans, calés sur
-   * l'illustration. Reposer le cadre ciselé par-dessus doublerait le filet et
-   * masquerait le sceau.
-   *
-   * `object-cover` plutôt que `fill` : si une planche arrive avec un ratio un
-   * peu différent du sachet, mieux vaut la recadrer que déformer un visage.
-   */
-  if (art) {
-    return (
-      <Image
-        src={art}
-        alt=""
-        aria-hidden="true"
-        draggable={false}
-        fill
-        sizes="260px"
-        className="pointer-events-none select-none object-cover"
-        priority
-      />
-    );
-  }
 
   return (
     <svg
@@ -251,36 +218,54 @@ export function PackArtwork({ name, cardCount, tint, variant = 0, art }: PackArt
 
         {/* La fenêtre d'illustration, arrondie comme sur un vrai sachet. */}
         <clipPath id={`${uid}-fenetre`}>
-          <rect x={PAD} y={PAD} width={W - PAD * 2} height={H - PAD * 2} rx="9" />
+          <rect x={FX} y={FY} width={W - FX * 2} height={FH} rx="7" />
         </clipPath>
+
+        {/* Le sertissage : le film écrasé par la molette de scellage. Deux pas
+            différents évitent l'effet peigne trop régulier. */}
+        <pattern id={`${uid}-stries`} width="3" height="1" patternUnits="userSpaceOnUse">
+          <rect width="1" height="1" fill="#ffffff" opacity="0.44" />
+          <rect x="1" width="1" height="1" fill="#000000" opacity="0.34" />
+          <rect x="2" width="1" height="1" fill="#ffffff" opacity="0.14" />
+        </pattern>
+
+        <linearGradient id={`${uid}-metal`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#eef5fc" />
+          <stop offset="34%" stopColor="#9db2c7" />
+          <stop offset="58%" stopColor="#dde8f3" />
+          <stop offset="100%" stopColor="#5f7489" />
+        </linearGradient>
       </defs>
 
       {/* ------------------------- L'illustration ------------------------- */}
       <g clipPath={`url(#${uid}-fenetre)`}>
-        {art ? (
-          <image
-            href={art}
-            x="0"
-            y="0"
-            width={W}
-            height={H}
-            preserveAspectRatio="xMidYMid slice"
-          />
-        ) : (
-          <VectorScene uid={uid} aurora={aurora} variant={variant} />
-        )}
-
+        <VectorScene uid={uid} aurora={aurora} variant={variant} />
       </g>
+
+      {/* ------------------------- Les sertissages ------------------------ */}
+      {/* Le sachet est soudé à plat sur ses deux extrémités : c'est ce qui le
+          distingue d'une simple étiquette rectangulaire. */}
+      {[
+        { y: 0, flip: false },
+        { y: H - CRIMP, flip: true },
+      ].map((band, i) => (
+        <g key={i} transform={band.flip ? `translate(0,${H}) scale(1,-1)` : undefined}>
+          <rect x="0" y="0" width={W} height={CRIMP} fill={`url(#${uid}-metal)`} />
+          <rect x="0" y="0" width={W} height={CRIMP} fill={`url(#${uid}-stries)`} />
+          {/* Le pli marqué entre la soudure et le corps gonflé. */}
+          <rect x="0" y={CRIMP - 1.2} width={W} height="1.2" fill="#040a14" opacity="0.55" />
+        </g>
+      ))}
 
       {/* ---------------------------- Le cadre ---------------------------- */}
       <g fill="none" stroke={`url(#${uid}-argent)`}>
-        <rect x={PAD} y={PAD} width={W - PAD * 2} height={H - PAD * 2} rx="9" strokeWidth="1.6" />
+        <rect x={FX} y={FY} width={W - FX * 2} height={FH} rx="7" strokeWidth="1.6" />
         <rect
-          x={PAD + 4}
-          y={PAD + 4}
-          width={W - (PAD + 4) * 2}
-          height={H - (PAD + 4) * 2}
-          rx="6"
+          x={FX + 4}
+          y={FY + 4}
+          width={W - (FX + 4) * 2}
+          height={FH - 8}
+          rx="5"
           strokeWidth="0.7"
           opacity="0.65"
         />
@@ -289,10 +274,10 @@ export function PackArtwork({ name, cardCount, tint, variant = 0, art }: PackArt
       {/* Volutes d'angle : le détail qui fait « édition soignée ». */}
       <g fill="none" stroke={`url(#${uid}-argent)`} strokeWidth="1.1" strokeLinecap="round">
         {[
-          { x: PAD + 5, y: PAD + 5, sx: 1, sy: 1 },
-          { x: W - PAD - 5, y: PAD + 5, sx: -1, sy: 1 },
-          { x: PAD + 5, y: H - PAD - 5, sx: 1, sy: -1 },
-          { x: W - PAD - 5, y: H - PAD - 5, sx: -1, sy: -1 },
+          { x: FX + 5, y: FY + 5, sx: 1, sy: 1 },
+          { x: W - FX - 5, y: FY + 5, sx: -1, sy: 1 },
+          { x: FX + 5, y: FY + FH - 5, sx: 1, sy: -1 },
+          { x: W - FX - 5, y: FY + FH - 5, sx: -1, sy: -1 },
         ].map((c, i) => (
           <g key={i} transform={`translate(${c.x},${c.y}) scale(${c.sx},${c.sy})`}>
             <path d="M0,16 C0,7 7,0 16,0" />
@@ -305,7 +290,7 @@ export function PackArtwork({ name, cardCount, tint, variant = 0, art }: PackArt
       {/* ---------------------------- Les textes -------------------------- */}
       <text
         x={W / 2}
-        y={PAD + 17}
+        y={FY + 15}
         textAnchor="middle"
         fill="#eaf4ff"
         fontSize="7.5"
@@ -318,7 +303,7 @@ export function PackArtwork({ name, cardCount, tint, variant = 0, art }: PackArt
 
       <text
         x={W / 2}
-        y={H - PAD - 11}
+        y={FY + FH - 9}
         textAnchor="middle"
         fill="#eaf4ff"
         fontSize="8.5"
@@ -331,12 +316,12 @@ export function PackArtwork({ name, cardCount, tint, variant = 0, art }: PackArt
 
       {/* Le titre répété sur les montants, comme sur un vrai sachet. */}
       {[
-        { x: PAD + 12, rotate: -90, anchor: 'middle' as const },
-        { x: W - PAD - 12, rotate: 90, anchor: 'middle' as const },
+        { x: FX + 11, rotate: -90, anchor: 'middle' as const },
+        { x: W - FX - 11, rotate: 90, anchor: 'middle' as const },
       ].map((side, i) => (
         <text
           key={i}
-          transform={`translate(${side.x},${H / 2}) rotate(${side.rotate})`}
+          transform={`translate(${side.x},${FY + FH / 2}) rotate(${side.rotate})`}
           textAnchor={side.anchor}
           fill="#cfe2f5"
           fontSize="6.5"

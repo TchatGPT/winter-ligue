@@ -1,29 +1,35 @@
 'use client';
 
+import Image from 'next/image';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { PackArtwork } from './PackArtwork';
 
 /**
- * Dimensions du sachet, en pixels.
+ * Dimensions d'affichage, en pixels.
  *
- * Le ratio compte plus que les valeurs. Il est calé sur **1:1,75**, mesuré sur
- * la planche de référence — et c'est aussi celui d'un booster du commerce
- * (67 × 117 mm). Deux versions ont précédé : 250 × 368 donnait 1:1,47, qui se
- * lisait comme un carré ; la correction est partie trop loin jusqu'à 1:2,1, où
- * le sachet s'étirait et déformait l'illustration de 20 % en hauteur.
+ * Elles suivent exactement le ratio de la planche détourée — 1117 × 1981, soit
+ * **1:1,774**, qui est aussi celui d'un booster du commerce (67 × 117 mm).
+ * Toute autre valeur étirerait l'illustration : c'est ce qui déformait le
+ * visage du soldat quand le sachet était à 1:2,1.
  */
 const W = 200;
-const H = 350;
-/** Épaisseur du film, gonflé par les cartes. */
-const D = 13;
-/** Hauteur du sertissage, en haut comme en bas. */
-const CRIMP = 15;
+const H = 355;
+
+/**
+ * Écartement des deux films, en pixels.
+ *
+ * Un sachet, c'est deux feuilles de mylar soudées sur leurs quatre bords. Vu
+ * par la tranche il ne fait presque rien — d'où cette valeur minuscule, qui
+ * suffit à séparer le recto du verso sans jamais donner l'épaisseur d'une
+ * boîte.
+ */
+const FILM = 1.5;
 
 export interface Pack3DProps {
   name: string;
   cardCount: number;
   gradient: [string, string];
-  /** Illustration peinte du sachet. Absente, on retombe sur le décor vectoriel. */
+  /** Planche peinte du sachet. Absente, on retombe sur le sachet dessiné. */
   art?: string | null;
   /** Coupe la rotation continue, pendant l'ouverture par exemple. */
   frozen?: boolean;
@@ -31,17 +37,25 @@ export interface Pack3DProps {
 }
 
 /**
- * Sachet de booster en volume, orientable à 360°.
+ * Le sachet de booster, orientable à 360°.
  *
- * Six faces réelles en CSS 3D, pas une déformation d'image : on peut faire le
- * tour du sachet, voir son dos et ses tranches. Un sachet de cartes est une
- * boîte très plate — la géométrie ne justifiait pas d'embarquer un moteur
- * WebGL et ses ~200 Ko, mais la rotation, elle, devait être vraie.
+ * **La planche EST le sachet.** Elle est affichée telle quelle, sans rien
+ * par-dessus et sans rien en dessous.
  *
- * Au repos le sachet tourne lentement sur lui-même. Dès qu'on l'attrape, la
- * rotation passe sous le doigt, avec de l'inertie au relâchement : c'est ce
- * ralentissement progressif qui fait qu'un objet manipulé semble avoir une
- * masse.
+ * Une version précédente montait six faces en CSS 3D — avant, arrière, deux
+ * tranches, un opercule, un fond — et plaquait l'illustration sur la face
+ * avant. Le résultat se lisait exactement pour ce qu'il était : un bloc à
+ * épaisseur constante, avec une arête vive au sommet et une image collée
+ * dessus. Or un vrai sachet n'a pas d'arête en haut, il y est soudé à plat.
+ *
+ * Il ne reste donc que deux plans sans épaisseur, ce qu'est physiquement un
+ * sachet : le recto imprimé, le verso en mylar nu. Le sertissage, le
+ * bombement et les plis ne sont plus simulés — ils sont dans la planche, où
+ * ils ont toujours mieux rendu que des dégradés CSS.
+ *
+ * Au repos le sachet tourne lentement. Dès qu'on l'attrape, la rotation passe
+ * sous le doigt avec de l'inertie au relâchement : c'est ce ralentissement
+ * progressif qui fait qu'un objet manipulé semble avoir une masse.
  */
 export function BoosterPack3D({
   name,
@@ -146,82 +160,17 @@ export function BoosterPack3D({
     startGlide();
   };
 
-  const faceVars = {
-    ['--p1' as string]: gradient[0],
-    ['--p2' as string]: gradient[1],
-  };
-
-  /**
-   * Une planche peinte porte ses propres sertissages, puisqu'elle photographie
-   * un sachet entier. Le sertissage CSS et l'encoche de déchirure sont alors
-   * retirés, et l'impression va d'un bord à l'autre : les redessiner par-dessus
-   * donnerait un double sertissage.
-   */
-  const illustre = Boolean(art);
-
-  /**
-   * L'impression du sachet.
-   *
-   * Le décor va bord à bord et seul le film écrasé reste nu — comme sur un vrai
-   * sachet, où l'impression précède le pliage.
-   */
-  const artwork = (variant = 0) => (
-    <div
-      className="pack3d-print"
-      style={illustre ? { top: 0, bottom: 0 } : { top: CRIMP, bottom: CRIMP }}
-    >
-      <PackArtwork
-        name={name}
-        cardCount={cardCount}
-        tint={gradient}
-        variant={variant}
-        art={art}
-      />
-    </div>
-  );
-
-  /** Sertissages et encoche : le film écrasé, absent des planches peintes. */
-  const sertissages = (notch = false) =>
-    illustre ? null : (
-      <>
-        <span className="pack3d-crimp pack3d-crimp-top" aria-hidden="true" />
-        <span className="pack3d-crimp pack3d-crimp-bottom" aria-hidden="true" />
-        {notch ? <span className="pack3d-notch" aria-hidden="true" /> : null}
-      </>
-    );
-
   return (
-    <div className={`pack3d-scene ${className ?? ''}`} style={{ width: W, height: H }}>
-      {/* Turbulence : elle déforme les stries droites des dégradés en plis
-          irréguliers. Un dégradé CSS ne trace que des lignes droites, et du
-          mylar froissé n'a aucune ligne droite. Le filtre est posé sur un
-          calque interne, pas sur la face elle-même : un `filter` appliqué à un
-          élément transformé casse la chaîne 3D et annule backface-visibility. */}
-      <svg width="0" height="0" aria-hidden="true" style={{ position: 'absolute' }}>
-        <defs>
-          <filter id="froisse-mylar" x="-10%" y="-10%" width="120%" height="120%">
-            <feTurbulence
-              type="fractalNoise"
-              baseFrequency="0.014 0.05"
-              numOctaves="3"
-              seed="7"
-              result="bruit"
-            />
-            <feDisplacementMap
-              in="SourceGraphic"
-              in2="bruit"
-              scale="22"
-              xChannelSelector="R"
-              yChannelSelector="G"
-            />
-          </filter>
-        </defs>
-      </svg>
-
+    <div className={`sachet-scene ${className ?? ''}`} style={{ width: W, height: H }}>
       <div
         ref={packRef}
-        className={`pack3d ${grabbed || frozen ? '' : 'pack3d-spin'}`}
-        style={{ width: W, height: H, ...faceVars }}
+        className={`sachet ${grabbed || frozen ? '' : 'sachet-tourne'}`}
+        style={{
+          width: W,
+          height: H,
+          ['--p1' as string]: gradient[0],
+          ['--p2' as string]: gradient[1],
+        }}
         onPointerDown={onDown}
         onPointerMove={onMove}
         onPointerUp={onUp}
@@ -229,71 +178,39 @@ export function BoosterPack3D({
         role="img"
         aria-label={`Sachet ${name}, ${cardCount} cartes — faites-le tourner`}
       >
-        {/* Face avant */}
-        <div
-          className={`pack3d-face pack3d-front ${illustre ? 'pack3d-illustre' : ''}`}
-          style={{ width: W, height: H, transform: `translateZ(${D / 2}px)` }}
-        >
-          {artwork(0)}
-          <span className="pack3d-froisse" aria-hidden="true" />
-          {sertissages(true)}
+        {/* Le recto : la planche, seule. */}
+        <div className="sachet-face sachet-avant" style={{ transform: `translateZ(${FILM}px)` }}>
+          {art ? (
+            <Image
+              src={art}
+              alt=""
+              aria-hidden="true"
+              draggable={false}
+              fill
+              sizes="260px"
+              className="sachet-planche"
+              priority
+            />
+          ) : (
+            <PackArtwork name={name} cardCount={cardCount} tint={gradient} />
+          )}
+          <span className="sachet-reflet" aria-hidden="true" />
         </div>
 
-        {/* Face arrière, retournée pour que l'impression reste lisible */}
+        {/* Le verso : mylar nu. Sur un vrai sachet, seul le recto est imprimé —
+            le dos ne porte qu'un film brossé et la mention de série. */}
         <div
-          className={`pack3d-face pack3d-back ${illustre ? 'pack3d-illustre' : ''}`}
-          style={{ width: W, height: H, transform: `rotateY(180deg) translateZ(${D / 2}px)` }}
+          className="sachet-face sachet-arriere"
+          style={{ transform: `rotateY(180deg) translateZ(${FILM}px)` }}
         >
-          {artwork(1)}
-          <span className="pack3d-froisse" aria-hidden="true" />
-          {sertissages()}
+          <span className="sachet-dos" aria-hidden="true" />
+          <span className="sachet-dos-titre" aria-hidden="true">
+            {name.toUpperCase()}
+          </span>
+          <span className="sachet-reflet" aria-hidden="true" />
         </div>
 
-        {/* Tranche gauche */}
-        <div
-          className="pack3d-face pack3d-edge"
-          style={{
-            width: D,
-            height: H,
-            left: W / 2 - D / 2,
-            transform: `rotateY(-90deg) translateZ(${W / 2}px)`,
-          }}
-        />
-
-        {/* Tranche droite */}
-        <div
-          className="pack3d-face pack3d-edge"
-          style={{
-            width: D,
-            height: H,
-            left: W / 2 - D / 2,
-            transform: `rotateY(90deg) translateZ(${W / 2}px)`,
-          }}
-        />
-
-        {/* Opercule du haut */}
-        <div
-          className="pack3d-face pack3d-edge"
-          style={{
-            width: W,
-            height: D,
-            top: H / 2 - D / 2,
-            transform: `rotateX(90deg) translateZ(${H / 2}px)`,
-          }}
-        />
-
-        {/* Fond du sachet */}
-        <div
-          className="pack3d-face pack3d-edge"
-          style={{
-            width: W,
-            height: D,
-            top: H / 2 - D / 2,
-            transform: `rotateX(-90deg) translateZ(${H / 2}px)`,
-          }}
-        />
-
-        <span className="pack3d-shadow" aria-hidden="true" />
+        <span className="sachet-ombre" aria-hidden="true" />
       </div>
     </div>
   );
