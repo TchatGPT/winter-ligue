@@ -1,14 +1,14 @@
 /**
- * Le bruit d'un sachet qu'on déchire, synthétisé.
+ * Le bruit d'un sachet qu'on ouvre, synthétisé.
  *
- * Pas de fichier audio. Un déchirement de mylar, c'est du bruit filtré : le
- * synthétiser tient en vingt lignes, là où un échantillon demanderait un fichier
- * à héberger, un aller-retour réseau et un préchargement pour que le son ne
- * traîne pas derrière l'animation.
+ * Pas de fichier audio. Un sachet de mylar ne produit que du bruit filtré :
+ * le synthétiser tient en trente lignes, là où un échantillon demanderait un
+ * fichier à héberger, un aller-retour réseau et un préchargement pour que le
+ * son ne traîne pas derrière l'animation.
  *
- * Il n'est déclenché que par un double-clic délibéré, jamais au chargement. Le
- * contexte audio est fermé dès la fin du son : en laisser un ouvert par
- * ouverture finirait par épuiser le quota du navigateur.
+ * Il n'est déclenché que par un double-clic délibéré, jamais au chargement, et
+ * le contexte audio est fermé dès la fin : en laisser un ouvert par ouverture
+ * finirait par épuiser le quota du navigateur.
  */
 export function bruitDeDechirure() {
   const Fabrique =
@@ -28,38 +28,58 @@ export function bruitDeDechirure() {
     return;
   }
 
-  const duree = 0.5;
+  const duree = 0.85;
   const n = Math.floor(ctx.sampleRate * duree);
   const tampon = ctx.createBuffer(1, n, ctx.sampleRate);
   const canal = tampon.getChannelData(0);
 
   /*
-   * Un film ne se déchire pas d'un trait, il cède par à-coups.
+   * Un déchirement est une grêle de micro-craquements, pas une détonation.
    *
-   * D'où ce bruit blanc haché de micro-crêtes plutôt qu'une enveloppe lisse :
-   * c'est le crépitement irrégulier qui fait entendre du plastique, une
-   * décroissance propre ne donnant qu'un souffle.
+   * Une première version prenait du bruit blanc sous une simple décroissance
+   * exponentielle : ça donnait une claque, parce qu'une enveloppe unique n'a
+   * qu'une attaque et qu'une chute. Ici chaque craquement est un grain qui naît
+   * à un instant tiré au sort et retombe en trois millisecondes ; c'est leur
+   * irrégularité qui fait entendre du plastique.
+   *
+   * Leur densité suit le geste : elle monte à mesure que le film cède, culmine,
+   * puis s'éteint quand la déchirure atteint le bord.
    */
+  const chute = Math.exp(-1 / (0.003 * ctx.sampleRate));
+  const grainsParSeconde = 900;
+  let grain = 0;
+
   for (let i = 0; i < n; i += 1) {
     const t = i / n;
-    const enveloppe = Math.exp(-3.4 * t) * (1 - t);
-    const crete = Math.random() < 0.04 ? 3.4 : 1;
-    canal[i] = (Math.random() * 2 - 1) * enveloppe * crete;
+    const densite = Math.sin(Math.PI * Math.min(1, t * 1.12)) ** 1.3;
+    if (Math.random() < (grainsParSeconde / ctx.sampleRate) * densite) {
+      grain = 0.35 + Math.random() * 0.65;
+    }
+    grain *= chute;
+    canal[i] = (Math.random() * 2 - 1) * grain;
   }
 
   const source = ctx.createBufferSource();
   source.buffer = tampon;
 
-  // Le mylar chante dans les aigus : sous 1 kHz on n'entend qu'un grondement.
-  const bande = ctx.createBiquadFilter();
-  bande.type = 'bandpass';
-  bande.frequency.value = 3100;
-  bande.Q.value = 0.65;
+  // Sous le kilohertz, il ne reste qu'un grondement sourd : c'est ce qui donnait
+  // à la version précédente son côté « coup » plutôt que « froissement ».
+  const coupeBas = ctx.createBiquadFilter();
+  coupeBas.type = 'highpass';
+  coupeBas.frequency.value = 1100;
+  coupeBas.Q.value = 0.7;
+
+  // La bosse où le mylar chante.
+  const brillance = ctx.createBiquadFilter();
+  brillance.type = 'peaking';
+  brillance.frequency.value = 5200;
+  brillance.Q.value = 1.1;
+  brillance.gain.value = 7;
 
   const volume = ctx.createGain();
-  volume.gain.value = 0.14;
+  volume.gain.value = 0.5;
 
-  source.connect(bande).connect(volume).connect(ctx.destination);
+  source.connect(coupeBas).connect(brillance).connect(volume).connect(ctx.destination);
   source.onended = () => {
     void ctx.close();
   };

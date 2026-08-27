@@ -1946,19 +1946,14 @@
      Le filtre ne touche que la face plate d'une vignette, jamais le sachet
      central : `filter` aplatit la 3D de ses descendants, il écraserait le
      maillage et le sachet redeviendrait une image. */
-  /* Gros plan à l'ouverture.
+  /* À l'ouverture, les voisins s'effacent.
 
-     Le sachet retenu s'avance, ses voisins s'effacent. Le geste est
-     irréversible et coûte des flocons : la scène doit s'y consacrer
-     entièrement et cesser d'en proposer d'autres. */
+     Le geste est irréversible et coûte des flocons : la scène doit s'y
+     consacrer et cesser d'en proposer d'autres. Une version antérieure
+     avançait aussi le sachet de 26 % — un zoom qui cassait la mise en scène
+     au lieu de la servir. */
   .carrousel-gros-plan .carrousel-case:not(.carrousel-case-actif) {
     opacity: 0;
-  }
-
-  /* 1,26 et pas davantage : le rail fait 430 px de haut pour un sachet de 331,
-     et au-delà le gros plan se ferait couper en haut et en bas. */
-  .carrousel-gros-plan .carrousel-case-actif .carrousel-prise {
-    transform: scale(1.26);
   }
 
   .carrousel-case:not(.carrousel-case-actif) .sachet-face {
@@ -2023,6 +2018,7 @@
     pointer-events: none;
     background-image: var(--eclat);
     background-size: var(--largeur-eclat, 440px) 100%;
+    mix-blend-mode: screen;
     background-repeat: no-repeat;
     background-position: var(--balayage) 0;
   }
@@ -2158,10 +2154,10 @@
      le retour au point de départ serait un saut de lumière bien visible. */
   @keyframes sachet-balayage {
     from {
-      --balayage: -235px;
+      --balayage: -220px;
     }
     to {
-      --balayage: -5px;
+      --balayage: -20px;
     }
   }
 

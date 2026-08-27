@@ -180,15 +180,15 @@ const COUPE = (() => {
  */
 const bombement = (deg: number) =>
   `linear-gradient(${deg}deg,
-    rgb(0 0 0 / 0.66) 0%,
-    rgb(0 0 0 / 0.3) 5%,
-    rgb(255 255 255 / 0.26) 16%,
-    rgb(255 255 255 / 0.03) 30%,
-    rgb(0 0 0 / 0.12) 47%,
-    rgb(255 255 255 / 0.2) 66%,
-    rgb(255 255 255 / 0.02) 80%,
-    rgb(0 0 0 / 0.32) 93%,
-    rgb(0 0 0 / 0.7) 100%)`;
+    rgb(0 0 0 / 0.3) 0%,
+    rgb(0 0 0 / 0.14) 8%,
+    rgb(255 255 255 / 0.16) 20%,
+    rgb(255 255 255 / 0.02) 33%,
+    rgb(0 0 0 / 0.06) 48%,
+    rgb(255 255 255 / 0.13) 66%,
+    rgb(255 255 255 / 0.01) 80%,
+    rgb(0 0 0 / 0.15) 93%,
+    rgb(0 0 0 / 0.32) 100%)`;
 
 /** Le creux d'ombre des deux plis, là où la soudure rejoint le corps. */
 const PLIS = `linear-gradient(180deg,
@@ -213,25 +213,26 @@ const MYLAR = `linear-gradient(190deg,
   #d2e0ef 100%)`;
 
 /**
- * Le reflet balayant, teinté par le booster.
+ * Le reflet, en lumière ajoutée.
  *
- * Un cœur blanc bordé de deux flancs à la couleur du sachet : c'est ce que
- * renvoie un film métallisé, qui ne réfléchit jamais un blanc pur mais un blanc
- * coloré par ce qu'il y a dessous. `color-mix` avec `transparent` sert
- * uniquement à obtenir la teinte à l'opacité voulue.
+ * Le calque est **noir** là où il n'éclaire pas, et fusionné en `screen` : le
+ * noir ne change rien, le clair ajoute. Une version antérieure posait un gris
+ * translucide par-dessus, ce qui ne pouvait donner qu'un voile — un calque
+ * semi-opaque assombrit forcément ce qu'il recouvre, quelle que soit sa
+ * couleur.
  *
  * Il ne bouge pas tout seul : sa position vient de `--balayage`, animée une
- * fois pour toutes sur le sachet, si bien que les cent quarante tuiles se
- * déplacent d'un bloc et que le reflet traverse la coque sans se briser.
+ * fois pour toutes sur le sachet, si bien que les tuiles se déplacent d'un
+ * bloc et que la lumière traverse la coque sans se briser aux coutures.
  */
 const ECLAT = `linear-gradient(102deg,
-  rgb(255 255 255 / 0) 3%,
-  color-mix(in srgb, var(--p1) 11%, transparent) 21%,
-  rgb(255 255 255 / 0.11) 38%,
-  rgb(255 255 255 / 0.16) 50%,
-  rgb(255 255 255 / 0.11) 62%,
-  color-mix(in srgb, var(--p1) 11%, transparent) 79%,
-  rgb(255 255 255 / 0) 97%)`;
+  #000000 0%,
+  #050d16 20%,
+  color-mix(in srgb, var(--p1) 60%, #000000) 38%,
+  #7ea3bd 50%,
+  color-mix(in srgb, var(--p1) 60%, #000000) 62%,
+  #050d16 80%,
+  #000000 100%)`;
 
 /**
  * Largeur du calque de reflet.
@@ -577,6 +578,7 @@ export function BoosterPack3D({
               backgroundSize: couches
                 .map((_, k) => (k === 0 ? `${LARGEUR_ECLAT}px ${H}px` : `${W}px ${H}px`))
                 .join(', '),
+              backgroundBlendMode: couches.map((_, k) => (k === 0 ? 'screen' : 'normal')).join(', '),
               // Seul le reflet bouge : sa position part de `--balayage`, les
               // autres couches restent calées sur la planche.
               backgroundPosition: couches
@@ -616,6 +618,7 @@ export function BoosterPack3D({
               backgroundSize: couches
                 .map((_, k) => (k === 0 ? `${LARGEUR_ECLAT}px ${H}px` : `${W}px ${H}px`))
                 .join(', '),
+              backgroundBlendMode: couches.map((_, k) => (k === 0 ? 'screen' : 'normal')).join(', '),
               // Le repère du verso est inversé : le reflet s'y ajoute au lieu de
               // s'y soustraire, pour continuer d'aller dans le même sens que sur
               // le recto quand le sachet tourne.
