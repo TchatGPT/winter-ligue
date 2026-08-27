@@ -43,8 +43,25 @@ const REPRISE = 0.115;
 const COLS = [0, 0.015, 0.045, 0.095, 0.17, 0.29, 0.5, 0.71, 0.83, 0.905, 0.955, 0.985, 1];
 const ROWS = [0, 0.034, 0.07, 0.115, 0.885, 0.93, 0.966, 1];
 
-/** Chevauchement des tuiles, pour que les coutures ne s'ouvrent pas. */
-const CHEV = 1.3;
+/**
+ * Chevauchement des tuiles, **mesuré à l'écran** et non dans le plan de la tuile.
+ *
+ * C'est toute la difficulté. Une tuile inclinée se projette plus étroite qu'elle
+ * n'est : aux colonnes de bord, inclinées de 47°, un chevauchement de 1,3 px
+ * dans le plan n'en donnait plus que 0,9 à l'écran. Insuffisant pour survivre à
+ * la rastérisation — chaque tuile est composée séparément, avec ses bords
+ * adoucis, et deux bords adoucis qui se rejoignent laissent passer le fond.
+ *
+ * D'où des coutures sombres d'un pixel le long des deux bords du sachet, qui se
+ * déplaçaient avec le balancement. Elles ne se voyaient qu'à 100 % : à tout
+ * autre facteur de zoom, la grille de pixels retombe ailleurs et le trou se
+ * referme. C'est aussi pourquoi elles n'apparaissaient sur aucune de nos
+ * captures, toutes prises en facteur 2.
+ *
+ * En divisant par le cosinus **avec** le chevauchement, celui-ci vaut 2,4 px à
+ * l'écran quelle que soit l'inclinaison.
+ */
+const CHEV = 2.4;
 
 /**
  * Marge de sécurité sur les fonds, en pixels de sachet.
@@ -56,11 +73,12 @@ const CHEV = 1.3;
  * voyait le fond de page à travers, sous la forme d'un filet sombre courant le
  * long des bords.
  *
- * Les fonds sont donc dessinés trois pixels plus grands que le sachet et
- * recalés d'autant. Trois sur deux cents, soit un agrandissement d'un pour
- * soixante-six : invisible.
+ * Les fonds sont donc dessinés six pixels plus grands que le sachet et
+ * recalés d'autant. Six sur deux cents, soit un agrandissement de trois pour
+ * cent : invisible. La marge a suivi l'élargissement du chevauchement, les
+ * tuiles du pourtour débordant désormais un peu plus.
  */
-const MARGE = 3;
+const MARGE = 6;
 
 const RAD = Math.PI / 180;
 const DEG = 180 / Math.PI;
@@ -134,9 +152,11 @@ for (let i = 0; i < COLS.length - 1; i += 1) {
     const ry = Math.atan2(prof(u0, vc) - prof(u1, vc), dx) * DEG;
     const rx = Math.atan2(prof(uc, v1) - prof(uc, v0), dy) * DEG;
 
-    // Une tuile inclinée doit être plus grande pour couvrir la même maille.
-    const w = dx / Math.cos(ry * RAD) + CHEV;
-    const h = dy / Math.cos(rx * RAD) + CHEV;
+    // Une tuile inclinée doit être plus grande pour couvrir la même maille — et
+    // le chevauchement passe dans la division, sans quoi il rétrécirait avec
+    // l'inclinaison au lieu de rester constant à l'écran.
+    const w = (dx + CHEV) / Math.cos(ry * RAD);
+    const h = (dy + CHEV) / Math.cos(rx * RAD);
 
     // Arrondi obligatoire, et pas cosmétique.
     //
@@ -733,6 +753,7 @@ export function BoosterPack3D({
           colorées se chevauchaient derrière la rangée et faisaient des taches
           à côté des sachets. */}
       {!vignette && <span className="sachet-halo" aria-hidden="true" />}
+      <span className="sachet-lisiere" aria-hidden="true" />
 
       <div
         ref={packRef}

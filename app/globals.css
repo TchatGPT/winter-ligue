@@ -1979,6 +1979,31 @@
      franchement visible à côté du sachet. Le halo doit décoller l'objet de son
      fond, pas se faire remarquer — il reste donc froid, l'accent du booster n'y
      entrant qu'au quart, et il ne déborde plus que d'un tiers. */
+  /* La lisière : une lueur serrée, juste autour de la silhouette.
+
+     Le halo est flou de quarante-quatre pixels — assez large pour décoller le
+     sachet du fond, bien trop pour le border. Or le sachet est clair et le
+     panneau presque noir : leur rencontre tient en un pixel, et une transition
+     aussi raide se lit comme un trait sombre plutôt que comme un bord.
+
+     Cette seconde lueur, à peine plus grande que le sachet et floue de douze
+     pixels, éclaire le fond immédiatement autour de lui. La marche disparaît. */
+  .sachet-lisiere {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 112%;
+    height: 106%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    background: radial-gradient(
+      ellipse at 50% 50%,
+      rgb(216 236 253 / 0.46) 0%,
+      rgb(200 224 247 / 0.26) 64%,
+      transparent 86%
+    );
+    filter: blur(15px);
+  }
   .sachet-halo {
     position: absolute;
     left: 50%;
