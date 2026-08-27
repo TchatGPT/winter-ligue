@@ -38,6 +38,12 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   ajouter une entrée là et une branche dans `applyEffect()` de `lib/services/cards.ts`.
 - Les taux de rareté sont dans `RARITY_WEIGHTS_BASE` et dans `BOOSTERS[].weights`.
   Toute table doit sommer **exactement** à 100 000 — un test le vérifie.
+- **Aucune carte ne dépasse `CARD_IMPACT_CAP` (25 points).** Un malus retire des
+  points, il n en donne jamais à l attaquant, et ne supprime jamais définitivement la
+  game d autrui. `tests/equilibre.test.ts` verrouille ces trois règles.
+- La résolution des effets vit dans `lib/services/effects.ts`, et nulle part ailleurs.
+  Chaque delta de points passe par `applyPoints`, qui le journalise dans `game.applied`
+  — c est ce journal qui rend Second Souffle et Contre-Courant possibles.
 - Les paliers de subs versent à **tous les joueurs actifs**. Ne jamais ajouter de
   récompense individuelle : c'est l'invariant anti-pay-to-win, et il est testé.
 - Les couleurs viennent des variables CSS de `app/globals.css`, jamais codées en dur.

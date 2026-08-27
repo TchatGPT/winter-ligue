@@ -23,6 +23,7 @@ import { buildStats, checkBid, minimumBid, sellerPayout, marketFee } from '@/lib
 import { MARKET } from '@/lib/domain/rules';
 import type { Bid, Listing, MarketStats } from '@/lib/domain/types';
 import { audit, credit, debit } from './ledger';
+import { consumeBoon } from './effects';
 import { bonusesFor } from './league';
 
 export class MarketError extends Error {
@@ -318,7 +319,13 @@ function settle(
     }
   }
 
-  const feeDiscount = bonusesFor(db, listing.sellerId).marketFeeDiscount;
+  // La remise de collection et la faveur « Mécène » se cumulent, plafonnées à
+  // 100 % : une vente ne peut jamais rapporter plus que son prix.
+  const mecene = consumeBoon(db, listing.sellerId, 'TAXE_REDUITE');
+  const feeDiscount = Math.min(
+    1,
+    bonusesFor(db, listing.sellerId).marketFeeDiscount + (mecene ? Number(mecene.value ?? 0) : 0),
+  );
   const fee = marketFee(price, feeDiscount);
   const payout = sellerPayout(price, feeDiscount);
   credit(db, listing.sellerId, payout, 'VENTE_MARCHE', listing.id);

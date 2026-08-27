@@ -18,9 +18,7 @@ export function round2(n: number): number {
 export interface GameInput {
   kills: number;
   placement: Placement;
-  /** Multiplicateur issu des cartes jouées sur cette game. */
-  multiplier: number;
-  /** Points fixes ajoutés ou retirés par les cartes. */
+  /** Somme des effets de cartes appliqués à cette game, positifs ou négatifs. */
   bonusPoints: number;
   /** Une game passée n'entre pas dans le total de la saison. */
   skipped?: boolean;
@@ -36,15 +34,16 @@ export interface GameBreakdown {
 /**
  * Score d'une game.
  *
- *   score = (kills × multiplicateur) + points de classement + bonus
+ *   score = (kills × bonus permanent de collection) + points de classement + bonus de cartes
  *
- * Le multiplicateur ne s'applique qu'aux kills : les points de classement
- * restent fixes, comme sur la Summer Ligue.
+ * Il n'existe plus de multiplicateur stocké sur la game. Une carte annoncée
+ * « ×1,5 jusqu'à +18 » calcule son apport au moment où on la joue et l'inscrit
+ * comme un bonus de points : c'est mathématiquement équivalent, mais ça rend
+ * l'empilement de multiplicateurs impossible et chaque apport traçable.
  */
 export function scoreGame(input: GameInput, permanentKillMultiplier = 0): GameBreakdown {
-  const multiplier = clampMultiplier(input.multiplier) * (1 + permanentKillMultiplier);
   const kills = clampKills(input.kills);
-  const killPoints = round2(kills * multiplier);
+  const killPoints = round2(kills * (1 + permanentKillMultiplier));
   const place = placementPoints(input.placement);
   const bonus = clampBonus(input.bonusPoints);
   return {
@@ -58,14 +57,6 @@ export function scoreGame(input: GameInput, permanentKillMultiplier = 0): GameBr
 export function clampKills(kills: number): number {
   if (!Number.isFinite(kills)) return 0;
   return Math.min(GAME_LIMITS.maxKills, Math.max(GAME_LIMITS.minKills, Math.trunc(kills)));
-}
-
-export function clampMultiplier(multiplier: number): number {
-  if (!Number.isFinite(multiplier)) return GAME_LIMITS.minMultiplier;
-  return Math.min(
-    GAME_LIMITS.maxMultiplier,
-    Math.max(GAME_LIMITS.minMultiplier, round2(multiplier)),
-  );
 }
 
 export function clampBonus(bonus: number): number {

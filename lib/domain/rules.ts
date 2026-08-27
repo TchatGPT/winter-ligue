@@ -36,10 +36,12 @@ export function placementPoints(placement: Placement): number {
 export const GAME_LIMITS = {
   minKills: 0,
   maxKills: 60,
-  minMultiplier: 1,
-  maxMultiplier: 3,
-  minBonusPoints: -500,
-  maxBonusPoints: 500,
+  /**
+   * Bornes du cumul de bonus sur une seule game. Large, mais pas infini : une
+   * game ne doit jamais peser plus que quelques bonnes parties réunies.
+   */
+  minBonusPoints: -80,
+  maxBonusPoints: 80,
 } as const;
 
 /** Nombre de games comptabilisées par joueur, ajustable par l'admin. */
@@ -250,8 +252,37 @@ export function atLeastOnePercent(
  */
 export const BASE_RESERVE_SLOTS = 40;
 
-/** Une carte offensive ne peut pas viser deux fois le même joueur dans ce délai. */
-export const MALUS_COOLDOWN_HOURS = 6;
+/**
+ * Encadrement des malus.
+ *
+ * Le ciblage reste libre — n'importe qui peut viser n'importe qui — mais deux
+ * garde-fous évitent l'acharnement :
+ *
+ *   — `cooldownHours` empêche un même joueur de frapper deux fois la même
+ *     cible dans la journée ;
+ *   — `maxReceivedPerDay` plafonne ce qu'une cible encaisse **toutes sources
+ *     confondues**. Sans ce second plafond, sept joueurs pourraient enchaîner
+ *     sept malus sur le leader le même soir, et mener deviendrait une punition.
+ */
+export const MALUS = {
+  cooldownHours: 6,
+  maxReceivedPerDay: 2,
+  /** Fenêtre d'annulation par Second Souffle. */
+  undoWindowHours: 24,
+} as const;
+
+/** Conservé pour la lisibilité des messages. */
+export const MALUS_COOLDOWN_HOURS = MALUS.cooldownHours;
+
+/**
+ * Plafond d'impact d'une carte, en points.
+ *
+ * Une game moyenne vaut environ 25 points et une saison en totalise ~400. Une
+ * carte au-delà de ce plafond volerait une part visible du classement en un
+ * clic — c'est exactement ce qui rendait certaines roues de la Summer Ligue
+ * insupportables. Un test vérifie qu'aucune carte ne le dépasse.
+ */
+export const CARD_IMPACT_CAP = 25;
 
 /** Nombre de cartes par famille. */
 export const CARDS_PER_THEME = 6;

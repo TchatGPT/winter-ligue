@@ -1,36 +1,34 @@
 import { describe, expect, it } from 'vitest';
-import { clampMultiplier, rank, round2, scoreGame, totalsFor } from '@/lib/domain/scoring';
+import { rank, round2, scoreGame, totalsFor } from '@/lib/domain/scoring';
 import type { ScoredGame } from '@/lib/domain/scoring';
 
 describe('score d’une game', () => {
-  it('applique le multiplicateur aux kills seulement', () => {
-    const result = scoreGame({ kills: 10, placement: 1, multiplier: 1.5, bonusPoints: 0 });
-    // 10 × 1,5 = 15 kills-points, + 20 de Top 1 — le Top 1 n'est pas multiplié.
-    expect(result.killPoints).toBe(15);
+  it('additionne kills, classement et bonus de cartes', () => {
+    const result = scoreGame({ kills: 10, placement: 1, bonusPoints: 0 });
+    expect(result.killPoints).toBe(10);
     expect(result.placementPoints).toBe(20);
-    expect(result.total).toBe(35);
+    expect(result.total).toBe(30);
   });
 
-  it('additionne les bonus après le multiplicateur', () => {
-    const result = scoreGame({ kills: 8, placement: null, multiplier: 1.3, bonusPoints: 25 });
-    expect(result.killPoints).toBe(10.4);
-    expect(result.total).toBe(35.4);
+  it('compte les bonus de cartes, positifs comme négatifs', () => {
+    expect(scoreGame({ kills: 8, placement: null, bonusPoints: 12 }).total).toBe(20);
+    expect(scoreGame({ kills: 8, placement: null, bonusPoints: -6 }).total).toBe(2);
   });
 
-  it('applique le bonus permanent de la famille Tempête', () => {
-    const sans = scoreGame({ kills: 20, placement: null, multiplier: 1, bonusPoints: 0 });
-    const avec = scoreGame({ kills: 20, placement: null, multiplier: 1, bonusPoints: 0 }, 0.05);
-    expect(sans.total).toBe(20);
-    expect(avec.total).toBe(21);
+  it('applique le bonus permanent de la famille Tempête aux kills seuls', () => {
+    const sans = scoreGame({ kills: 20, placement: 1, bonusPoints: 0 });
+    const avec = scoreGame({ kills: 20, placement: 1, bonusPoints: 0 }, 0.07);
+    // +7 % sur les 20 kills, mais les 20 points de Top 1 ne bougent pas.
+    expect(sans.total).toBe(40);
+    expect(avec.total).toBe(41.4);
   });
 
   it('borne les entrées aberrantes plutôt que de les propager', () => {
     // Une requête forgée avec des valeurs absurdes ne peut pas gonfler un score.
-    expect(scoreGame({ kills: 99999, placement: null, multiplier: 50, bonusPoints: 0 }).total).toBe(
-      180,
-    );
-    expect(scoreGame({ kills: -5, placement: null, multiplier: 0.1, bonusPoints: 0 }).total).toBe(0);
-    expect(clampMultiplier(Number.NaN)).toBe(1);
+    expect(scoreGame({ kills: 99999, placement: null, bonusPoints: 0 }).total).toBe(60);
+    expect(scoreGame({ kills: -5, placement: null, bonusPoints: 0 }).total).toBe(0);
+    expect(scoreGame({ kills: 0, placement: null, bonusPoints: 9999 }).total).toBe(80);
+    expect(scoreGame({ kills: 0, placement: null, bonusPoints: -9999 }).total).toBe(-80);
   });
 
   it('arrondit sans dérive de virgule flottante', () => {

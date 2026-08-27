@@ -6,7 +6,7 @@
  * enregistrements, si bien que le changement de base ne touchera pas au métier.
  */
 
-import type { Bid, Listing, Placement, Sale } from '@/lib/domain/types';
+import type { Bid, BoonKind, Listing, Placement, Sale } from '@/lib/domain/types';
 
 export interface Player {
   id: string;
@@ -22,13 +22,29 @@ export interface Player {
   active: boolean;
 }
 
+/** Trace d'un effet de carte appliqué à une game, avec son delta exact. */
+export interface AppliedEffect {
+  /** Identifiant unique, pour pouvoir annuler précisément cet effet. */
+  id: string;
+  cardId: string;
+  /** Qui a joué la carte — le propriétaire de la game, ou un adversaire. */
+  byPlayerId: string;
+  /** Points ajoutés (positif) ou retirés (négatif). */
+  points: number;
+  at: string;
+  /** true si un Second Souffle ou un Contre-Courant l'a déjà annulé. */
+  undone: boolean;
+}
+
 export interface Game {
   id: string;
   playerId: string;
   kills: number;
   placement: Placement;
-  /** Multiplicateur cumulé des cartes jouées sur cette game. */
-  multiplier: number;
+  /**
+   * Somme des effets de cartes appliqués. Recalculée à partir de `applied` :
+   * c'est un cache, jamais une source de vérité.
+   */
   bonusPoints: number;
   /** Une game passée reste visible mais ne compte pas. */
   skipped: boolean;
@@ -39,8 +55,12 @@ export interface Game {
   note: string | null;
   playedAt: string;
   createdAt: string;
-  /** Cartes ayant modifié cette game, pour l'affichage et l'audit. */
-  appliedCardIds: string[];
+  /**
+   * Effets de cartes appliqués, dans l'ordre. C'est ce journal qui rend
+   * Second Souffle et Contre-Courant possibles : on sait exactement combien
+   * chaque carte a donné ou retiré, donc on sait quoi rendre.
+   */
+  applied: AppliedEffect[];
 }
 
 /** Une copie de carte possédée par un joueur. */
@@ -80,14 +100,31 @@ export interface BoosterOpening {
   idempotencyKey: string;
 }
 
-/** Effet temporaire posé sur un joueur (bouclier, immunité…). */
+/** Effet temporaire posé sur un joueur. */
 export interface PlayerEffect {
   id: string;
   playerId: string;
-  kind: 'BOUCLIER';
+  /** BOUCLIER : immunise contre les malus. SILENCE : interdit de jouer une carte. */
+  kind: 'BOUCLIER' | 'SILENCE';
   sourceCardId: string;
   createdAt: string;
   expiresAt: string;
+}
+
+/**
+ * Faveur durable : un effet qui se consomme sur plusieurs actions plutôt que
+ * dans l'instant. Trois usages restants de « flocons doublés », par exemple.
+ */
+export interface PlayerBoon {
+  id: string;
+  playerId: string;
+  kind: BoonKind;
+  /** Utilisations restantes. La faveur disparaît à zéro. */
+  remaining: number;
+  /** Paramètre libre : taux de remise, rareté garantie… */
+  value: string | null;
+  sourceCardId: string;
+  createdAt: string;
 }
 
 export interface LedgerEntry {
@@ -156,6 +193,7 @@ export interface Database {
   discoveries: Discovery[];
   openings: BoosterOpening[];
   effects: PlayerEffect[];
+  boons: PlayerBoon[];
   ledger: LedgerEntry[];
   listings: Listing[];
   bids: Bid[];

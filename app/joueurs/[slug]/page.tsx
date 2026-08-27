@@ -109,7 +109,6 @@ export default async function ProfilJoueurPage({ params }: { params: Promise<{ s
                   <th>Date</th>
                   <th className="text-right">Kills</th>
                   <th className="text-center">Top</th>
-                  <th className="text-right">×</th>
                   <th className="text-right">Bonus</th>
                   <th className="text-right">Score</th>
                   <th>Cartes</th>
@@ -125,9 +124,6 @@ export default async function ProfilJoueurPage({ params }: { params: Promise<{ s
                     </td>
                     <td className="num text-right text-ink">{game.kills}</td>
                     <td className="num text-center text-gold">{game.placement ?? '—'}</td>
-                    <td className="num text-right text-muted">
-                      {game.multiplier !== 1 ? `×${game.multiplier}` : '—'}
-                    </td>
                     <td
                       className={`num text-right ${game.bonusPoints < 0 ? 'text-danger' : 'text-muted'}`}
                     >
@@ -139,17 +135,31 @@ export default async function ProfilJoueurPage({ params }: { params: Promise<{ s
                       {game.score}
                     </td>
                     <td className="text-xs">
-                      {game.appliedCardIds.length === 0 ? (
+                      {game.applied.length === 0 ? (
                         <span className="text-faint">—</span>
                       ) : (
-                        <span className="flex flex-wrap gap-1">
-                          {game.appliedCardIds.map((id, i) => {
-                            const card = getCard(id);
-                            return card ? (
-                              <span key={`${id}-${i}`} title={card.name} aria-label={card.name}>
+                        // Chaque carte affiche son apport exact : on voit d'un
+                        // coup d'œil comment le score a été construit, et par qui.
+                        <span className="flex flex-wrap gap-1.5">
+                          {game.applied.map((effect, i) => {
+                            const card = getCard(effect.cardId);
+                            if (!card) return null;
+                            const hostile = effect.byPlayerId !== profile.id;
+                            return (
+                              <span
+                                key={`${effect.cardId}-${i}`}
+                                title={`${card.name} : ${effect.points > 0 ? '+' : ''}${effect.points} pts${
+                                  hostile ? ' (malus adverse)' : ''
+                                }`}
+                                className={hostile ? 'text-danger' : 'text-muted'}
+                              >
                                 {card.glyph}
+                                <span className="num ml-0.5 text-[11px]">
+                                  {effect.points > 0 ? '+' : ''}
+                                  {effect.points}
+                                </span>
                               </span>
-                            ) : null;
+                            );
                           })}
                         </span>
                       )}

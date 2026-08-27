@@ -59,10 +59,35 @@ sur soi, soit un **malus** à poser sur un adversaire.
 
 | Famille | Rôle | 4/6 | 6/6 |
 |---|---|---|---|
-| ❄ Glace Éternelle | Geler, protéger | +8 places de réserve | +20 places |
-| 🌪 Tempête | Multiplicateurs de kills | +3 % de kills | +7 % de kills |
-| 🌌 Aurore Boréale | Points et flocons | +8 ❄ par game | +20 ❄ par game |
-| 🎁 Solstice | Chaos et malus | −8 % en boutique | −18 % et −50 % de taxe |
+| ❄ Glace Éternelle | Protéger, geler, annuler | +8 places de réserve | +20 places |
+| 🌪 Tempête | Amplifier une performance réelle | +3 % de kills | +7 % de kills |
+| 🌌 Aurore Boréale | Économie pure, zéro impact au classement | +8 ❄ par game | +20 ❄ par game |
+| 🎁 Solstice | Interaction et malus | −8 % en boutique | −18 % et −50 % de taxe |
+
+### L'équilibrage
+
+Une game moyenne vaut ~25 points, une saison en totalise ~400. Une carte à
++100 points volerait donc **un quart d'une saison en un clic** — c'est ce qui rendait
+certaines roues de la Summer Ligue insupportables. Quatre règles l'empêchent :
+
+1. **Aucune carte ne fait bouger un total de plus de 25 points**, soit une bonne game.
+   Chaque carte annonce son plafond dans son texte, et un test le vérifie.
+2. **Un malus retire des points, il n'en donne jamais à l'attaquant.** Le vol crée un
+   double mouvement — la victime perd *et* l'autre gagne — et c'est ce qui le rend
+   insupportable des deux côtés. Aucune carte ne copie ni ne vole une game.
+3. **Aucune suppression définitive** de la game de quelqu'un d'autre.
+4. **Un joueur ne peut encaisser que 2 malus par 24 h**, toutes sources confondues.
+   Sans ce plafond, sept joueurs enchaîneraient sept malus sur le leader le même soir,
+   et mener deviendrait une punition.
+
+Et trois réponses existent face à un malus : le **bouclier** (immunité), le **gel**
+(une game devient intouchable) et **Second Souffle** (annule le dernier malus subi et
+rend les points).
+
+Les multiplicateurs restent liés au skill mais sont plafonnés : « ×1,8 jusqu'à +25 »
+ne donnera jamais plus de 25 points, même sur une game à 40 kills. Il n'existe plus de
+multiplicateur stocké sur une game — un multiplicateur plafonné *est* un bonus, et le
+garder ouvrait la porte à l'empilement.
 
 Le palier à 4 cartes n’est pas un cadeau : la légendaire d’une famille sort une ouverture
 sur mille, exiger les six d’emblée rendrait le bonus décoratif. Les cartes manquantes

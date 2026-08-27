@@ -23,10 +23,10 @@ const FILE = process.env.LEAGUE_DATA_FILE ?? join(process.cwd(), '.data', 'leagu
 
 /* Doit refléter lib/domain/catalog.ts — 4 familles × 6 raretés. */
 const FAMILIES = {
-  glace: ['flocon-protecteur', 'bouclier-givre', 'gel-eternel', 'banquise', 'rempart-polaire', 'hiver-sans-fin'],
-  tempete: ['brise-glacee', 'vent-du-nord', 'blizzard', 'oeil-du-cyclone', 'tempete-blanche', 'nuit-polaire'],
-  aurore: ['etincelle', 'etoile-polaire', 'pluie-de-flocons', 'couronne-polaire', 'voile-daurore', 'aurore-boreale'],
-  solstice: ['boule-de-neige', 'givre-mordant', 'traineau-perce', 'vol-de-traineau', 'tempete-de-verglas', 'grand-froid'],
+  glace: ['congere', 'bouclier-givre', 'gel-eternel', 'second-souffle', 'rempart-polaire', 'sanctuaire'],
+  tempete: ['rafale', 'vent-du-nord', 'percee', 'blizzard', 'sang-froid', 'nuit-polaire'],
+  aurore: ['etincelle', 'etoile-polaire', 'pluie-de-flocons', 'manne', 'mecene', 'aurore-boreale'],
+  solstice: ['boule-de-neige', 'givre-mordant', 'contre-courant', 'traineau-perce', 'tempete-de-verglas', 'grand-froid'],
 };
 const LADDER = ['C', 'PC', 'R', 'SR', 'UR', 'L'];
 
@@ -91,6 +91,7 @@ const db = {
   discoveries: [],
   openings: [],
   effects: [],
+  boons: [],
   ledger: [],
   listings: [],
   bids: [],
@@ -138,8 +139,13 @@ for (const player of db.players) {
     const roll = rnd();
     const placement = roll > 0.88 ? 1 : roll > 0.78 ? 2 : roll > 0.66 ? 3 : null;
     // Quelques games portent déjà un multiplicateur, comme si une carte avait été jouée.
-    const multiplier = rnd() > 0.75 ? pick([1.15, 1.3, 1.5, 1.8]) : 1;
-    const bonusPoints = rnd() > 0.85 ? pick([5, 10, 40, -25]) : 0;
+    // Quelques games portent déjà l'effet d'une carte, avec son journal.
+    const boosted = rnd() > 0.7;
+    const boostCard = boosted ? pick(FAMILIES.tempete.slice(0, 4)) : null;
+    const boostPoints = boosted ? between(4, 16) : 0;
+    const struck = rnd() > 0.88;
+    const strikePoints = struck ? -between(6, 12) : 0;
+    const bonusPoints = boostPoints + strikePoints;
     const playedAt = iso(between(1, 45) * DAY);
 
     db.games.push({
@@ -147,15 +153,40 @@ for (const player of db.players) {
       playerId: player.id,
       kills,
       placement,
-      multiplier,
       bonusPoints,
       skipped: rnd() > 0.94,
       frozen: rnd() > 0.9,
-      score: round2(kills * multiplier + (placement ? PLACEMENT_POINTS[placement] : 0) + bonusPoints),
+      score: round2(kills + (placement ? PLACEMENT_POINTS[placement] : 0) + bonusPoints),
       note: null,
       playedAt,
       createdAt: playedAt,
-      appliedCardIds: multiplier !== 1 ? [pick(FAMILIES.tempete.slice(0, 4))] : [],
+      applied: [
+        ...(boostCard
+          ? [
+              {
+                id: randomUUID(),
+                cardId: boostCard,
+                byPlayerId: player.id,
+                points: boostPoints,
+                at: playedAt,
+                undone: false,
+              },
+            ]
+          : []),
+        ...(struck
+          ? [
+              {
+                id: randomUUID(),
+                cardId: 'traineau-perce',
+                // Un malus vient forcément de quelqu'un d'autre.
+                byPlayerId: 'adversaire',
+                points: strikePoints,
+                at: playedAt,
+                undone: false,
+              },
+            ]
+          : []),
+      ],
     });
 
     move(

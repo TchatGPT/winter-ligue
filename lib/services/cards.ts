@@ -10,25 +10,17 @@ import 'server-only';
  * des copies réussissent ou échouent ensemble.
  */
 
-import { randomInt } from 'node:crypto';
-import type { CardInstance, Database, Game } from '@/lib/db/entities';
+import type { CardInstance, Database } from '@/lib/db/entities';
 import { newId } from '@/lib/db/store';
 import { getBooster, getCard } from '@/lib/domain/catalog';
+import { RARITY_ORDER } from '@/lib/domain/rules';
+import type { Rarity } from '@/lib/domain/types';
 import { discountedPrice } from '@/lib/domain/economy';
 import { rollBooster } from '@/lib/domain/rng';
-import { GAME_LIMITS, MALUS_COOLDOWN_HOURS } from '@/lib/domain/rules';
-import { clampMultiplier } from '@/lib/domain/scoring';
-import type { CardDefinition } from '@/lib/domain/types';
-import { audit, credit, debit } from './ledger';
+import { audit, debit } from './ledger';
+import { consumeBoon, isSilenced, resolve } from './effects';
 import { handSlotsFor } from '@/lib/domain/collection';
-import {
-  bonusesFor,
-  discoveredCardIds,
-  gamesOf,
-  hasShield,
-  recomputeGame,
-  recomputePlayerGames,
-} from './league';
+import { bonusesFor, discoveredCardIds, recomputePlayerGames } from './league';
 
 export class CardError extends Error {
   constructor(
@@ -46,6 +38,7 @@ export class CardError extends Error {
       | 'CIBLE_PROTEGEE'
       | 'DELAI_MALUS'
       | 'RESERVE_PLEINE'
+      | 'SILENCE'
       | 'FLOCONS_INSUFFISANTS',
   ) {
     super(message);
@@ -150,7 +143,22 @@ export function purchaseAndOpen(
   // Lève si le solde est insuffisant : la transaction est alors annulée.
   const balance = debit(db, playerId, price, 'ACHAT_BOOSTER', boosterId);
 
-  const cardIds = rollBooster(booster);
+  // Une faveur « garantie » relève le palier promis par le booster, sans
+  // jamais l'abaisser : ouvrir un Solstice avec une garantie SR en poche
+  // conserve la garantie UR du booster.
+  const boon = consumeBoon(db, playerId, 'GARANTIE_BOOSTER');
+  const effective =
+    boon && boon.value
+      ? {
+          ...booster,
+          guaranteed:
+            RARITY_ORDER[boon.value as Rarity] > RARITY_ORDER[booster.guaranteed ?? 'C']
+              ? (boon.value as Rarity)
+              : booster.guaranteed,
+        }
+      : booster;
+
+  const cardIds = rollBooster(effective);
   const cards = cardIds.map((cardId) => {
     const instance = createInstance(db, playerId, cardId, 'BOOSTER');
     const isNew = recordDiscovery(db, playerId, cardId);
@@ -189,300 +197,6 @@ export interface PlayCardResult {
   balance: number;
 }
 
-function countedGames(db: Database, playerId: string): Game[] {
-  return gamesOf(db, playerId).filter((g) => !g.skipped);
-}
-
-function bestGame(db: Database, playerId: string): Game | null {
-  return countedGames(db, playerId).reduce<Game | null>(
-    (best, g) => (!best || g.score > best.score ? g : best),
-    null,
-  );
-}
-
-function worstGame(db: Database, playerId: string): Game | null {
-  return countedGames(db, playerId).reduce<Game | null>(
-    (worst, g) => (!worst || g.score < worst.score ? g : worst),
-    null,
-  );
-}
-
-/** Sélection aléatoire côté serveur, jamais fournie par le client. */
-function pickRandom<T>(items: T[]): T | null {
-  if (items.length === 0) return null;
-  return items[randomInt(items.length)];
-}
-
-/**
- * Pose un bouclier. Si le joueur en a déjà un, on prolonge à partir de la
- * date d'expiration la plus lointaine plutôt que d'en empiler deux : deux
- * boucliers simultanés ne protégeraient pas mieux qu'un seul.
- */
-function grantShield(db: Database, playerId: string, sourceCardId: string, hours: number): void {
-  const now = Date.now();
-  const current = db.effects
-    .filter((e) => e.playerId === playerId && e.kind === 'BOUCLIER')
-    .map((e) => new Date(e.expiresAt).getTime())
-    .filter((t) => t > now);
-  const from = current.length > 0 ? Math.max(...current) : now;
-
-  db.effects.push({
-    id: newId(),
-    playerId,
-    kind: 'BOUCLIER',
-    sourceCardId,
-    createdAt: new Date().toISOString(),
-    expiresAt: new Date(from + hours * 60 * 60 * 1000).toISOString(),
-  });
-}
-
-/**
- * Vérifie qu'un malus peut atteindre sa cible : joueur existant, actif, non
- * protégé, et pas déjà visé par le même joueur récemment.
- */
-function assertCanTarget(db: Database, attackerId: string, targetId: string): void {
-  if (attackerId === targetId) {
-    throw new CardError('Un malus se pose sur un adversaire, pas sur soi.', 'CIBLE_INVALIDE');
-  }
-  const target = db.players.find((p) => p.id === targetId);
-  if (!target || !target.active) throw new CardError('Adversaire introuvable.', 'CIBLE_INVALIDE');
-  if (hasShield(db, targetId)) {
-    throw new CardError('Cet adversaire est protégé par un Bouclier de Givre.', 'CIBLE_PROTEGEE');
-  }
-
-  const since = Date.now() - MALUS_COOLDOWN_HOURS * 60 * 60 * 1000;
-  const recent = db.cards.some(
-    (c) =>
-      c.playerId === attackerId &&
-      c.consumed &&
-      c.consumedOnPlayerId === targetId &&
-      c.consumedAt !== null &&
-      new Date(c.consumedAt).getTime() > since,
-  );
-  if (recent) {
-    throw new CardError(
-      `Tu as déjà visé ce joueur il y a moins de ${MALUS_COOLDOWN_HOURS} h.`,
-      'DELAI_MALUS',
-    );
-  }
-}
-
-function ownGame(db: Database, playerId: string, gameId: string | undefined): Game {
-  if (!gameId) throw new CardError('Cette carte demande de choisir une game.', 'CIBLE_REQUISE');
-  const game = db.games.find((g) => g.id === gameId && g.playerId === playerId);
-  if (!game) throw new CardError('Game introuvable.', 'CIBLE_INVALIDE');
-  return game;
-}
-
-/**
- * Applique l'effet d'une carte. Chaque branche relit la définition serveur ;
- * `input` ne sert qu'à désigner des cibles.
- */
-function applyEffect(
-  db: Database,
-  playerId: string,
-  card: CardDefinition,
-  input: { gameId?: string; targetPlayerId?: string },
-): { summary: string; affectedGameId: string | null; targetPlayerId: string | null } {
-  const effect = card.effect;
-
-  switch (effect.kind) {
-    case 'multiplier': {
-      const game = ownGame(db, playerId, input.gameId);
-      if (game.frozen) throw new CardError('Cette game est gelée.', 'GAME_GELEE');
-      game.multiplier = clampMultiplier(game.multiplier * effect.value);
-      game.appliedCardIds.push(card.id);
-      recomputeGame(db, game);
-      return {
-        summary: `${card.name} appliquée : multiplicateur porté à ×${game.multiplier} (${game.score} pts).`,
-        affectedGameId: game.id,
-        targetPlayerId: null,
-      };
-    }
-
-    case 'bonus_points': {
-      const game = ownGame(db, playerId, input.gameId);
-      if (game.frozen) throw new CardError('Cette game est gelée.', 'GAME_GELEE');
-      game.bonusPoints = Math.min(GAME_LIMITS.maxBonusPoints, game.bonusPoints + effect.value);
-      game.appliedCardIds.push(card.id);
-      recomputeGame(db, game);
-      return {
-        summary: `${card.name} appliquée : +${effect.value} pts (game à ${game.score} pts).`,
-        affectedGameId: game.id,
-        targetPlayerId: null,
-      };
-    }
-
-    case 'snowflakes': {
-      credit(db, playerId, effect.value, 'CARTE', card.id);
-      return {
-        summary: `${card.name} : +${effect.value} flocons.`,
-        affectedGameId: null,
-        targetPlayerId: null,
-      };
-    }
-
-    case 'freeze_game': {
-      const game = ownGame(db, playerId, input.gameId);
-      game.frozen = true;
-      game.appliedCardIds.push(card.id);
-      return {
-        summary: `${card.name} : game à ${game.score} pts gelée.`,
-        affectedGameId: game.id,
-        targetPlayerId: null,
-      };
-    }
-
-    case 'freeze_best_game': {
-      const game = bestGame(db, playerId);
-      if (!game) throw new CardError('Aucune game à geler.', 'AUCUNE_GAME');
-      game.frozen = true;
-      game.bonusPoints += effect.bonusPoints;
-      game.appliedCardIds.push(card.id);
-      recomputeGame(db, game);
-      return {
-        summary: `${card.name} : meilleure game gelée et portée à ${game.score} pts.`,
-        affectedGameId: game.id,
-        targetPlayerId: null,
-      };
-    }
-
-    case 'freeze_all_games': {
-      const games = countedGames(db, playerId);
-      if (games.length === 0) throw new CardError('Aucune game à geler.', 'AUCUNE_GAME');
-      for (const g of games) {
-        g.frozen = true;
-        g.appliedCardIds.push(card.id);
-      }
-      return {
-        summary: `${card.name} : ${games.length} game(s) gelée(s).`,
-        affectedGameId: null,
-        targetPlayerId: null,
-      };
-    }
-
-    case 'points_and_snowflakes': {
-      const game = ownGame(db, playerId, input.gameId);
-      if (game.frozen) throw new CardError('Cette game est gelée.', 'GAME_GELEE');
-      game.bonusPoints = Math.min(GAME_LIMITS.maxBonusPoints, game.bonusPoints + effect.points);
-      game.appliedCardIds.push(card.id);
-      recomputeGame(db, game);
-      credit(db, playerId, effect.snowflakes, 'CARTE', card.id);
-      return {
-        summary: `${card.name} : +${effect.points} pts (game à ${game.score} pts) et +${effect.snowflakes} flocons.`,
-        affectedGameId: game.id,
-        targetPlayerId: null,
-      };
-    }
-
-    case 'shield': {
-      grantShield(db, playerId, card.id, effect.hours);
-      return {
-        summary: `${card.name} : protégé contre les malus pendant ${effect.hours} h.`,
-        affectedGameId: null,
-        targetPlayerId: null,
-      };
-    }
-
-    case 'shield_and_freeze_best': {
-      grantShield(db, playerId, card.id, effect.hours);
-      const game = bestGame(db, playerId);
-      if (game) {
-        game.frozen = true;
-        game.appliedCardIds.push(card.id);
-      }
-      return {
-        summary: game
-          ? `${card.name} : protégé ${effect.hours} h et meilleure game (${game.score} pts) gelée.`
-          : `${card.name} : protégé ${effect.hours} h. Aucune game à geler pour l’instant.`,
-        affectedGameId: game ? game.id : null,
-        targetPlayerId: null,
-      };
-    }
-
-    case 'delete_worst_game': {
-      const game = worstGame(db, playerId);
-      if (!game) throw new CardError('Aucune game à supprimer.', 'AUCUNE_GAME');
-      if (game.frozen) throw new CardError('Ta pire game est gelée.', 'GAME_GELEE');
-      db.games = db.games.filter((g) => g.id !== game.id);
-      return {
-        summary: `${card.name} : pire game (${game.score} pts) supprimée.`,
-        affectedGameId: null,
-        targetPlayerId: null,
-      };
-    }
-
-    case 'steal_points': {
-      const targetId = input.targetPlayerId;
-      if (!targetId) throw new CardError('Choisis un adversaire.', 'CIBLE_REQUISE');
-      assertCanTarget(db, playerId, targetId);
-      const game = bestGame(db, targetId);
-      if (!game) throw new CardError('Cet adversaire n’a aucune game.', 'AUCUNE_GAME');
-      if (game.frozen) throw new CardError('La meilleure game de la cible est gelée.', 'GAME_GELEE');
-      game.bonusPoints = Math.max(GAME_LIMITS.minBonusPoints, game.bonusPoints - effect.value);
-      game.appliedCardIds.push(card.id);
-      recomputeGame(db, game);
-      return {
-        summary: `${card.name} : −${effect.value} pts sur la meilleure game de l’adversaire.`,
-        affectedGameId: game.id,
-        targetPlayerId: targetId,
-      };
-    }
-
-    case 'swap_random_game': {
-      const targetId = input.targetPlayerId;
-      if (!targetId) throw new CardError('Choisis un adversaire.', 'CIBLE_REQUISE');
-      assertCanTarget(db, playerId, targetId);
-
-      const mine = pickRandom(countedGames(db, playerId).filter((g) => !g.frozen));
-      const theirs = pickRandom(countedGames(db, targetId).filter((g) => !g.frozen));
-      if (!mine || !theirs) {
-        throw new CardError('Pas assez de games non gelées pour échanger.', 'AUCUNE_GAME');
-      }
-
-      // On échange les propriétaires, pas les contenus : l'historique reste lisible.
-      mine.playerId = targetId;
-      theirs.playerId = playerId;
-      mine.appliedCardIds.push(card.id);
-      theirs.appliedCardIds.push(card.id);
-      recomputeGame(db, mine);
-      recomputeGame(db, theirs);
-
-      return {
-        summary: `${card.name} : ta game de ${mine.score} pts échangée contre celle de ${theirs.score} pts.`,
-        affectedGameId: theirs.id,
-        targetPlayerId: targetId,
-      };
-    }
-
-    case 'copy_best_game': {
-      const targetId = input.targetPlayerId;
-      if (!targetId) throw new CardError('Choisis un adversaire.', 'CIBLE_REQUISE');
-      assertCanTarget(db, playerId, targetId);
-      const source = bestGame(db, targetId);
-      if (!source) throw new CardError('Cet adversaire n’a aucune game.', 'AUCUNE_GAME');
-
-      const copy: Game = {
-        ...source,
-        id: newId(),
-        playerId,
-        frozen: false,
-        createdAt: new Date().toISOString(),
-        note: `Copiée par ${card.name}`,
-        appliedCardIds: [...source.appliedCardIds, card.id],
-      };
-      db.games.push(copy);
-      recomputeGame(db, copy);
-
-      return {
-        summary: `${card.name} : meilleure game adverse (${copy.score} pts) copiée dans ton palmarès.`,
-        affectedGameId: copy.id,
-        targetPlayerId: targetId,
-      };
-    }
-  }
-}
-
 /**
  * Joue une copie de carte. À appeler dans une transaction : si l'effet lève,
  * la carte n'est pas consommée.
@@ -509,6 +223,13 @@ export function playCard(
     };
   }
 
+  if (isSilenced(db, playerId)) {
+    throw new CardError(
+      'Tu es sous l’effet d’un Grand Froid : aucune carte jouable pour l’instant.',
+      'SILENCE',
+    );
+  }
+
   const instance = db.cards.find((c) => c.id === input.cardInstanceId);
   if (!instance || instance.playerId !== playerId) {
     throw new CardError('Carte introuvable dans ta réserve.', 'CARTE_INTROUVABLE');
@@ -521,7 +242,12 @@ export function playCard(
   const card = getCard(instance.cardId);
   if (!card) throw new CardError('Carte inconnue au catalogue.', 'CARTE_INTROUVABLE');
 
-  const outcome = applyEffect(db, playerId, card, input);
+  // Toute la mécanique d'effet vit dans effects.ts. Si elle lève, la carte
+  // n'est pas consommée : la transaction est annulée en amont.
+  const outcome = resolve(db, playerId, card, {
+    gameId: input.gameId,
+    targetPlayerId: input.targetPlayerId,
+  });
 
   instance.consumed = true;
   instance.consumedAt = new Date().toISOString();

@@ -12,6 +12,7 @@ import 'server-only';
 
 import { NextResponse } from 'next/server';
 import { CardError } from '@/lib/services/cards';
+import { EffectError } from '@/lib/services/effects';
 import { LedgerError } from '@/lib/services/ledger';
 import { MarketError } from '@/lib/services/market';
 import { SubError } from '@/lib/services/subs';
@@ -19,6 +20,12 @@ import { fail } from './respond';
 
 export function toResponse(error: unknown): NextResponse {
   if (error instanceof CardError) {
+    return fail('CONFLIT', error.message, { code: error.code });
+  }
+  // Un refus de règle — cible protégée, quota atteint, game gelée — est une
+  // réponse normale du jeu, pas une panne. Sans cette branche il remontait en
+  // 500 générique et le joueur ne savait pas pourquoi sa carte échouait.
+  if (error instanceof EffectError) {
     return fail('CONFLIT', error.message, { code: error.code });
   }
   if (error instanceof MarketError) {

@@ -32,7 +32,6 @@ export function recomputeGame(db: Database, game: Game): Game {
     {
       kills: game.kills,
       placement: game.placement,
-      multiplier: game.multiplier,
       bonusPoints: game.bonusPoints,
     },
     bonuses.killMultiplier,

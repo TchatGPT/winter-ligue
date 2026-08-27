@@ -75,14 +75,13 @@ export interface ProfileView {
     id: string;
     kills: number;
     placement: number | null;
-    multiplier: number;
     bonusPoints: number;
     score: number;
     skipped: boolean;
     frozen: boolean;
     playedAt: string;
     note: string | null;
-    appliedCardIds: string[];
+    applied: { cardId: string; points: number; byPlayerId: string }[];
   }[];
   /** Ventes que le joueur a lui-même publiées. */
   myListings: ListingView[];
@@ -172,14 +171,17 @@ function buildProfile(db: Database, playerId: string): ProfileView | null {
       id: g.id,
       kills: g.kills,
       placement: g.placement,
-      multiplier: g.multiplier,
       bonusPoints: g.bonusPoints,
       score: g.score,
       skipped: g.skipped,
       frozen: g.frozen,
       playedAt: g.playedAt,
       note: g.note,
-      appliedCardIds: g.appliedCardIds,
+      applied: g.applied.filter((a) => !a.undone).map((a) => ({
+        cardId: a.cardId,
+        points: a.points,
+        byPlayerId: a.byPlayerId,
+      })),
     })),
     myListings: db.listings
       .filter((l) => l.sellerId === playerId && l.status === 'ACTIVE')

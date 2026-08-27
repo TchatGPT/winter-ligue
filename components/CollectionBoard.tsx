@@ -311,7 +311,7 @@ export function CollectionBoard({
                       {playableGames.map((g) => (
                         <option key={g.id} value={g.id}>
                           {g.score} pts — {g.kills} kills
-                          {g.placement ? ` — Top ${g.placement}` : ''} (×{g.multiplier})
+                          {g.placement ? ` — Top ${g.placement}` : ''}
                         </option>
                       ))}
                     </select>

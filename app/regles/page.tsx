@@ -3,8 +3,8 @@ import { BOOSTERS, RARITY_META, THEMES } from '@/lib/domain/catalog';
 import {
   atLeastOnePercent,
   ECONOMY,
-  GAME_LIMITS,
-  MALUS_COOLDOWN_HOURS,
+  CARD_IMPACT_CAP,
+  MALUS,
   MARKET,
   PLACEMENT_POINTS,
   rarityPercent,
@@ -65,8 +65,12 @@ export default function ReglesPage() {
             fixes.
           </li>
           <li>
-            Multiplicateur plafonné à ×{GAME_LIMITS.maxMultiplier}, même en cumulant plusieurs
-            cartes sur la même game.
+            Chaque carte annonce son plafond : « ×1,5 jusqu’à +18 points » ne donnera jamais
+            plus de 18 points, même sur une game à 40 kills.
+          </li>
+          <li>
+            Aucune carte ne peut faire bouger un total de plus de{' '}
+            <strong className="text-ink">{CARD_IMPACT_CAP} points</strong>, soit une bonne game.
           </li>
         </ul>
         <p className="text-xs text-faint">
@@ -222,17 +226,47 @@ export default function ReglesPage() {
         <ul className="list-inside list-disc space-y-1">
           <li>Une carte jouée est consommée.</li>
           <li>
-            Une game <strong>gelée</strong> ne peut plus être modifiée, ni par toi, ni par un malus
-            adverse.
+            <strong className="text-ink">Aucune carte ne peut faire bouger un total de plus de{' '}
+            {CARD_IMPACT_CAP} points</strong>, soit une bonne game. Chaque carte annonce son
+            plafond dans son texte.
           </li>
           <li>
-            Un <strong>bouclier</strong> rend son porteur intouchable par les malus pendant sa
-            durée. Deux boucliers se cumulent en durée, pas en épaisseur.
+            <strong className="text-ink">Un malus retire des points, il n’en donne jamais à
+            l’attaquant.</strong> Aucune carte ne copie ni ne vole la game de quelqu’un.
           </li>
           <li>
-            On ne peut pas viser deux fois le même joueur en moins de {MALUS_COOLDOWN_HOURS} heures.
+            Une game <strong>gelée</strong> ne peut plus être touchée par un malus.
+          </li>
+          <li>
+            Un <strong>bouclier</strong> rend son porteur intouchable pendant sa durée. Deux
+            boucliers se cumulent en durée, pas en épaisseur.
+          </li>
+          <li>
+            <strong>Second Souffle</strong> annule le dernier malus subi dans les{' '}
+            {MALUS.undoWindowHours} h et rend les points : tout malus a une réponse.
           </li>
         </ul>
+
+        <div className="rounded-lg border border-white/10 bg-white/5 p-3">
+          <h3 className="font-display text-sm font-bold tracking-wide text-ink uppercase">
+            Protection contre l’acharnement
+          </h3>
+          <ul className="mt-1.5 list-inside list-disc space-y-1 text-xs">
+            <li>
+              N’importe qui peut viser n’importe qui — il n’y a pas de restriction de classement.
+            </li>
+            <li>
+              Mais on ne peut pas viser deux fois le même joueur en moins de{' '}
+              {MALUS.cooldownHours} heures.
+            </li>
+            <li>
+              Et surtout : un joueur ne peut pas encaisser plus de{' '}
+              <strong className="text-ink">{MALUS.maxReceivedPerDay} malus par 24 h</strong>, toutes
+              sources confondues. Sans ce plafond, sept joueurs pourraient enchaîner sept malus sur
+              le leader le même soir, et mener deviendrait une punition.
+            </li>
+          </ul>
+        </div>
       </Rule>
 
       <Rule

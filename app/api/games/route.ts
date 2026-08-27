@@ -6,6 +6,7 @@ import type { Game } from '@/lib/db/entities';
 import { getStore, newId } from '@/lib/db/store';
 import { rewardForGame } from '@/lib/domain/economy';
 import { LIMITS } from '@/lib/security/ratelimit';
+import { consumeBoon } from '@/lib/services/effects';
 import { bonusesFor, recomputeGame } from '@/lib/services/league';
 import { audit, credit } from '@/lib/services/ledger';
 
@@ -43,7 +44,6 @@ export async function POST(request: Request): Promise<NextResponse> {
         playerId: player.id,
         kills: g.body.kills,
         placement: g.body.placement,
-        multiplier: 1,
         bonusPoints: 0,
         skipped: false,
         frozen: false,
@@ -51,17 +51,21 @@ export async function POST(request: Request): Promise<NextResponse> {
         note: g.body.note ?? null,
         playedAt: now,
         createdAt: now,
-        appliedCardIds: [],
+        applied: [],
       };
       db.games.push(game);
       recomputeGame(db, game);
 
       const bonuses = bonusesFor(db, player.id);
       const reward = rewardForGame(game.kills, game.placement, bonuses.snowflakesPerGame);
-      credit(db, player.id, reward.total, 'GAME', game.id);
+
+      // La faveur « Manne » double les flocons de la game, et se consomme.
+      const manne = consumeBoon(db, player.id, 'FLOCONS_DOUBLES');
+      const payout = manne ? reward.total * 2 : reward.total;
+      credit(db, player.id, payout, 'GAME', game.id);
       audit(db, 'admin', 'GAME_ENREGISTREE', player.id, `${game.kills} kills — ${game.score} pts`);
 
-      return { game, reward };
+      return { game, reward, payout, doubled: Boolean(manne) };
     });
 
     if ('error' in result) {

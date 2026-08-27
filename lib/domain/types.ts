@@ -22,21 +22,56 @@ export type CardTarget =
   | 'own_best_game' // résolue serveur : ta meilleure game
   | 'opponent'; // un autre joueur
 
-/** Effet mécanique appliqué par le serveur. Le client ne fait que l'afficher. */
+/** Faveurs durables : des effets qui se consomment sur plusieurs actions. */
+export type BoonKind =
+  /** Double les flocons gagnés à chaque game. */
+  | 'FLOCONS_DOUBLES'
+  /** Réduit la taxe de l'hôtel des ventes. */
+  | 'TAXE_REDUITE'
+  /** Garantit une rareté minimale à la prochaine ouverture de booster. */
+  | 'GARANTIE_BOOSTER';
+
+/**
+ * Effet mécanique appliqué par le serveur. Le client ne fait que l'afficher.
+ *
+ * Deux principes gouvernent cette liste :
+ *
+ *  1. **Tout est borné.** Une game moyenne vaut ~25 points et une saison ~400 :
+ *     une carte qui en donnerait 100 volerait un quart de saison en un clic.
+ *     Chaque effet porte donc son plafond, y compris les multiplicateurs.
+ *  2. **Un malus retire, il ne transfère jamais.** Aucun effet ne prend des
+ *     points à quelqu'un pour les donner à l'attaquant : ce double mouvement
+ *     est précisément ce qui rend le vol insupportable des deux côtés.
+ */
 export type CardEffect =
-  | { kind: 'multiplier'; value: number }
+  /* -- Glace : protéger ------------------------------------------------- */
   | { kind: 'bonus_points'; value: number }
-  | { kind: 'snowflakes'; value: number }
-  | { kind: 'points_and_snowflakes'; points: number; snowflakes: number }
-  | { kind: 'freeze_game' }
-  | { kind: 'freeze_best_game'; bonusPoints: number }
-  | { kind: 'freeze_all_games' }
   | { kind: 'shield'; hours: number }
+  | { kind: 'freeze_game' }
+  | { kind: 'undo_last_malus'; withinHours: number }
   | { kind: 'shield_and_freeze_best'; hours: number }
+  | { kind: 'freeze_top_games'; count: number }
+  /* -- Tempête : amplifier une performance réelle ------------------------ */
+  | { kind: 'points_per_kill'; perKill: number; cap: number }
+  | { kind: 'kill_multiplier'; value: number; cap: number }
+  | { kind: 'points_per_kill_above'; perKill: number; threshold: number; cap: number }
+  | { kind: 'double_placement' }
+  /* -- Aurore : économie, sans incidence sur le classement --------------- */
+  | { kind: 'snowflakes'; value: number }
+  | { kind: 'boon'; boon: BoonKind; uses: number; value?: string }
+  | {
+      kind: 'snowflakes_and_boon';
+      snowflakes: number;
+      boon: BoonKind;
+      uses: number;
+      value?: string;
+    }
+  /* -- Solstice : interaction -------------------------------------------- */
   | { kind: 'delete_worst_game' }
-  | { kind: 'steal_points'; value: number }
-  | { kind: 'swap_random_game' }
-  | { kind: 'copy_best_game' };
+  | { kind: 'strike_best'; points: number }
+  | { kind: 'strike_top'; points: number; count: number }
+  | { kind: 'cancel_last_boost' }
+  | { kind: 'silence'; hours: number };
 
 export interface CardDefinition {
   id: string;
