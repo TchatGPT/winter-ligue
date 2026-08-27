@@ -1880,7 +1880,9 @@
     position: relative;
     width: 100%;
     height: 430px;
-    perspective: 1250px;
+    /* Assez courte pour que le recul sur le cercle se voie : c'est elle,
+       et non une mise a l'echelle, qui retrecit les sachets eloignes. */
+    perspective: 900px;
     perspective-origin: 50% 48%;
     /* Le geste horizontal nous revient, le vertical reste à la page : sans ça,
        sur mobile, on ne pourrait plus faire défiler la page depuis le sachet. */

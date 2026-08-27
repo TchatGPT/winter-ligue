@@ -13,13 +13,38 @@ const RARITY_LADDER: Rarity[] = ['C', 'PC', 'R', 'SR', 'UR', 'L'];
 /**
  * Géométrie du carrousel.
  *
- * `ECART` est volontairement inférieur à la largeur d'un sachet (200 px) : c'est
- * ce qui les fait se chevaucher au lieu de s'aligner. Combiné à la rotation, on
- * regarde une rangée serrée vue de biais, pas une étagère.
+ * Les sachets sont posés sur un **cercle**, pas sur une ligne. Une première
+ * version les décalait latéralement d'un pas fixe en leur appliquant une
+ * inclinaison plafonnée : ça donnait des sachets collés les uns aux autres,
+ * tous penchés du même angle, sans courbe — un jeu de cartes en éventail, pas
+ * un présentoir tournant.
+ *
+ * Ici chaque sachet occupe une position angulaire sur un cylindre de rayon
+ * `RAYON`. Son écartement, son recul et son inclinaison découlent tous du même
+ * angle, donc ils s'accordent forcément. La perspective suffit alors à le
+ * rétrécir : aucune mise à l'échelle n'est appliquée à la main.
  */
-const ECART = 124;
-const PROFONDEUR = 135;
-const ANGLE = 46;
+const RAYON = 560;
+const PAS = 26;
+
+/**
+ * De combien le sachet de tête avance vers le regard.
+ *
+ * Sur le seul cercle, il n'était devant son voisin que de cinquante pixels : la
+ * perspective ne le grossissait presque pas et la rangée se lisait comme un
+ * paravent. Ce pas en avant lui donne un cinquième de taille de plus que ses
+ * voisins, et c'est ce qui désigne le sachet choisi sans avoir à l'écrire.
+ */
+const AVANCEE = 110;
+
+/**
+ * Combien de pixels de glissement valent un sachet.
+ *
+ * C'est l'écartement réel de deux sachets voisins sur le cercle,
+ * `RAYON · sin(PAS)`, pour que le rail suive le doigt au lieu de le devancer
+ * ou de traîner derrière.
+ */
+const GLISSE = Math.round(RAYON * Math.sin((PAS * Math.PI) / 180));
 
 export interface ShopBooster extends BoosterDefinition {
   finalPrice: number;
@@ -92,36 +117,31 @@ export function BoosterOpening({
   const cases = useRef<(HTMLDivElement | null)[]>([]);
   const geste = useRef({ actif: false, capture: false, x0: 0, pos0: 0, parcouru: 0 });
 
-  /**
-   * Où se place un sachet, selon son écart au centre de la rangée.
-   *
-   * Il recule, tourne et rétrécit à mesure qu'il s'éloigne. L'écart latéral est
-   * plus petit que la largeur d'un sachet : c'est ce qui les fait se toucher au
-   * lieu de s'aligner comme sur une étagère.
-   */
+  /** Où se place un sachet, selon son écart au sachet de tête. */
   const place = useCallback((i: number, p: number) => {
     const d = i - p;
-    const ad = Math.abs(d);
 
-    // L'inclinaison monte sur le premier voisin puis se fige.
-    //
-    // Proportionnelle à l'écart, elle dépassait 90° dès le deuxième voisin : le
-    // sachet basculait sur son verso et le nom s'affichait en miroir. Au-delà
-    // du premier rang, les sachets ne tournent donc plus, ils ne font que
-    // reculer et rétrécir.
-    const proche = Math.min(ad, 1);
-    const loin = Math.max(0, ad - 1);
-
-    const x = d * ECART;
-    const z = -(proche * PROFONDEUR + loin * 42);
-    const ry = -Math.sign(d) * proche * ANGLE;
-    const k = Math.max(0.6, 1 - proche * 0.14 - loin * 0.07);
+    /*
+     * Le sachet est envoyé sur le cercle, puis le cercle est ramené devant.
+     *
+     * `translateZ(RAYON)` l'éloigne le long du rayon, `rotateY` le fait tourner
+     * autour de l'axe du présentoir, et `translateZ(-RAYON)` remet le sachet de
+     * tête à sa place. Son centre se retrouve en (R·sin θ, R·cos θ − R) et il
+     * regarde vers l'extérieur — la courbe, l'écartement et l'inclinaison
+     * viennent tous du même angle.
+     */
+    const theta = d * PAS;
+    // L'avancée s'éteint sur le premier voisin, et progressivement : pendant le
+    // glissement, le sachet qui arrive grandit à mesure qu'il prend la tête.
+    const avant = AVANCEE * Math.max(0, 1 - Math.abs(d));
 
     return {
       transform:
-        `translateX(${x.toFixed(1)}px) translateZ(${z.toFixed(1)}px) ` +
-        `rotateY(${ry.toFixed(1)}deg) scale(${k.toFixed(3)})`,
-      zIndex: 40 - Math.round(ad * 10),
+        `translateZ(${(-RAYON + avant).toFixed(1)}px) ` +
+        `rotateY(${theta.toFixed(2)}deg) translateZ(${RAYON}px)`,
+      // Sans `preserve-3d` sur le rail, le navigateur ne trie pas les sachets
+      // par profondeur : c'est l'ordre de peinture qui décide, donc le z-index.
+      zIndex: 40 - Math.round(Math.abs(d) * 10),
     };
   }, []);
 
@@ -172,7 +192,7 @@ export function BoosterOpening({
 
     pos.current = Math.max(
       0,
-      Math.min(boosters.length - 1, geste.current.pos0 - dx / ECART),
+      Math.min(boosters.length - 1, geste.current.pos0 - dx / GLISSE),
     );
     applique();
   };
