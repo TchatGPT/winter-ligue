@@ -1980,7 +1980,8 @@
       transparent 70%
     );
     filter: blur(38px);
-    animation: sachet-halo 5.5s ease-in-out infinite;
+    --duree-halo: 5.5s;
+    animation: sachet-halo var(--duree-halo) ease-in-out infinite;
   }
 
   @keyframes sachet-halo {
@@ -2189,13 +2190,14 @@
      accessible en cliquant le sachet mis en avant, qui bascule alors sur
      `--tour: 180deg`. */
   .sachet {
-    animation: sachet-balayage 4.6s linear infinite;
+    --duree-reflet: 4.6s;
+    animation: sachet-balayage var(--duree-reflet) linear infinite;
   }
 
   .sachet-tourne {
     animation:
       sachet-pose 7s ease-in-out infinite,
-      sachet-balayage 4.6s linear infinite;
+      sachet-balayage var(--duree-reflet) linear infinite;
   }
 
   /* Le reflet part avant le bord gauche et sort après le bord droit : sa pointe
@@ -2219,21 +2221,55 @@
     }
   }
 
+  /*
+   * Mouvement réduit : on arrête ce qui déplace, pas ce qui éclaire.
+   *
+   * Une première version coupait tout — reflet, halo, onde de rareté, foil des
+   * cartes. Sur une machine dont les animations système sont désactivées, et
+   * c'est un réglage courant, les sachets devenaient de simples images fixes :
+   * aucune des lumières décrites plus haut n'apparaissait jamais.
+   *
+   * La préférence vise l'inconfort vestibulaire — rotations, glissements,
+   * parallaxes. Un reflet qui balaie une surface, un halo qui respire, un
+   * anneau de lumière, un foil qui miroite ne déplacent rien : ce sont des
+   * variations de luminance, et rien ne justifie de les supprimer.
+   *
+   * Ce qui s'arrête donc vraiment ici : la rotation du sachet. Son reflet, lui,
+   * continue — d'où la règle qui rejoue la seule animation à garder, la
+   * propriété `animation` étant écrasée en bloc.
+   */
   @media (prefers-reduced-motion: reduce) {
-    .sachet,
-    .sachet-tourne,
-    .sachet-halo,
-    .sachet-onde,
-    .tc-foil-gold .tc-holo {
-      animation: none;
+    /* Le sachet cesse de tourner, mais garde son reflet. */
+    .sachet-tourne {
+      animation: sachet-balayage var(--duree-reflet) linear infinite;
     }
 
-    /* L'animation arrêtée, le reflet se figerait sur sa valeur initiale — une
-       barre claire posée en travers du sachet. On l'envoie hors du cadre : une
-       seule déclaration suffit, la coque galbée comme les vignettes lisant la
-       même variable. */
-    .sachet {
-      --balayage: -420px;
+    /*
+     * Les lumières sont rétablies une à une.
+     *
+     * Bien plus haut, un garde-fou universel impose
+     * `animation-duration: 0.01ms !important` et `iteration-count: 1` à tout
+     * élément de la page. C'est un filet utile — il attrape les animations
+     * ajoutées plus tard sans y penser — mais c'est lui qui éteignait le
+     * reflet, le halo et l'onde, quel que soit ce qui était écrit ici.
+     *
+     * Le `!important` est donc obligatoire pour lui répondre, et la durée
+     * reprise d'une variable pour ne pas exister en deux exemplaires.
+     */
+    .sachet,
+    .sachet-tourne {
+      animation-duration: var(--duree-reflet) !important;
+      animation-iteration-count: infinite !important;
+    }
+
+    .sachet-halo {
+      animation-duration: var(--duree-halo) !important;
+      animation-iteration-count: infinite !important;
+    }
+
+    .sachet-onde {
+      animation-duration: var(--onde-duree, 6s) !important;
+      animation-iteration-count: infinite !important;
     }
   }
 }
