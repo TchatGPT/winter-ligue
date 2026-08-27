@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BoosterPack3D } from '@/components/BoosterPack3D';
-import { bruitDeDechirure } from '@/components/bruitage';
+import { bruitDeDechirure, bruitDeSelection } from '@/components/bruitage';
 import { TradingCard } from '@/components/TradingCard';
 import { Notice, RarityChip, flakes, rarityMeta } from '@/components/ui';
 import { boosterArt, boosterSize, cardArt } from '@/lib/domain/catalog';
@@ -161,6 +161,15 @@ export function BoosterOpening({
     pos.current = rang;
   }, [rang]);
 
+  /** Retient un booster, et le fait entendre. */
+  const choisir = useCallback((id: string) => {
+    setSelected((actuel) => {
+      if (actuel === id) return actuel;
+      bruitDeSelection();
+      return id;
+    });
+  }, []);
+
   const onDown = (event: React.PointerEvent<HTMLDivElement>) => {
     if (busy) return;
     geste.current = {
@@ -213,7 +222,7 @@ export function BoosterOpening({
     pos.current = cible;
     applique();
     const b = boosters[cible];
-    if (b) setSelected((actuel) => (b.id === actuel ? actuel : b.id));
+    if (b) choisir(b.id);
   };
 
   const onKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
@@ -222,7 +231,7 @@ export function BoosterOpening({
     if (!pas) return;
     event.preventDefault();
     const b = boosters[Math.max(0, Math.min(boosters.length - 1, rang + pas))];
-    if (b) setSelected(b.id);
+    if (b) choisir(b.id);
   };
 
   // Les minuteries de l'animation doivent mourir avec le composant, sinon un
@@ -404,7 +413,7 @@ export function BoosterOpening({
                           // n'y a qu'un seul geste sur cet objet, le double-clic
                           // qui l'ouvre. Un simple clic qui agirait aussi
                           // déclencherait l'ouverture au premier des deux.
-                          if (!actif) setSelected(b.id);
+                          if (!actif) choisir(b.id);
                         }}
                         onDoubleClick={() => {
                           // Les mêmes conditions que le bouton : sans ça, un

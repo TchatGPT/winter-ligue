@@ -2035,23 +2035,6 @@
     pointer-events: none;
   }
 
-  /* La coupe médiane, qui remplit la silhouette vue par la tranche. Les tuiles
-     n'ont pas d'épaisseur : sans elle, le sachet paraîtrait creux de profil. */
-  .sachet-coupe {
-    position: absolute;
-    top: 0;
-    transform: rotateY(90deg);
-    background: linear-gradient(
-      180deg,
-      #c3d2e1 0%,
-      #55697e 16%,
-      #93a7bb 46%,
-      #3f5266 80%,
-      #a7bbcf 100%
-    );
-    pointer-events: none;
-  }
-
   /* -- Le verso ----------------------------------------------------------- */
 
   /* Sur un vrai sachet, seul le recto est imprimé : le dos ne porte qu'un
@@ -2135,6 +2118,7 @@
      `--tour: 180deg`. */
   .sachet {
     --duree-pose: 9s;
+    --duree-veille: 13s;
     --duree-reflet: 7.5s;
     animation: sachet-balayage var(--duree-reflet) ease-in-out infinite alternate;
   }
@@ -2143,6 +2127,22 @@
     animation:
       sachet-pose var(--duree-pose) ease-in-out infinite,
       sachet-balayage var(--duree-reflet) ease-in-out infinite alternate;
+  }
+
+  /* Les sachets qu'on n'a pas choisis respirent aussi.
+
+     Plus lentement et de moins loin que celui de tête — c'est ce qui les
+     distingue sans avoir à les éteindre. Un présentoir dont seul l'objet
+     retenu bouge se lit comme trois images posées autour d'un objet ; ici
+     les quatre sont vivants, et l'ampleur dit lequel est choisi.
+
+     Le retard vient du nom du booster : à l'unisson, quatre oscillations se
+     liraient comme un seul mécanisme. */
+  .sachet-veille {
+    animation:
+      sachet-veille var(--duree-veille) ease-in-out infinite alternate,
+      sachet-balayage var(--duree-reflet) ease-in-out infinite alternate;
+    animation-delay: var(--retard, 0s), var(--retard, 0s);
   }
 
   /* Le calque fait 440 px pour un sachet de 200 : entre -235 et -5, il le
@@ -2158,6 +2158,15 @@
     }
     to {
       --balayage: -20px;
+    }
+  }
+
+  @keyframes sachet-veille {
+    from {
+      transform: rotateX(-6deg) rotateY(-21deg);
+    }
+    to {
+      transform: rotateX(-4deg) rotateY(-10deg);
     }
   }
 
@@ -2203,6 +2212,11 @@
        `animation`, sinon le balancement hériterait de la durée du reflet. */
     .sachet-tourne {
       animation-duration: var(--duree-pose), var(--duree-reflet) !important;
+      animation-iteration-count: infinite !important;
+    }
+
+    .sachet-veille {
+      animation-duration: var(--duree-veille), var(--duree-reflet) !important;
       animation-iteration-count: infinite !important;
     }
 

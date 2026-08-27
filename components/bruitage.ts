@@ -1,32 +1,78 @@
 /**
- * Le bruit d'un sachet qu'on ouvre, synthétisé.
+ * Les bruits des sachets, synthétisés.
  *
- * Pas de fichier audio. Un sachet de mylar ne produit que du bruit filtré :
- * le synthétiser tient en trente lignes, là où un échantillon demanderait un
- * fichier à héberger, un aller-retour réseau et un préchargement pour que le
- * son ne traîne pas derrière l'animation.
+ * Pas de fichier audio. Un sachet de mylar ne produit que du bruit filtré : le
+ * synthétiser tient en quelques lignes, là où des échantillons demanderaient
+ * des fichiers à héberger, des allers-retours réseau et un préchargement pour
+ * que le son ne traîne pas derrière l'animation.
  *
- * Il n'est déclenché que par un double-clic délibéré, jamais au chargement, et
- * le contexte audio est fermé dès la fin : en laisser un ouvert par ouverture
- * finirait par épuiser le quota du navigateur.
+ * Rien ne part au chargement : chaque son suit un geste délibéré. Et le
+ * contexte audio est fermé dès la fin — en laisser un ouvert par son finirait
+ * par épuiser le quota du navigateur, qui en compte les instances.
  */
-export function bruitDeDechirure() {
+
+/**
+ * Ouvre un contexte audio, ou rien.
+ *
+ * Un navigateur peut refuser — quota atteint, politique de la page. Le son est
+ * un agrément : son absence ne doit jamais empêcher le geste.
+ */
+function contexte(): AudioContext | null {
   const Fabrique =
     typeof window === 'undefined'
       ? undefined
       : (window.AudioContext ??
         (window as unknown as { webkitAudioContext?: typeof AudioContext })
           .webkitAudioContext);
-  if (!Fabrique) return;
-
-  let ctx: AudioContext;
+  if (!Fabrique) return null;
   try {
-    ctx = new Fabrique();
+    return new Fabrique();
   } catch {
-    // Un navigateur peut refuser d'ouvrir un contexte audio. Le son est un
-    // agrément, son absence ne doit rien empêcher.
-    return;
+    return null;
   }
+}
+
+/**
+ * Le petit bruit sec du sachet qu'on fait passer devant soi.
+ *
+ * Dix fois plus court et cinq fois plus discret que l'ouverture : il ponctue
+ * une navigation, et un geste qu'on répète en glissant le rail ne doit surtout
+ * pas s'entendre autant que celui, unique, qui coûte des flocons.
+ */
+export function bruitDeSelection() {
+  const ctx = contexte();
+  if (!ctx) return;
+
+  const n = Math.floor(ctx.sampleRate * 0.075);
+  const tampon = ctx.createBuffer(1, n, ctx.sampleRate);
+  const canal = tampon.getChannelData(0);
+  for (let i = 0; i < n; i += 1) {
+    const t = i / n;
+    canal[i] = (Math.random() * 2 - 1) * Math.exp(-14 * t) * (1 - t);
+  }
+
+  const source = ctx.createBufferSource();
+  source.buffer = tampon;
+
+  const bande = ctx.createBiquadFilter();
+  bande.type = 'bandpass';
+  bande.frequency.value = 4200;
+  bande.Q.value = 1.4;
+
+  const volume = ctx.createGain();
+  volume.gain.value = 0.1;
+
+  source.connect(bande).connect(volume).connect(ctx.destination);
+  source.onended = () => {
+    void ctx.close();
+  };
+  source.start();
+}
+
+/** Le sachet qu'on déchire, au moment de l'ouvrir. */
+export function bruitDeDechirure() {
+  const ctx = contexte();
+  if (!ctx) return;
 
   const duree = 0.85;
   const n = Math.floor(ctx.sampleRate * duree);

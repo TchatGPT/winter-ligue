@@ -146,28 +146,6 @@ for (let i = 0; i < COLS.length - 1; i += 1) {
 }
 
 /**
- * La coupe du sachet, pour la vue de profil.
- *
- * Les tuiles n'ont pas d'épaisseur : vues exactement par la tranche, elles se
- * réduisent à des traits et le sachet paraîtrait creux. Ce plan médian, découpé
- * au profil réel, remplit la silhouette. Il est gardé 6 % en retrait de la
- * coque pour ne jamais la traverser — le tri en profondeur du navigateur se
- * fait par plan, pas par pixel, et deux surfaces qui se croisent s'affichent
- * mal.
- */
-const COUPE = (() => {
-  const droite: string[] = [];
-  const gauche: string[] = [];
-  for (let k = 0; k <= 24; k += 1) {
-    const v = k / 24;
-    const demi = 50 * galbeY(v) * 0.94;
-    droite.push(`${(50 + demi).toFixed(2)}% ${(v * 100).toFixed(2)}%`);
-    gauche.unshift(`${(50 - demi).toFixed(2)}% ${(v * 100).toFixed(2)}%`);
-  }
-  return `polygon(${[...droite, ...gauche].join(',')})`;
-})();
-
-/**
  * L'ombrage, en dégradés à l'échelle du sachet entier.
  *
  * Une première version calculait une teinte plate par tuile. Chaque tuile
@@ -177,18 +155,24 @@ const COUPE = (() => {
  * tuiles sans montrer une seule couture.
  *
  * `deg` bascule à 270 pour le verso, dont les tuiles sont retournées.
+ *
+ * Les extrémités sont volontairement très pâles. Ce dégradé date de l'époque où
+ * le sachet était une boîte plate et devait porter toute la rondeur à lui seul :
+ * il montait alors à 66 % de noir aux arêtes. La coque tourne désormais pour de
+ * bon, la géométrie assombrit déjà les bords, et l'ombre s'y ajoutait en
+ * doublon jusqu'à tracer deux barres franches.
  */
 const bombement = (deg: number) =>
   `linear-gradient(${deg}deg,
-    rgb(0 0 0 / 0.3) 0%,
-    rgb(0 0 0 / 0.14) 8%,
+    rgb(0 0 0 / 0.1) 0%,
+    rgb(0 0 0 / 0.05) 8%,
     rgb(255 255 255 / 0.16) 20%,
     rgb(255 255 255 / 0.02) 33%,
     rgb(0 0 0 / 0.06) 48%,
     rgb(255 255 255 / 0.13) 66%,
     rgb(255 255 255 / 0.01) 80%,
-    rgb(0 0 0 / 0.15) 93%,
-    rgb(0 0 0 / 0.32) 100%)`;
+    rgb(0 0 0 / 0.06) 93%,
+    rgb(0 0 0 / 0.12) 100%)`;
 
 /** Le creux d'ombre des deux plis, là où la soudure rejoint le corps. */
 const PLIS = `linear-gradient(180deg,
@@ -543,6 +527,20 @@ export function BoosterPack3D({
   const verso = useMemo(() => versoImprime(name), [name]);
   const recto = useMemo(() => rectoImprime(name), [name]);
 
+  /*
+   * Décalage de la respiration, tiré du nom du booster.
+   *
+   * Quatre vignettes qui oscillent à l'unisson se lisent comme un seul
+   * mécanisme, pas comme quatre objets posés là. Un retard négatif démarre
+   * l'animation en cours de route, et le tirer du nom plutôt qu'au hasard
+   * garantit la même valeur au rendu serveur et dans le navigateur.
+   */
+  const retard = useMemo(() => {
+    let somme = 0;
+    for (let i = 0; i < name.length; i += 1) somme += name.charCodeAt(i);
+    return `-${(somme % 97) / 7}s`;
+  }, [name]);
+
   const coque = vignette ? (
     /* Une seule face, posée de trois quarts. L'ombrage du bombement est là,
        le maillage non : à cette taille, la courbure ne se verrait pas. */
@@ -635,11 +633,6 @@ export function BoosterPack3D({
         );
       })}
 
-      <span
-        className="sachet-coupe"
-        style={{ left: W / 2 - T, width: T * 2, height: H, clipPath: COUPE }}
-        aria-hidden="true"
-      />
     </>
   ) : (
     <>
@@ -702,12 +695,18 @@ export function BoosterPack3D({
 
       <div
         ref={packRef}
-        className={`sachet ${vignette || grabbed || frozen ? '' : 'sachet-tourne'}`}
+        className={`sachet ${grabbed || frozen ? '' : vignette ? 'sachet-veille' : 'sachet-tourne'}`}
         style={{
           width: W,
           height: H,
           // Les teintes viennent de la scène, par héritage.
-          ...(vignette ? { ['--rx3' as string]: '-6deg', ['--ry3' as string]: '-15deg' } : null),
+          ...(vignette
+            ? {
+                ['--rx3' as string]: '-6deg',
+                ['--ry3' as string]: '-15deg',
+                ['--retard' as string]: retard,
+              }
+            : null),
         }}
         {...(inerte
           ? {}
