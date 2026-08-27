@@ -16,13 +16,17 @@ const H = 340;
 /**
  * Demi-épaisseur du sachet en son point le plus gonflé.
  *
- * 28 px pour 200 px de large, soit plus d'un quart d'épaisseur totale.
- * C'est bien au-dessus de ce que donneraient cinq à huit cartes dans un sachet
- * de 67 mm, et c'est assumé : à l'échelle où le sachet est affiché, une
- * épaisseur physiquement juste ne se lit tout simplement pas. On dessine ce qui
- * se voit, pas ce qui se mesure.
+ * 44 px pour 200 px de large, soit 88 px d'épaisseur totale — presque la moitié
+ * de la largeur. C'est très au-dessus de ce que donneraient cinq à huit cartes
+ * dans un sachet de 67 mm, et c'est assumé : à l'échelle où le sachet est
+ * affiché, une épaisseur physiquement juste ne se lit tout simplement pas. On
+ * dessine ce qui se voit, pas ce qui se mesure.
+ *
+ * 28 px ne suffisaient pas. Vus de trois quarts dans le carrousel, les voisins
+ * gardaient un profil de feuille : l'épaisseur ne devient lisible qu'une fois
+ * comparable au raccourci de la largeur.
  */
-const T = 28;
+const T = 44;
 
 /** Ce qu'il reste d'épaisseur au ras des soudures : presque rien. */
 const SOUDURE = 0.05;
@@ -35,14 +39,14 @@ const REPRISE = 0.115;
  *
  * Les colonnes sont resserrées près des bords et les rangées près des
  * soudures : c'est là que le film tourne le plus vite, donc là qu'une tuile
- * plate s'écarte le plus de la vraie courbe. Deux colonnes ont été ajoutées
- * aux extrémités en même temps que l'épaisseur passait à 19 : le profil en
- * lentille se replie d'autant plus sec au bord qu'il est bombé au centre, et
- * la facettisation commençait à s'y voir.
+ * plate s'écarte le plus de la vraie courbe.
+ *
+ * Deux colonnes larges d'un pixel avaient été ajoutées aux extrémités quand le
+ * profil s'y repliait à sept degrés de la verticale. Le plancher `BORD` a
+ * supprimé ce repli — la colonne de bord ne s'incline plus que de 65° — et ces
+ * deux colonnes ne servaient plus qu'à coûter quatorze tuiles animées.
  */
-const COLS = [
-  0, 0.008, 0.022, 0.05, 0.1, 0.175, 0.29, 0.5, 0.71, 0.825, 0.9, 0.95, 0.978, 0.992, 1,
-];
+const COLS = [0, 0.022, 0.05, 0.1, 0.175, 0.29, 0.5, 0.71, 0.825, 0.9, 0.95, 0.978, 1];
 const ROWS = [0, 0.034, 0.07, 0.115, 0.885, 0.93, 0.966, 1];
 
 /**
@@ -75,12 +79,17 @@ const CHEV = 2.4;
  * voyait le fond de page à travers, sous la forme d'un filet sombre courant le
  * long des bords.
  *
- * Les fonds sont donc dessinés six pixels plus grands que le sachet et
- * recalés d'autant. Six sur deux cents, soit un agrandissement de trois pour
- * cent : invisible. La marge a suivi l'élargissement du chevauchement, les
- * tuiles du pourtour débordant désormais un peu plus.
+ * Les fonds sont donc dessinés huit pixels plus grands que le sachet et
+ * recalés d'autant. Huit sur deux cents, soit un agrandissement de quatre pour
+ * cent : l'illustration est rognée d'autant sur son pourtour, ce qui reste loin
+ * du seuil où les plis latéraux seraient entamés.
+ *
+ * La marge suit l'épaisseur, car une tuile inclinée doit être d'autant plus
+ * large pour couvrir sa maille. Le sachet épaissi débordait de 7,5 px avec un
+ * galbe qui s'annulait au bord ; le plancher `BORD` a redressé le profil et
+ * ramené ce débordement à 4,9 px. Huit laisse de quoi voir venir.
  */
-const MARGE = 6;
+const MARGE = 8;
 
 const RAD = Math.PI / 180;
 const DEG = 180 / Math.PI;
@@ -103,9 +112,32 @@ function lissage(t: number) {
  * jusqu'aux plis, comme un vrai sachet bourré de cartes, et non tendu sur une
  * arête. À 0,65 les bords se refermaient trop tôt et le sachet semblait vide
  * sur ses deux tranches.
+ *
+ * Augmenter la seule épaisseur ne suffisait pas : à 0,5, le dixième de largeur
+ * le plus proche du bord n'en garde que la moitié, et c'est précisément ce
+ * bord-là qu'on voit de profil. À 0,40 il en garde les deux tiers, et le sachet
+ * ne s'affine plus qu'au ras des plis latéraux.
+ *
+ * Aplatir le galbe ne réglait pourtant pas la tranche : un sinus s'annule à ses
+ * deux extrémités, donc l'épaisseur tombait à zéro exactement sur le bord. Le
+ * sachet avait beau être bombé, son chant restait une lame — d'où l'impression
+ * de feuille, tenace, quand on le regarde de côté dans le carrousel.
+ *
+ * `BORD` est le plancher qui l'en empêche : le film garde plus de quatre
+ * dixièmes de son épaisseur jusqu'au pli latéral, comme un vrai sachet dont la
+ * soudure est une languette plate et non une arête. C'est ce plancher que la
+ * paroi de tranche vient ensuite fermer.
+ *
+ * Trois dixièmes n'y suffisaient pas : la paroi ne mesurait que vingt-six
+ * pixels d'épaisseur, dont la moitié cachée derrière la coque, et il n'en
+ * dépassait que six à l'écran sur un voisin tourné de vingt-six degrés.
+ * Au-delà de quatre dixièmes, en revanche, le chant devient plus large que ce
+ * qu'un sachet peut avoir et se met à concurrencer la face.
  */
+const BORD = 0.38;
+
 function galbeX(u: number) {
-  return Math.sin(Math.PI * u) ** 0.5;
+  return BORD + (1 - BORD) * Math.sin(Math.PI * u) ** 0.4;
 }
 
 /** Profil vertical : nul aux soudures, plein dans le corps. */
@@ -226,9 +258,70 @@ const TUILES = construireMaillage(COLS, ROWS);
  * donner un galbe, là où les cent quatre-vingt-seize du sachet de tête,
  * multipliées par trois, feraient chuter la page.
  */
-const COLS_LEGER = [0, 0.05, 0.2, 0.5, 0.8, 0.95, 1];
+const COLS_LEGER = [0, 0.03, 0.1, 0.26, 0.5, 0.74, 0.9, 0.97, 1];
 const ROWS_LEGER = [0, 0.09, 0.91, 1];
 const TUILES_LEGERES = construireMaillage(COLS_LEGER, ROWS_LEGER);
+
+/** Une bande de tranche : le chant du sachet, sur un côté et une rangée. */
+interface Tranche {
+  left: number;
+  top: number;
+  /** L'épaisseur du sachet à cette hauteur — la largeur de la bande. */
+  w: number;
+  h: number;
+  /** −1 à gauche, +1 à droite. */
+  cote: number;
+}
+
+/**
+ * Les parois de tranche.
+ *
+ * La coque n'a qu'une face : elle décrit le dessus du sachet et s'arrête net
+ * sur les bords, où il ne reste qu'une arête sans surface. De face on ne voit
+ * rien ; de trois quarts, c'est-à-dire partout ailleurs dans le carrousel, le
+ * sachet redevient une feuille découpée.
+ *
+ * Chaque bande ferme ce chant. Elle est posée dans le plan vertical du bord —
+ * `rotateY(±90°)` — large de toute l'épaisseur du sachet à cette hauteur, et
+ * centrée sur le bord pour s'étendre symétriquement de part et d'autre du plan
+ * médian. De face elle est rigoureusement invisible, sa projection étant nulle ;
+ * plus le sachet tourne, plus elle s'ouvre. C'est exactement ce qu'on attend
+ * d'une tranche.
+ *
+ * Elle suit les mêmes rangées que la coque, donc le même `galbeY` : elle
+ * s'amincit jusqu'à disparaître dans les soudures du haut et du bas, où le
+ * sachet est effectivement plat.
+ */
+function construireTranches(rows: number[]): Tranche[] {
+  const bandes: Tranche[] = [];
+  for (let j = 0; j < rows.length - 1; j += 1) {
+    const v0 = rows[j];
+    const v1 = rows[j + 1];
+    const vc = (v0 + v1) / 2;
+    // L'épaisseur totale : la coque monte à `prof` au-dessus du plan médian, la
+    // tranche descend d'autant en dessous.
+    const w = 2 * prof(0, vc);
+    // Un poil de recouvrement en hauteur, comme entre deux tuiles : deux bords
+    // adoucis qui se rejoignent laissent passer le fond.
+    const haut = j > 0 ? CHEV / 2 : 0;
+    const bas = j < rows.length - 2 ? CHEV / 2 : 0;
+    for (const cote of [-1, 1]) {
+      bandes.push({
+        // Centrée sur le bord : `rotateY` tourne autour du centre de l'élément,
+        // qui doit donc tomber exactement sur x = 0 ou x = W.
+        left: arrondi((cote < 0 ? 0 : W) - w / 2),
+        top: arrondi(v0 * H - haut),
+        w: arrondi(w),
+        h: arrondi((v1 - v0) * H + haut + bas),
+        cote,
+      });
+    }
+  }
+  return bandes;
+}
+
+const TRANCHES = construireTranches(ROWS);
+const TRANCHES_LEGERES = construireTranches(ROWS_LEGER);
 
 /**
  * L'ombrage, en dégradés à l'échelle du sachet entier.
@@ -333,6 +426,56 @@ const LARGEUR_ECLAT = Math.round(W * 2.2);
  * la tuile — et une tuile aplatie ne se galbe plus.
  */
 const VOILE = 'linear-gradient(rgb(0 0 0 / var(--voile, 0)), rgb(0 0 0 / var(--voile, 0)))';
+
+/**
+ * Le chant du sachet, vu de côté.
+ *
+ * La bande traverse toute l'épaisseur : son début touche la coque, du côté de
+ * la face, et sa fin plonge vers l'arrière.
+ *
+ * Une première version l'assombrissait régulièrement de l'avant vers
+ * l'arrière — ce qui paraît juste, et ne l'est pas. Quand le sachet tourne,
+ * c'est précisément la **moitié arrière** de la tranche qui dépasse de la
+ * silhouette de la face : le seul morceau qu'on voie était donc le plus noir du
+ * dégradé, indiscernable du fond. Le sachet gardait son air de feuille.
+ *
+ * Or un chant de mylar est au contraire ce qu'il y a de plus brillant sur un
+ * sachet : le film s'y enroule, et une surface courbe renvoie forcément la
+ * lumière quelque part le long de sa courbe. C'est aussi ce que fait tout rendu
+ * de produit — une lumière de contre-jour sur l'arête, pour que la silhouette
+ * se détache du fond.
+ *
+ * Le clair occupe donc la moitié arrière, celle qui dépasse, et le sombre est
+ * réservé aux tout derniers pour cent : juste de quoi terminer l'arête sans la
+ * laisser flotter.
+ *
+ * Surtout, ce n'est qu'un **ombrage** : les couleurs sont transparentes, et la
+ * tranche laisse voir sous elle le bord de la planche, étiré. Peinte en gris
+ * plein, elle se lisait comme une plaque rapportée — un bandeau pâle collé le
+ * long du sachet, où l'illustration s'arrêtait net avant la silhouette. Une
+ * tranche de sachet, c'est le même film qui s'enroule : il porte la même
+ * image.
+ */
+function chant(sens: string) {
+  return `linear-gradient(${sens},
+    rgb(255 255 255 / 0.26) 0%,
+    rgb(0 0 0 / 0.12) 20%,
+    rgb(0 0 0 / 0.3) 38%,
+    rgb(255 255 255 / 0.2) 58%,
+    rgb(255 255 255 / 0.36) 74%,
+    rgb(255 255 255 / 0.14) 86%,
+    rgb(0 0 0 / 0.34) 95%,
+    rgb(0 0 0 / 0.66) 100%)`;
+}
+
+/**
+ * Largeur, sur la planche, de la lisière que la tranche étire.
+ *
+ * Trois pixels d'illustration répandus sur quarante : c'est très flou, et c'est
+ * exactement ce qu'on veut. Un chant de sachet est une surface qui tourne à la
+ * verticale — ses détails s'y écrasent, seules restent les masses de couleur.
+ */
+const LISIERE = 3;
 
 /** Le vernis : la bande spéculaire large qui fait « feuille brillante ». */
 const VERNIS = `linear-gradient(255deg,
@@ -722,12 +865,52 @@ export function BoosterPack3D({
     );
   };
 
+  /**
+   * Une bande de tranche.
+   *
+   * `rotateY(±90°)` la couche dans le plan vertical du bord. Le sens du dégradé
+   * suit le côté : sur les deux tranches, le clair doit tomber du côté de la
+   * face et le noir vers l'arrière — sans quoi l'une des deux paraîtrait
+   * éclairée par-derrière.
+   */
+  const bandeTranche = (t: Tranche, i: number, prefixe: string) => {
+    // La lisière de la planche, étirée sur toute la largeur de la bande.
+    const etire = t.w / LISIERE;
+    const largeurArt = W * etire;
+    // À gauche on part du tout premier pixel de la planche, à droite du dernier.
+    const departArt = t.cote < 0 ? 0 : -(W - LISIERE) * etire;
+    const couches = [VOILE, chant(t.cote < 0 ? 'to left' : 'to right'), `url("${art}")`];
+    return (
+      <span
+        key={`${prefixe}t${i}`}
+        className="sachet-tuile"
+        style={{
+          left: t.left,
+          top: t.top,
+          width: t.w,
+          height: t.h,
+          transform: `rotateY(${t.cote * 90}deg)`,
+          backgroundImage: couches.join(', '),
+          backgroundSize: `${t.w}px ${t.h}px, ${t.w}px ${t.h}px, ${largeurArt.toFixed(1)}px ${H}px`,
+          // La planche garde son calage vertical : la tranche montre bien la
+          // hauteur qui lui correspond, sinon la bande et la coque ne
+          // raconteraient pas la même image au même endroit.
+          backgroundPosition: `0 0, 0 0, ${departArt.toFixed(1)}px ${(-t.top).toFixed(2)}px`,
+        }}
+        aria-hidden="true"
+      />
+    );
+  };
+
   const coque = vignette ? (
     art ? (
       /* Un maillage allégé : les voisins ont besoin d'un galbe, pas du détail
          du sachet de tête. Sans lui, tournés de quatre-vingts degrés au bout du
          carrousel, ils se lisaient comme des feuilles de papier. */
-      <>{TUILES_LEGERES.map((t, i) => tuileRecto(t, i, 'lg', false))}</>
+      <>
+        {TUILES_LEGERES.map((t, i) => tuileRecto(t, i, 'lg', false))}
+        {TRANCHES_LEGERES.map((t, i) => bandeTranche(t, i, 'lg'))}
+      </>
     ) : (
       <div className="sachet-face">
         <PackArtwork name={name} cardCount={cardCount} tint={gradient} />
@@ -737,8 +920,7 @@ export function BoosterPack3D({
   ) : art ? (
     <>
       {TUILES.map((t, i) => tuileRecto(t, i, 'av', true))}
-
-
+      {TRANCHES.map((t, i) => bandeTranche(t, i, 'av'))}
     </>
   ) : (
     <>

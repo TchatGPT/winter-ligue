@@ -146,7 +146,15 @@ export function BoosterOpening({
       // Le voile s'efface à mesure qu'un sachet approche du centre : ils
       // s'illuminent donc à leur passage, au lieu de s'allumer d'un coup une
       // fois retenus.
-      voile: (0.42 * Math.min(1, Math.abs(d))).toFixed(3),
+      //
+      // Il est resté longtemps à 0,42, et c'est ce qui faisait passer les
+      // voisins pour des feuilles : un noir plat posé par-dessus rabote tous
+      // les écarts de luminosité de la même fraction, or c'est précisément
+      // l'écart entre le creux et la crête du galbe qui donne le volume. Le
+      // sachet gardait sa forme et perdait son relief. À 0,28 il s'efface
+      // toujours nettement au profit du sachet de tête, sans écraser son
+      // modelé.
+      voile: (0.28 * Math.min(1, Math.abs(d))).toFixed(3),
     };
   }, []);
 
