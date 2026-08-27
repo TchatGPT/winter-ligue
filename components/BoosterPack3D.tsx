@@ -16,13 +16,13 @@ const H = 331;
 /**
  * Demi-épaisseur du sachet en son point le plus gonflé.
  *
- * 19 px pour 200 px de large, soit près d'un cinquième d'épaisseur totale.
+ * 24 px pour 200 px de large, soit près d'un quart d'épaisseur totale.
  * C'est bien au-dessus de ce que donneraient cinq à huit cartes dans un sachet
  * de 67 mm, et c'est assumé : à l'échelle où le sachet est affiché, une
  * épaisseur physiquement juste ne se lit tout simplement pas. On dessine ce qui
  * se voit, pas ce qui se mesure.
  */
-const T = 19;
+const T = 24;
 
 /** Ce qu'il reste d'épaisseur au ras des soudures : presque rien. */
 const SOUDURE = 0.05;
@@ -372,12 +372,12 @@ function versoImprime(nom: string) {
  * animation cassée plutôt que comme le bas de l'échelle.
  */
 const ONDE: Record<string, { gemme: string; force: number; duree: string }> = {
-  C: { gemme: 'var(--ice)', force: 0.3, duree: '8s' },
-  PC: { gemme: 'var(--r-pc)', force: 0.4, duree: '7.2s' },
-  R: { gemme: 'var(--r-r)', force: 0.5, duree: '6.4s' },
-  SR: { gemme: 'var(--r-sr)', force: 0.62, duree: '5.4s' },
-  UR: { gemme: 'var(--r-ur)', force: 0.76, duree: '4.4s' },
-  L: { gemme: 'var(--r-l)', force: 0.9, duree: '3.6s' },
+  C: { gemme: 'var(--ice)', force: 0.2, duree: '8s' },
+  PC: { gemme: 'var(--r-pc)', force: 0.27, duree: '7.2s' },
+  R: { gemme: 'var(--r-r)', force: 0.35, duree: '6.4s' },
+  SR: { gemme: 'var(--r-sr)', force: 0.44, duree: '5.4s' },
+  UR: { gemme: 'var(--r-ur)', force: 0.55, duree: '4.4s' },
+  L: { gemme: 'var(--r-l)', force: 0.68, duree: '3.6s' },
 };
 
 export interface Pack3DProps {
