@@ -39,7 +39,7 @@ classement. C’est ce qui empêche le pay-to-win.
 | tous les 5 subs | 40 ❄ |
 | tous les 25 subs | +200 ❄ |
 | tous les 100 subs | un booster Givre |
-| tous les 500 subs | un booster Aurore |
+| tous les 500 subs | un booster Hors-Piste |
 
 Un gifteur peut désigner un joueur à partir de 5 subs : celui-ci reçoit une **carte
 commune au hasard**, jamais des flocons.
@@ -72,7 +72,7 @@ participants — sans multiplier la surface d'équilibrage. La collection fait l
 profondeur, les effets font le jeu.
 
 **Les boosters ont des emplacements dédiés** : Givre donne 1 effet + 2 collection,
-Solstice 3 effets + 2 collection. Sans ça, un booster pouvait ne contenir aucune carte
+Everest 3 effets + 2 collection. Sans ça, un booster pouvait ne contenir aucune carte
 jouable, ce qui est pénible à trois mille flocons. La garantie de rareté ne porte que
 sur les emplacements d'effet.
 

@@ -145,7 +145,7 @@ export function purchaseAndOpen(
   const balance = debit(db, playerId, price, 'ACHAT_BOOSTER', boosterId);
 
   // Une faveur « garantie » relève le palier promis par le booster, sans
-  // jamais l'abaisser : ouvrir un Solstice avec une garantie SR en poche
+  // jamais l'abaisser : ouvrir un Everest avec une garantie SR en poche
   // conserve la garantie UR du booster.
   const boon = consumeBoon(db, playerId, 'GARANTIE_BOOSTER');
   const effective =

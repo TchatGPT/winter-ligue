@@ -578,7 +578,7 @@ export function cardsOfRarity(rarity: Rarity): CardDefinition[] {
 /**
  * Quatre boosters. Le prix ne fait pas qu'acheter des cartes : il achète une
  * courbe de raretés plus favorable et une garantie plus haute. Un joueur qui
- * économise pour un Solstice sait exactement ce qu'il paie.
+ * économise pour un Everest sait exactement ce qu'il paie.
  */
 export const BOOSTERS: readonly BoosterDefinition[] = [
   {
@@ -605,9 +605,11 @@ export const BOOSTERS: readonly BoosterDefinition[] = [
   },
   {
     id: 'aurore',
-    name: 'Aurore',
+    // L'identifiant ne suit pas le nom : il est écrit dans l'historique
+    // d'ouverture, dans le grand livre et dans le nom du fichier de planche.
+    name: 'Hors-Piste',
     tagline: 'Une super rare garantie',
-    glyph: '🌌',
+    glyph: '🎿',
     gradient: ['#6b4bab', '#241540'],
     price: 1_200,
     slots: { collection: 3, effet: 2 },
@@ -616,9 +618,9 @@ export const BOOSTERS: readonly BoosterDefinition[] = [
   },
   {
     id: 'solstice',
-    name: 'Solstice',
+    name: 'Everest',
     tagline: 'Une ultra rare garantie',
-    glyph: '🎁',
+    glyph: '🏔',
     gradient: ['#b07a2a', '#3d2708'],
     price: 3_000,
     // Le sachet le plus cher donne plus de cartes jouables, pas seulement des

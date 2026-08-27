@@ -156,7 +156,8 @@ gonflé, et rien de plus :
 
 - une coque galbée — un profil en lentille, nul aux soudures et maximal au centre — sur
   laquelle la planche est découpée en tuiles ;
-- un tour complet sur lui-même, lentement, pour le sachet mis en avant ;
+- une pose de trois quarts, oscillante : de face, une coque galbée se lit comme une
+  image plate, c'est de biais que le volume apparaît ;
 - un verso en mylar brillant, gaufré d'un massif et portant le nom de la série ;
 - l'ombrage du bombement et l'ombre au sol.
 
@@ -238,7 +239,7 @@ au milieu de séracs géants. C'est un choix assumé et provisoire : il vaut mie
 sachets identiques et beaux que deux peints et deux dessinés, l'écart entre les deux
 sautant aux yeux dès qu'ils sont côte à côte dans le carrousel.
 
-La contrepartie est réelle : **rien ne distingue visuellement un Givre d'un Solstice**,
+La contrepartie est réelle : **rien ne distingue visuellement un Givre d'un Everest**,
 sauf son nom, son prix et la teinte de son halo. Le jour où les quatre planches propres
 existent, elles remplacent simplement les fichiers.
 
@@ -246,8 +247,8 @@ existent, elles remplacent simplement les fichiers.
 |---|---|---|
 | `givre` | un tireur d'élite en tenue de camouflage neige, à plat ventre dans la poudreuse, sa section avançant derrière lui dans la tempête | `COMMON` |
 | `blizzard` | une escouade progressant contre un vent de face, la neige rayant l'image à l'horizontale, silhouettes à peine lisibles | `RARE` |
-| `aurore` | une aurore boréale verte et violette au-dessus d'un lac gelé, un observateur seul de dos sur la rive | `SUPER RARE` |
-| `solstice` | un opérateur au sommet d'une crête au soleil rasant, l'ombre longue, la lumière dorée sur les névés | `ULTRA RARE` |
+| `aurore` — **Hors-Piste** | un skieur seul hors des traces, la pente vierge sous lui, une trace unique derrière | `SUPER RARE` |
+| `solstice` — **Everest** | l'arête sommitale au soleil rasant, la cordée minuscule sur le fil, la lumière dorée sur les névés | `ULTRA RARE` |
 
 La planche partagée sert d'étalon : les quatre définitives doivent tenir à côté d'elle —
 même palette froide, même niveau de détail, même traitement du sertissage.

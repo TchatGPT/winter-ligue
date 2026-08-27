@@ -135,7 +135,7 @@ export const SUB_MILESTONES: readonly SubMilestone[] = [
     kind: 'BOOSTER',
     boosterId: 'aurore',
     label: 'Grand Nord',
-    description: 'Un booster Aurore offert à chaque joueur actif.',
+    description: 'Un booster Hors-Piste offert à chaque joueur actif.',
   },
 ];
 

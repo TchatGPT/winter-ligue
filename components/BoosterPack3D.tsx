@@ -16,12 +16,13 @@ const H = 331;
 /**
  * Demi-épaisseur du sachet en son point le plus gonflé.
  *
- * 14 px pour 200 px de large, soit 14 % d'épaisseur totale. C'est au-dessus de
- * ce que donneraient cinq à huit cartes dans un sachet de 67 mm, et c'est
- * volontaire : à l'échelle où le sachet est affiché, l'épaisseur physiquement
- * juste ne se lisait pas.
+ * 19 px pour 200 px de large, soit près d'un cinquième d'épaisseur totale.
+ * C'est bien au-dessus de ce que donneraient cinq à huit cartes dans un sachet
+ * de 67 mm, et c'est assumé : à l'échelle où le sachet est affiché, une
+ * épaisseur physiquement juste ne se lit tout simplement pas. On dessine ce qui
+ * se voit, pas ce qui se mesure.
  */
-const T = 14;
+const T = 19;
 
 /** Ce qu'il reste d'épaisseur au ras des soudures : presque rien. */
 const SOUDURE = 0.05;
@@ -34,9 +35,12 @@ const REPRISE = 0.115;
  *
  * Les colonnes sont resserrées près des bords et les rangées près des
  * soudures : c'est là que le film tourne le plus vite, donc là qu'une tuile
- * plate s'écarte le plus de la vraie courbe.
+ * plate s'écarte le plus de la vraie courbe. Deux colonnes ont été ajoutées
+ * aux extrémités en même temps que l'épaisseur passait à 19 : le profil en
+ * lentille se replie d'autant plus sec au bord qu'il est bombé au centre, et
+ * la facettisation commençait à s'y voir.
  */
-const COLS = [0, 0.04, 0.095, 0.17, 0.29, 0.5, 0.71, 0.83, 0.905, 0.96, 1];
+const COLS = [0, 0.015, 0.045, 0.095, 0.17, 0.29, 0.5, 0.71, 0.83, 0.905, 0.955, 0.985, 1];
 const ROWS = [0, 0.034, 0.07, 0.115, 0.885, 0.93, 0.966, 1];
 
 /** Chevauchement des tuiles, pour que les coutures ne s'ouvrent pas. */
