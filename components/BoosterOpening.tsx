@@ -165,8 +165,11 @@ export function BoosterOpening({
       {error && <Notice kind="error">{error}</Notice>}
 
       {/* ------------------------ Choix du booster ---------------------- */}
+      {/* Les sachets tiennent lieu de sélecteur : on choisit un booster en
+          regardant l'objet, pas en lisant une fiche. Le détail du booster
+          retenu est donné sous la scène, où il sert vraiment. */}
       <div className="scroll-x-clean -mx-4 px-4 sm:mx-0 sm:px-0">
-        <div className="flex min-w-max gap-2 sm:grid sm:min-w-0 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="flex min-w-max items-start justify-center gap-4 py-2 sm:gap-8">
           {boosters.map((b) => {
             const active = b.id === booster.id;
             return (
@@ -176,36 +179,21 @@ export function BoosterOpening({
                 onClick={() => !busy && setSelected(b.id)}
                 disabled={busy}
                 aria-pressed={active}
-                className={`glass glass-hover w-[230px] shrink-0 p-3 text-left sm:w-auto ${
-                  active ? 'border-ice/70' : ''
-                }`}
-                style={active ? { boxShadow: '0 0 0 1px rgba(127,216,255,0.35)' } : undefined}
+                aria-label={`Choisir le booster ${b.name}`}
+                className={`choix-sachet ${active ? 'choix-sachet-actif' : ''}`}
               >
-                <div className="flex items-start justify-between gap-2">
-                  <span className="text-2xl leading-none" aria-hidden="true">
-                    {b.glyph}
-                  </span>
-                  {b.guaranteed && (
-                    <span className="flex items-center gap-1 text-[13px] text-faint">
-                      garanti <RarityChip rarity={b.guaranteed} />
-                    </span>
-                  )}
-                </div>
-                <div className="mt-1.5 font-display text-base leading-tight font-black tracking-wide text-ink uppercase">
+                <BoosterPack3D
+                  name={b.name}
+                  cardCount={boosterSize(b)}
+                  gradient={b.gradient}
+                  art={boosterArt(b.id)}
+                  vignette
+                  taille={0.5}
+                />
+                <span className="mt-3 block font-display text-sm leading-tight font-black tracking-wide uppercase">
                   {b.name}
-                </div>
-                <div className="text-[13px] text-faint">
-                  {b.slots.effet} effet{b.slots.effet > 1 ? 's' : ''} + {b.slots.collection}{' '}
-                  collection · {b.tagline}
-                </div>
-                <div className="num mt-2 font-display text-lg font-black text-ice">
-                  ❄ {flakes(b.finalPrice)}
-                  {b.finalPrice !== b.price && (
-                    <span className="num ml-1.5 text-[13px] font-normal text-faint line-through">
-                      {flakes(b.price)}
-                    </span>
-                  )}
-                </div>
+                </span>
+                <span className="num block text-[13px] text-ice">❄ {flakes(b.finalPrice)}</span>
               </button>
             );
           })}
@@ -225,6 +213,24 @@ export function BoosterOpening({
         <div className="relative flex min-h-[400px] flex-col items-center justify-center gap-6 px-4 py-10 sm:min-h-[460px]">
           {phase !== 'reveal' ? (
             <>
+              {/* Ce que portaient les fiches supprimées : composition du sachet,
+                  rareté garantie et promesse. Ici il n'y en a qu'une, celle du
+                  booster choisi — donc lisible au lieu d'être répétée quatre fois. */}
+              <div className="flex flex-col items-center gap-1 text-center">
+                <h2 className="font-display text-2xl leading-none font-black tracking-wide text-ink uppercase">
+                  {booster.name}
+                </h2>
+                <p className="text-[13px] text-faint">
+                  {booster.slots.effet} effet{booster.slots.effet > 1 ? 's' : ''} +{' '}
+                  {booster.slots.collection} collection · {booster.tagline}
+                </p>
+                {booster.guaranteed && (
+                  <span className="flex items-center gap-1.5 text-[13px] text-faint">
+                    garanti <RarityChip rarity={booster.guaranteed} />
+                  </span>
+                )}
+              </div>
+
               <div
                 className={`scene ${phase === 'secousse' ? 'pack-shake' : ''} ${
                   phase === 'eclat' ? 'pack-burst' : ''

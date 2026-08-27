@@ -151,18 +151,22 @@ n'existe qu'en **quatre** exemplaires, jamais côte à côte, et son décor est 
 sa découpe — le sceau de rareté se pose dans un creux de l'illustration, le filet suit le
 bord du film. Découper ça en deux couches coûterait plus que ça ne rapporte.
 
-Le code ne construit **aucune géométrie**. Il ne fait que :
+Le code ne construit **aucune boîte**. Il donne à la planche la forme d'un sachet
+gonflé, et rien de plus :
 
-- présenter la planche sur un plan qu'on peut orienter à la souris, avec de l'inertie ;
-- poser un verso en mylar brossé, comme un vrai sachet dont seul le recto est imprimé ;
-- faire glisser un reflet discret pendant la rotation — c'est la seule chose qu'une
-  image fixe ne peut pas faire toute seule ;
-- porter l'ombre au sol.
+- une coque galbée — un profil en lentille, nul aux soudures et maximal au centre — sur
+  laquelle la planche est découpée en tuiles ;
+- l'orientation à la souris, avec de l'inertie ;
+- un verso en mylar brillant, gaufré d'un massif et portant le nom de la série ;
+- l'ombrage du bombement et l'ombre au sol.
 
-Une version antérieure montait six faces en CSS 3D et plaquait l'illustration sur la
-face avant. Ça se lisait pour ce que c'était : un bloc à épaisseur constante, avec une
-arête vive au sommet et une image collée dessus. Un vrai sachet n'a pas d'arête en
-haut — il y est soudé à plat. **Ne réintroduis pas de boîte** : le bombement, les plis
+Trois versions ont précédé, et chacune corrigeait la précédente. **Une boîte à six
+faces** avec la planche collée devant : épaisseur constante, arête vive au sommet, ça se
+lisait comme un carton — or un sachet n'a pas d'arête en haut, il y est soudé à plat.
+Puis **deux plans sans épaisseur** : le sommet était réglé, mais l'objet disparaissait de
+profil. Enfin la coque galbée, qui a les deux.
+
+**Ne réintroduis pas de boîte** : le bombement, les plis
 et les sertissages appartiennent à la planche, où ils rendent bien mieux que des
 dégradés CSS.
 
@@ -226,13 +230,26 @@ sachets tout en gardant la gamme cohérente :
 | Booster | Sujet | Sceau |
 |---|---|---|
 | `givre` | ✅ **fait** — un tireur d'élite en tenue de camouflage neige, à plat ventre dans la poudreuse, sa section avançant derrière lui dans la tempête | `COMMON` |
-| `blizzard` | une escouade progressant contre un vent de face, la neige rayant l'image à l'horizontale, silhouettes à peine lisibles | `RARE` |
+| `blizzard` | ✅ **fait** — une colonne prise sous des séracs géants, véhicules à l'arrêt, l'échelle donnée par les silhouettes minuscules au pied de la glace | `RARE` |
 | `aurore` | une aurore boréale verte et violette au-dessus d'un lac gelé, un observateur seul de dos sur la rive | `SUPER RARE` |
 | `solstice` | un opérateur au sommet d'une crête au soleil rasant, l'ombre longue, la lumière dorée sur les névés | `ULTRA RARE` |
 
-Le sujet de `givre` est là comme étalon : c'est la planche de référence, les trois autres
-doivent tenir à côté d'elle — même palette froide, même niveau de détail, même traitement
-du sertissage.
+`givre` et `blizzard` sont les étalons : les deux qui restent doivent tenir à côté
+d'elles — même palette froide, même niveau de détail, même traitement du sertissage.
+
+### Si le générateur rend le sachet de trois quarts
+
+C'est le cas courant, et c'est rattrapable. La planche de `blizzard` est arrivée en
+perspective : bord haut incliné de 3,7°, côté gauche 3 % plus haut que le droit.
+
+Un simple recadrage ne suffit pas — ce n'est pas un cisaillement mais une vraie
+perspective, il faut une **homographie**. Le script
+`scripts/redresse-planche.ps1` fait le travail : on lui donne les quatre coins mesurés du
+sachet dans la planche source, il rend un rectangle droit à la bonne taille.
+
+Pour mesurer les coins, balaie l'image par lignes et par colonnes en cherchant le premier
+pixel non blanc — les quatre extrêmes sont les quatre coins. Rentre-les ensuite de cinq
+pixels vers l'intérieur, sinon le halo d'antialiasing du bord se retrouve sur le sachet.
 
 ---
 

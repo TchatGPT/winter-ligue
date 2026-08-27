@@ -1866,13 +1866,78 @@
     backface-visibility: hidden;
   }
 
-  /* La planche, bord à bord.
-     `fill` et non `cover` : le cadre a exactement le ratio du fichier, il n'y a
-     donc rien à recadrer — et `cover` rognerait le sertissage. */
-  .sachet-planche {
-    object-fit: fill;
-    -webkit-user-drag: none;
-    user-select: none;
+  /* -- Le sélecteur ------------------------------------------------------- */
+
+  /* Les sachets alignés servent de sélecteur. Celui qui est choisi remonte et
+     reprend sa pleine opacité ; les autres s'effacent sans disparaître, pour
+     rester cliquables d'un coup d'œil. */
+  .choix-sachet {
+    flex-shrink: 0;
+    text-align: center;
+    color: var(--muted);
+    opacity: 0.5;
+    transition:
+      transform 200ms ease,
+      opacity 200ms ease,
+      color 200ms ease;
+  }
+
+  .choix-sachet:hover:not(:disabled) {
+    opacity: 0.82;
+  }
+
+  .choix-sachet-actif,
+  .choix-sachet-actif:hover:not(:disabled) {
+    opacity: 1;
+    color: var(--ink);
+    transform: translateY(-6px);
+  }
+
+  .choix-sachet:disabled {
+    cursor: default;
+  }
+
+  /* Une vignette ne se prend pas à la souris : c'est le bouton qui l'entoure
+     qui reçoit le clic. Sans ça, la scène avalerait l'événement. */
+  .sachet-scene-fixe {
+    cursor: inherit;
+    pointer-events: none;
+  }
+
+  .sachet-vignette {
+    position: absolute;
+    inset: 0;
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
+  }
+
+  /* -- La coque galbée ---------------------------------------------------- */
+
+  /* Une tuile du maillage : un morceau plat de la planche, placé à sa
+     profondeur et incliné selon la pente locale du film. Le décalage du fond
+     fait que la planche traverse les tuiles sans couture. */
+  .sachet-tuile {
+    position: absolute;
+    background-repeat: no-repeat;
+    backface-visibility: hidden;
+    pointer-events: none;
+  }
+
+  /* La coupe médiane, qui remplit la silhouette vue par la tranche. Les tuiles
+     n'ont pas d'épaisseur : sans elle, le sachet paraîtrait creux de profil. */
+  .sachet-coupe {
+    position: absolute;
+    top: 0;
+    transform: rotateY(90deg);
+    background: linear-gradient(
+      180deg,
+      #c3d2e1 0%,
+      #55697e 16%,
+      #93a7bb 46%,
+      #3f5266 80%,
+      #a7bbcf 100%
+    );
+    pointer-events: none;
   }
 
   /* -- Le verso ----------------------------------------------------------- */
@@ -1882,30 +1947,7 @@
   .sachet-dos {
     position: absolute;
     inset: 0;
-    background-image:
-      linear-gradient(
-        76deg,
-        transparent 0%,
-        rgb(255 255 255 / 0.1) 30%,
-        transparent 48%,
-        rgb(255 255 255 / 0.07) 70%,
-        transparent 100%
-      ),
-      linear-gradient(
-        90deg,
-        rgb(0 0 0 / 0.52) 0%,
-        rgb(0 0 0 / 0.14) 11%,
-        rgb(255 255 255 / 0.14) 29%,
-        rgb(0 0 0 / 0.06) 52%,
-        rgb(255 255 255 / 0.11) 73%,
-        rgb(0 0 0 / 0.16) 89%,
-        rgb(0 0 0 / 0.52) 100%
-      ),
-      linear-gradient(
-        170deg,
-        color-mix(in srgb, var(--p1, #2b4a63) 55%, #93a8bd),
-        color-mix(in srgb, var(--p2, #0e1c2a) 70%, #485d73)
-      );
+    background-repeat: no-repeat;
   }
 
   /* Les deux soudures, striées comme celles du recto. */
@@ -1934,19 +1976,6 @@
   .sachet-dos::after {
     bottom: 0;
     transform: scaleY(-1);
-  }
-
-  .sachet-dos-titre {
-    position: absolute;
-    inset-inline: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    text-align: center;
-    font-size: 9px;
-    font-weight: 600;
-    letter-spacing: 3px;
-    color: rgb(255 255 255 / 0.45);
-    pointer-events: none;
   }
 
   /* -- Le reflet ---------------------------------------------------------- */
