@@ -1,0 +1,428 @@
+@import 'tailwindcss';
+
+/* ==========================================================================
+   Winter Ligue — thème hivernal
+   Nuit polaire, glace et aurores boréales. Une seule palette, déclarée ici et
+   exposée à Tailwind, pour que rien ne soit codé en dur dans les composants.
+   ========================================================================== */
+
+:root {
+  --bg: #05080f;
+  --bg-2: #0a1019;
+  --bg-3: #101826;
+  --bg-4: #16202f;
+  --border: #1e2a3b;
+  --border-bright: #2c3d54;
+
+  --ice: #7fd8ff;
+  --ice-deep: #4cc4f0;
+  --frost: #dcf1ff;
+  --aurora: #6ee7c7;
+  --violet: #b18cff;
+  --gold: #e8c46a;
+  --danger: #ff6b5a;
+
+  --text: #dbe7f5;
+  --text-muted: #7d90a8;
+  --text-faint: #4d5c72;
+
+  --shadow: 0 8px 32px rgb(0 0 0 / 0.55);
+  --glow-ice: 0 0 28px rgb(127 216 255 / 0.28);
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-bg-2: var(--bg-2);
+  --color-bg-3: var(--bg-3);
+  --color-bg-4: var(--bg-4);
+  --color-line: var(--border);
+  --color-line-bright: var(--border-bright);
+
+  --color-ice: var(--ice);
+  --color-ice-deep: var(--ice-deep);
+  --color-frost: var(--frost);
+  --color-aurora: var(--aurora);
+  --color-violet: var(--violet);
+  --color-gold: var(--gold);
+  --color-danger: var(--danger);
+
+  --color-ink: var(--text);
+  --color-muted: var(--text-muted);
+  --color-faint: var(--text-faint);
+
+  --font-display: var(--font-barlow-condensed), 'Arial Narrow', sans-serif;
+  --font-sans: var(--font-barlow), system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background-color: var(--bg);
+  /* Deux voiles d'aurore, fixés au viewport pour ne pas défiler avec le contenu. */
+  background-image:
+    radial-gradient(ellipse 70% 45% at 12% 0%, rgb(127 216 255 / 0.09) 0%, transparent 60%),
+    radial-gradient(ellipse 55% 40% at 88% 8%, rgb(177 140 255 / 0.07) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 35% at 50% 100%, rgb(110 231 199 / 0.05) 0%, transparent 65%);
+  background-attachment: fixed;
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.55;
+  min-height: 100dvh;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4,
+.font-display {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+/* --------------------------------------------------------------------------
+   Titres de section : un filet lumineux plutôt qu'un gros trait.
+   -------------------------------------------------------------------------- */
+
+.section-title {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: clamp(1.5rem, 4vw, 2.1rem);
+  line-height: 1;
+  letter-spacing: 0.015em;
+  text-transform: uppercase;
+}
+
+.section-title em {
+  font-style: normal;
+  color: var(--ice);
+  text-shadow: var(--glow-ice);
+}
+
+.eyebrow {
+  font-family: var(--font-display);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* --------------------------------------------------------------------------
+   Surfaces
+   -------------------------------------------------------------------------- */
+
+.panel {
+  background: linear-gradient(160deg, rgb(16 24 38 / 0.9), rgb(10 16 25 / 0.9));
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+}
+
+.panel-frost {
+  position: relative;
+  overflow: hidden;
+}
+
+/* Reflet de givre en haut du panneau. */
+.panel-frost::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgb(127 216 255 / 0.5), transparent);
+}
+
+/* --------------------------------------------------------------------------
+   Boutons
+   -------------------------------------------------------------------------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--border-bright);
+  border-radius: 6px;
+  background: var(--bg-3);
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    transform 0.1s ease;
+}
+
+.btn:hover:not(:disabled) {
+  background: var(--bg-4);
+  border-color: var(--ice-deep);
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn-ice {
+  background: linear-gradient(140deg, var(--ice-deep), #2f9fd0);
+  border-color: transparent;
+  color: #041018;
+}
+
+.btn-ice:hover:not(:disabled) {
+  background: linear-gradient(140deg, var(--ice), var(--ice-deep));
+  border-color: transparent;
+}
+
+.btn-gold {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+.btn-gold:hover:not(:disabled) {
+  background: var(--gold);
+  color: #1a1204;
+}
+
+.btn-danger {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: var(--danger);
+  color: #200704;
+}
+
+.btn-sm {
+  padding: 0.3125rem 0.625rem;
+  font-size: 0.6875rem;
+}
+
+/* --------------------------------------------------------------------------
+   Champs de saisie
+   -------------------------------------------------------------------------- */
+
+.field {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+}
+
+.field:focus {
+  outline: none;
+  border-color: var(--ice-deep);
+  box-shadow: 0 0 0 3px rgb(76 196 240 / 0.15);
+}
+
+.field::placeholder {
+  color: var(--text-faint);
+}
+
+.label {
+  display: block;
+  margin-bottom: 0.25rem;
+  font-family: var(--font-display);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* --------------------------------------------------------------------------
+   Pastilles
+   -------------------------------------------------------------------------- */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.125rem 0.5rem;
+  border: 1px solid var(--border-bright);
+  border-radius: 999px;
+  font-family: var(--font-display);
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* --------------------------------------------------------------------------
+   Cartes à jouer
+   La lueur de rareté est portée par --rarity, posée en style inline.
+   -------------------------------------------------------------------------- */
+
+.game-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--rarity, var(--border)) 45%, transparent);
+  border-radius: 10px;
+  background:
+    linear-gradient(165deg, color-mix(in srgb, var(--rarity, #fff) 9%, var(--bg-3)), var(--bg-2));
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.4);
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.game-card:hover {
+  transform: translateY(-3px);
+  box-shadow:
+    0 0 0 1px rgb(0 0 0 / 0.4),
+    0 10px 30px color-mix(in srgb, var(--rarity, #000) 22%, transparent);
+}
+
+.game-card__glyph {
+  font-size: 1.75rem;
+  line-height: 1;
+}
+
+.game-card--locked {
+  opacity: 0.42;
+  filter: grayscale(0.7);
+}
+
+/* --------------------------------------------------------------------------
+   Tableau de classement
+   -------------------------------------------------------------------------- */
+
+.rank-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.rank-table th {
+  padding: 0.625rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-display);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.rank-table td {
+  padding: 0.6875rem 0.75rem;
+  border-bottom: 1px solid rgb(30 42 59 / 0.55);
+}
+
+.rank-table tbody tr:hover {
+  background: rgb(127 216 255 / 0.035);
+}
+
+/* Les places qualificatives portent un liseré doré à gauche. */
+.rank-table tr.finalist td:first-child {
+  box-shadow: inset 3px 0 0 var(--gold);
+}
+
+/* --------------------------------------------------------------------------
+   Chute de neige — purement décorative, désactivée si l'utilisateur
+   préfère les animations réduites.
+   -------------------------------------------------------------------------- */
+
+.snow {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.snow span {
+  position: absolute;
+  top: -5vh;
+  color: rgb(220 241 255 / 0.5);
+  animation: fall linear infinite;
+}
+
+@keyframes fall {
+  0% {
+    transform: translate3d(0, -5vh, 0) rotate(0deg);
+  }
+  100% {
+    transform: translate3d(var(--drift, 20px), 105vh, 0) rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .snow {
+    display: none;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Divers
+   -------------------------------------------------------------------------- */
+
+.scroll-x {
+  overflow-x: auto;
+  /* Le contenu large défile dans son conteneur, jamais la page entière. */
+  -webkit-overflow-scrolling: touch;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+::selection {
+  background: rgb(76 196 240 / 0.3);
+}
+
+:focus-visible {
+  outline: 2px solid var(--ice);
+  outline-offset: 2px;
+}
+
+/* Barre de défilement discrète, accordée au thème. */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-2);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-bright);
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ice-deep);
+}
