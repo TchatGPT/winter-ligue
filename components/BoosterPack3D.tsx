@@ -85,6 +85,8 @@ interface Tuile {
   rx: number;
   /** La tuile tombe-t-elle dans une soudure ? */
   soudure: boolean;
+  /** La tuile touche-t-elle la zone imprimée du recto ? */
+  imprimee: boolean;
 }
 
 /**
@@ -135,6 +137,10 @@ for (let i = 0; i < COLS.length - 1; i += 1) {
       ry: arrondi(ry),
       rx: arrondi(rx),
       soudure: vc < 0.075 || vc > 0.925,
+      // Le texte du recto tient entre 15 % et 55 % de la hauteur. Le poser
+      // sur les cent soixante-huit tuiles coûtait treize images par seconde
+      // pour rien : seules celles qui le traversent le portent.
+      imprimee: v1 > 0.12 && v0 < 0.62,
     });
   }
 }
@@ -232,6 +238,60 @@ const VERNIS = `linear-gradient(255deg,
   rgb(255 255 255 / 0.05) 52%,
   rgb(255 255 255 / 0.3) 61%,
   rgb(255 255 255 / 0) 76%)`;
+
+/**
+ * L'impression du recto : le nom du booster, et la série au-dessus.
+ *
+ * Même procédé que le verso — une image à la taille du sachet, décalée comme la
+ * planche — et pour la même raison : le recto est fait de dizaines de tuiles, un
+ * élément de texte y serait découpé en morceaux.
+ *
+ * Deux contraintes gouvernent le dessin. La lisibilité d'abord : le texte se
+ * pose sur une illustration très contrastée, tantôt neige presque blanche,
+ * tantôt roche sombre. Un simple remplissage clair disparaîtrait une fois sur
+ * deux, d'où le contour foncé passé sous le remplissage. L'effet de glace
+ * ensuite : un dégradé du blanc au bleu pâle du haut vers le bas, plus un
+ * doublon décalé d'un pixel qui fait l'arête givrée.
+ */
+function rectoImprime(nom: string) {
+  const police = "font-family='Arial Narrow, Haettenschweiler, Arial, sans-serif'";
+  const titre = nom.toUpperCase();
+
+  // Largeur imposée, écartement laissé libre. Les noms vont de cinq à dix
+  // lettres : à corps constant, « Givre » serait perdu au milieu du sachet là
+  // où « Hors-Piste » déborderait. En fixant la largeur et en n'ajustant que
+  // l'espacement, les quatre sachets portent un titre de même emprise — et
+  // aucune police manquante ne peut le faire dépasser.
+  const largeur = (W * 0.78).toFixed(1);
+  const corps = Math.min(30, 270 / Math.max(1, titre.length)).toFixed(1);
+
+  // `textLength` doit être porté par chaque `<text>` : sur un `<g>` il est
+  // ignoré sans le moindre avertissement, et le titre reprend sa largeur
+  // naturelle — « HORS-PISTE » sortait alors du sachet par la droite.
+  const cadre = `textLength='${largeur}' lengthAdjust='spacing'`;
+
+  const svg =
+    `<svg xmlns='http://www.w3.org/2000/svg' width='${W}' height='${H}'>` +
+    `<defs><linearGradient id='gel' x1='0' y1='0' x2='0' y2='1'>` +
+    `<stop offset='0%' stop-color='#ffffff'/>` +
+    `<stop offset='42%' stop-color='#dff1ff'/>` +
+    `<stop offset='100%' stop-color='#8cc8ef'/>` +
+    `</linearGradient></defs>` +
+    `<g text-anchor='middle' ${police}>` +
+    // La série, sous le pli : posée sur le sertissage, elle serait écrasée par
+    // les stries et coupée par l'arête.
+    `<text x='${W / 2}' y='${(H * 0.155).toFixed(1)}' font-size='8.5' font-weight='700' ` +
+    `letter-spacing='3' fill='#eaf6ff' stroke='#06121f' stroke-width='2.4' ` +
+    `paint-order='stroke' stroke-linejoin='round' opacity='0.94'>WINTER LIGUE</text>` +
+    // Le nom, au milieu. L'arête givrée est le doublon décalé vers le haut.
+    `<g font-size='${corps}' font-weight='900'>` +
+    `<text x='${W / 2}' y='${(H * 0.535).toFixed(1)}' ${cadre} fill='none' stroke='#05141f' ` +
+    `stroke-width='5' paint-order='stroke' stroke-linejoin='round' opacity='0.62'>${titre}</text>` +
+    `<text x='${W / 2}' y='${(H * 0.535 - 1).toFixed(1)}' ${cadre} fill='#ffffff' opacity='0.5'>${titre}</text>` +
+    `<text x='${W / 2}' y='${(H * 0.535).toFixed(1)}' ${cadre} fill='url(#gel)'>${titre}</text>` +
+    `</g></g></svg>`;
+  return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
+}
 
 /**
  * L'impression du verso, en SVG embarqué.
@@ -470,6 +530,7 @@ export function BoosterPack3D({
   // L'impression du verso ne dépend que du nom : inutile de reconstruire le
   // SVG et de le ré-encoder à chaque image d'animation.
   const verso = useMemo(() => versoImprime(name), [name]);
+  const recto = useMemo(() => rectoImprime(name), [name]);
 
   const coque = vignette ? (
     /* Une seule face, posée de trois quarts. L'ombrage du bombement est là,
@@ -478,7 +539,7 @@ export function BoosterPack3D({
       {art ? (
         <span
           className="sachet-vignette"
-          style={{ backgroundImage: `${PLIS}, ${bombement(90)}, url("${art}")` }}
+          style={{ backgroundImage: `${PLIS}, ${bombement(90)}, ${recto}, url("${art}")` }}
           aria-hidden="true"
         />
       ) : (
@@ -489,7 +550,9 @@ export function BoosterPack3D({
   ) : art ? (
     <>
       {TUILES.map((t, i) => {
-        const couches = [ECLAT, PLIS, bombement(90), `url("${art}")`];
+        const couches = t.imprimee
+          ? [ECLAT, PLIS, bombement(90), recto, `url("${art}")`]
+          : [ECLAT, PLIS, bombement(90), `url("${art}")`];
         return (
           <span
             key={`av${i}`}
