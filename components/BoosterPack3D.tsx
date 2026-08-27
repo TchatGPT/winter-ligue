@@ -152,11 +152,28 @@ for (let i = 0; i < COLS.length - 1; i += 1) {
     const ry = Math.atan2(prof(u0, vc) - prof(u1, vc), dx) * DEG;
     const rx = Math.atan2(prof(uc, v1) - prof(uc, v0), dy) * DEG;
 
+    /*
+     * Le chevauchement ne va que vers l'intérieur au pourtour du sachet.
+     *
+     * Il sert à masquer les coutures entre tuiles voisines ; au bord, il n'y a
+     * pas de voisine, et déborder n'y sert qu'à faire dépasser l'illustration
+     * de la silhouette — un liseré d'image au-delà du sachet, en haut à droite
+     * notamment, là où la maille est la plus fine.
+     */
+    const gauche = i > 0 ? CHEV / 2 : 0;
+    const droite = i < COLS.length - 2 ? CHEV / 2 : 0;
+    const haut = j > 0 ? CHEV / 2 : 0;
+    const bas = j < ROWS.length - 2 ? CHEV / 2 : 0;
+
+    // Ce que la tuile doit couvrir une fois projetée à l'écran.
+    const largeurVue = dx + gauche + droite;
+    const hauteurVue = dy + haut + bas;
+
     // Une tuile inclinée doit être plus grande pour couvrir la même maille — et
     // le chevauchement passe dans la division, sans quoi il rétrécirait avec
     // l'inclinaison au lieu de rester constant à l'écran.
-    const w = (dx + CHEV) / Math.cos(ry * RAD);
-    const h = (dy + CHEV) / Math.cos(rx * RAD);
+    const w = largeurVue / Math.cos(ry * RAD);
+    const h = hauteurVue / Math.cos(rx * RAD);
 
     // Arrondi obligatoire, et pas cosmétique.
     //
@@ -165,8 +182,8 @@ for (let i = 0; i < COLS.length - 1; i += 1) {
     // puis recalculé dans le navigateur : sans arrondi, deux styles écartés
     // d'un ULP suffisaient à déclencher une erreur d'hydratation React.
     TUILES.push({
-      left: arrondi(x0 - (w - dx) / 2),
-      top: arrondi(y0 - (h - dy) / 2),
+      left: arrondi(x0 - gauche - (w - largeurVue) / 2),
+      top: arrondi(y0 - haut - (h - hauteurVue) / 2),
       w: arrondi(w),
       h: arrondi(h),
       z: arrondi(prof(uc, vc)),
