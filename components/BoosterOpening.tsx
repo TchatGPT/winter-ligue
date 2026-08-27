@@ -143,6 +143,10 @@ export function BoosterOpening({
       // Sans `preserve-3d` sur le rail, le navigateur ne trie pas les sachets
       // par profondeur : c'est l'ordre de peinture qui décide, donc le z-index.
       zIndex: 40 - Math.round(Math.abs(d) * 10),
+      // Le voile s'efface à mesure qu'un sachet approche du centre : ils
+      // s'illuminent donc à leur passage, au lieu de s'allumer d'un coup une
+      // fois retenus.
+      voile: (0.42 * Math.min(1, Math.abs(d))).toFixed(3),
     };
   }, []);
 
@@ -152,6 +156,7 @@ export function BoosterOpening({
       const s = place(i, pos.current);
       el.style.transform = s.transform;
       el.style.zIndex = String(s.zIndex);
+      el.style.setProperty('--voile', s.voile);
     });
   }, [place]);
 
@@ -195,15 +200,31 @@ export function BoosterOpening({
      */
     if (!geste.current.capture) {
       if (geste.current.parcouru <= 6) return;
-      event.currentTarget.setPointerCapture(event.pointerId);
+      // La capture est un confort — elle garde le glissement vivant quand le
+      // doigt sort du rail. Si le navigateur la refuse, le glissement doit
+      // continuer sans elle, pas s'interrompre sur une exception.
+      try {
+        event.currentTarget.setPointerCapture(event.pointerId);
+      } catch {
+        /* pointeur déjà relâché : on glisse sans capture. */
+      }
       rail.current?.classList.add('carrousel-glisse');
       geste.current.capture = true;
     }
 
+    const avant = Math.round(pos.current);
     pos.current = Math.max(
       0,
       Math.min(boosters.length - 1, geste.current.pos0 - dx / GLISSE),
     );
+
+    // Un cran par sachet franchi, pendant le glissement lui-même.
+    //
+    // Le son ne partait qu'au relâchement : traverser le rail d'un bout à
+    // l'autre d'un seul geste ne s'entendait donc qu'une fois, à l'arrivée.
+    // Ici chaque sachet qui passe devant marque son passage.
+    if (Math.round(pos.current) !== avant) bruitDeSelection();
+
     applique();
   };
 
@@ -214,7 +235,11 @@ export function BoosterOpening({
     if (!geste.current.capture) return;
 
     geste.current.capture = false;
-    event.currentTarget.releasePointerCapture?.(event.pointerId);
+    try {
+      event.currentTarget.releasePointerCapture?.(event.pointerId);
+    } catch {
+      /* jamais capturé : rien à relâcher. */
+    }
     rail.current?.classList.remove('carrousel-glisse');
 
     // On s'arrête sur un sachet, jamais entre deux.
@@ -391,7 +416,11 @@ export function BoosterOpening({
                         cases.current[i] = el;
                       }}
                       className={`carrousel-case ${actif ? 'carrousel-case-actif' : ''}`}
-                      style={assise}
+                      style={{
+                        transform: assise.transform,
+                        zIndex: assise.zIndex,
+                        ['--voile' as string]: assise.voile,
+                      }}
                       role="option"
                       aria-selected={actif}
                     >
@@ -442,6 +471,7 @@ export function BoosterOpening({
                             gradient={b.gradient}
                             art={boosterArt(b.id)}
                             frozen={busy}
+                            rarete={b.guaranteed}
                             vignette={!actif}
                             inerte
                           />

@@ -141,72 +141,94 @@ interface Tuile {
  * pentes locales en x et en y. Avec des mailles resserrées là où ça tourne, la
  * facettisation ne se voit pas.
  */
-const TUILES: Tuile[] = [];
-for (let i = 0; i < COLS.length - 1; i += 1) {
-  const u0 = COLS[i];
-  const u1 = COLS[i + 1];
-  const uc = (u0 + u1) / 2;
+function construireMaillage(cols: number[], rows: number[]): Tuile[] {
+  const tuiles: Tuile[] = [];
+  for (let i = 0; i < cols.length - 1; i += 1) {
+    const u0 = cols[i];
+    const u1 = cols[i + 1];
+    const uc = (u0 + u1) / 2;
 
-  for (let j = 0; j < ROWS.length - 1; j += 1) {
-    const v0 = ROWS[j];
-    const v1 = ROWS[j + 1];
-    const vc = (v0 + v1) / 2;
+    for (let j = 0; j < rows.length - 1; j += 1) {
+      const v0 = rows[j];
+      const v1 = rows[j + 1];
+      const vc = (v0 + v1) / 2;
 
-    const x0 = u0 * W;
-    const y0 = v0 * H;
-    const dx = (u1 - u0) * W;
-    const dy = (v1 - v0) * H;
+      const x0 = u0 * W;
+      const y0 = v0 * H;
+      const dx = (u1 - u0) * W;
+      const dy = (v1 - v0) * H;
 
-    // Pentes locales. Le signe de `ry` suit CSS : un `rotateY` positif éloigne
-    // le bord droit du regard, or sur la moitié gauche c'est lui qui avance.
-    const ry = Math.atan2(prof(u0, vc) - prof(u1, vc), dx) * DEG;
-    const rx = Math.atan2(prof(uc, v1) - prof(uc, v0), dy) * DEG;
+      // Pentes locales. Le signe de `ry` suit CSS : un `rotateY` positif éloigne
+      // le bord droit du regard, or sur la moitié gauche c'est lui qui avance.
+      const ry = Math.atan2(prof(u0, vc) - prof(u1, vc), dx) * DEG;
+      const rx = Math.atan2(prof(uc, v1) - prof(uc, v0), dy) * DEG;
 
-    /*
-     * Le chevauchement ne va que vers l'intérieur au pourtour du sachet.
-     *
-     * Il sert à masquer les coutures entre tuiles voisines ; au bord, il n'y a
-     * pas de voisine, et déborder n'y sert qu'à faire dépasser l'illustration
-     * de la silhouette — un liseré d'image au-delà du sachet, en haut à droite
-     * notamment, là où la maille est la plus fine.
-     */
-    const gauche = i > 0 ? CHEV / 2 : 0;
-    const droite = i < COLS.length - 2 ? CHEV / 2 : 0;
-    const haut = j > 0 ? CHEV / 2 : 0;
-    const bas = j < ROWS.length - 2 ? CHEV / 2 : 0;
+      /*
+       * Le chevauchement ne va que vers l'intérieur au pourtour du sachet.
+       *
+       * Il sert à masquer les coutures entre tuiles voisines ; au bord, il n'y a
+       * pas de voisine, et déborder n'y sert qu'à faire dépasser l'illustration
+       * de la silhouette — un liseré d'image au-delà du sachet, en haut à droite
+       * notamment, là où la maille est la plus fine.
+       */
+      const gauche = i > 0 ? CHEV / 2 : 0;
+      const droite = i < cols.length - 2 ? CHEV / 2 : 0;
+      const haut = j > 0 ? CHEV / 2 : 0;
+      const bas = j < rows.length - 2 ? CHEV / 2 : 0;
 
-    // Ce que la tuile doit couvrir une fois projetée à l'écran.
-    const largeurVue = dx + gauche + droite;
-    const hauteurVue = dy + haut + bas;
+      // Ce que la tuile doit couvrir une fois projetée à l'écran.
+      const largeurVue = dx + gauche + droite;
+      const hauteurVue = dy + haut + bas;
 
-    // Une tuile inclinée doit être plus grande pour couvrir la même maille — et
-    // le chevauchement passe dans la division, sans quoi il rétrécirait avec
-    // l'inclinaison au lieu de rester constant à l'écran.
-    const w = largeurVue / Math.cos(ry * RAD);
-    const h = hauteurVue / Math.cos(rx * RAD);
+      // Une tuile inclinée doit être plus grande pour couvrir la même maille — et
+      // le chevauchement passe dans la division, sans quoi il rétrécirait avec
+      // l'inclinaison au lieu de rester constant à l'écran.
+      const w = largeurVue / Math.cos(ry * RAD);
+      const h = hauteurVue / Math.cos(rx * RAD);
 
-    // Arrondi obligatoire, et pas cosmétique.
-    //
-    // `Math.sin` et `**` ne sont pas tenus de rendre le même bit de poids
-    // faible d'un moteur à l'autre. Le maillage est calculé au rendu serveur
-    // puis recalculé dans le navigateur : sans arrondi, deux styles écartés
-    // d'un ULP suffisaient à déclencher une erreur d'hydratation React.
-    TUILES.push({
-      left: arrondi(x0 - gauche - (w - largeurVue) / 2),
-      top: arrondi(y0 - haut - (h - hauteurVue) / 2),
-      w: arrondi(w),
-      h: arrondi(h),
-      z: arrondi(prof(uc, vc)),
-      ry: arrondi(ry),
-      rx: arrondi(rx),
-      soudure: vc < 0.075 || vc > 0.925,
-      // Le texte du recto tient entre 15 % et 55 % de la hauteur. Le poser
-      // sur les cent soixante-huit tuiles coûtait treize images par seconde
-      // pour rien : seules celles qui le traversent le portent.
-      imprimee: v1 > 0.12 && v0 < 0.62,
-    });
+      // Arrondi obligatoire, et pas cosmétique.
+      //
+      // `Math.sin` et `**` ne sont pas tenus de rendre le même bit de poids
+      // faible d'un moteur à l'autre. Le maillage est calculé au rendu serveur
+      // puis recalculé dans le navigateur : sans arrondi, deux styles écartés
+      // d'un ULP suffisaient à déclencher une erreur d'hydratation React.
+      tuiles.push({
+        left: arrondi(x0 - gauche - (w - largeurVue) / 2),
+        top: arrondi(y0 - haut - (h - hauteurVue) / 2),
+        w: arrondi(w),
+        h: arrondi(h),
+        z: arrondi(prof(uc, vc)),
+        ry: arrondi(ry),
+        rx: arrondi(rx),
+        soudure: vc < 0.075 || vc > 0.925,
+        // Le texte du recto tient entre 15 % et 55 % de la hauteur. Le poser
+        // sur toutes les tuiles coûtait treize images par seconde pour rien :
+        // seules celles qui le traversent le portent.
+        imprimee: v1 > 0.12 && v0 < 0.62,
+      });
+    }
   }
+  return tuiles;
 }
+
+/** Le maillage du sachet mis en avant : celui qu'on regarde de près. */
+const TUILES = construireMaillage(COLS, ROWS);
+
+/**
+ * Le maillage des voisins, quatre fois plus grossier.
+ *
+ * Ils étaient auparavant de simples plans — une seule face, sans épaisseur. Vus
+ * de trois quarts ça passait ; au bout du carrousel, où ils sont tournés de
+ * près de quatre-vingts degrés, ils se lisaient comme des feuilles de papier.
+ *
+ * Il leur faut donc une vraie coque, mais pas la même : ils sont petits,
+ * assombris, et jamais retournés. Vingt-quatre tuiles de recto suffisent à leur
+ * donner un galbe, là où les cent quatre-vingt-seize du sachet de tête,
+ * multipliées par trois, feraient chuter la page.
+ */
+const COLS_LEGER = [0, 0.05, 0.2, 0.5, 0.8, 0.95, 1];
+const ROWS_LEGER = [0, 0.09, 0.91, 1];
+const TUILES_LEGERES = construireMaillage(COLS_LEGER, ROWS_LEGER);
 
 /**
  * L'ombrage, en dégradés à l'échelle du sachet entier.
@@ -245,11 +267,6 @@ const PLIS = `linear-gradient(180deg,
   rgb(0 0 0 / 0) 81%,
   rgb(0 0 0 / 0.34) 88.5%,
   rgb(0 0 0 / 0) 95%)`;
-
-/** Les stries de la soudure. */
-const STRIES =
-  'repeating-linear-gradient(90deg, rgb(255 255 255 / 0.34) 0 1px, ' +
-  'rgb(0 0 0 / 0.3) 1px 2px, rgb(255 255 255 / 0.12) 2px 3px)';
 
 /** Le mylar brossé du verso, teinté par le booster. */
 const MYLAR = `linear-gradient(190deg,
@@ -308,6 +325,14 @@ const ECLAT = `linear-gradient(102deg,
  * passer.
  */
 const LARGEUR_ECLAT = Math.round(W * 2.2);
+
+/**
+ * Le voile des voisins : ils s'assombrissent pour désigner le sachet retenu.
+ *
+ * Une couche de fond plutôt qu'un `filter: brightness`, qui aplatirait la 3D de
+ * la tuile — et une tuile aplatie ne se galbe plus.
+ */
+const VOILE = 'linear-gradient(rgb(0 0 0 / var(--voile, 0)), rgb(0 0 0 / var(--voile, 0)))';
 
 /** Le vernis : la bande spéculaire large qui fait « feuille brillante ». */
 const VERNIS = `linear-gradient(255deg,
@@ -438,6 +463,23 @@ function versoImprime(nom: string) {
   return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
 }
 
+/**
+ * La teinte du halo, par rareté garantie.
+ *
+ * Elle est sur le halo et non sur le reflet : le halo est derrière le sachet,
+ * sa couleur ne peut donc rien assombrir. Une première version teintait le
+ * reflet, posé par-dessus l'illustration — l'ambre d'Everest y noircissait le
+ * ciel partout où la fusion ne prenait pas.
+ */
+const GEMME: Record<string, string> = {
+  C: 'var(--ice)',
+  PC: 'var(--r-pc)',
+  R: 'var(--r-r)',
+  SR: 'var(--r-sr)',
+  UR: 'var(--r-ur)',
+  L: 'var(--r-l)',
+};
+
 export interface Pack3DProps {
   name: string;
   cardCount: number;
@@ -446,6 +488,8 @@ export interface Pack3DProps {
   art?: string | null;
   /** Coupe la rotation continue, pendant l'ouverture par exemple. */
   frozen?: boolean;
+  /** Rareté garantie : elle donne sa couleur au halo. */
+  rarete?: string | null;
   /**
    * Rendu allégé, pour le sélecteur.
    *
@@ -495,6 +539,7 @@ export function BoosterPack3D({
   gradient,
   art,
   frozen = false,
+  rarete = null,
   vignette = false,
   inerte = false,
   className,
@@ -621,105 +666,78 @@ export function BoosterPack3D({
     return `-${(somme % 97) / 7}s`;
   }, [name]);
 
+  /**
+   * Une tuile de recto.
+   *
+   * Partagée par les deux maillages — celui du sachet mis en avant et celui,
+   * allégé, des voisins. `voile` assombrit ceux qu'on n'a pas choisis : une
+   * couche de plus plutôt qu'un `filter`, qui aplatirait la 3D de la tuile.
+   */
+  const tuileRecto = (t: Tuile, i: number, prefixe: string, reflet: boolean) => {
+    const couches = [
+      ...(reflet ? [ECLAT] : []),
+      VOILE,
+      PLIS,
+      bombement(90),
+      ...(t.imprimee ? [recto] : []),
+      `url("${art}")`,
+    ];
+    // Le reflet est la seule couche qui bouge : sans lui, la tuile n'est plus
+    // réévaluée à chaque image. C'est ce qui permet de galber les voisins sans
+    // tripler le coût de la page.
+    const mobile = reflet ? 1 : 0;
+    return (
+      <span
+        key={`${prefixe}${i}`}
+        className="sachet-tuile"
+        style={{
+          left: t.left,
+          top: t.top,
+          width: t.w,
+          height: t.h,
+          transform: `translateZ(${t.z.toFixed(2)}px) rotateY(${t.ry.toFixed(2)}deg) rotateX(${t.rx.toFixed(2)}deg)`,
+          backgroundImage: couches.join(', '),
+          backgroundSize: couches
+            .map((_, k) =>
+              k === 0 && mobile
+                ? `${LARGEUR_ECLAT}px ${H + MARGE * 2}px`
+                : `${W + MARGE * 2}px ${H + MARGE * 2}px`,
+            )
+            .join(', '),
+          backgroundBlendMode: couches
+            .map((_, k) => (k === 0 && mobile ? 'screen' : 'normal'))
+            .join(', '),
+          // Seul le reflet bouge : sa position part de `--balayage`, les
+          // autres couches restent calées sur la planche.
+          backgroundPosition: couches
+            .map((_, k) =>
+              k === 0 && mobile
+                ? `calc(var(--balayage) - ${t.left.toFixed(2)}px) ${(-t.top - MARGE).toFixed(2)}px`
+                : `${(-t.left - MARGE).toFixed(2)}px ${(-t.top - MARGE).toFixed(2)}px`,
+            )
+            .join(', '),
+        }}
+        aria-hidden="true"
+      />
+    );
+  };
+
   const coque = vignette ? (
-    /* Une seule face, posée de trois quarts. L'ombrage du bombement est là,
-       le maillage non : à cette taille, la courbure ne se verrait pas. */
-    <div className="sachet-face">
-      {art ? (
-        <span
-          className="sachet-vignette"
-          style={{ backgroundImage: `${PLIS}, ${bombement(90)}, ${recto}, url("${art}")` }}
-          aria-hidden="true"
-        />
-      ) : (
+    art ? (
+      /* Un maillage allégé : les voisins ont besoin d'un galbe, pas du détail
+         du sachet de tête. Sans lui, tournés de quatre-vingts degrés au bout du
+         carrousel, ils se lisaient comme des feuilles de papier. */
+      <>{TUILES_LEGERES.map((t, i) => tuileRecto(t, i, 'lg', false))}</>
+    ) : (
+      <div className="sachet-face">
         <PackArtwork name={name} cardCount={cardCount} tint={gradient} />
-      )}
-      <span className="sachet-eclat" aria-hidden="true" />
-    </div>
+        <span className="sachet-eclat" aria-hidden="true" />
+      </div>
+    )
   ) : art ? (
     <>
-      {TUILES.map((t, i) => {
-        const couches = t.imprimee
-          ? [ECLAT, PLIS, bombement(90), recto, `url("${art}")`]
-          : [ECLAT, PLIS, bombement(90), `url("${art}")`];
-        return (
-          <span
-            key={`av${i}`}
-            className="sachet-tuile"
-            style={{
-              left: t.left,
-              top: t.top,
-              width: t.w,
-              height: t.h,
-              transform: `translateZ(${t.z.toFixed(2)}px) rotateY(${t.ry.toFixed(2)}deg) rotateX(${t.rx.toFixed(2)}deg)`,
-              backgroundImage: couches.join(', '),
-              backgroundSize: couches
-                .map((_, k) =>
-                  k === 0
-                    ? `${LARGEUR_ECLAT}px ${H + MARGE * 2}px`
-                    : `${W + MARGE * 2}px ${H + MARGE * 2}px`,
-                )
-                .join(', '),
-              backgroundBlendMode: couches.map((_, k) => (k === 0 ? 'screen' : 'normal')).join(', '),
-              // Seul le reflet bouge : sa position part de `--balayage`, les
-              // autres couches restent calées sur la planche.
-              backgroundPosition: couches
-                .map((_, k) =>
-                  k === 0
-                    ? `calc(var(--balayage) - ${t.left.toFixed(2)}px) ${(-t.top - MARGE).toFixed(2)}px`
-                    : `${(-t.left - MARGE).toFixed(2)}px ${(-t.top - MARGE).toFixed(2)}px`,
-                )
-                .join(', '),
-            }}
-            aria-hidden="true"
-          />
-        );
-      })}
+      {TUILES.map((t, i) => tuileRecto(t, i, 'av', true))}
 
-      {TUILES.map((t, i) => {
-        // L'ordre compte : le vernis passe par-dessus l'impression, comme sur
-        // une vraie feuille brillante où le texte est sous le brillant.
-        const couches = t.soudure
-          ? [ECLAT, PLIS, bombement(270), STRIES, MYLAR]
-          : [ECLAT, PLIS, bombement(270), VERNIS, verso, MYLAR];
-        // Les tuiles du verso sont retournées sur elles-mêmes : leur repère
-        // horizontal est inversé. Sans ce décalage miroir, chaque tuile
-        // redémarrerait le dégradé pour son compte et le maillage réapparaîtrait.
-        const px = t.left + t.w - W;
-        return (
-          <span
-            key={`ar${i}`}
-            className="sachet-tuile"
-            style={{
-              left: t.left,
-              top: t.top,
-              width: t.w,
-              height: t.h,
-              transform: `translateZ(${(-t.z).toFixed(2)}px) rotateY(${(-t.ry).toFixed(2)}deg) rotateX(${(-t.rx).toFixed(2)}deg) rotateY(180deg)`,
-              backgroundImage: couches.join(', '),
-              backgroundSize: couches
-                .map((_, k) =>
-                  k === 0
-                    ? `${LARGEUR_ECLAT}px ${H + MARGE * 2}px`
-                    : `${W + MARGE * 2}px ${H + MARGE * 2}px`,
-                )
-                .join(', '),
-              backgroundBlendMode: couches.map((_, k) => (k === 0 ? 'screen' : 'normal')).join(', '),
-              // Le repère du verso est inversé : le reflet s'y ajoute au lieu de
-              // s'y soustraire, pour continuer d'aller dans le même sens que sur
-              // le recto quand le sachet tourne.
-              backgroundPosition: couches
-                .map((_, k) =>
-                  k === 0
-                    ? `calc(${px.toFixed(2)}px + var(--balayage)) ${(-t.top - MARGE).toFixed(2)}px`
-                    : `${(px - MARGE).toFixed(2)}px ${(-t.top - MARGE).toFixed(2)}px`,
-                )
-                .join(', '),
-            }}
-            aria-hidden="true"
-          />
-        );
-      })}
 
     </>
   ) : (
@@ -769,16 +787,18 @@ export function BoosterPack3D({
         ['--p1' as string]: gradient[0],
         ['--p2' as string]: gradient[1],
         ['--eclat' as string]: ECLAT,
+        ['--gemme' as string]: GEMME[rarete ?? 'C'] ?? GEMME.C,
         ['--largeur-eclat' as string]: `${LARGEUR_ECLAT}px`,
-        ['--largeur-eclat' as string]: `px`,
       }}
     >
       {/* Le halo ne tourne pas avec le sachet : c'est un éclairage de vitrine
           posé derrière lui, pas une propriété de l'objet.
 
-          Il ne va qu'au sachet mis en avant. Sur les vignettes, quatre lueurs
-          colorées se chevauchaient derrière la rangée et faisaient des taches
-          à côté des sachets. */}
+          Sa teinte vient de la rareté garantie du booster. Il ne va qu'au
+          sachet mis en avant : sur les vignettes, quatre lueurs colorées de
+          132 % de large se chevauchaient derrière la rangée et faisaient des
+          taches entre les sachets. Sur la rangée, c'est la lisière qui porte la
+          rareté — voir `app/globals.css`. */}
       {!vignette && <span className="sachet-halo" aria-hidden="true" />}
       <span className="sachet-lisiere" aria-hidden="true" />
 

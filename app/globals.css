@@ -1942,20 +1942,10 @@
     cursor: inherit;
   }
 
-  /* Les sachets écartés sont assombris.
-     Le filtre ne touche que la face plate d'une vignette, jamais le sachet
-     central : `filter` aplatit la 3D de ses descendants, il écraserait le
-     maillage et le sachet redeviendrait une image. */
-  /* À l'ouverture, les voisins s'effacent.
-
-     Le geste est irréversible et coûte des flocons : la scène doit s'y
-     consacrer et cesser d'en proposer d'autres. Une version antérieure
-     avançait aussi le sachet de 26 % — un zoom qui cassait la mise en scène
-     au lieu de la servir. */
-  .carrousel-gros-plan .carrousel-case:not(.carrousel-case-actif) {
-    opacity: 0;
-  }
-
+  /* Le repli dessiné, quand un booster n'a pas encore sa planche, reste un
+     plan unique : lui seul a encore besoin de ce filtre pour s'assombrir. Les
+     vignettes illustrées portent leur voile en couche de fond, un `filter`
+     aplatissant la 3D de ce qu'il touche. */
   .carrousel-case:not(.carrousel-case-actif) .sachet-face {
     filter: brightness(0.6) saturate(0.88);
   }
@@ -1987,7 +1977,17 @@
      aussi raide se lit comme un trait sombre plutôt que comme un bord.
 
      Cette seconde lueur, à peine plus grande que le sachet et floue de douze
-     pixels, éclaire le fond immédiatement autour de lui. La marche disparaît. */
+     pixels, éclaire le fond immédiatement autour de lui. La marche disparaît.
+
+     C'est elle, et non le halo, qui porte la couleur de rareté sur toute la
+     rangée. Le halo est large et flou : sur un voisin incliné de soixante-dix
+     degrés, la rotation du présentoir l'écrase dans le plan du sachet, où il ne
+     mesure plus que quelques pixels — entièrement cachés derrière le sachet
+     lui-même. La lisière, elle, épouse la silhouette : elle subit le même
+     raccourci que le sachet et reste donc toujours visible tout autour, quel
+     que soit l'angle. Son cœur reste clair, sans quoi elle ne masquerait plus
+     la marche de contraste qui est sa raison d'être ; la teinte n'intervient
+     qu'en s'éloignant du bord. */
   .sachet-lisiere {
     position: absolute;
     left: 50%;
@@ -1999,8 +1999,9 @@
     background: radial-gradient(
       ellipse at 50% 50%,
       rgb(216 236 253 / 0.46) 0%,
-      rgb(200 224 247 / 0.26) 64%,
-      transparent 86%
+      color-mix(in srgb, var(--gemme, #8fdcff) 34%, transparent) 60%,
+      color-mix(in srgb, var(--gemme, #8fdcff) 22%, transparent) 74%,
+      transparent 88%
     );
     filter: blur(15px);
   }
@@ -2013,23 +2014,26 @@
     pointer-events: none;
     background: radial-gradient(
       ellipse at 50% 50%,
-      color-mix(in srgb, var(--p1, #2b4a63) 26%, transparent) 0%,
-      color-mix(in srgb, var(--p1, #2b4a63) 12%, transparent) 46%,
-      transparent 72%
+      color-mix(in srgb, var(--gemme, #8fdcff) 42%, transparent) 0%,
+      color-mix(in srgb, var(--gemme, #8fdcff) 20%, transparent) 48%,
+      transparent 74%
     );
     filter: blur(44px);
     --duree-halo: 9s;
     animation: sachet-halo var(--duree-halo) ease-in-out infinite;
   }
 
+
+  /* L'intensité passe par des variables : une `opacity` posée sur le modificateur
+     serait perdue, les keyframes ayant la priorité sur les règles ordinaires. */
   @keyframes sachet-halo {
     0%,
     100% {
-      opacity: 0.5;
+      opacity: var(--halo-bas, 0.5);
       transform: translate(-50%, -50%) scale(0.97);
     }
     50% {
-      opacity: 0.78;
+      opacity: var(--halo-haut, 0.78);
       transform: translate(-50%, -50%) scale(1.03);
     }
   }
@@ -2053,10 +2057,18 @@
   /* Une tuile du maillage : un morceau plat de la planche, placé à sa
      profondeur et incliné selon la pente locale du film. Le décalage du fond
      fait que la planche traverse les tuiles sans couture. */
+  /* Les tuiles restent visibles par leur dos.
+
+     Le sachet n'a plus de verso : il n'etait jamais vu depuis que le
+     retournement a disparu, et il pesait la moitie du maillage. Reste que la
+     colonne la plus extreme s'incline de soixante-dix degres, et qu'au bout du
+     balancement elle depasse les quatre-vingt-dix : masquee par son dos, elle
+     s'effacerait et ouvrirait un trou dans la silhouette. A cet angle elle ne
+     fait qu'un ou deux pixels — ce qu'on y voit de l'illustration en miroir ne
+     se distingue pas. */
   .sachet-tuile {
     position: absolute;
     background-repeat: no-repeat;
-    backface-visibility: hidden;
     pointer-events: none;
   }
 
