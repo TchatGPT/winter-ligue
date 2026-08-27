@@ -68,7 +68,7 @@ export function LoginForms({
 
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      <section className="panel panel-frost p-5">
+      <section className="glass p-5">
         <h2 className="font-display text-lg font-black uppercase tracking-wide text-ink">
           Joueurs
         </h2>
@@ -115,7 +115,7 @@ export function LoginForms({
         )}
       </section>
 
-      <section className="panel panel-frost p-5">
+      <section className="glass p-5">
         <h2 className="font-display text-lg font-black uppercase tracking-wide text-ink">
           Modération
         </h2>

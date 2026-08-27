@@ -205,7 +205,7 @@ export function MarketBoard({
       {message && <Notice kind={message.kind}>{message.text}</Notice>}
 
       {/* ------------------------------ Onglets -------------------------- */}
-      <div className="scroll-x-clean border-b border-line">
+      <div className="scroll-x-clean border-b border-white/10">
         <div className="flex min-w-max gap-5">
           {tabs.map((t) => (
             <button
@@ -264,7 +264,7 @@ export function MarketBoard({
                   onClick={() => toggleRarity(r)}
                   aria-pressed={active}
                   title={meta.label}
-                  className="rounded-md border px-2 py-1 font-display text-[11px] font-black tracking-wider uppercase transition-colors"
+                  className="rounded-md border px-2 py-1 font-display text-[13px] font-black tracking-wider uppercase transition-colors"
                   style={{
                     borderColor: active ? meta.color : 'var(--line-2)',
                     color: active ? '#060a12' : meta.color,
@@ -280,7 +280,7 @@ export function MarketBoard({
                 Tout
               </button>
             )}
-            <span className="ml-auto text-[11px] text-faint">
+            <span className="ml-auto text-[13px] text-faint">
               {filtered.length} vente{filtered.length > 1 ? 's' : ''}
             </span>
           </div>
@@ -342,7 +342,7 @@ export function MarketBoard({
           }
         />
       ) : (
-        <div className="panel scroll-x">
+        <div className="glass scroll-x">
           <table className="grid-table min-w-[620px]">
             <thead>
               <tr>
@@ -374,7 +374,7 @@ export function MarketBoard({
                     <td className="text-muted">
                       {tab === 'gagnees' ? sale.seller : sale.side === 'VENTE' ? sale.buyer : sale.seller}
                       {tab === 'historique' && (
-                        <span className="ml-1.5 text-[10px] text-faint uppercase">
+                        <span className="ml-1.5 text-[13px] text-faint uppercase">
                           {sale.side === 'VENTE' ? 'vendu' : 'acheté'}
                         </span>
                       )}
@@ -388,7 +388,7 @@ export function MarketBoard({
                     >
                       ❄ {flakes(sale.price)}
                     </td>
-                    <td className="num text-right text-[11px] text-faint">
+                    <td className="num text-right text-[13px] text-faint">
                       {new Date(sale.soldAt).toLocaleString('fr-FR', {
                         day: '2-digit',
                         month: '2-digit',
@@ -467,7 +467,7 @@ function ListingCard({
           <span className="absolute top-1.5 left-1.5">
             <RarityChip rarity={listing.rarity} />
           </span>
-          <span className="absolute top-1.5 right-1.5 rounded bg-black/55 px-1 py-px text-[9px] font-bold text-ink/90 backdrop-blur-sm">
+          <span className="absolute top-1.5 right-1.5 rounded bg-black/55 px-1 py-px text-[13px] font-bold text-ink/90 backdrop-blur-sm">
             ⚡ {listing.power}
           </span>
         </div>
@@ -477,7 +477,7 @@ function ListingCard({
         <h3 className="tcg-name">{listing.name}</h3>
         <p className="tcg-sub">{listing.subtitle}</p>
 
-        <dl className="mt-2 space-y-0.5 border-t border-line pt-1.5 text-[10px]">
+        <dl className="mt-2 space-y-0.5 border-t border-white/10 pt-1.5 text-[13px]">
           <div className="flex items-baseline justify-between gap-1">
             <dt className="tracking-wider text-faint uppercase">
               {listing.bidCount > 0 ? 'Mise actuelle' : 'Mise de départ'}
@@ -491,14 +491,14 @@ function ListingCard({
           </div>
           <div className="flex items-baseline justify-between gap-1">
             <dt className="tracking-wider text-faint uppercase">Durée</dt>
-            <dd className="num text-[11px]">
+            <dd className="num text-[13px]">
               <Countdown endsAt={listing.endsAt} onExpire={onExpire} />
             </dd>
           </div>
           {listing.quote !== null && (
             <div className="flex items-baseline justify-between gap-1">
               <dt className="tracking-wider text-faint uppercase">Cote</dt>
-              <dd className="num text-[11px] text-muted">❄ {flakesShort(listing.quote)}</dd>
+              <dd className="num text-[13px] text-muted">❄ {flakesShort(listing.quote)}</dd>
             </div>
           )}
         </dl>
@@ -545,7 +545,7 @@ function ListingCard({
                 <div className="flex gap-1">
                   <input
                     type="number"
-                    className="field num flex-1 !px-1.5 !py-1 !text-[11px]"
+                    className="field num flex-1 !px-1.5 !py-1 !text-[13px]"
                     min={listing.minimumNextBid}
                     step={1}
                     value={amount}
@@ -562,13 +562,13 @@ function ListingCard({
                     OK
                   </button>
                 </div>
-                <p className="num text-[10px] text-faint">min ❄ {flakes(listing.minimumNextBid)}</p>
+                <p className="num text-[13px] text-faint">min ❄ {flakes(listing.minimumNextBid)}</p>
               </div>
             )}
 
             {listing.buyoutPrice !== null && (
               <button
-                className="btn btn-sm btn-gold mt-1 w-full !text-[10px]"
+                className="btn btn-sm btn-gold mt-1 w-full !text-[13px]"
                 disabled={working || !canBuy}
                 onClick={onBuyout}
               >

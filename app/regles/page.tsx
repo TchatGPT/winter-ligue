@@ -29,7 +29,7 @@ function Rule({
   children: React.ReactNode;
 }) {
   return (
-    <section className="panel panel-frost p-5">
+    <section className="glass p-5">
       <h2 className="font-display text-lg font-black tracking-wide text-ice uppercase">{title}</h2>
       {lead && <p className="mt-0.5 text-xs text-faint">{lead}</p>}
       <div className="mt-3 space-y-2.5 text-sm leading-relaxed text-muted">{children}</div>
@@ -50,7 +50,7 @@ export default function ReglesPage() {
       <PageHead eyebrow={SEASON.edition} title="Les" accent="Règles" />
 
       <Rule title="Le score d’une game">
-        <p className="rounded-lg border border-line bg-bg-1/60 px-3 py-2 font-display text-base text-ink">
+        <p className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 font-display text-base text-ink">
           score = (kills × multiplicateur) + points de classement + bonus
         </p>
         <ul className="list-inside list-disc space-y-1">
@@ -80,7 +80,7 @@ export default function ReglesPage() {
         lead="Deux sources, et cette séparation est le cœur de l’équilibre."
       >
         <div className="grid gap-3 sm:grid-cols-2">
-          <div className="rounded-lg border border-line bg-bg-1/60 p-3">
+          <div className="rounded-lg border border-white/10 bg-white/5 p-3">
             <h3 className="font-display text-sm font-bold tracking-wide text-ink uppercase">
               1. Le jeu — ce qui crée l’écart
             </h3>
@@ -99,7 +99,7 @@ export default function ReglesPage() {
             </p>
           </div>
 
-          <div className="rounded-lg border border-line bg-bg-1/60 p-3">
+          <div className="rounded-lg border border-white/10 bg-white/5 p-3">
             <h3 className="font-display text-sm font-bold tracking-wide text-ink uppercase">
               2. Les subs Twitch — pour tout le monde
             </h3>
@@ -250,7 +250,7 @@ export default function ReglesPage() {
             return (
               <div
                 key={id}
-                className="rounded-lg border border-line bg-bg-1/60 p-3"
+                className="rounded-lg border border-white/10 bg-white/5 p-3"
                 style={{ borderLeft: `3px solid ${theme.color}` }}
               >
                 <div

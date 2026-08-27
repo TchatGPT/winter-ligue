@@ -108,7 +108,7 @@ export default async function CoteCartePage({ params }: { params: Promise<{ card
         / <span className="text-ink">{card.name}</span>
       </nav>
 
-      <header className="panel panel-frost relative overflow-hidden p-5">
+      <header className="glass relative overflow-hidden p-5">
         <div
           className="pointer-events-none absolute inset-0 opacity-50"
           style={{
@@ -144,7 +144,7 @@ export default async function CoteCartePage({ params }: { params: Promise<{ card
             <p className="mt-0.5 text-xs text-faint">{card.subtitle}</p>
             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">{card.description}</p>
 
-            <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-faint">
+            <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-faint">
               <span>
                 Famille{' '}
                 <span style={{ color: theme.color }}>
@@ -191,8 +191,8 @@ export default async function CoteCartePage({ params }: { params: Promise<{ card
         />
       </section>
 
-      <section className="panel panel-frost">
-        <h2 className="border-b border-line px-4 py-2.5 font-display text-sm font-black tracking-wider text-ink uppercase">
+      <section className="glass">
+        <h2 className="border-b border-white/10 px-4 py-2.5 font-display text-sm font-black tracking-wider text-ink uppercase">
           Évolution des prix
         </h2>
         <div className="pt-2">
@@ -221,8 +221,8 @@ export default async function CoteCartePage({ params }: { params: Promise<{ card
       </section>
 
       {data.sales.length > 0 && (
-        <section className="panel panel-frost">
-          <h2 className="border-b border-line px-4 py-2.5 font-display text-sm font-black tracking-wider text-ink uppercase">
+        <section className="glass">
+          <h2 className="border-b border-white/10 px-4 py-2.5 font-display text-sm font-black tracking-wider text-ink uppercase">
             Historique des ventes
           </h2>
           <div className="scroll-x">
@@ -239,7 +239,7 @@ export default async function CoteCartePage({ params }: { params: Promise<{ card
               <tbody>
                 {data.sales.map((sale) => (
                   <tr key={sale.id}>
-                    <td className="num text-[11px] text-faint">
+                    <td className="num text-[13px] text-faint">
                       {new Date(sale.soldAt).toLocaleString('fr-FR', {
                         day: '2-digit',
                         month: '2-digit',

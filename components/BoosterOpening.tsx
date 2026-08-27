@@ -173,7 +173,7 @@ export function BoosterOpening({
                 onClick={() => !busy && setSelected(b.id)}
                 disabled={busy}
                 aria-pressed={active}
-                className={`panel panel-hover w-[230px] shrink-0 p-3 text-left sm:w-auto ${
+                className={`glass glass-hover w-[230px] shrink-0 p-3 text-left sm:w-auto ${
                   active ? 'border-ice/70' : ''
                 }`}
                 style={active ? { boxShadow: '0 0 0 1px rgba(127,216,255,0.35)' } : undefined}
@@ -183,7 +183,7 @@ export function BoosterOpening({
                     {b.glyph}
                   </span>
                   {b.guaranteed && (
-                    <span className="flex items-center gap-1 text-[10px] text-faint">
+                    <span className="flex items-center gap-1 text-[13px] text-faint">
                       garanti <RarityChip rarity={b.guaranteed} />
                     </span>
                   )}
@@ -191,13 +191,13 @@ export function BoosterOpening({
                 <div className="mt-1.5 font-display text-base leading-tight font-black tracking-wide text-ink uppercase">
                   {b.name}
                 </div>
-                <div className="text-[11px] text-faint">
+                <div className="text-[13px] text-faint">
                   {b.cardCount} cartes · {b.tagline}
                 </div>
                 <div className="num mt-2 font-display text-lg font-black text-ice">
                   ❄ {flakes(b.finalPrice)}
                   {b.finalPrice !== b.price && (
-                    <span className="num ml-1.5 text-[11px] font-normal text-faint line-through">
+                    <span className="num ml-1.5 text-[13px] font-normal text-faint line-through">
                       {flakes(b.price)}
                     </span>
                   )}
@@ -209,7 +209,7 @@ export function BoosterOpening({
       </div>
 
       {/* ------------------------- Scène 3D ------------------------------ */}
-      <div className="panel panel-frost relative overflow-hidden">
+      <div className="glass relative overflow-hidden">
         <div
           className="pointer-events-none absolute inset-0 opacity-60"
           style={{
@@ -248,13 +248,13 @@ export function BoosterOpening({
                       {booster.glyph}
                     </span>
                     <div className="relative text-center">
-                      <div className="font-display text-[11px] font-bold tracking-[0.3em] text-white/60 uppercase">
+                      <div className="font-display text-[13px] font-bold tracking-[0.3em] text-white/60 uppercase">
                         Winter Ligue
                       </div>
                       <div className="font-display text-2xl leading-none font-black tracking-wide text-white uppercase drop-shadow">
                         {booster.name}
                       </div>
-                      <div className="mt-1 font-display text-[11px] font-bold tracking-[0.18em] text-white/70 uppercase">
+                      <div className="mt-1 font-display text-[13px] font-bold tracking-[0.18em] text-white/70 uppercase">
                         {booster.cardCount} cartes
                       </div>
                     </div>
@@ -359,7 +359,7 @@ export function BoosterOpening({
                             corner={
                               card.isNew ? (
                                 <span
-                                  className="rounded px-1 py-px font-display text-[9px] font-black tracking-wider uppercase"
+                                  className="rounded px-1 py-px font-display text-[13px] font-black tracking-wider uppercase"
                                   style={{ background: '#5fe3bd', color: '#04211a' }}
                                 >
                                   New
@@ -396,12 +396,12 @@ export function BoosterOpening({
       </div>
 
       {/* --------------------- Taux du booster choisi -------------------- */}
-      <section className="panel">
-        <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-line px-4 py-2.5">
+      <section className="glass">
+        <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-white/10 px-4 py-2.5">
           <h2 className="font-display text-sm font-black tracking-wider text-ink uppercase">
             Taux du booster {booster.name}
           </h2>
-          <span className="text-[11px] text-faint">
+          <span className="text-[13px] text-faint">
             Tirage serveur, source cryptographique — {booster.cardCount} cartes par booster
           </span>
         </div>
@@ -412,15 +412,15 @@ export function BoosterOpening({
             const per = rarityPercent(booster.weights, rarity);
             const atLeast = atLeastOnePercent(booster.weights, rarity, booster.cardCount);
             return (
-              <div key={rarity} className="border-t border-line px-3 py-2.5 sm:border-r">
+              <div key={rarity} className="border-t border-white/10 px-3 py-2.5 sm:border-r">
                 <div className="flex items-center gap-1.5">
                   <RarityChip rarity={rarity} />
-                  <span className="text-[11px] text-muted">{meta.label}</span>
+                  <span className="text-[13px] text-muted">{meta.label}</span>
                 </div>
                 <div className="num mt-1 font-display text-lg font-black" style={{ color: meta.color }}>
                   {per < 0.1 ? per.toFixed(3) : per < 1 ? per.toFixed(2) : per.toFixed(1)} %
                 </div>
-                <div className="num text-[10px] text-faint">
+                <div className="num text-[13px] text-faint">
                   {atLeast < 0.1 ? atLeast.toFixed(3) : atLeast.toFixed(1)} % par booster
                 </div>
               </div>

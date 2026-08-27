@@ -182,7 +182,7 @@ export function CollectionBoard({
             hint="Choisis « Vendre » sur une carte de ta main pour la mettre aux enchères."
           />
         ) : (
-          <div className="panel panel-frost scroll-x">
+          <div className="glass scroll-x">
             <table className="grid-table min-w-[600px]">
               <thead>
                 <tr>
@@ -238,7 +238,7 @@ export function CollectionBoard({
           <h2 className="mb-3 font-display text-xl font-black uppercase tracking-wide text-ink">
             Enchères où je suis en tête
           </h2>
-          <div className="panel panel-frost scroll-x">
+          <div className="glass scroll-x">
             <table className="grid-table min-w-[480px]">
               <thead>
                 <tr>
@@ -281,7 +281,7 @@ export function CollectionBoard({
           aria-modal="true"
           aria-label={dialog.kind === 'jouer' ? 'Jouer une carte' : 'Mettre en vente'}
         >
-          <div className="panel panel-frost w-full max-w-md p-5">
+          <div className="glass w-full max-w-md p-5">
             <div className="mb-3 flex items-start gap-3">
               <span className="text-3xl leading-none" aria-hidden="true">
                 {dialog.card.glyph}

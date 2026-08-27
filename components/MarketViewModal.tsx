@@ -36,8 +36,8 @@ interface Payload {
 
 function Stat({ label, value, accent }: { label: string; value: string; accent?: string }) {
   return (
-    <div className="rounded-lg border border-line bg-bg-1/70 px-3 py-2">
-      <div className="text-[10px] font-bold tracking-[0.16em] text-faint uppercase">{label}</div>
+    <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2">
+      <div className="text-[13px] font-bold tracking-[0.16em] text-faint uppercase">{label}</div>
       <div
         className="num font-display text-lg leading-tight font-black"
         style={{ color: accent ?? 'var(--ink)' }}
@@ -110,11 +110,11 @@ export function MarketViewModal({ cardId, onClose }: { cardId: string; onClose: 
       onClick={onClose}
     >
       <div
-        className="panel panel-frost max-h-[92dvh] w-full max-w-3xl overflow-y-auto rounded-b-none sm:rounded-b-xl"
+        className="glass max-h-[92dvh] w-full max-w-3xl overflow-y-auto rounded-b-none sm:rounded-b-xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* -------------------------- Entête -------------------------- */}
-        <div className="sticky top-0 z-10 flex items-start gap-3 border-b border-line bg-bg-2/95 px-4 py-3 backdrop-blur">
+        <div className="sticky top-0 z-10 flex items-start gap-3 border-b border-white/10 bg-[#0a1220]/85 px-4 py-3 backdrop-blur">
           {data && (
             <span
               className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-2xl"
@@ -184,7 +184,7 @@ export function MarketViewModal({ cardId, onClose }: { cardId: string; onClose: 
                   />
                 </div>
 
-                <div className="mt-3 rounded-lg border border-line bg-bg-1/60 pt-2">
+                <div className="mt-3 rounded-lg border border-white/10 bg-white/5 pt-2">
                   <PriceChart
                     points={data.stats.history}
                     color={meta!.color}
@@ -192,7 +192,7 @@ export function MarketViewModal({ cardId, onClose }: { cardId: string; onClose: 
                   />
                 </div>
 
-                <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-faint">
+                <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-faint">
                   <span>
                     Tendance 7 j :{' '}
                     {trend === null ? (
@@ -226,7 +226,7 @@ export function MarketViewModal({ cardId, onClose }: { cardId: string; onClose: 
                 </h3>
 
                 {data.sales.length === 0 ? (
-                  <p className="rounded-lg border border-line bg-bg-1/60 px-3 py-6 text-center text-xs text-faint">
+                  <p className="rounded-lg border border-white/10 bg-white/5 px-3 py-6 text-center text-xs text-faint">
                     Cette carte n’a encore jamais changé de mains.
                   </p>
                 ) : (
@@ -234,11 +234,11 @@ export function MarketViewModal({ cardId, onClose }: { cardId: string; onClose: 
                     {data.sales.slice(0, 10).map((sale) => (
                       <li
                         key={sale.id}
-                        className="flex items-center gap-2 rounded-lg border border-line bg-bg-1/60 px-3 py-2"
+                        className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2"
                         style={{ borderLeft: `3px solid ${meta!.color}` }}
                       >
                         <RarityChip rarity={sale.rarity} />
-                        <span className="num shrink-0 text-[11px] text-faint">
+                        <span className="num shrink-0 text-[13px] text-faint">
                           {new Date(sale.soldAt).toLocaleString('fr-FR', {
                             day: '2-digit',
                             month: 'short',
@@ -247,7 +247,7 @@ export function MarketViewModal({ cardId, onClose }: { cardId: string; onClose: 
                             minute: '2-digit',
                           })}
                         </span>
-                        <span className="min-w-0 flex-1 truncate text-[11px] text-muted">
+                        <span className="min-w-0 flex-1 truncate text-[13px] text-muted">
                           {sale.seller} → {sale.buyer}
                           <span className="ml-1.5 text-faint">
                             {sale.method === 'ENCHERE' ? '· enchère' : '· achat immédiat'}

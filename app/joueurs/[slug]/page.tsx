@@ -35,8 +35,8 @@ export default async function ProfilJoueurPage({ params }: { params: Promise<{ s
         / {profile.pseudo}
       </nav>
 
-      <header className="panel panel-frost flex flex-wrap items-center gap-4 p-5">
-        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-line-bright bg-bg-3 font-display text-xl font-black text-ice">
+      <header className="glass flex flex-wrap items-center gap-4 p-5">
+        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-white/20 bg-white/10 font-display text-xl font-black text-ice">
           {profile.pseudo.slice(0, 2).toUpperCase()}
         </div>
         <div className="min-w-0 flex-1">
@@ -101,7 +101,7 @@ export default async function ProfilJoueurPage({ params }: { params: Promise<{ s
         {profile.games.length === 0 ? (
           <EmptyState title="Aucune game enregistrée" />
         ) : (
-          <div className="panel panel-frost scroll-x">
+          <div className="glass scroll-x">
             <table className="grid-table min-w-[640px]">
               <thead>
                 <tr>
@@ -125,7 +125,7 @@ export default async function ProfilJoueurPage({ params }: { params: Promise<{ s
                         minute: '2-digit',
                       })}
                       {game.frozen && <span title="Game gelée"> ❄</span>}
-                      {game.skipped && <span className="ml-1 text-[10px] uppercase">passée</span>}
+                      {game.skipped && <span className="ml-1 text-[13px] uppercase">passée</span>}
                     </td>
                     <td className="num text-right text-ink">{game.kills}</td>
                     <td className="num text-center text-gold">{game.placement ?? '—'}</td>

@@ -154,7 +154,7 @@ export function AdminPanel({
 
       <div className="grid gap-4 lg:grid-cols-2">
         {/* --------------------------- Saisir une game -------------------- */}
-        <section className="panel panel-frost p-5">
+        <section className="glass p-5">
           <h2 className="font-display text-lg font-black uppercase tracking-wide text-ice">
             Saisir une game
           </h2>
@@ -238,7 +238,7 @@ export function AdminPanel({
         </section>
 
         {/* ---------------------------- Inscription ----------------------- */}
-        <section className="panel panel-frost p-5">
+        <section className="glass p-5">
           <h2 className="font-display text-lg font-black uppercase tracking-wide text-ice">
             Inscrire un joueur
           </h2>
@@ -293,7 +293,7 @@ export function AdminPanel({
         </section>
 
         {/* ---------------------------- Attribution ----------------------- */}
-        <section className="panel panel-frost p-5">
+        <section className="glass p-5">
           <h2 className="font-display text-lg font-black uppercase tracking-wide text-ice">
             Attribuer flocons ou carte
           </h2>
@@ -394,7 +394,7 @@ export function AdminPanel({
         </section>
 
         {/* ------------------------------ Réglages ------------------------ */}
-        <section className="panel panel-frost p-5">
+        <section className="glass p-5">
           <h2 className="font-display text-lg font-black uppercase tracking-wide text-ice">
             Réglages de saison
           </h2>
@@ -444,7 +444,7 @@ export function AdminPanel({
               </button>
             </div>
 
-            <div className="border-t border-line pt-3">
+            <div className="border-t border-white/10 pt-3">
               <p className="label">Sauvegarde</p>
               <a href="/api/admin/backup" className="btn btn-sm no-underline">
                 Exporter la base (JSON)
@@ -459,8 +459,8 @@ export function AdminPanel({
       </div>
 
       {/* ------------------------------- Joueurs -------------------------- */}
-      <section className="panel panel-frost">
-        <h2 className="border-b border-line px-4 py-2.5 font-display text-sm font-black uppercase tracking-wider text-ink">
+      <section className="glass">
+        <h2 className="border-b border-white/10 px-4 py-2.5 font-display text-sm font-black uppercase tracking-wider text-ink">
           Joueurs inscrits
         </h2>
         <div className="scroll-x">
@@ -494,8 +494,8 @@ export function AdminPanel({
       </section>
 
       {/* ------------------------------- Journal -------------------------- */}
-      <section className="panel panel-frost">
-        <h2 className="border-b border-line px-4 py-2.5 font-display text-sm font-black uppercase tracking-wider text-ink">
+      <section className="glass">
+        <h2 className="border-b border-white/10 px-4 py-2.5 font-display text-sm font-black uppercase tracking-wider text-ink">
           Journal d’audit
         </h2>
         <div className="scroll-x">
@@ -563,7 +563,7 @@ function SubsPanel({
   const next = nextMilestone(config.totalSubs);
 
   return (
-    <section className="panel panel-frost p-5">
+    <section className="glass p-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h2 className="font-display text-lg font-black tracking-wide text-ice uppercase">
@@ -579,7 +579,7 @@ function SubsPanel({
             {flakes(config.totalSubs)}
           </div>
           {next && (
-            <div className="text-[11px] text-faint">
+            <div className="text-[13px] text-faint">
               {next.milestone.label} dans {next.remaining} sub{next.remaining > 1 ? 's' : ''}
             </div>
           )}
@@ -605,7 +605,7 @@ function SubsPanel({
         </p>
       )}
 
-      <div className="mt-4 border-t border-line pt-3">
+      <div className="mt-4 border-t border-white/10 pt-3">
         <p className="label">Carte offerte par un gifteur ({SUBS.giftThreshold} subs)</p>
         <div className="flex flex-wrap gap-2">
           <select
@@ -624,7 +624,7 @@ function SubsPanel({
             Offrir une commune
           </button>
         </div>
-        <p className="mt-1.5 text-[11px] text-faint">
+        <p className="mt-1.5 text-[13px] text-faint">
           Toujours une commune, jamais des flocons : le geste passe à l’antenne sans peser sur le
           classement. Maximum {SUBS.maxGiftedCardsPerDay} par joueur et par jour.
         </p>

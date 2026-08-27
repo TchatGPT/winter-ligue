@@ -110,7 +110,7 @@ export default async function BoostersPage() {
                   <span style={{ color: theme.color }}>{theme.name}</span>
                 </h3>
                 <span className="text-xs text-faint">{theme.tagline}</span>
-                <span className="ml-auto text-[11px] text-muted">
+                <span className="ml-auto text-[13px] text-muted">
                   4/6 → <strong className="text-ink">{theme.partialBonusLabel}</strong>
                   <span className="mx-1.5 text-faint">·</span>
                   6/6 → <strong style={{ color: theme.color }}>{theme.fullBonusLabel}</strong>
@@ -139,8 +139,8 @@ export default async function BoostersPage() {
         })}
       </section>
 
-      <section className="panel px-4 py-3">
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px] text-faint">
+      <section className="glass px-4 py-3">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px] text-faint">
           <span className="font-display text-xs font-bold tracking-wider text-muted uppercase">
             Légende
           </span>

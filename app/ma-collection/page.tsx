@@ -79,7 +79,7 @@ export default async function MaCollectionPage() {
           {profile.themes.map((theme) => (
             <div
               key={theme.id}
-              className="panel p-3"
+              className="glass p-3"
               style={{
                 borderColor: theme.complete ? theme.color : undefined,
                 borderLeft: `3px solid ${theme.complete ? theme.color : `${theme.color}44`}`,
@@ -107,7 +107,7 @@ export default async function MaCollectionPage() {
                 />
               </div>
 
-              <dl className="mt-2 space-y-0.5 text-[11px]">
+              <dl className="mt-2 space-y-0.5 text-[13px]">
                 <div className="flex gap-1.5">
                   <dt className={theme.partial ? 'text-aurora' : 'text-faint'}>
                     {theme.partial ? '✓' : `${SET_TIERS.partial}/${theme.total}`}
@@ -127,7 +127,7 @@ export default async function MaCollectionPage() {
               </dl>
 
               {!theme.complete && (
-                <p className="mt-1.5 text-[10px] text-faint">
+                <p className="mt-1.5 text-[13px] text-faint">
                   Encore {theme.toNextTier} carte{theme.toNextTier > 1 ? 's' : ''} avant le prochain
                   palier.
                 </p>
@@ -155,7 +155,7 @@ export default async function MaCollectionPage() {
               glyph={entry.discovered ? entry.glyph : '❔'}
               dimmed={!entry.discovered}
               footer={
-                <span className="text-[10px] uppercase tracking-wider text-faint">
+                <span className="text-[13px] uppercase tracking-wider text-faint">
                   {entry.discovered
                     ? entry.copies > 0
                       ? `${entry.copies} exemplaire${entry.copies > 1 ? 's' : ''} en réserve`
@@ -176,7 +176,7 @@ export default async function MaCollectionPage() {
         <h2 className="mb-3 font-display text-xl font-black uppercase tracking-wide text-ink">
           Derniers mouvements de flocons
         </h2>
-        <div className="panel panel-frost scroll-x">
+        <div className="glass scroll-x">
           <table className="grid-table min-w-[420px]">
             <thead>
               <tr>
