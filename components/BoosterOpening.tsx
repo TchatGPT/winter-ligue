@@ -423,7 +423,6 @@ export function BoosterOpening({
                             frozen={busy}
                             vignette={!actif}
                             retourne={actif && verso === b.id}
-                            rarete={b.guaranteed}
                             inerte
                           />
                           {actif && phase === 'eclat' && (

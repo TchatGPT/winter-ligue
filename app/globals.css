@@ -7,12 +7,6 @@
  * ordinaire s'animerait par sauts. Une seule animation, portee par le sachet,
  * entraine alors d'un bloc les cent quarante tuiles qui la lisent.
  */
-@property --onde {
-  syntax: '<percentage>';
-  inherits: true;
-  initial-value: 0%;
-}
-
 @property --balayage {
   syntax: '<length>';
   inherits: true;
@@ -1966,120 +1960,46 @@
   /* Le halo : une lueur posée derrière le sachet, à sa couleur.
      Elle ne tourne pas avec lui — c'est un éclairage de vitrine, pas une
      propriété de l'objet — et elle respire lentement. */
+  /* Une lueur froide posée derrière le sachet, et rien de plus.
+
+     La version précédente prenait 62 % de la teinte du booster sur une ellipse
+     de 165 % de large : sur un Everest ambré, ça faisait une tache orange
+     franchement visible à côté du sachet. Le halo doit décoller l'objet de son
+     fond, pas se faire remarquer — il reste donc froid, l'accent du booster n'y
+     entrant qu'au quart, et il ne déborde plus que d'un tiers. */
   .sachet-halo {
     position: absolute;
     left: 50%;
     top: 50%;
-    width: 165%;
-    height: 125%;
+    width: 132%;
+    height: 112%;
     pointer-events: none;
     background: radial-gradient(
       ellipse at 50% 50%,
-      color-mix(in srgb, var(--p1, #2b4a63) 62%, transparent) 0%,
-      color-mix(in srgb, var(--p2, #0e1c2a) 34%, transparent) 40%,
-      transparent 70%
+      color-mix(in srgb, var(--p1, #2b4a63) 26%, transparent) 0%,
+      color-mix(in srgb, var(--p1, #2b4a63) 12%, transparent) 46%,
+      transparent 72%
     );
-    filter: blur(38px);
-    --duree-halo: 5.5s;
+    filter: blur(44px);
+    --duree-halo: 9s;
     animation: sachet-halo var(--duree-halo) ease-in-out infinite;
   }
 
   @keyframes sachet-halo {
     0%,
     100% {
-      opacity: 0.38;
-      transform: translate(-50%, -50%) scale(0.93);
+      opacity: 0.5;
+      transform: translate(-50%, -50%) scale(0.97);
     }
     50% {
-      opacity: 0.7;
-      transform: translate(-50%, -50%) scale(1.07);
+      opacity: 0.78;
+      transform: translate(-50%, -50%) scale(1.03);
     }
   }
 
   /* Le reflet balayant, pour les sachets qui n'ont pas de maillage — vignettes
      et repli dessiné. Sur la coque galbée, il est une couche de fond de plus
      sur chaque tuile : voir `BoosterPack3D`. */
-  /* -- L'onde de rareté ----------------------------------------------------- */
-
-  /* Un anneau de lumière part du centre et traverse le sachet dans toutes les
-     directions à la fois, puis attend. Sa teinte, son intensité et sa cadence
-     viennent de la rareté garantie : c'est ce qui distingue un sachet à ultra
-     rare d'un sachet d'entrée, sans avoir à l'écrire.
-
-     Un seul plan, posé devant la coque, plutôt qu'une couche de fond sur chacune
-     des cent soixante-huit tuiles. L'onde balaie tout le sachet, on ne peut donc
-     pas la restreindre à quelques rangées comme le titre — et cent soixante-huit
-     fonds animés coûteraient une bonne quinzaine d'images par seconde. Le sachet
-     reposant entre 9 et 31 degrés, l'écart entre ce plan et la surface galbée ne
-     se voit pas.
-
-     `backface-visibility` la retire dès qu'on retourne le sachet : le verso n'a
-     pas de rareté à annoncer. */
-  .sachet-onde {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    backface-visibility: hidden;
-    border-radius: 2px;
-    /* Deux pixels devant le point le plus gonflé de la coque.
-       Le `z-index` ne sert à rien ici : dans un contexte `preserve-3d`, c'est la
-       profondeur qui trie. Laissée à z = 0, l'onde se retrouvait à l'intérieur du
-       sachet et les tuiles du recto, jusqu'à z = 24, la masquaient entièrement. */
-    transform: translateZ(25.5px);
-    /*
-     * `screen`, et non un aplat posé devant.
-     *
-     * Une couleur peinte par-dessus une illustration se lit toujours comme un
-     * autocollant, quelle que soit sa finesse. En fusion, l'anneau ne remplace
-     * plus les pixels : il les eclaircit. La neige blanche reste blanche, la
-     * roche sombre s'illumine, et la lumiere parait venir du sachet.
-     */
-    mix-blend-mode: screen;
-    /* Une ellipse aux proportions du sachet, et non un cercle : passé cent
-       pixels, un cercle sort déjà par les côtés d'un sachet de 200 de large et
-       ne traverse plus que par le haut et le bas. L'ellipse garde un anneau
-       complet du centre jusqu'aux quatre coins. */
-    background: radial-gradient(
-      ellipse 110px 182px at 50% 46%,
-      transparent calc(var(--onde) - 32%),
-      color-mix(in srgb, var(--gemme, #8fdcff) 20%, transparent) calc(var(--onde) - 15%),
-      color-mix(in srgb, var(--gemme, #8fdcff) 52%, transparent) calc(var(--onde) - 4%),
-      rgb(255 255 255 / 0.68) var(--onde),
-      color-mix(in srgb, var(--gemme, #8fdcff) 52%, transparent) calc(var(--onde) + 4%),
-      color-mix(in srgb, var(--gemme, #8fdcff) 20%, transparent) calc(var(--onde) + 15%),
-      transparent calc(var(--onde) + 32%)
-    );
-    opacity: 0;
-    animation: sachet-onde var(--onde-duree, 6s) linear infinite;
-  }
-
-  /* L'anneau traverse en un tiers du cycle, puis se gare hors du sachet — au
-     rayon 340, sa lisière intérieure est déjà au-delà du coin le plus éloigné,
-     qui est à 205. C'est ce stationnement qui fait l'intervalle. */
-  @keyframes sachet-onde {
-    0% {
-      --onde: 2%;
-      opacity: 0;
-    }
-    /* L'intensité monte vite et tient tout le trajet. Étalée sur la première
-       moitié, elle ne culminait qu'une fois l'anneau déjà près des bords : on
-       voyait une lueur pousser sur un côté au lieu d'un cercle qui traverse. */
-    6% {
-      opacity: var(--onde-force, 0.5);
-    }
-    30% {
-      opacity: var(--onde-force, 0.5);
-    }
-    42% {
-      --onde: 165%;
-      opacity: 0;
-    }
-    100% {
-      --onde: 165%;
-      opacity: 0;
-    }
-  }
-
   .sachet-eclat {
     position: absolute;
     inset: 0;
@@ -2201,13 +2121,14 @@
      accessible en cliquant le sachet mis en avant, qui bascule alors sur
      `--tour: 180deg`. */
   .sachet {
-    --duree-reflet: 4.6s;
+    --duree-pose: 9s;
+    --duree-reflet: 7.5s;
     animation: sachet-balayage var(--duree-reflet) linear infinite;
   }
 
   .sachet-tourne {
     animation:
-      sachet-pose 7s ease-in-out infinite,
+      sachet-pose var(--duree-pose) ease-in-out infinite,
       sachet-balayage var(--duree-reflet) linear infinite;
   }
 
@@ -2233,53 +2154,42 @@
   }
 
   /*
-   * Mouvement réduit : on arrête ce qui déplace, pas ce qui éclaire.
+   * Mouvement réduit : on arrête ce qui déplace largement, pas ce qui éclaire.
    *
-   * Une première version coupait tout — reflet, halo, onde de rareté, foil des
-   * cartes. Sur une machine dont les animations système sont désactivées, et
-   * c'est un réglage courant, les sachets devenaient de simples images fixes :
-   * aucune des lumières décrites plus haut n'apparaissait jamais.
+   * Une première version coupait tout. Sur une machine dont les animations
+   * système sont désactivées — un réglage courant — les sachets devenaient de
+   * simples images fixes : aucune des lumières décrites plus haut n'apparaissait
+   * jamais.
    *
-   * La préférence vise l'inconfort vestibulaire — rotations, glissements,
-   * parallaxes. Un reflet qui balaie une surface, un halo qui respire, un
-   * anneau de lumière, un foil qui miroite ne déplacent rien : ce sont des
-   * variations de luminance, et rien ne justifie de les supprimer.
+   * La préférence vise l'inconfort vestibulaire, que provoquent les grandes
+   * surfaces en mouvement : parallaxes, dérives de fond, défilements. Ce qui
+   * reste ici n'en relève pas — un reflet qui glisse, un halo qui respire, et
+   * un sachet de deux cents pixels qui se balance de onze degrés en neuf
+   * secondes. Ce sont l'aurore, la neige et les montagnes qui s'arrêtent, et
+   * elles s'arrêtent bien, dans leurs propres blocs plus haut.
    *
-   * Ce qui s'arrête donc vraiment ici : la rotation du sachet. Son reflet, lui,
-   * continue — d'où la règle qui rejoue la seule animation à garder, la
-   * propriété `animation` étant écrasée en bloc.
+   * Bien plus haut, un garde-fou universel impose par ailleurs
+   * `animation-duration: 0.01ms !important` et `iteration-count: 1` à toute la
+   * page. C'est un filet utile — il attrape les animations ajoutées plus tard
+   * sans y penser — mais c'est lui qu'il faut contredire ici, d'où le
+   * `!important`, et les durées reprises de variables pour ne pas exister en
+   * deux exemplaires qui divergeraient.
    */
   @media (prefers-reduced-motion: reduce) {
-    /* Le sachet cesse de tourner, mais garde son reflet. */
-    .sachet-tourne {
-      animation: sachet-balayage var(--duree-reflet) linear infinite;
+    .sachet {
+      animation-duration: var(--duree-reflet) !important;
+      animation-iteration-count: infinite !important;
     }
 
-    /*
-     * Les lumières sont rétablies une à une.
-     *
-     * Bien plus haut, un garde-fou universel impose
-     * `animation-duration: 0.01ms !important` et `iteration-count: 1` à tout
-     * élément de la page. C'est un filet utile — il attrape les animations
-     * ajoutées plus tard sans y penser — mais c'est lui qui éteignait le
-     * reflet, le halo et l'onde, quel que soit ce qui était écrit ici.
-     *
-     * Le `!important` est donc obligatoire pour lui répondre, et la durée
-     * reprise d'une variable pour ne pas exister en deux exemplaires.
-     */
-    .sachet,
+    /* Deux animations, deux durées : la liste doit suivre celle de la propriété
+       `animation`, sinon le balancement hériterait de la durée du reflet. */
     .sachet-tourne {
-      animation-duration: var(--duree-reflet) !important;
+      animation-duration: var(--duree-pose), var(--duree-reflet) !important;
       animation-iteration-count: infinite !important;
     }
 
     .sachet-halo {
       animation-duration: var(--duree-halo) !important;
-      animation-iteration-count: infinite !important;
-    }
-
-    .sachet-onde {
-      animation-duration: var(--onde-duree, 6s) !important;
       animation-iteration-count: infinite !important;
     }
   }

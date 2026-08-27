@@ -360,26 +360,6 @@ function versoImprime(nom: string) {
   return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
 }
 
-/**
- * L'onde, réglée par la rareté garantie.
- *
- * Trois grandeurs montent ensemble — la teinte se réchauffe, l'anneau s'éclaircit,
- * l'attente raccourcit. Un sachet à ultra rare pulse donc plus vite et plus fort
- * qu'un sachet d'entrée, et ça se lit sans lire.
- *
- * Un booster sans garantie n'est pas privé d'onde pour autant : il en reçoit une
- * lente et pâle, dans le bleu de la glace. L'absence pure se serait lue comme une
- * animation cassée plutôt que comme le bas de l'échelle.
- */
-const ONDE: Record<string, { gemme: string; force: number; duree: string }> = {
-  C: { gemme: 'var(--ice)', force: 0.2, duree: '8s' },
-  PC: { gemme: 'var(--r-pc)', force: 0.27, duree: '7.2s' },
-  R: { gemme: 'var(--r-r)', force: 0.35, duree: '6.4s' },
-  SR: { gemme: 'var(--r-sr)', force: 0.44, duree: '5.4s' },
-  UR: { gemme: 'var(--r-ur)', force: 0.55, duree: '4.4s' },
-  L: { gemme: 'var(--r-l)', force: 0.68, duree: '3.6s' },
-};
-
 export interface Pack3DProps {
   name: string;
   cardCount: number;
@@ -408,12 +388,6 @@ export interface Pack3DProps {
   inerte?: boolean;
   /** Présente le verso plutôt que le recto. */
   retourne?: boolean;
-  /**
-   * Rareté garantie du booster, qui règle l'onde.
-   *
-   * Absente, l'onde prend son réglage le plus bas — voir `ONDE`.
-   */
-  rarete?: string | null;
   className?: string;
 }
 
@@ -448,7 +422,6 @@ export function BoosterPack3D({
   vignette = false,
   inerte = false,
   retourne = false,
-  rarete = null,
   className,
 }: Pack3DProps) {
   const packRef = useRef<HTMLDivElement>(null);
@@ -558,7 +531,6 @@ export function BoosterPack3D({
   // SVG et de le ré-encoder à chaque image d'animation.
   const verso = useMemo(() => versoImprime(name), [name]);
   const recto = useMemo(() => rectoImprime(name), [name]);
-  const onde = ONDE[rarete ?? 'C'] ?? ONDE.C;
 
   const coque = vignette ? (
     /* Une seule face, posée de trois quarts. L'ombrage du bombement est là,
@@ -699,14 +671,15 @@ export function BoosterPack3D({
         ['--p1' as string]: gradient[0],
         ['--p2' as string]: gradient[1],
         ['--eclat' as string]: ECLAT,
-        ['--gemme' as string]: onde.gemme,
-        ['--onde-force' as string]: onde.force,
-        ['--onde-duree' as string]: onde.duree,
       }}
     >
       {/* Le halo ne tourne pas avec le sachet : c'est un éclairage de vitrine
-          posé derrière lui, pas une propriété de l'objet. */}
-      <span className="sachet-halo" aria-hidden="true" />
+          posé derrière lui, pas une propriété de l'objet.
+
+          Il ne va qu'au sachet mis en avant. Sur les vignettes, quatre lueurs
+          colorées se chevauchaient derrière la rangée et faisaient des taches
+          à côté des sachets. */}
+      {!vignette && <span className="sachet-halo" aria-hidden="true" />}
 
       <div
         ref={packRef}
@@ -736,7 +709,6 @@ export function BoosterPack3D({
         }
       >
         {coque}
-        {!vignette && <span className="sachet-onde" aria-hidden="true" />}
         <span className="sachet-ombre" aria-hidden="true" />
       </div>
     </div>
