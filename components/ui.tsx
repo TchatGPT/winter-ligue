@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { RARITY_META, THEMES } from '@/lib/domain/catalog';
 import type { Rarity, ThemeId } from '@/lib/domain/types';
+import { compact, num } from '@/lib/format';
 
 /** Une rareté inconnue retombe sur la commune plutôt que de casser le rendu. */
 export function rarityMeta(rarity: string) {
@@ -11,17 +12,13 @@ export function themeMeta(theme: string) {
   return THEMES[theme as ThemeId] ?? null;
 }
 
-export function flakes(n: number): string {
-  return n.toLocaleString('fr-FR');
-}
-
-/** Format compact pour les vignettes serrées : 12 400 → 12,4 k */
-export function flakesShort(n: number): string {
-  if (Math.abs(n) >= 1_000_000) return `${(n / 1_000_000).toFixed(1).replace('.', ',')} M`;
-  if (Math.abs(n) >= 10_000) return `${Math.round(n / 1000)} k`;
-  if (Math.abs(n) >= 1_000) return `${(n / 1000).toFixed(1).replace('.', ',')} k`;
-  return String(n);
-}
+/**
+ * Alias historiques vers les formateurs déterministes de `lib/format`.
+ * Le formatage passe par là et jamais par `toLocaleString` : Node et les
+ * navigateurs ne produisent pas la même chaîne, ce qui casse l'hydratation.
+ */
+export const flakes = num;
+export const flakesShort = compact;
 
 /* ------------------------------- Tuiles --------------------------------- */
 

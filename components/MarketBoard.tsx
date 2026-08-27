@@ -7,6 +7,7 @@ import { MarketViewModal } from '@/components/MarketViewModal';
 import { EmptyState, Notice, RarityChip, flakes, flakesShort, rarityMeta } from '@/components/ui';
 import { MARKET } from '@/lib/domain/rules';
 import type { Rarity } from '@/lib/domain/types';
+import { shortDateTime } from '@/lib/format';
 
 const RARITIES: Rarity[] = ['L', 'UR', 'SR', 'R', 'PC', 'C'];
 
@@ -389,12 +390,7 @@ export function MarketBoard({
                       ❄ {flakes(sale.price)}
                     </td>
                     <td className="num text-right text-[13px] text-faint">
-                      {new Date(sale.soldAt).toLocaleString('fr-FR', {
-                        day: '2-digit',
-                        month: '2-digit',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
+                      {shortDateTime(sale.soldAt)}
                     </td>
                   </tr>
                 );

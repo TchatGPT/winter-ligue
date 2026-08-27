@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
+import { num } from '@/lib/format';
 
 /**
  * Pastille de session : solde de flocons, pseudo, déconnexion.
@@ -55,7 +56,7 @@ export function SessionBadge({
       title="Tes flocons — la monnaie de la saison"
     >
       <span aria-hidden="true">❄</span>
-      <span className="num">{balance.toLocaleString('fr-FR')}</span>
+      <span className="num">{num(balance)}</span>
     </span>
   );
 

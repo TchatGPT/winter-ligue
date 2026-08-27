@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { PriceChart } from '@/components/PriceChart';
 import { RarityChip, flakes, rarityMeta } from '@/components/ui';
 import type { MarketStats } from '@/lib/domain/types';
+import { longDateTime } from '@/lib/format';
 
 interface CardInfo {
   id: string;
@@ -239,13 +240,7 @@ export function MarketViewModal({ cardId, onClose }: { cardId: string; onClose: 
                       >
                         <RarityChip rarity={sale.rarity} />
                         <span className="num shrink-0 text-[13px] text-faint">
-                          {new Date(sale.soldAt).toLocaleString('fr-FR', {
-                            day: '2-digit',
-                            month: 'short',
-                            year: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
+                          {longDateTime(sale.soldAt)}
                         </span>
                         <span className="min-w-0 flex-1 truncate text-[13px] text-muted">
                           {sale.seller} → {sale.buyer}

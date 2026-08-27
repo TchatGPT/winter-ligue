@@ -7,6 +7,7 @@ import { getStore } from '@/lib/db/store';
 import { SET_TIERS } from '@/lib/domain/rules';
 import { hasShield } from '@/lib/services/league';
 import { getProfile } from '@/lib/services/profile';
+import { shortDateTime } from '@/lib/format';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Ma collection' };
@@ -190,12 +191,7 @@ export default async function MaCollectionPage() {
               {profile.ledger.map((entry, i) => (
                 <tr key={i}>
                   <td className="text-xs text-faint">
-                    {new Date(entry.createdAt).toLocaleString('fr-FR', {
-                      day: '2-digit',
-                      month: '2-digit',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
+                    {shortDateTime(entry.createdAt)}
                   </td>
                   <td className="text-xs text-muted">{entry.reason.replaceAll('_', ' ')}</td>
                   <td

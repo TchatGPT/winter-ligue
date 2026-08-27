@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { CardTile, EmptyState, StatTile, flakes } from '@/components/ui';
 import { getCard } from '@/lib/domain/catalog';
 import { getPublicProfile } from '@/lib/services/profile';
+import { shortDateTime } from '@/lib/format';
 
 export const dynamic = 'force-dynamic';
 
@@ -118,12 +119,7 @@ export default async function ProfilJoueurPage({ params }: { params: Promise<{ s
                 {profile.games.map((game) => (
                   <tr key={game.id} className={game.skipped ? 'opacity-45' : undefined}>
                     <td className="text-xs text-faint">
-                      {new Date(game.playedAt).toLocaleString('fr-FR', {
-                        day: '2-digit',
-                        month: '2-digit',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
+                      {shortDateTime(game.playedAt)}
                       {game.frozen && <span title="Game gelée"> ❄</span>}
                       {game.skipped && <span className="ml-1 text-[13px] uppercase">passée</span>}
                     </td>

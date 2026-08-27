@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { Notice, flakes } from '@/components/ui';
 import { CARDS } from '@/lib/domain/catalog';
 import { GAME_LIMITS, SUBS, nextMilestone } from '@/lib/domain/rules';
+import { shortDateTime } from '@/lib/format';
 
 export interface AdminPlayer {
   id: string;
@@ -512,12 +513,7 @@ export function AdminPanel({
               {auditTrail.map((entry, i) => (
                 <tr key={i}>
                   <td className="whitespace-nowrap text-xs text-faint">
-                    {new Date(entry.at).toLocaleString('fr-FR', {
-                      day: '2-digit',
-                      month: '2-digit',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
+                    {shortDateTime(entry.at)}
                   </td>
                   <td className="text-xs text-muted">{entry.actor.slice(0, 8)}</td>
                   <td className="text-xs text-ink">{entry.action.replaceAll('_', ' ')}</td>

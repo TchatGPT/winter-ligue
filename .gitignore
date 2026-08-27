@@ -45,3 +45,6 @@ next-env.d.ts
 
 # Base locale de développement (données de démonstration, jamais de vraies données).
 /.data/
+
+# Index des illustrations : généré par `npm run cartes`, mais versionné pour
+# que le build fonctionne sur une machine neuve sans étape préalable.

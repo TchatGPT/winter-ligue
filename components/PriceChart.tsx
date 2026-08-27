@@ -7,6 +7,8 @@
  * défile jamais.
  */
 
+import { num, shortDate, shortDateTime } from '@/lib/format';
+
 interface Point {
   at: string;
   price: number;
@@ -69,8 +71,7 @@ export function PriceChart({
 
   const avgY = average != null && average >= yMin && average <= yMax ? y(average) : null;
 
-  const dateLabel = (t: number) =>
-    new Date(t).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
+  const dateLabel = (t: number) => shortDate(new Date(t).toISOString());
 
   return (
     <div className="scroll-x">
@@ -106,7 +107,7 @@ export function PriceChart({
                 fill="#4d6180"
                 fontSize="10"
               >
-                {Math.round(tick).toLocaleString('fr-FR')}
+                {num(tick)}
               </text>
             </g>
           ))}
@@ -134,7 +135,7 @@ export function PriceChart({
                 className="sparkline-avg"
               />
               <text x={innerW - 2} y={avgY - 5} textAnchor="end" fill="#7f95b0" fontSize="9.5">
-                Moy. {Math.round(average!).toLocaleString('fr-FR')}
+                {`Moy. ${num(average!)}`}
               </text>
             </>
           )}
@@ -149,15 +150,10 @@ export function PriceChart({
               stroke={i === coords.length - 1 ? '#050810' : 'none'}
               strokeWidth={i === coords.length - 1 ? 1.5 : 0}
             >
-              <title>
-                {c.price.toLocaleString('fr-FR')} ❄ —{' '}
-                {new Date(c.at).toLocaleString('fr-FR', {
-                  day: '2-digit',
-                  month: '2-digit',
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })}
-              </title>
+              {/* Un seul enfant textuel, jamais plusieurs expressions : dans un
+                  <title> SVG, React concatène côté serveur et crée des nœuds
+                  distincts côté client, ce qui casse l'hydratation. */}
+              <title>{`${num(c.price)} ❄ — ${shortDateTime(c.at)}`}</title>
             </circle>
           ))}
 

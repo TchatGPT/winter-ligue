@@ -1355,4 +1355,590 @@
     }
   }
 
+  /* ========================================================================
+     CARTE DE COLLECTION — le rendu « premium »
+     ========================================================================
+     Anatomie reprise des vraies cartes à collectionner : cartouche de nom,
+     fenêtre d'illustration, barre de type, encadré d'effet, exergue, pied de
+     carte. Le cadre est en code et strictement identique d'une carte à
+     l'autre — c'est précisément ce qui fait qu'un set se lit comme un set.
+     Seule l'illustration change.
+
+     Quatre variables pilotent l'effet, posées par le composant au survol :
+     --mx / --my (position du pointeur en %), --rx / --ry (rotation) et
+     --px / --py (décalage des trames de foil). Tout le reste est du CSS.
+     ====================================================================== */
+
+  .tc-scene {
+    perspective: 1200px;
+    perspective-origin: 50% 50%;
+    /* Les tailles de la carte sont en cqw : la carte s'adapte donc à son
+       conteneur, du timbre-poste de la grille au grand format de la fiche. */
+    container-type: inline-size;
+  }
+
+  .tc {
+    position: relative;
+    aspect-ratio: 5 / 7;
+    border-radius: 16px;
+    transform-style: preserve-3d;
+    transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+    transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.3, 1);
+    will-change: transform;
+    isolation: isolate;
+    /* Le liseré clair du bas simule la tranche du carton. */
+    box-shadow:
+      0 1px 0 1px rgb(255 255 255 / 0.1),
+      0 22px 46px rgb(0 0 0 / 0.55);
+  }
+
+  /* Pendant l'interaction on coupe la transition : sinon le suivi du pointeur
+     traîne d'une demi-seconde et l'illusion tombe. */
+  .tc[data-active='true'] {
+    transition: none;
+  }
+
+  .tc[data-active='true'] .tc-glare {
+    opacity: 1;
+  }
+
+  /* -- Le cadre ---------------------------------------------------------- */
+
+  .tc-frame {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2.2cqw;
+    padding: 3cqw;
+    border-radius: 16px;
+    overflow: hidden;
+    background: linear-gradient(
+      160deg,
+      color-mix(in srgb, var(--r, #6f8db0) 40%, #0a1526) 0%,
+      color-mix(in srgb, var(--r, #6f8db0) 12%, #060d1a) 48%,
+      color-mix(in srgb, var(--r, #6f8db0) 28%, #050b16) 100%
+    );
+    border: 1px solid color-mix(in srgb, var(--r, #6f8db0) 55%, transparent);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.26),
+      inset 0 0 26px color-mix(in srgb, var(--r, #000) 20%, transparent);
+  }
+
+  /* -- Cartouche de nom --------------------------------------------------- */
+
+  .tc-plate {
+    display: flex;
+    align-items: center;
+    gap: 1.6cqw;
+    padding: 1.6cqw 2.4cqw;
+    border-radius: 2.4cqw;
+    background: linear-gradient(
+      160deg,
+      rgb(22 38 62 / 0.88) 0%,
+      rgb(10 20 36 / 0.9) 55%,
+      rgb(4 10 20 / 0.92) 100%
+    );
+    border: 1px solid rgb(255 255 255 / 0.16);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.3);
+  }
+
+  .tc-name {
+    flex: 1;
+    min-width: 0;
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: 5.6cqw;
+    line-height: 1.05;
+    color: var(--frost);
+    text-shadow: 0 1px 2px rgb(0 0 0 / 0.7);
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+
+  /* -- Fenêtre d'illustration --------------------------------------------- */
+
+  .tc-art {
+    position: relative;
+    aspect-ratio: 4 / 3;
+    border-radius: 2cqw;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background:
+      radial-gradient(
+        ellipse 130% 100% at 50% 122%,
+        color-mix(in srgb, var(--r, #6f8db0) 58%, transparent) 0%,
+        transparent 74%
+      ),
+      linear-gradient(168deg, #14243a 0%, #060d1a 100%);
+    /* Le double liseré creuse la fenêtre dans l'épaisseur du cadre. */
+    box-shadow:
+      inset 0 0 0 1px rgb(0 0 0 / 0.55),
+      inset 0 0 0 2px rgb(255 255 255 / 0.09),
+      inset 0 10px 22px rgb(0 0 0 / 0.38);
+  }
+
+  .tc-art img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* Facettes de givre, tant qu'aucune illustration n'est fournie. */
+  .tc-art[data-has-art='true']::after {
+    display: none;
+  }
+
+  .tc-art::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0.3;
+    background-image:
+      linear-gradient(118deg, transparent 46%, rgb(255 255 255 / 0.1) 50%, transparent 54%),
+      linear-gradient(62deg, transparent 46%, rgb(255 255 255 / 0.07) 50%, transparent 54%);
+    background-size:
+      26px 26px,
+      34px 34px;
+    pointer-events: none;
+  }
+
+  .tc-art-glyph {
+    position: relative;
+    font-size: 17cqw;
+    line-height: 1;
+    filter: drop-shadow(0 6px 16px rgb(0 0 0 / 0.7));
+  }
+
+  /* -- Barre de type ------------------------------------------------------ */
+
+  .tc-type {
+    display: flex;
+    align-items: center;
+    gap: 1.4cqw;
+    padding: 1cqw 2cqw;
+    border-radius: 1.6cqw;
+    background: rgb(4 10 20 / 0.82);
+    border: 1px solid rgb(255 255 255 / 0.1);
+    font-family: var(--font-display);
+    font-size: 3.2cqw;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+
+  /* -- Encadré d'effet ---------------------------------------------------- */
+
+  .tc-text {
+    flex: 1;
+    min-height: 0;
+    padding: 2cqw 2.4cqw;
+    border-radius: 2cqw;
+    background: linear-gradient(170deg, rgb(10 20 36 / 0.82), rgb(4 10 20 / 0.88));
+    border: 1px solid rgb(255 255 255 / 0.09);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.12);
+    font-size: 3.6cqw;
+    line-height: 1.34;
+    color: #d5e5f6;
+    overflow: hidden;
+  }
+
+  .tc-flavor {
+    margin-top: 1.4cqw;
+    padding-top: 1.4cqw;
+    border-top: 1px solid rgb(255 255 255 / 0.08);
+    font-style: italic;
+    font-size: 3.1cqw;
+    line-height: 1.3;
+    color: #90a9c3;
+  }
+
+  /* -- Pied de carte ------------------------------------------------------ */
+
+  .tc-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.6cqw;
+    font-family: var(--font-display);
+    font-size: 2.9cqw;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgb(255 255 255 / 0.52);
+  }
+
+  /* ========================================================================
+     LES FOILS
+     ========================================================================
+     Un vrai holographique est une figure d'interférence : sa couleur dépend de
+     l'angle de vue. On l'approche avec des calques en fondu additif dont la
+     *position* suit le pointeur — ce qui bouge n'est pas la couleur, c'est
+     l'endroit où elle apparaît. Sans ce déplacement, l'effet retombe à une
+     texture arc-en-ciel plate, et ça se voit immédiatement.
+     ====================================================================== */
+
+  .tc-glare,
+  .tc-holo {
+    position: absolute;
+    inset: 0;
+    border-radius: 16px;
+    pointer-events: none;
+  }
+
+  /* Le reflet direct passe au-dessus de tout : c'est de la lumière.
+     Le holographique, lui, reste SOUS les blocs de texte. Une première
+     version le posait par-dessus toute la carte : le foil or noyait le nom,
+     l'effet et le pied de carte, et la carte devenait illisible. Sur une vraie
+     carte brillante, le reflet joue sur l'illustration et le cadre — jamais
+     sur le texte, qui est imprimé par-dessus le vernis. */
+  .tc-glare {
+    z-index: 6;
+  }
+
+  .tc-holo {
+    z-index: 1;
+  }
+
+  .tc-plate,
+  .tc-type,
+  .tc-text,
+  .tc-foot {
+    position: relative;
+    z-index: 4;
+  }
+
+  .tc-glare {
+    opacity: 0;
+    transition: opacity 0.35s ease;
+    background: radial-gradient(
+      farthest-corner circle at var(--mx, 50%) var(--my, 50%),
+      rgb(255 255 255 / 0.42) 8%,
+      rgb(190 230 255 / 0.16) 28%,
+      rgb(0 0 0 / 0.32) 100%
+    );
+    mix-blend-mode: overlay;
+  }
+
+  .tc-holo {
+    opacity: 0;
+    transition: opacity 0.4s ease;
+  }
+
+  /* Commune : pas de foil du tout. Le foil doit vouloir dire quelque chose. */
+  .tc-foil-none .tc-holo {
+    display: none;
+  }
+
+  .tc-foil-none .tc-glare {
+    background: radial-gradient(
+      farthest-corner circle at var(--mx, 50%) var(--my, 50%),
+      rgb(255 255 255 / 0.18) 10%,
+      rgb(0 0 0 / 0.38) 100%
+    );
+  }
+
+  /* Peu commune : un lustre de vernis, sans arc-en-ciel. */
+  .tc-foil-satin .tc-holo {
+    background: linear-gradient(
+      110deg,
+      transparent 32%,
+      rgb(190 230 255 / 0.26) 46%,
+      rgb(255 255 255 / 0.4) 50%,
+      rgb(190 230 255 / 0.26) 54%,
+      transparent 68%
+    );
+    background-size: 240% 240%;
+    background-position: calc(var(--px, 50) * 1%) calc(var(--py, 50) * 1%);
+    mix-blend-mode: soft-light;
+  }
+
+  .tc[data-active='true'] .tc-foil-satin .tc-holo,
+  .tc-foil-satin[data-active='true'] .tc-holo {
+    opacity: 1;
+  }
+
+  /* Rare : trame linéaire, l'holographique classique. */
+  .tc-foil-linear .tc-holo {
+    background-image:
+      repeating-linear-gradient(
+        100deg,
+        #7ccfff 0%,
+        #b18cff 12%,
+        #7dffd8 24%,
+        #ffd76a 36%,
+        #ff7dc8 48%,
+        #7ccfff 60%
+      ),
+      repeating-linear-gradient(
+        16deg,
+        rgb(0 0 0 / 0.55) 0%,
+        rgb(255 255 255 / 0.5) 4%,
+        rgb(0 0 0 / 0.55) 8%
+      );
+    background-size:
+      220% 220%,
+      180% 180%;
+    background-position:
+      calc(var(--px, 50) * 1%) calc(var(--py, 50) * 1%),
+      calc(var(--px, 50) * -1%) calc(var(--py, 50) * 1%);
+    background-blend-mode: color-dodge;
+    filter: brightness(0.8) contrast(1.5) saturate(1.35);
+    mix-blend-mode: color-dodge;
+  }
+
+  /* Super rare : trame croisée, plus dense et plus nerveuse. */
+  .tc-foil-cross .tc-holo {
+    background-image:
+      repeating-linear-gradient(
+        95deg,
+        #ff7dc8 0%,
+        #b18cff 10%,
+        #7ccfff 20%,
+        #7dffd8 30%,
+        #ffd76a 40%,
+        #ff7dc8 50%
+      ),
+      repeating-linear-gradient(
+        -35deg,
+        rgb(0 0 0 / 0.6) 0%,
+        rgb(255 255 255 / 0.55) 3%,
+        rgb(0 0 0 / 0.6) 6%
+      );
+    background-size:
+      190% 190%,
+      130% 130%;
+    background-position:
+      calc(var(--px, 50) * 1%) calc(var(--py, 50) * 1%),
+      calc(var(--px, 50) * -1.4%) calc(var(--py, 50) * -1%);
+    background-blend-mode: color-dodge;
+    filter: brightness(0.8) contrast(1.65) saturate(1.5);
+    mix-blend-mode: color-dodge;
+  }
+
+  /* Ultra rare : galaxie. Des paillettes plutôt qu'une trame régulière. */
+  .tc-foil-cosmos .tc-holo {
+    background-image:
+      radial-gradient(circle at 22% 28%, rgb(255 255 255 / 0.9) 0.6px, transparent 1.4px),
+      radial-gradient(circle at 68% 62%, rgb(255 255 255 / 0.8) 0.5px, transparent 1.2px),
+      radial-gradient(circle at 44% 82%, rgb(255 255 255 / 0.7) 0.5px, transparent 1.2px),
+      repeating-linear-gradient(
+        120deg,
+        #ffab5e 0%,
+        #ff7dc8 14%,
+        #b18cff 28%,
+        #45bdf0 42%,
+        #ffab5e 56%
+      );
+    background-size:
+      42px 42px,
+      66px 66px,
+      88px 88px,
+      210% 210%;
+    background-position:
+      calc(var(--px, 50) * 0.6%) calc(var(--py, 50) * 0.6%),
+      calc(var(--px, 50) * -0.9%) calc(var(--py, 50) * 0.8%),
+      calc(var(--px, 50) * 1.2%) calc(var(--py, 50) * -0.7%),
+      calc(var(--px, 50) * 1%) calc(var(--py, 50) * 1%);
+    background-blend-mode: screen, screen, screen, color-dodge;
+    filter: brightness(0.85) contrast(1.6) saturate(1.45);
+    mix-blend-mode: color-dodge;
+  }
+
+  /* Légendaire : or texturé. La seule rareté qui brille sans qu'on la touche —
+     une légendaire doit se repérer dans une grille, pas seulement au survol. */
+  .tc-foil-gold .tc-holo {
+    opacity: 0.26;
+    background-image:
+      repeating-linear-gradient(
+        104deg,
+        #fff3c4 0%,
+        #ffd76a 8%,
+        #c98f22 16%,
+        #fff8dd 24%,
+        #ffd76a 32%,
+        #a8701a 40%,
+        #fff3c4 48%
+      ),
+      repeating-linear-gradient(
+        -18deg,
+        rgb(0 0 0 / 0.62) 0%,
+        rgb(255 255 255 / 0.6) 2.5%,
+        rgb(0 0 0 / 0.62) 5%
+      );
+    background-size:
+      210% 210%,
+      120% 120%;
+    background-position:
+      calc(var(--px, 50) * 1%) calc(var(--py, 50) * 1%),
+      calc(var(--px, 50) * -1.2%) calc(var(--py, 50) * 1%);
+    background-blend-mode: color-dodge;
+    filter: brightness(0.78) contrast(1.7) saturate(1.3);
+    mix-blend-mode: color-dodge;
+    animation: gold-drift 7s ease-in-out infinite;
+  }
+
+  @keyframes gold-drift {
+    0%,
+    100% {
+      filter: brightness(0.74) contrast(1.7) saturate(1.3) hue-rotate(-6deg);
+    }
+    50% {
+      filter: brightness(0.9) contrast(1.85) saturate(1.45) hue-rotate(8deg);
+    }
+  }
+
+  /* Les foils s'allument au survol, sauf l'or qui reste toujours visible. */
+  .tc[data-active='true'] .tc-holo {
+    opacity: 0.46;
+  }
+
+  .tc-foil-gold[data-active='true'] .tc-holo {
+    opacity: 0.5;
+  }
+
+  /* Grain de carton : ce qui empêche l'aplat numérique. */
+  .tc-grain {
+    position: absolute;
+    inset: 0;
+    border-radius: 16px;
+    pointer-events: none;
+    z-index: 2;
+    opacity: 0.08;
+    background-image:
+      repeating-linear-gradient(0deg, transparent 0 2px, rgb(255 255 255 / 0.5) 2px 3px),
+      repeating-linear-gradient(90deg, transparent 0 2px, rgb(0 0 0 / 0.5) 2px 3px);
+    mix-blend-mode: overlay;
+  }
+
+  /* ========================================================================
+     SACHET DE BOOSTER, EN VOLUME
+     ========================================================================
+     Six faces en CSS 3D. Un sachet de cartes est une boîte très plate : la
+     géométrie ne justifiait pas un moteur WebGL, mais la rotation, elle, doit
+     être vraie — d'où six faces réelles plutôt qu'une simulation par
+     déformation.
+     ====================================================================== */
+
+  .pack3d-scene {
+    perspective: 1500px;
+    perspective-origin: 50% 45%;
+    touch-action: none;
+    cursor: grab;
+    user-select: none;
+  }
+
+  .pack3d-scene:active {
+    cursor: grabbing;
+  }
+
+  .pack3d {
+    position: relative;
+    transform-style: preserve-3d;
+    transform: rotateX(var(--rx3, -8deg)) rotateY(var(--ry3, 0deg));
+    will-change: transform;
+  }
+
+  .pack3d-face {
+    position: absolute;
+    overflow: hidden;
+    background: linear-gradient(160deg, var(--p1, #2b4a63), var(--p2, #0e1c2a));
+    border: 1px solid rgb(255 255 255 / 0.13);
+    backface-visibility: hidden;
+  }
+
+  /* Le pli brillant du plastique, décalé d'une face à l'autre pour que la
+     rotation ne montre jamais deux fois le même reflet. */
+  .pack3d-front::before,
+  .pack3d-back::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      102deg,
+      transparent 0%,
+      rgb(255 255 255 / 0.05) 26%,
+      rgb(255 255 255 / 0.3) 44%,
+      rgb(255 255 255 / 0.06) 62%,
+      transparent 100%
+    );
+    pointer-events: none;
+  }
+
+  .pack3d-back::before {
+    background: linear-gradient(
+      78deg,
+      transparent 0%,
+      rgb(255 255 255 / 0.04) 30%,
+      rgb(255 255 255 / 0.18) 48%,
+      rgb(255 255 255 / 0.04) 66%,
+      transparent 100%
+    );
+  }
+
+  /* Dentelure de l'opercule. */
+  .pack3d-crimp {
+    position: absolute;
+    top: 15px;
+    left: 0;
+    right: 0;
+    height: 9px;
+    background-image: radial-gradient(circle at 6px 0, transparent 5px, rgb(0 0 0 / 0.45) 5px);
+    background-size: 12px 9px;
+    opacity: 0.7;
+    pointer-events: none;
+  }
+
+  /* Tranches : plus sombres, avec un liseré clair qui marque l'arête. */
+  .pack3d-edge {
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--p1, #2b4a63) 52%, #000) 0%,
+      color-mix(in srgb, var(--p2, #0e1c2a) 72%, #000) 100%
+    );
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.2);
+  }
+
+  /* Ombre au sol : c'est elle qui pose l'objet dans l'espace. */
+  .pack3d-shadow {
+    position: absolute;
+    left: 50%;
+    bottom: -8%;
+    width: 76%;
+    height: 28px;
+    transform: translateX(-50%) rotateX(84deg);
+    background: radial-gradient(ellipse, rgb(0 0 0 / 0.62) 0%, transparent 72%);
+    filter: blur(10px);
+    pointer-events: none;
+  }
+
+  /* Rotation continue au repos, coupée dès qu'on attrape le sachet. */
+  .pack3d-spin {
+    animation: pack3d-turn 20s linear infinite;
+  }
+
+  @keyframes pack3d-turn {
+    from {
+      transform: rotateX(-8deg) rotateY(0deg);
+    }
+    to {
+      transform: rotateX(-8deg) rotateY(360deg);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pack3d-spin,
+    .tc-foil-gold .tc-holo {
+      animation: none;
+    }
+  }
 }

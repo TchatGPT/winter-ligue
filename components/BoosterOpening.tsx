@@ -1,7 +1,10 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { CardTile, Notice, RarityChip, flakes, rarityMeta } from '@/components/ui';
+import { BoosterPack3D } from '@/components/BoosterPack3D';
+import { TradingCard } from '@/components/TradingCard';
+import { Notice, RarityChip, flakes, rarityMeta } from '@/components/ui';
+import { cardArt } from '@/lib/domain/catalog';
 import { atLeastOnePercent, rarityPercent } from '@/lib/domain/rules';
 import type { BoosterDefinition, Rarity } from '@/lib/domain/types';
 
@@ -221,45 +224,22 @@ export function BoosterOpening({
         <div className="relative flex min-h-[400px] flex-col items-center justify-center gap-6 px-4 py-10 sm:min-h-[460px]">
           {phase !== 'reveal' ? (
             <>
-              <div className="scene">
-                <div
-                  className={`pack ${phase === 'repos' || phase === 'achat' ? 'pack-idle' : ''} ${
-                    phase === 'secousse' ? 'pack-shake' : ''
-                  } ${phase === 'eclat' ? 'pack-burst' : ''}`}
-                  onClick={() => !busy && connected && shopOpen && affordable && open()}
-                  role="button"
-                  tabIndex={0}
-                  aria-label={`Ouvrir un booster ${booster.name}`}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      if (!busy && connected && shopOpen && affordable) open();
-                    }
-                  }}
-                >
-                  <div
-                    className="pack-face flex flex-col items-center justify-center gap-3 px-4"
-                    style={{
-                      ['--p1' as string]: booster.gradient[0],
-                      ['--p2' as string]: booster.gradient[1],
-                    }}
-                  >
-                    <span className="relative text-5xl drop-shadow-lg" aria-hidden="true">
-                      {booster.glyph}
-                    </span>
-                    <div className="relative text-center">
-                      <div className="font-display text-[13px] font-bold tracking-[0.3em] text-white/60 uppercase">
-                        Winter Ligue
-                      </div>
-                      <div className="font-display text-2xl leading-none font-black tracking-wide text-white uppercase drop-shadow">
-                        {booster.name}
-                      </div>
-                      <div className="mt-1 font-display text-[13px] font-bold tracking-[0.18em] text-white/70 uppercase">
-                        {booster.cardCount} cartes
-                      </div>
-                    </div>
-                  </div>
-                </div>
+              <div
+                className={`scene ${phase === 'secousse' ? 'pack-shake' : ''} ${
+                  phase === 'eclat' ? 'pack-burst' : ''
+                }`}
+              >
+                {/* Le sachet tourne librement : on le prend, on le retourne,
+                    on regarde ses tranches. L'ouverture se déclenche par le
+                    bouton, pas par le clic sur le sachet — sinon chaque
+                    tentative de le faire pivoter dépenserait des flocons. */}
+                <BoosterPack3D
+                  name={booster.name}
+                  glyph={booster.glyph}
+                  cardCount={booster.cardCount}
+                  gradient={booster.gradient}
+                  frozen={busy}
+                />
                 {phase === 'eclat' && <span className="shockwave" aria-hidden="true" />}
               </div>
 
@@ -338,7 +318,7 @@ export function BoosterOpening({
                       >
                         {/* Face cachée : le dos, tant qu'on n'a pas retourné. */}
                         <div className="flip-face">
-                          <div className="card-back aspect-[5/7.4]">
+                          <div className="card-back aspect-[5/7]">
                             <span className="text-3xl opacity-70" aria-hidden="true">
                               ❄
                             </span>
@@ -347,26 +327,28 @@ export function BoosterOpening({
 
                         {/* Face visible après retournement. */}
                         <div className="flip-back">
-                          <CardTile
-                            cardId={card.cardId}
-                            name={card.name}
-                            subtitle={card.subtitle}
-                            rarity={card.rarity}
-                            theme={card.theme}
-                            glyph={card.glyph}
-                            power={card.power}
-                            nature={card.nature}
-                            corner={
-                              card.isNew ? (
-                                <span
-                                  className="rounded px-1 py-px font-display text-[13px] font-black tracking-wider uppercase"
-                                  style={{ background: '#5fe3bd', color: '#04211a' }}
-                                >
-                                  New
-                                </span>
-                              ) : undefined
-                            }
+                          <TradingCard
+                            card={{
+                              cardId: card.cardId,
+                              name: card.name,
+                              subtitle: card.subtitle,
+                              description: card.description,
+                              rarity: card.rarity,
+                              theme: card.theme,
+                              glyph: card.glyph,
+                              power: card.power,
+                              nature: card.nature,
+                              art: cardArt(card.cardId),
+                            }}
                           />
+                          {card.isNew && (
+                            <span
+                              className="absolute -top-2 left-1/2 z-10 -translate-x-1/2 rounded-full px-2.5 py-0.5 font-display text-[12px] font-black tracking-wider uppercase"
+                              style={{ background: '#5fe3bd', color: '#04211a' }}
+                            >
+                              Nouvelle
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>

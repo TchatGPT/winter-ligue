@@ -22,8 +22,13 @@ export function middleware(request: NextRequest): NextResponse {
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' ${isDev ? "'unsafe-eval'" : ''}`,
     // Next injecte ses styles critiques en ligne ; 'unsafe-inline' reste
     // acceptable ici, une feuille de style ne permettant pas d'exécution.
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-    'font-src https://fonts.gstatic.com',
+    "style-src 'self' 'unsafe-inline'",
+    // `next/font/google` télécharge les polices au build et les sert depuis
+    // notre propre origine, sous /_next/static/media. Une directive pointant
+    // vers fonts.gstatic.com bloquait donc *toutes* les polices du site, qui
+    // retombait silencieusement sur les polices système — invisible à l'œil,
+    // visible en console.
+    "font-src 'self'",
     // Les avatars Twitch, le jour où l'authentification sera branchée.
     "img-src 'self' data: blob: https://static-cdn.jtvnw.net",
     "connect-src 'self'",

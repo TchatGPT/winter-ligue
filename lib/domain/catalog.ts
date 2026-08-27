@@ -6,6 +6,7 @@
  * envoyée par le navigateur n'est qu'un identifiant, jamais un effet.
  */
 
+import { CARD_ART } from './card-art.generated';
 import { RARITY_ORDER, RARITY_WEIGHTS_BASE } from './rules';
 import type {
   BoosterDefinition,
@@ -492,6 +493,43 @@ export const CARDS: readonly CardDefinition[] = [
 ];
 
 const CARD_INDEX = new Map(CARDS.map((c) => [c.id, c]));
+
+/** Numéro de collection, à la façon du « 12/24 » au dos des cartes. */
+const CARD_NUMBERS = new Map(CARDS.map((c, i) => [c.id, i + 1]));
+
+export const TOTAL_CARDS = CARDS.length;
+
+export function cardNumber(id: string): string {
+  const n = CARD_NUMBERS.get(id);
+  return n ? `${String(n).padStart(2, '0')}/${TOTAL_CARDS}` : `--/${TOTAL_CARDS}`;
+}
+
+/**
+ * Chemin de l'illustration d'une carte, ou null si elle n'existe pas encore.
+ *
+ * Les visuels vivent dans `public/cartes/<id>.webp` et sont facultatifs : tant
+ * qu'un fichier manque, la carte retombe sur son glyphe. On peut donc livrer
+ * les 24 illustrations au fur et à mesure, sans jamais casser l'affichage.
+ *
+ * Le chemin n'est pas déduit de l'identifiant mais lu dans un index généré par
+ * `npm run cartes` : sans lui, chaque carte sans visuel déclencherait une
+ * requête vouée à un 404 à chaque affichage.
+ *
+ * Voir `docs/DIRECTION-ARTISTIQUE.md` pour le gabarit et les prompts.
+ */
+export function cardArt(id: string): string | null {
+  return CARD_ART[id] ?? null;
+}
+
+/** Traitement de foil appliqué à chaque rareté. */
+export const FOIL: Record<Rarity, 'none' | 'satin' | 'linear' | 'cross' | 'cosmos' | 'gold'> = {
+  C: 'none',
+  PC: 'satin',
+  R: 'linear',
+  SR: 'cross',
+  UR: 'cosmos',
+  L: 'gold',
+};
 
 /** Retourne la définition d'une carte, ou null si l'identifiant est inconnu. */
 export function getCard(id: string): CardDefinition | null {
