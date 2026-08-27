@@ -35,20 +35,25 @@ function contexte(): AudioContext | null {
 /**
  * Le petit bruit sec du sachet qu'on fait passer devant soi.
  *
- * Dix fois plus court et cinq fois plus discret que l'ouverture : il ponctue
- * une navigation, et un geste qu'on répète en glissant le rail ne doit surtout
- * pas s'entendre autant que celui, unique, qui coûte des flocons.
+ * Bien plus court et plus discret que l'ouverture : il ponctue une navigation,
+ * et un geste qu'on répète en glissant le rail ne doit surtout pas s'entendre
+ * autant que celui, unique, qui coûte des flocons.
+ *
+ * Une première version durait 75 ms à un dixième de volume : elle partait bien,
+ * mais passait inaperçue. Trop discret revient au même que muet.
  */
 export function bruitDeSelection() {
   const ctx = contexte();
   if (!ctx) return;
 
-  const n = Math.floor(ctx.sampleRate * 0.075);
+  const n = Math.floor(ctx.sampleRate * 0.16);
   const tampon = ctx.createBuffer(1, n, ctx.sampleRate);
   const canal = tampon.getChannelData(0);
   for (let i = 0; i < n; i += 1) {
     const t = i / n;
-    canal[i] = (Math.random() * 2 - 1) * Math.exp(-14 * t) * (1 - t);
+    // Une attaque nette puis une queue courte : le froissement bref du film
+    // qu'on fait glisser devant soi.
+    canal[i] = (Math.random() * 2 - 1) * Math.exp(-9 * t) * (1 - t);
   }
 
   const source = ctx.createBufferSource();
@@ -56,11 +61,11 @@ export function bruitDeSelection() {
 
   const bande = ctx.createBiquadFilter();
   bande.type = 'bandpass';
-  bande.frequency.value = 4200;
-  bande.Q.value = 1.4;
+  bande.frequency.value = 3400;
+  bande.Q.value = 0.9;
 
   const volume = ctx.createGain();
-  volume.gain.value = 0.1;
+  volume.gain.value = 0.3;
 
   source.connect(bande).connect(volume).connect(ctx.destination);
   source.onended = () => {

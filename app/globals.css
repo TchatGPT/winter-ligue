@@ -2143,7 +2143,7 @@
      `--tour: 180deg`. */
   .sachet {
     --duree-pose: 9s;
-    --duree-veille: 13s;
+    --duree-veille: 9.5s;
     --duree-reflet: 7.5s;
     animation: sachet-balayage var(--duree-reflet) ease-in-out infinite alternate;
   }
@@ -2188,10 +2188,10 @@
 
   @keyframes sachet-veille {
     from {
-      transform: rotateX(-6deg) rotateY(-21deg);
+      transform: rotateX(-7deg) rotateY(-27deg);
     }
     to {
-      transform: rotateX(-4deg) rotateY(-10deg);
+      transform: rotateX(-3deg) rotateY(-5deg);
     }
   }
 

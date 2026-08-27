@@ -16,13 +16,13 @@ const H = 340;
 /**
  * Demi-épaisseur du sachet en son point le plus gonflé.
  *
- * 24 px pour 200 px de large, soit près d'un quart d'épaisseur totale.
+ * 28 px pour 200 px de large, soit plus d'un quart d'épaisseur totale.
  * C'est bien au-dessus de ce que donneraient cinq à huit cartes dans un sachet
  * de 67 mm, et c'est assumé : à l'échelle où le sachet est affiché, une
  * épaisseur physiquement juste ne se lit tout simplement pas. On dessine ce qui
  * se voit, pas ce qui se mesure.
  */
-const T = 24;
+const T = 28;
 
 /** Ce qu'il reste d'épaisseur au ras des soudures : presque rien. */
 const SOUDURE = 0.05;
@@ -40,7 +40,9 @@ const REPRISE = 0.115;
  * lentille se replie d'autant plus sec au bord qu'il est bombé au centre, et
  * la facettisation commençait à s'y voir.
  */
-const COLS = [0, 0.015, 0.045, 0.095, 0.17, 0.29, 0.5, 0.71, 0.83, 0.905, 0.955, 0.985, 1];
+const COLS = [
+  0, 0.008, 0.022, 0.05, 0.1, 0.175, 0.29, 0.5, 0.71, 0.825, 0.9, 0.95, 0.978, 0.992, 1,
+];
 const ROWS = [0, 0.034, 0.07, 0.115, 0.885, 0.93, 0.966, 1];
 
 /**
@@ -93,9 +95,17 @@ function lissage(t: number) {
   return c * c * (3 - 2 * c);
 }
 
-/** Profil transversal : une lentille, plate au centre, pincée aux plis. */
+/**
+ * Profil transversal : une lentille.
+ *
+ * L'exposant en gouverne la forme. Plus il est bas, plus la surface reste
+ * épaisse près du bord au lieu de s'y pincer — le sachet paraît alors rempli
+ * jusqu'aux plis, comme un vrai sachet bourré de cartes, et non tendu sur une
+ * arête. À 0,65 les bords se refermaient trop tôt et le sachet semblait vide
+ * sur ses deux tranches.
+ */
 function galbeX(u: number) {
-  return Math.sin(Math.PI * u) ** 0.65;
+  return Math.sin(Math.PI * u) ** 0.5;
 }
 
 /** Profil vertical : nul aux soudures, plein dans le corps. */
