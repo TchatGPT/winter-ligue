@@ -215,24 +215,33 @@ const MYLAR = `linear-gradient(190deg,
 /**
  * Le reflet, en lumière ajoutée.
  *
- * Le calque est **noir** là où il n'éclaire pas, et fusionné en `screen` : le
- * noir ne change rien, le clair ajoute. Une version antérieure posait un gris
- * translucide par-dessus, ce qui ne pouvait donner qu'un voile — un calque
- * semi-opaque assombrit forcément ce qu'il recouvre, quelle que soit sa
- * couleur.
+ * Le calque est **transparent** là où il n'éclaire pas, et fusionné en `screen`.
+ *
+ * Deux versions ratées ont précédé, aux défauts opposés. La première posait un
+ * gris translucide : un calque semi-opaque assombrit forcément ce qu'il
+ * recouvre, quelle que soit sa couleur, et ça ne pouvait donner qu'un voile.
+ * La seconde le peignait en noir opaque, ce qui est correct en théorie —
+ * `screen` sur du noir ne change rien — mais ne tient que si la fusion
+ * s'applique vraiment. Partout où elle ne s'appliquait pas, ce noir se peignait
+ * tel quel : une bande sombre au bord de chaque sachet, du côté où le dégradé
+ * redescend vers son extrémité.
+ *
+ * Transparent, le calque est sûr dans les deux cas. En fusion il éclaircit, et
+ * sans fusion il ne pose que des teintes claires : aucune des deux voies ne
+ * peut assombrir.
  *
  * Il ne bouge pas tout seul : sa position vient de `--balayage`, animée une
  * fois pour toutes sur le sachet, si bien que les tuiles se déplacent d'un
  * bloc et que la lumière traverse la coque sans se briser aux coutures.
  */
 const ECLAT = `linear-gradient(102deg,
-  #000000 0%,
-  #050d16 20%,
-  color-mix(in srgb, var(--p1) 60%, #000000) 38%,
-  #7ea3bd 50%,
-  color-mix(in srgb, var(--p1) 60%, #000000) 62%,
-  #050d16 80%,
-  #000000 100%)`;
+  rgb(255 255 255 / 0) 0%,
+  color-mix(in srgb, var(--p1) 20%, transparent) 26%,
+  rgb(196 224 246 / 0.34) 44%,
+  rgb(236 248 255 / 0.46) 50%,
+  rgb(196 224 246 / 0.34) 56%,
+  color-mix(in srgb, var(--p1) 20%, transparent) 74%,
+  rgb(255 255 255 / 0) 100%)`;
 
 /**
  * Largeur du calque de reflet.
