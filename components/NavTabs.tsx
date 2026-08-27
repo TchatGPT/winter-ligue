@@ -14,9 +14,8 @@ interface Tab {
 
 const TABS: Tab[] = [
   { href: '/', label: 'Classement' },
-  { href: '/cartes', label: 'Cartes' },
-  { href: '/boutique', label: 'Boutique' },
-  { href: '/marche', label: 'Hôtel des ventes' },
+  { href: '/boosters', label: 'Boosters' },
+  { href: '/marche', label: 'Marché' },
   { href: '/ma-collection', label: 'Ma collection', player: true },
   { href: '/regles', label: 'Règles' },
   { href: '/admin', label: 'Modération', admin: true },

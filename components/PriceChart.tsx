@@ -1,10 +1,10 @@
 /**
- * Courbe de prix d'une carte, en SVG inline.
+ * Courbe de prix d'une carte, en SVG écrit à la main.
  *
- * Aucune bibliothèque de graphiques : le nuage de points est simple, et un SVG
- * écrit à la main reste net à toutes les tailles, se rend côté serveur, et ne
- * pèse rien dans le bundle. Le conteneur gère lui-même son défilement pour que
- * la page ne défile jamais horizontalement.
+ * Aucune bibliothèque de graphiques : le nuage est simple, un SVG reste net à
+ * toutes les tailles, se rend côté serveur et ne pèse rien dans le bundle. Le
+ * conteneur gère son propre défilement horizontal pour que la page, elle, ne
+ * défile jamais.
  */
 
 interface Point {
@@ -12,21 +12,29 @@ interface Point {
   price: number;
 }
 
-const WIDTH = 720;
-const HEIGHT = 220;
-const PAD = { top: 16, right: 14, bottom: 26, left: 46 };
+const W = 760;
+const H = 240;
+const PAD = { top: 14, right: 16, bottom: 28, left: 52 };
 
-export function PriceChart({ points, color = '#7fd8ff' }: { points: Point[]; color?: string }) {
+export function PriceChart({
+  points,
+  color = '#7fd8ff',
+  average,
+}: {
+  points: Point[];
+  color?: string;
+  average?: number | null;
+}) {
   if (points.length === 0) {
     return (
-      <div className="flex h-[220px] items-center justify-center text-xs text-faint">
-        Aucune vente conclue pour le moment — la cote apparaîtra dès la première transaction.
+      <div className="flex h-[240px] items-center justify-center px-6 text-center text-xs text-faint">
+        Aucune vente conclue pour le moment. La cote apparaîtra dès la première transaction.
       </div>
     );
   }
 
-  const innerW = WIDTH - PAD.left - PAD.right;
-  const innerH = HEIGHT - PAD.top - PAD.bottom;
+  const innerW = W - PAD.left - PAD.right;
+  const innerH = H - PAD.top - PAD.bottom;
 
   const times = points.map((p) => new Date(p.at).getTime());
   const prices = points.map((p) => p.price);
@@ -36,33 +44,45 @@ export function PriceChart({ points, color = '#7fd8ff' }: { points: Point[]; col
   const pMin = Math.min(...prices);
   const pMax = Math.max(...prices);
 
-  // Marge verticale de 10 % pour que la courbe ne colle pas aux bords.
-  const span = pMax - pMin || Math.max(1, pMax * 0.2);
-  const yMin = Math.max(0, pMin - span * 0.1);
-  const yMax = pMax + span * 0.1;
+  // Marge verticale de 12 % pour que la courbe ne colle pas aux bords.
+  const span = pMax - pMin || Math.max(1, pMax * 0.25);
+  const yMin = Math.max(0, pMin - span * 0.12);
+  const yMax = pMax + span * 0.12;
 
   const x = (t: number) => (tMax === tMin ? innerW / 2 : ((t - tMin) / (tMax - tMin)) * innerW);
   const y = (p: number) => innerH - ((p - yMin) / (yMax - yMin)) * innerH;
 
-  const coords = points.map((p, i) => ({ x: x(times[i]), y: y(p.price), price: p.price, at: p.at }));
-  const line = coords.map((c, i) => `${i === 0 ? 'M' : 'L'}${c.x.toFixed(1)},${c.y.toFixed(1)}`).join(' ');
+  const coords = points.map((p, i) => ({
+    x: x(times[i]),
+    y: y(p.price),
+    price: p.price,
+    at: p.at,
+  }));
+
+  const line = coords
+    .map((c, i) => `${i === 0 ? 'M' : 'L'}${c.x.toFixed(1)},${c.y.toFixed(1)}`)
+    .join(' ');
   const area = `${line} L${coords.at(-1)!.x.toFixed(1)},${innerH} L${coords[0].x.toFixed(1)},${innerH} Z`;
 
-  // Quatre graduations régulières sur l'axe des prix.
   const ticks = Array.from({ length: 4 }, (_, i) => yMin + ((yMax - yMin) * i) / 3);
   const gradientId = `spark-${color.replace('#', '')}`;
+
+  const avgY = average != null && average >= yMin && average <= yMax ? y(average) : null;
+
+  const dateLabel = (t: number) =>
+    new Date(t).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
 
   return (
     <div className="scroll-x">
       <svg
-        viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
-        className="h-[220px] w-full min-w-[520px]"
+        viewBox={`0 0 ${W} ${H}`}
+        className="h-[240px] w-full min-w-[540px]"
         role="img"
         aria-label={`Évolution du prix sur ${points.length} vente${points.length > 1 ? 's' : ''}`}
       >
         <defs>
           <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={color} stopOpacity="0.28" />
+            <stop offset="0%" stopColor={color} stopOpacity="0.3" />
             <stop offset="100%" stopColor={color} stopOpacity="0" />
           </linearGradient>
         </defs>
@@ -75,17 +95,16 @@ export function PriceChart({ points, color = '#7fd8ff' }: { points: Point[]; col
                 x2={innerW}
                 y1={y(tick)}
                 y2={y(tick)}
-                stroke="#1e2a3b"
-                strokeDasharray="3 4"
+                stroke="#1a2739"
+                strokeDasharray="3 5"
               />
               <text
-                x={-8}
+                x={-9}
                 y={y(tick)}
                 textAnchor="end"
                 dominantBaseline="middle"
-                fill="#4d5c72"
+                fill="#4d6180"
                 fontSize="10"
-                fontFamily="var(--font-sans)"
               >
                 {Math.round(tick).toLocaleString('fr-FR')}
               </text>
@@ -93,10 +112,43 @@ export function PriceChart({ points, color = '#7fd8ff' }: { points: Point[]; col
           ))}
 
           <path d={area} fill={`url(#${gradientId})`} />
-          <path d={line} fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round" />
+          <path
+            d={line}
+            fill="none"
+            stroke={color}
+            strokeWidth="2"
+            strokeLinejoin="round"
+            strokeLinecap="round"
+          />
+
+          {/* Ligne de moyenne : le repère qui dit si le dernier prix est cher. */}
+          {avgY !== null && (
+            <>
+              <line
+                x1={0}
+                x2={innerW}
+                y1={avgY}
+                y2={avgY}
+                stroke="#7f95b0"
+                strokeWidth="1"
+                className="sparkline-avg"
+              />
+              <text x={innerW - 2} y={avgY - 5} textAnchor="end" fill="#7f95b0" fontSize="9.5">
+                Moy. {Math.round(average!).toLocaleString('fr-FR')}
+              </text>
+            </>
+          )}
 
           {coords.map((c, i) => (
-            <circle key={i} cx={c.x} cy={c.y} r={i === coords.length - 1 ? 4 : 2.5} fill={color}>
+            <circle
+              key={i}
+              cx={c.x}
+              cy={c.y}
+              r={i === coords.length - 1 ? 4.5 : 2.5}
+              fill={color}
+              stroke={i === coords.length - 1 ? '#050810' : 'none'}
+              strokeWidth={i === coords.length - 1 ? 1.5 : 0}
+            >
               <title>
                 {c.price.toLocaleString('fr-FR')} ❄ —{' '}
                 {new Date(c.at).toLocaleString('fr-FR', {
@@ -109,11 +161,11 @@ export function PriceChart({ points, color = '#7fd8ff' }: { points: Point[]; col
             </circle>
           ))}
 
-          <text y={innerH + 18} fill="#4d5c72" fontSize="10">
-            {new Date(tMin).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}
+          <text y={innerH + 19} fill="#4d6180" fontSize="10">
+            {dateLabel(tMin)}
           </text>
-          <text x={innerW} y={innerH + 18} textAnchor="end" fill="#4d5c72" fontSize="10">
-            {new Date(tMax).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}
+          <text x={innerW} y={innerH + 19} textAnchor="end" fill="#4d6180" fontSize="10">
+            {dateLabel(tMax)}
           </text>
         </g>
       </svg>

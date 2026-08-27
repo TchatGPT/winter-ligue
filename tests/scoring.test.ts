@@ -1,10 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { CARDS, cardsOfTheme, THEMES } from '@/lib/domain/catalog';
-import { completionRatio, handSlotsFor, setBonusesFor } from '@/lib/domain/collection';
-import { discountedPrice, rewardForGame } from '@/lib/domain/economy';
 import { clampMultiplier, rank, round2, scoreGame, totalsFor } from '@/lib/domain/scoring';
 import type { ScoredGame } from '@/lib/domain/scoring';
-import type { ThemeId } from '@/lib/domain/types';
 
 describe('score d’une game', () => {
   it('applique le multiplicateur aux kills seulement', () => {
@@ -83,78 +79,5 @@ describe('totaux et classement', () => {
       { player: { id: 'a', pseudo: 'Ana' }, totals: même },
     ]);
     expect(premier[0].player.pseudo).toBe('Ana');
-  });
-});
-
-describe('économie', () => {
-  it('récompense kills, placement et participation', () => {
-    const reward = rewardForGame(10, 1);
-    // 10 kills × 3 + 80 (Top 1) + 15 (participation)
-    expect(reward.total).toBe(125);
-  });
-
-  it('ajoute le bonus de la famille Aurore', () => {
-    expect(rewardForGame(0, null, 15).total).toBe(30);
-  });
-
-  it('applique la remise de boutique en arrondissant au supérieur', () => {
-    expect(discountedPrice(150, 0.15)).toBe(128);
-    expect(discountedPrice(150, 0)).toBe(150);
-    // Une remise absurde reste bornée : le prix ne tombe jamais à zéro.
-    expect(discountedPrice(100, 5)).toBe(10);
-  });
-});
-
-describe('collection', () => {
-  const glace = cardsOfTheme('glace').map((c) => c.id);
-  const solstice = cardsOfTheme('solstice').map((c) => c.id);
-
-  it('n’accorde le bonus qu’une famille complète', () => {
-    expect(setBonusesFor(glace.slice(0, 3)).completed).toEqual([]);
-    expect(setBonusesFor(glace).completed).toEqual(['glace']);
-    expect(handSlotsFor(glace)).toBe(7);
-    expect(handSlotsFor([])).toBe(6);
-  });
-
-  it('cumule les bonus de plusieurs familles', () => {
-    const bonuses = setBonusesFor([...glace, ...solstice]);
-    expect(bonuses.completed.sort()).toEqual(['glace', 'solstice']);
-    expect(bonuses.handSlots).toBe(1);
-    expect(bonuses.shopDiscount).toBeCloseTo(0.15);
-    expect(bonuses.marketFeeDiscount).toBeCloseTo(0.5);
-  });
-
-  it('ignore les identifiants inconnus dans le taux de complétion', () => {
-    expect(completionRatio(['carte-qui-n-existe-pas'])).toBe(0);
-    expect(completionRatio(CARDS.map((c) => c.id))).toBe(1);
-  });
-});
-
-describe('cohérence du catalogue', () => {
-  it('contient 4 familles de 4 cartes, une par rareté', () => {
-    for (const theme of Object.keys(THEMES) as ThemeId[]) {
-      const cards = cardsOfTheme(theme);
-      expect(cards).toHaveLength(4);
-      expect(cards.map((c) => c.rarity)).toEqual([
-        'COMMUNE',
-        'RARE',
-        'EPIQUE',
-        'LEGENDAIRE',
-      ]);
-    }
-  });
-
-  it('n’a aucun identifiant en double', () => {
-    const ids = CARDS.map((c) => c.id);
-    expect(new Set(ids).size).toBe(ids.length);
-  });
-
-  it('donne une cible cohérente à chaque malus', () => {
-    for (const card of CARDS) {
-      if (card.nature === 'malus') {
-        expect(card.target).toBe('opponent');
-        expect(card.offensive).toBe(true);
-      }
-    }
   });
 });

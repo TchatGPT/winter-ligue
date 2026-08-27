@@ -1,18 +1,15 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ListingRow, type ListingItem } from '@/components/ListingRow';
+import { MarketBoard, type MarketListing } from '@/components/MarketBoard';
 import { PriceChart } from '@/components/PriceChart';
-import { EmptyState, RarityBadge, StatTile, ThemeBadge, formatFlakes } from '@/components/ui';
+import { CardTile, RarityChip, StatTile, flakes, rarityMeta } from '@/components/ui';
 import { getSession } from '@/lib/auth/session';
+import type { Database } from '@/lib/db/entities';
 import { getStore } from '@/lib/db/store';
-import { CARDS, getCard, RARITY_META, THEMES } from '@/lib/domain/catalog';
-import type { Rarity, ThemeId } from '@/lib/domain/types';
-import {
-  closeExpiredListings,
-  statsForCard,
-  viewListing,
-  type ListingView,
-} from '@/lib/services/market';
+import { cardsOfTheme, getCard, THEMES } from '@/lib/domain/catalog';
+import { minimumBid } from '@/lib/domain/market';
+import type { ThemeId } from '@/lib/domain/types';
+import { closeExpiredListings, lastBuyerPseudo, statsForCard } from '@/lib/services/market';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,7 +19,6 @@ export async function generateMetadata({ params }: { params: Promise<{ cardId: s
   return { title: card ? `Cote — ${card.name}` : 'Carte inconnue' };
 }
 
-/** Petite flèche de tendance, verte à la hausse, rouge à la baisse. */
 function Trend({ value }: { value: number | null }) {
   if (value === null) return <span className="text-faint">—</span>;
   const up = value >= 0;
@@ -33,6 +29,13 @@ function Trend({ value }: { value: number | null }) {
   );
 }
 
+/**
+ * Fiche d'une carte : sa cote, sa courbe, ses ventes en cours et son historique.
+ *
+ * Doublon assumé de la boîte « Vue du marché » du marché : celle-ci est une
+ * vraie URL, partageable dans un chat et indexable, là où la boîte sert à
+ * consulter sans quitter la grille.
+ */
 export default async function CoteCartePage({ params }: { params: Promise<{ cardId: string }> }) {
   const { cardId } = await params;
   const card = getCard(cardId);
@@ -43,149 +46,187 @@ export default async function CoteCartePage({ params }: { params: Promise<{ card
 
   const data = await getStore().transaction((db) => {
     closeExpiredListings(db);
-    const stats = statsForCard(db, cardId);
-    const sales = db.sales
-      .filter((s) => s.cardId === cardId)
-      .sort((a, b) => new Date(b.soldAt).getTime() - new Date(a.soldAt).getTime())
-      .slice(0, 12)
-      .map((s) => ({
-        id: s.id,
-        price: s.price,
-        method: s.method,
-        soldAt: s.soldAt,
-        buyer: db.players.find((p) => p.id === s.buyerId)?.pseudo ?? 'Inconnu',
-        seller: db.players.find((p) => p.id === s.sellerId)?.pseudo ?? 'Inconnu',
+    const pseudo = (id: string) => db.players.find((p) => p.id === id)?.pseudo ?? 'Inconnu';
+    const stats = statsForCard(db as Database, cardId);
+
+    const rows: MarketListing[] = db.listings
+      .filter((l) => l.cardId === cardId && l.status === 'ACTIVE')
+      .sort((a, b) => new Date(a.endsAt).getTime() - new Date(b.endsAt).getTime())
+      .map((l) => ({
+        id: l.id,
+        cardId: l.cardId,
+        name: card.name,
+        subtitle: card.subtitle,
+        rarity: card.rarity,
+        theme: card.theme,
+        glyph: card.glyph,
+        power: card.power,
+        sellerId: l.sellerId,
+        sellerPseudo: pseudo(l.sellerId),
+        startPrice: l.startPrice,
+        currentPrice: l.currentPrice,
+        buyoutPrice: l.buyoutPrice,
+        currentBidderId: l.currentBidderId,
+        currentBidderPseudo: l.currentBidderId ? pseudo(l.currentBidderId) : null,
+        bidCount: l.bidCount,
+        minimumNextBid: minimumBid(l),
+        endsAt: l.endsAt,
+        quote: stats.lastPrice,
       }));
 
     return {
       stats,
-      sales,
-      lastBuyer: stats.lastBuyerId
-        ? (db.players.find((p) => p.id === stats.lastBuyerId)?.pseudo ?? null)
-        : null,
+      lastBuyer: lastBuyerPseudo(db as Database, cardId),
       balance: viewerId ? (db.players.find((p) => p.id === viewerId)?.snowflakes ?? null) : null,
-      listings: db.listings
-        .filter((l) => l.cardId === cardId && l.status === 'ACTIVE')
-        .sort((a, b) => new Date(a.endsAt).getTime() - new Date(b.endsAt).getTime())
-        .map((l) => viewListing(db, l))
-        .filter((l): l is ListingView => l !== null),
+      marketOpen: db.config.marketOpen,
+      listings: rows,
+      sales: db.sales
+        .filter((s) => s.cardId === cardId)
+        .sort((a, b) => new Date(b.soldAt).getTime() - new Date(a.soldAt).getTime())
+        .slice(0, 15)
+        .map((s) => ({
+          id: s.id,
+          price: s.price,
+          method: s.method,
+          soldAt: s.soldAt,
+          buyer: pseudo(s.buyerId),
+          seller: pseudo(s.sellerId),
+        })),
     };
   });
 
-  const meta = RARITY_META[card.rarity as Rarity];
+  const meta = rarityMeta(card.rarity);
   const theme = THEMES[card.theme as ThemeId];
-  const siblings = CARDS.filter((c) => c.theme === card.theme && c.id !== card.id);
-
-  const items: ListingItem[] = data.listings.map((l) => ({
-    id: l.id,
-    cardId: l.cardId,
-    card: l.card,
-    sellerId: l.sellerId,
-    sellerPseudo: l.sellerPseudo,
-    currentPrice: l.currentPrice,
-    buyoutPrice: l.buyoutPrice,
-    currentBidderId: l.currentBidderId,
-    currentBidderPseudo: l.currentBidderPseudo,
-    bidCount: l.bidCount,
-    minimumNextBid: l.minimumNextBid,
-    endsAt: l.endsAt,
-  }));
+  const siblings = cardsOfTheme(card.theme).filter((c) => c.id !== card.id);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <nav className="text-xs text-faint">
         <Link href="/marche" className="text-muted no-underline hover:text-ice">
           Hôtel des ventes
         </Link>{' '}
-        / {card.name}
+        / <span className="text-ink">{card.name}</span>
       </nav>
 
-      <header className="panel panel-frost flex flex-wrap items-start gap-4 p-5">
-        <span className="text-5xl leading-none" aria-hidden="true">
-          {card.glyph}
-        </span>
-        <div className="min-w-[240px] flex-1">
-          <h1 className="font-display text-2xl font-black uppercase tracking-wide text-ink">
-            {card.name}
-          </h1>
-          <div className="mt-1.5 flex flex-wrap gap-1.5">
-            <RarityBadge rarity={card.rarity} />
-            <ThemeBadge theme={card.theme} />
-            {card.nature === 'malus' && (
-              <span className="badge border-danger/50 text-danger">Malus</span>
-            )}
+      <header className="panel panel-frost relative overflow-hidden p-5">
+        <div
+          className="pointer-events-none absolute inset-0 opacity-50"
+          style={{
+            background: `radial-gradient(ellipse 55% 100% at 8% 50%, ${meta.color}22 0%, transparent 65%)`,
+          }}
+          aria-hidden="true"
+        />
+        <div className="relative flex flex-wrap items-start gap-5">
+          <div className="w-[132px] shrink-0">
+            <CardTile
+              cardId={card.id}
+              name={card.name}
+              subtitle={card.subtitle}
+              rarity={card.rarity}
+              theme={card.theme}
+              glyph={card.glyph}
+              power={card.power}
+              quote={data.stats.lastPrice}
+              nature={card.nature}
+            />
           </div>
-          <p className="mt-2 max-w-2xl text-sm text-muted">{card.description}</p>
+
+          <div className="min-w-[240px] flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="font-display text-2xl leading-none font-black tracking-wide text-ink uppercase">
+                {card.name}
+              </h1>
+              <RarityChip rarity={card.rarity} />
+              {card.nature === 'malus' && (
+                <span className="badge border-danger/50 text-danger">Malus</span>
+              )}
+            </div>
+            <p className="mt-0.5 text-xs text-faint">{card.subtitle}</p>
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">{card.description}</p>
+
+            <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-faint">
+              <span>
+                Famille{' '}
+                <span style={{ color: theme.color }}>
+                  {theme.glyph} {theme.name}
+                </span>
+              </span>
+              <span>
+                Puissance <span className="num text-danger">⚡ {card.power}</span>
+              </span>
+              <span>
+                Tendance 7 j : <Trend value={data.stats.trend7d} />
+              </span>
+              {data.lastBuyer && <span>Dernier acheteur : {data.lastBuyer}</span>}
+            </div>
+          </div>
         </div>
       </header>
 
-      <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <section className="grid grid-cols-2 gap-2.5 lg:grid-cols-5">
+        <StatTile label="Ventes" value={data.stats.volume} accent="ink" />
         <StatTile
           label="Dernier prix"
-          value={data.stats.lastPrice !== null ? `❄ ${formatFlakes(data.stats.lastPrice)}` : '—'}
-          hint={data.lastBuyer ? `Acheté par ${data.lastBuyer}` : 'Jamais vendue'}
+          value={data.stats.lastPrice !== null ? flakes(data.stats.lastPrice) : '—'}
         />
         <StatTile
-          label="Prix moyen"
-          value={data.stats.averagePrice !== null ? formatFlakes(data.stats.averagePrice) : '—'}
-          hint={
+          label="Moyenne"
+          value={data.stats.averagePrice !== null ? flakes(data.stats.averagePrice) : '—'}
+          accent="ink"
+        />
+        <StatTile
+          label="Min / Max"
+          value={
             data.stats.minPrice !== null
-              ? `min ${formatFlakes(data.stats.minPrice)} · max ${formatFlakes(data.stats.maxPrice!)}`
-              : undefined
+              ? `${flakes(data.stats.minPrice)} / ${flakes(data.stats.maxPrice!)}`
+              : '—'
           }
-          accent="muted"
+          accent="violet"
         />
-        <StatTile label="Ventes conclues" value={data.stats.volume} accent="violet" />
         <StatTile
-          label="Prix plancher"
-          value={data.stats.floorPrice !== null ? formatFlakes(data.stats.floorPrice) : '—'}
+          label="Plancher"
+          value={data.stats.floorPrice !== null ? flakes(data.stats.floorPrice) : '—'}
           hint={`${data.stats.activeListings} en vente`}
           accent="gold"
         />
       </section>
 
-      <section className="panel panel-frost p-4">
-        <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
-          <h2 className="font-display text-sm font-black uppercase tracking-wider text-ink">
-            Évolution du prix
-          </h2>
-          <span className="text-xs text-muted">
-            Tendance 7 jours&nbsp;: <Trend value={data.stats.trend7d} />
-          </span>
+      <section className="panel panel-frost">
+        <h2 className="border-b border-line px-4 py-2.5 font-display text-sm font-black tracking-wider text-ink uppercase">
+          Évolution des prix
+        </h2>
+        <div className="pt-2">
+          <PriceChart
+            points={data.stats.history}
+            color={meta.color}
+            average={data.stats.averagePrice}
+          />
         </div>
-        <PriceChart points={data.stats.history} color={meta.color} />
       </section>
 
       <section>
-        <h2 className="mb-3 font-display text-lg font-black uppercase tracking-wide text-ink">
+        <h2 className="mb-3 font-display text-lg font-black tracking-wide text-ink uppercase">
           Ventes en cours
         </h2>
-        {items.length === 0 ? (
-          <EmptyState
-            title="Aucune vente en cours pour cette carte"
-            hint="Reviens plus tard, ou ouvre un booster pour tenter de l’obtenir."
-          />
-        ) : (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {items.map((listing) => (
-              <ListingRow
-                key={listing.id}
-                listing={listing}
-                viewerId={viewerId}
-                balance={data.balance}
-              />
-            ))}
-          </div>
-        )}
+        <MarketBoard
+          listings={data.listings}
+          myListings={[]}
+          myBids={[]}
+          won={[]}
+          history={[]}
+          viewerId={viewerId}
+          balance={data.balance}
+          marketOpen={data.marketOpen}
+        />
       </section>
 
       {data.sales.length > 0 && (
         <section className="panel panel-frost">
-          <h2 className="border-b border-line px-4 py-2.5 font-display text-sm font-black uppercase tracking-wider text-ink">
+          <h2 className="border-b border-line px-4 py-2.5 font-display text-sm font-black tracking-wider text-ink uppercase">
             Historique des ventes
           </h2>
           <div className="scroll-x">
-            <table className="rank-table min-w-[560px]">
+            <table className="grid-table min-w-[560px]">
               <thead>
                 <tr>
                   <th>Date</th>
@@ -198,7 +239,7 @@ export default async function CoteCartePage({ params }: { params: Promise<{ card
               <tbody>
                 {data.sales.map((sale) => (
                   <tr key={sale.id}>
-                    <td className="text-xs text-faint">
+                    <td className="num text-[11px] text-faint">
                       {new Date(sale.soldAt).toLocaleString('fr-FR', {
                         day: '2-digit',
                         month: '2-digit',
@@ -211,8 +252,11 @@ export default async function CoteCartePage({ params }: { params: Promise<{ card
                     <td className="text-xs text-faint">
                       {sale.method === 'ENCHERE' ? 'Enchère' : 'Achat immédiat'}
                     </td>
-                    <td className="num text-right font-display font-bold text-ice">
-                      ❄ {formatFlakes(sale.price)}
+                    <td
+                      className="num text-right font-display font-black"
+                      style={{ color: meta.color }}
+                    >
+                      ❄ {flakes(sale.price)}
                     </td>
                   </tr>
                 ))}
@@ -223,18 +267,23 @@ export default async function CoteCartePage({ params }: { params: Promise<{ card
       )}
 
       <section>
-        <h2 className="mb-3 font-display text-sm font-black uppercase tracking-wider text-muted">
+        <h2 className="mb-3 font-display text-sm font-black tracking-wider text-muted uppercase">
           Le reste de la famille {theme.name}
         </h2>
-        <div className="flex flex-wrap gap-2">
+        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-5">
           {siblings.map((sibling) => (
-            <Link
+            <CardTile
               key={sibling.id}
+              cardId={sibling.id}
+              name={sibling.name}
+              subtitle={sibling.subtitle}
+              rarity={sibling.rarity}
+              theme={sibling.theme}
+              glyph={sibling.glyph}
+              power={sibling.power}
+              nature={sibling.nature}
               href={`/marche/${sibling.id}`}
-              className="badge no-underline hover:border-ice hover:text-ice"
-            >
-              <span aria-hidden="true">{sibling.glyph}</span> {sibling.name}
-            </Link>
+            />
           ))}
         </div>
       </section>

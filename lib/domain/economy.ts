@@ -39,15 +39,24 @@ export function rewardForGame(
   };
 }
 
-/** Prix d'un booster après remise de collection, arrondi à l'entier supérieur. */
+/**
+ * Prix d'un booster après remise de collection.
+ *
+ * On calcule le *montant de la remise* puis on le soustrait, au lieu de
+ * multiplier le prix par (1 − remise). La différence n'est pas cosmétique :
+ * `1 - 0.18` vaut 0.8200000000000001 en virgule flottante, et un arrondi au
+ * supérieur ferait payer un flocon de trop sur un prix rond.
+ */
 export function discountedPrice(basePrice: number, discount: number): number {
   const safeDiscount = Math.min(0.9, Math.max(0, discount));
-  return Math.max(1, Math.ceil(basePrice * (1 - safeDiscount)));
+  const off = Math.floor(basePrice * safeDiscount);
+  return Math.max(1, basePrice - off);
 }
 
 export type LedgerReason =
   | 'INSCRIPTION'
   | 'GAME'
+  | 'SUBS_TWITCH'
   | 'CARTE'
   | 'ACHAT_BOOSTER'
   | 'VENTE_MARCHE'

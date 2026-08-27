@@ -88,8 +88,10 @@ export interface RankingRow {
   twitchLogin: string | null;
   snowflakes: number;
   totals: PlayerTotals;
-  /** Familles complétées, affichées sous forme de pastilles. */
+  /** Familles complétées à 6/6, affichées en pastilles pleines. */
   completedThemes: string[];
+  /** Familles au palier 4/6, affichées estompées. */
+  partialThemes: string[];
   shielded: boolean;
   /** Vrai pour les places qualificatives pour la finale. */
   finalist: boolean;
@@ -117,6 +119,7 @@ export async function getRanking(): Promise<RankingRow[]> {
       snowflakes: player.snowflakes,
       totals,
       completedThemes: setBonusesFor(discoveredCardIds(db as Database, player.id)).completed,
+      partialThemes: setBonusesFor(discoveredCardIds(db as Database, player.id)).partial,
       shielded: hasShield(db as Database, player.id),
       finalist: position <= SEASON.finalistCount,
     }));

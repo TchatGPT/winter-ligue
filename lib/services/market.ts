@@ -450,3 +450,15 @@ export function lastBuyerPseudo(db: Database, cardId: string): string | null {
   if (!last) return null;
   return db.players.find((p) => p.id === last.buyerId)?.pseudo ?? null;
 }
+
+/**
+ * Ventes conclues dans les N dernières heures.
+ *
+ * Vit ici plutôt que dans la page : lire l'horloge pendant le rendu d'un
+ * composant est signalé comme impur, et une fenêtre glissante est de toute
+ * façon une question de domaine, pas de présentation.
+ */
+export function recentSales(db: Database, hours: number, now = new Date()) {
+  const cutoff = now.getTime() - hours * 60 * 60 * 1000;
+  return db.sales.filter((s) => new Date(s.soldAt).getTime() >= cutoff);
+}

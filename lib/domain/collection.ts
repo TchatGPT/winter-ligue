@@ -2,17 +2,21 @@
  * Collection et bonus de famille — le volet « passif » du système de cartes.
  *
  * Une carte jouée est consommée, mais sa *découverte* est définitive : elle
- * reste inscrite dans la collection du joueur. Compléter les 4 cartes d'une
- * famille débloque donc un bonus permanent qu'aucune dépense ne fait perdre.
+ * reste inscrite dans la collection du joueur. Les bonus de famille sont donc
+ * un acquis, jamais une dépense.
+ *
+ * Deux paliers par famille : 4 cartes sur 6 pour le bonus partiel, les 6 pour
+ * le bonus plein. Exiger d'emblée les six rendrait le bonus hors d'atteinte —
+ * la légendaire d'une famille ne sort qu'une ouverture sur mille.
  */
 
 import { CARDS, THEMES } from './catalog';
-import { BASE_HAND_SLOTS } from './rules';
+import { BASE_RESERVE_SLOTS, SET_TIERS } from './rules';
 import type { SetBonuses, ThemeId } from './types';
 
 const THEME_IDS = Object.keys(THEMES) as ThemeId[];
 
-/** Cartes requises pour compléter chaque famille. */
+/** Cartes composant chaque famille. */
 const THEME_REQUIREMENTS: Record<ThemeId, string[]> = THEME_IDS.reduce(
   (acc, theme) => {
     acc[theme] = CARDS.filter((c) => c.theme === theme).map((c) => c.id);
@@ -21,21 +25,40 @@ const THEME_REQUIREMENTS: Record<ThemeId, string[]> = THEME_IDS.reduce(
   {} as Record<ThemeId, string[]>,
 );
 
-/** Bonus accordé par chaque famille complétée. */
-const THEME_BONUS: Record<ThemeId, Partial<Omit<SetBonuses, 'completed'>>> = {
-  glace: { handSlots: 1 },
-  tempete: { killMultiplier: 0.05 },
-  aurore: { snowflakesPerGame: 15 },
-  solstice: { shopDiscount: 0.15, marketFeeDiscount: 0.5 },
+type BonusDelta = Partial<Omit<SetBonuses, 'completed' | 'partial'>>;
+
+/** Bonus accordé à chaque palier. Le plein remplace le partiel, il ne s'ajoute pas. */
+const THEME_BONUS: Record<ThemeId, { partial: BonusDelta; full: BonusDelta }> = {
+  glace: {
+    partial: { handSlots: 8 },
+    full: { handSlots: 20 },
+  },
+  tempete: {
+    partial: { killMultiplier: 0.03 },
+    full: { killMultiplier: 0.07 },
+  },
+  aurore: {
+    partial: { snowflakesPerGame: 8 },
+    full: { snowflakesPerGame: 20 },
+  },
+  solstice: {
+    partial: { shopDiscount: 0.08 },
+    full: { shopDiscount: 0.18, marketFeeDiscount: 0.5 },
+  },
 };
 
 export interface ThemeProgress {
   theme: ThemeId;
   owned: string[];
   missing: string[];
+  /** 4 cartes sur 6 atteintes. */
+  partial: boolean;
+  /** Les 6 cartes possédées. */
   complete: boolean;
   /** Entre 0 et 1. */
   ratio: number;
+  /** Cartes restantes avant le prochain palier, 0 si le plein est atteint. */
+  toNextTier: number;
 }
 
 /** Avancement de la collection, famille par famille. */
@@ -45,12 +68,21 @@ export function themeProgress(discovered: readonly string[]): ThemeProgress[] {
     const required = THEME_REQUIREMENTS[theme];
     const owned = required.filter((id) => set.has(id));
     const missing = required.filter((id) => !set.has(id));
+    const complete = missing.length === 0;
+    const partial = owned.length >= SET_TIERS.partial;
+
     return {
       theme,
       owned,
       missing,
-      complete: missing.length === 0,
+      partial,
+      complete,
       ratio: required.length === 0 ? 0 : owned.length / required.length,
+      toNextTier: complete
+        ? 0
+        : partial
+          ? SET_TIERS.full - owned.length
+          : SET_TIERS.partial - owned.length,
     };
   });
 }
@@ -69,17 +101,24 @@ export function setBonusesFor(discovered: readonly string[]): SetBonuses {
     shopDiscount: 0,
     marketFeeDiscount: 0,
     completed: [],
+    partial: [],
   };
 
   for (const progress of themeProgress(discovered)) {
-    if (!progress.complete) continue;
-    bonuses.completed.push(progress.theme);
-    const bonus = THEME_BONUS[progress.theme];
-    bonuses.handSlots += bonus.handSlots ?? 0;
-    bonuses.killMultiplier += bonus.killMultiplier ?? 0;
-    bonuses.snowflakesPerGame += bonus.snowflakesPerGame ?? 0;
-    bonuses.shopDiscount += bonus.shopDiscount ?? 0;
-    bonuses.marketFeeDiscount += bonus.marketFeeDiscount ?? 0;
+    if (!progress.partial) continue;
+
+    const tier = progress.complete
+      ? THEME_BONUS[progress.theme].full
+      : THEME_BONUS[progress.theme].partial;
+
+    if (progress.complete) bonuses.completed.push(progress.theme);
+    else bonuses.partial.push(progress.theme);
+
+    bonuses.handSlots += tier.handSlots ?? 0;
+    bonuses.killMultiplier += tier.killMultiplier ?? 0;
+    bonuses.snowflakesPerGame += tier.snowflakesPerGame ?? 0;
+    bonuses.shopDiscount += tier.shopDiscount ?? 0;
+    bonuses.marketFeeDiscount += tier.marketFeeDiscount ?? 0;
   }
 
   // Garde-fous : même si le catalogue évolue, ces valeurs restent bornées.
@@ -88,13 +127,14 @@ export function setBonusesFor(discovered: readonly string[]): SetBonuses {
   return bonuses;
 }
 
-/** Taille de main autorisée pour un joueur, bonus de collection compris. */
+/** Places de réserve d'un joueur, bonus de collection compris. */
 export function handSlotsFor(discovered: readonly string[]): number {
-  return BASE_HAND_SLOTS + setBonusesFor(discovered).handSlots;
+  return BASE_RESERVE_SLOTS + setBonusesFor(discovered).handSlots;
 }
 
 /** Pourcentage de complétion global, pour l'affichage du profil. */
 export function completionRatio(discovered: readonly string[]): number {
-  const set = new Set(discovered.filter((id) => CARDS.some((c) => c.id === id)));
-  return CARDS.length === 0 ? 0 : set.size / CARDS.length;
+  const known = new Set(CARDS.map((c) => c.id));
+  const valid = new Set(discovered.filter((id) => known.has(id)));
+  return CARDS.length === 0 ? 0 : valid.size / CARDS.length;
 }

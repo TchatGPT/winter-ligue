@@ -31,6 +31,7 @@ export function emptyDatabase(): Database {
     version: SCHEMA_VERSION,
     config: {
       maxGamesPerPlayer: DEFAULT_MAX_GAMES_PER_PLAYER,
+      totalSubs: 0,
       shopOpen: true,
       marketOpen: true,
       seasonStartsAt: SEASON.startsAt,
@@ -47,6 +48,7 @@ export function emptyDatabase(): Database {
     bids: [],
     sales: [],
     events: [],
+    subEvents: [],
     audit: [],
   };
 }
@@ -157,6 +159,7 @@ function migrate(db: Partial<Database>): Database {
     bids: db.bids ?? [],
     sales: db.sales ?? [],
     events: db.events ?? [],
+    subEvents: db.subEvents ?? [],
     audit: db.audit ?? [],
   };
 }

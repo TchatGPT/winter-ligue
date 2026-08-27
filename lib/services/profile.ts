@@ -11,7 +11,7 @@ import 'server-only';
 import type { Database } from '@/lib/db/entities';
 import { getStore } from '@/lib/db/store';
 import { CARDS, getCard, THEMES } from '@/lib/domain/catalog';
-import { completionRatio, themeProgress } from '@/lib/domain/collection';
+import { completionRatio, handSlotsFor, themeProgress } from '@/lib/domain/collection';
 import type { SetBonuses } from '@/lib/domain/types';
 import { handOf } from './cards';
 import { bonusesFor, discoveredCardIds, gamesOf, hasShield, totalsOf } from './league';
@@ -59,10 +59,16 @@ export interface ProfileView {
     name: string;
     glyph: string;
     color: string;
+    /** Bonus effectivement actif, ou le prochain à atteindre. */
     bonusLabel: string;
+    partialBonusLabel: string;
+    fullBonusLabel: string;
     owned: number;
     total: number;
+    partial: boolean;
     complete: boolean;
+    /** Cartes restantes avant le prochain palier. */
+    toNextTier: number;
   }[];
   totals: ReturnType<typeof totalsOf>;
   games: {
@@ -109,7 +115,7 @@ function buildProfile(db: Database, playerId: string): ProfileView | null {
     twitchLogin: player.twitchLogin,
     snowflakes: player.snowflakes,
     shielded: hasShield(db, playerId),
-    handSlots: 6 + bonuses.handSlots,
+    handSlots: handSlotsFor(discovered),
     hand: hand
       .map((instance): HandCard | null => {
         const card = getCard(instance.cardId);
@@ -146,10 +152,19 @@ function buildProfile(db: Database, playerId: string): ProfileView | null {
         name: theme.name,
         glyph: theme.glyph,
         color: theme.color,
-        bonusLabel: theme.setBonusLabel,
+        // Le libellé mis en avant est celui qu'on a, ou celui qu'on vise.
+        bonusLabel: p.complete
+          ? theme.fullBonusLabel
+          : p.partial
+            ? theme.partialBonusLabel
+            : theme.partialBonusLabel,
+        partialBonusLabel: theme.partialBonusLabel,
+        fullBonusLabel: theme.fullBonusLabel,
         owned: p.owned.length,
         total: p.owned.length + p.missing.length,
+        partial: p.partial,
         complete: p.complete,
+        toNextTier: p.toNextTier,
       };
     }),
     totals: totalsOf(db, playerId),

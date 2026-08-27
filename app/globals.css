@@ -1,54 +1,91 @@
 @import 'tailwindcss';
 
 /* ==========================================================================
-   Winter Ligue — thème hivernal
-   Nuit polaire, glace et aurores boréales. Une seule palette, déclarée ici et
-   exposée à Tailwind, pour que rien ne soit codé en dur dans les composants.
+   WINTER LIGUE — système visuel
+   Nuit polaire, glace et aurores. Une seule palette, déclarée ici et exposée
+   à Tailwind : rien n'est codé en dur dans les composants.
    ========================================================================== */
 
 :root {
-  --bg: #05080f;
-  --bg-2: #0a1019;
-  --bg-3: #101826;
-  --bg-4: #16202f;
-  --border: #1e2a3b;
-  --border-bright: #2c3d54;
+  /* -- Fonds, du plus profond au plus clair ------------------------------ */
+  --bg: #050810;
+  --bg-1: #080d18;
+  --bg-2: #0c1421;
+  --bg-3: #111b2c;
+  --bg-4: #182438;
+  --bg-5: #22314a;
 
+  /* -- Bordures ---------------------------------------------------------- */
+  --line: #1a2739;
+  --line-2: #26374f;
+  --line-3: #35496a;
+
+  /* -- Accent : la glace ------------------------------------------------- */
   --ice: #7fd8ff;
-  --ice-deep: #4cc4f0;
-  --frost: #dcf1ff;
-  --aurora: #6ee7c7;
-  --violet: #b18cff;
-  --gold: #e8c46a;
-  --danger: #ff6b5a;
+  --ice-2: #3fb8ea;
+  --ice-3: #1d84b5;
+  --frost: #e4f4ff;
+  --aurora: #5fe3bd;
+  --violet: #a78bfa;
+  --gold: #ffd76a;
+  --danger: #ff6b6b;
 
-  --text: #dbe7f5;
-  --text-muted: #7d90a8;
-  --text-faint: #4d5c72;
+  /* -- Texte ------------------------------------------------------------- */
+  --ink: #dceaf8;
+  --ink-2: #8ea4bd;
+  --ink-3: #56698350;
+  --muted: #7f95b0;
+  --faint: #4d6180;
 
-  --shadow: 0 8px 32px rgb(0 0 0 / 0.55);
-  --glow-ice: 0 0 28px rgb(127 216 255 / 0.28);
+  /* -- Raretés — froid pour le banal, chaud pour le convoité ------------- */
+  --r-c: #93a9c0;
+  --r-pc: #4fc9f0;
+  --r-r: #8b7dff;
+  --r-sr: #ff7dc8;
+  --r-ur: #ff9a4d;
+  --r-l: #ffd76a;
+
+  --shadow-sm: 0 2px 8px rgb(0 0 0 / 0.4);
+  --shadow: 0 8px 28px rgb(0 0 0 / 0.5);
+  --shadow-lg: 0 24px 70px rgb(0 0 0 / 0.65);
+  --glow-ice: 0 0 24px rgb(127 216 255 / 0.35);
+
+  --radius: 12px;
+  --radius-sm: 8px;
 }
 
 @theme inline {
   --color-bg: var(--bg);
+  --color-bg-1: var(--bg-1);
   --color-bg-2: var(--bg-2);
   --color-bg-3: var(--bg-3);
   --color-bg-4: var(--bg-4);
-  --color-line: var(--border);
-  --color-line-bright: var(--border-bright);
+  --color-bg-5: var(--bg-5);
+
+  --color-line: var(--line);
+  --color-line-2: var(--line-2);
+  --color-line-3: var(--line-3);
 
   --color-ice: var(--ice);
-  --color-ice-deep: var(--ice-deep);
+  --color-ice-2: var(--ice-2);
+  --color-ice-3: var(--ice-3);
   --color-frost: var(--frost);
   --color-aurora: var(--aurora);
   --color-violet: var(--violet);
   --color-gold: var(--gold);
   --color-danger: var(--danger);
 
-  --color-ink: var(--text);
-  --color-muted: var(--text-muted);
-  --color-faint: var(--text-faint);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+
+  --color-r-c: var(--r-c);
+  --color-r-pc: var(--r-pc);
+  --color-r-r: var(--r-r);
+  --color-r-sr: var(--r-sr);
+  --color-r-ur: var(--r-ur);
+  --color-r-l: var(--r-l);
 
   --font-display: var(--font-barlow-condensed), 'Arial Narrow', sans-serif;
   --font-sans: var(--font-barlow), system-ui, sans-serif;
@@ -58,21 +95,49 @@
   box-sizing: border-box;
 }
 
+html {
+  /* Le fond doit couvrir aussi la zone de rebond du défilement élastique. */
+  background-color: var(--bg);
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
   background-color: var(--bg);
-  /* Deux voiles d'aurore, fixés au viewport pour ne pas défiler avec le contenu. */
-  background-image:
-    radial-gradient(ellipse 70% 45% at 12% 0%, rgb(127 216 255 / 0.09) 0%, transparent 60%),
-    radial-gradient(ellipse 55% 40% at 88% 8%, rgb(177 140 255 / 0.07) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 35% at 50% 100%, rgb(110 231 199 / 0.05) 0%, transparent 65%);
-  background-attachment: fixed;
-  color: var(--text);
+  color: var(--ink);
   font-family: var(--font-sans);
   font-size: 14px;
   line-height: 1.55;
   min-height: 100dvh;
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
 }
+
+/* Voiles d'aurore : trois nappes fixes, hors flux, sous tout le contenu. */
+.aurora-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(ellipse 90% 55% at 8% -8%, rgb(63 184 234 / 0.16) 0%, transparent 62%),
+    radial-gradient(ellipse 70% 45% at 92% 2%, rgb(167 139 250 / 0.13) 0%, transparent 60%),
+    radial-gradient(ellipse 80% 45% at 50% 108%, rgb(95 227 189 / 0.09) 0%, transparent 65%);
+}
+
+/* Grain léger : casse les dégradés et donne de la matière au fond. */
+.aurora-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0.25;
+  background-image: radial-gradient(circle at 1px 1px, rgb(255 255 255 / 0.5) 1px, transparent 0);
+  background-size: 3px 3px;
+  mix-blend-mode: overlay;
+}
+
+/* --------------------------------------------------------------------------
+   Typographie
+   -------------------------------------------------------------------------- */
 
 h1,
 h2,
@@ -81,35 +146,38 @@ h4,
 .font-display {
   font-family: var(--font-display);
   font-weight: 700;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.015em;
 }
-
-/* --------------------------------------------------------------------------
-   Titres de section : un filet lumineux plutôt qu'un gros trait.
-   -------------------------------------------------------------------------- */
 
 .section-title {
   font-family: var(--font-display);
   font-weight: 900;
-  font-size: clamp(1.5rem, 4vw, 2.1rem);
-  line-height: 1;
-  letter-spacing: 0.015em;
+  font-size: clamp(1.65rem, 5vw, 2.6rem);
+  line-height: 0.98;
+  letter-spacing: 0.005em;
   text-transform: uppercase;
 }
 
 .section-title em {
   font-style: normal;
-  color: var(--ice);
-  text-shadow: var(--glow-ice);
+  background: linear-gradient(120deg, var(--frost) 0%, var(--ice) 45%, var(--ice-3) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 22px rgb(127 216 255 / 0.4));
 }
 
 .eyebrow {
   font-family: var(--font-display);
   font-size: 0.6875rem;
   font-weight: 700;
-  letter-spacing: 0.22em;
+  letter-spacing: 0.26em;
   text-transform: uppercase;
-  color: var(--text-muted);
+  color: var(--ice-3);
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
 }
 
 /* --------------------------------------------------------------------------
@@ -117,24 +185,41 @@ h4,
    -------------------------------------------------------------------------- */
 
 .panel {
-  background: linear-gradient(160deg, rgb(16 24 38 / 0.9), rgb(10 16 25 / 0.9));
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  box-shadow: var(--shadow);
-}
-
-.panel-frost {
   position: relative;
-  overflow: hidden;
+  background:
+    linear-gradient(165deg, rgb(17 27 44 / 0.82), rgb(8 13 24 / 0.92));
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  backdrop-filter: blur(10px);
 }
 
-/* Reflet de givre en haut du panneau. */
+/* Filet de givre sur l'arête haute : un seul pixel, mais tout le relief. */
 .panel-frost::before {
   content: '';
   position: absolute;
   inset: 0 0 auto 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgb(127 216 255 / 0.5), transparent);
+  border-radius: var(--radius) var(--radius) 0 0;
+  background: linear-gradient(
+    90deg,
+    transparent 5%,
+    rgb(127 216 255 / 0.55) 50%,
+    transparent 95%
+  );
+}
+
+.panel-hover {
+  transition:
+    border-color 0.18s ease,
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.panel-hover:hover {
+  border-color: var(--line-3);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
 }
 
 /* --------------------------------------------------------------------------
@@ -145,28 +230,31 @@ h4,
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  border: 1px solid var(--border-bright);
-  border-radius: 6px;
-  background: var(--bg-3);
-  color: var(--text);
+  gap: 0.4rem;
+  padding: 0.5rem 0.95rem;
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-sm);
+  background: linear-gradient(160deg, var(--bg-4), var(--bg-2));
+  color: var(--ink);
   font-family: var(--font-display);
   font-size: 0.8125rem;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
+  white-space: nowrap;
   cursor: pointer;
   transition:
     background 0.15s ease,
     border-color 0.15s ease,
     color 0.15s ease,
-    transform 0.1s ease;
+    box-shadow 0.15s ease,
+    transform 0.08s ease;
 }
 
 .btn:hover:not(:disabled) {
-  background: var(--bg-4);
-  border-color: var(--ice-deep);
+  border-color: var(--ice-3);
+  color: var(--frost);
+  box-shadow: 0 0 0 1px rgb(63 184 234 / 0.15);
 }
 
 .btn:active:not(:disabled) {
@@ -174,80 +262,113 @@ h4,
 }
 
 .btn:disabled {
-  opacity: 0.45;
+  opacity: 0.4;
   cursor: not-allowed;
 }
 
 .btn-ice {
-  background: linear-gradient(140deg, var(--ice-deep), #2f9fd0);
+  background: linear-gradient(160deg, var(--ice), var(--ice-3));
   border-color: transparent;
-  color: #041018;
+  color: #03121c;
+  text-shadow: 0 1px 0 rgb(255 255 255 / 0.25);
 }
 
 .btn-ice:hover:not(:disabled) {
-  background: linear-gradient(140deg, var(--ice), var(--ice-deep));
+  background: linear-gradient(160deg, #a5e6ff, var(--ice-2));
   border-color: transparent;
+  color: #03121c;
+  box-shadow: 0 0 22px rgb(127 216 255 / 0.35);
 }
 
 .btn-gold {
-  border-color: var(--gold);
-  color: var(--gold);
+  background: linear-gradient(160deg, #ffe08a, #d8a02e);
+  border-color: transparent;
+  color: #1e1403;
 }
 
 .btn-gold:hover:not(:disabled) {
-  background: var(--gold);
-  color: #1a1204;
+  box-shadow: 0 0 22px rgb(255 215 106 / 0.35);
+  color: #1e1403;
+}
+
+.btn-ghost {
+  background: transparent;
+  border-color: var(--line-2);
+  color: var(--muted);
 }
 
 .btn-danger {
-  border-color: var(--danger);
+  background: transparent;
+  border-color: color-mix(in srgb, var(--danger) 45%, transparent);
   color: var(--danger);
 }
 
 .btn-danger:hover:not(:disabled) {
   background: var(--danger);
-  color: #200704;
+  border-color: var(--danger);
+  color: #200404;
 }
 
 .btn-sm {
-  padding: 0.3125rem 0.625rem;
+  padding: 0.3rem 0.6rem;
   font-size: 0.6875rem;
+  gap: 0.3rem;
+}
+
+.btn-lg {
+  padding: 0.7rem 1.5rem;
+  font-size: 0.95rem;
 }
 
 /* --------------------------------------------------------------------------
-   Champs de saisie
+   Champs
    -------------------------------------------------------------------------- */
 
 .field {
   width: 100%;
-  padding: 0.5rem 0.75rem;
-  background: var(--bg-2);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  color: var(--text);
+  padding: 0.5rem 0.8rem;
+  background: rgb(5 8 16 / 0.7);
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-sm);
+  color: var(--ink);
   font-family: var(--font-sans);
   font-size: 0.875rem;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .field:focus {
   outline: none;
-  border-color: var(--ice-deep);
-  box-shadow: 0 0 0 3px rgb(76 196 240 / 0.15);
+  border-color: var(--ice-2);
+  box-shadow: 0 0 0 3px rgb(63 184 234 / 0.14);
 }
 
 .field::placeholder {
-  color: var(--text-faint);
+  color: var(--faint);
+}
+
+select.field {
+  appearance: none;
+  padding-right: 2rem;
+  background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+    linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position:
+    calc(100% - 15px) calc(50% + 1px),
+    calc(100% - 10px) calc(50% + 1px);
+  background-size: 5px 5px;
+  background-repeat: no-repeat;
 }
 
 .label {
   display: block;
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.3rem;
   font-family: var(--font-display);
   font-size: 0.6875rem;
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--text-muted);
+  color: var(--muted);
 }
 
 /* --------------------------------------------------------------------------
@@ -258,130 +379,528 @@ h4,
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
-  padding: 0.125rem 0.5rem;
-  border: 1px solid var(--border-bright);
+  padding: 0.1rem 0.45rem;
+  border: 1px solid var(--line-2);
   border-radius: 999px;
   font-family: var(--font-display);
   font-size: 0.625rem;
   font-weight: 700;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
   white-space: nowrap;
+  line-height: 1.5;
+}
+
+/* Sigle de rareté, carré, posé en coin de vignette. */
+.rarity-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  height: 1.15rem;
+  padding: 0 0.3rem;
+  border-radius: 5px;
+  font-family: var(--font-display);
+  font-size: 0.6875rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  color: #060a12;
+  background: var(--chip, var(--r-c));
+  box-shadow: 0 1px 6px rgb(0 0 0 / 0.5);
 }
 
 /* --------------------------------------------------------------------------
-   Cartes à jouer
-   La lueur de rareté est portée par --rarity, posée en style inline.
+   VIGNETTE DE CARTE
+   La couleur de rareté arrive par --r, posée en style inline.
    -------------------------------------------------------------------------- */
 
-.game-card {
+.tcg {
   position: relative;
   display: flex;
   flex-direction: column;
-  padding: 0.75rem;
-  border: 1px solid color-mix(in srgb, var(--rarity, var(--border)) 45%, transparent);
   border-radius: 10px;
-  background:
-    linear-gradient(165deg, color-mix(in srgb, var(--rarity, #fff) 9%, var(--bg-3)), var(--bg-2));
-  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.4);
+  border: 1px solid color-mix(in srgb, var(--r, var(--line-2)) 42%, transparent);
+  background: var(--bg-1);
+  overflow: hidden;
+  isolation: isolate;
   transition:
-    transform 0.18s ease,
-    box-shadow 0.18s ease;
+    transform 0.2s cubic-bezier(0.2, 0.8, 0.3, 1),
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
 }
 
-.game-card:hover {
-  transform: translateY(-3px);
+.tcg-link:hover .tcg,
+.tcg-hover:hover {
+  transform: translateY(-4px);
+  border-color: color-mix(in srgb, var(--r, var(--line-3)) 75%, transparent);
   box-shadow:
-    0 0 0 1px rgb(0 0 0 / 0.4),
-    0 10px 30px color-mix(in srgb, var(--rarity, #000) 22%, transparent);
+    0 12px 30px rgb(0 0 0 / 0.55),
+    0 0 22px color-mix(in srgb, var(--r, transparent) 22%, transparent);
 }
 
-.game-card__glyph {
-  font-size: 1.75rem;
+/* Fenêtre d'illustration : dégradé de rareté + glyphe en filigrane. */
+.tcg-art {
+  position: relative;
+  aspect-ratio: 5 / 4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(
+      ellipse 120% 90% at 50% 115%,
+      color-mix(in srgb, var(--r, #4a5a70) 55%, transparent) 0%,
+      transparent 70%
+    ),
+    linear-gradient(
+      165deg,
+      color-mix(in srgb, var(--r, #4a5a70) 26%, var(--bg-3)) 0%,
+      var(--bg-1) 100%
+    );
+}
+
+.tcg-art::before {
+  /* Trame de givre, très discrète, pour éviter l'aplat. */
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0.35;
+  background-image:
+    linear-gradient(115deg, transparent 46%, rgb(255 255 255 / 0.06) 50%, transparent 54%),
+    linear-gradient(65deg, transparent 46%, rgb(255 255 255 / 0.04) 50%, transparent 54%);
+  background-size: 26px 26px, 34px 34px;
+}
+
+.tcg-glyph {
+  position: relative;
+  font-size: clamp(1.9rem, 7vw, 2.9rem);
   line-height: 1;
+  filter: drop-shadow(0 4px 14px rgb(0 0 0 / 0.6));
 }
 
-.game-card--locked {
-  opacity: 0.42;
-  filter: grayscale(0.7);
+/* Reflet holographique : bande lumineuse qui traverse au survol.
+   Réservée aux raretés R et au-dessus, pour que le reflet veuille dire
+   quelque chose. */
+.tcg-holo::after {
+  content: '';
+  position: absolute;
+  inset: -60% -120%;
+  background: linear-gradient(
+    68deg,
+    transparent 38%,
+    rgb(255 255 255 / 0.22) 47%,
+    rgb(255 255 255 / 0.42) 50%,
+    rgb(255 255 255 / 0.22) 53%,
+    transparent 62%
+  );
+  transform: translateX(-85%) rotate(6deg);
+  transition: transform 0.75s cubic-bezier(0.25, 0.6, 0.3, 1);
+  pointer-events: none;
+}
+
+.tcg-link:hover .tcg-holo::after,
+.tcg-hover:hover .tcg-holo::after {
+  transform: translateX(85%) rotate(6deg);
+}
+
+.tcg-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 0.15rem;
+  padding: 0.5rem 0.55rem 0.55rem;
+  background: linear-gradient(180deg, var(--bg-2), var(--bg-1));
+}
+
+.tcg-name {
+  font-family: var(--font-display);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  line-height: 1.12;
+  color: var(--ink);
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.tcg-sub {
+  font-size: 0.625rem;
+  line-height: 1.25;
+  color: var(--faint);
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+/* Bandeau de statistiques, comme le bas d'une carte à collectionner. */
+.tcg-stats {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem;
+  margin-top: auto;
+  padding-top: 0.4rem;
+  font-family: var(--font-display);
+  font-size: 0.6875rem;
+  font-weight: 700;
+}
+
+.tcg-foot {
+  padding: 0.35rem 0.55rem;
+  border-top: 1px solid var(--line);
+  background: rgb(5 8 16 / 0.55);
+  font-size: 0.625rem;
+  line-height: 1.35;
+}
+
+.tcg-dim {
+  filter: grayscale(0.85) brightness(0.55);
+  opacity: 0.6;
 }
 
 /* --------------------------------------------------------------------------
-   Tableau de classement
+   BOOSTER 3D
+   Un sachet qu'on retourne, qu'on secoue, puis qui se déchire.
    -------------------------------------------------------------------------- */
 
-.rank-table {
+.scene {
+  perspective: 1400px;
+  perspective-origin: 50% 45%;
+}
+
+.pack {
+  position: relative;
+  width: min(230px, 62vw);
+  aspect-ratio: 5 / 7.4;
+  transform-style: preserve-3d;
+  transition: transform 0.55s cubic-bezier(0.2, 0.7, 0.3, 1);
+  cursor: pointer;
+}
+
+.pack-idle {
+  animation: pack-float 5s ease-in-out infinite;
+}
+
+.scene:hover .pack-idle {
+  transform: rotateY(-16deg) rotateX(7deg) scale(1.03);
+}
+
+@keyframes pack-float {
+  0%,
+  100% {
+    transform: rotateY(-6deg) rotateX(3deg) translateY(0);
+  }
+  50% {
+    transform: rotateY(6deg) rotateX(-2deg) translateY(-10px);
+  }
+}
+
+.pack-face {
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  backface-visibility: hidden;
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 0.14);
+  box-shadow:
+    0 30px 60px rgb(0 0 0 / 0.65),
+    inset 0 1px 0 rgb(255 255 255 / 0.22);
+  background: linear-gradient(160deg, var(--p1, #2b4a63), var(--p2, #0e1c2a));
+}
+
+/* Bande brillante verticale : le pli du sachet plastique. */
+.pack-face::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    100deg,
+    transparent 0%,
+    rgb(255 255 255 / 0.05) 30%,
+    rgb(255 255 255 / 0.22) 44%,
+    rgb(255 255 255 / 0.05) 58%,
+    transparent 100%
+  );
+}
+
+/* Dentelure du haut du sachet. */
+.pack-face::after {
+  content: '';
+  position: absolute;
+  top: 13px;
+  left: 0;
+  right: 0;
+  height: 7px;
+  background-image: radial-gradient(circle at 5px 0, transparent 4px, rgb(0 0 0 / 0.35) 4px);
+  background-size: 10px 7px;
+  opacity: 0.65;
+}
+
+.pack-shake {
+  animation: pack-shake 0.62s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+}
+
+@keyframes pack-shake {
+  0%,
+  100% {
+    transform: rotateY(0) translateX(0) scale(1);
+  }
+  12% {
+    transform: rotateY(-9deg) translateX(-9px) scale(1.02);
+  }
+  28% {
+    transform: rotateY(11deg) translateX(11px) scale(1.03);
+  }
+  46% {
+    transform: rotateY(-13deg) translateX(-9px) scale(1.05);
+  }
+  64% {
+    transform: rotateY(13deg) translateX(9px) scale(1.07);
+  }
+  82% {
+    transform: rotateY(-7deg) translateX(-4px) scale(1.1);
+  }
+}
+
+.pack-burst {
+  animation: pack-burst 0.5s cubic-bezier(0.3, 0, 0.2, 1) forwards;
+}
+
+@keyframes pack-burst {
+  0% {
+    opacity: 1;
+    transform: scale(1.1);
+    filter: brightness(1);
+  }
+  35% {
+    opacity: 1;
+    transform: scale(1.22);
+    filter: brightness(3.4) saturate(0.4);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.7);
+    filter: brightness(6) saturate(0);
+  }
+}
+
+/* Onde de choc à l'ouverture. */
+.shockwave {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 120px;
+  height: 120px;
+  margin: -60px 0 0 -60px;
+  border-radius: 50%;
+  border: 2px solid var(--frost);
+  animation: shockwave 0.75s cubic-bezier(0.15, 0.7, 0.3, 1) forwards;
+  pointer-events: none;
+}
+
+@keyframes shockwave {
+  0% {
+    opacity: 0.9;
+    transform: scale(0.2);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(7);
+  }
+}
+
+/* -- Cartes révélées ---------------------------------------------------- */
+
+.reveal {
+  perspective: 1200px;
+  opacity: 0;
+  animation: reveal-in 0.5s cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
+}
+
+@keyframes reveal-in {
+  0% {
+    opacity: 0;
+    transform: translateY(34px) scale(0.86);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.flipper {
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.62s cubic-bezier(0.3, 0.8, 0.25, 1);
+  cursor: pointer;
+}
+
+.flipper.is-flipped {
+  transform: rotateY(180deg);
+}
+
+.flip-face {
+  backface-visibility: hidden;
+}
+
+.flip-back {
+  position: absolute;
+  inset: 0;
+  transform: rotateY(180deg);
+}
+
+/* Dos de carte : motif de flocon géométrique, pur CSS. */
+.card-back {
+  height: 100%;
+  border-radius: 10px;
+  border: 1px solid var(--line-3);
+  background:
+    radial-gradient(circle at 50% 50%, rgb(127 216 255 / 0.16) 0%, transparent 58%),
+    repeating-linear-gradient(60deg, transparent 0 8px, rgb(127 216 255 / 0.07) 8px 9px),
+    repeating-linear-gradient(-60deg, transparent 0 8px, rgb(127 216 255 / 0.07) 8px 9px),
+    linear-gradient(165deg, var(--bg-3), var(--bg));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 0 40px rgb(0 0 0 / 0.6);
+}
+
+/* Halo derrière les cartes rares, proportionnel à la rareté. */
+.reveal-halo {
+  position: absolute;
+  inset: -14%;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--r, transparent) 0%, transparent 68%);
+  opacity: 0.32;
+  filter: blur(22px);
+  pointer-events: none;
+  animation: halo-pulse 2.6s ease-in-out infinite;
+}
+
+@keyframes halo-pulse {
+  0%,
+  100% {
+    opacity: 0.22;
+  }
+  50% {
+    opacity: 0.44;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Onglets
+   -------------------------------------------------------------------------- */
+
+.tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.55rem 0.15rem;
+  font-family: var(--font-display);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
+  cursor: pointer;
+  background: none;
+}
+
+.tab:hover {
+  color: var(--ink);
+}
+
+.tab[data-active='true'] {
+  color: var(--ice);
+  border-bottom-color: var(--ice);
+}
+
+.tab-count {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--faint);
+}
+
+/* --------------------------------------------------------------------------
+   Tableaux
+   -------------------------------------------------------------------------- */
+
+.grid-table {
   width: 100%;
   border-collapse: collapse;
   font-variant-numeric: tabular-nums;
 }
 
-.rank-table th {
-  padding: 0.625rem 0.75rem;
-  border-bottom: 1px solid var(--border);
+.grid-table th {
+  padding: 0.6rem 0.7rem;
+  border-bottom: 1px solid var(--line);
   font-family: var(--font-display);
   font-size: 0.6875rem;
   font-weight: 700;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.13em;
   text-transform: uppercase;
-  color: var(--text-muted);
+  color: var(--muted);
   text-align: left;
   white-space: nowrap;
 }
 
-.rank-table td {
-  padding: 0.6875rem 0.75rem;
-  border-bottom: 1px solid rgb(30 42 59 / 0.55);
+.grid-table td {
+  padding: 0.62rem 0.7rem;
+  border-bottom: 1px solid rgb(26 39 57 / 0.6);
 }
 
-.rank-table tbody tr:hover {
-  background: rgb(127 216 255 / 0.035);
+.grid-table tbody tr {
+  transition: background 0.12s ease;
 }
 
-/* Les places qualificatives portent un liseré doré à gauche. */
-.rank-table tr.finalist td:first-child {
+.grid-table tbody tr:hover {
+  background: rgb(127 216 255 / 0.04);
+}
+
+.grid-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Les places qualificatives portent un liseré doré. */
+.grid-table tr.finalist td:first-child {
   box-shadow: inset 3px 0 0 var(--gold);
 }
 
 /* --------------------------------------------------------------------------
-   Chute de neige — purement décorative, désactivée si l'utilisateur
-   préfère les animations réduites.
+   Neige
    -------------------------------------------------------------------------- */
 
 .snow {
   position: fixed;
   inset: 0;
   pointer-events: none;
-  z-index: 0;
+  z-index: 1;
   overflow: hidden;
 }
 
 .snow span {
   position: absolute;
-  top: -5vh;
-  color: rgb(220 241 255 / 0.5);
+  top: -6vh;
+  color: var(--frost);
   animation: fall linear infinite;
+  will-change: transform;
 }
 
 @keyframes fall {
   0% {
-    transform: translate3d(0, -5vh, 0) rotate(0deg);
+    transform: translate3d(0, -6vh, 0) rotate(0deg);
   }
   100% {
-    transform: translate3d(var(--drift, 20px), 105vh, 0) rotate(360deg);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .snow {
-    display: none;
-  }
-
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    transition-duration: 0.01ms !important;
+    transform: translate3d(var(--drift, 20px), 106vh, 0) rotate(360deg);
   }
 }
 
@@ -391,38 +910,75 @@ h4,
 
 .scroll-x {
   overflow-x: auto;
-  /* Le contenu large défile dans son conteneur, jamais la page entière. */
+  overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
 }
 
-.num {
-  font-variant-numeric: tabular-nums;
+/* Masque les barres de défilement des rubans d'onglets. */
+.scroll-x-clean {
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.scroll-x-clean::-webkit-scrollbar {
+  display: none;
+}
+
+.sparkline-avg {
+  stroke-dasharray: 3 4;
 }
 
 ::selection {
-  background: rgb(76 196 240 / 0.3);
+  background: rgb(63 184 234 / 0.32);
+  color: var(--frost);
 }
 
 :focus-visible {
   outline: 2px solid var(--ice);
   outline-offset: 2px;
+  border-radius: 4px;
 }
 
-/* Barre de défilement discrète, accordée au thème. */
 ::-webkit-scrollbar {
   width: 10px;
   height: 10px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--bg-2);
+  background: var(--bg-1);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--border-bright);
+  background: var(--line-2);
   border-radius: 5px;
+  border: 2px solid var(--bg-1);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--ice-deep);
+  background: var(--line-3);
+}
+
+/* --------------------------------------------------------------------------
+   Accessibilité : on coupe tout mouvement décoratif si l'utilisateur
+   a demandé des animations réduites.
+   -------------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .snow,
+  .reveal-halo {
+    display: none;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .reveal {
+    opacity: 1;
+  }
 }

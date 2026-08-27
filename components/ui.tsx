@@ -2,7 +2,30 @@ import Link from 'next/link';
 import { RARITY_META, THEMES } from '@/lib/domain/catalog';
 import type { Rarity, ThemeId } from '@/lib/domain/types';
 
-/** Tuile de statistique : un grand chiffre, un libellé discret. */
+/** Raccourci sûr : une rareté inconnue retombe sur la commune plutôt que de casser le rendu. */
+export function rarityMeta(rarity: string) {
+  return RARITY_META[rarity as Rarity] ?? RARITY_META.C;
+}
+
+export function themeMeta(theme: string) {
+  return THEMES[theme as ThemeId] ?? null;
+}
+
+/** Formatage des flocons. Espace fine insécable pour les milliers. */
+export function flakes(n: number): string {
+  return n.toLocaleString('fr-FR');
+}
+
+/** Formatage compact pour les vignettes serrées : 12 400 → 12,4 k */
+export function flakesShort(n: number): string {
+  if (Math.abs(n) >= 1_000_000) return `${(n / 1_000_000).toFixed(1).replace('.', ',')} M`;
+  if (Math.abs(n) >= 10_000) return `${Math.round(n / 1000)} k`;
+  if (Math.abs(n) >= 1_000) return `${(n / 1000).toFixed(1).replace('.', ',')} k`;
+  return String(n);
+}
+
+/* ------------------------------- Tuiles --------------------------------- */
+
 export function StatTile({
   label,
   value,
@@ -12,41 +35,55 @@ export function StatTile({
   label: string;
   value: string | number;
   hint?: string;
-  accent?: 'ice' | 'gold' | 'aurora' | 'violet' | 'muted';
+  accent?: 'ice' | 'gold' | 'aurora' | 'violet' | 'ink' | 'danger';
 }) {
   const color = {
     ice: 'text-ice',
     gold: 'text-gold',
     aurora: 'text-aurora',
     violet: 'text-violet',
-    muted: 'text-ink',
+    ink: 'text-ink',
+    danger: 'text-danger',
   }[accent];
 
   return (
-    <div className="panel panel-frost px-4 py-3">
-      <div className="eyebrow">{label}</div>
-      <div className={`num font-display text-2xl font-black leading-tight ${color}`}>{value}</div>
-      {hint && <div className="mt-0.5 text-xs text-faint">{hint}</div>}
+    <div className="panel panel-frost px-3 py-2.5 sm:px-4 sm:py-3">
+      <div className="eyebrow truncate text-[10px] tracking-[0.18em] text-faint">{label}</div>
+      <div className={`num font-display text-xl leading-tight font-black sm:text-2xl ${color}`}>
+        {value}
+      </div>
+      {hint && <div className="mt-0.5 truncate text-[11px] text-faint">{hint}</div>}
     </div>
   );
 }
 
-/** Pastille de rareté, couleur incluse. */
-export function RarityBadge({ rarity }: { rarity: Rarity | string }) {
-  const meta = RARITY_META[rarity as Rarity] ?? RARITY_META.COMMUNE;
+/* ------------------------------ Pastilles -------------------------------- */
+
+/** Sigle de rareté : C, PC, R, SR, UR, L. */
+export function RarityChip({ rarity, title }: { rarity: string; title?: string }) {
+  const meta = rarityMeta(rarity);
   return (
     <span
-      className="badge"
-      style={{ borderColor: `${meta.color}66`, color: meta.color }}
+      className="rarity-chip"
+      style={{ ['--chip' as string]: meta.color }}
+      title={title ?? meta.label}
     >
+      {meta.code}
+    </span>
+  );
+}
+
+export function RarityBadge({ rarity }: { rarity: string }) {
+  const meta = rarityMeta(rarity);
+  return (
+    <span className="badge" style={{ borderColor: `${meta.color}66`, color: meta.color }}>
       {meta.label}
     </span>
   );
 }
 
-/** Pastille de famille. */
-export function ThemeBadge({ theme }: { theme: ThemeId | string }) {
-  const meta = THEMES[theme as ThemeId];
+export function ThemeBadge({ theme }: { theme: string }) {
+  const meta = themeMeta(theme);
   if (!meta) return null;
   return (
     <span className="badge" style={{ borderColor: `${meta.color}55`, color: meta.color }}>
@@ -56,99 +93,158 @@ export function ThemeBadge({ theme }: { theme: ThemeId | string }) {
   );
 }
 
+/* --------------------------- Vignette de carte --------------------------- */
+
 export interface CardTileProps {
   cardId: string;
   name: string;
+  subtitle?: string;
   rarity: string;
   theme: string;
   glyph: string;
-  description?: string;
+  /** Indice de puissance sur 100. */
+  power?: number;
+  /** Cote de marché en flocons. */
+  quote?: number | null;
   nature?: 'bonus' | 'malus';
   /** Grisée : non découverte, ou verrouillée par une vente. */
   dimmed?: boolean;
+  /** Bandeau bas : prix, boutons, mention du vendeur… */
   footer?: React.ReactNode;
+  /** Coin haut droit : compteur d'exemplaires, mention « Nouvelle »… */
+  corner?: React.ReactNode;
   href?: string;
+  onClick?: () => void;
 }
 
 /**
- * Carte à jouer. La couleur de rareté est injectée en variable CSS `--rarity`,
- * ce qui laisse la feuille de style gérer bordure, dégradé et lueur au survol.
+ * Vignette de carte à collectionner.
+ *
+ * La couleur de rareté est injectée en variable CSS `--r` : c'est la feuille de
+ * style qui en tire la bordure, le dégradé de la fenêtre d'illustration, le
+ * halo au survol et le reflet holographique. Un composant, six apparences.
  */
 export function CardTile({
   cardId,
   name,
+  subtitle,
   rarity,
   theme,
   glyph,
-  description,
+  power,
+  quote,
   nature,
   dimmed,
   footer,
+  corner,
   href,
+  onClick,
 }: CardTileProps) {
-  const meta = RARITY_META[rarity as Rarity] ?? RARITY_META.COMMUNE;
-  const themeMeta = THEMES[theme as ThemeId];
+  const meta = rarityMeta(rarity);
+  const th = themeMeta(theme);
 
   const body = (
-    <div
-      className={`game-card h-full ${dimmed ? 'game-card--locked' : ''}`}
-      style={{ ['--rarity' as string]: meta.color }}
+    <article
+      className={`tcg h-full ${dimmed ? 'tcg-dim' : ''} ${href || onClick ? '' : 'tcg-hover'}`}
+      style={{ ['--r' as string]: meta.color }}
     >
-      <div className="flex items-start justify-between gap-2">
-        <span className="game-card__glyph" aria-hidden="true">
+      <div className={`tcg-art ${meta.holo && !dimmed ? 'tcg-holo' : ''}`}>
+        <span className="tcg-glyph" aria-hidden="true">
           {glyph}
         </span>
-        {nature === 'malus' && (
-          <span className="badge border-danger/50 text-danger">Malus</span>
-        )}
-      </div>
 
-      <h3 className="mt-2 font-display text-sm font-bold uppercase leading-tight tracking-wide text-ink">
-        {name}
-      </h3>
-
-      <div className="mt-1.5 flex flex-wrap items-center gap-1">
-        <span
-          className="font-display text-[10px] font-bold uppercase tracking-[0.12em]"
-          style={{ color: meta.color }}
-        >
-          {meta.label}
+        <span className="absolute top-1.5 left-1.5">
+          <RarityChip rarity={rarity} />
         </span>
-        {themeMeta && (
-          <span className="text-[10px] text-faint">· {themeMeta.name}</span>
+
+        {nature === 'malus' && (
+          <span
+            className="absolute right-1.5 bottom-1.5 rounded px-1 py-px font-display text-[9px] font-black tracking-wider uppercase"
+            style={{ background: 'rgba(255,107,107,0.9)', color: '#1c0505' }}
+          >
+            Malus
+          </span>
+        )}
+
+        {corner && <span className="absolute top-1.5 right-1.5">{corner}</span>}
+
+        {th && (
+          <span
+            className="absolute bottom-1.5 left-1.5 text-[11px] leading-none opacity-70"
+            title={th.name}
+            aria-label={th.name}
+          >
+            {th.glyph}
+          </span>
         )}
       </div>
 
-      {description && (
-        <p className="mt-2 flex-1 text-xs leading-snug text-muted">{description}</p>
-      )}
+      <div className="tcg-body">
+        <h3 className="tcg-name">{name}</h3>
+        {subtitle && <p className="tcg-sub">{subtitle}</p>}
 
-      {footer && <div className="mt-3 border-t border-line pt-2.5">{footer}</div>}
-    </div>
+        {(power !== undefined || quote !== undefined) && (
+          <div className="tcg-stats">
+            {power !== undefined && (
+              <span className="text-danger" title={`Puissance ${power} / 100`}>
+                ⚡ <span className="num">{power}</span>
+              </span>
+            )}
+            {quote !== undefined && (
+              <span className="text-ice" title="Cote : dernier prix constaté">
+                ❄ <span className="num">{quote === null ? '—' : flakesShort(quote)}</span>
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+
+      {footer && <div className="tcg-foot">{footer}</div>}
+    </article>
   );
 
-  if (!href) return body;
-  return (
-    <Link href={href} className="no-underline" aria-label={`Cote de ${name}`} key={cardId}>
-      {body}
-    </Link>
-  );
+  if (onClick) {
+    return (
+      <button type="button" onClick={onClick} className="tcg-link block w-full text-left">
+        {body}
+      </button>
+    );
+  }
+
+  if (href) {
+    return (
+      <Link href={href} className="tcg-link block no-underline" aria-label={name} key={cardId}>
+        {body}
+      </Link>
+    );
+  }
+
+  return body;
 }
 
-/** Bloc « rien à afficher », pour éviter les pages vides sans explication. */
-export function EmptyState({ title, hint }: { title: string; hint?: string }) {
+/* -------------------------------- Divers --------------------------------- */
+
+export function EmptyState({
+  title,
+  hint,
+  action,
+}: {
+  title: string;
+  hint?: string;
+  action?: React.ReactNode;
+}) {
   return (
-    <div className="panel flex flex-col items-center gap-1.5 px-6 py-10 text-center">
-      <span className="text-2xl opacity-40" aria-hidden="true">
+    <div className="panel flex flex-col items-center gap-2 px-6 py-12 text-center">
+      <span className="text-3xl opacity-30" aria-hidden="true">
         ❄
       </span>
-      <p className="font-display text-sm font-bold uppercase tracking-wider text-muted">{title}</p>
-      {hint && <p className="max-w-md text-xs text-faint">{hint}</p>}
+      <p className="font-display text-sm font-bold tracking-wider text-muted uppercase">{title}</p>
+      {hint && <p className="max-w-md text-xs leading-relaxed text-faint">{hint}</p>}
+      {action && <div className="mt-2">{action}</div>}
     </div>
   );
 }
 
-/** Message d'erreur ou de succès inline. */
 export function Notice({
   kind = 'info',
   children,
@@ -157,19 +253,54 @@ export function Notice({
   children: React.ReactNode;
 }) {
   const styles = {
-    info: 'border-line-bright text-muted',
-    error: 'border-danger/50 text-danger',
-    success: 'border-aurora/50 text-aurora',
+    info: 'border-line-2 text-muted bg-bg-2/60',
+    error: 'border-danger/50 text-danger bg-danger/5',
+    success: 'border-aurora/50 text-aurora bg-aurora/5',
   }[kind];
 
   return (
-    <div className={`rounded-md border px-3 py-2 text-xs ${styles}`} role="status">
+    <div className={`rounded-lg border px-3 py-2 text-xs leading-relaxed ${styles}`} role="status">
       {children}
     </div>
   );
 }
 
-/** Formatage court des flocons. */
-export function formatFlakes(n: number): string {
-  return n.toLocaleString('fr-FR');
+/** Barre de progression fine, teintée. */
+export function Meter({ ratio, color }: { ratio: number; color: string }) {
+  return (
+    <div className="h-1 overflow-hidden rounded-full bg-bg-1">
+      <div
+        className="h-full rounded-full transition-[width] duration-500"
+        style={{ width: `${Math.min(100, Math.max(0, ratio * 100))}%`, background: color }}
+      />
+    </div>
+  );
+}
+
+/** Titre de section avec surtitre. */
+export function PageHead({
+  eyebrow,
+  title,
+  accent,
+  lead,
+  actions,
+}: {
+  eyebrow: string;
+  title: string;
+  accent: string;
+  lead?: React.ReactNode;
+  actions?: React.ReactNode;
+}) {
+  return (
+    <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+      <div className="min-w-0">
+        <p className="eyebrow">{eyebrow}</p>
+        <h1 className="section-title">
+          {title} <em>{accent}</em>
+        </h1>
+        {lead && <p className="mt-2 max-w-3xl text-sm leading-relaxed text-muted">{lead}</p>}
+      </div>
+      {actions && <div className="flex shrink-0 flex-wrap gap-2">{actions}</div>}
+    </header>
+  );
 }

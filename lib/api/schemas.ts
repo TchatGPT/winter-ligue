@@ -108,7 +108,7 @@ export const cancelListingSchema = z.object({ listingId: uuid });
 
 export const marketQuerySchema = z.object({
   cardId: z.enum(cardIds).optional(),
-  rarity: z.enum(['COMMUNE', 'RARE', 'EPIQUE', 'LEGENDAIRE']).optional(),
+  rarity: z.enum(['C', 'PC', 'R', 'SR', 'UR', 'L']).optional(),
   theme: z.enum(['glace', 'tempete', 'aurore', 'solstice']).optional(),
   sort: z.enum(['fin', 'prix_asc', 'prix_desc', 'recent']).default('fin'),
   page: z.coerce.number().int().min(1).max(200).default(1),

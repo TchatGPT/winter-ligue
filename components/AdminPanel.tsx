@@ -2,9 +2,9 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { Notice, formatFlakes } from '@/components/ui';
+import { Notice, flakes } from '@/components/ui';
 import { CARDS } from '@/lib/domain/catalog';
-import { GAME_LIMITS } from '@/lib/domain/rules';
+import { GAME_LIMITS, SUBS, nextMilestone } from '@/lib/domain/rules';
 
 export interface AdminPlayer {
   id: string;
@@ -19,6 +19,7 @@ export interface AdminConfig {
   maxGamesPerPlayer: number;
   shopOpen: boolean;
   marketOpen: boolean;
+  totalSubs: number;
 }
 
 /**
@@ -59,6 +60,10 @@ export function AdminPanel({
 
   // Réglages
   const [maxGames, setMaxGames] = useState(config.maxGamesPerPlayer);
+
+  // Subs
+  const [giftPlayer, setGiftPlayer] = useState('');
+  const [lastDrop, setLastDrop] = useState<string | null>(null);
 
   async function call(path: string, body: unknown, method = 'POST') {
     setBusy(true);
@@ -103,6 +108,49 @@ export function AdminPanel({
   return (
     <div className="space-y-6">
       {message && <Notice kind={message.kind}>{message.text}</Notice>}
+
+      <SubsPanel
+        config={config}
+        players={players}
+        busy={busy}
+        giftPlayer={giftPlayer}
+        setGiftPlayer={setGiftPlayer}
+        lastDrop={lastDrop}
+        onSubs={async (delta) => {
+          setBusy(true);
+          setMessage(null);
+          try {
+            const response = await fetch('/api/admin/subs', {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({ action: 'subs', delta }),
+            });
+            const payload = await response.json();
+            if (!payload.ok) {
+              setMessage({ kind: 'error', text: payload.error?.message ?? 'Action refusée.' });
+              return;
+            }
+            const d = payload.data;
+            setLastDrop(
+              d.milestones.length === 0
+                ? `+${delta} subs — aucun palier franchi`
+                : `${d.milestones.join(', ')} — ${d.snowflakesEach} ❄${
+                    d.boostersEach.length ? ` + ${d.boostersEach.length} booster(s)` : ''
+                  } pour ${d.recipients} joueur(s)`,
+            );
+            setMessage({ kind: 'success', text: 'Subs enregistrés.' });
+            router.refresh();
+          } catch {
+            setMessage({ kind: 'error', text: 'Le serveur n’a pas répondu.' });
+          } finally {
+            setBusy(false);
+          }
+        }}
+        onGift={async () => {
+          const done = await call('/api/admin/subs', { action: 'gift', playerId: giftPlayer });
+          if (done) setGiftPlayer('');
+        }}
+      />
 
       <div className="grid gap-4 lg:grid-cols-2">
         {/* --------------------------- Saisir une game -------------------- */}
@@ -283,7 +331,7 @@ export function AdminPanel({
                 <option value="">— Choisir —</option>
                 {players.map((p) => (
                   <option key={p.id} value={p.id}>
-                    {p.pseudo} — ❄ {formatFlakes(p.snowflakes)}
+                    {p.pseudo} — ❄ {flakes(p.snowflakes)}
                   </option>
                 ))}
               </select>
@@ -416,7 +464,7 @@ export function AdminPanel({
           Joueurs inscrits
         </h2>
         <div className="scroll-x">
-          <table className="rank-table min-w-[520px]">
+          <table className="grid-table min-w-[520px]">
             <thead>
               <tr>
                 <th>Joueur</th>
@@ -432,7 +480,7 @@ export function AdminPanel({
                   <td className="text-ink">{p.pseudo}</td>
                   <td className="num text-right text-muted">{p.games}</td>
                   <td className="num text-right text-ice">{p.score}</td>
-                  <td className="num text-right text-faint">❄ {formatFlakes(p.snowflakes)}</td>
+                  <td className="num text-right text-faint">❄ {flakes(p.snowflakes)}</td>
                   <td className="text-right">
                     <a href={`/joueurs/${p.slug}`} className="btn btn-sm no-underline">
                       Profil
@@ -451,7 +499,7 @@ export function AdminPanel({
           Journal d’audit
         </h2>
         <div className="scroll-x">
-          <table className="rank-table min-w-[600px]">
+          <table className="grid-table min-w-[600px]">
             <thead>
               <tr>
                 <th>Date</th>
@@ -481,5 +529,106 @@ export function AdminPanel({
         </div>
       </section>
     </div>
+  );
+}
+
+/* ------------------------------------------------------------------------ */
+
+/**
+ * Compteur de subs.
+ *
+ * Deux actions bien distinctes, et la distinction est volontairement visible :
+ * ajouter des subs verse à *tous* les joueurs actifs, tandis que la carte
+ * offerte vise un joueur nommé — mais ne donne jamais de flocons.
+ */
+function SubsPanel({
+  config,
+  players,
+  busy,
+  giftPlayer,
+  setGiftPlayer,
+  lastDrop,
+  onSubs,
+  onGift,
+}: {
+  config: AdminConfig;
+  players: AdminPlayer[];
+  busy: boolean;
+  giftPlayer: string;
+  setGiftPlayer: (id: string) => void;
+  lastDrop: string | null;
+  onSubs: (delta: number) => void;
+  onGift: () => void;
+}) {
+  const next = nextMilestone(config.totalSubs);
+
+  return (
+    <section className="panel panel-frost p-5">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h2 className="font-display text-lg font-black tracking-wide text-ice uppercase">
+            Compteur de subs
+          </h2>
+          <p className="mt-0.5 text-xs text-faint">
+            Chaque palier verse à <strong className="text-muted">tous les joueurs actifs</strong>,
+            à parts égales. Aucun versement ne peut viser un joueur en particulier.
+          </p>
+        </div>
+        <div className="text-right">
+          <div className="num font-display text-3xl leading-none font-black text-violet">
+            {flakes(config.totalSubs)}
+          </div>
+          {next && (
+            <div className="text-[11px] text-faint">
+              {next.milestone.label} dans {next.remaining} sub{next.remaining > 1 ? 's' : ''}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="mt-4 flex flex-wrap gap-1.5">
+        {SUBS.adminSteps.map((step) => (
+          <button
+            key={step}
+            className="btn btn-sm"
+            disabled={busy}
+            onClick={() => onSubs(step)}
+          >
+            +{step}
+          </button>
+        ))}
+      </div>
+
+      {lastDrop && (
+        <p className="mt-3 rounded-lg border border-aurora/40 bg-aurora/5 px-3 py-2 text-xs text-aurora">
+          {lastDrop}
+        </p>
+      )}
+
+      <div className="mt-4 border-t border-line pt-3">
+        <p className="label">Carte offerte par un gifteur ({SUBS.giftThreshold} subs)</p>
+        <div className="flex flex-wrap gap-2">
+          <select
+            className="field flex-1"
+            value={giftPlayer}
+            onChange={(e) => setGiftPlayer(e.target.value)}
+          >
+            <option value="">— Joueur désigné —</option>
+            {players.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.pseudo}
+              </option>
+            ))}
+          </select>
+          <button className="btn shrink-0" disabled={busy || !giftPlayer} onClick={onGift}>
+            Offrir une commune
+          </button>
+        </div>
+        <p className="mt-1.5 text-[11px] text-faint">
+          Toujours une commune, jamais des flocons : le geste passe à l’antenne sans peser sur le
+          classement. Maximum {SUBS.maxGiftedCardsPerDay} par joueur et par jour.
+        </p>
+      </div>
+    </section>
   );
 }

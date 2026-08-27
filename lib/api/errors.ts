@@ -14,6 +14,7 @@ import { NextResponse } from 'next/server';
 import { CardError } from '@/lib/services/cards';
 import { LedgerError } from '@/lib/services/ledger';
 import { MarketError } from '@/lib/services/market';
+import { SubError } from '@/lib/services/subs';
 import { fail } from './respond';
 
 export function toResponse(error: unknown): NextResponse {
@@ -24,6 +25,9 @@ export function toResponse(error: unknown): NextResponse {
     return fail('CONFLIT', error.message, { code: error.code, ...(error.detail ?? {}) });
   }
   if (error instanceof LedgerError) {
+    return fail('CONFLIT', error.message, { code: error.code });
+  }
+  if (error instanceof SubError) {
     return fail('CONFLIT', error.message, { code: error.code });
   }
 

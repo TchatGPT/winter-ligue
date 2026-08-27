@@ -153,7 +153,21 @@ juste après la remise à zéro d'une fenêtre :
 | Enchères | 60 / min / IP |
 | Lectures d'API | 240 / min / IP |
 
-### 11. Traçabilité
+### 11. Équilibre de l'économie
+
+Deux garde-fous ne relèvent pas de la sécurité technique mais de l'intégrité du jeu, et
+méritent la même vigilance :
+
+- **Aucun versement de subs ne peut cibler un joueur.** `addSubs()` verse à tous les
+  joueurs actifs, et la route n'expose aucun paramètre de destinataire. Un test
+  (`ne verse jamais de flocons à un joueur nommé`) échoue si un palier individuel
+  apparaît un jour dans la table. Sans cela, la communauté la plus généreuse achèterait
+  le classement de son joueur.
+- **La réserve est plafonnée, et le plafond est vérifié avant le débit.** On ne fait
+  jamais payer un booster qu'on refuse ensuite de livrer. Le plafond force le surplus
+  vers l'hôtel des ventes plutôt que de le laisser dormir.
+
+### 12. Traçabilité
 
 Aucun mouvement de flocons sans ligne au **grand livre** (`LedgerEntry`) : le solde d'un
 joueur doit toujours être reconstructible à partir de son historique, ce qui rend une

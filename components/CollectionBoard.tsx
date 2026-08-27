@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { Countdown } from '@/components/Countdown';
-import { CardTile, EmptyState, Notice, formatFlakes } from '@/components/ui';
+import { CardTile, EmptyState, Notice, flakes } from '@/components/ui';
 import { MARKET } from '@/lib/domain/rules';
 import type { HandCard, ProfileView } from '@/lib/services/profile';
 
@@ -120,10 +120,10 @@ export function CollectionBoard({
       <section>
         <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
           <h2 className="font-display text-xl font-black uppercase tracking-wide text-ink">
-            Ta main
+            Ta réserve
           </h2>
           <span className="text-xs text-muted">
-            <span className="num">{profile.hand.length}</span> / {profile.handSlots} emplacements
+            <span className="num">{profile.hand.length}</span> / {profile.handSlots} places de réserve
             {profile.bonuses.handSlots > 0 && (
               <span className="text-aurora"> (+{profile.bonuses.handSlots} par collection)</span>
             )}
@@ -132,7 +132,7 @@ export function CollectionBoard({
 
         {profile.hand.length === 0 ? (
           <EmptyState
-            title="Aucune carte en main"
+            title="Réserve vide"
             hint="Ouvre un booster en boutique, ou achète une carte à l’hôtel des ventes."
           />
         ) : (
@@ -145,7 +145,7 @@ export function CollectionBoard({
                 rarity={card.rarity}
                 theme={card.theme}
                 glyph={card.glyph}
-                description={card.description}
+                subtitle={card.description}
                 nature={card.nature}
                 footer={
                   <div className="flex gap-1.5">
@@ -183,7 +183,7 @@ export function CollectionBoard({
           />
         ) : (
           <div className="panel panel-frost scroll-x">
-            <table className="rank-table min-w-[600px]">
+            <table className="grid-table min-w-[600px]">
               <thead>
                 <tr>
                   <th>Carte</th>
@@ -201,7 +201,7 @@ export function CollectionBoard({
                       <span aria-hidden="true">{listing.card.glyph}</span> {listing.card.name}
                     </td>
                     <td className="num text-right font-bold text-ice">
-                      ❄ {formatFlakes(listing.currentPrice)}
+                      ❄ {flakes(listing.currentPrice)}
                     </td>
                     <td className="num text-right text-muted">{listing.bidCount}</td>
                     <td className="text-muted">{listing.currentBidderPseudo ?? '—'}</td>
@@ -239,7 +239,7 @@ export function CollectionBoard({
             Enchères où je suis en tête
           </h2>
           <div className="panel panel-frost scroll-x">
-            <table className="rank-table min-w-[480px]">
+            <table className="grid-table min-w-[480px]">
               <thead>
                 <tr>
                   <th>Carte</th>
@@ -256,7 +256,7 @@ export function CollectionBoard({
                     </td>
                     <td className="text-muted">{listing.sellerPseudo}</td>
                     <td className="num text-right font-bold text-aurora">
-                      ❄ {formatFlakes(listing.currentPrice)}
+                      ❄ {flakes(listing.currentPrice)}
                     </td>
                     <td className="text-right">
                       <Countdown endsAt={listing.endsAt} onExpire={() => router.refresh()} />

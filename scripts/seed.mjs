@@ -1,12 +1,13 @@
 #!/usr/bin/env node
 /**
  * Remplit `.data/league.json` avec une saison de démonstration : des joueurs,
- * des games, des cartes, des ventes en cours et un historique de prix.
+ * des games, des cartes, des ventes en cours et un historique de prix étalé sur
+ * plusieurs mois pour que les courbes aient du relief.
  *
  *   npm run seed
  *
- * Purement local. Le fichier `.data/` est ignoré par git, et le script refuse
- * de s'exécuter en production pour ne jamais écraser de vraies données.
+ * Purement local. `.data/` est ignoré par git, et le script refuse de tourner
+ * en production pour ne jamais écraser de vraies données.
  */
 
 import { randomUUID } from 'node:crypto';
@@ -20,13 +21,29 @@ if (process.env.NODE_ENV === 'production') {
 
 const FILE = process.env.LEAGUE_DATA_FILE ?? join(process.cwd(), '.data', 'league.json');
 
-const CARD_IDS = {
-  glace: ['bouclier-givre', 'gel-eternel', 'banquise', 'hiver-sans-fin'],
-  tempete: ['vent-du-nord', 'blizzard', 'oeil-du-cyclone', 'nuit-polaire'],
-  aurore: ['etoile-polaire', 'pluie-de-flocons', 'couronne-polaire', 'aurore-boreale'],
-  solstice: ['boule-de-neige', 'traineau-perce', 'vol-de-traineau', 'grand-froid'],
+/* Doit refléter lib/domain/catalog.ts — 4 familles × 6 raretés. */
+const FAMILIES = {
+  glace: ['flocon-protecteur', 'bouclier-givre', 'gel-eternel', 'banquise', 'rempart-polaire', 'hiver-sans-fin'],
+  tempete: ['brise-glacee', 'vent-du-nord', 'blizzard', 'oeil-du-cyclone', 'tempete-blanche', 'nuit-polaire'],
+  aurore: ['etincelle', 'etoile-polaire', 'pluie-de-flocons', 'couronne-polaire', 'voile-daurore', 'aurore-boreale'],
+  solstice: ['boule-de-neige', 'givre-mordant', 'traineau-perce', 'vol-de-traineau', 'tempete-de-verglas', 'grand-froid'],
 };
-const ALL_CARDS = Object.values(CARD_IDS).flat();
+const LADDER = ['C', 'PC', 'R', 'SR', 'UR', 'L'];
+
+const RARITY_OF = {};
+for (const ids of Object.values(FAMILIES)) {
+  ids.forEach((id, i) => {
+    RARITY_OF[id] = LADDER[i];
+  });
+}
+const ALL_CARDS = Object.values(FAMILIES).flat();
+
+/* Cote de référence, alignée sur catalog.referencePrice(). */
+const BASE_PRICE = { C: 40, PC: 120, R: 500, SR: 2_000, UR: 8_000, L: 40_000 };
+
+/* Poids de tirage du booster Givre, pour que la démo respecte les vraies raretés. */
+const WEIGHTS = { C: 73_000, PC: 20_000, R: 5_700, SR: 1_000, UR: 280, L: 20 };
+const WEIGHT_TOTAL = 100_000;
 
 const PSEUDOS = ['Lriaa', 'Frostbyte', 'Yeti', 'Nordik', 'Cristal', 'Avalanche', 'Boreal', 'Iglou'];
 
@@ -39,16 +56,30 @@ function rnd() {
 const pick = (items) => items[Math.floor(rnd() * items.length)];
 const between = (min, max) => min + Math.floor(rnd() * (max - min + 1));
 
+/** Tirage pondéré, identique à celui du serveur. */
+function pickRarity() {
+  let roll = Math.floor(rnd() * WEIGHT_TOTAL);
+  for (const rarity of LADDER) {
+    roll -= WEIGHTS[rarity];
+    if (roll < 0) return rarity;
+  }
+  return 'C';
+}
+const cardOfRarity = (rarity) => pick(ALL_CARDS.filter((id) => RARITY_OF[id] === rarity));
+
 const now = Date.now();
 const iso = (msAgo) => new Date(now - msAgo).toISOString();
+const DAY = 86_400_000;
 
 const PLACEMENT_POINTS = { 1: 20, 2: 15, 3: 8 };
+const PLACEMENT_FLAKES = { 1: 400, 2: 250, 3: 120 };
 const round2 = (n) => Math.round((n + Number.EPSILON) * 100) / 100;
 
 const db = {
   version: 1,
   config: {
     maxGamesPerPlayer: 25,
+    totalSubs: 437,
     shopOpen: true,
     marketOpen: true,
     seasonStartsAt: '2026-12-01T00:00:00.000Z',
@@ -65,10 +96,11 @@ const db = {
   bids: [],
   sales: [],
   events: [],
+  subEvents: [],
   audit: [],
 };
 
-function credit(playerId, delta, reason) {
+function move(playerId, delta, reason, msAgo = between(0, 20) * 3_600_000) {
   const player = db.players.find((p) => p.id === playerId);
   player.snowflakes += delta;
   db.ledger.push({
@@ -78,7 +110,7 @@ function credit(playerId, delta, reason) {
     balanceAfter: player.snowflakes,
     reason,
     refId: null,
-    createdAt: iso(between(0, 20) * 3_600_000),
+    createdAt: iso(msAgo),
   });
 }
 
@@ -92,22 +124,23 @@ for (const pseudo of PSEUDOS) {
     twitchLogin: pseudo.toLowerCase(),
     avatarUrl: null,
     snowflakes: 0,
-    joinedAt: iso(30 * 86_400_000),
+    joinedAt: iso(60 * DAY),
     active: true,
   });
-  credit(db.players.at(-1).id, 300, 'INSCRIPTION');
+  move(db.players.at(-1).id, 400, 'INSCRIPTION', 60 * DAY);
 }
 
 // --- Games -------------------------------------------------------------------
 for (const player of db.players) {
-  const count = between(6, 16);
+  const count = between(8, 20);
   for (let i = 0; i < count; i += 1) {
-    const kills = between(2, 22);
+    const kills = between(2, 24);
     const roll = rnd();
     const placement = roll > 0.88 ? 1 : roll > 0.78 ? 2 : roll > 0.66 ? 3 : null;
     // Quelques games portent déjà un multiplicateur, comme si une carte avait été jouée.
-    const multiplier = rnd() > 0.75 ? pick([1.3, 1.5, 1.8]) : 1;
-    const bonusPoints = rnd() > 0.85 ? pick([10, 25, 40, -25]) : 0;
+    const multiplier = rnd() > 0.75 ? pick([1.15, 1.3, 1.5, 1.8]) : 1;
+    const bonusPoints = rnd() > 0.85 ? pick([5, 10, 40, -25]) : 0;
+    const playedAt = iso(between(1, 45) * DAY);
 
     db.games.push({
       id: randomUUID(),
@@ -120,29 +153,46 @@ for (const player of db.players) {
       frozen: rnd() > 0.9,
       score: round2(kills * multiplier + (placement ? PLACEMENT_POINTS[placement] : 0) + bonusPoints),
       note: null,
-      playedAt: iso(between(1, 25) * 86_400_000),
-      createdAt: iso(between(1, 25) * 86_400_000),
-      appliedCardIds: multiplier !== 1 ? [pick(CARD_IDS.tempete)] : [],
+      playedAt,
+      createdAt: playedAt,
+      appliedCardIds: multiplier !== 1 ? [pick(FAMILIES.tempete.slice(0, 4))] : [],
     });
 
-    credit(
+    move(
       player.id,
-      kills * 3 + (placement ? { 1: 80, 2: 50, 3: 25 }[placement] : 0) + 15,
+      kills * 25 + (placement ? PLACEMENT_FLAKES[placement] : 0) + 150,
       'GAME',
+      between(1, 45) * DAY,
     );
   }
 }
 
+// --- Versements de subs ------------------------------------------------------
+// 437 subs cumulés : 87 Bourrasques, 17 Rafales, 4 Chutes de Neige.
+for (const player of db.players) {
+  move(player.id, 87 * 40 + 17 * 200, 'SUBS_TWITCH', between(1, 30) * DAY);
+}
+db.subEvents.push({
+  id: randomUUID(),
+  at: iso(2 * 3_600_000),
+  delta: 25,
+  totalAfter: 437,
+  milestones: ['Bourrasque', 'Bourrasque', 'Bourrasque', 'Bourrasque', 'Bourrasque', 'Rafale'],
+  snowflakesEach: 400,
+  boostersEach: [],
+  recipients: db.players.length,
+});
+
 // --- Cartes et collections ---------------------------------------------------
 for (const player of db.players) {
-  const owned = between(3, 9);
+  const owned = between(5, 14);
   for (let i = 0; i < owned; i += 1) {
-    const cardId = pick(ALL_CARDS);
+    const cardId = cardOfRarity(pickRarity());
     db.cards.push({
       id: randomUUID(),
       playerId: player.id,
       cardId,
-      obtainedAt: iso(between(1, 20) * 86_400_000),
+      obtainedAt: iso(between(1, 40) * DAY),
       source: 'BOOSTER',
       consumed: false,
       consumedAt: null,
@@ -155,47 +205,50 @@ for (const player of db.players) {
       db.discoveries.push({
         playerId: player.id,
         cardId,
-        firstObtainedAt: iso(between(1, 20) * 86_400_000),
+        firstObtainedAt: iso(between(1, 40) * DAY),
       });
     }
   }
 }
 
-// Le premier joueur a complété la famille Tempête : ses bonus sont visibles.
-for (const cardId of CARD_IDS.tempete) {
+// Le premier joueur a bouclé la famille Tempête : ses bonus sont visibles au classement.
+for (const cardId of FAMILIES.tempete) {
   if (!db.discoveries.some((d) => d.playerId === db.players[0].id && d.cardId === cardId)) {
     db.discoveries.push({
       playerId: db.players[0].id,
       cardId,
-      firstObtainedAt: iso(15 * 86_400_000),
+      firstObtainedAt: iso(20 * DAY),
+    });
+  }
+}
+// Le deuxième atteint le palier partiel sur Glace (4 cartes sur 6).
+for (const cardId of FAMILIES.glace.slice(0, 4)) {
+  if (!db.discoveries.some((d) => d.playerId === db.players[1].id && d.cardId === cardId)) {
+    db.discoveries.push({
+      playerId: db.players[1].id,
+      cardId,
+      firstObtainedAt: iso(18 * DAY),
     });
   }
 }
 
 // --- Historique de ventes, pour alimenter les courbes de prix ----------------
-const BASE_PRICE = {
-  COMMUNE: 120,
-  RARE: 450,
-  EPIQUE: 1400,
-  LEGENDAIRE: 4200,
-};
-const RARITY_OF = {};
-for (const [, ids] of Object.entries(CARD_IDS)) {
-  ids.forEach((id, index) => {
-    RARITY_OF[id] = ['COMMUNE', 'RARE', 'EPIQUE', 'LEGENDAIRE'][index];
-  });
-}
-
 for (const cardId of ALL_CARDS) {
   const base = BASE_PRICE[RARITY_OF[cardId]];
-  const count = between(3, 9);
+  // Les cartes rares s'échangent moins souvent : le volume suit la rareté.
+  const count = { C: 14, PC: 12, R: 9, SR: 6, UR: 3, L: 2 }[RARITY_OF[cardId]];
+
+  // Marche aléatoire autour de la référence, pour une courbe qui respire.
+  let level = base * (0.85 + rnd() * 0.3);
   for (let i = 0; i < count; i += 1) {
     const seller = pick(db.players);
     let buyer = pick(db.players);
     while (buyer.id === seller.id) buyer = pick(db.players);
 
-    // Marche aléatoire autour du prix de référence : la courbe a du relief.
-    const price = Math.max(10, Math.round(base * (0.65 + rnd() * 0.8)));
+    level *= 0.88 + rnd() * 0.3;
+    level = Math.min(base * 2.4, Math.max(base * 0.35, level));
+    const price = Math.max(10, Math.round(level));
+
     db.sales.push({
       id: randomUUID(),
       listingId: randomUUID(),
@@ -205,23 +258,26 @@ for (const cardId of ALL_CARDS) {
       price,
       fee: Math.floor(price * 0.05),
       method: rnd() > 0.7 ? 'ACHAT_IMMEDIAT' : 'ENCHERE',
-      soldAt: iso(between(1, 21) * 86_400_000),
+      // Étalé sur 100 jours, du plus ancien au plus récent.
+      soldAt: iso(Math.round((100 - (i / count) * 98) * DAY)),
     });
   }
 }
+db.sales.sort((a, b) => new Date(a.soldAt) - new Date(b.soldAt));
 
 // --- Ventes en cours ---------------------------------------------------------
-const forSale = db.cards.filter(() => rnd() > 0.7).slice(0, 14);
+const forSale = db.cards.filter(() => rnd() > 0.62).slice(0, 26);
 for (const instance of forSale) {
   const base = BASE_PRICE[RARITY_OF[instance.cardId]];
-  const startPrice = Math.max(10, Math.round(base * 0.6));
+  const startPrice = Math.max(10, Math.round(base * (0.5 + rnd() * 0.3)));
+
   let bidder = pick(db.players);
   while (bidder.id === instance.playerId) bidder = pick(db.players);
 
   // On ne simule une enchère que si l'enchérisseur peut réellement la couvrir :
   // un solde négatif serait un état que l'application ne sait pas produire.
-  const wantedBid = Math.round(startPrice * (1.1 + rnd() * 0.6));
-  const hasBid = rnd() > 0.45 && bidder.snowflakes >= wantedBid;
+  const wantedBid = Math.round(startPrice * (1.1 + rnd() * 0.7));
+  const hasBid = rnd() > 0.4 && bidder.snowflakes >= wantedBid;
 
   const listing = {
     id: randomUUID(),
@@ -229,12 +285,13 @@ for (const instance of forSale) {
     cardInstanceId: instance.id,
     cardId: instance.cardId,
     startPrice,
-    buyoutPrice: rnd() > 0.5 ? Math.round(base * 1.6) : null,
+    buyoutPrice: rnd() > 0.45 ? Math.round(base * (1.4 + rnd() * 0.6)) : null,
     currentPrice: hasBid ? wantedBid : startPrice,
     currentBidderId: hasBid ? bidder.id : null,
-    bidCount: hasBid ? between(1, 5) : 0,
-    createdAt: iso(between(1, 10) * 3_600_000),
-    endsAt: new Date(now + between(1, 60) * 3_600_000).toISOString(),
+    bidCount: hasBid ? between(1, 6) : 0,
+    createdAt: iso(between(1, 12) * 3_600_000),
+    // Quelques ventes finissent dans la minute : de quoi voir l'anti-snipe.
+    endsAt: new Date(now + between(1, 190) * 60_000 * (rnd() > 0.7 ? 1 : 12)).toISOString(),
     status: 'ACTIVE',
     buyerId: null,
     finalPrice: null,
@@ -254,18 +311,18 @@ for (const instance of forSale) {
       refunded: false,
     });
     // Les flocons de l'enchérisseur sont bien sous séquestre.
-    credit(bidder.id, -listing.currentPrice, 'ENCHERE_BLOQUEE');
+    move(bidder.id, -listing.currentPrice, 'ENCHERE_BLOQUEE', 3_600_000);
   }
 }
 
-// Un bouclier actif, pour voir l'icône dans le classement.
+// Un bouclier actif, pour voir l'icône au classement.
 db.effects.push({
   id: randomUUID(),
   playerId: db.players[1].id,
   kind: 'BOUCLIER',
   sourceCardId: 'bouclier-givre',
   createdAt: iso(3_600_000),
-  expiresAt: new Date(now + 20 * 3_600_000).toISOString(),
+  expiresAt: new Date(now + 9 * 3_600_000).toISOString(),
 });
 
 db.audit.push({
@@ -277,11 +334,18 @@ db.audit.push({
   at: new Date().toISOString(),
 });
 
+const negatives = db.players.filter((p) => p.snowflakes < 0);
+if (negatives.length > 0) {
+  console.error('Incohérence : soldes négatifs générés —', negatives.map((p) => p.pseudo).join(', '));
+  process.exit(1);
+}
+
 await mkdir(dirname(FILE), { recursive: true });
 await writeFile(FILE, JSON.stringify(db, null, 2), 'utf8');
 
 console.log(`Saison de démonstration écrite dans ${FILE}`);
 console.log(
   `  ${db.players.length} joueurs · ${db.games.length} games · ${db.cards.length} cartes · ` +
-    `${db.listings.length} ventes en cours · ${db.sales.length} transactions`,
+    `${db.listings.length} ventes en cours · ${db.sales.length} transactions · ` +
+    `${db.config.totalSubs} subs`,
 );

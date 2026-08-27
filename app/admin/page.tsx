@@ -40,6 +40,7 @@ export default async function AdminPage() {
         maxGamesPerPlayer: db.config.maxGamesPerPlayer,
         shopOpen: db.config.shopOpen,
         marketOpen: db.config.marketOpen,
+        totalSubs: db.config.totalSubs,
       },
       auditTrail: db.audit
         .slice(-40)

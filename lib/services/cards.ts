@@ -20,7 +20,15 @@ import { GAME_LIMITS, MALUS_COOLDOWN_HOURS } from '@/lib/domain/rules';
 import { clampMultiplier } from '@/lib/domain/scoring';
 import type { CardDefinition } from '@/lib/domain/types';
 import { audit, credit, debit } from './ledger';
-import { bonusesFor, gamesOf, hasShield, recomputeGame, recomputePlayerGames } from './league';
+import { handSlotsFor } from '@/lib/domain/collection';
+import {
+  bonusesFor,
+  discoveredCardIds,
+  gamesOf,
+  hasShield,
+  recomputeGame,
+  recomputePlayerGames,
+} from './league';
 
 export class CardError extends Error {
   constructor(
@@ -37,7 +45,7 @@ export class CardError extends Error {
       | 'GAME_GELEE'
       | 'CIBLE_PROTEGEE'
       | 'DELAI_MALUS'
-      | 'MAIN_PLEINE'
+      | 'RESERVE_PLEINE'
       | 'FLOCONS_INSUFFISANTS',
   ) {
     super(message);
@@ -123,6 +131,19 @@ export function purchaseAndOpen(
   const booster = getBooster(boosterId);
   if (!booster) throw new CardError('Booster inconnu.', 'BOOSTER_INCONNU');
 
+  // La réserve est plafonnée, et le plafond est vérifié *avant* le débit : on
+  // ne fait jamais payer un booster qu'on refuse ensuite de livrer. C'est ce
+  // qui donne du sens aux places de réserve, et ce qui pousse le surplus vers
+  // l'hôtel des ventes au lieu de dormir dans les collections.
+  const slots = handSlotsFor(discoveredCardIds(db, playerId));
+  const held = handOf(db, playerId).length;
+  if (held + booster.cardCount > slots) {
+    throw new CardError(
+      `Réserve pleine : ${held}/${slots} places occupées, il en faut ${booster.cardCount} de libres. Joue ou revends des cartes.`,
+      'RESERVE_PLEINE',
+    );
+  }
+
   const before = new Set(bonusesFor(db, playerId).completed);
   const price = discountedPrice(booster.price, bonusesFor(db, playerId).shopDiscount);
 
@@ -190,6 +211,29 @@ function worstGame(db: Database, playerId: string): Game | null {
 function pickRandom<T>(items: T[]): T | null {
   if (items.length === 0) return null;
   return items[randomInt(items.length)];
+}
+
+/**
+ * Pose un bouclier. Si le joueur en a déjà un, on prolonge à partir de la
+ * date d'expiration la plus lointaine plutôt que d'en empiler deux : deux
+ * boucliers simultanés ne protégeraient pas mieux qu'un seul.
+ */
+function grantShield(db: Database, playerId: string, sourceCardId: string, hours: number): void {
+  const now = Date.now();
+  const current = db.effects
+    .filter((e) => e.playerId === playerId && e.kind === 'BOUCLIER')
+    .map((e) => new Date(e.expiresAt).getTime())
+    .filter((t) => t > now);
+  const from = current.length > 0 ? Math.max(...current) : now;
+
+  db.effects.push({
+    id: newId(),
+    playerId,
+    kind: 'BOUCLIER',
+    sourceCardId,
+    createdAt: new Date().toISOString(),
+    expiresAt: new Date(from + hours * 60 * 60 * 1000).toISOString(),
+  });
 }
 
 /**
@@ -317,19 +361,41 @@ function applyEffect(
       };
     }
 
+    case 'points_and_snowflakes': {
+      const game = ownGame(db, playerId, input.gameId);
+      if (game.frozen) throw new CardError('Cette game est gelée.', 'GAME_GELEE');
+      game.bonusPoints = Math.min(GAME_LIMITS.maxBonusPoints, game.bonusPoints + effect.points);
+      game.appliedCardIds.push(card.id);
+      recomputeGame(db, game);
+      credit(db, playerId, effect.snowflakes, 'CARTE', card.id);
+      return {
+        summary: `${card.name} : +${effect.points} pts (game à ${game.score} pts) et +${effect.snowflakes} flocons.`,
+        affectedGameId: game.id,
+        targetPlayerId: null,
+      };
+    }
+
     case 'shield': {
-      const expiresAt = new Date(Date.now() + effect.hours * 60 * 60 * 1000).toISOString();
-      db.effects.push({
-        id: newId(),
-        playerId,
-        kind: 'BOUCLIER',
-        sourceCardId: card.id,
-        createdAt: new Date().toISOString(),
-        expiresAt,
-      });
+      grantShield(db, playerId, card.id, effect.hours);
       return {
         summary: `${card.name} : protégé contre les malus pendant ${effect.hours} h.`,
         affectedGameId: null,
+        targetPlayerId: null,
+      };
+    }
+
+    case 'shield_and_freeze_best': {
+      grantShield(db, playerId, card.id, effect.hours);
+      const game = bestGame(db, playerId);
+      if (game) {
+        game.frozen = true;
+        game.appliedCardIds.push(card.id);
+      }
+      return {
+        summary: game
+          ? `${card.name} : protégé ${effect.hours} h et meilleure game (${game.score} pts) gelée.`
+          : `${card.name} : protégé ${effect.hours} h. Aucune game à geler pour l’instant.`,
+        affectedGameId: game ? game.id : null,
         targetPlayerId: null,
       };
     }
@@ -445,7 +511,7 @@ export function playCard(
 
   const instance = db.cards.find((c) => c.id === input.cardInstanceId);
   if (!instance || instance.playerId !== playerId) {
-    throw new CardError('Carte introuvable dans ta main.', 'CARTE_INTROUVABLE');
+    throw new CardError('Carte introuvable dans ta réserve.', 'CARTE_INTROUVABLE');
   }
   if (instance.consumed) throw new CardError('Cette carte a déjà été jouée.', 'CARTE_DEJA_JOUEE');
   if (instance.listingId) {

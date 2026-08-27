@@ -20,25 +20,60 @@ score = (kills × multiplicateur) + points de classement + bonus
 1 kill = 1 point. Top 1 : +20, Top 2 : +15, Top 3 : +8. Le multiplicateur ne s’applique
 qu’aux kills — les points de classement restent fixes.
 
-**Les flocons ❄** — la monnaie de la saison, gagnée uniquement en jouant : 3 ❄ par kill,
-80/50/25 ❄ selon le podium, 15 ❄ par game enregistrée.
+**Les flocons ❄** — la monnaie de la saison. Deux sources, et la séparation est le cœur
+de l’équilibre : **le jeu** (25 ❄ par kill, 400/250/120 ❄ selon le podium, 150 ❄ par game)
+est la seule source qui crée un écart entre joueurs ; **les subs** arrosent tout le monde
+également.
 
-**Les boosters** — 4 boosters, de 150 à 2 200 ❄, avec raretés garanties. Le tirage est
-fait par le serveur avec `crypto.randomInt`.
+**Les subs Twitch** — chaque palier de subs verse **à tous les joueurs actifs, à parts
+égales**. Le chat fait grossir l’économie entière ; il ne fait monter personne au
+classement. C’est ce qui empêche le pay-to-win.
 
-**Les cartes** — 16 cartes, 4 familles × 4 raretés. Chacune est soit un **bonus** à jouer
+| Palier | Récompense, pour chaque joueur |
+|---|---|
+| tous les 5 subs | 40 ❄ |
+| tous les 25 subs | +200 ❄ |
+| tous les 100 subs | un booster Givre |
+| tous les 500 subs | un booster Aurore |
+
+Un gifteur peut désigner un joueur à partir de 5 subs : celui-ci reçoit une **carte
+commune au hasard**, jamais des flocons.
+
+**Les boosters** — 4 boosters, de 150 à 3 000 ❄, avec raretés garanties et courbe de
+tirage améliorée à mesure du prix. Le tirage est fait par le serveur avec
+`crypto.randomInt`, et s’ouvre en 3D dans le navigateur.
+
+**Les raretés** — six paliers. Les poids sont exprimés sur 100 000 pour rester exacts.
+
+| Rareté | Par carte | Au moins une par booster de 5 |
+|---|---|---|
+| C — Commune | 73 % | — |
+| PC — Peu commune | 20 % | — |
+| R — Rare | 5,7 % | 1 booster sur 4 |
+| SR — Super rare | 1 % | 1 sur 20 |
+| UR — Ultra rare | 0,28 % | 1 sur 72 |
+| **L — Légendaire** | **0,02 %** | **1 sur 1 000** |
+
+**Les cartes** — 24 cartes, 4 familles × 6 raretés. Chacune est soit un **bonus** à jouer
 sur soi, soit un **malus** à poser sur un adversaire.
 
-| Famille | Rôle | Bonus si complète |
-|---|---|---|
-| ❄ Glace Éternelle | Geler, protéger | +1 emplacement de main |
-| 🌪 Tempête | Multiplicateurs de kills | +5 % de kills en permanence |
-| 🌌 Aurore Boréale | Points et flocons | +15 ❄ par game |
-| 🎁 Solstice | Chaos et malus | −15 % en boutique, −50 % de taxe de vente |
+| Famille | Rôle | 4/6 | 6/6 |
+|---|---|---|---|
+| ❄ Glace Éternelle | Geler, protéger | +8 places de réserve | +20 places |
+| 🌪 Tempête | Multiplicateurs de kills | +3 % de kills | +7 % de kills |
+| 🌌 Aurore Boréale | Points et flocons | +8 ❄ par game | +20 ❄ par game |
+| 🎁 Solstice | Chaos et malus | −8 % en boutique | −18 % et −50 % de taxe |
+
+Le palier à 4 cartes n’est pas un cadeau : la légendaire d’une famille sort une ouverture
+sur mille, exiger les six d’emblée rendrait le bonus décoratif. Les cartes manquantes
+s’achètent à l’hôtel des ventes.
 
 Le volet hybride : **une carte jouée est consommée, mais sa découverte est définitive.**
-Compléter les quatre cartes d’une famille débloque un bonus permanent que ni la revente
-ni l’usage ne font perdre.
+Les bonus de famille sont donc un acquis, que ni la revente ni l’usage ne font perdre.
+
+**La réserve** — 40 places de base. Le plafond est appliqué à l’ouverture d’un booster,
+et il est économique avant d’être ergonomique : sans lui, les cartes s’accumulent et
+l’hôtel des ventes se vide.
 
 **L’hôtel des ventes** — chaque carte peut être mise aux enchères avec un prix de départ,
 un achat immédiat facultatif et une durée (1 h à 72 h). Enchérir bloque les flocons en
@@ -77,11 +112,10 @@ d’incarner un joueur pour tester cartes et enchères sans Twitch.
 ```
 app/
 ├─ page.tsx              Classement général
-├─ cartes/               Catalogue des 16 cartes
-├─ boutique/             Achat et ouverture de boosters
+├─ boosters/             Achat, ouverture 3D, catalogue des 24 cartes
 ├─ marche/               Hôtel des ventes
 │  └─ [cardId]/          Cote d’une carte : courbe de prix, historique
-├─ ma-collection/        Main, collection, ventes, grand livre
+├─ ma-collection/        Réserve, collection, ventes, grand livre
 ├─ joueurs/[slug]/       Profil public
 ├─ regles/               Règles, lues depuis le code
 ├─ admin/                Modération
@@ -89,8 +123,8 @@ app/
 
 lib/
 ├─ domain/               Règles pures, sans I/O — testées
-│  ├─ rules.ts           Toutes les constantes de saison
-│  ├─ catalog.ts         Cartes, familles, boosters
+│  ├─ rules.ts           Constantes, taux de rareté, paliers de subs
+│  ├─ catalog.ts         Raretés, cartes, familles, boosters
 │  ├─ scoring.ts         Calcul des scores et du classement
 │  ├─ economy.ts         Flocons
 │  ├─ collection.ts      Bonus de familles
@@ -100,7 +134,7 @@ lib/
 ├─ auth/                 Sessions signées, OAuth Twitch (prêt, désactivé)
 ├─ security/             Limitation de débit
 ├─ api/                  Validation Zod, garde-fous, réponses
-└─ services/             Orchestration : cartes, marché, ligue, grand livre
+└─ services/             Orchestration : cartes, marché, subs, ligue, grand livre
 ```
 
 Une règle structure tout le reste : **`lib/domain` ne fait aucune entrée-sortie.**
@@ -124,6 +158,8 @@ Le détail est dans [`docs/SECURITE.md`](docs/SECURITE.md). En résumé :
   fois le même solde.
 - **Sessions HttpOnly signées en HMAC**, vérification d’origine sur toute écriture,
   limitation de débit par IP, CSP avec nonce, `frame-ancestors 'none'`.
+- **Aucun versement de subs ne peut viser un joueur** : la route n’expose pas ce
+  paramètre, et un test le vérifie.
 - **Grand livre et journal d’audit** : chaque mouvement de flocons et chaque action de
   modération laissent une trace.
 

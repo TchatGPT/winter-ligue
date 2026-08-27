@@ -5,13 +5,13 @@ import 'server-only';
  *
  * L'import `server-only` en tête fait échouer la compilation si ce module est
  * jamais tiré dans un bundle client : le joueur ne doit pouvoir ni observer ni
- * rejouer le tirage. La source d'entropie est `crypto.randomInt`, qui est
- * uniforme et non prédictible, contrairement à `Math.random()`.
+ * rejouer le tirage. La source d'entropie est `crypto.randomInt`, uniforme et
+ * non prédictible, contrairement à `Math.random()`.
  */
 
 import { randomInt } from 'node:crypto';
 import { CARDS, getBooster } from './catalog';
-import { RARITY_ORDER } from './rules';
+import { RARITY_ORDER, WEIGHT_TOTAL } from './rules';
 import type { BoosterDefinition, Rarity } from './types';
 
 /** Entier uniforme dans [0, maxExclusive). */
@@ -29,12 +29,16 @@ export function pick<T>(items: readonly T[]): T {
 }
 
 /**
- * Tirage pondéré. Les poids sont des entiers ; un poids nul ou négatif exclut
- * simplement l'entrée.
+ * Tirage pondéré sur 100 000.
+ *
+ * Travailler en entiers plutôt qu'en pourcentages flottants permet d'exprimer
+ * 0,02 % exactement, et rend le tirage vérifiable : la somme des poids doit
+ * valoir précisément le total, sinon on lève plutôt que de biaiser en silence.
  */
 export function pickWeighted<K extends string>(weights: Record<K, number>): K {
   const entries = (Object.entries(weights) as [K, number][]).filter(([, w]) => w > 0);
   if (entries.length === 0) throw new RangeError('pickWeighted sans poids exploitable');
+
   const total = entries.reduce((sum, [, w]) => sum + Math.trunc(w), 0);
   let roll = secureInt(total);
   for (const [key, weight] of entries) {
@@ -67,10 +71,8 @@ export function rollBooster(booster: BoosterDefinition): string[] {
 
   if (booster.guaranteed) {
     const floor = RARITY_ORDER[booster.guaranteed];
-    const alreadySatisfied = rarities.some((r) => RARITY_ORDER[r] >= floor);
-    if (!alreadySatisfied) {
-      rarities[secureInt(rarities.length)] = booster.guaranteed;
-    }
+    const satisfied = rarities.some((r) => RARITY_ORDER[r] >= floor);
+    if (!satisfied) rarities[secureInt(rarities.length)] = booster.guaranteed;
   }
 
   return rarities.map((rarity) => pick(CARDS_BY_RARITY[rarity]));
@@ -80,4 +82,11 @@ export function rollBooster(booster: BoosterDefinition): string[] {
 export function rollBoosterById(boosterId: string): string[] | null {
   const booster = getBooster(boosterId);
   return booster ? rollBooster(booster) : null;
+}
+
+/** Vérifie qu'une table de poids est exploitable. Utilisée par les tests. */
+export function weightsAreValid(weights: Record<Rarity, number>): boolean {
+  const values = Object.values(weights) as number[];
+  if (values.some((w) => !Number.isInteger(w) || w < 0)) return false;
+  return values.reduce((a, b) => a + b, 0) === WEIGHT_TOTAL;
 }

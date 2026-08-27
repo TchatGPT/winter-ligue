@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { CardTile, EmptyState, StatTile, formatFlakes } from '@/components/ui';
+import { CardTile, EmptyState, StatTile, flakes } from '@/components/ui';
 import { getCard } from '@/lib/domain/catalog';
 import { getPublicProfile } from '@/lib/services/profile';
 
@@ -78,7 +78,7 @@ export default async function ProfilJoueurPage({ params }: { params: Promise<{ s
           label="Games"
           value={profile.totals.countedGames}
           hint={`moyenne ${profile.totals.averageScore}`}
-          accent="muted"
+          accent="ink"
         />
         <StatTile
           label="Kills"
@@ -102,7 +102,7 @@ export default async function ProfilJoueurPage({ params }: { params: Promise<{ s
           <EmptyState title="Aucune game enregistrée" />
         ) : (
           <div className="panel panel-frost scroll-x">
-            <table className="rank-table min-w-[640px]">
+            <table className="grid-table min-w-[640px]">
               <thead>
                 <tr>
                   <th>Date</th>
@@ -173,7 +173,7 @@ export default async function ProfilJoueurPage({ params }: { params: Promise<{ s
           </h2>
           <span className="text-xs text-muted">
             {discovered.length} / {profile.collection.length} cartes découvertes ·{' '}
-            <span className="num">❄ {formatFlakes(profile.snowflakes)}</span>
+            <span className="num">❄ {flakes(profile.snowflakes)}</span>
           </span>
         </div>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8">

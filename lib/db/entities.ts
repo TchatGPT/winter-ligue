@@ -122,10 +122,28 @@ export interface AuditEntry {
 
 export interface LeagueConfig {
   maxGamesPerPlayer: number;
+  /** Subs cumulés de la saison. Seule la modération l'incrémente. */
+  totalSubs: number;
   shopOpen: boolean;
   marketOpen: boolean;
   seasonStartsAt: string;
   seasonEndsAt: string;
+}
+
+/** Un versement déclenché par les subs Twitch, conservé pour l'historique. */
+export interface SubEvent {
+  id: string;
+  at: string;
+  /** Subs ajoutés lors de cette saisie. */
+  delta: number;
+  totalAfter: number;
+  /** Libellés des paliers franchis. */
+  milestones: string[];
+  /** Flocons versés à chaque joueur actif. */
+  snowflakesEach: number;
+  /** Boosters offerts à chaque joueur actif. */
+  boostersEach: string[];
+  recipients: number;
 }
 
 export interface Database {
@@ -143,5 +161,6 @@ export interface Database {
   bids: Bid[];
   sales: Sale[];
   events: LeagueEvent[];
+  subEvents: SubEvent[];
   audit: AuditEntry[];
 }

@@ -36,6 +36,10 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - Les constantes de saison vivent dans `lib/domain/rules.ts`, nulle part ailleurs.
 - Le catalogue de cartes vit dans `lib/domain/catalog.ts`. Ajouter une carte, c'est
   ajouter une entrée là et une branche dans `applyEffect()` de `lib/services/cards.ts`.
+- Les taux de rareté sont dans `RARITY_WEIGHTS_BASE` et dans `BOOSTERS[].weights`.
+  Toute table doit sommer **exactement** à 100 000 — un test le vérifie.
+- Les paliers de subs versent à **tous les joueurs actifs**. Ne jamais ajouter de
+  récompense individuelle : c'est l'invariant anti-pay-to-win, et il est testé.
 - Les couleurs viennent des variables CSS de `app/globals.css`, jamais codées en dur.
 - Avant de livrer : `npm run typecheck && npm test && npm run build`.
 
