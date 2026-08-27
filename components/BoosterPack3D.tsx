@@ -5,7 +5,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 /** Dimensions du sachet, en pixels. Le conteneur le met ensuite à l'échelle. */
 const W = 250;
 const H = 368;
-const D = 22;
+// Un sachet de cartes est fin : à 22 px il faisait boîte à chaussures.
+const D = 15;
+/** Hauteur du sertissage, en haut comme en bas. */
+const CRIMP = 22;
 
 export interface Pack3DProps {
   name: string;
@@ -142,13 +145,22 @@ export function BoosterPack3D({
   const artwork = (mirrored = false) => (
     <div
       className="relative flex h-full flex-col items-center justify-center gap-3 px-4"
-      style={mirrored ? { transform: 'scaleX(-1)' } : undefined}
+      style={{
+        // On dégage la zone des sertissages : l'impression s'arrête où le film
+        // est écrasé.
+        paddingTop: CRIMP + 8,
+        paddingBottom: CRIMP + 8,
+        ...(mirrored ? { transform: 'scaleX(-1)' } : {}),
+      }}
     >
-      <span className="pack3d-crimp" aria-hidden="true" />
-      <span className="text-5xl drop-shadow-lg" aria-hidden="true">
+      {/* Les deux sertissages. N'en mettre qu'en haut faisait « sachet ouvert
+          par le bas » : le film est écrasé à ses deux extrémités. */}
+      <span className="pack3d-crimp pack3d-crimp-top" aria-hidden="true" />
+      <span className="pack3d-crimp pack3d-crimp-bottom" aria-hidden="true" />
+      <span className="relative text-5xl drop-shadow-lg" aria-hidden="true">
         {glyph}
       </span>
-      <div className="text-center">
+      <div className="relative text-center">
         <div className="font-display text-[11px] font-bold tracking-[0.3em] text-white/55 uppercase">
           Winter Ligue
         </div>
@@ -164,6 +176,32 @@ export function BoosterPack3D({
 
   return (
     <div className={`pack3d-scene ${className ?? ''}`} style={{ width: W, height: H }}>
+      {/* Turbulence : elle déforme les stries droites des dégradés en plis
+          irréguliers. Un dégradé CSS ne trace que des lignes droites, et du
+          mylar froissé n'a aucune ligne droite. Le filtre est posé sur un
+          calque interne, pas sur la face elle-même : un `filter` appliqué à un
+          élément transformé casse la chaîne 3D et annule backface-visibility. */}
+      <svg width="0" height="0" aria-hidden="true" style={{ position: 'absolute' }}>
+        <defs>
+          <filter id="froisse-mylar" x="-10%" y="-10%" width="120%" height="120%">
+            <feTurbulence
+              type="fractalNoise"
+              baseFrequency="0.014 0.05"
+              numOctaves="3"
+              seed="7"
+              result="bruit"
+            />
+            <feDisplacementMap
+              in="SourceGraphic"
+              in2="bruit"
+              scale="22"
+              xChannelSelector="R"
+              yChannelSelector="G"
+            />
+          </filter>
+        </defs>
+      </svg>
+
       <div
         ref={packRef}
         className={`pack3d ${grabbed || frozen ? '' : 'pack3d-spin'}`}
@@ -177,17 +215,19 @@ export function BoosterPack3D({
       >
         {/* Face avant */}
         <div
-          className="pack3d-face pack3d-front rounded-[18px]"
+          className="pack3d-face pack3d-front"
           style={{ width: W, height: H, transform: `translateZ(${D / 2}px)` }}
         >
+          <span className="pack3d-froisse" aria-hidden="true" />
           {artwork()}
         </div>
 
         {/* Face arrière, retournée pour que l'impression reste lisible */}
         <div
-          className="pack3d-face pack3d-back rounded-[18px]"
+          className="pack3d-face pack3d-back"
           style={{ width: W, height: H, transform: `rotateY(180deg) translateZ(${D / 2}px)` }}
         >
+          <span className="pack3d-froisse" aria-hidden="true" />
           {artwork(true)}
         </div>
 

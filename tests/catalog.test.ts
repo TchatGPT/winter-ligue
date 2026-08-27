@@ -1,9 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { BOOSTERS, CARDS, cardsOfRarity, cardsOfTheme, RARITY_META, THEMES } from '@/lib/domain/catalog';
+import {
+  BOOSTERS,
+  boosterSize,
+  CARDS,
+  cardsOfRarity,
+  cardsOfTheme,
+  RARITY_META,
+  THEMES,
+} from '@/lib/domain/catalog';
 import { completionRatio, handSlotsFor, setBonusesFor, themeProgress } from '@/lib/domain/collection';
 import { discountedPrice, rewardForGame } from '@/lib/domain/economy';
 import {
-  atLeastOnePercent,
   BASE_RESERVE_SLOTS,
   crossedMilestones,
   ECONOMY,
@@ -91,13 +98,9 @@ describe('tables de raretés', () => {
     }
   });
 
-  it('garde la légendaire rare mais atteignable : environ 1 booster sur 1 000', () => {
+  it('garde la légendaire rare mais atteignable', () => {
     const perCard = rarityPercent(RARITY_WEIGHTS_BASE, 'L');
     expect(perCard).toBeCloseTo(0.02, 5);
-
-    const perPack = atLeastOnePercent(RARITY_WEIGHTS_BASE, 'L', 5);
-    expect(perPack).toBeGreaterThan(0.09);
-    expect(perPack).toBeLessThan(0.11);
   });
 
   it('améliore la courbe à mesure que le booster coûte cher', () => {
@@ -248,5 +251,45 @@ describe('places de réserve', () => {
     expect(handSlotsFor([])).toBe(BASE_RESERVE_SLOTS);
     expect(handSlotsFor(glace.slice(0, 4))).toBeGreaterThan(handSlotsFor([]));
     expect(handSlotsFor(glace)).toBeGreaterThan(handSlotsFor(glace.slice(0, 4)));
+  });
+});
+
+describe('emplacements de booster', () => {
+  it('donne toujours au moins une carte jouable', () => {
+    // Sans emplacement d'effet garanti, un booster pouvait ne rien contenir de
+    // jouable — franchement pénible à trois mille flocons.
+    for (const booster of BOOSTERS) {
+      expect(booster.slots.effet).toBeGreaterThanOrEqual(1);
+    }
+  });
+
+  it('donne toujours au moins une carte de collection', () => {
+    // C'est ce qui alimente le pool échangeable et fait vivre le marché.
+    for (const booster of BOOSTERS) {
+      expect(booster.slots.collection).toBeGreaterThanOrEqual(1);
+    }
+  });
+
+  it('fait monter la part de cartes jouables avec le prix', () => {
+    const sorted = [...BOOSTERS].sort((a, b) => a.price - b.price);
+    const ratio = (b: (typeof BOOSTERS)[number]) => b.slots.effet / boosterSize(b);
+    for (let i = 1; i < sorted.length; i += 1) {
+      expect(ratio(sorted[i])).toBeGreaterThanOrEqual(ratio(sorted[i - 1]));
+    }
+  });
+
+  it('ne promet une garantie que sur les emplacements d’effet', () => {
+    // Promettre « une super rare » et livrer une carte Joueur super rare ne
+    // serait pas ce que le joueur croit acheter.
+    for (const booster of BOOSTERS) {
+      if (booster.guaranteed) expect(booster.slots.effet).toBeGreaterThanOrEqual(1);
+    }
+  });
+
+  it('garde des sachets d’une taille lisible', () => {
+    for (const booster of BOOSTERS) {
+      expect(boosterSize(booster)).toBeGreaterThanOrEqual(3);
+      expect(boosterSize(booster)).toBeLessThanOrEqual(6);
+    }
   });
 });

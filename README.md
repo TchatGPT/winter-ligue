@@ -17,8 +17,13 @@ déplacée côté serveur.
 score = (kills × multiplicateur) + points de classement + bonus
 ```
 
-1 kill = 1 point. Top 1 : +20, Top 2 : +15, Top 3 : +8. Le multiplicateur ne s’applique
-qu’aux kills — les points de classement restent fixes.
+1 kill = 1 point. Top 1 : +20, Top 2 : +15, Top 3 : +8. Limite de **60 games** par
+joueur, comme sur la Summer Ligue.
+
+À ce volume, un joueur assidu termine autour de 1 000 points. Une carte plafonnée à 25
+points pèse donc 2 % de sa saison — mais 17 % de celle d'un joueur occasionnel. Les
+cartes sont surtout un outil de rattrapage, et c'est aussi pour ça que le quota de
+malus par jour compte autant : le même malus fait bien plus mal en bas du classement.
 
 **Les flocons ❄** — la monnaie de la saison. Deux sources, et la séparation est le cœur
 de l’équilibre : **le jeu** (25 ❄ par kill, 400/250/120 ❄ selon le podium, 150 ❄ par game)
@@ -54,7 +59,24 @@ tirage améliorée à mesure du prix. Le tirage est fait par le serveur avec
 | UR — Ultra rare | 0,28 % | 1 sur 72 |
 | **L — Légendaire** | **0,02 %** | **1 sur 1 000** |
 
-**Les cartes** — 24 cartes, 4 familles × 6 raretés. Chacune est soit un **bonus** à jouer
+**Le pool** — deux natures de cartes, et cette séparation est structurante :
+
+| Nature | Combien | Rôle |
+|---|---|---|
+| **Effet** | 24, figées dans le code | Le jeu. Chacune doit être équilibrée contre le classement, ce qui limite volontairement leur nombre. |
+| **Joueur** | une par participant | La collection. Aucun effet, donc aucun risque d'équilibrage — et une valeur de marché qui suit les performances sans qu'on code quoi que ce soit. |
+| **Moment** | créées au fil de la saison | Les instants marquants : un record, une vente folle, un palier de subs. |
+
+C'est ce qui permet d'avoir un pool profond — une soixantaine de cartes avec 38
+participants — sans multiplier la surface d'équilibrage. La collection fait la
+profondeur, les effets font le jeu.
+
+**Les boosters ont des emplacements dédiés** : Givre donne 1 effet + 2 collection,
+Solstice 3 effets + 2 collection. Sans ça, un booster pouvait ne contenir aucune carte
+jouable, ce qui est pénible à trois mille flocons. La garantie de rareté ne porte que
+sur les emplacements d'effet.
+
+**Les cartes à effet** — 4 familles × 6 raretés. Chacune est soit un **bonus** à jouer
 sur soi, soit un **malus** à poser sur un adversaire.
 
 | Famille | Rôle | 4/6 | 6/6 |

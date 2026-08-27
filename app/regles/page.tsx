@@ -184,7 +184,8 @@ export default function ReglesPage() {
               <tr>
                 <th>Booster</th>
                 <th className="text-right">Prix</th>
-                <th className="text-right">Cartes</th>
+                <th className="text-right">Effets</th>
+                <th className="text-right">Collection</th>
                 <th>Garantie</th>
                 <th className="text-right">Chance légendaire</th>
               </tr>
@@ -196,7 +197,8 @@ export default function ReglesPage() {
                     <span aria-hidden="true">{b.glyph}</span> {b.name}
                   </td>
                   <td className="num text-right text-ice">❄ {flakes(b.price)}</td>
-                  <td className="num text-right text-muted">{b.cardCount}</td>
+                  <td className="num text-right text-ink">{b.slots.effet}</td>
+                  <td className="num text-right text-muted">{b.slots.collection}</td>
                   <td>
                     {b.guaranteed ? (
                       <span className="flex items-center gap-1.5">
@@ -208,7 +210,7 @@ export default function ReglesPage() {
                     )}
                   </td>
                   <td className="num text-right text-gold">
-                    {atLeastOnePercent(b.weights, 'L', b.cardCount).toFixed(2)} %
+                    {atLeastOnePercent(b.weights, 'L', b.slots.effet).toFixed(2)} %
                   </td>
                 </tr>
               ))}

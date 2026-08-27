@@ -65,7 +65,18 @@ function pickRarity() {
   }
   return 'C';
 }
-const cardOfRarity = (rarity) => pick(ALL_CARDS.filter((id) => RARITY_OF[id] === rarity));
+/**
+ * Tire une carte de la rareté demandée, en redescendant si le palier est vide —
+ * même repli que le serveur.
+ */
+function cardOfRarity(rarity, pool) {
+  const ladder = ['L', 'UR', 'SR', 'R', 'PC', 'C'];
+  for (let i = ladder.indexOf(rarity); i < ladder.length; i += 1) {
+    const candidates = pool.filter((c) => c.rarity === ladder[i]);
+    if (candidates.length > 0) return pick(candidates).id;
+  }
+  return pool[0].id;
+}
 
 const now = Date.now();
 const iso = (msAgo) => new Date(now - msAgo).toISOString();
@@ -88,6 +99,7 @@ const db = {
   players: [],
   games: [],
   cards: [],
+  collectibles: [],
   discoveries: [],
   openings: [],
   effects: [],
@@ -214,11 +226,57 @@ db.subEvents.push({
   recipients: db.players.length,
 });
 
-// --- Cartes et collections ---------------------------------------------------
+// --- Cartes de collection ----------------------------------------------------
+// Une carte par participant, plus quelques moments de saison. Aucune n'a
+// d'effet en jeu : c'est ce qui permet d'élargir le pool sans toucher à
+// l'équilibrage.
+for (const player of db.players) {
+  db.collectibles.push({
+    id: `joueur-${player.slug}`,
+    kind: 'JOUEUR',
+    name: player.pseudo,
+    subtitle: 'Participant de la saison',
+    description: 'Carte de collection. Aucun effet en jeu — sa valeur, c’est le marché qui la fait.',
+    // Réparties sur trois paliers pour que la démo montre l'effet des raretés.
+    rarity: pick(['C', 'C', 'PC', 'PC', 'R']),
+    glyph: '🎴',
+    art: null,
+    playerId: player.id,
+    createdAt: iso(60 * DAY),
+  });
+}
+
+for (const [name, subtitle, rarity, glyph] of [
+  ['Record de kills', '24 kills en une game', 'SR', '🔥'],
+  ['Première légendaire', 'Tirée le soir des 200 subs', 'UR', '✨'],
+  ['La vente du siècle', '41 000 flocons pour une Nuit Polaire', 'R', '💰'],
+  ['Cap des 500 subs', 'Le Grand Nord est tombé', 'R', '🎁'],
+]) {
+  db.collectibles.push({
+    id: `moment-${name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
+    kind: 'MOMENT',
+    name,
+    subtitle,
+    description: 'Un instant de la saison, gravé dans une carte.',
+    rarity,
+    glyph,
+    art: null,
+    playerId: null,
+    createdAt: iso(between(5, 40) * DAY),
+  });
+}
+
+// --- Cartes possédées --------------------------------------------------------
 for (const player of db.players) {
   const owned = between(5, 14);
   for (let i = 0; i < owned; i += 1) {
-    const cardId = cardOfRarity(pickRarity());
+    // Deux tiers de cartes de collection, un tiers d'effets : la proportion
+    // qu'induisent les emplacements de booster.
+    const pool =
+      rnd() > 0.34
+        ? db.collectibles.map((c) => ({ id: c.id, rarity: c.rarity }))
+        : ALL_CARDS.map((id) => ({ id, rarity: RARITY_OF[id] }));
+    const cardId = cardOfRarity(pickRarity(), pool);
     db.cards.push({
       id: randomUUID(),
       playerId: player.id,
@@ -264,10 +322,15 @@ for (const cardId of FAMILIES.glace.slice(0, 4)) {
 }
 
 // --- Historique de ventes, pour alimenter les courbes de prix ----------------
-for (const cardId of ALL_CARDS) {
-  const base = BASE_PRICE[RARITY_OF[cardId]];
+const PRICED = [
+  ...ALL_CARDS.map((id) => ({ id, rarity: RARITY_OF[id] })),
+  ...db.collectibles.map((c) => ({ id: c.id, rarity: c.rarity })),
+];
+
+for (const { id: cardId, rarity } of PRICED) {
+  const base = BASE_PRICE[rarity];
   // Les cartes rares s'échangent moins souvent : le volume suit la rareté.
-  const count = { C: 14, PC: 12, R: 9, SR: 6, UR: 3, L: 2 }[RARITY_OF[cardId]];
+  const count = { C: 14, PC: 12, R: 9, SR: 6, UR: 3, L: 2 }[rarity];
 
   // Marche aléatoire autour de la référence, pour une courbe qui respire.
   let level = base * (0.85 + rnd() * 0.3);
@@ -299,7 +362,8 @@ db.sales.sort((a, b) => new Date(a.soldAt) - new Date(b.soldAt));
 // --- Ventes en cours ---------------------------------------------------------
 const forSale = db.cards.filter(() => rnd() > 0.62).slice(0, 26);
 for (const instance of forSale) {
-  const base = BASE_PRICE[RARITY_OF[instance.cardId]];
+  const known = PRICED.find((c) => c.id === instance.cardId);
+  const base = BASE_PRICE[known ? known.rarity : 'C'];
   const startPrice = Math.max(10, Math.round(base * (0.5 + rnd() * 0.3)));
 
   let bidder = pick(db.players);
@@ -377,6 +441,6 @@ await writeFile(FILE, JSON.stringify(db, null, 2), 'utf8');
 console.log(`Saison de démonstration écrite dans ${FILE}`);
 console.log(
   `  ${db.players.length} joueurs · ${db.games.length} games · ${db.cards.length} cartes · ` +
-    `${db.listings.length} ventes en cours · ${db.sales.length} transactions · ` +
+    `${db.collectibles.length} cartes de collection · ${db.listings.length} ventes · ` +
     `${db.config.totalSubs} subs`,
 );

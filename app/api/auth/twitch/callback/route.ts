@@ -5,6 +5,7 @@ import { fail } from '@/lib/api/respond';
 import { newId, getStore } from '@/lib/db/store';
 import { ECONOMY } from '@/lib/domain/rules';
 import { credit } from '@/lib/services/ledger';
+import { ensurePlayerCard } from '@/lib/services/collection';
 import { makeSlug } from '@/lib/services/league';
 
 export const runtime = 'nodejs';
@@ -39,6 +40,7 @@ export async function GET(request: Request): Promise<NextResponse> {
       existing.twitchLogin = profile.login;
       existing.avatarUrl = profile.avatarUrl;
       existing.active = true;
+      ensurePlayerCard(db, existing);
       return existing;
     }
 
@@ -55,6 +57,7 @@ export async function GET(request: Request): Promise<NextResponse> {
     };
     db.players.push(created);
     credit(db, created.id, ECONOMY.welcomeGrant, 'INSCRIPTION', null);
+    ensurePlayerCard(db, created);
     return created;
   });
 

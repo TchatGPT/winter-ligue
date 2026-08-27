@@ -10,7 +10,7 @@ import 'server-only';
  */
 
 import { randomInt } from 'node:crypto';
-import { CARDS, getBooster } from './catalog';
+import { CARDS } from './catalog';
 import { RARITY_ORDER, WEIGHT_TOTAL } from './rules';
 import type { BoosterDefinition, Rarity } from './types';
 
@@ -48,7 +48,8 @@ export function pickWeighted<K extends string>(weights: Record<K, number>): K {
   return entries[entries.length - 1][0];
 }
 
-const CARDS_BY_RARITY = CARDS.reduce(
+/** Cartes à effet, indexées par rareté. */
+export const EFFECT_BY_RARITY = CARDS.reduce(
   (acc, card) => {
     (acc[card.rarity] ??= []).push(card.id);
     return acc;
@@ -57,31 +58,64 @@ const CARDS_BY_RARITY = CARDS.reduce(
 );
 
 /**
- * Ouvre un booster et retourne les identifiants de cartes obtenus.
+ * Tire une carte d'un pool, en redescendant de rareté si le palier est vide.
  *
- * La rareté garantie est appliquée après coup : si aucun tirage n'a atteint le
- * palier promis, un emplacement au hasard est relevé à ce palier. On ne
- * « re-roll » jamais l'ensemble, ce qui garderait un biais difficile à auditer.
+ * Le cas se produit vraiment : au lancement de la saison, aucune carte Joueur
+ * n'est encore Légendaire. Sans ce repli, un emplacement de collection tombant
+ * sur une rareté inhabitée ferait échouer toute l'ouverture — et le joueur
+ * aurait payé pour rien.
  */
-export function rollBooster(booster: BoosterDefinition): string[] {
-  const rarities: Rarity[] = [];
-  for (let i = 0; i < booster.cardCount; i += 1) {
-    rarities.push(pickWeighted(booster.weights));
+function pickFromPool(pool: Record<Rarity, string[]>, wanted: Rarity): string | null {
+  const ladder: Rarity[] = ['L', 'UR', 'SR', 'R', 'PC', 'C'];
+  const from = ladder.indexOf(wanted);
+  for (let i = from; i < ladder.length; i += 1) {
+    const candidates = pool[ladder[i]];
+    if (candidates && candidates.length > 0) return pick(candidates);
   }
-
-  if (booster.guaranteed) {
-    const floor = RARITY_ORDER[booster.guaranteed];
-    const satisfied = rarities.some((r) => RARITY_ORDER[r] >= floor);
-    if (!satisfied) rarities[secureInt(rarities.length)] = booster.guaranteed;
-  }
-
-  return rarities.map((rarity) => pick(CARDS_BY_RARITY[rarity]));
+  return null;
 }
 
-/** Variante par identifiant, utilisée par la route d'ouverture. */
-export function rollBoosterById(boosterId: string): string[] | null {
-  const booster = getBooster(boosterId);
-  return booster ? rollBooster(booster) : null;
+/**
+ * Ouvre un booster et retourne les identifiants de cartes obtenus.
+ *
+ * Chaque emplacement tire sa rareté dans la table du booster, puis une carte
+ * dans le pool correspondant à sa nature. La garantie ne porte que sur les
+ * emplacements d'effet : promettre « une super rare » et livrer une carte
+ * Joueur super rare ne serait pas ce que le joueur croit acheter.
+ *
+ * La garantie est appliquée après coup, sur un emplacement au hasard. On ne
+ * « re-roll » jamais l'ensemble, ce qui introduirait un biais difficile à
+ * auditer.
+ */
+export function rollBooster(
+  booster: BoosterDefinition,
+  collectionPool: Record<Rarity, string[]> = {} as Record<Rarity, string[]>,
+): string[] {
+  const effetRarities: Rarity[] = [];
+  for (let i = 0; i < booster.slots.effet; i += 1) {
+    effetRarities.push(pickWeighted(booster.weights));
+  }
+
+  if (booster.guaranteed && effetRarities.length > 0) {
+    const floor = RARITY_ORDER[booster.guaranteed];
+    const satisfied = effetRarities.some((r) => RARITY_ORDER[r] >= floor);
+    if (!satisfied) effetRarities[secureInt(effetRarities.length)] = booster.guaranteed;
+  }
+
+  const drawn: string[] = [];
+  for (const rarity of effetRarities) {
+    const card = pickFromPool(EFFECT_BY_RARITY, rarity);
+    if (card) drawn.push(card);
+  }
+
+  for (let i = 0; i < booster.slots.collection; i += 1) {
+    const card = pickFromPool(collectionPool, pickWeighted(booster.weights));
+    // Pool de collection vide au tout début de la saison : l'emplacement se
+    // reporte sur une carte à effet plutôt que de rendre un booster amputé.
+    drawn.push(card ?? pickFromPool(EFFECT_BY_RARITY, 'C')!);
+  }
+
+  return drawn;
 }
 
 /** Vérifie qu'une table de poids est exploitable. Utilisée par les tests. */

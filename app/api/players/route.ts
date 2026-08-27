@@ -5,6 +5,7 @@ import { createPlayerSchema } from '@/lib/api/schemas';
 import { getStore, newId } from '@/lib/db/store';
 import { ECONOMY } from '@/lib/domain/rules';
 import { LIMITS } from '@/lib/security/ratelimit';
+import { ensurePlayerCard } from '@/lib/services/collection';
 import { getRanking, makeSlug } from '@/lib/services/league';
 import { audit, credit } from '@/lib/services/ledger';
 
@@ -46,6 +47,9 @@ export async function POST(request: Request): Promise<NextResponse> {
       };
       db.players.push(created);
       credit(db, created.id, ECONOMY.welcomeGrant, 'INSCRIPTION', null);
+      // Un participant qui rejoint la ligue entre du même coup dans le pool de
+      // cartes : sa carte de collection existe dès l'inscription.
+      ensurePlayerCard(db, created, g.body.cardRarity ?? undefined);
       audit(db, 'admin', 'JOUEUR_CREE', created.id, created.pseudo);
       return created;
     });

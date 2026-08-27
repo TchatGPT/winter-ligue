@@ -11,8 +11,46 @@ export type Rarity = 'C' | 'PC' | 'R' | 'SR' | 'UR' | 'L';
 
 export const RARITIES: readonly Rarity[] = ['C', 'PC', 'R', 'SR', 'UR', 'L'];
 
-/** Les quatre familles de cartes. Compléter une famille débloque un bonus permanent. */
+/** Les quatre familles de cartes à effet. Compléter une famille débloque un bonus. */
 export type ThemeId = 'glace' | 'tempete' | 'aurore' | 'solstice';
+
+/**
+ * Ce qu'une carte est, avant ce qu'elle fait.
+ *
+ *  — EFFET : les 24 cartes jouables. Chacune doit être équilibrée contre le
+ *    classement, ce qui limite volontairement leur nombre.
+ *  — JOUEUR : une carte par participant. Aucun effet, donc aucun risque
+ *    d'équilibrage — et une valeur de marché qui suivra ses performances sans
+ *    qu'on code quoi que ce soit.
+ *  — MOMENT : les instants marquants de la saison, créés par la modération.
+ *
+ * C'est cette séparation qui permet d'avoir un pool profond sans multiplier la
+ * surface d'équilibrage : la collection fait la profondeur, les effets font le
+ * jeu.
+ */
+export type CardKind = 'EFFET' | 'JOUEUR' | 'MOMENT';
+
+/**
+ * Une carte prête à l'affichage, quelle que soit son origine — catalogue figé
+ * pour les effets, base de données pour les joueurs et les moments.
+ */
+export interface ResolvedCard {
+  id: string;
+  kind: CardKind;
+  name: string;
+  subtitle: string;
+  description: string;
+  rarity: Rarity;
+  glyph: string;
+  art: string | null;
+  /** Renseignés pour les cartes à effet seulement. */
+  theme: ThemeId | null;
+  nature: 'bonus' | 'malus' | null;
+  power: number | null;
+  /** Pour une carte Joueur : le participant représenté. */
+  playerId: string | null;
+  playerSlug: string | null;
+}
 
 /** Ce que la carte demande comme cible au moment d'être jouée. */
 export type CardTarget =
@@ -136,8 +174,16 @@ export interface BoosterDefinition {
   gradient: [string, string];
   /** Prix en flocons, avant remise de collection. */
   price: number;
-  cardCount: number;
-  /** Rareté minimale garantie sur au moins une carte du booster. */
+  /**
+   * Emplacements du sachet, par nature de carte.
+   *
+   * Des emplacements dédiés plutôt qu'un tirage libre : sans eux, un booster
+   * pouvait ne contenir aucune carte jouable, ce qui est franchement pénible
+   * quand on vient d'en payer trois mille flocons. Et ça rend les cartes
+   * d'effet mécaniquement plus rares sans toucher aux taux.
+   */
+  slots: { collection: number; effet: number };
+  /** Rareté minimale garantie sur au moins une carte d'effet du booster. */
   guaranteed: Rarity | null;
   /**
    * Poids de tirage par rareté, exprimés sur 100 000 pour rester exacts.

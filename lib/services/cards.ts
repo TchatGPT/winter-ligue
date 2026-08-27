@@ -12,7 +12,7 @@ import 'server-only';
 
 import type { CardInstance, Database } from '@/lib/db/entities';
 import { newId } from '@/lib/db/store';
-import { getBooster, getCard } from '@/lib/domain/catalog';
+import { boosterSize, getBooster, getCard } from '@/lib/domain/catalog';
 import { RARITY_ORDER } from '@/lib/domain/rules';
 import type { Rarity } from '@/lib/domain/types';
 import { discountedPrice } from '@/lib/domain/economy';
@@ -21,6 +21,7 @@ import { audit, debit } from './ledger';
 import { consumeBoon, isSilenced, resolve } from './effects';
 import { handSlotsFor } from '@/lib/domain/collection';
 import { bonusesFor, discoveredCardIds, recomputePlayerGames } from './league';
+import { resolveCard } from './collection';
 
 export class CardError extends Error {
   constructor(
@@ -130,9 +131,9 @@ export function purchaseAndOpen(
   // l'hôtel des ventes au lieu de dormir dans les collections.
   const slots = handSlotsFor(discoveredCardIds(db, playerId));
   const held = handOf(db, playerId).length;
-  if (held + booster.cardCount > slots) {
+  if (held + boosterSize(booster) > slots) {
     throw new CardError(
-      `Réserve pleine : ${held}/${slots} places occupées, il en faut ${booster.cardCount} de libres. Joue ou revends des cartes.`,
+      `Réserve pleine : ${held}/${slots} places occupées, il en faut ${boosterSize(booster)} de libres. Joue ou revends des cartes.`,
       'RESERVE_PLEINE',
     );
   }
@@ -158,7 +159,14 @@ export function purchaseAndOpen(
         }
       : booster;
 
-  const cardIds = rollBooster(effective);
+  // Le pool de collection est reconstruit à chaque ouverture : un joueur qui
+  // vient de s'inscrire entre immédiatement dans les tirages.
+  const collectionPool = db.collectibles.reduce<Record<string, string[]>>((acc, item) => {
+    (acc[item.rarity] ??= []).push(item.id);
+    return acc;
+  }, {});
+
+  const cardIds = rollBooster(effective, collectionPool as never);
   const cards = cardIds.map((cardId) => {
     const instance = createInstance(db, playerId, cardId, 'BOOSTER');
     const isNew = recordDiscovery(db, playerId, cardId);
@@ -240,7 +248,17 @@ export function playCard(
   }
 
   const card = getCard(instance.cardId);
-  if (!card) throw new CardError('Carte inconnue au catalogue.', 'CARTE_INTROUVABLE');
+  if (!card) {
+    // Carte de collection : elle se possède, s'échange et se revend, mais ne
+    // se joue pas. Le message doit le dire, pas laisser croire à un bug.
+    const collectible = resolveCard(db, instance.cardId);
+    throw new CardError(
+      collectible
+        ? `${collectible.name} est une carte de collection : elle n’a aucun effet à jouer.`
+        : 'Carte inconnue au catalogue.',
+      'CARTE_INTROUVABLE',
+    );
+  }
 
   // Toute la mécanique d'effet vit dans effects.ts. Si elle lève, la carte
   // n'est pas consommée : la transaction est annulée en amont.

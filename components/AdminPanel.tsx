@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Notice, flakes } from '@/components/ui';
-import { CARDS } from '@/lib/domain/catalog';
+import { CARDS, RARITY_META } from '@/lib/domain/catalog';
 import { GAME_LIMITS, SUBS, nextMilestone } from '@/lib/domain/rules';
 import { shortDateTime } from '@/lib/format';
 
@@ -61,6 +61,12 @@ export function AdminPanel({
 
   // Réglages
   const [maxGames, setMaxGames] = useState(config.maxGamesPerPlayer);
+
+  // Carte Moment
+  const [momentName, setMomentName] = useState('');
+  const [momentSubtitle, setMomentSubtitle] = useState('');
+  const [momentRarity, setMomentRarity] = useState('R');
+  const [momentGlyph, setMomentGlyph] = useState('🏅');
 
   // Subs
   const [giftPlayer, setGiftPlayer] = useState('');
@@ -390,6 +396,97 @@ export function AdminPanel({
               }
             >
               Attribuer
+            </button>
+          </form>
+        </section>
+
+        {/* --------------------------- Carte Moment ----------------------- */}
+        <section className="glass p-5">
+          <h2 className="font-display text-lg font-black tracking-wide text-ice uppercase">
+            Graver un moment
+          </h2>
+          <p className="mt-1 text-[13px] text-faint">
+            Un record, une vente folle, un palier de subs. La carte entre dans les tirages dès sa
+            création — et n’a aucun effet en jeu, donc aucun risque pour l’équilibrage.
+          </p>
+          <form
+            className="mt-4 space-y-3"
+            onSubmit={async (e) => {
+              e.preventDefault();
+              const done = await call('/api/admin/collection', {
+                name: momentName,
+                subtitle: momentSubtitle,
+                description: 'Un instant de la saison, gravé dans une carte.',
+                rarity: momentRarity,
+                glyph: momentGlyph,
+              });
+              if (done) {
+                setMomentName('');
+                setMomentSubtitle('');
+              }
+            }}
+          >
+            <div>
+              <label className="label" htmlFor="moment-nom">
+                Titre
+              </label>
+              <input
+                id="moment-nom"
+                className="field"
+                value={momentName}
+                onChange={(e) => setMomentName(e.target.value)}
+                minLength={2}
+                maxLength={48}
+                required
+                placeholder="Record de kills"
+              />
+            </div>
+            <div>
+              <label className="label" htmlFor="moment-sous-titre">
+                Sous-titre
+              </label>
+              <input
+                id="moment-sous-titre"
+                className="field"
+                value={momentSubtitle}
+                onChange={(e) => setMomentSubtitle(e.target.value)}
+                maxLength={64}
+                placeholder="24 kills en une game"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="label" htmlFor="moment-rarete">
+                  Rareté
+                </label>
+                <select
+                  id="moment-rarete"
+                  className="field"
+                  value={momentRarity}
+                  onChange={(e) => setMomentRarity(e.target.value)}
+                >
+                  {(['C', 'PC', 'R', 'SR', 'UR', 'L'] as const).map((r) => (
+                    <option key={r} value={r}>
+                      {RARITY_META[r].label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="label" htmlFor="moment-glyphe">
+                  Symbole
+                </label>
+                <input
+                  id="moment-glyphe"
+                  className="field"
+                  value={momentGlyph}
+                  onChange={(e) => setMomentGlyph(e.target.value)}
+                  maxLength={8}
+                />
+              </div>
+            </div>
+            <button className="btn btn-ice w-full" disabled={busy || momentName.length < 2}>
+              Créer la carte
             </button>
           </form>
         </section>

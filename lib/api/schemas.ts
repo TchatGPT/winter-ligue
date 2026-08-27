@@ -27,8 +27,17 @@ export const loginSchema = z.object({
   password: z.string().min(1).max(256),
 });
 
+export const rarity = z.enum(['C', 'PC', 'R', 'SR', 'UR', 'L']);
+
 export const createPlayerSchema = z.object({
   pseudo,
+  /**
+   * Rareté de la carte Joueur, figée à l'inscription et jamais modifiée
+   * ensuite : une carte échangeable dont la rareté bougerait en cours de
+   * saison ferait varier son foil, son taux de tirage et son prix sous les
+   * pieds de ceux qui l'ont achetée.
+   */
+  cardRarity: rarity.optional(),
   twitchLogin: z
     .string()
     .trim()
@@ -141,3 +150,12 @@ export type GameInput = z.infer<typeof gameSchema>;
 export type CreateListingInput = z.infer<typeof createListingSchema>;
 export type BidInput = z.infer<typeof bidSchema>;
 export type PlayCardInput = z.infer<typeof playCardSchema>;
+
+/** Création d'une carte Moment par la modération. */
+export const momentSchema = z.object({
+  name: z.string().trim().min(2).max(48),
+  subtitle: z.string().trim().max(64).default(''),
+  description: z.string().trim().max(240).default(''),
+  rarity,
+  glyph: z.string().trim().min(1).max(8).default('🏅'),
+});

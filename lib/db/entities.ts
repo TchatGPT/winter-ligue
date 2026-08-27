@@ -6,7 +6,7 @@
  * enregistrements, si bien que le changement de base ne touchera pas au métier.
  */
 
-import type { Bid, BoonKind, Listing, Placement, Sale } from '@/lib/domain/types';
+import type { Bid, BoonKind, Listing, Placement, Rarity, Sale } from '@/lib/domain/types';
 
 export interface Player {
   id: string;
@@ -157,6 +157,32 @@ export interface AuditEntry {
   at: string;
 }
 
+/**
+ * Carte de collection : Joueur ou Moment.
+ *
+ * Contrairement aux cartes à effet, figées dans le catalogue, celles-ci sont
+ * des données : un participant s'inscrit, sa carte existe. Elles n'ont aucun
+ * effet en jeu, donc aucun risque d'équilibrage — c'est ce qui permet d'avoir
+ * un pool profond sans multiplier les combos à surveiller.
+ *
+ * La rareté est fixée à la création et ne bouge plus. Une carte échangeable
+ * dont la rareté changerait en cours de saison ferait bouger son foil, son
+ * taux de tirage et son prix sous les pieds de ceux qui l'ont achetée.
+ */
+export interface Collectible {
+  id: string;
+  kind: 'JOUEUR' | 'MOMENT';
+  name: string;
+  subtitle: string;
+  description: string;
+  rarity: Rarity;
+  glyph: string;
+  art: string | null;
+  /** Pour une carte Joueur : le participant représenté. */
+  playerId: string | null;
+  createdAt: string;
+}
+
 export interface LeagueConfig {
   maxGamesPerPlayer: number;
   /** Subs cumulés de la saison. Seule la modération l'incrémente. */
@@ -190,6 +216,7 @@ export interface Database {
   players: Player[];
   games: Game[];
   cards: CardInstance[];
+  collectibles: Collectible[];
   discoveries: Discovery[];
   openings: BoosterOpening[];
   effects: PlayerEffect[];

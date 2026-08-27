@@ -10,16 +10,20 @@ import 'server-only';
 
 import type { Database } from '@/lib/db/entities';
 import { getStore } from '@/lib/db/store';
-import { CARDS, getCard, THEMES } from '@/lib/domain/catalog';
-import { completionRatio, handSlotsFor, themeProgress } from '@/lib/domain/collection';
+import { getCard, THEMES } from '@/lib/domain/catalog';
+import { handSlotsFor, themeProgress } from '@/lib/domain/collection';
 import type { SetBonuses } from '@/lib/domain/types';
 import { handOf } from './cards';
+import { allCards, resolveCard } from './collection';
 import { bonusesFor, discoveredCardIds, gamesOf, hasShield, totalsOf } from './league';
 import { closeExpiredListings, viewListing, type ListingView } from './market';
 
 export interface HandCard {
   instanceId: string;
   cardId: string;
+  kind: string;
+  /** false pour une carte de collection : elle se possède et se vend, pas plus. */
+  playable: boolean;
   name: string;
   rarity: string;
   theme: string;
@@ -32,12 +36,15 @@ export interface HandCard {
 
 export interface CollectionEntry {
   cardId: string;
+  kind: string;
   name: string;
+  subtitle: string;
   rarity: string;
+  /** Vide pour une carte de collection, qui n'appartient à aucune famille. */
   theme: string;
   glyph: string;
   discovered: boolean;
-  /** Copies jouables actuellement détenues. */
+  /** Copies actuellement détenues. */
   copies: number;
 }
 
@@ -117,32 +124,43 @@ function buildProfile(db: Database, playerId: string): ProfileView | null {
     handSlots: handSlotsFor(discovered),
     hand: hand
       .map((instance): HandCard | null => {
-        const card = getCard(instance.cardId);
+        const card = resolveCard(db, instance.cardId);
         if (!card) return null;
+        const effect = getCard(instance.cardId);
         return {
           instanceId: instance.id,
           cardId: card.id,
+          kind: card.kind,
           name: card.name,
           rarity: card.rarity,
-          theme: card.theme,
+          theme: card.theme ?? '',
           glyph: card.glyph,
           description: card.description,
-          nature: card.nature,
-          target: card.target,
+          nature: card.nature ?? 'bonus',
+          // Une carte de collection ne cible rien : elle ne se joue pas.
+          target: effect ? effect.target : 'none',
+          playable: Boolean(effect),
           obtainedAt: instance.obtainedAt,
         };
       })
       .filter((c): c is HandCard => c !== null),
-    collection: CARDS.map((card) => ({
+    // Le pool entier : cartes à effet, cartes Joueur et cartes Moment. Le
+    // catalogue figé ne suffit plus, les deux dernières vivent en base.
+    collection: allCards(db).map((card) => ({
       cardId: card.id,
+      kind: card.kind,
       name: card.name,
+      subtitle: card.subtitle,
       rarity: card.rarity,
-      theme: card.theme,
+      theme: card.theme ?? '',
       glyph: card.glyph,
       discovered: discoveredSet.has(card.id),
       copies: copiesByCard[card.id] ?? 0,
     })),
-    completion: completionRatio(discovered),
+    completion:
+      allCards(db).length === 0
+        ? 0
+        : allCards(db).filter((c) => discoveredSet.has(c.id)).length / allCards(db).length,
     bonuses,
     themes: progress.map((p) => {
       const theme = THEMES[p.theme];

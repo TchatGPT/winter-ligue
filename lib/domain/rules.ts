@@ -44,8 +44,16 @@ export const GAME_LIMITS = {
   maxBonusPoints: 80,
 } as const;
 
-/** Nombre de games comptabilisées par joueur, ajustable par l'admin. */
-export const DEFAULT_MAX_GAMES_PER_PLAYER = 25;
+/**
+ * Nombre de games comptabilisées par joueur, ajustable par la modération.
+ *
+ * Aligné sur la Summer Ligue. À ce volume, un joueur assidu termine autour de
+ * 1 000 points : une carte plafonnée à 25 points pèse alors 2 % de sa saison,
+ * mais 17 % de celle d'un joueur occasionnel. Les cartes sont donc surtout un
+ * outil de rattrapage — et c'est aussi pour ça que le quota de malus par jour
+ * compte autant : le même malus fait bien plus mal en bas du classement.
+ */
+export const DEFAULT_MAX_GAMES_PER_PLAYER = 60;
 
 /* ------------------------------- Économie ------------------------------- */
 
@@ -249,8 +257,12 @@ export function atLeastOnePercent(
  *
  * Une carte gagnée aux enchères, elle, arrive toujours — on ne fait pas perdre
  * une vente remportée pour une question de place.
+ *
+ * Dimensionnée pour 60 games : un joueur assidu ouvre environ 130 cartes sur
+ * une saison, il devra donc arbitrer et revendre — ce qui est exactement le
+ * but.
  */
-export const BASE_RESERVE_SLOTS = 40;
+export const BASE_RESERVE_SLOTS = 60;
 
 /**
  * Encadrement des malus.

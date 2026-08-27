@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BoosterPack3D } from '@/components/BoosterPack3D';
 import { TradingCard } from '@/components/TradingCard';
 import { Notice, RarityChip, flakes, rarityMeta } from '@/components/ui';
-import { cardArt } from '@/lib/domain/catalog';
+import { boosterSize, cardArt } from '@/lib/domain/catalog';
 import { atLeastOnePercent, rarityPercent } from '@/lib/domain/rules';
 import type { BoosterDefinition, Rarity } from '@/lib/domain/types';
 
@@ -195,7 +195,8 @@ export function BoosterOpening({
                   {b.name}
                 </div>
                 <div className="text-[13px] text-faint">
-                  {b.cardCount} cartes · {b.tagline}
+                  {b.slots.effet} effet{b.slots.effet > 1 ? 's' : ''} + {b.slots.collection}{' '}
+                  collection · {b.tagline}
                 </div>
                 <div className="num mt-2 font-display text-lg font-black text-ice">
                   ❄ {flakes(b.finalPrice)}
@@ -236,7 +237,7 @@ export function BoosterOpening({
                 <BoosterPack3D
                   name={booster.name}
                   glyph={booster.glyph}
-                  cardCount={booster.cardCount}
+                  cardCount={boosterSize(booster)}
                   gradient={booster.gradient}
                   frozen={busy}
                 />
@@ -384,7 +385,8 @@ export function BoosterOpening({
             Taux du booster {booster.name}
           </h2>
           <span className="text-[13px] text-faint">
-            Tirage serveur, source cryptographique — {booster.cardCount} cartes par booster
+            Taux des {booster.slots.effet} emplacement{booster.slots.effet > 1 ? 's' : ''} d’effet.
+            Les {booster.slots.collection} autres tirent des cartes Joueur et Moment.
           </span>
         </div>
 
@@ -392,7 +394,7 @@ export function BoosterOpening({
           {RARITY_LADDER.map((rarity) => {
             const meta = rarityMeta(rarity);
             const per = rarityPercent(booster.weights, rarity);
-            const atLeast = atLeastOnePercent(booster.weights, rarity, booster.cardCount);
+            const atLeast = atLeastOnePercent(booster.weights, rarity, booster.slots.effet);
             return (
               <div key={rarity} className="border-t border-white/10 px-3 py-2.5 sm:border-r">
                 <div className="flex items-center gap-1.5">

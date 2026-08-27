@@ -152,7 +152,7 @@ export const THEMES: Record<ThemeId, ThemeDefinition> = {
  *     l'attaquant ;
  *   — tout malus est annulable par Second Souffle dans les 24 h.
  */
-export const CARDS: readonly CardDefinition[] = [
+export const EFFECT_CARDS: readonly CardDefinition[] = [
   /* ================ GLACE — protéger ce qui est acquis =================== */
   {
     id: 'congere',
@@ -512,6 +512,13 @@ export const CARDS: readonly CardDefinition[] = [
   },
 ];
 
+/**
+ * Alias de lecture. Le catalogue figé ne contient que des cartes à effet ; les
+ * cartes Joueur et Moment vivent en base et se résolvent via
+ * `lib/services/collection.ts`.
+ */
+export const CARDS = EFFECT_CARDS;
+
 const CARD_INDEX = new Map(CARDS.map((c) => [c.id, c]));
 
 /** Numéro de collection, à la façon du « 12/24 » au dos des cartes. */
@@ -581,7 +588,7 @@ export const BOOSTERS: readonly BoosterDefinition[] = [
     glyph: '❄',
     gradient: ['#2b4a63', '#0e1c2a'],
     price: 150,
-    cardCount: 3,
+    slots: { collection: 2, effet: 1 },
     guaranteed: null,
     weights: RARITY_WEIGHTS_BASE,
   },
@@ -592,7 +599,7 @@ export const BOOSTERS: readonly BoosterDefinition[] = [
     glyph: '🌨',
     gradient: ['#2f6f8f', '#10283a'],
     price: 450,
-    cardCount: 5,
+    slots: { collection: 3, effet: 2 },
     guaranteed: 'R',
     weights: { C: 62_000, PC: 26_000, R: 10_000, SR: 1_700, UR: 260, L: 40 },
   },
@@ -603,7 +610,7 @@ export const BOOSTERS: readonly BoosterDefinition[] = [
     glyph: '🌌',
     gradient: ['#6b4bab', '#241540'],
     price: 1_200,
-    cardCount: 5,
+    slots: { collection: 3, effet: 2 },
     guaranteed: 'SR',
     weights: { C: 45_000, PC: 33_000, R: 17_000, SR: 4_200, UR: 720, L: 80 },
   },
@@ -614,11 +621,18 @@ export const BOOSTERS: readonly BoosterDefinition[] = [
     glyph: '🎁',
     gradient: ['#b07a2a', '#3d2708'],
     price: 3_000,
-    cardCount: 5,
+    // Le sachet le plus cher donne plus de cartes jouables, pas seulement des
+    // raretés plus hautes : c'est ce qu'on achète.
+    slots: { collection: 2, effet: 3 },
     guaranteed: 'UR',
     weights: { C: 26_000, PC: 36_000, R: 27_000, SR: 9_000, UR: 1_800, L: 200 },
   },
 ];
+
+/** Nombre total de cartes d'un booster, toutes natures confondues. */
+export function boosterSize(booster: BoosterDefinition): number {
+  return booster.slots.collection + booster.slots.effet;
+}
 
 const BOOSTER_INDEX = new Map(BOOSTERS.map((b) => [b.id, b]));
 
