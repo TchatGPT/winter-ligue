@@ -234,22 +234,27 @@ No other text anywhere on the pack.
 Garde la structure, change le sujet et le sceau — c'est ce qui distingue les quatre
 sachets tout en gardant la gamme cohérente :
 
-Trois boosters sur quatre ont leur planche. Seul **Everest** partage encore celle des
-séracs, servie par défaut au moment où les quatre étaient identiques.
+**Les quatre boosters ont leur planche.** Chacune illustre son nom plutôt que sa rareté,
+et la montée du prix se lit dans le sujet : on progresse dans la neige, on la dévale, on
+atteint le sommet.
 
 Le fichier garde le nom de l'identifiant — `aurore.jpg` pour Hors-Piste, `solstice.jpg`
 pour Everest — parce que l'identifiant n'a pas suivi le renommage : il est écrit dans
 l'historique d'ouverture et dans le grand livre.
 
-| Booster | Sujet à demander | Sceau |
+| Booster | Sujet | Sceau |
 |---|---|---|
-| `givre` | un tireur d'élite en tenue de camouflage neige, à plat ventre dans la poudreuse, sa section avançant derrière lui dans la tempête | `COMMON` |
-| `blizzard` | ✅ **fait** — un opérateur avançant seul de face dans la poudreuse, la glace occupant tout le fond | `RARE` |
-| `aurore` — **Hors-Piste** | ✅ **fait** — un opérateur à ski dans une pente vierge, gerbe de neige, sommet au fond | `SUPER RARE` |
-| `solstice` — **Everest** | l'arête sommitale au soleil rasant, la cordée minuscule sur le fil, la lumière dorée sur les névés | `ULTRA RARE` |
+| `givre` | une escouade prise sous des séracs géants, l'échelle donnée par les silhouettes au pied de la glace | `COMMON` |
+| `blizzard` | un opérateur avançant seul de face dans la poudreuse, la glace occupant tout le fond | `RARE` |
+| `aurore` — **Hors-Piste** | un opérateur à ski dans une pente vierge, gerbe de neige, sommet au fond | `SUPER RARE` |
+| `solstice` — **Everest** | un sommet gagné, drapeau planté, la brume en contrebas | `ULTRA RARE` |
 
-La planche partagée sert d'étalon : les quatre définitives doivent tenir à côté d'elle —
-même palette froide, même niveau de détail, même traitement du sertissage.
+Les quatre partagent une découpe identique — même boîte de 1297 × 2139 dans la planche
+source — parce que le générateur rend toujours le même placement. C'est ce qui garantit
+qu'elles ont exactement le même gabarit, le composant n'ayant qu'un seul ratio pour
+tous. Pour une cinquième planche, reprends cette boîte et vérifie seulement les bords au
+pixel : sur `solstice`, le bord gauche tombait à 207 au lieu de 203, et la boîte a été
+décalée de deux pixels sans changer de taille.
 
 ### Si le générateur rend le sachet de trois quarts
 
