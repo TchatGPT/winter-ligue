@@ -1903,8 +1903,14 @@
     background-image: var(--planche);
     background-repeat: no-repeat;
     background-size: 100% 100%;
-    transform: scale(1.04);
-    filter: blur(22px) saturate(1.35) drop-shadow(0 0 11px var(--gemme, #8fdcff));
+    transform: scale(1.02);
+    /* Elle doit tenir dans le rembourrage de la rangée : le panneau qui porte
+       tout ça est en `overflow: hidden`, et une lueur plus large que la marge
+       s'y retrouvait tranchée net sur le bord gauche du premier sachet.
+
+       Le compte : quinze pixels de flou plus sept de halo font vingt-deux, pour
+       seize de marge de rangée et seize de rembourrage du panneau. */
+    filter: blur(15px) saturate(1.3) drop-shadow(0 0 7px var(--gemme, #8fdcff));
     pointer-events: none;
     --duree-lueur: 9s;
     animation: sachet-lueur var(--duree-lueur) ease-in-out infinite;
@@ -1913,19 +1919,19 @@
   /* Les voisins gardent une lueur, plus discrète : elle dit leur rareté sans
      venir concurrencer le sachet de tête. */
   .sachet-lueur-voisin {
-    filter: blur(15px) saturate(1.2) drop-shadow(0 0 7px var(--gemme, #8fdcff));
-    --lueur-bas: 0.13;
-    --lueur-haut: 0.2;
+    filter: blur(12px) saturate(1.15) drop-shadow(0 0 5px var(--gemme, #8fdcff));
+    --lueur-bas: 0.1;
+    --lueur-haut: 0.16;
   }
 
   @keyframes sachet-lueur {
     0%,
     100% {
-      opacity: var(--lueur-bas, 0.26);
+      opacity: var(--lueur-bas, 0.2);
       transform: scale(1.04);
     }
     50% {
-      opacity: var(--lueur-haut, 0.4);
+      opacity: var(--lueur-haut, 0.32);
       transform: scale(1.08);
     }
   }
@@ -1945,6 +1951,11 @@
   .rangee-cadre {
     position: relative;
     width: 100%;
+    /* La rangée se mesure à son cadre, pas à la fenêtre : une barre latérale
+       de 272 px sépare les deux, et la largeur utile passe de 926 px sur un
+       écran de 1280 à 1086 sur un de 1440. Des paliers en `max-width` se
+       trompaient donc systématiquement de cible. */
+    container-type: inline-size;
   }
 
   .rangee {
@@ -1976,33 +1987,25 @@
   .rangee-piste {
     display: flex;
     align-items: center;
-    gap: clamp(8px, 1.5vw, 18px);
     width: max-content;
     margin-inline: auto;
     /* De quoi loger la lueur, la lévitation et l'agrandissement du sachet
        retenu sans que rien ne soit rogné par le défilement. */
-    padding: 34px 10px 44px;
   }
 
   /* La taille du sachet vit ici, et nulle part ailleurs.
 
-     Elle décroît par paliers : quatre sachets de 210 px tiennent dans la
-     colonne d'un ordinateur, pas dans un téléphone. Le composant, lui, remplit
-     simplement la boîte qu'on lui donne. */
+     Elle se calcule à partir de la largeur du cadre : les quatre sachets, leurs
+     trois écarts et les deux marges occupent exactement la place disponible,
+     moins dix pixels de jeu. Ils grandissent donc avec le panneau au lieu de
+     sauter d'un palier à l'autre, et le plancher de 126 px les fait passer au
+     défilement sur un téléphone plutôt que de les y rendre illisibles. */
   .rangee-piste {
-    --l-sachet: 210px;
-  }
-
-  @media (max-width: 900px) {
-    .rangee-piste {
-      --l-sachet: 168px;
-    }
-  }
-
-  @media (max-width: 560px) {
-    .rangee-piste {
-      --l-sachet: 132px;
-    }
+    --ecart: 12px;
+    --marge: 16px;
+    --l-sachet: clamp(126px, calc((100cqw - 78px) / 4), 320px);
+    gap: var(--ecart);
+    padding: 44px var(--marge) 48px;
   }
 
   .rangee-case {
@@ -2117,19 +2120,6 @@
     mask-repeat: no-repeat;
   }
 
-  /* -- Ombre au sol ------------------------------------------------------- */
-
-  .sachet-ombre {
-    position: absolute;
-    left: 50%;
-    bottom: -7%;
-    width: 74%;
-    height: 26px;
-    transform: translateX(-50%) rotateX(84deg);
-    background: radial-gradient(ellipse, rgb(0 0 0 / 0.6) 0%, transparent 72%);
-    filter: blur(11px);
-    pointer-events: none;
-  }
 
   /* Au repos, le sachet lévite : il monte et redescend de quelques pixels.
 
@@ -2141,6 +2131,8 @@
 
      Le déplacement est vertical, lent, et décalé d'un sachet à l'autre. */
   .sachet {
+    --amplitude-levite: 9px;
+    --pivot-levite: 2deg;
     --duree-levite: 4.6s;
     --duree-reflet: 7.5s;
     animation:
@@ -2154,7 +2146,8 @@
      objet. Ici les quatre sont vivants, et l'ampleur dit lequel est choisi. */
   .sachet-veille {
     --duree-levite: 5.8s;
-    --amplitude-levite: 5px;
+    --amplitude-levite: 6px;
+    --pivot-levite: 1.4deg;
   }
 
   /* Le calque du reflet fait 440 px pour un sachet de 200 : entre -220 et -20,
@@ -2178,12 +2171,20 @@
     animation: sachet-balayage var(--duree-reflet) ease-in-out infinite alternate;
   }
 
+  /* Deux degrés, pas plus.
+
+     La planche porte déjà sa perspective : tourner au-delà revient à en montrer
+     la tranche peinte sous un angle qu'elle n'a pas, et le sachet se met à
+     glisser au lieu de flotter. Ici c'est assez pour que la lumière change
+     pendant la lévitation, et trop peu pour qu'on voie un bord. */
   @keyframes sachet-levite {
     from {
-      transform: translateY(calc(var(--amplitude-levite, 8px) * -1));
+      transform: translateY(calc(var(--amplitude-levite, 8px) * -1))
+        rotateX(calc(var(--pivot-levite, 1deg) * -1)) rotateY(var(--pivot-levite, 1deg));
     }
     to {
-      transform: translateY(var(--amplitude-levite, 8px));
+      transform: translateY(var(--amplitude-levite, 8px))
+        rotateX(var(--pivot-levite, 1deg)) rotateY(calc(var(--pivot-levite, 1deg) * -1));
     }
   }
 

@@ -179,7 +179,6 @@ export function BoosterPack3D({
             aria-hidden="true"
           />
         </div>
-        <span className="sachet-ombre" aria-hidden="true" />
       </div>
     </div>
   );
