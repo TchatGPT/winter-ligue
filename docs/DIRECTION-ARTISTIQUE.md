@@ -156,9 +156,14 @@ gonflé, et rien de plus :
 
 - une coque galbée — un profil en lentille, nul aux soudures et maximal au centre — sur
   laquelle la planche est découpée en tuiles ;
-- l'orientation à la souris, avec de l'inertie ;
+- un tour complet sur lui-même, lentement, pour le sachet mis en avant ;
 - un verso en mylar brillant, gaufré d'un massif et portant le nom de la série ;
 - l'ombrage du bombement et l'ombre au sol.
+
+Les quatre sachets sont présentés serrés en carrousel : celui du centre fait face, ses
+voisins s'effacent de profil, et on fait glisser la rangée pour choisir. Le glissement
+horizontal appartient donc au carrousel, pas au sachet — c'est pour ça que le sachet
+tourne tout seul au lieu d'attendre qu'on le prenne.
 
 Trois versions ont précédé, et chacune corrigeait la précédente. **Une boîte à six
 faces** avec la planche collée devant : épaisseur constante, arête vive au sommet, ça se

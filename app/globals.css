@@ -1868,93 +1868,68 @@
 
   /* -- Le carrousel de sachets -------------------------------------------- */
 
-  /* Les sachets vivent dans la scène, alignés. On fait défiler le rail ou on
-     clique un voisin ; le sachet centré est celui qu'on ouvre. Le choix et la
-     mise en scène deviennent le même geste.
+  /* Les sachets sont serrés les uns contre les autres et la rangée tourne :
+     celui du centre fait face, ses voisins s'effacent de profil. On fait
+     glisser pour choisir, ou on clique un voisin.
 
-     L'accrochage se fait au centre, et les cases gardent toutes la même
-     largeur : c'est ce qui rend le calcul du sachet le plus proche du centre
-     fiable, quelle que soit la taille à laquelle il est affiché. */
+     Un défilement plat avait précédé. Il fonctionnait, mais des sachets alignés
+     à plat se lisent comme une étagère ; c'est la rotation qui donne
+     l'impression de tourner autour d'un présentoir, et qui laisse tenir quatre
+     sachets dans la largeur sans les éloigner. */
   .carrousel {
-    display: flex;
+    position: relative;
     width: 100%;
-    overflow-x: auto;
-    overscroll-behavior-x: contain;
-    scroll-snap-type: x mandatory;
-    /* De quoi amener le premier et le dernier sachet jusqu'au centre. */
-    padding-inline: calc(50% - 115px);
-    scrollbar-width: none;
+    height: 430px;
+    perspective: 1250px;
+    perspective-origin: 50% 48%;
+    /* Le geste horizontal nous revient, le vertical reste à la page : sans ça,
+       sur mobile, on ne pourrait plus faire défiler la page depuis le sachet. */
+    touch-action: pan-y;
+    cursor: grab;
+    user-select: none;
   }
 
-  .carrousel::-webkit-scrollbar {
-    display: none;
+  .carrousel:active {
+    cursor: grabbing;
   }
 
   .carrousel-case {
-    flex: 0 0 230px;
-    display: flex;
-    height: 400px;
-    align-items: center;
-    justify-content: center;
-    scroll-snap-align: center;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 200px;
+    height: 355px;
+    margin: -177px 0 0 -100px;
+    will-change: transform;
+    transition: transform 400ms cubic-bezier(0.22, 1, 0.36, 1);
   }
 
-  /* Le voisin est réduit et effacé, sans disparaître : il faut qu'on voie
-     qu'il y a autre chose à côté, sinon on ne pense pas à faire défiler. */
+  /* Pendant le glissement la rangée suit le doigt : la moindre transition la
+     ferait traîner d'une image sur l'autre. */
+  .carrousel-glisse .carrousel-case {
+    transition: none;
+  }
+
   .carrousel-prise {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.5rem;
-    color: var(--muted);
-    opacity: 0.45;
-    transform: scale(0.6);
-    transition:
-      transform 260ms cubic-bezier(0.22, 1, 0.36, 1),
-      opacity 260ms ease,
-      color 260ms ease;
+    position: absolute;
+    inset: 0;
+    display: block;
+    padding: 0;
+    border: 0;
+    background: none;
   }
 
-  .carrousel-prise:hover:not(:disabled) {
-    opacity: 0.72;
+  .carrousel-case-actif .carrousel-prise {
+    /* Le sachet du centre est déjà choisi : son clic n'a rien à faire. */
+    cursor: inherit;
   }
 
-  .carrousel-case-actif .carrousel-prise,
-  .carrousel-case-actif .carrousel-prise:hover:not(:disabled) {
-    opacity: 1;
-    color: var(--ink);
-    transform: scale(1);
-    /* Le sachet centré se prend à la souris pour tourner ; c'est le seul du
-       rail dont le clic ne sert pas à changer de sélection. */
-    cursor: default;
-  }
-
-  .carrousel-etiquette {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.15rem;
-    /* Le nom et le prix du sachet centré sont déjà écrits au-dessus de la
-       scène et sur le bouton : les répéter ici ferait doublon. */
-    transition: opacity 200ms ease;
-  }
-
-  .carrousel-case-actif .carrousel-etiquette {
-    opacity: 0;
-  }
-
-  .carrousel-nom {
-    font-family: var(--font-display);
-    font-size: 0.95rem;
-    font-weight: 900;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    line-height: 1;
-  }
-
-  .carrousel-prix {
-    font-size: 0.85rem;
-    color: var(--ice);
+  /* Les sachets écartés sont assombris.
+     Le filtre ne touche que la face plate d'une vignette, jamais le sachet
+     central : `filter` aplatit la 3D de ses descendants, il écraserait le
+     maillage et le sachet redeviendrait une image. */
+  .carrousel-case:not(.carrousel-case-actif) .sachet-face {
+    filter: brightness(0.6) saturate(0.88);
   }
 
   .sachet-vignette {
@@ -2062,22 +2037,22 @@
     pointer-events: none;
   }
 
-  /* Au repos, un balancement — et non plus un tour complet.
-     Le sachet est un plan : vu à 90° il se réduit à un trait. Un tour continu
-     le faisait donc disparaître deux fois par révolution. Le balancement le
-     garde lisible en permanence et suffit à montrer que l'objet a un volume ;
-     le tour complet, lui, reste accessible à la souris. */
+  /* Au repos, le sachet centre fait un tour complet, lentement.
+
+     Un balancement l'avait remplace au moment ou le sachet n'etait que deux
+     plans : vu a 90 degres il se reduisait a un trait et disparaissait deux
+     fois par revolution. La coque galbee a une vraie coupe, le tour complet
+     redevient lisible — et c'est le seul moyen de voir le verso. */
   .sachet-tourne {
-    animation: sachet-balance 9s ease-in-out infinite;
+    animation: sachet-tour 18s linear infinite;
   }
 
-  @keyframes sachet-balance {
-    0%,
-    100% {
-      transform: rotateX(-8deg) rotateY(-24deg);
+  @keyframes sachet-tour {
+    from {
+      transform: rotateX(-8deg) rotateY(0deg);
     }
-    50% {
-      transform: rotateX(-5deg) rotateY(24deg);
+    to {
+      transform: rotateX(-8deg) rotateY(360deg);
     }
   }
 

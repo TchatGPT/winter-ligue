@@ -287,12 +287,21 @@ export interface Pack3DProps {
   /**
    * Rendu allégé, pour le sélecteur.
    *
-   * Une vignette n'a ni maillage, ni verso, ni prise à la souris : une seule
-   * face suffit à reconnaître un sachet à cette taille. Le maillage coûte cent
-   * quarante tuiles — en afficher un par booster à côté de la grande scène
+   * Une vignette n'a ni maillage ni verso : une seule face suffit à
+   * reconnaître un sachet à cette taille. Le maillage coûte cent quarante
+   * tuiles — en afficher un par booster à côté du sachet mis en avant
    * multiplierait la page par cinq pour un gain nul.
    */
   vignette?: boolean;
+  /**
+   * Le sachet ne capte plus le pointeur.
+   *
+   * Indépendant de `vignette`, et c'est le but : dans le carrousel, le sachet
+   * central garde son maillage complet mais laisse le geste horizontal au rail,
+   * qui s'en sert pour faire tourner la rangée. Deux prises concurrentes sur le
+   * même glissement, et aucune des deux ne marche.
+   */
+  inerte?: boolean;
   className?: string;
 }
 
@@ -325,6 +334,7 @@ export function BoosterPack3D({
   art,
   frozen = false,
   vignette = false,
+  inerte = false,
   className,
 }: Pack3DProps) {
   const packRef = useRef<HTMLDivElement>(null);
@@ -537,9 +547,17 @@ export function BoosterPack3D({
   // La mise à l'échelle est laissée au parent : une transformation CSS sur la
   // case du carrousel s'anime, là où changer les dimensions ne ferait que
   // sauter d'une taille à l'autre.
+  /*
+   * La rotation continue est coupée par `vignette`, pas par `inerte`.
+   *
+   * Dans le carrousel, le sachet mis en avant ne capte pas le pointeur — le
+   * glissement horizontal appartient à la rangée — mais il doit continuer de
+   * tourner sur lui-même, puisque c'est le seul moyen de voir son verso. Seules
+   * les vignettes restent immobiles.
+   */
   return (
     <div
-      className={`sachet-scene ${vignette ? 'sachet-scene-fixe' : ''} ${className ?? ''}`}
+      className={`sachet-scene ${inerte ? 'sachet-scene-fixe' : ''} ${className ?? ''}`}
       style={{ width: W, height: H }}
     >
       <div
@@ -552,7 +570,7 @@ export function BoosterPack3D({
           ['--p2' as string]: gradient[1],
           ...(vignette ? { ['--rx3' as string]: '-6deg', ['--ry3' as string]: '-15deg' } : null),
         }}
-        {...(vignette
+        {...(inerte
           ? {}
           : {
               onPointerDown: onDown,
@@ -562,7 +580,7 @@ export function BoosterPack3D({
             })}
         role="img"
         aria-label={
-          vignette
+          inerte
             ? `Sachet ${name}`
             : `Sachet ${name}, ${cardCount} cartes — faites-le tourner`
         }

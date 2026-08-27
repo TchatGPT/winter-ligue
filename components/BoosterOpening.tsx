@@ -10,6 +10,17 @@ import type { BoosterDefinition, Rarity } from '@/lib/domain/types';
 
 const RARITY_LADDER: Rarity[] = ['C', 'PC', 'R', 'SR', 'UR', 'L'];
 
+/**
+ * Géométrie du carrousel.
+ *
+ * `ECART` est volontairement inférieur à la largeur d'un sachet (200 px) : c'est
+ * ce qui les fait se chevaucher au lieu de s'aligner. Combiné à la rotation, on
+ * regarde une rangée serrée vue de biais, pas une étagère.
+ */
+const ECART = 124;
+const PROFONDEUR = 135;
+const ANGLE = 46;
+
 export interface ShopBooster extends BoosterDefinition {
   finalPrice: number;
 }
@@ -63,71 +74,135 @@ export function BoosterOpening({
   const [newBalance, setNewBalance] = useState<number | null>(null);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const rail = useRef<HTMLDivElement>(null);
-  const arret = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const booster = useMemo(
     () => boosters.find((b) => b.id === selected) ?? boosters[0],
     [boosters, selected],
   );
 
-  /** Amène un sachet au centre du rail. */
-  const centrer = useCallback((index: number, doux = true) => {
-    const piste = rail.current;
-    const case_ = piste?.children[index] as HTMLElement | undefined;
-    if (!piste || !case_) return;
-    piste.scrollTo({
-      left: case_.offsetLeft + case_.offsetWidth / 2 - piste.clientWidth / 2,
-      behavior: doux ? 'smooth' : 'auto',
-    });
-  }, []);
+  const rang = Math.max(
+    0,
+    boosters.findIndex((b) => b.id === (booster?.id ?? selected)),
+  );
+
+  // Position continue de la rangée, en numéros de sachet. Elle vit dans une ref
+  // parce qu'elle change à chaque image pendant le glissement : la faire passer
+  // par le state déclencherait un rendu React par image.
+  const pos = useRef(rang);
+  const cases = useRef<(HTMLDivElement | null)[]>([]);
+  const geste = useRef({ actif: false, capture: false, x0: 0, pos0: 0, parcouru: 0 });
 
   /**
-   * Le défilement fait foi.
+   * Où se place un sachet, selon son écart au centre de la rangée.
    *
-   * On attend l'arrêt plutôt que de suivre chaque événement : pendant un
-   * défilement fluide, le sachet le plus proche du centre change plusieurs fois
-   * par seconde, et changer de sélection à chaque fois ferait clignoter la
-   * scène et le prix.
+   * Il recule, tourne et rétrécit à mesure qu'il s'éloigne. L'écart latéral est
+   * plus petit que la largeur d'un sachet : c'est ce qui les fait se toucher au
+   * lieu de s'aligner comme sur une étagère.
    */
-  const onScroll = useCallback(() => {
-    if (arret.current) clearTimeout(arret.current);
-    arret.current = setTimeout(() => {
-      const piste = rail.current;
-      if (!piste) return;
-      const centre = piste.scrollLeft + piste.clientWidth / 2;
-      let proche = 0;
-      let ecart = Infinity;
-      Array.from(piste.children).forEach((el, i) => {
-        const c = (el as HTMLElement).offsetLeft + (el as HTMLElement).offsetWidth / 2;
-        const d = Math.abs(c - centre);
-        if (d < ecart) {
-          ecart = d;
-          proche = i;
-        }
-      });
-      const cible = boosters[proche];
-      if (cible) setSelected((actuel) => (cible.id === actuel ? actuel : cible.id));
-    }, 130);
-  }, [boosters]);
+  const place = useCallback((i: number, p: number) => {
+    const d = i - p;
+    const ad = Math.abs(d);
 
-  // Au premier rendu, le sachet retenu doit déjà être au centre — sans
-  // animation, sinon la page s'ouvre sur un défilement qu'on n'a pas demandé.
-  const monte = useRef(false);
+    // L'inclinaison monte sur le premier voisin puis se fige.
+    //
+    // Proportionnelle à l'écart, elle dépassait 90° dès le deuxième voisin : le
+    // sachet basculait sur son verso et le nom s'affichait en miroir. Au-delà
+    // du premier rang, les sachets ne tournent donc plus, ils ne font que
+    // reculer et rétrécir.
+    const proche = Math.min(ad, 1);
+    const loin = Math.max(0, ad - 1);
+
+    const x = d * ECART;
+    const z = -(proche * PROFONDEUR + loin * 42);
+    const ry = -Math.sign(d) * proche * ANGLE;
+    const k = Math.max(0.6, 1 - proche * 0.14 - loin * 0.07);
+
+    return {
+      transform:
+        `translateX(${x.toFixed(1)}px) translateZ(${z.toFixed(1)}px) ` +
+        `rotateY(${ry.toFixed(1)}deg) scale(${k.toFixed(3)})`,
+      zIndex: 40 - Math.round(ad * 10),
+    };
+  }, []);
+
+  const applique = useCallback(() => {
+    cases.current.forEach((el, i) => {
+      if (!el) return;
+      const s = place(i, pos.current);
+      el.style.transform = s.transform;
+      el.style.zIndex = String(s.zIndex);
+    });
+  }, [place]);
+
+  // Un choix venu d'ailleurs — un clic sur un voisin — doit recaler la position
+  // continue, sinon le glissement suivant repartirait de l'ancien sachet.
   useEffect(() => {
-    if (monte.current) return;
-    monte.current = true;
-    centrer(
-      boosters.findIndex((b) => b.id === selected),
-      false,
-    );
-  }, [boosters, selected, centrer]);
+    pos.current = rang;
+  }, [rang]);
 
-  useEffect(
-    () => () => {
-      if (arret.current) clearTimeout(arret.current);
-    },
-    [],
-  );
+  const onDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (busy) return;
+    geste.current = {
+      actif: true,
+      capture: false,
+      x0: event.clientX,
+      pos0: pos.current,
+      parcouru: 0,
+    };
+  };
+
+  const onMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!geste.current.actif) return;
+    const dx = event.clientX - geste.current.x0;
+    geste.current.parcouru = Math.max(geste.current.parcouru, Math.abs(dx));
+
+    /*
+     * La capture n'est prise qu'une fois le glissement avéré.
+     *
+     * La prendre dès l'appui paraissait plus simple, mais un pointeur capturé
+     * redirige aussi le `click` vers l'élément qui capture : le clic n'arrivait
+     * jamais au sachet visé, et cliquer un voisin ne le sélectionnait pas.
+     */
+    if (!geste.current.capture) {
+      if (geste.current.parcouru <= 6) return;
+      event.currentTarget.setPointerCapture(event.pointerId);
+      rail.current?.classList.add('carrousel-glisse');
+      geste.current.capture = true;
+    }
+
+    pos.current = Math.max(
+      0,
+      Math.min(boosters.length - 1, geste.current.pos0 - dx / ECART),
+    );
+    applique();
+  };
+
+  const onUp = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!geste.current.actif) return;
+    geste.current.actif = false;
+    // Sans glissement, rien à conclure : c'est un clic, le bouton s'en charge.
+    if (!geste.current.capture) return;
+
+    geste.current.capture = false;
+    event.currentTarget.releasePointerCapture?.(event.pointerId);
+    rail.current?.classList.remove('carrousel-glisse');
+
+    // On s'arrête sur un sachet, jamais entre deux.
+    const cible = Math.max(0, Math.min(boosters.length - 1, Math.round(pos.current)));
+    pos.current = cible;
+    applique();
+    const b = boosters[cible];
+    if (b) setSelected((actuel) => (b.id === actuel ? actuel : b.id));
+  };
+
+  const onKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (busy) return;
+    const pas = event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowRight' ? 1 : 0;
+    if (!pas) return;
+    event.preventDefault();
+    const b = boosters[Math.max(0, Math.min(boosters.length - 1, rang + pas))];
+    if (b) setSelected(b.id);
+  };
 
   // Les minuteries de l'animation doivent mourir avec le composant, sinon un
   // changement de page en cours d'ouverture déclencherait un setState fantôme.
@@ -267,16 +342,26 @@ export function BoosterOpening({
               <div
                 ref={rail}
                 className="carrousel"
-                onScroll={onScroll}
+                onPointerDown={onDown}
+                onPointerMove={onMove}
+                onPointerUp={onUp}
+                onPointerCancel={onUp}
+                onKeyDown={onKeyDown}
                 role="listbox"
                 aria-label="Choix du booster"
+                tabIndex={0}
               >
                 {boosters.map((b, i) => {
                   const actif = b.id === booster.id;
+                  const assise = place(i, rang);
                   return (
                     <div
                       key={b.id}
+                      ref={(el) => {
+                        cases.current[i] = el;
+                      }}
                       className={`carrousel-case ${actif ? 'carrousel-case-actif' : ''}`}
+                      style={assise}
                       role="option"
                       aria-selected={actif}
                     >
@@ -285,18 +370,25 @@ export function BoosterOpening({
                         className="carrousel-prise"
                         disabled={busy}
                         aria-label={`Choisir le booster ${b.name}`}
-                        onClick={() => !busy && !actif && centrer(i)}
+                        onClick={() => {
+                          // Un glissement se termine aussi par un clic : sans ce
+                          // garde-fou, faire tourner la rangée sélectionnerait
+                          // le sachet sous le doigt au relâchement.
+                          if (busy || actif || geste.current.parcouru > 6) return;
+                          setSelected(b.id);
+                        }}
                       >
                         <div
                           className={`scene ${actif && phase === 'secousse' ? 'pack-shake' : ''} ${
                             actif && phase === 'eclat' ? 'pack-burst' : ''
                           }`}
                         >
-                          {/* Le sachet centré tourne librement : on le prend, on
-                              le retourne, on regarde ses tranches. L'ouverture
-                              se déclenche par le bouton, jamais par le clic sur
-                              le sachet — sinon chaque tentative de le faire
-                              pivoter dépenserait des flocons. */}
+                          {/* Le sachet du centre tourne sur lui-même pour
+                              montrer son verso, mais ne capte pas le pointeur :
+                              le glissement horizontal appartient à la rangée.
+                              L'ouverture passe par le bouton, jamais par le clic
+                              sur le sachet — sinon la moindre manipulation
+                              dépenserait des flocons. */}
                           <BoosterPack3D
                             name={b.name}
                             cardCount={boosterSize(b)}
@@ -304,18 +396,12 @@ export function BoosterOpening({
                             art={boosterArt(b.id)}
                             frozen={busy}
                             vignette={!actif}
+                            inerte
                           />
                           {actif && phase === 'eclat' && (
                             <span className="shockwave" aria-hidden="true" />
                           )}
                         </div>
-                        {/* Nom et prix ne servent qu'aux voisins : pour le
-                            sachet centré, ils sont déjà au-dessus de la scène
-                            et sur le bouton d'ouverture. */}
-                        <span className="carrousel-etiquette">
-                          <span className="carrousel-nom">{b.name}</span>
-                          <span className="num carrousel-prix">❄ {flakes(b.finalPrice)}</span>
-                        </span>
                       </button>
                     </div>
                   );
