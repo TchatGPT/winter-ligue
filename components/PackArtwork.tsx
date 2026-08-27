@@ -15,12 +15,12 @@
 /**
  * Le repère du dessin.
  *
- * Il suit le ratio de la planche détourée (1295 × 2142, soit 1:1,654) : le SVG
+ * Il suit le ratio de la planche détourée (1258 × 2139, soit 1:1,700) : le SVG
  * est tracé en `preserveAspectRatio="none"`, donc tout écart se paierait en
  * étirement du massif et du cadre.
  */
 const W = 200;
-const H = 331;
+const H = 340;
 
 /** Hauteur du sertissage, en haut comme en bas. */
 const CRIMP = 26;

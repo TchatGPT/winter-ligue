@@ -6,12 +6,12 @@ import { PackArtwork } from './PackArtwork';
 /**
  * Dimensions d'affichage, en pixels.
  *
- * Elles suivent le ratio de la planche détourée — 1295 × 2142, soit **1:1,654**.
+ * Elles suivent le ratio de la planche détourée — 1258 × 2139, soit **1:1,700**.
  * Un booster du commerce est un peu plus élancé (1:1,75), mais c'est la planche
  * qui fait foi : l'écart se paierait en visages étirés.
  */
 const W = 200;
-const H = 331;
+const H = 340;
 
 /**
  * Demi-épaisseur du sachet en son point le plus gonflé.
@@ -45,6 +45,22 @@ const ROWS = [0, 0.034, 0.07, 0.115, 0.885, 0.93, 0.966, 1];
 
 /** Chevauchement des tuiles, pour que les coutures ne s'ouvrent pas. */
 const CHEV = 1.3;
+
+/**
+ * Marge de sécurité sur les fonds, en pixels de sachet.
+ *
+ * Les tuiles du pourtour débordent du sachet — leur chevauchement et la
+ * correction d'inclinaison les élargissent des deux côtés, y compris vers
+ * l'extérieur, là où il n'y a pas de voisine. Sans marge, elles échantillonnent
+ * au-delà de la planche, et `background-repeat: no-repeat` n'y laisse rien : on
+ * voyait le fond de page à travers, sous la forme d'un filet sombre courant le
+ * long des bords.
+ *
+ * Les fonds sont donc dessinés trois pixels plus grands que le sachet et
+ * recalés d'autant. Trois sur deux cents, soit un agrandissement d'un pour
+ * soixante-six : invisible.
+ */
+const MARGE = 3;
 
 const RAD = Math.PI / 180;
 const DEG = 180 / Math.PI;
@@ -574,7 +590,11 @@ export function BoosterPack3D({
               transform: `translateZ(${t.z.toFixed(2)}px) rotateY(${t.ry.toFixed(2)}deg) rotateX(${t.rx.toFixed(2)}deg)`,
               backgroundImage: couches.join(', '),
               backgroundSize: couches
-                .map((_, k) => (k === 0 ? `${LARGEUR_ECLAT}px ${H}px` : `${W}px ${H}px`))
+                .map((_, k) =>
+                  k === 0
+                    ? `${LARGEUR_ECLAT}px ${H + MARGE * 2}px`
+                    : `${W + MARGE * 2}px ${H + MARGE * 2}px`,
+                )
                 .join(', '),
               backgroundBlendMode: couches.map((_, k) => (k === 0 ? 'screen' : 'normal')).join(', '),
               // Seul le reflet bouge : sa position part de `--balayage`, les
@@ -582,8 +602,8 @@ export function BoosterPack3D({
               backgroundPosition: couches
                 .map((_, k) =>
                   k === 0
-                    ? `calc(var(--balayage) - ${t.left.toFixed(2)}px) ${(-t.top).toFixed(2)}px`
-                    : `${(-t.left).toFixed(2)}px ${(-t.top).toFixed(2)}px`,
+                    ? `calc(var(--balayage) - ${t.left.toFixed(2)}px) ${(-t.top - MARGE).toFixed(2)}px`
+                    : `${(-t.left - MARGE).toFixed(2)}px ${(-t.top - MARGE).toFixed(2)}px`,
                 )
                 .join(', '),
             }}
@@ -601,7 +621,7 @@ export function BoosterPack3D({
         // Les tuiles du verso sont retournées sur elles-mêmes : leur repère
         // horizontal est inversé. Sans ce décalage miroir, chaque tuile
         // redémarrerait le dégradé pour son compte et le maillage réapparaîtrait.
-        const px = (t.left + t.w - W).toFixed(2);
+        const px = t.left + t.w - W;
         return (
           <span
             key={`ar${i}`}
@@ -614,7 +634,11 @@ export function BoosterPack3D({
               transform: `translateZ(${(-t.z).toFixed(2)}px) rotateY(${(-t.ry).toFixed(2)}deg) rotateX(${(-t.rx).toFixed(2)}deg) rotateY(180deg)`,
               backgroundImage: couches.join(', '),
               backgroundSize: couches
-                .map((_, k) => (k === 0 ? `${LARGEUR_ECLAT}px ${H}px` : `${W}px ${H}px`))
+                .map((_, k) =>
+                  k === 0
+                    ? `${LARGEUR_ECLAT}px ${H + MARGE * 2}px`
+                    : `${W + MARGE * 2}px ${H + MARGE * 2}px`,
+                )
                 .join(', '),
               backgroundBlendMode: couches.map((_, k) => (k === 0 ? 'screen' : 'normal')).join(', '),
               // Le repère du verso est inversé : le reflet s'y ajoute au lieu de
@@ -623,8 +647,8 @@ export function BoosterPack3D({
               backgroundPosition: couches
                 .map((_, k) =>
                   k === 0
-                    ? `calc(${px}px + var(--balayage)) ${(-t.top).toFixed(2)}px`
-                    : `${px}px ${(-t.top).toFixed(2)}px`,
+                    ? `calc(${px.toFixed(2)}px + var(--balayage)) ${(-t.top - MARGE).toFixed(2)}px`
+                    : `${(px - MARGE).toFixed(2)}px ${(-t.top - MARGE).toFixed(2)}px`,
                 )
                 .join(', '),
             }}

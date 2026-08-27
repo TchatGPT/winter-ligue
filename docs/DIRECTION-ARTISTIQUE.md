@@ -187,8 +187,8 @@ autres, l'écart est net.
 
 | | |
 |---|---|
-| Format | **vertical, ratio 1:1,774** — celui d'un booster du commerce (67 × 117 mm) |
-| Résolution | 760 × 1348 |
+| Format | **vertical, ratio 1:1,700** — celui de la découpe des quatre planches |
+| Résolution | 760 × 1292 |
 | Livraison | JPEG qualité 90 ou WebP 84, moins de 250 Ko |
 | Nom du fichier | l'identifiant du booster : `givre`, `blizzard`, `aurore`, `solstice` |
 | Emplacement | `public/boosters/` |
@@ -249,12 +249,20 @@ l'historique d'ouverture et dans le grand livre.
 | `aurore` — **Hors-Piste** | un opérateur à ski dans une pente vierge, gerbe de neige, sommet au fond | `SUPER RARE` |
 | `solstice` — **Everest** | un sommet gagné, drapeau planté, la brume en contrebas | `ULTRA RARE` |
 
-Les quatre partagent une découpe identique — même boîte de 1297 × 2139 dans la planche
-source — parce que le générateur rend toujours le même placement. C'est ce qui garantit
-qu'elles ont exactement le même gabarit, le composant n'ayant qu'un seul ratio pour
-tous. Pour une cinquième planche, reprends cette boîte et vérifie seulement les bords au
-pixel : sur `solstice`, le bord gauche tombait à 207 au lieu de 203, et la boîte a été
-décalée de deux pixels sans changer de taille.
+Les quatre partagent une découpe identique — même boîte de 1258 × 2139 dans la
+planche source — parce que le générateur rend toujours le même placement. C'est ce
+qui garantit qu'elles ont exactement le même gabarit, le composant n'ayant qu'un seul
+ratio pour tous.
+
+**La boîte est rentrée d'environ 25 px sous le bord du sachet**, et c'est important.
+Le générateur peint un liseré sombre le long du film, sur une vingtaine de pixels. Le
+garder plaçait un trait noir vertical de chaque côté du sachet à l'écran — un défaut
+qui ressemblait à s'y méprendre à un artefact de rendu, et qui a coûté plusieurs
+fausses pistes avant qu'on ne le cherche dans l'image elle-même.
+
+Pour une planche supplémentaire, reprends cette boîte et vérifie la luminance moyenne
+des colonnes de bord du fichier produit : elle doit rester dans la plage du centre. Si
+elle est nettement plus basse, le liseré est encore dedans.
 
 ### Si le générateur rend le sachet de trois quarts
 
