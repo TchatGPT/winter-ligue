@@ -8,12 +8,13 @@
  * soixante degrés, l'angle du réseau hexagonal de la glace. C'est cet angle
  * qu'on reconnaît.
  */
-const fs = require('fs');
-const path = require('path');
+import { readFileSync, writeFileSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 /* Depuis la racine du dépôt : le script écrit dans la feuille de style et
    dans le composant, il doit pouvoir être rejoué après un changement de
    paramètre sans rien casser — il retire son propre bloc avant de le reposer. */
-const R = path.resolve(__dirname, '..') + '/';
+const R = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..') + '/';
 
 /* Le dessin est fait aux dimensions d'une tuile : à cette taille, les fougères
    gardent la finesse qu'on leur a donnée au lieu d'être réduites en filaments. */
@@ -154,19 +155,19 @@ const regle = `
   }
 `;
 
-let c = fs.readFileSync(R + 'app/globals.css', 'utf8');
+let c = readFileSync(R + 'app/globals.css', 'utf8');
 const ancre = "  /* La réflexion appuyée, pour les plaques qu'on veut voir briller. */";
 const debut = c.indexOf('  /* -- Le givre des tuiles');
 if (debut >= 0) c = c.slice(0, debut) + c.slice(c.indexOf(ancre, debut));
 if (!c.includes(ancre)) throw new Error('ancre introuvable');
 c = c.replace(ancre, regle + '\n' + ancre);
-fs.writeFileSync(R + 'app/globals.css', c);
+writeFileSync(R + 'app/globals.css', c);
 
 const p = R + 'components/ui.tsx';
-let t = fs.readFileSync(p, 'utf8');
+let t = readFileSync(p, 'utf8');
 const de = '<div className="glass flex flex-col px-4 py-3.5 sm:px-5 sm:py-4">';
 const vers = '<div className="glass glass-givre flex flex-col px-4 py-3.5 sm:px-5 sm:py-4">';
 if (!t.includes(de) && !t.includes(vers)) throw new Error('StatTile introuvable');
-fs.writeFileSync(p, t.split(de).join(vers));
+writeFileSync(p, t.split(de).join(vers));
 
 console.log('givre posé — ' + Math.round(encode(dessin(21)).length / 1024) + ' Ko de tracé');
