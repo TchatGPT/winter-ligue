@@ -68,8 +68,14 @@
   /* -- Texte ------------------------------------------------------------- */
   --ink: #eaf3fc;
   --ink-2: #b3c8de;
-  --muted: #8ba4bf;
-  --faint: #63799a;
+  /* Le gris secondaire et le gris tertiaire ont ete remontes.
+
+     Ils etaient deja limites avant le decor : mesures sur la page, les
+     sous-titres en --faint tombaient a 4,0:1 la ou il en faut 4,5. Poses sur
+     une montagne, ils passaient sous 3,6. Ce n est pas le decor qui les a
+     casses, il les a reveles. */
+  --muted: #9cb4ce;
+  --faint: #7f97b6;
 
   /* -- Raretés : froid pour le banal, chaud pour le convoité ------------- */
   --r-c: #9fb4c9;
@@ -1465,18 +1471,68 @@
      crêtes traversaient le tableau de classement : illisible. Les montagnes
      occupent maintenant le bas de l'écran, en retrait, et s'effacent vers le
      haut pour ne jamais concurrencer le contenu. */
+  /* Le decor occupe tout l ecran : c est le fond du site, pas une bande. */
   .mountains {
     position: fixed;
-    right: 0;
-    bottom: 0;
-    left: 0;
+    inset: 0;
     z-index: 0;
-    height: clamp(200px, 34vh, 420px);
     overflow: hidden;
     pointer-events: none;
-    opacity: 0.62;
-    mask-image: linear-gradient(to bottom, transparent 0%, rgb(0 0 0 / 0.45) 38%, #000 100%);
-    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, rgb(0 0 0 / 0.45) 38%, #000 100%);
+  }
+
+  /* Le massif.
+
+     Cale en bas et agrandi jusqu a ce que le sommet vienne toucher le haut de
+     la page. C est la seule position ou les cretes passent derriere les
+     panneaux de verre — plus bas, le contenu les recouvre entierement et le
+     verre n a de nouveau plus rien a refracter.
+
+     Le leger flou fait deux choses a la fois : il eloigne le decor, qui cesse
+     de rivaliser avec le contenu, et il adoucit l agrandissement — la planche
+     source ne fait que 860 pixels de large, elle est etiree bien au-dela.
+
+     Le masque dissout la base. La photo est detouree sur une brume qui se
+     termine par une arete horizontale nette : posee telle quelle, elle
+     dessine une etagere en travers du site. */
+  .mt-massif {
+    position: absolute;
+    inset: -4%;
+    background-image: url(/fond/massif.webp);
+    background-repeat: no-repeat;
+    background-position: 50% 100%;
+    /* Calé sur la hauteur, avec du ciel au-dessus du sommet.
+
+       `cover` mangeait le sommet : la planche est trois fois et demie plus large
+       que haute, la faire couvrir en largeur la fait déborder par le haut. À
+       92 % de la hauteur, il frôle le bord sans jamais être coupé. */
+    background-size: auto 92%;
+    filter: blur(3.5px);
+    mask-image: linear-gradient(to bottom, #000 0%, #000 54%, rgb(0 0 0 / 0.5) 78%, transparent 96%);
+  }
+
+  /* Sur un écran étroit, la planche est calée sur la largeur.
+
+     La caler sur la hauteur comme sur un ordinateur reviendrait à n'en montrer
+     qu'un quatorzième : on ne verrait plus une montagne mais un pan de roche
+     agrandi douze fois. Elle redevient donc une chaîne posée en bas de page,
+     ce qui est sa forme naturelle. */
+  @media (max-width: 900px) {
+    .mt-massif {
+      background-position: 50% 96%;
+      background-size: 560% auto;
+    }
+  }
+  /* Le voile, sans lequel le site n est pas lisible. Voir . */
+  .mt-voile {
+    position: absolute;
+    inset: 0;
+    background-image: linear-gradient(
+      180deg,
+      rgb(3 7 17 / 0.9) 0%,
+      rgb(3 7 17 / 0.8) 24%,
+      rgb(4 10 22 / 0.72) 52%,
+      rgb(3 7 17 / 0.82) 100%
+    );
   }
 
   .mt-far,
