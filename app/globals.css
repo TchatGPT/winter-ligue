@@ -437,19 +437,140 @@
     cursor: not-allowed;
   }
 
+  /* Le bouton principal : une pastille de verre, pas un aplat bleu.
+
+     La version précédente peignait un dégradé opaque à 95 %, ce qui annulait
+     purement et simplement le `backdrop-filter` hérité de `.btn` — il ne
+     restait aucun verre dans le bouton de verre. Le fond est donc redescendu
+     autour de 0,74 d'opacité : assez transparent pour que le panneau et
+     l'aurore transparaissent et se déforment derrière, assez couvrant pour que
+     le texte sombre garde un contraste de 5,6:1.
+
+     Le reste est ce qui distingue le verre du plastique :
+
+     - une arête spéculaire vive en haut, et une seconde, quatre fois plus
+       faible, en bas — la lumière qui remonte du fond fait toujours briller le
+       bord opposé, et c'est son absence qui donne l'air imprimé ;
+     - une ombre interne remontant du bas, qui donne son épaisseur à la pastille ;
+     - une lentille claire sur la moitié haute, la même que sur une goutte ;
+     - une lueur portée froide, très étalée, qui décolle le bouton du panneau.
+
+     Aucune animation au repos. Le sachet respire déjà juste au-dessus : deux
+     objets qui bougent en même temps dans la même colonne, et le regard ne sait
+     plus lequel regarder. La lumière ne traverse le bouton qu'au survol. */
   .btn-ice {
-    background: linear-gradient(158deg, rgb(143 220 255 / 0.95), rgb(28 138 194 / 0.9));
-    border-color: rgb(190 235 255 / 0.5);
-    color: #02121d;
-    text-shadow: 0 1px 0 rgb(255 255 255 / 0.3);
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    border-color: rgb(216 244 255 / 0.55);
+    background: linear-gradient(
+      177deg,
+      rgb(186 236 255 / 0.82) 0%,
+      rgb(126 205 242 / 0.74) 44%,
+      rgb(46 156 209 / 0.76) 100%
+    );
+    backdrop-filter: blur(22px) saturate(190%);
+    -webkit-backdrop-filter: blur(22px) saturate(190%);
+    color: #032235;
+    text-shadow: 0 1px 0 rgb(255 255 255 / 0.42);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.78),
+      inset 0 -1px 0 rgb(255 255 255 / 0.2),
+      inset 0 -12px 20px -14px rgb(3 34 53 / 0.6),
+      0 10px 26px -10px rgb(8 96 145 / 0.55),
+      0 0 34px -8px rgb(143 220 255 / 0.4);
+  }
+
+  /* La lentille du haut. `z-index: -1` la place au-dessus du fond du bouton et
+     au-dessous de son texte — c'est l'ordre de peinture d'un contexte
+     d'empilement, que `isolation` garantit ici. */
+  .btn-ice::before {
+    content: '';
+    position: absolute;
+    inset: 1px 1px auto;
+    height: 54%;
+    border-radius: 999px 999px 60% 60% / 999px 999px 22% 22%;
+    background: linear-gradient(
+      180deg,
+      rgb(255 255 255 / 0.5) 0%,
+      rgb(255 255 255 / 0.14) 46%,
+      rgb(255 255 255 / 0) 100%
+    );
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  /* La lumière qui traverse, au survol seulement. */
+  .btn-ice::after {
+    content: '';
+    position: absolute;
+    top: -20%;
+    bottom: -20%;
+    left: -60%;
+    width: 45%;
+    background: linear-gradient(
+      104deg,
+      rgb(255 255 255 / 0) 0%,
+      rgb(255 255 255 / 0.34) 50%,
+      rgb(255 255 255 / 0) 100%
+    );
+    transform: translateX(0);
+    opacity: 0;
+    pointer-events: none;
+    z-index: -1;
   }
 
   .btn-ice:hover:not(:disabled) {
-    background: linear-gradient(158deg, rgb(180 235 255 / 1), rgb(51 165 220 / 0.95));
-    color: #02121d;
+    border-color: rgb(233 250 255 / 0.72);
+    color: #032235;
+    background: linear-gradient(
+      177deg,
+      rgb(206 244 255 / 0.88) 0%,
+      rgb(146 217 248 / 0.8) 44%,
+      rgb(58 173 226 / 0.82) 100%
+    );
     box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / 0.5),
-      0 8px 30px rgb(69 189 240 / 0.35);
+      inset 0 1px 0 rgb(255 255 255 / 0.9),
+      inset 0 -1px 0 rgb(255 255 255 / 0.26),
+      inset 0 -12px 20px -14px rgb(3 34 53 / 0.5),
+      0 14px 34px -10px rgb(8 96 145 / 0.6),
+      0 0 46px -6px rgb(143 220 255 / 0.55);
+  }
+
+  .btn-ice:hover:not(:disabled)::after {
+    opacity: 1;
+    animation: btn-ice-reflet 0.9s cubic-bezier(0.34, 0, 0.4, 1);
+  }
+
+  @keyframes btn-ice-reflet {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(600%);
+    }
+  }
+
+  /* Désactivé, le verre ne s'éteint pas : il se dépolit. Une simple opacité à
+     0,4 le rendait sale — on voyait le panneau au travers d'un voile gris. */
+  .btn-ice:disabled {
+    opacity: 1;
+    border-color: rgb(150 185 210 / 0.24);
+    background: linear-gradient(
+      177deg,
+      rgb(152 178 200 / 0.2) 0%,
+      rgb(110 138 165 / 0.18) 100%
+    );
+    color: rgb(180 205 226 / 0.5);
+    text-shadow: none;
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.14),
+      inset 0 -10px 18px -14px rgb(3 20 34 / 0.5);
+  }
+
+  .btn-ice:disabled::before,
+  .btn-ice:disabled::after {
+    opacity: 0;
   }
 
   .btn-gold {
@@ -2260,6 +2381,13 @@
     .sachet-eclat::before {
       animation-duration: var(--duree-reflet) !important;
       animation-iteration-count: infinite !important;
+    }
+
+    /* Le reflet du bouton, lui, ne reprend pas : il n'apparaît qu'au survol,
+       et une lumière qui file en travers d'une cible qu'on vise est
+       exactement ce que ce réglage demande de ne pas faire. */
+    .btn-ice::after {
+      animation: none !important;
     }
 
     .sachet-lueur {
