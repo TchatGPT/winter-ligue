@@ -30,8 +30,8 @@ const RATIO = 1.545;
  * long du sachet. La couleur du booster est portée par le halo, pas par la
  * lumière qui le traverse.
  *
- * Il ne bouge pas tout seul : sa position vient de `--balayage`, animée sur le
- * sachet.
+ * Il ne bouge pas tout seul : il est porté par une bande que `app/globals.css`
+ * fait traverser le sachet, puis attendre quelques secondes.
  */
 const ECLAT = `linear-gradient(102deg,
   rgb(255 255 255 / 0) 0%,
@@ -43,17 +43,30 @@ const ECLAT = `linear-gradient(102deg,
   rgb(255 255 255 / 0) 100%)`;
 
 /**
- * Largeur du calque de reflet.
+ * Le rythme du reflet, par rareté garantie.
  *
- * Plus du double du sachet, et c'est le point : le dégradé le recouvre alors
- * entièrement quelle que soit sa position, et son déplacement se lit comme une
- * lumière qui parcourt toute la surface. Une version antérieure tenait dans la
- * largeur du sachet avec un cœur étroit — on ne voyait qu'une bande passer.
+ * Plus le booster est haut dans l'échelle, plus la lumière le traverse souvent
+ * et plus elle est franche. C'est le seul signal continu qui distingue les
+ * quatre sachets une fois qu'ils sont alignés : la couleur de la lueur dit
+ * laquelle, la fréquence du reflet dit combien.
  *
- * En pour cent, depuis que la taille vient de la rangée : le reflet doit garder
- * la même allure sur un sachet de 210 pixels et sur un de 140.
+ * La durée est celle du **cycle entier** — la traversée en occupe un peu moins
+ * de la moitié, le reste est un temps mort. Un reflet perpétuel ne se remarque
+ * plus ; c'est l'attente qui en fait un évènement.
+ *
+ * La force est une opacité, donc plafonnée à 1 : l'échelle monte jusque-là au
+ * lieu de la dépasser. Une première version culminait à 1,3 pour les deux
+ * raretés les plus hautes, et le navigateur ramenait les deux à 1 — elles
+ * brillaient exactement pareil.
  */
-const LARGEUR_ECLAT = 220;
+const REFLET: Record<string, { duree: string; force: string }> = {
+  C: { duree: '13s', force: '0.55' },
+  PC: { duree: '11.5s', force: '0.65' },
+  R: { duree: '10s', force: '0.75' },
+  SR: { duree: '8.5s', force: '0.85' },
+  UR: { duree: '7.5s', force: '0.93' },
+  L: { duree: '6.5s', force: '1' },
+};
 
 /** La rareté garantie du booster donne sa couleur au halo. */
 const GEMME: Record<string, string> = {
@@ -141,7 +154,8 @@ export function BoosterPack3D({
         ['--p2' as string]: gradient[1],
         ['--eclat' as string]: ECLAT,
         ['--gemme' as string]: GEMME[rarete ?? 'C'] ?? GEMME.C,
-        ['--largeur-eclat' as string]: `${LARGEUR_ECLAT}%`,
+        ['--duree-reflet' as string]: (REFLET[rarete ?? 'C'] ?? REFLET.C).duree,
+        ['--force-reflet' as string]: (REFLET[rarete ?? 'C'] ?? REFLET.C).force,
         // La planche sert trois fois : elle est le sachet, elle est sa lueur
         // floue, et elle découpe le reflet balayant. D'où la variable.
         ...(art ? { ['--planche' as string]: `url("${art}")` } : null),

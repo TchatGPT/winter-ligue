@@ -1,18 +1,5 @@
 @import 'tailwindcss';
 
-/**
- * Le balayage du reflet des sachets.
- *
- * Declaree comme une longueur, elle s'interpole : une propriete personnalisee
- * ordinaire s'animerait par sauts. Une seule animation, portee par le sachet,
- * entraine alors d'un bloc les cent quarante tuiles qui la lisent.
- */
-@property --balayage {
-  syntax: '<length-percentage>';
-  inherits: true;
-  initial-value: 0px;
-}
-
 
 /* ==========================================================================
    WINTER LIGUE — verre liquide
@@ -2097,15 +2084,41 @@
   /* Le reflet balayant, pour les sachets qui n'ont pas de maillage — vignettes
      et repli dessiné. Sur la coque galbée, il est une couche de fond de plus
      sur chaque tuile : voir `BoosterPack3D`. */
+  /* La boîte du reflet : elle ne bouge pas, elle découpe.
+
+     C'est la bande à l'intérieur qui traverse. La distinction compte : le
+     masque qui donne au reflet la forme du sachet doit rester calé sur le
+     sachet, alors que la lumière, elle, doit le parcourir de bout en bout. Les
+     deux sur le même élément, et le masque partirait avec la lumière. */
   .sachet-eclat {
     position: absolute;
     inset: 0;
+    overflow: hidden;
     pointer-events: none;
-    background-image: var(--eclat);
-    background-size: var(--largeur-eclat, 220%) 100%;
     mix-blend-mode: screen;
-    background-repeat: no-repeat;
-    background-position: var(--balayage) 0;
+  }
+
+  /* La bande lumineuse.
+
+     Une version précédente déplaçait un `background-position` exprimé en
+     pour cent. C'était une erreur de nature : un pourcentage de
+     `background-position` n'est pas un décalage, c'est un alignement
+     proportionnel — le point situé à X % de l'image se cale sur le point situé
+     à X % de la boîte. La lumière n'avançait donc presque pas, et l'aller-retour
+     la faisait osciller sur place au lieu de traverser.
+
+     Une translation, elle, est une translation. */
+  .sachet-eclat::before {
+    content: '';
+    position: absolute;
+    top: -8%;
+    bottom: -8%;
+    left: -72%;
+    width: 60%;
+    background-image: var(--eclat);
+    opacity: var(--force-reflet, 1);
+    animation: sachet-balayage var(--duree-reflet, 10s) linear infinite;
+    animation-delay: var(--retard, 0s);
   }
 
   /* Sur une planche détourée, le reflet doit être découpé à sa forme : sans
@@ -2134,11 +2147,12 @@
     --amplitude-levite: 9px;
     --pivot-levite: 2deg;
     --duree-levite: 4.6s;
-    --duree-reflet: 7.5s;
-    animation:
-      sachet-levite var(--duree-levite) ease-in-out infinite alternate,
-      sachet-balayage var(--duree-reflet) ease-in-out infinite alternate;
-    animation-delay: var(--retard, 0s), var(--retard, 0s);
+    /* Le reflet est porté par son propre calque, pas par le sachet : les deux
+       animations ne se disputent plus une même liste, et `transform` reste
+       entièrement à la lévitation. Sa durée, elle, vient de la scène — elle
+       dépend de la rareté du booster, que seul le composant connaît. */
+    animation: sachet-levite var(--duree-levite) ease-in-out infinite alternate;
+    animation-delay: var(--retard, 0s);
   }
 
   /* Les voisins lévitent aussi, plus lentement et de moins haut : un présentoir
@@ -2156,19 +2170,35 @@
 
      L'aller-retour est indispensable avec un calque aussi large : en boucle, le
      retour au point de départ serait un saut de lumière bien visible. */
+  /* Une traversée, puis l'attente.
+
+     La bande part entièrement à gauche du sachet et va se perdre entièrement à
+     sa droite : 300 % de sa propre largeur, soit 180 % de celle du sachet. Le
+     trajet occupe un peu moins de la moitié du cycle, le reste est un temps
+     mort — c'est lui qui fait de ce reflet un évènement qui revient, et non un
+     balayage perpétuel dont l'œil finit par ne plus rien voir.
+
+     La durée du cycle vient de la rareté garantie du booster : voir `REFLET`
+     dans `components/BoosterPack3D.tsx`. Sur un sachet commun la traversée
+     dure six secondes et revient toutes les treize ; sur le plus rare, trois
+     secondes toutes les six et demie. */
   @keyframes sachet-balayage {
-    from {
-      --balayage: -120%;
+    0%,
+    5% {
+      transform: translateX(0);
+      animation-timing-function: cubic-bezier(0.38, 0, 0.5, 1);
     }
-    to {
-      --balayage: -10%;
+    52%,
+    100% {
+      transform: translateX(300%);
     }
   }
 
   /* Pendant l'ouverture le sachet est secoué puis éclate : sa lévitation
-     entrerait en concurrence avec ces deux animations sur la même propriété. */
+     entrerait en concurrence avec ces animations sur la même propriété. Le
+     reflet, lui, continue — il vit sur son propre calque. */
   .sachet-fige {
-    animation: sachet-balayage var(--duree-reflet) ease-in-out infinite alternate;
+    animation: none;
   }
 
   /* Deux degrés, pas plus.
@@ -2220,7 +2250,13 @@
        `animation`, sinon le reflet hériterait de la durée de la lévitation. */
     .sachet {
       --amplitude-levite: 3px;
-      animation-duration: var(--duree-levite), var(--duree-reflet) !important;
+      --pivot-levite: 1deg;
+      animation-duration: var(--duree-levite) !important;
+      animation-iteration-count: infinite !important;
+    }
+
+    .sachet-eclat::before {
+      animation-duration: var(--duree-reflet) !important;
       animation-iteration-count: infinite !important;
     }
 
