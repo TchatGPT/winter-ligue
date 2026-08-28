@@ -380,60 +380,6 @@
 
 
 
-  /* -- Le givre à l'intérieur des tuiles ---------------------------------- */
-
-  /*
-   * Du givre pris sur la face interne de la plaque.
-   *
-   * Il vient des bords et meurt au centre. C'est la seule disposition qui se
-   * lise comme du givre : sur une vitre froide, la glace part du cadre, qui est
-   * le point le plus froid, et progresse vers le milieu sans jamais l'atteindre.
-   * Réparti uniformément, le même dessin ne serait qu'un voile sale.
-   *
-   * Le dégradé du masque est radial et reste transparent jusqu'au quart : il
-   * dégage franchement le centre, là où se trouvent le chiffre et son libellé.
-   *
-   * La texture est faite de deux bruits. Les **cristaux** — une turbulence
-   * seuillée par une table discrète, qui transforme un dégradé continu en
-   * plaques aux contours nets. Puis le **grésil**, fin et isotrope, qui casse
-   * leur régularité. Le seuil est le point important : sans lui, une
-   * turbulence ne donne qu'un voile gris uniforme, c'est-à-dire exactement ce
-   * qu'un givre n'est pas.
-   *
-   * Trois autres textures ont été essayées et rendues côte à côte avant de
-   * choisir : un bruit fractal seuillé, trop pâle ; une turbulence étirée en
-   * largeur, qui donnait des traînées horizontales ; et de grosses plaques
-   * floues, qui ressemblaient à de la buée. C'est la finesse du bruit, pas son
-   * intensité, qui décide si on lit de la glace ou de la saleté.
-   *
-   * La texture est calée en `background-size: cover` plutôt que répétée. Une
-   * tuile de statistique est petite ; répéter un motif dedans le ferait
-   * reconnaître immédiatement, et il n'y a pas assez de place pour que le
-   * raccord se perde.
-   */
-  .glass-givre::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    z-index: -1;
-    border-radius: inherit;
-    pointer-events: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='260' viewBox='0 0 420 260'%3E %3Cdefs%3E %3Cfilter id='cristaux' x='0' y='0' width='100%' height='100%'%3E %3CfeTurbulence type='turbulence' baseFrequency='0.05' numOctaves='4' seed='9'/%3E %3CfeColorMatrix type='matrix' values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 1.4 0 0 0 -0.3'/%3E %3CfeComponentTransfer%3E%3CfeFuncA type='table' tableValues='0 0.12 0.45 0.8 1'/%3E%3C/feComponentTransfer%3E %3C/filter%3E %3Cfilter id='gresil' x='0' y='0' width='100%' height='100%'%3E %3CfeTurbulence type='fractalNoise' baseFrequency='0.5' numOctaves='2' seed='21'/%3E %3CfeColorMatrix type='matrix' values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 3 0 0 0 -1.9'/%3E %3C/filter%3E %3C/defs%3E %3Crect width='420' height='260' filter='url(%23cristaux)'/%3E %3Crect width='420' height='260' filter='url(%23gresil)' opacity='0.6'/%3E %3C/svg%3E");
-    background-size: cover;
-    background-position: center;
-    /* Le givre prend une teinte froide au lieu du blanc pur : de la glace sur
-       un panneau bleu nuit ne renvoie pas du blanc, elle renvoie le ciel. */
-    filter: blur(0.3px);
-    opacity: 1;
-    mask-image: radial-gradient(
-      120% 130% at 50% 50%,
-      transparent 0%,
-      transparent 26%,
-      rgb(0 0 0 / 0.55) 58%,
-      #000 100%
-    );
-  }
-
   /* La réflexion appuyée, pour les plaques qu'on veut voir briller. */
   .glass-reflet::before {
     background-image:
