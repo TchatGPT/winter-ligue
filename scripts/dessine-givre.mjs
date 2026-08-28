@@ -1,26 +1,43 @@
-/*
- * Pose les fougères de givre sur les tuiles de statistique.
+/**
+ * Dessine le givre du bas des tuiles, et l'écrit dans la feuille de style.
  *
- * Le dessin vient de `fougeres.cjs` : des dendrites tracées branche par branche,
- * pas une texture de bruit. Deux tentatives précédentes partaient d'une
- * turbulence SVG et donnaient des taches ; le givre de vitre est une géométrie,
- * pas un grain — une tige qui pousse depuis le bord froid et se ramifie à
- * soixante degrés, l'angle du réseau hexagonal de la glace. C'est cet angle
- * qu'on reconnaît.
+ *     node scripts/dessine-givre.mjs
+ *
+ * Le tracé est généré ici plutôt qu'écrit à la main : une image SVG en `data:`
+ * doit être encodée pour l'URL, et une erreur d'encodage ne se signale pas — la
+ * règle est simplement ignorée. Le script retire son propre bloc avant de le
+ * reposer, il peut donc être rejoué après un changement de paramètre.
+ *
+ * ## Ce qui est dessiné, et ce qui ne l'est pas
+ *
+ * Du **givre de profondeur** : une masse cristalline serrée au sol, et des
+ * prismes qui en sortent, effilés, de hauteurs très inégales.
+ *
+ * Deux versions antérieures se sont trompées de phénomène. La première partait
+ * d'une turbulence SVG — une turbulence fait des taches, et des taches claires
+ * sur un panneau sombre se lisent comme de la saleté. La seconde dessinait des
+ * fougères de givre de vitre, avec leur ramification à soixante degrés : c'est
+ * un beau motif, mais ce n'est pas ce qu'on voulait, et une fougère posée sur
+ * une carte ressemble à une plante.
+ *
+ * Un cristal de glace vu de côté est un **prisme**, pas un triangle. Son épaule
+ * est haute et large : les deux flancs restent presque parallèles sur presque
+ * toute la longueur, et la pointe ne prend que le dernier quart. Une épaule à
+ * mi-hauteur donne des triangles, et un champ de triangles se lit comme une
+ * rangée de dents.
  */
+
 import { readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-/* Depuis la racine du dépôt : le script écrit dans la feuille de style et
-   dans le composant, il doit pouvoir être rejoué après un changement de
-   paramètre sans rien casser — il retire son propre bloc avant de le reposer. */
+
 const R = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..') + '/';
 
-/* Le dessin est fait aux dimensions d'une tuile : à cette taille, les fougères
-   gardent la finesse qu'on leur a donnée au lieu d'être réduites en filaments. */
+/** Le dessin fait la largeur d'une tuile, et la hauteur de la bande givrée. */
 const L = 260;
-const H = 130;
+const H = 64;
 
+/** Un générateur reproductible : deux exécutions doivent rendre la même image. */
 function hasard(graine) {
   let x = graine >>> 0;
   return () => {
@@ -33,141 +50,140 @@ function hasard(graine) {
   };
 }
 
-function branche(traits, x, y, angle, longueur, niveau, rnd) {
-  if (longueur < 2.4 || niveau > 3) return;
-  const rad = (angle * Math.PI) / 180;
-  const x2 = x + Math.cos(rad) * longueur;
-  const y2 = y + Math.sin(rad) * longueur;
-  traits.push({
-    d: `M${x.toFixed(1)} ${y.toFixed(1)}L${x2.toFixed(1)} ${y2.toFixed(1)}`,
-    n: niveau,
-  });
-  const combien = niveau === 0 ? 5 : 3;
-  for (let i = 1; i <= combien; i += 1) {
-    const t = i / (combien + 1);
-    const px = x + Math.cos(rad) * longueur * t;
-    const py = y + Math.sin(rad) * longueur * t;
-    const fille = longueur * (0.52 - t * 0.22) * (0.8 + rnd() * 0.4);
-    for (const sens of [-1, 1]) {
-      branche(traits, px, py, angle + sens * (58 + rnd() * 8), fille, niveau + 1, rnd);
-    }
-  }
+const p = (a, b) => `${a.toFixed(1)} ${b.toFixed(1)}`;
+
+/** Un prisme de glace, posé sur le sol et pointant vers le haut. */
+function eclat(x, base, hauteur, penche, rnd) {
+  const sol = H + 4;
+  const dx = Math.tan((penche * Math.PI) / 180) * hauteur;
+  const ep = 0.72 + rnd() * 0.18;
+  const ey = sol - hauteur * ep;
+  const eb = base * (0.62 + rnd() * 0.26);
+  const ex = x + dx * ep;
+  const sx = x + dx + (rnd() - 0.5) * base * 0.4;
+  return {
+    corps:
+      `M${p(x - base / 2, sol)}L${p(ex - eb / 2, ey)}L${p(sx, sol - hauteur)}` +
+      `L${p(ex + eb / 2, ey)}L${p(x + base / 2, sol)}Z`,
+    // Une seule arête est éclairée : celle qui fait face à la lumière.
+    arete: `M${p(x - base / 2, sol)}L${p(ex - eb / 2, ey)}L${p(sx, sol - hauteur)}`,
+  };
 }
+
+/**
+ * Le lit.
+ *
+ * La masse dense d'où tout sort. Elle est dessinée à part et non laissée à
+ * l'accumulation des éclats : au ras du sol, une somme de transparences donne un
+ * gris moyen, alors qu'un banc de glace y est franchement clair.
+ */
+function lit(rnd) {
+  const sol = H + 4;
+  const points = [`M-8 ${sol}`];
+  for (let x = -8; x <= L + 8; x += 5 + rnd() * 7) {
+    points.push(`L${p(x, sol - 5 - rnd() * 9)}`);
+  }
+  points.push(`L${L + 8} ${sol}Z`);
+  return points.join('');
+}
+
+/*
+ * Trois rangs, du fond vers l'avant.
+ *
+ * Le fond est une foule de petits éclats serrés ; l'avant, quelques grands
+ * prismes francs. Sans cette gradation on obtient une haie régulière, pas un
+ * amas. La hauteur suit le carré d'un tirage uniforme : beaucoup de courts,
+ * quelques longs, sans avoir à le coder.
+ */
+const RANGS = [
+  { n: 150, hMin: 4, hMax: 16, base: [2.5, 6], opacite: 0.2, arete: 0.22 },
+  { n: 80, hMin: 7, hMax: 26, base: [3, 7], opacite: 0.24, arete: 0.36 },
+  { n: 34, hMin: 11, hMax: 40, base: [3.5, 8], opacite: 0.3, arete: 0.6 },
+];
 
 function dessin(graine) {
   const rnd = hasard(graine);
-  const traits = [];
-  const semer = (n, place, angle) => {
-    for (let i = 0; i < n; i += 1) {
-      if (rnd() < 0.24) continue;
-      const t = (i + 0.5) / n + (rnd() - 0.5) * 0.07;
-      const [x, y] = place(t);
+  const couches = RANGS.map((rang) => {
+    const corps = [];
+    const aretes = [];
+    for (let i = 0; i < rang.n; i += 1) {
+      const x = rnd() * (L + 24) - 12;
       const r = rnd();
-      const longueur = 8 + r * r * 30;
-      branche(traits, x, y, angle + (rnd() - 0.5) * 40, longueur, 0, rnd);
+      const hauteur = rang.hMin + r * r * (rang.hMax - rang.hMin);
+      const base = rang.base[0] + rnd() * (rang.base[1] - rang.base[0]);
+      const t = eclat(x, base, hauteur, (rnd() - 0.5) * 30, rnd);
+      corps.push(t.corps);
+      aretes.push(t.arete);
     }
-  };
-  semer(18, (t) => [t * L, -2], 90);
-  semer(18, (t) => [t * L, H + 2], -90);
-  semer(10, (t) => [-2, t * H], 0);
-  semer(10, (t) => [L + 2, t * H], 180);
+    return { corps: corps.join(''), aretes: aretes.join(''), ...rang };
+  });
 
   return (
     `<svg xmlns="http://www.w3.org/2000/svg" width="${L}" height="${H}" viewBox="0 0 ${L} ${H}">` +
-    '<g fill="none" stroke="%23ffffff" stroke-linecap="round">' +
-    // Un chemin par niveau de ramification, et non un par segment : le
-    // navigateur en dessine quatre au lieu de six mille, et la règle CSS pèse
-    // le quart. Les segments d'un même niveau partagent épaisseur et opacité,
-    // ils peuvent donc tenir dans un seul attribut `d`.
-    [0, 1, 2, 3]
-      .map((n) => {
-        const d = traits
-          .filter((t) => t.n === n)
-          .map((t) => t.d)
-          .join('');
-        if (!d) return '';
-        const w = Math.max(0.2, 0.62 - n * 0.15).toFixed(2);
-        const o = Math.max(0.14, 0.52 - n * 0.1).toFixed(2);
-        return `<path d="${d}" stroke-width="${w}" opacity="${o}"/>`;
-      })
-      .join('') +
+    `<path d="${lit(rnd)}" fill="%23ffffff" opacity="0.34"/>` +
+    couches.map((c) => `<path d="${c.corps}" fill="%23ffffff" opacity="${c.opacite}"/>`).join('') +
+    '<g fill="none" stroke="%23ffffff" stroke-width="0.7" stroke-linejoin="round">' +
+    couches.map((c) => `<path d="${c.aretes}" opacity="${c.arete}"/>`).join('') +
     '</g></svg>'
   );
 }
 
-const encode = (svg) =>
-  svg
-    .replace(/"/g, "'")
-    .replace(/</g, '%3C')
-    .replace(/>/g, '%3E');
+const encode = (svg) => svg.replace(/"/g, "'").replace(/</g, '%3C').replace(/>/g, '%3E');
 
 const regle = `
-  /* -- Le givre des tuiles ------------------------------------------------ */
+  /* -- Le givre du bas des tuiles ----------------------------------------- */
 
   /*
-   * Des fougères de givre prises sur la face interne de la plaque.
+   * Des cristaux de glace montant du bord inférieur.
    *
-   * Elles sont **dessinées**, branche par branche, et non tirées d'une texture.
-   * Deux versions antérieures partaient d'une turbulence SVG : une turbulence
-   * fait des taches, et des taches claires sur un panneau sombre se lisent comme
-   * de la saleté. Le givre de vitre n'est pas un grain, c'est une géométrie —
-   * une tige qui pousse depuis le bord froid et se ramifie à soixante degrés,
-   * l'angle du réseau hexagonal de la glace. C'est cet angle qu'on reconnaît,
-   * et aucun bruit ne le produit.
+   * Ils sont **dessinés**, prisme par prisme, et non tirés d'une texture. Voir
+   * \`scripts/dessine-givre.mjs\` pour ce qui distingue un cristal d'un triangle,
+   * et pourquoi une turbulence ne peut pas en tenir lieu.
    *
-   * Elles partent des quatre bords vers l'intérieur, parce que c'est le cadre
-   * qui est froid, et n'atteignent jamais le centre — là où se trouvent le
-   * chiffre et son libellé. Un semis sur quatre ne prend pas : ce sont les
-   * plages nues qui font croire à un phénomène plutôt qu'à un motif.
+   * La bande occupe le bas de la tuile et n'atteint jamais le chiffre : elle
+   * fait soixante-quatre pixels, quand la tuile en fait plus du double.
    */
   .glass-givre::after {
     content: '';
     position: absolute;
-    inset: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    height: 64px;
     z-index: -1;
-    border-radius: inherit;
     pointer-events: none;
-    background-image: url("data:image/svg+xml,${encode(dessin(21))}");
+    border-end-start-radius: inherit;
+    border-end-end-radius: inherit;
+    overflow: hidden;
+    background-image: url("data:image/svg+xml,${encode(dessin(19))}");
     background-size: 100% 100%;
     background-repeat: no-repeat;
-    opacity: 0.72;
-    /* Un souffle de flou : les traits font moins d'un pixel de large, et sans
-       lui ils scintillent d'un pixel à l'autre au redimensionnement. */
+    background-position: bottom;
+    /* Les arêtes font moins d'un pixel : sans ce souffle de flou, elles
+       scintillent d'un pixel à l'autre au redimensionnement. */
     filter: blur(0.25px);
   }
 
-  /* Quatre orientations pour un seul dessin.
-
-     Cinq tuiles alignées portant exactement le même givre, cela se remarque
-     immédiatement. Un retournement suffit à faire une variante — et un tracé
-     retourné reste du givre, là où un second dessin coûterait le double en
-     poids de feuille de style. */
-  .glass-givre:nth-child(4n + 2)::after {
+  /* Deux orientations pour un seul tracé : cinq tuiles alignées portant
+     exactement le même givre, cela se remarque immédiatement, et un tracé
+     retourné reste du givre. */
+  .glass-givre:nth-child(even)::after {
     transform: scaleX(-1);
-  }
-
-  .glass-givre:nth-child(4n + 3)::after {
-    transform: scaleY(-1);
-  }
-
-  .glass-givre:nth-child(4n)::after {
-    transform: scale(-1);
   }
 `;
 
 let c = readFileSync(R + 'app/globals.css', 'utf8');
 const ancre = "  /* La réflexion appuyée, pour les plaques qu'on veut voir briller. */";
-const debut = c.indexOf('  /* -- Le givre des tuiles');
+const debut = c.indexOf('  /* -- Le givre');
 if (debut >= 0) c = c.slice(0, debut) + c.slice(c.indexOf(ancre, debut));
 if (!c.includes(ancre)) throw new Error('ancre introuvable');
-c = c.replace(ancre, regle + '\n' + ancre);
-writeFileSync(R + 'app/globals.css', c);
+writeFileSync(R + 'app/globals.css', c.replace(ancre, regle + '\n' + ancre));
 
-const p = R + 'components/ui.tsx';
-let t = readFileSync(p, 'utf8');
+const composant = R + 'components/ui.tsx';
+let t = readFileSync(composant, 'utf8');
 const de = '<div className="glass flex flex-col px-4 py-3.5 sm:px-5 sm:py-4">';
 const vers = '<div className="glass glass-givre flex flex-col px-4 py-3.5 sm:px-5 sm:py-4">';
 if (!t.includes(de) && !t.includes(vers)) throw new Error('StatTile introuvable');
-writeFileSync(p, t.split(de).join(vers));
+writeFileSync(composant, t.split(de).join(vers));
 
-console.log('givre posé — ' + Math.round(encode(dessin(21)).length / 1024) + ' Ko de tracé');
+console.log(`givre posé — ${Math.round(encode(dessin(19)).length / 1024)} Ko de tracé`);
