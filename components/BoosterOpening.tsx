@@ -265,7 +265,7 @@ export function BoosterOpening({
       {error && <Notice kind="error">{error}</Notice>}
 
       {/* ------------------------- Scène 3D ------------------------------ */}
-      <div className="glass glass-reflet relative overflow-hidden">
+      <div className="glass glass-reflet glass-neige relative overflow-hidden">
         <div
           className="pointer-events-none absolute inset-0 opacity-60"
           style={{

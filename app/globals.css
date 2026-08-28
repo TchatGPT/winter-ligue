@@ -369,6 +369,54 @@
       var(--lift-3);
   }
 
+
+
+
+  /* -- La neige posée sur les plaques ------------------------------------- */
+
+  /*
+   * Une croûte de neige sur l'arête haute des grands panneaux.
+   *
+   * Elle déborde de quelques pixels sur les côtés et par le haut : de la neige
+   * qui s'arrêterait pile au bord se lirait comme une bordure dessinée. Ce
+   * léger débordement est tout ce qui la fait passer pour une accumulation
+   * posée là plutôt que pour un motif.
+   *
+   * Elle est réservée aux grands panneaux, et c'est une décision de dessin :
+   * une congère de la même épaisseur sur une vignette de statistique la fait
+   * passer pour un chalet. D'où une classe explicite plutôt qu'une règle sur
+   * toutes les plaques — la taille d'un élément n'est pas quelque chose qu'une
+   * feuille de style sait interroger sans imposer un confinement.
+   *
+   * Elle ne bouge pas. Une première version faisait tomber des gouttes : trois
+   * par motif, répétées tous les 320 px, elles formaient un chapelet de perles
+   * identiques le long du panneau — l'inverse de ce qu'on cherchait.
+   */
+  .glass-neige::after {
+    content: '';
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    left: -6px;
+    height: 40px;
+    z-index: -1;
+    pointer-events: none;
+    background-image:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='617' height='40' viewBox='0 0 617 40'%3E %3Cdefs%3E %3ClinearGradient id='n' x1='0' y1='0' x2='0' y2='1'%3E %3Cstop offset='0' stop-color='%23ffffff' stop-opacity='0.86'/%3E %3Cstop offset='0.22' stop-color='%23f4fbff' stop-opacity='0.66'/%3E %3Cstop offset='0.46' stop-color='%23cfe4f7' stop-opacity='0.3'/%3E %3Cstop offset='0.72' stop-color='%23b6d2ec' stop-opacity='0.09'/%3E %3Cstop offset='1' stop-color='%23b6d2ec' stop-opacity='0'/%3E %3C/linearGradient%3E %3ClinearGradient id='h' x1='0' y1='0' x2='0' y2='1'%3E %3Cstop offset='0' stop-color='%23ffffff' stop-opacity='0.9'/%3E %3Cstop offset='1' stop-color='%23ffffff' stop-opacity='0'/%3E %3C/linearGradient%3E %3Cfilter id='grain' x='-8%' y='-30%' width='116%' height='170%'%3E %3CfeTurbulence type='fractalNoise' baseFrequency='0.055 0.09' numOctaves='4' seed='23' result='bruit'/%3E %3CfeDisplacementMap in='SourceGraphic' in2='bruit' scale='7' xChannelSelector='R' yChannelSelector='G'/%3E %3C/filter%3E %3Cfilter id='assise' x='-12%' y='-40%' width='124%' height='200%'%3E %3CfeGaussianBlur stdDeviation='3.5'/%3E %3C/filter%3E %3C/defs%3E %3Cpath filter='url(%23assise)' fill='%23041020' opacity='0.34' d='M0,9 C22,3 46,7 70,5 C96,3 116,10 142,8 C170,6 190,2 218,5 C246,8 268,12 296,9 C324,6 344,2 372,5 C400,8 420,11 448,8 C476,5 496,3 524,6 C552,9 578,12 600,9 C610,8 614,8 617,9 L617,27 C602,32 580,26 556,29 C528,32 508,36 480,33 C452,30 432,23 404,26 C376,29 356,35 328,32 C300,29 280,22 252,25 C224,28 204,34 176,31 C148,28 128,21 100,24 C72,27 52,33 26,30 C14,28 6,25 0,26 Z' transform='translate(0 4)'/%3E %3Cg filter='url(%23grain)'%3E %3Cpath fill='url(%23n)' d='M0,9 C22,3 46,7 70,5 C96,3 116,10 142,8 C170,6 190,2 218,5 C246,8 268,12 296,9 C324,6 344,2 372,5 C400,8 420,11 448,8 C476,5 496,3 524,6 C552,9 578,12 600,9 C610,8 614,8 617,9 L617,27 C602,32 580,26 556,29 C528,32 508,36 480,33 C452,30 432,23 404,26 C376,29 356,35 328,32 C300,29 280,22 252,25 C224,28 204,34 176,31 C148,28 128,21 100,24 C72,27 52,33 26,30 C14,28 6,25 0,26 Z'/%3E %3Cpath fill='url(%23h)' d='M0,9 C22,3 46,7 70,5 C96,3 116,10 142,8 C170,6 190,2 218,5 C246,8 268,12 296,9 C324,6 344,2 372,5 C400,8 420,11 448,8 C476,5 496,3 524,6 C552,9 578,12 600,9 C610,8 614,8 617,9 L617,14 C602,15 580,13 556,10 C528,7 508,8 480,11 C452,14 432,16 404,13 C376,10 356,7 328,10 C300,13 280,17 252,14 C224,11 204,7 176,10 C148,13 128,16 100,13 C72,10 52,8 26,11 C14,12 6,14 0,14 Z'/%3E %3C/g%3E %3C/svg%3E"),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='40' viewBox='0 0 320 40'%3E %3Cdefs%3E %3ClinearGradient id='n' x1='0' y1='0' x2='0' y2='1'%3E %3Cstop offset='0' stop-color='%23ffffff' stop-opacity='0.86'/%3E %3Cstop offset='0.22' stop-color='%23f4fbff' stop-opacity='0.66'/%3E %3Cstop offset='0.46' stop-color='%23cfe4f7' stop-opacity='0.3'/%3E %3Cstop offset='0.72' stop-color='%23b6d2ec' stop-opacity='0.09'/%3E %3Cstop offset='1' stop-color='%23b6d2ec' stop-opacity='0'/%3E %3C/linearGradient%3E %3ClinearGradient id='h' x1='0' y1='0' x2='0' y2='1'%3E %3Cstop offset='0' stop-color='%23ffffff' stop-opacity='0.9'/%3E %3Cstop offset='1' stop-color='%23ffffff' stop-opacity='0'/%3E %3C/linearGradient%3E %3Cfilter id='grain' x='-8%' y='-30%' width='116%' height='170%'%3E %3CfeTurbulence type='fractalNoise' baseFrequency='0.055 0.09' numOctaves='4' seed='11' result='bruit'/%3E %3CfeDisplacementMap in='SourceGraphic' in2='bruit' scale='7' xChannelSelector='R' yChannelSelector='G'/%3E %3C/filter%3E %3Cfilter id='assise' x='-12%' y='-40%' width='124%' height='200%'%3E %3CfeGaussianBlur stdDeviation='3.5'/%3E %3C/filter%3E %3C/defs%3E %3Cpath filter='url(%23assise)' fill='%23041020' opacity='0.34' d='M0,10 C16,4 34,2 54,6 C72,10 88,3 110,3 C134,3 148,9 170,8 C192,7 208,1 232,4 C254,7 272,11 292,9 C304,8 314,7 320,8 L320,26 C306,31 292,25 274,27 C254,29 242,35 222,32 C202,29 190,22 170,24 C150,26 138,34 116,32 C96,30 84,21 64,23 C46,25 34,32 18,29 C10,27 4,23 0,24 Z' transform='translate(0 4)'/%3E %3Cg filter='url(%23grain)'%3E %3Cpath fill='url(%23n)' d='M0,10 C16,4 34,2 54,6 C72,10 88,3 110,3 C134,3 148,9 170,8 C192,7 208,1 232,4 C254,7 272,11 292,9 C304,8 314,7 320,8 L320,26 C306,31 292,25 274,27 C254,29 242,35 222,32 C202,29 190,22 170,24 C150,26 138,34 116,32 C96,30 84,21 64,23 C46,25 34,32 18,29 C10,27 4,23 0,24 Z'/%3E %3Cpath fill='url(%23h)' d='M0,10 C16,4 34,2 54,6 C72,10 88,3 110,3 C134,3 148,9 170,8 C192,7 208,1 232,4 C254,7 272,11 292,9 C304,8 314,7 320,8 L320,14 C306,13 304,14 292,15 C272,17 254,13 232,10 C208,7 192,13 170,14 C148,15 134,9 110,9 C88,9 72,16 54,12 C34,8 16,10 0,16 Z'/%3E %3C/g%3E %3C/svg%3E");
+    background-repeat: repeat-x, repeat-x;
+    background-size:
+      617px 40px,
+      320px 40px;
+    background-position:
+      137px 1px,
+      0 0;
+    /* Un demi-pixel de flou pour casser l'escalier des courbes sur les écrans
+       non densifiés. Aucune ombre portée : elle redessinerait exactement le
+       contour qu'on cherche à faire disparaître. */
+    filter: blur(0.5px);
+  }
+
   /* La réflexion appuyée, pour les plaques qu'on veut voir briller. */
   .glass-reflet::before {
     background-image:

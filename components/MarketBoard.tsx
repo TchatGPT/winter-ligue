@@ -343,7 +343,7 @@ export function MarketBoard({
           }
         />
       ) : (
-        <div className="glass scroll-x">
+        <div className="glass glass-neige scroll-x">
           <table className="grid-table min-w-[620px]">
             <thead>
               <tr>

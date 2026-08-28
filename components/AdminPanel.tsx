@@ -161,7 +161,7 @@ export function AdminPanel({
 
       <div className="grid gap-4 lg:grid-cols-2">
         {/* --------------------------- Saisir une game -------------------- */}
-        <section className="glass p-5">
+        <section className="glass glass-neige p-5">
           <h2 className="font-display text-lg font-black uppercase tracking-wide text-ice">
             Saisir une game
           </h2>
@@ -245,7 +245,7 @@ export function AdminPanel({
         </section>
 
         {/* ---------------------------- Inscription ----------------------- */}
-        <section className="glass p-5">
+        <section className="glass glass-neige p-5">
           <h2 className="font-display text-lg font-black uppercase tracking-wide text-ice">
             Inscrire un joueur
           </h2>
@@ -300,7 +300,7 @@ export function AdminPanel({
         </section>
 
         {/* ---------------------------- Attribution ----------------------- */}
-        <section className="glass p-5">
+        <section className="glass glass-neige p-5">
           <h2 className="font-display text-lg font-black uppercase tracking-wide text-ice">
             Attribuer flocons ou carte
           </h2>
@@ -401,7 +401,7 @@ export function AdminPanel({
         </section>
 
         {/* --------------------------- Carte Moment ----------------------- */}
-        <section className="glass p-5">
+        <section className="glass glass-neige p-5">
           <h2 className="font-display text-lg font-black tracking-wide text-ice uppercase">
             Graver un moment
           </h2>
@@ -492,7 +492,7 @@ export function AdminPanel({
         </section>
 
         {/* ------------------------------ Réglages ------------------------ */}
-        <section className="glass p-5">
+        <section className="glass glass-neige p-5">
           <h2 className="font-display text-lg font-black uppercase tracking-wide text-ice">
             Réglages de saison
           </h2>
@@ -656,7 +656,7 @@ function SubsPanel({
   const next = nextMilestone(config.totalSubs);
 
   return (
-    <section className="glass p-5">
+    <section className="glass glass-neige p-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h2 className="font-display text-lg font-black tracking-wide text-ice uppercase">

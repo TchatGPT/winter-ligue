@@ -177,7 +177,7 @@ export default async function MaCollectionPage() {
         <h2 className="mb-3 font-display text-xl font-black uppercase tracking-wide text-ink">
           Derniers mouvements de flocons
         </h2>
-        <div className="glass scroll-x">
+        <div className="glass glass-neige scroll-x">
           <table className="grid-table min-w-[420px]">
             <thead>
               <tr>

@@ -29,7 +29,7 @@ function Rule({
   children: React.ReactNode;
 }) {
   return (
-    <section className="glass p-5">
+    <section className="glass glass-neige p-5">
       <h2 className="font-display text-lg font-black tracking-wide text-ice uppercase">{title}</h2>
       {lead && <p className="mt-0.5 text-xs text-faint">{lead}</p>}
       <div className="mt-3 space-y-2.5 text-sm leading-relaxed text-muted">{children}</div>
