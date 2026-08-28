@@ -102,7 +102,7 @@ export default async function ProfilJoueurPage({ params }: { params: Promise<{ s
         {profile.games.length === 0 ? (
           <EmptyState title="Aucune game enregistrée" />
         ) : (
-          <div className="glass glass-neige scroll-x">
+          <div className="glass scroll-x">
             <table className="grid-table min-w-[640px]">
               <thead>
                 <tr>

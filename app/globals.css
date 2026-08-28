@@ -372,49 +372,71 @@
 
 
 
+
+
+
+
+
   /* -- La neige posée sur les plaques ------------------------------------- */
 
   /*
-   * Une croûte de neige sur l'arête haute des grands panneaux.
+   * Une croûte de neige sur l'arête haute des plaques du centre.
    *
-   * Elle déborde de quelques pixels sur les côtés et par le haut : de la neige
-   * qui s'arrêterait pile au bord se lirait comme une bordure dessinée. Ce
-   * léger débordement est tout ce qui la fait passer pour une accumulation
-   * posée là plutôt que pour un motif.
+   * `main` suffit à cadrer la portée : la colonne de gauche et le pied de page
+   * sont ailleurs dans l'ossature, et les cartes à collectionner ne sont pas des
+   * plaques de verre. Aucune classe à poser à la main, donc aucun panneau
+   * oublié.
    *
-   * Elle est réservée aux grands panneaux, et c'est une décision de dessin :
-   * une congère de la même épaisseur sur une vignette de statistique la fait
-   * passer pour un chalet. D'où une classe explicite plutôt qu'une règle sur
-   * toutes les plaques — la taille d'un élément n'est pas quelque chose qu'une
-   * feuille de style sait interroger sans imposer un confinement.
+   * Le corps est dessiné à partir de −16 dans le repère du motif, c'est-à-dire
+   * au-dessus du cadre. C'est ce qui bouche les trous : le `feDisplacementMap`
+   * qui donne son grain au contour déplaçait aussi le bord du haut, qui se
+   * décollait de l'arête et laissait voir le fond au travers. Hors du cadre, il
+   * n'y a plus de bord à décoller.
    *
-   * Elle ne bouge pas. Une première version faisait tomber des gouttes : trois
-   * par motif, répétées tous les 320 px, elles formaient un chapelet de perles
-   * identiques le long du panneau — l'inverse de ce qu'on cherchait.
+   * Elle chevauche l'arête : un tiers au-dessus, deux tiers dans la plaque. Une
+   * version précédente la posait presque entièrement au-dessus du panneau, et
+   * sur les petites tuiles alignées en grille les bandes voisines formaient un
+   * trait blanc continu qui flottait au-dessus de la rangée, détaché d'elle. Six
+   * pixels de recouvrement suffisent à la reposer dessus, et restent en deçà du
+   * rembourrage du plus serré des panneaux — donc jamais sur le texte.
+   *
+   * Deux calques, de 320 et 617 px. Un seul motif se répétait de façon très
+   * visible : le filtre est découpé à chaque tuile, et le contour granuleux se
+   * retrouvait tranché net à intervalle régulier. Deux largeurs premières entre
+   * elles ne font jamais coïncider leurs raccords.
    */
-  .glass-neige::after {
+  main .glass::after {
     content: '';
     position: absolute;
-    top: -6px;
-    right: -6px;
-    left: -6px;
-    height: 40px;
+    top: -12px;
+    right: -4px;
+    left: -4px;
+    height: 26px;
     z-index: -1;
     pointer-events: none;
     background-image:
-      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='617' height='40' viewBox='0 0 617 40'%3E %3Cdefs%3E %3ClinearGradient id='n' x1='0' y1='0' x2='0' y2='1'%3E %3Cstop offset='0' stop-color='%23ffffff' stop-opacity='0.86'/%3E %3Cstop offset='0.22' stop-color='%23f4fbff' stop-opacity='0.66'/%3E %3Cstop offset='0.46' stop-color='%23cfe4f7' stop-opacity='0.3'/%3E %3Cstop offset='0.72' stop-color='%23b6d2ec' stop-opacity='0.09'/%3E %3Cstop offset='1' stop-color='%23b6d2ec' stop-opacity='0'/%3E %3C/linearGradient%3E %3ClinearGradient id='h' x1='0' y1='0' x2='0' y2='1'%3E %3Cstop offset='0' stop-color='%23ffffff' stop-opacity='0.9'/%3E %3Cstop offset='1' stop-color='%23ffffff' stop-opacity='0'/%3E %3C/linearGradient%3E %3Cfilter id='grain' x='-8%' y='-30%' width='116%' height='170%'%3E %3CfeTurbulence type='fractalNoise' baseFrequency='0.055 0.09' numOctaves='4' seed='23' result='bruit'/%3E %3CfeDisplacementMap in='SourceGraphic' in2='bruit' scale='7' xChannelSelector='R' yChannelSelector='G'/%3E %3C/filter%3E %3Cfilter id='assise' x='-12%' y='-40%' width='124%' height='200%'%3E %3CfeGaussianBlur stdDeviation='3.5'/%3E %3C/filter%3E %3C/defs%3E %3Cpath filter='url(%23assise)' fill='%23041020' opacity='0.34' d='M0,9 C22,3 46,7 70,5 C96,3 116,10 142,8 C170,6 190,2 218,5 C246,8 268,12 296,9 C324,6 344,2 372,5 C400,8 420,11 448,8 C476,5 496,3 524,6 C552,9 578,12 600,9 C610,8 614,8 617,9 L617,27 C602,32 580,26 556,29 C528,32 508,36 480,33 C452,30 432,23 404,26 C376,29 356,35 328,32 C300,29 280,22 252,25 C224,28 204,34 176,31 C148,28 128,21 100,24 C72,27 52,33 26,30 C14,28 6,25 0,26 Z' transform='translate(0 4)'/%3E %3Cg filter='url(%23grain)'%3E %3Cpath fill='url(%23n)' d='M0,9 C22,3 46,7 70,5 C96,3 116,10 142,8 C170,6 190,2 218,5 C246,8 268,12 296,9 C324,6 344,2 372,5 C400,8 420,11 448,8 C476,5 496,3 524,6 C552,9 578,12 600,9 C610,8 614,8 617,9 L617,27 C602,32 580,26 556,29 C528,32 508,36 480,33 C452,30 432,23 404,26 C376,29 356,35 328,32 C300,29 280,22 252,25 C224,28 204,34 176,31 C148,28 128,21 100,24 C72,27 52,33 26,30 C14,28 6,25 0,26 Z'/%3E %3Cpath fill='url(%23h)' d='M0,9 C22,3 46,7 70,5 C96,3 116,10 142,8 C170,6 190,2 218,5 C246,8 268,12 296,9 C324,6 344,2 372,5 C400,8 420,11 448,8 C476,5 496,3 524,6 C552,9 578,12 600,9 C610,8 614,8 617,9 L617,14 C602,15 580,13 556,10 C528,7 508,8 480,11 C452,14 432,16 404,13 C376,10 356,7 328,10 C300,13 280,17 252,14 C224,11 204,7 176,10 C148,13 128,16 100,13 C72,10 52,8 26,11 C14,12 6,14 0,14 Z'/%3E %3C/g%3E %3C/svg%3E"),
-      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='40' viewBox='0 0 320 40'%3E %3Cdefs%3E %3ClinearGradient id='n' x1='0' y1='0' x2='0' y2='1'%3E %3Cstop offset='0' stop-color='%23ffffff' stop-opacity='0.86'/%3E %3Cstop offset='0.22' stop-color='%23f4fbff' stop-opacity='0.66'/%3E %3Cstop offset='0.46' stop-color='%23cfe4f7' stop-opacity='0.3'/%3E %3Cstop offset='0.72' stop-color='%23b6d2ec' stop-opacity='0.09'/%3E %3Cstop offset='1' stop-color='%23b6d2ec' stop-opacity='0'/%3E %3C/linearGradient%3E %3ClinearGradient id='h' x1='0' y1='0' x2='0' y2='1'%3E %3Cstop offset='0' stop-color='%23ffffff' stop-opacity='0.9'/%3E %3Cstop offset='1' stop-color='%23ffffff' stop-opacity='0'/%3E %3C/linearGradient%3E %3Cfilter id='grain' x='-8%' y='-30%' width='116%' height='170%'%3E %3CfeTurbulence type='fractalNoise' baseFrequency='0.055 0.09' numOctaves='4' seed='11' result='bruit'/%3E %3CfeDisplacementMap in='SourceGraphic' in2='bruit' scale='7' xChannelSelector='R' yChannelSelector='G'/%3E %3C/filter%3E %3Cfilter id='assise' x='-12%' y='-40%' width='124%' height='200%'%3E %3CfeGaussianBlur stdDeviation='3.5'/%3E %3C/filter%3E %3C/defs%3E %3Cpath filter='url(%23assise)' fill='%23041020' opacity='0.34' d='M0,10 C16,4 34,2 54,6 C72,10 88,3 110,3 C134,3 148,9 170,8 C192,7 208,1 232,4 C254,7 272,11 292,9 C304,8 314,7 320,8 L320,26 C306,31 292,25 274,27 C254,29 242,35 222,32 C202,29 190,22 170,24 C150,26 138,34 116,32 C96,30 84,21 64,23 C46,25 34,32 18,29 C10,27 4,23 0,24 Z' transform='translate(0 4)'/%3E %3Cg filter='url(%23grain)'%3E %3Cpath fill='url(%23n)' d='M0,10 C16,4 34,2 54,6 C72,10 88,3 110,3 C134,3 148,9 170,8 C192,7 208,1 232,4 C254,7 272,11 292,9 C304,8 314,7 320,8 L320,26 C306,31 292,25 274,27 C254,29 242,35 222,32 C202,29 190,22 170,24 C150,26 138,34 116,32 C96,30 84,21 64,23 C46,25 34,32 18,29 C10,27 4,23 0,24 Z'/%3E %3Cpath fill='url(%23h)' d='M0,10 C16,4 34,2 54,6 C72,10 88,3 110,3 C134,3 148,9 170,8 C192,7 208,1 232,4 C254,7 272,11 292,9 C304,8 314,7 320,8 L320,14 C306,13 304,14 292,15 C272,17 254,13 232,10 C208,7 192,13 170,14 C148,15 134,9 110,9 C88,9 72,16 54,12 C34,8 16,10 0,16 Z'/%3E %3C/g%3E %3C/svg%3E");
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='617' height='34' viewBox='0 -16 617 34'%3E %3Cdefs%3E %3ClinearGradient id='n' x1='0' y1='0' x2='0' y2='1'%3E %3Cstop offset='0' stop-color='%23eef7ff' stop-opacity='0.34'/%3E %3Cstop offset='0.26' stop-color='%23ffffff' stop-opacity='0.58'/%3E %3Cstop offset='0.5' stop-color='%23dfeefb' stop-opacity='0.34'/%3E %3Cstop offset='0.74' stop-color='%23bcd6ef' stop-opacity='0.1'/%3E %3Cstop offset='1' stop-color='%23b6d2ec' stop-opacity='0'/%3E %3C/linearGradient%3E %3ClinearGradient id='h' x1='0' y1='0' x2='0' y2='1'%3E %3Cstop offset='0.38' stop-color='%23ffffff' stop-opacity='0.6'/%3E %3Cstop offset='1' stop-color='%23ffffff' stop-opacity='0'/%3E %3C/linearGradient%3E %3Cfilter id='grain' x='-6%' y='-6%' width='112%' height='130%'%3E %3CfeTurbulence type='fractalNoise' baseFrequency='0.06 0.1' numOctaves='4' seed='23' result='bruit'/%3E %3CfeDisplacementMap in='SourceGraphic' in2='bruit' scale='6' xChannelSelector='R' yChannelSelector='G'/%3E %3C/filter%3E %3Cfilter id='assise' x='-8%' y='-8%' width='116%' height='150%'%3E %3CfeGaussianBlur stdDeviation='3'/%3E %3C/filter%3E %3C/defs%3E %3Cpath filter='url(%23assise)' fill='%23041020' opacity='0.26' d='M0,-16 L617,-16 L617,8 C602,13 580,7 556,10 C528,13 508,17 480,14 C452,11 432,4 404,7 C376,10 356,16 328,13 C300,10 280,3 252,6 C224,9 204,15 176,12 C148,9 128,2 100,5 C72,8 52,14 26,11 C14,9 6,6 0,7 Z' transform='translate(0 -5)'/%3E %3Cg filter='url(%23grain)' transform='translate(0 -9)'%3E %3Cpath fill='url(%23n)' d='M0,-16 L617,-16 L617,8 C602,13 580,7 556,10 C528,13 508,17 480,14 C452,11 432,4 404,7 C376,10 356,16 328,13 C300,10 280,3 252,6 C224,9 204,15 176,12 C148,9 128,2 100,5 C72,8 52,14 26,11 C14,9 6,6 0,7 Z'/%3E %3Cpath fill='url(%23h)' d='M0,-16 L617,-16 L617,-5 C602,-4 580,-6 556,-9 C528,-12 508,-11 480,-8 C452,-5 432,-3 404,-6 C376,-9 356,-12 328,-9 C300,-6 280,-2 252,-5 C224,-8 204,-12 176,-9 C148,-6 128,-3 100,-6 C72,-9 52,-11 26,-8 C14,-7 6,-5 0,-5 Z'/%3E %3C/g%3E %3C/svg%3E"),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='34' viewBox='0 -16 320 34'%3E %3Cdefs%3E %3ClinearGradient id='n' x1='0' y1='0' x2='0' y2='1'%3E %3Cstop offset='0' stop-color='%23eef7ff' stop-opacity='0.34'/%3E %3Cstop offset='0.26' stop-color='%23ffffff' stop-opacity='0.58'/%3E %3Cstop offset='0.5' stop-color='%23dfeefb' stop-opacity='0.34'/%3E %3Cstop offset='0.74' stop-color='%23bcd6ef' stop-opacity='0.1'/%3E %3Cstop offset='1' stop-color='%23b6d2ec' stop-opacity='0'/%3E %3C/linearGradient%3E %3ClinearGradient id='h' x1='0' y1='0' x2='0' y2='1'%3E %3Cstop offset='0.38' stop-color='%23ffffff' stop-opacity='0.6'/%3E %3Cstop offset='1' stop-color='%23ffffff' stop-opacity='0'/%3E %3C/linearGradient%3E %3Cfilter id='grain' x='-6%' y='-6%' width='112%' height='130%'%3E %3CfeTurbulence type='fractalNoise' baseFrequency='0.06 0.1' numOctaves='4' seed='11' result='bruit'/%3E %3CfeDisplacementMap in='SourceGraphic' in2='bruit' scale='6' xChannelSelector='R' yChannelSelector='G'/%3E %3C/filter%3E %3Cfilter id='assise' x='-8%' y='-8%' width='116%' height='150%'%3E %3CfeGaussianBlur stdDeviation='3'/%3E %3C/filter%3E %3C/defs%3E %3Cpath filter='url(%23assise)' fill='%23041020' opacity='0.26' d='M0,-16 L320,-16 L320,7 C306,12 292,6 274,8 C254,10 242,15 222,12 C202,9 190,3 170,5 C150,7 138,14 116,12 C96,10 84,2 64,4 C46,6 34,12 18,9 C10,7 4,4 0,5 Z' transform='translate(0 -5)'/%3E %3Cg filter='url(%23grain)' transform='translate(0 -9)'%3E %3Cpath fill='url(%23n)' d='M0,-16 L320,-16 L320,7 C306,12 292,6 274,8 C254,10 242,15 222,12 C202,9 190,3 170,5 C150,7 138,14 116,12 C96,10 84,2 64,4 C46,6 34,12 18,9 C10,7 4,4 0,5 Z'/%3E %3Cpath fill='url(%23h)' d='M0,-16 L320,-16 L320,-4 C306,-5 304,-4 292,-3 C272,-1 254,-5 232,-8 C208,-11 192,-5 170,-4 C148,-3 134,-9 110,-9 C88,-9 72,-2 54,-6 C34,-10 16,-8 0,-2 Z'/%3E %3C/g%3E %3C/svg%3E");
     background-repeat: repeat-x, repeat-x;
+    /* Le motif est écrasé de 34 à 26 pixels de haut : la masse s assied sur
+       l arête au lieu de la survoler, et n en mord que six a l interieur —
+       moins que le rembourrage du plus serré des panneaux. */
     background-size:
-      617px 40px,
-      320px 40px;
+      617px 26px,
+      320px 26px;
     background-position:
-      137px 1px,
+      137px 2px,
       0 0;
-    /* Un demi-pixel de flou pour casser l'escalier des courbes sur les écrans
-       non densifiés. Aucune ombre portée : elle redessinerait exactement le
-       contour qu'on cherche à faire disparaître. */
+    /* Un demi-pixel pour casser l'escalier des courbes. Aucune ombre portée en
+       CSS : elle redessinerait exactement le contour qu'on cherche à faire
+       oublier — l'assise est dans le dessin, floutée. */
     filter: blur(0.5px);
+  }
+
+  /* Les plaques qui rognent leur contenu ne peuvent pas laisser la neige
+     déborder : on la rentre, faute de mieux. */
+  main .glass.overflow-hidden::after {
+    top: -2px;
   }
 
   /* La réflexion appuyée, pour les plaques qu'on veut voir briller. */

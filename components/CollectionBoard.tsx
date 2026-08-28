@@ -182,7 +182,7 @@ export function CollectionBoard({
             hint="Choisis « Vendre » sur une carte de ta main pour la mettre aux enchères."
           />
         ) : (
-          <div className="glass glass-neige scroll-x">
+          <div className="glass scroll-x">
             <table className="grid-table min-w-[600px]">
               <thead>
                 <tr>
@@ -238,7 +238,7 @@ export function CollectionBoard({
           <h2 className="mb-3 font-display text-xl font-black uppercase tracking-wide text-ink">
             Enchères où je suis en tête
           </h2>
-          <div className="glass glass-neige scroll-x">
+          <div className="glass scroll-x">
             <table className="grid-table min-w-[480px]">
               <thead>
                 <tr>
