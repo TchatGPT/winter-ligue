@@ -2113,8 +2113,11 @@
     position: absolute;
     top: -8%;
     bottom: -8%;
-    left: -72%;
-    width: 60%;
+    /* Large, et posée entièrement hors du sachet au départ. Une bande étroite
+       ramenait ses deux bords à l'intérieur du sachet pendant la traversée, et
+       l'inclinaison du dégradé y laissait un trait vertical franc. */
+    left: -134%;
+    width: 120%;
     background-image: var(--eclat);
     opacity: var(--force-reflet, 1);
     animation: sachet-balayage var(--duree-reflet, 10s) linear infinite;
@@ -2173,24 +2176,23 @@
   /* Une traversée, puis l'attente.
 
      La bande part entièrement à gauche du sachet et va se perdre entièrement à
-     sa droite : 300 % de sa propre largeur, soit 180 % de celle du sachet. Le
-     trajet occupe un peu moins de la moitié du cycle, le reste est un temps
-     mort — c'est lui qui fait de ce reflet un évènement qui revient, et non un
+     sa droite : 200 % de sa propre largeur, soit 240 % de celle du sachet. Le
+     trajet occupe près des deux tiers du cycle, le reste est un temps mort — c'est lui qui fait de ce reflet un évènement qui revient, et non un
      balayage perpétuel dont l'œil finit par ne plus rien voir.
 
      La durée du cycle vient de la rareté garantie du booster : voir `REFLET`
-     dans `components/BoosterPack3D.tsx`. Sur un sachet commun la traversée
-     dure six secondes et revient toutes les treize ; sur le plus rare, trois
-     secondes toutes les six et demie. */
+     dans `components/BoosterPack3D.tsx`. Sur un sachet commun, le cœur lumineux
+     met quatre secondes et demie à parcourir le sachet et revient toutes les
+     dix-huit ; sur le plus rare, deux secondes et quart toutes les neuf. */
   @keyframes sachet-balayage {
     0%,
-    5% {
+    4% {
       transform: translateX(0);
-      animation-timing-function: cubic-bezier(0.38, 0, 0.5, 1);
+      animation-timing-function: cubic-bezier(0.36, 0, 0.52, 1);
     }
-    52%,
+    62%,
     100% {
-      transform: translateX(300%);
+      transform: translateX(200%);
     }
   }
 

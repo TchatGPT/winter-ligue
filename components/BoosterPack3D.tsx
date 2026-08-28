@@ -32,14 +32,23 @@ const RATIO = 1.545;
  *
  * Il ne bouge pas tout seul : il est porté par une bande que `app/globals.css`
  * fait traverser le sachet, puis attendre quelques secondes.
+ *
+ * Les deux tiers du dégradé sont transparents, et ce n'est pas du gaspillage.
+ * Il est incliné de douze degrés, et la bande est haute : sur 376 pixels, cette
+ * inclinaison décale le dégradé de 78 pixels d'un bord à l'autre. Avec des
+ * fondus courts, les bords de la bande tombaient donc dans du non-transparent —
+ * on voyait un trait vertical net là où la lumière s'arrêtait, et la marche de
+ * couleur avec le sachet en dessous.
  */
 const ECLAT = `linear-gradient(102deg,
   rgb(255 255 255 / 0) 0%,
-  rgb(222 238 252 / 0.09) 26%,
-  rgb(233 245 255 / 0.3) 44%,
-  rgb(247 252 255 / 0.44) 50%,
-  rgb(233 245 255 / 0.3) 56%,
-  rgb(222 238 252 / 0.09) 74%,
+  rgb(255 255 255 / 0) 28%,
+  rgb(222 238 252 / 0.07) 37%,
+  rgb(233 245 255 / 0.24) 45%,
+  rgb(247 252 255 / 0.4) 50%,
+  rgb(233 245 255 / 0.24) 55%,
+  rgb(222 238 252 / 0.07) 63%,
+  rgb(255 255 255 / 0) 72%,
   rgb(255 255 255 / 0) 100%)`;
 
 /**
@@ -60,12 +69,12 @@ const ECLAT = `linear-gradient(102deg,
  * brillaient exactement pareil.
  */
 const REFLET: Record<string, { duree: string; force: string }> = {
-  C: { duree: '13s', force: '0.55' },
-  PC: { duree: '11.5s', force: '0.65' },
-  R: { duree: '10s', force: '0.75' },
-  SR: { duree: '8.5s', force: '0.85' },
-  UR: { duree: '7.5s', force: '0.93' },
-  L: { duree: '6.5s', force: '1' },
+  C: { duree: '18s', force: '0.55' },
+  PC: { duree: '16s', force: '0.65' },
+  R: { duree: '14s', force: '0.75' },
+  SR: { duree: '12s', force: '0.85' },
+  UR: { duree: '10.5s', force: '0.93' },
+  L: { duree: '9s', force: '1' },
 };
 
 /** La rareté garantie du booster donne sa couleur au halo. */
