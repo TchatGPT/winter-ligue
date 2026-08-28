@@ -96,9 +96,9 @@ function lit(rnd) {
  * quelques longs, sans avoir à le coder.
  */
 const RANGS = [
-  { n: 150, hMin: 4, hMax: 16, base: [2.5, 6], opacite: 0.2, arete: 0.22 },
-  { n: 80, hMin: 7, hMax: 26, base: [3, 7], opacite: 0.24, arete: 0.36 },
-  { n: 34, hMin: 11, hMax: 40, base: [3.5, 8], opacite: 0.3, arete: 0.6 },
+  { n: 150, hMin: 4, hMax: 16, base: [2.5, 6], opacite: 0.085, arete: 0.1 },
+  { n: 80, hMin: 7, hMax: 26, base: [3, 7], opacite: 0.1, arete: 0.16 },
+  { n: 34, hMin: 11, hMax: 40, base: [3.5, 8], opacite: 0.13, arete: 0.26 },
 ];
 
 function dessin(graine) {
@@ -120,7 +120,7 @@ function dessin(graine) {
 
   return (
     `<svg xmlns="http://www.w3.org/2000/svg" width="${L}" height="${H}" viewBox="0 0 ${L} ${H}">` +
-    `<path d="${lit(rnd)}" fill="%23ffffff" opacity="0.34"/>` +
+    `<path d="${lit(rnd)}" fill="%23ffffff" opacity="0.15"/>` +
     couches.map((c) => `<path d="${c.corps}" fill="%23ffffff" opacity="${c.opacite}"/>`).join('') +
     '<g fill="none" stroke="%23ffffff" stroke-width="0.7" stroke-linejoin="round">' +
     couches.map((c) => `<path d="${c.aretes}" opacity="${c.arete}"/>`).join('') +

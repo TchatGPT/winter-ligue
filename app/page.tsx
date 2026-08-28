@@ -100,16 +100,14 @@ export default async function ClassementPage() {
         <StatTile label="Joueurs" value={overview.playerCount} />
         <StatTile label="Games jouées" value={overview.gameCount} accent="ink" />
         <StatTile label="Kills cumulés" value={flakes(overview.totalKills)} accent="aurora" />
-        <StatTile
-          label="Meilleure game"
-          value={overview.bestScore}
-          hint={overview.bestScorePlayer ?? undefined}
-          accent="gold"
-        />
+        {/* Sans mention secondaire : elle tombait dans la bande de givre du bas
+            de la tuile, où un gris fin ne se lit plus. Le nom du meilleur joueur
+            et le nombre d'annonces se retrouvent l'un dans le classement juste
+            en dessous, l'autre à l'hôtel des ventes. */}
+        <StatTile label="Meilleure game" value={overview.bestScore} accent="gold" />
         <StatTile
           label="Cartes en jeu"
           value={overview.cardsInCirculation}
-          hint={`${overview.activeListings} en vente`}
           accent="violet"
         />
       </section>
