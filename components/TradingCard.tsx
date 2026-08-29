@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useRef, useState } from 'react';
+import { RarityIcon } from '@/components/RarityIcon';
 import { cardNumber, FOIL, RARITY_META, THEMES } from '@/lib/domain/catalog';
 import type { Rarity, ThemeId } from '@/lib/domain/types';
 
@@ -109,15 +110,21 @@ export function TradingCard({
         <div className="tc-frame">
           {/* --------------------------- Cartouche --------------------- */}
           <div className="tc-plate">
+            {/* La marque de rareté, dessinée plutôt qu'écrite. Sa taille suit
+                celle de la carte — l'unité `cqw` la met à l'échelle du conteneur,
+                et une icône en pixels fixes aurait grossi sur les vignettes et
+                rétréci sur les cartes plein écran. */}
             <span
-              className="shrink-0 rounded-[1.6cqw] px-[1.8cqw] py-[0.6cqw] font-display text-[3.2cqw] font-black"
+              className="grid shrink-0 place-items-center rounded-[1.6cqw] p-[1.1cqw]"
               style={{
                 background: `linear-gradient(155deg, ${meta.color}, color-mix(in srgb, ${meta.color} 60%, #000))`,
                 color: '#04101c',
                 boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.45)',
               }}
+              role="img"
+              aria-label={meta.label}
             >
-              {meta.code}
+              <RarityIcon rarity={card.rarity} taille="4.2cqw" />
             </span>
             <h3 className="tc-name">{card.name}</h3>
             <span

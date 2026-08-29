@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { Countdown } from '@/components/Countdown';
+import { RarityIcon } from '@/components/RarityIcon';
 import { MarketViewModal } from '@/components/MarketViewModal';
 import { EmptyState, Notice, RarityChip, flakes, flakesShort, rarityMeta } from '@/components/ui';
 import { MARKET } from '@/lib/domain/rules';
@@ -264,15 +265,16 @@ export function MarketBoard({
                   key={r}
                   onClick={() => toggleRarity(r)}
                   aria-pressed={active}
+                  aria-label={meta.label}
                   title={meta.label}
-                  className="rounded-md border px-2 py-1 font-display text-[13px] font-black tracking-wider uppercase transition-colors"
+                  className="grid place-items-center rounded-md border px-2 py-1.5 transition-colors"
                   style={{
                     borderColor: active ? meta.color : 'var(--line-2)',
                     color: active ? '#060a12' : meta.color,
                     background: active ? meta.color : 'transparent',
                   }}
                 >
-                  {meta.code}
+                  <RarityIcon rarity={r} />
                 </button>
               );
             })}

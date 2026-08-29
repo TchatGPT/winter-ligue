@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { RarityIcon } from '@/components/RarityIcon';
 import { RARITY_META, THEMES } from '@/lib/domain/catalog';
 import type { Rarity, ThemeId } from '@/lib/domain/types';
 import { compact, num } from '@/lib/format';
@@ -62,6 +63,16 @@ export function StatTile({
 
 /* ------------------------------ Pastilles -------------------------------- */
 
+/**
+ * La pastille de rareté.
+ *
+ * Elle portait le sigle — `C`, `PC`, `SR` — et porte désormais une marque
+ * dessinée. Un sigle se décode, une forme se reconnaît : dans une grille de
+ * vignettes, on veut classer sans lire.
+ *
+ * Le nom accessible est repris sur la pastille elle-même. Le sigle en tenait
+ * lieu jusqu'ici sans qu'on ait à y penser ; un dessin, non.
+ */
 export function RarityChip({ rarity, title }: { rarity: string; title?: string }) {
   const meta = rarityMeta(rarity);
   return (
@@ -69,8 +80,10 @@ export function RarityChip({ rarity, title }: { rarity: string; title?: string }
       className="rarity-chip"
       style={{ ['--chip' as string]: meta.color }}
       title={title ?? meta.label}
+      role="img"
+      aria-label={title ?? meta.label}
     >
-      {meta.code}
+      <RarityIcon rarity={rarity} />
     </span>
   );
 }
