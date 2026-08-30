@@ -120,6 +120,23 @@ export function IconSnowflake(props: IconProps) {
   );
 }
 
+/**
+ * Puissance d'une carte — un impact.
+ *
+ * Un éclair aurait fait doublon avec la Tempête de Verglas du catalogue, et le
+ * ⚡ qui tenait ce rôle jusqu'ici imposait la palette jaune de la police du
+ * système au beau milieu d'un bandeau de rareté.
+ */
+export function IconImpact(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M12 3v4.2M12 16.8V21M3 12h4.2M16.8 12H21" />
+      <path d="M6 6l2.8 2.8M15.2 15.2 18 18M18 6l-2.8 2.8M8.8 15.2 6 18" />
+      <circle cx="12" cy="12" r="3.1" />
+    </Svg>
+  );
+}
+
 export const NAV_ICONS = {
   trophy: IconTrophy,
   pack: IconPack,

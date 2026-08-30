@@ -2,11 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BoosterPack3D } from '@/components/BoosterPack3D';
+import { CardDetailModal, type CarteDetail } from '@/components/CardDetailModal';
 import { Tirage } from '@/components/Tirage';
 import { bruitDeDechirure, bruitDeSelection } from '@/components/bruitage';
-import { TradingCard } from '@/components/TradingCard';
-import { Notice, RarityChip, flakes, rarityMeta } from '@/components/ui';
-import { boosterArt, boosterSize, cardArt } from '@/lib/domain/catalog';
+import { CardTile, Notice, RarityChip, flakes, rarityMeta } from '@/components/ui';
+import { boosterArt, boosterSize } from '@/lib/domain/catalog';
 import { atLeastOnePercent, rarityPercent } from '@/lib/domain/rules';
 import type { BoosterDefinition, Rarity } from '@/lib/domain/types';
 
@@ -57,6 +57,8 @@ export function BoosterOpening({
 }) {
   const [selected, setSelected] = useState<string>(boosters[0]?.id ?? 'givre');
   const [phase, setPhase] = useState<Phase>('repos');
+  /** La carte dont la fiche est ouverte, s'il y en a une. */
+  const [fiche, setFiche] = useState<CarteDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pulled, setPulled] = useState<Pulled[]>([]);
   const [spent, setSpent] = useState<number | null>(null);
@@ -301,6 +303,8 @@ export function BoosterOpening({
 
   return (
     <div className="space-y-6">
+      {fiche && <CardDetailModal carte={fiche} onClose={() => setFiche(null)} />}
+
       {!shopOpen && <Notice kind="error">La boutique est fermée par la modération.</Notice>}
       {!connected && (
         <Notice>
@@ -515,7 +519,7 @@ export function BoosterOpening({
               </div>
 
               {/*
-               * Les cartes arrivent face visible, et grandes.
+               * Les cartes arrivent face visible, et cliquables.
                *
                * Elles étaient posées de dos, à retourner une par une ou d'un
                * bouton. Deux défauts : le rail venait de faire tout un travail
@@ -524,13 +528,12 @@ export function BoosterOpening({
                * colonnes, où le texte d'effet — la seule chose qui dise à quoi
                * sert la carte — était illisible.
                *
-               * Trois colonnes au plus, dans un cadre plus large : les tailles
-               * de `TradingCard` sont en `cqw`, donc la largeur de la colonne
-               * gouverne directement la lisibilité de la description. En
-               * dessous d'environ 320 px de colonne, l'encadré d'effet passe
-               * sous les onze pixels et ne se lit plus.
+               * C'est la vignette de collection qui sert ici, et non le grand
+               * format : le joueur doit reconnaître les cartes qu'il vient
+               * d'obtenir dans la grille où il les retrouvera ensuite. Le grand
+               * format est à un clic, dans la fiche.
                */}
-              <div className="mx-auto grid max-w-5xl grid-cols-1 justify-center gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="mx-auto grid max-w-4xl grid-cols-2 justify-center gap-4 sm:grid-cols-3">
                 {pulled.map((card, i) => {
                   const meta = rarityMeta(card.rarity);
                   return (
@@ -547,29 +550,27 @@ export function BoosterOpening({
                         />
                       )}
 
-                      <TradingCard
-                        card={{
-                          cardId: card.cardId,
-                          name: card.name,
-                          subtitle: card.subtitle,
-                          description: card.description,
-                          rarity: card.rarity,
-                          theme: card.theme,
-                          glyph: card.glyph,
-                          power: card.power,
-                          nature: card.nature,
-                          art: cardArt(card.cardId),
-                        }}
+                      <CardTile
+                        cardId={card.cardId}
+                        name={card.name}
+                        description={card.description}
+                        rarity={card.rarity}
+                        theme={card.theme}
+                        glyph={card.glyph}
+                        power={card.power}
+                        nature={card.nature}
+                        onClick={() => setFiche(card)}
+                        corner={
+                          card.isNew ? (
+                            <span
+                              className="rounded-full px-2 py-0.5 font-display text-[11px] font-black tracking-wider uppercase"
+                              style={{ background: '#5fe3bd', color: '#04211a' }}
+                            >
+                              Nouvelle
+                            </span>
+                          ) : undefined
+                        }
                       />
-
-                      {card.isNew && (
-                        <span
-                          className="absolute -top-2 left-1/2 z-10 -translate-x-1/2 rounded-full px-2.5 py-0.5 font-display text-[12px] font-black tracking-wider uppercase"
-                          style={{ background: '#5fe3bd', color: '#04211a' }}
-                        >
-                          Nouvelle
-                        </span>
-                      )}
                     </div>
                   );
                 })}

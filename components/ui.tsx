@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { aUneIllustration, CardArt } from '@/components/CardArt';
+import { IconImpact, IconSnowflake } from '@/components/icons';
 import { RarityIcon } from '@/components/RarityIcon';
 import { RARITY_META, THEMES } from '@/lib/domain/catalog';
 import type { Rarity, ThemeId } from '@/lib/domain/types';
@@ -115,6 +116,8 @@ export interface CardTileProps {
   cardId: string;
   name: string;
   subtitle?: string;
+  /** Le texte d'effet. Absent, la vignette retombe sur le sous-titre. */
+  description?: string;
   rarity: string;
   theme: string;
   glyph: string;
@@ -132,13 +135,27 @@ export interface CardTileProps {
  * Vignette de carte à collectionner.
  *
  * La couleur de rareté est injectée en variable CSS `--r` : la feuille de style
- * en tire la bordure, le dégradé de l'illustration, le halo au survol et le
- * reflet holographique. Un composant, six apparences.
+ * en tire la bordure, la pastille, le halo au survol et surtout le **bandeau**.
+ * Un composant, six apparences.
+ *
+ * ## Le bandeau est plein, et son texte est sombre
+ *
+ * C'est l'inverse du reste du site, qui est en verre sombre à texte clair, et
+ * c'est délibéré. Une grille de cartes se lit d'abord par blocs de couleur : si
+ * le bandeau reste dans les gris translucides et que la rareté n'est signalée
+ * que par un liseré, il faut lire chaque vignette pour trier. Un aplat teinté
+ * par la rareté se trie d'un coup d'œil, à un mètre de l'écran.
+ *
+ * Les six teintes de rareté sont claires — c'est une palette de nuit polaire,
+ * pensée pour ressortir sur du noir. Sur un aplat, elles imposent donc du texte
+ * sombre : du blanc dessus passerait sous le seuil de contraste sur quatre des
+ * six raretés.
  */
 export function CardTile({
   cardId,
   name,
   subtitle,
+  description,
   rarity,
   theme,
   glyph,
@@ -168,49 +185,41 @@ export function CardTile({
           </span>
         )}
 
-        <span className="absolute top-2 left-2">
-          <RarityChip rarity={rarity} />
-        </span>
+        {/* La pastille de rareté : le sigle, pas la gemme. Sur l'illustration
+            elle doit se lire à la taille d'une vignette, et une gemme de dix
+            pixels ne se distingue plus d'une autre. */}
+        <span className="tcg-pastille">{meta.code}</span>
 
-        {nature === 'malus' && (
-          <span
-            className="absolute right-2 bottom-2 rounded-md px-1.5 py-0.5 font-display text-[13px] font-black tracking-wider uppercase"
-            style={{ background: 'rgba(255,122,122,0.92)', color: '#1c0505' }}
-          >
-            Malus
-          </span>
-        )}
+        {nature === 'malus' && <span className="tcg-malus">Malus</span>}
 
-        {corner && <span className="absolute top-2 right-2">{corner}</span>}
-
-        {th && (
-          <span
-            className="absolute bottom-2 left-2 text-sm leading-none opacity-75"
-            title={th.name}
-            aria-label={th.name}
-          >
-            {th.glyph}
-          </span>
-        )}
+        {corner && <span className="absolute top-2 right-2 z-[2]">{corner}</span>}
       </div>
 
       <div className="tcg-body">
         <h3 className="tcg-name">{name}</h3>
-        {subtitle && <p className="tcg-sub">{subtitle}</p>}
+        {(description ?? subtitle) && <p className="tcg-sub">{description ?? subtitle}</p>}
 
         {(power !== undefined || quote !== undefined) && (
           <div className="tcg-stats">
             {power !== undefined && (
-              <span className="text-danger" title={`Puissance ${power} sur 100`}>
-                ⚡ <span className="num">{power}</span>
+              <span className="tcg-stat tcg-stat-pui" title={`Puissance ${power} sur 100`}>
+                <IconImpact className="h-[15px] w-[15px]" />
+                <span className="num">{power}</span>
               </span>
             )}
             {quote !== undefined && (
-              <span className="text-ice" title="Cote : dernier prix constaté">
-                ❄ <span className="num">{quote === null ? '—' : flakesShort(quote)}</span>
+              <span className="tcg-stat tcg-stat-cote" title="Cote : dernier prix constaté">
+                <IconSnowflake className="h-[15px] w-[15px]" />
+                <span className="num">{quote === null ? '—' : flakesShort(quote)}</span>
               </span>
             )}
           </div>
+        )}
+
+        {th && (
+          <span className="tcg-famille" style={{ ['--f' as string]: th.color }}>
+            {th.name}
+          </span>
         )}
       </div>
 

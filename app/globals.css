@@ -978,15 +978,19 @@
     border-radius: var(--r-md);
     overflow: hidden;
     isolation: isolate;
-    background: linear-gradient(
-      162deg,
-      color-mix(in srgb, var(--r, #6f8db0) 14%, rgb(148 192 236 / 0.07)) 0%,
-      rgb(3 7 17 / 0.42) 100%
-    );
-    backdrop-filter: blur(18px) saturate(165%);
-    border: 1px solid color-mix(in srgb, var(--r, #6f8db0) 34%, transparent);
+    /*
+     * Opaque, et sans `backdrop-filter`.
+     *
+     * La carte était en verre dépoli comme le reste du site. Depuis que le
+     * bandeau est un aplat, il ne reste rien à travers quoi voir : le flou
+     * coûtait une couche de composition par vignette — cinquante sur une page
+     * de collection — pour un effet invisible.
+     */
+    background: #060d19;
+    border: 1px solid color-mix(in srgb, var(--r, #6f8db0) 55%, transparent);
     box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / 0.22),
+      0 0 0 1px rgb(0 0 0 / 0.5),
+      0 0 22px color-mix(in srgb, var(--r, transparent) 22%, transparent),
       var(--lift-1);
     transition:
       transform 0.28s cubic-bezier(0.2, 0.8, 0.3, 1),
@@ -997,11 +1001,11 @@
   .tcg-link:hover .tcg,
   .tcg-hover:hover {
     transform: translateY(-5px);
-    border-color: color-mix(in srgb, var(--r, #6f8db0) 70%, transparent);
+    border-color: color-mix(in srgb, var(--r, #6f8db0) 90%, transparent);
     box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / 0.32),
+      0 0 0 1px rgb(0 0 0 / 0.5),
       0 20px 46px rgb(0 0 0 / 0.5),
-      0 0 38px color-mix(in srgb, var(--r, transparent) 30%, transparent);
+      0 0 42px color-mix(in srgb, var(--r, transparent) 42%, transparent);
   }
 
   /* Fenêtre d'illustration. */
@@ -1084,20 +1088,82 @@
     transform: translateX(90%) rotate(6deg);
   }
 
+  /*
+   * La pastille de rareté, posée sur l'illustration.
+   *
+   * Texte sombre sur l'aplat de rareté, comme le bandeau : c'est la même règle,
+   * et la même raison — les six teintes sont claires.
+   */
+  .tcg-pastille {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    z-index: 2;
+    padding: 1px 7px;
+    border-radius: 6px;
+    background: var(--r, #6f8db0);
+    color: #0b1420;
+    font-family: var(--font-display);
+    font-size: 0.6875rem;
+    font-weight: 900;
+    letter-spacing: 0.06em;
+    line-height: 1.5;
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.5),
+      0 2px 6px rgb(0 0 0 / 0.5);
+  }
+
+  .tcg-malus {
+    position: absolute;
+    right: 8px;
+    bottom: 8px;
+    z-index: 2;
+    padding: 1px 6px;
+    border-radius: 6px;
+    background: rgb(255 122 122 / 0.94);
+    color: #1c0505;
+    font-family: var(--font-display);
+    font-size: 0.6875rem;
+    font-weight: 900;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    box-shadow: 0 2px 6px rgb(0 0 0 / 0.5);
+  }
+
+  /*
+   * Le bandeau : un aplat de rareté, rayé, à texte sombre.
+   *
+   * Les rayures ne sont pas un ornement. Un aplat nu de cette taille se lit
+   * comme un rectangle de couleur posé sur la carte ; la trame lui donne une
+   * matière, et fait que la couleur se lit comme celle d'un support imprimé.
+   * Deux trames à des pas et des angles voisins plutôt qu'une seule : une
+   * répétition unique se lit comme un code-barres, leur battement se lit comme
+   * du tissu.
+   *
+   * L'aplat est éclairci de 22 % de blanc. Non pour l'esthétique : à teinte
+   * pleine, les raretés Rare et Super rare passaient sous 4,5:1 avec le texte
+   * secondaire.
+   */
   .tcg-body {
+    position: relative;
     display: flex;
     flex-direction: column;
     flex: 1;
     gap: 0.2rem;
-    padding: 0.8rem 0.85rem 0.85rem;
+    padding: 0.75rem 0.85rem 0.8rem;
+    background-color: color-mix(in srgb, var(--r, #6f8db0) 78%, #ffffff);
+    background-image:
+      repeating-linear-gradient(112deg, rgb(255 255 255 / 0.2) 0 6px, transparent 6px 22px),
+      repeating-linear-gradient(97deg, rgb(0 0 0 / 0.05) 0 9px, transparent 9px 30px);
+    color: #0b1826;
   }
 
   .tcg-name {
     font-family: var(--font-display);
     font-size: 1.0625rem;
-    font-weight: 700;
+    font-weight: 900;
     line-height: 1.15;
-    color: var(--ink);
+    color: #0b1826;
     overflow: hidden;
     display: -webkit-box;
     -webkit-line-clamp: 2;
@@ -1108,12 +1174,37 @@
   .tcg-sub {
     font-size: 0.8125rem;
     line-height: 1.35;
-    color: var(--muted);
+    color: rgb(11 24 38 / 0.76);
     overflow: hidden;
     display: -webkit-box;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
     -webkit-box-orient: vertical;
+  }
+
+  /*
+   * La famille, sur sa propre plaque sombre.
+   *
+   * Elle a d'abord été écrite à même le bandeau, dans la couleur de la famille.
+   * Mesure faite, les quatre teintes tombaient entre 1,75 et 2,6:1 sur les
+   * aplats clairs — illisibles. Les assombrir jusqu'au seuil les ramenait toutes
+   * les quatre au même quasi-noir, et la couleur ne distinguait plus rien.
+   *
+   * Une plaque sombre rend à la couleur le fond pour lequel elle a été choisie :
+   * les quatre teintes de famille sont au-dessus de 8:1 sur du bleu nuit.
+   */
+  .tcg-famille {
+    align-self: flex-start;
+    margin-top: 0.35rem;
+    padding: 1px 7px;
+    border-radius: 5px;
+    background: rgb(5 18 30 / 0.85);
+    font-family: var(--font-display);
+    font-size: 0.6875rem;
+    font-weight: 900;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--f, #cfe3f5);
   }
 
   .tcg-stats {
@@ -1122,16 +1213,47 @@
     justify-content: space-between;
     gap: 0.4rem;
     margin-top: auto;
-    padding-top: 0.55rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid rgb(11 24 38 / 0.16);
     font-family: var(--font-display);
     font-size: 0.875rem;
-    font-weight: 700;
+    font-weight: 900;
   }
 
+  .tcg-stats + .tcg-famille {
+    margin-top: 0.4rem;
+  }
+
+  /* Les deux chiffres, chacun sa couleur : le rouge pour ce que la carte fait,
+     le bleu pour ce qu'elle vaut. Des teintes sombres — elles se posent sur
+     l'aplat clair du bandeau, pas sur le fond de nuit du site. */
+  .tcg-stat {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+  }
+
+  /*
+   * Ces deux teintes sont mesurées, pas choisies.
+   *
+   * Un rouge et un bleu ordinaires — #9a1420 et #0f4a86 — tombaient à 3,5:1 sur
+   * le bandeau Rare, qui est le plus sombre des six. Elles sont descendues
+   * jusqu'à ce que la pire des six raretés passe 4,5:1 : 5,0 pour le rouge, 5,3
+   * pour le bleu. Les éclaircir, c'est repasser sous le seuil sur le violet.
+   */
+  .tcg-stat-pui {
+    color: #6e0d17;
+  }
+
+  .tcg-stat-cote {
+    color: #0a325c;
+  }
+
+  /* Le pied porte les actions. Opaque et sombre : il vient sous un bandeau
+     clair, et les boutons du site sont dessinés pour du fond de nuit. */
   .tcg-foot {
     padding: 0.6rem 0.85rem 0.7rem;
-    border-top: 1px solid rgb(255 255 255 / 0.08);
-    background: rgb(3 7 17 / 0.35);
+    background: #060d19;
     font-size: 0.8125rem;
     line-height: 1.45;
   }
