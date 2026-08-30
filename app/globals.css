@@ -394,21 +394,23 @@
   /* -- Le carrousel de tirage --------------------------------------------- */
 
   /*
-   * Les pistes empilées, et un seul repère qui les traverse toutes.
+   * Les pistes empilées, et une fenêtre unique qui les traverse toutes.
    *
-   * C'est la disposition des sites d'ouverture de caisses : une ligne par objet,
-   * et une barre verticale unique au centre. Un repère par ligne donnerait des
-   * machines juxtaposées ; une seule barre en fait un seul appareil.
+   * Le cadre est volontairement étroit. À 720 px de large pour des cartes de
+   * 74, on en voyait neuf par piste : trop petites pour qu'on reconnaisse ce
+   * qui passe, et si nombreuses que la bande se lisait comme du papier peint.
+   * Les sites d'ouverture en montrent cinq. À 560 px pour des cartes de 107,
+   * on y est.
    */
   .tirage {
     position: relative;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
     width: 100%;
-    max-width: 720px;
+    max-width: 560px;
     margin-inline: auto;
-    padding: 10px 0;
+    padding: 12px 0;
   }
 
   /*
@@ -420,17 +422,17 @@
   .tirage-piste {
     position: relative;
     overflow: hidden;
-    height: 104px;
+    height: 150px;
     border-radius: var(--r-md);
     border: 1px solid var(--glass-edge);
-    background: linear-gradient(180deg, rgb(4 10 20 / 0.6), rgb(6 14 26 / 0.8));
-    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.14);
+    background: linear-gradient(180deg, rgb(3 8 16 / 0.75), rgb(6 14 26 / 0.9));
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.12);
     transition: box-shadow 0.4s ease;
   }
 
   @media (max-width: 640px) {
     .tirage-piste {
-      height: 82px;
+      height: 116px;
     }
   }
 
@@ -458,31 +460,59 @@
     flex: 0 0 auto;
     height: 100%;
     aspect-ratio: 1 / 1.4;
-    border-radius: 8px;
+    border-radius: 10px;
     overflow: hidden;
-    border: 1px solid color-mix(in srgb, var(--r) 42%, transparent);
+    border: 1px solid color-mix(in srgb, var(--r) 55%, transparent);
     background: linear-gradient(158deg, color-mix(in srgb, var(--r) 26%, var(--d)), var(--d));
-    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.18);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.2),
+      inset 0 -28px 30px -20px color-mix(in srgb, var(--r) 60%, transparent);
     transition:
       opacity 0.45s ease,
       filter 0.45s ease;
   }
 
-  /* La barre de rareté en pied de carte. À pleine vitesse on ne lit rien d'une
-     carte, mais on voit passer les couleurs — et c'est ce qui fait espérer. */
+  /*
+   * Le nom, en pied de carte.
+   *
+   * Sans lui, une bande d'illustrations vues à cent pixels n'est qu'une suite de
+   * taches colorées : on ne reconnaît pas ce qui passe, donc on n'espère rien.
+   * Il est posé sur un fond sombre plutôt que sur l'illustration, faute de quoi
+   * il devient illisible sur les scènes claires.
+   */
+  .tirage-nom {
+    position: absolute;
+    right: 0;
+    bottom: 4px;
+    left: 0;
+    z-index: 2;
+    padding: 2px 5px;
+    overflow: hidden;
+    background: linear-gradient(0deg, rgb(3 8 16 / 0.92), rgb(3 8 16 / 0));
+    font-family: var(--font-display);
+    font-size: 0.625rem;
+    font-weight: 900;
+    line-height: 1.15;
+    letter-spacing: 0.02em;
+    text-align: center;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    color: var(--frost);
+  }
+
   .tirage-barre {
     position: absolute;
     right: 0;
     bottom: 0;
     left: 0;
-    z-index: 2;
+    z-index: 3;
     height: 4px;
     background: var(--r);
-    box-shadow: 0 0 8px color-mix(in srgb, var(--r) 70%, transparent);
+    box-shadow: 0 0 10px color-mix(in srgb, var(--r) 80%, transparent);
   }
 
   .tirage-glyphe {
-    font-size: 1.6rem;
+    font-size: 2rem;
     line-height: 1;
     opacity: 0.9;
   }
@@ -493,24 +523,24 @@
     width: 100%;
     height: 100%;
     object-fit: cover;
-    opacity: 0.92;
   }
 
   .tirage-gemme {
     position: absolute;
-    top: 4px;
-    left: 4px;
+    top: 5px;
+    left: 5px;
     z-index: 2;
     line-height: 0;
-    filter: drop-shadow(0 2px 4px rgb(0 0 0 / 0.7));
+    filter: drop-shadow(0 2px 4px rgb(0 0 0 / 0.8));
   }
 
   /*
-   * Le repère : une barre verticale au centre, par-dessus toutes les pistes.
+   * Le repère : une fenêtre éclairée au centre, pas un cheveu.
    *
-   * Un trait et deux pointes, pas un cadre : un cadre autour de la carte
-   * gagnante donnerait envie de la lire pendant qu'elle défile, alors que tout
-   * l'intérêt est de ne pas savoir avant l'arrêt.
+   * Un trait de deux pixels se perd dès qu'une carte claire passe dessous. Une
+   * bande lumineuse de la largeur d'une carte donne au contraire un emplacement
+   * — on voit *où* ça va s'arrêter avant que ça s'arrête, et c'est là qu'on
+   * regarde pendant toute la descente.
    */
   .tirage-repere {
     position: absolute;
@@ -524,12 +554,12 @@
     background: linear-gradient(
       180deg,
       transparent,
-      var(--ice) 8%,
+      var(--ice) 6%,
       #ffffff 50%,
-      var(--ice) 92%,
+      var(--ice) 94%,
       transparent
     );
-    box-shadow: 0 0 12px rgb(143 220 255 / 0.8);
+    box-shadow: 0 0 16px 2px rgb(143 220 255 / 0.9);
   }
 
   .tirage-repere::before,
@@ -539,40 +569,40 @@
     left: 50%;
     width: 0;
     height: 0;
-    margin-left: -7px;
-    border-left: 7px solid transparent;
-    border-right: 7px solid transparent;
+    margin-left: -8px;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
   }
 
   .tirage-repere::before {
-    top: 0;
-    border-top: 9px solid var(--ice);
+    top: -2px;
+    border-top: 11px solid var(--ice);
   }
 
   .tirage-repere::after {
-    bottom: 0;
-    border-bottom: 9px solid var(--ice);
+    bottom: -2px;
+    border-bottom: 11px solid var(--ice);
   }
 
-  /* Les deux fondus : les rails doivent avoir l'air de continuer au-delà du
-     cadre, pas d'y être coupés. */
+  /* Les deux fondus. Larges : ils rognent la bande bien avant le bord, ce qui
+     concentre le regard sur la fenêtre et masque la répétition des leurres. */
   .tirage-voile {
     position: absolute;
     top: 0;
     bottom: 0;
     z-index: 3;
-    width: 12%;
+    width: 22%;
     pointer-events: none;
   }
 
   .tirage-voile-gauche {
     left: 0;
-    background: linear-gradient(90deg, var(--bg), transparent);
+    background: linear-gradient(90deg, var(--bg) 15%, transparent);
   }
 
   .tirage-voile-droite {
     right: 0;
-    background: linear-gradient(270deg, var(--bg), transparent);
+    background: linear-gradient(270deg, var(--bg) 15%, transparent);
   }
 
   /* -- L'arrêt ------------------------------------------------------------- */
@@ -582,20 +612,20 @@
    * cercle de la couleur de la carte gagnée, tout ce qui n'est pas cette carte
    * s'éteint, et la carte elle-même sursaute.
    *
-   * Cet extinction du reste est le geste le plus important. Pendant le
+   * Cette extinction du reste est le geste le plus important. Pendant le
    * défilement, l'œil suit la bande ; à l'arrêt, il faut qu'il n'ait plus qu'un
    * endroit où aller.
    */
   .tirage-piste[data-arrete='true'] {
     box-shadow:
       inset 0 1px 0 rgb(255 255 255 / 0.14),
-      0 0 26px color-mix(in srgb, var(--gagne) 45%, transparent),
-      inset 0 0 0 1px color-mix(in srgb, var(--gagne) 70%, transparent);
+      0 0 30px color-mix(in srgb, var(--gagne) 50%, transparent),
+      inset 0 0 0 1px color-mix(in srgb, var(--gagne) 75%, transparent);
   }
 
   .tirage-piste[data-arrete='true'] .tirage-carte:not(.tirage-carte-gagnante) {
-    opacity: 0.28;
-    filter: saturate(0.35);
+    opacity: 0.22;
+    filter: saturate(0.3);
   }
 
   .tirage-piste[data-arrete='true'] .tirage-carte-gagnante {
@@ -606,19 +636,19 @@
   @keyframes tirage-atterrit {
     0% {
       transform: scale(1);
-      box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.18);
+      box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.2);
     }
     28% {
-      transform: scale(1.14);
+      transform: scale(1.12);
       box-shadow:
         inset 0 1px 0 rgb(255 255 255 / 0.5),
-        0 0 34px 6px color-mix(in srgb, var(--r) 85%, transparent);
+        0 0 40px 8px color-mix(in srgb, var(--r) 90%, transparent);
     }
     100% {
-      transform: scale(1.06);
+      transform: scale(1.05);
       box-shadow:
         inset 0 1px 0 rgb(255 255 255 / 0.3),
-        0 0 18px color-mix(in srgb, var(--r) 60%, transparent);
+        0 0 22px color-mix(in srgb, var(--r) 65%, transparent);
     }
   }
 

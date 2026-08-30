@@ -210,9 +210,20 @@ function Piste({
     const hautes = pioche.filter((c) => (RARITY_ORDER[c.rarity as Rarity] ?? 0) >= 4);
     const rares = hautes.length ? hautes : pioche;
 
+    /*
+     * Aucun doublon à moins de trois cases d'écart.
+     *
+     * Tiré à plat, le hasard collait deux fois la même carte dans le champ de
+     * vision une fois sur trois — et avec vingt-quatre cartes pour cent
+     * soixante cases, la bande donnait l'impression d'un jeu de six. Ce n'est
+     * pas la fréquence des répétitions qui gêne, c'est de les voir ensemble.
+     */
     const items: CarteTirage[] = [];
     for (let i = 0; i < AVANT + 1 + APRES; i += 1) {
-      items.push(pioche[Math.floor(Math.random() * pioche.length)]);
+      const recents = items.slice(-3).map((c) => c.cardId);
+      const libres = pioche.filter((c) => !recents.includes(c.cardId));
+      const source = libres.length ? libres : pioche;
+      items.push(source[Math.floor(Math.random() * source.length)]);
     }
     for (const a of APPATS) {
       items[AVANT - a.avant] = rares[Math.floor(Math.random() * rares.length)];
@@ -333,8 +344,12 @@ function Piste({
               <span className="tirage-gemme">
                 <RarityIcon rarity={c.rarity} taille={14} />
               </span>
-              {/* La barre de rareté en pied de carte : c'est elle qui donne le
-                  ton d'une bande qui défile trop vite pour être lue. */}
+              {/* Le nom, en pied de carte.
+                  Sans lui, une bande d'illustrations vues à cent pixels n'est
+                  qu'une suite de taches colorées : on ne reconnaît pas ce qui
+                  passe, donc on n'espère rien. C'est ce que montrent tous les
+                  sites d'ouverture, et c'est ce qui manquait le plus. */}
+              <span className="tirage-nom">{c.name}</span>
               <span className="tirage-barre" aria-hidden="true" />
             </div>
           );
