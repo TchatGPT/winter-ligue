@@ -6,9 +6,8 @@
  * allers-retours réseau et un préchargement pour que le son ne traîne pas
  * derrière l'animation.
  *
- * Rien ne part au chargement : chaque son suit un geste délibéré. Et le
- * contexte audio est fermé dès la fin — en laisser un ouvert par son finirait
- * par épuiser le quota du navigateur, qui en compte les instances.
+ * Rien ne part au chargement : chaque son suit un geste délibéré, et le
+ * contexte audio n'est ouvert qu'au premier d'entre eux.
  *
  * ## Des notes, pas du bruit
  *
@@ -28,13 +27,39 @@
  * modifier revient à changer le son, pas à l'affiner.
  */
 
+/** L'unique contexte audio de la page, ouvert au premier son. */
+let partage: AudioContext | null = null;
+
 /**
- * Ouvre un contexte audio, ou rien.
+ * Le contexte audio, partagé, ou rien.
  *
- * Un navigateur peut refuser — quota atteint, politique de la page. Le son est
- * un agrément : son absence ne doit jamais empêcher le geste.
+ * ## Pourquoi un seul, et pourquoi il ne se ferme jamais
+ *
+ * Chaque son ouvrait autrefois son propre contexte et le fermait à
+ * l'extinction. C'était tenable tant qu'un son suivait un clic. Le carrousel de
+ * tirage a tout changé : il émet un cran par carte franchie, soit plusieurs
+ * dizaines en quelques secondes. Or un navigateur plafonne le nombre de
+ * contextes audio simultanés — six sur Chrome — et **la construction d'un
+ * contexte n'est pas gratuite** : elle démarre un fil audio et négocie avec le
+ * périphérique de sortie. Au rythme du rail, on payait cette négociation vingt
+ * fois par seconde sur le fil principal, et l'animation saccadait.
+ *
+ * Un contexte unique, gardé ouvert, coûte un fil audio pour toute la vie de la
+ * page. C'est le fonctionnement normal de l'API ; la fermeture systématique
+ * était la déviation.
+ *
+ * Un navigateur peut toujours refuser d'en ouvrir un — politique de la page,
+ * périphérique absent. Le son est un agrément : son absence ne doit jamais
+ * empêcher le geste.
  */
 function contexte(): AudioContext | null {
+  if (partage && partage.state !== 'closed') {
+    // Un contexte ouvert avant le premier geste de l'utilisateur naît suspendu,
+    // et le reste jusqu'à ce qu'on le réveille explicitement.
+    if (partage.state === 'suspended') void partage.resume();
+    return partage;
+  }
+
   const Fabrique =
     typeof window === 'undefined'
       ? undefined
@@ -43,7 +68,8 @@ function contexte(): AudioContext | null {
           .webkitAudioContext);
   if (!Fabrique) return null;
   try {
-    return new Fabrique();
+    partage = new Fabrique();
+    return partage;
   } catch {
     return null;
   }
@@ -138,18 +164,14 @@ function grapheDechirure(ctx: BaseAudioContext) {
 export function bruitDeSelection() {
   const ctx = contexte();
   if (!ctx) return;
-  grapheSelection(ctx).onended = () => {
-    void ctx.close();
-  };
+  grapheSelection(ctx);
 }
 
 /** Le sachet qu'on ouvre. */
 export function bruitDeDechirure() {
   const ctx = contexte();
   if (!ctx) return;
-  grapheDechirure(ctx).onended = () => {
-    void ctx.close();
-  };
+  grapheDechirure(ctx);
 }
 
 /**
@@ -166,8 +188,5 @@ export function bruitDeDechirure() {
 export function bruitDeCran() {
   const ctx = contexte();
   if (!ctx) return;
-  joue(ctx, ctx.destination, { hz: 1180, vers: 880, duree: 0.045, niveau: 0.07 }).onended =
-    () => {
-      void ctx.close();
-    };
+  joue(ctx, ctx.destination, { hz: 1180, vers: 880, duree: 0.045, niveau: 0.07 });
 }

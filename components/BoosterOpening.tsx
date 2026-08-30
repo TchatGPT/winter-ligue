@@ -30,8 +30,6 @@ export interface CatalogCard {
 interface Pulled extends CatalogCard {
   cardId: string;
   isNew: boolean;
-  /** Retournée par le joueur, ou par le bouton « Tout retourner ». */
-  flipped: boolean;
 }
 
 type Phase = 'repos' | 'achat' | 'secousse' | 'eclat' | 'tirage' | 'reveal';
@@ -256,7 +254,6 @@ export function BoosterOpening({
           ...catalog[c.cardId],
           cardId: c.cardId,
           isNew: c.isNew,
-          flipped: false,
         }),
       );
 
@@ -270,23 +267,22 @@ export function BoosterOpening({
        * de connaître la gagnante pour la placer, et il ne tire rien lui-même.
        * Tout est déjà décidé par le serveur à cet instant — le carrousel ne met
        * en scène qu'un résultat acquis.
+       *
+       * Le préambule dure moins d'une demi-seconde. Il en faisait 1,06 — et
+       * comme il s'ajoutait à l'aller-retour au serveur, qui n'est pas
+       * instantané non plus, le joueur restait deux bonnes secondes devant un
+       * sachet qui tremble après avoir cliqué. La secousse et l'éclat doivent
+       * ponctuer le clic, pas faire patienter : dès qu'ils durent assez pour
+       * qu'on les regarde, ils sont trop longs.
        */
       setPulled(cards);
       setPhase('secousse');
-      schedule(() => setPhase('eclat'), 620);
-      schedule(() => setPhase('tirage'), 1_060);
+      schedule(() => setPhase('eclat'), 200);
+      schedule(() => setPhase('tirage'), 460);
     } catch {
       setError('Le serveur n’a pas répondu. Réessaie dans un instant.');
       setPhase('repos');
     }
-  }
-
-  function flip(index: number) {
-    setPulled((prev) => prev.map((c, i) => (i === index ? { ...c, flipped: true } : c)));
-  }
-
-  function flipAll() {
-    setPulled((prev) => prev.map((c) => ({ ...c, flipped: true })));
   }
 
   function reset() {
@@ -295,7 +291,6 @@ export function BoosterOpening({
     setSpent(null);
   }
 
-  const allFlipped = pulled.length > 0 && pulled.every((c) => c.flipped);
   /** La plus haute rareté du lot : c'est elle qui donne le ton du bandeau. */
   const bestRarity = pulled.reduce<Rarity>((best, c) => {
     const r = c.rarity as Rarity;
@@ -519,16 +514,32 @@ export function BoosterOpening({
                 )}
               </div>
 
-              <div className="mx-auto grid max-w-3xl grid-cols-2 justify-center gap-3 sm:grid-cols-3 lg:grid-cols-5">
+              {/*
+               * Les cartes arrivent face visible, et grandes.
+               *
+               * Elles étaient posées de dos, à retourner une par une ou d'un
+               * bouton. Deux défauts : le rail venait de faire tout un travail
+               * de suspense, et on redemandait au joueur de le refaire à la
+               * main ; et une fois retournées, elles tenaient dans cinq
+               * colonnes, où le texte d'effet — la seule chose qui dise à quoi
+               * sert la carte — était illisible.
+               *
+               * Trois colonnes au plus, dans un cadre plus large : les tailles
+               * de `TradingCard` sont en `cqw`, donc la largeur de la colonne
+               * gouverne directement la lisibilité de la description. En
+               * dessous d'environ 320 px de colonne, l'encadré d'effet passe
+               * sous les onze pixels et ne se lit plus.
+               */}
+              <div className="mx-auto grid max-w-5xl grid-cols-1 justify-center gap-5 sm:grid-cols-2 lg:grid-cols-3">
                 {pulled.map((card, i) => {
                   const meta = rarityMeta(card.rarity);
                   return (
                     <div
                       key={`${card.cardId}-${i}`}
                       className="reveal relative"
-                      style={{ animationDelay: `${i * 110}ms` }}
+                      style={{ animationDelay: `${i * 130}ms` }}
                     >
-                      {card.flipped && meta.holo && (
+                      {meta.holo && (
                         <span
                           className="reveal-halo"
                           style={{ ['--r' as string]: meta.color }}
@@ -536,75 +547,39 @@ export function BoosterOpening({
                         />
                       )}
 
-                      <div
-                        className={`flipper ${card.flipped ? 'is-flipped' : ''}`}
-                        onClick={() => flip(i)}
-                        role="button"
-                        tabIndex={0}
-                        aria-label={card.flipped ? card.name : 'Retourner la carte'}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            flip(i);
-                          }
+                      <TradingCard
+                        card={{
+                          cardId: card.cardId,
+                          name: card.name,
+                          subtitle: card.subtitle,
+                          description: card.description,
+                          rarity: card.rarity,
+                          theme: card.theme,
+                          glyph: card.glyph,
+                          power: card.power,
+                          nature: card.nature,
+                          art: cardArt(card.cardId),
                         }}
-                      >
-                        {/* Face cachée : le dos, tant qu'on n'a pas retourné. */}
-                        <div className="flip-face">
-                          <div className="card-back aspect-[5/7]">
-                            <span className="text-3xl opacity-70" aria-hidden="true">
-                              ❄
-                            </span>
-                          </div>
-                        </div>
+                      />
 
-                        {/* Face visible après retournement. */}
-                        <div className="flip-back">
-                          <TradingCard
-                            card={{
-                              cardId: card.cardId,
-                              name: card.name,
-                              subtitle: card.subtitle,
-                              description: card.description,
-                              rarity: card.rarity,
-                              theme: card.theme,
-                              glyph: card.glyph,
-                              power: card.power,
-                              nature: card.nature,
-                              art: cardArt(card.cardId),
-                            }}
-                          />
-                          {card.isNew && (
-                            <span
-                              className="absolute -top-2 left-1/2 z-10 -translate-x-1/2 rounded-full px-2.5 py-0.5 font-display text-[12px] font-black tracking-wider uppercase"
-                              style={{ background: '#5fe3bd', color: '#04211a' }}
-                            >
-                              Nouvelle
-                            </span>
-                          )}
-                        </div>
-                      </div>
+                      {card.isNew && (
+                        <span
+                          className="absolute -top-2 left-1/2 z-10 -translate-x-1/2 rounded-full px-2.5 py-0.5 font-display text-[12px] font-black tracking-wider uppercase"
+                          style={{ background: '#5fe3bd', color: '#04211a' }}
+                        >
+                          Nouvelle
+                        </span>
+                      )}
                     </div>
                   );
                 })}
               </div>
 
               <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
-                {!allFlipped && (
-                  <button className="btn" onClick={flipAll}>
-                    Tout retourner
-                  </button>
-                )}
-                <button className="btn btn-ice" onClick={reset} disabled={!allFlipped}>
+                <button className="btn btn-ice" onClick={reset}>
                   Ouvrir un autre booster
                 </button>
               </div>
-
-              {!allFlipped && (
-                <p className="mt-3 text-center text-xs text-faint">
-                  Clique sur une carte pour la retourner.
-                </p>
-              )}
             </div>
           )}
         </div>

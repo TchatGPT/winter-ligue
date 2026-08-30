@@ -14,18 +14,39 @@ export interface CarteTirage {
   glyph: string;
 }
 
-/** Largeur d'une carte du rail, gouttière comprise. */
-const PAS = 132;
+/**
+ * Largeur d'une carte du rail, gouttière comprise.
+ *
+ * Doit rester d'accord avec `.tirage-carte` dans la feuille de style : c'est
+ * cette valeur qui sert à calculer quelle carte passe sous le repère, et un
+ * écart de quelques pixels décalerait les crans sonores puis l'arrêt.
+ */
+const PAS = 162;
 
-/** Combien de cartes défilent avant la gagnante. */
-const AVANT = 54;
+/**
+ * Combien de cartes défilent avant la gagnante.
+ *
+ * Il y en avait cinquante-quatre. Chacune porte une illustration vectorielle
+ * d'une quinzaine de tracés : le rail montait donc près d'un millier de nœuds
+ * dans l'image qui précédait le départ de l'animation, et les premières
+ * dixièmes de seconde sautaient. Trente suffisent largement à ce qu'on ne voie
+ * jamais le bout du rail.
+ */
+const AVANT = 30;
 
 /** Combien restent après elle, pour que le rail ne s'arrête pas sur le vide. */
-const APRES = 8;
+const APRES = 6;
 
-/** Durée du défilement, en millisecondes. */
-const DUREE = 5200;
-const DUREE_REDUITE = 1400;
+/**
+ * Durée du défilement, en millisecondes.
+ *
+ * Cinq secondes deux au départ, ramenées à trois. Le suspense d'un rail ne
+ * vient pas de sa longueur mais de son ralentissement, et au-delà de trois
+ * secondes on attend au lieu de regarder — d'autant qu'il faut y ajouter
+ * l'aller-retour au serveur, qui a déjà fait patienter.
+ */
+const DUREE = 3000;
+const DUREE_REDUITE = 900;
 
 /**
  * L'amortissement.
@@ -147,8 +168,26 @@ export function Tirage({
       fini.current();
     };
 
-    trame = requestAnimationFrame(image);
-    return () => cancelAnimationFrame(trame);
+    /*
+     * Le départ est décalé d'une image.
+     *
+     * Au premier `requestAnimationFrame` après le montage, le navigateur n'a
+     * pas encore peint les trente-sept cartes du rail : la première image de
+     * l'animation partageait donc son budget avec cette mise en page, et le
+     * démarrage — le moment le plus rapide, celui où le moindre retard se voit
+     * — sautait. En attendant une image de plus, l'animation commence sur une
+     * page déjà peinte, et `debut` est pris à cet instant-là.
+     */
+    let amorce = requestAnimationFrame(() => {
+      amorce = requestAnimationFrame(image);
+      trame = amorce;
+    });
+    trame = amorce;
+
+    return () => {
+      cancelAnimationFrame(amorce);
+      cancelAnimationFrame(trame);
+    };
   }, []);
 
   return (
@@ -176,7 +215,7 @@ export function Tirage({
                 <span className="tirage-glyphe">{c.glyph}</span>
               )}
               <span className="tirage-gemme">
-                <RarityIcon rarity={c.rarity} taille={16} />
+                <RarityIcon rarity={c.rarity} taille={20} />
               </span>
             </div>
           );
