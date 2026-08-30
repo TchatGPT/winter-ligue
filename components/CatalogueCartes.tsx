@@ -53,7 +53,7 @@ export function CatalogueCartes({ cartes }: { cartes: CarteCatalogue[] }) {
         onToggle={bascule}
         onReset={() => setSelection(new Set())}
       >
-        {visibles.length} carte{visibles.length > 1 ? 's' : ''}
+        {visibles.length} carte{visibles.length > 1 ? 's' : ''} sur {cartes.length}
       </FiltreRarete>
 
       {retenues.map((rarity) => {

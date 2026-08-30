@@ -257,6 +257,8 @@ export function MarketBoard({
             selection={rarityFilter}
             onToggle={toggleRarity}
             onReset={() => setRarityFilter(new Set())}
+            compte={(r) => String(source.filter((l) => l.rarity === r).length)}
+            aide="Sous chaque palier, le nombre de ventes en cours. La recherche et le tri s'appliquent en plus du filtre."
           >
             {filtered.length} vente{filtered.length > 1 ? 's' : ''}
           </FiltreRarete>

@@ -186,6 +186,12 @@ export function CollectionBoard({
                 selection={rarete}
                 onToggle={basculeRarete}
                 onReset={() => setRarete(new Set())}
+                compte={(r) =>
+                  String(
+                    profile.hand.filter((c) => c.rarity === r).length,
+                  )
+                }
+                aide="Sous chaque palier, le nombre d'exemplaires que tu détiens. Les doublons sont regroupés sur une seule carte."
               >
                 {affichees.length} carte{affichees.length > 1 ? 's' : ''}
               </FiltreRarete>

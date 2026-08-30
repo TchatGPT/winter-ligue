@@ -53,6 +53,11 @@ export function GrilleCollection({ entrees }: { entrees: EntreeCollection[] }) {
         selection={selection}
         onToggle={bascule}
         onReset={() => setSelection(new Set())}
+        compte={(r) => {
+          const palier = entrees.filter((e) => e.rarity === r);
+          return `${palier.filter((e) => e.discovered).length}/${palier.length}`;
+        }}
+        aide="Sous chaque palier, ce que tu as découvert sur ce qu'il compte. Une carte jouée ou vendue reste découverte."
       >
         <span className="num">{trouvees}</span> / {visibles.length} découverte
         {visibles.length > 1 ? 's' : ''}
