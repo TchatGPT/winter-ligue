@@ -1,16 +1,24 @@
 'use client';
 
-import { RarityIcon } from '@/components/RarityIcon';
 import { rarityMeta } from '@/components/ui';
 import { RARITIES } from '@/lib/domain/types';
 
 /**
  * La barre de filtre par rareté.
  *
- * Six pastilles à bascule, et un bouton pour tout rouvrir. Elle vivait dans
+ * Six libellés à bascule, et un bouton pour tout rouvrir. Elle vivait dans
  * l'hôtel des ventes ; le catalogue et la collection en avaient besoin à leur
  * tour, et trois copies d'un même filtre finissent toujours par diverger — un
  * ordre ici, une teinte là.
+ *
+ * ## Des mots, pas les gemmes de rareté
+ *
+ * Les pastilles dessinées de {@link RarityIcon} tiennent leur rôle sur une
+ * carte, où la couleur du cadre et le sigle disent déjà la rareté et où la gemme
+ * ne fait que confirmer. Isolées sur une barre de filtre, elles demandent au
+ * joueur de connaître par cœur la correspondance entre six formes et six
+ * paliers — et une infobulle ne se survole pas sur un téléphone. Un filtre doit
+ * s'utiliser sans avoir été appris.
  *
  * ## Pourquoi des bascules et non un choix unique
  *
@@ -47,16 +55,14 @@ export function FiltreRarete({
             type="button"
             onClick={() => onToggle(r)}
             aria-pressed={active}
-            aria-label={meta.label}
-            title={meta.label}
-            className="grid place-items-center rounded-md border px-2 py-1.5 transition-colors"
+            className="rounded-full border px-3 py-1 font-display text-[12px] font-black tracking-[0.08em] uppercase transition-colors"
             style={{
               borderColor: active ? meta.color : 'var(--line-2)',
               color: active ? '#060a12' : meta.color,
               background: active ? meta.color : 'transparent',
             }}
           >
-            <RarityIcon rarity={r} />
+            {meta.label}
           </button>
         );
       })}
