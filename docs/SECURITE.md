@@ -169,7 +169,29 @@ méritent la même vigilance :
   gagner davantage celui qui dépensait davantage, et le multiplicateur de kills réécrivait
   rétroactivement toute la saison. Le score d'une game ne dépend plus que de la game.
 
-### 12. Traçabilité
+### 12. Rôles et réglages
+
+Trois rôles hiérarchiques — joueur, modérateur, admin — et le garde compare des rangs
+plutôt que des listes : une route qui demande `moderateur` accepte un admin, et ajouter
+un échelon ne demande pas de relire chaque route.
+
+La frontière n'est pas décorative. Un modérateur agit sur le **déroulement** de la saison,
+un admin sur ses **règles** : prix, taux de rareté, attribution des rôles. Un modérateur ne
+peut donc ni se promouvoir, ni rendre les légendaires dix fois plus fréquentes.
+
+Deux garde-fous sur les rôles, qui ne se recouvrent pas : un administrateur ne peut pas se
+rétrograder lui-même — c'est la faute de manipulation la plus banale, et elle est
+irréversible depuis l'interface — et le dernier administrateur ne peut pas être retiré,
+sans quoi deux admins peuvent se rétrograder l'un l'autre et laisser la ligue sans
+personne. Le mot de passe de secours permettrait de se rattraper, mais compter dessus
+revient à transformer une faute de clic en incident.
+
+Les taux réglés sont vérifiés côté serveur, pas côté formulaire : la somme doit valoir
+exactement 100 000, faute de quoi `pickWeighted` tire dans une plage qui ne correspond
+plus aux taux affichés. Le refus est net plutôt que normalisé en silence — l'administrateur
+doit voir son erreur, pas la voir corrigée.
+
+### 13. Traçabilité
 
 Aucun mouvement de flocons sans ligne au **grand livre** (`LedgerEntry`) : le solde d'un
 joueur doit toujours être reconstructible à partir de son historique, ce qui rend une

@@ -8,6 +8,20 @@
 
 import type { Bid, BoonKind, Listing, Placement, Rarity, Sale } from '@/lib/domain/types';
 
+/**
+ * Ce qu'un compte a le droit de faire.
+ *
+ * Trois échelons, et la frontière n'est pas arbitraire : un **modérateur** agit
+ * sur le déroulement de la saison — enregistrer une game, créditer, ouvrir ou
+ * fermer la boutique. Un **admin** agit sur ses règles : les prix, les taux de
+ * rareté, et l'attribution des rôles eux-mêmes.
+ *
+ * Autrement dit, un modérateur ne peut pas se promouvoir, ni rendre les
+ * légendaires dix fois plus fréquentes. C'est ce qui rend le rôle distribuable
+ * sans arrière-pensée.
+ */
+export type PlayerRole = 'joueur' | 'moderateur' | 'admin';
+
 export interface Player {
   id: string;
   /** Identifiant lisible utilisé dans les URLs. */
@@ -20,6 +34,7 @@ export interface Player {
   snowflakes: number;
   joinedAt: string;
   active: boolean;
+  role: PlayerRole;
 }
 
 /** Trace d'un effet de carte appliqué à une game, avec son delta exact. */
@@ -209,6 +224,23 @@ export interface SubEvent {
   recipients: number;
 }
 
+/**
+ * Réglages d'un booster décidés par l'administration.
+ *
+ * Le catalogue reste la source de vérité par défaut ; ceci ne fait que le
+ * recouvrir, champ par champ. Un booster sans réglage garde exactement les
+ * valeurs de `lib/domain/catalog.ts`, et remettre à zéro un réglage suffit à
+ * revenir au catalogue — on ne perd jamais l'original.
+ */
+export interface BoosterSetting {
+  boosterId: string;
+  /** Prix en flocons. Absent : celui du catalogue. */
+  price?: number;
+  /** Table de raretés. Absente : celle du catalogue. Somme exacte : 100 000. */
+  weights?: Record<Rarity, number>;
+  updatedAt: string;
+}
+
 export interface Database {
   /** Incrémentée à chaque migration de forme. */
   version: number;
@@ -228,4 +260,5 @@ export interface Database {
   events: LeagueEvent[];
   subEvents: SubEvent[];
   audit: AuditEntry[];
+  boosterSettings: BoosterSetting[];
 }

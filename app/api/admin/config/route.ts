@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic';
 export async function PATCH(request: Request): Promise<NextResponse> {
   const g = await guard(request, {
     scope: 'admin-config',
-    role: 'admin',
+    role: 'moderateur',
     limit: LIMITS.mutation,
     schema: adminConfigSchema,
   });

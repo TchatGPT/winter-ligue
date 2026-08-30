@@ -3,8 +3,9 @@ import { CatalogueCartes, type CarteCatalogue } from '@/components/CatalogueCart
 import { PageHead, RarityChip } from '@/components/ui';
 import { getSession } from '@/lib/auth/session';
 import { getStore } from '@/lib/db/store';
-import { BOOSTERS, CARDS } from '@/lib/domain/catalog';
+import { CARDS } from '@/lib/domain/catalog';
 import { ECONOMY } from '@/lib/domain/rules';
+import { resolvedBoosters } from '@/lib/services/boosters';
 import { statsForCard } from '@/lib/services/market';
 
 export const dynamic = 'force-dynamic';
@@ -23,16 +24,19 @@ export default async function BoostersPage() {
   const session = await getSession();
   const playerId = session?.role === 'joueur' ? session.sub : null;
 
-  const { balance, shopOpen, quotes } = await getStore().read((db) => ({
+  const { balance, shopOpen, quotes, catalogueBoosters } = await getStore().read((db) => ({
     balance: playerId ? (db.players.find((p) => p.id === playerId)?.snowflakes ?? null) : null,
     shopOpen: db.config.shopOpen,
+    // Prix et taux tels que l'administration les a réglés, pas ceux du
+    // catalogue : la page doit annoncer ce que le serveur appliquera.
+    catalogueBoosters: resolvedBoosters(db),
     // Cote de chaque carte, pour que le catalogue affiche une valeur de marché.
     quotes: Object.fromEntries(
       CARDS.map((c) => [c.id, statsForCard(db, c.id).lastPrice]),
     ) as Record<string, number | null>,
   }));
 
-  const boosters: ShopBooster[] = BOOSTERS.map((b) => ({ ...b, finalPrice: b.price }));
+  const boosters: ShopBooster[] = catalogueBoosters.map((b) => ({ ...b, finalPrice: b.price }));
 
   // Le catalogue tel que la grille filtrable l'attend.
   const catalogue: CarteCatalogue[] = CARDS.map((c) => ({

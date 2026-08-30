@@ -52,6 +52,7 @@ export function emptyDatabase(): Database {
     events: [],
     subEvents: [],
     audit: [],
+    boosterSettings: [],
   };
 }
 
@@ -150,7 +151,10 @@ function migrate(db: Partial<Database>): Database {
     ...db,
     version: SCHEMA_VERSION,
     config: { ...base.config, ...(db.config ?? {}) },
-    players: db.players ?? [],
+    // Les comptes existants n'avaient pas de rôle : ils deviennent joueurs.
+    // Sans ce rattrapage, `player.role` serait `undefined` et toute
+    // comparaison de rôle échouerait en silence.
+    players: (db.players ?? []).map((p) => ({ ...p, role: p.role ?? 'joueur' })),
     games: db.games ?? [],
     cards: db.cards ?? [],
     collectibles: db.collectibles ?? [],
@@ -165,6 +169,7 @@ function migrate(db: Partial<Database>): Database {
     events: db.events ?? [],
     subEvents: db.subEvents ?? [],
     audit: db.audit ?? [],
+    boosterSettings: db.boosterSettings ?? [],
   };
 }
 

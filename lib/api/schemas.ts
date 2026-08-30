@@ -158,3 +158,29 @@ export const momentSchema = z.object({
   rarity,
   glyph: z.string().trim().min(1).max(8).default('🏅'),
 });
+
+/**
+ * Changement de rôle.
+ *
+ * La validation s'arrête ici à la forme : c'est la route qui refuse à un
+ * administrateur de se retirer son propre rôle, parce que cette règle a besoin
+ * de savoir qui parle.
+ */
+export const adminRoleSchema = z.object({
+  playerId: uuid,
+  role: z.enum(['joueur', 'moderateur', 'admin']),
+});
+
+/**
+ * Réglage d'un booster.
+ *
+ * `null` veut dire « remets la valeur du catalogue », et se distingue donc de
+ * l'absence du champ, qui veut dire « n'y touche pas ». Les poids ne sont pas
+ * validés ici : leur somme doit valoir exactement 100 000, et un message
+ * indiquant de combien on s'écarte vaut mieux qu'un refus de schéma.
+ */
+export const adminBoosterSchema = z.object({
+  boosterId: z.string().trim().min(1).max(40),
+  price: z.number().int().nullable().optional(),
+  weights: z.record(z.string(), z.number()).nullable().optional(),
+});

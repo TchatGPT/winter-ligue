@@ -3,8 +3,8 @@ import { toResponse } from '@/lib/api/errors';
 import { fail, guard, ok } from '@/lib/api/respond';
 import { purchaseSchema } from '@/lib/api/schemas';
 import { getStore } from '@/lib/db/store';
-import { BOOSTERS } from '@/lib/domain/catalog';
 import { LIMITS } from '@/lib/security/ratelimit';
+import { resolvedBoosters } from '@/lib/services/boosters';
 import { purchaseAndOpen } from '@/lib/services/cards';
 
 export const runtime = 'nodejs';
@@ -20,11 +20,14 @@ export async function GET(request: Request): Promise<NextResponse> {
   // Le prix affiché est le prix payé : il n'y a plus de remise de collection.
   // Le champ reste nommé `finalPrice` pour que le client n'ait pas à savoir
   // qu'il n'existe plus de prix « avant remise ».
-  const { shopOpen } = await store.read((db) => ({ shopOpen: db.config.shopOpen }));
+  const { shopOpen, boosters } = await store.read((db) => ({
+    shopOpen: db.config.shopOpen,
+    boosters: resolvedBoosters(db as never),
+  }));
 
   return ok({
     shopOpen,
-    boosters: BOOSTERS.map((b) => ({ ...b, finalPrice: b.price })),
+    boosters: boosters.map((b) => ({ ...b, finalPrice: b.price })),
   });
 }
 

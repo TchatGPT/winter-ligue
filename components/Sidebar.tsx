@@ -19,7 +19,8 @@ export const SIDEBAR_WIDTH = 272;
  */
 export async function Sidebar() {
   const session = await getSession();
-  const isAdmin = session?.role === 'admin';
+  // Les deux échelons voient l'onglet ; la page décide ensuite quoi montrer.
+  const isAdmin = session?.role === 'admin' || session?.role === 'moderateur';
   const isPlayer = session?.role === 'joueur';
 
   const { player, totalSubs } = await getStore().read((db) => {

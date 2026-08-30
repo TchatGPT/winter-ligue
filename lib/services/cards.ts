@@ -12,13 +12,14 @@ import 'server-only';
 
 import type { CardInstance, Database } from '@/lib/db/entities';
 import { newId } from '@/lib/db/store';
-import { getBooster, getCard } from '@/lib/domain/catalog';
+import { getCard } from '@/lib/domain/catalog';
 import { RARITY_ORDER } from '@/lib/domain/rules';
 import type { Rarity } from '@/lib/domain/types';
 import { rollBooster } from '@/lib/domain/rng';
 import { audit, debit } from './ledger';
 import { consumeBoon, isSilenced, resolve } from './effects';
 import { resolveCard } from './collection';
+import { resolvedBooster } from './boosters';
 
 export class CardError extends Error {
   constructor(
@@ -115,7 +116,16 @@ export function purchaseAndOpen(
     };
   }
 
-  const booster = getBooster(boosterId);
+  /*
+   * Le booster **réglé**, et non celui du catalogue.
+   *
+   * C'est la ligne qui compte dans tout le réglage d'économie : elle porte le
+   * prix débité et la table de raretés qui sert au tirage. Lire le catalogue ici
+   * ferait payer le prix modifié et tirer avec les taux d'origine — l'écran et
+   * le serveur raconteraient deux choses différentes, ce qui est pire que de ne
+   * rien pouvoir régler.
+   */
+  const booster = resolvedBooster(db, boosterId);
   if (!booster) throw new CardError('Booster inconnu.', 'BOOSTER_INCONNU');
 
   // Il n'y a plus de plafond de détention : la réserve a été retirée en même

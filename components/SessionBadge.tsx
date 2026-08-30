@@ -17,7 +17,7 @@ export function SessionBadge({
   balance,
   stacked = false,
 }: {
-  role: 'admin' | 'joueur' | null;
+  role: 'admin' | 'moderateur' | 'joueur' | null;
   pseudo: string | null;
   balance: number | null;
   /** Disposition verticale, pour le pied de la colonne latérale. */
@@ -65,7 +65,7 @@ export function SessionBadge({
       <div className="space-y-2">
         {flakesPill}
         <div className="truncate text-center font-display text-sm font-bold tracking-wide text-muted uppercase">
-          {role === 'admin' ? 'Modération' : pseudo}
+          {role === 'admin' ? 'Administration' : role === 'moderateur' ? 'Modération' : pseudo}
         </div>
         <button className="btn btn-sm btn-ghost w-full" onClick={logout} disabled={busy || pending}>
           Se déconnecter

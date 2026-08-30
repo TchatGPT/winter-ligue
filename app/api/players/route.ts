@@ -44,6 +44,7 @@ export async function POST(request: Request): Promise<NextResponse> {
         snowflakes: 0,
         joinedAt: new Date().toISOString(),
         active: true,
+        role: 'joueur' as const,
       };
       db.players.push(created);
       credit(db, created.id, ECONOMY.welcomeGrant, 'INSCRIPTION', null);

@@ -19,7 +19,7 @@ export const dynamic = 'force-dynamic';
 export async function POST(request: Request): Promise<NextResponse> {
   const g = await guard(request, {
     scope: 'admin-grant',
-    role: 'admin',
+    role: 'moderateur',
     limit: LIMITS.mutation,
     schema: adminGrantSchema,
   });

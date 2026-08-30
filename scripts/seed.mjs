@@ -111,6 +111,7 @@ const db = {
   events: [],
   subEvents: [],
   audit: [],
+  boosterSettings: [],
 };
 
 function move(playerId, delta, reason, msAgo = between(0, 20) * 3_600_000) {
@@ -139,6 +140,10 @@ for (const pseudo of PSEUDOS) {
     snowflakes: 0,
     joinedAt: iso(60 * DAY),
     active: true,
+    // Le premier inscrit est administrateur, le deuxième modérateur : sans eux,
+    // la base de démonstration s'ouvre sur un panneau que personne ne peut
+    // atteindre autrement que par le mot de passe de secours.
+    role: db.players.length === 0 ? 'admin' : db.players.length === 1 ? 'moderateur' : 'joueur',
   });
   move(db.players.at(-1).id, 400, 'INSCRIPTION', 60 * DAY);
 }

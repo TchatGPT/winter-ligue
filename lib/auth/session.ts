@@ -26,7 +26,14 @@ const scrypt = promisify(scryptCb) as (
 export const SESSION_COOKIE = 'wl_session';
 const SESSION_TTL_SECONDS = 60 * 60 * 12; // 12 h
 
-export type Role = 'joueur' | 'admin';
+/**
+ * Le rôle porté par une session.
+ *
+ * Identique à `PlayerRole` côté base, à ceci près qu'il vit aussi dans le jeton
+ * : la session de secours ouverte par `ADMIN_PASSWORD_HASH` n'a pas de joueur
+ * derrière elle, et vaut `admin` sans qu'aucune ligne ne le dise.
+ */
+export type Role = 'joueur' | 'moderateur' | 'admin';
 
 export interface SessionPayload {
   /** Identifiant du joueur, ou 'admin' pour la session de modération. */
@@ -98,7 +105,7 @@ export function verifyToken(token: string | undefined | null): SessionPayload | 
   try {
     const payload = JSON.parse(fromB64url(encoded).toString('utf8')) as SessionPayload;
     if (typeof payload.exp !== 'number' || payload.exp * 1000 <= Date.now()) return null;
-    if (payload.role !== 'admin' && payload.role !== 'joueur') return null;
+    if (!['admin', 'moderateur', 'joueur'].includes(payload.role)) return null;
     if (typeof payload.sub !== 'string' || payload.sub.length === 0) return null;
     return payload;
   } catch {

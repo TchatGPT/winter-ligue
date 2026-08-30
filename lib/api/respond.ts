@@ -17,6 +17,9 @@ import type { ZodType } from 'zod';
 import { getSession, type Role, type SessionPayload } from '@/lib/auth/session';
 import { consume, LIMITS } from '@/lib/security/ratelimit';
 
+/** Hiérarchie des rôles : chacun peut ce que peut le précédent, et davantage. */
+const RANG: Record<Role, number> = { joueur: 0, moderateur: 1, admin: 2 };
+
 export type ApiErrorCode =
   | 'REQUETE_INVALIDE'
   | 'NON_AUTHENTIFIE'
@@ -134,8 +137,16 @@ export async function guard<T = undefined>(
     if (!session) {
       return { ok: false, response: fail('NON_AUTHENTIFIE', 'Connexion requise.') };
     }
-    if (options.role === 'admin' && session.role !== 'admin') {
-      return { ok: false, response: fail('NON_AUTORISE', 'Accès réservé à la modération.') };
+    /*
+     * Les rôles sont hiérarchiques, et une seule ligne le dit.
+     *
+     * Une route qui demande `moderateur` accepte donc un admin, ce qui évite
+     * l'erreur classique — lister les rôles autorisés route par route, puis en
+     * oublier un le jour où on en ajoute un. Une route qui demande `admin`
+     * n'accepte que lui.
+     */
+    if (RANG[session.role] < RANG[options.role]) {
+      return { ok: false, response: fail('NON_AUTORISE', 'Droits insuffisants.') };
     }
   }
 

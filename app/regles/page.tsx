@@ -1,5 +1,7 @@
 import { PageHead, RarityChip, flakes } from '@/components/ui';
-import { BOOSTERS, RARITY_META } from '@/lib/domain/catalog';
+import { RARITY_META } from '@/lib/domain/catalog';
+import { getStore } from '@/lib/db/store';
+import { resolvedBoosters } from '@/lib/services/boosters';
 import {
   atLeastOnePercent,
   ECONOMY,
@@ -43,7 +45,18 @@ function Rule({
  * ne peut pas mentir sur les taux, puisqu'elle affiche exactement les nombres
  * que le serveur utilise pour tirer.
  */
-export default function ReglesPage() {
+export const dynamic = 'force-dynamic';
+
+export default async function ReglesPage() {
+  /*
+   * Les boosters tels qu'ils sont réellement vendus.
+   *
+   * La page des règles lisait le catalogue. Depuis que l'administration peut
+   * régler prix et taux, ce serait publier des règles fausses — et c'est la
+   * seule page du site dont on attend qu'elle dise vrai.
+   */
+  const boosters = await getStore().read((db) => resolvedBoosters(db));
+
   return (
     <div className="space-y-4">
       <PageHead eyebrow={SEASON.edition} title="Les" accent="Règles" />
@@ -190,7 +203,7 @@ export default function ReglesPage() {
               </tr>
             </thead>
             <tbody>
-              {BOOSTERS.map((b) => (
+              {boosters.map((b) => (
                 <tr key={b.id}>
                   <td className="text-ink">
                     <span aria-hidden="true">{b.glyph}</span> {b.name}

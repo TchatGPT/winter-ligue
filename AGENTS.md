@@ -50,6 +50,17 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   ni bonus de collection, ni plafond de réserve, ni taxe de vente : tout cela existait et
   a été retiré parce que cela faisait marquer davantage celui qui dépensait davantage.
   Le score d'une game ne dépend que de la game et des cartes jouées dessus.
+- **Les boosters se lisent par `resolvedBooster()`, jamais par `getBooster()`, dès qu'ils
+  servent au jeu.** Le catalogue reste le défaut ; l'administration le recouvre. Débiter
+  le prix réglé en tirant avec les taux du catalogue serait pire que de ne rien pouvoir
+  régler — l'écran et le serveur raconteraient deux choses différentes.
+- **Toute table de raretés passe par `verifieTable()`.** Somme exacte de 100 000 : c'est
+  la plage dans laquelle `pickWeighted` tire. Une somme fausse rend les taux affichés
+  mensongers sans que personne puisse s'en apercevoir.
+- Trois rôles, hiérarchiques : un **modérateur** fait vivre la saison (games, crédits,
+  ouverture de la boutique), un **admin** en change les règles (prix, taux, rôles). Le
+  garde compare les rangs, donc une route `moderateur` accepte un admin. Ne jamais
+  donner à un modérateur de quoi se promouvoir.
 - Les couleurs viennent des variables CSS de `app/globals.css`, jamais codées en dur.
 - Avant de livrer : `npm run typecheck && npm test && npm run build`.
 

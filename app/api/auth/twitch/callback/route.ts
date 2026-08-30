@@ -54,6 +54,7 @@ export async function GET(request: Request): Promise<NextResponse> {
       snowflakes: 0,
       joinedAt: new Date().toISOString(),
       active: true,
+      role: 'joueur' as const,
     };
     db.players.push(created);
     credit(db, created.id, ECONOMY.welcomeGrant, 'INSCRIPTION', null);
@@ -61,7 +62,7 @@ export async function GET(request: Request): Promise<NextResponse> {
     return created;
   });
 
-  await setSessionCookie(createToken(player.id, 'joueur'));
+  await setSessionCookie(createToken(player.id, player.role));
 
   const base = (process.env.NEXT_PUBLIC_SITE_URL ?? url.origin).replace(/\/$/, '');
   return NextResponse.redirect(`${base}${returnTo}`);

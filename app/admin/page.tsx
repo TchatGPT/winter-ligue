@@ -1,7 +1,13 @@
 import { redirect } from 'next/navigation';
 import { AdminPanel, type AdminPlayer } from '@/components/AdminPanel';
+import {
+  AdminReglages,
+  type ReglageBooster,
+  type ReglageJoueur,
+} from '@/components/AdminReglages';
 import { getSession } from '@/lib/auth/session';
 import { getStore } from '@/lib/db/store';
+import { resolvedBoosters } from '@/lib/services/boosters';
 import { totalsOf } from '@/lib/services/league';
 
 export const dynamic = 'force-dynamic';
@@ -16,7 +22,12 @@ export const metadata = { title: 'Modération' };
  */
 export default async function AdminPage() {
   const session = await getSession();
-  if (!session || session.role !== 'admin') redirect('/connexion');
+  // Les deux échelons entrent ; ce qu'ils voient diffère plus bas, et chaque
+  // route revérifie de son côté.
+  if (!session || (session.role !== 'admin' && session.role !== 'moderateur')) {
+    redirect('/connexion');
+  }
+  const estAdmin = session.role === 'admin';
 
   const data = await getStore().read((db) => {
     const players: AdminPlayer[] = db.players
@@ -42,6 +53,25 @@ export default async function AdminPage() {
         marketOpen: db.config.marketOpen,
         totalSubs: db.config.totalSubs,
       },
+      roles: db.players
+        .filter((p) => p.active)
+        .map((p): ReglageJoueur => ({ id: p.id, pseudo: p.pseudo, role: p.role }))
+        .sort(
+          (a, b) =>
+            ['admin', 'moderateur', 'joueur'].indexOf(a.role) -
+              ['admin', 'moderateur', 'joueur'].indexOf(b.role) ||
+            a.pseudo.localeCompare(b.pseudo, 'fr'),
+        ),
+      boosters: resolvedBoosters(db).map(
+        (b): ReglageBooster => ({
+          id: b.id,
+          name: b.name,
+          price: b.price,
+          weights: b.weights,
+          slots: b.slots,
+          modifie: db.boosterSettings.some((r) => r.boosterId === b.id),
+        }),
+      ),
       auditTrail: db.audit
         .slice(-40)
         .reverse()
@@ -54,7 +84,15 @@ export default async function AdminPage() {
       <header>
         <p className="eyebrow">Accès réservé</p>
         <h1 className="section-title">
-          Modé<em>ration</em>
+          {estAdmin ? (
+            <>
+              Admini<em>stration</em>
+            </>
+          ) : (
+            <>
+              Modé<em>ration</em>
+            </>
+          )}
         </h1>
       </header>
 
@@ -63,6 +101,8 @@ export default async function AdminPage() {
         config={data.config}
         auditTrail={data.auditTrail}
       />
+
+      {estAdmin && <AdminReglages joueurs={data.roles} boosters={data.boosters} />}
     </div>
   );
 }

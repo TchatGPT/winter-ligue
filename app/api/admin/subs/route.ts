@@ -32,7 +32,7 @@ export async function GET(request: Request): Promise<NextResponse> {
 export async function POST(request: Request): Promise<NextResponse> {
   const g = await guard(request, {
     scope: 'admin-subs',
-    role: 'admin',
+    role: 'moderateur',
     limit: LIMITS.mutation,
     schema,
   });

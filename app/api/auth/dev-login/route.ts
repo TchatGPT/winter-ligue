@@ -35,6 +35,8 @@ export async function POST(request: Request): Promise<NextResponse> {
   );
   if (!player) return fail('INTROUVABLE', 'Joueur introuvable.');
 
-  await setSessionCookie(createToken(player.id, 'joueur'));
+  // Le rôle vient de la base, pas d'une valeur figée : c'est ce qui fait qu'un
+  // joueur promu administrateur l'est vraiment à sa prochaine connexion.
+  await setSessionCookie(createToken(player.id, player.role));
   return ok({ id: player.id, pseudo: player.pseudo, slug: player.slug });
 }
