@@ -406,9 +406,9 @@
     position: relative;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 16px;
     width: 100%;
-    max-width: 560px;
+    max-width: 620px;
     margin-inline: auto;
     padding: 12px 0;
   }
@@ -422,7 +422,7 @@
   .tirage-piste {
     position: relative;
     overflow: hidden;
-    height: 150px;
+    height: 172px;
     border-radius: var(--r-md);
     border: 1px solid var(--glass-edge);
     background: linear-gradient(180deg, rgb(3 8 16 / 0.75), rgb(6 14 26 / 0.9));
@@ -432,14 +432,16 @@
 
   @media (max-width: 640px) {
     .tirage-piste {
-      height: 116px;
+      height: 132px;
     }
   }
 
   .tirage-rail {
     display: flex;
     height: 100%;
-    gap: 8px;
+    /* Doit rester d'accord avec GOUTTIERE dans components/Tirage.tsx : c'est de
+       ce pas que le composant déduit la position d'arrêt. */
+    gap: 18px;
     width: max-content;
     /* Promu sur sa propre couche : il se déplace à chaque image, et sans
        promotion le navigateur repeindrait la bande entière à chaque fois. */
@@ -603,6 +605,36 @@
   .tirage-voile-droite {
     right: 0;
     background: linear-gradient(270deg, var(--bg) 15%, transparent);
+  }
+
+  /*
+   * La vraie carte, posée sur sa tuile à l'arrêt.
+   *
+   * Elle sort de l'échelle du rail : c'est le seul moment où une carte du
+   * carrousel mérite son cadre peint, et où on peut se le permettre — une par
+   * piste au lieu de cent cinquante.
+   */
+  .tirage-gagnee {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    z-index: 5;
+    height: 98%;
+    aspect-ratio: 1514 / 2231;
+    transform: translate(-50%, -50%);
+    animation: tirage-revele 520ms cubic-bezier(0.2, 1.5, 0.35, 1) both;
+    pointer-events: none;
+  }
+
+  @keyframes tirage-revele {
+    0% {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(0.72);
+    }
+    100% {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
   }
 
   /* -- L'arrêt ------------------------------------------------------------- */

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BoosterPack3D } from '@/components/BoosterPack3D';
+import { aUneIllustration } from '@/components/CardArt';
 import { CardDetailModal, type CarteDetail } from '@/components/CardDetailModal';
 import { Tirage } from '@/components/Tirage';
 import { bruitDeDechirure, bruitDeSelection } from '@/components/bruitage';
@@ -185,21 +186,32 @@ export function BoosterOpening({
   const affordable = balance !== null && booster !== undefined && balance >= booster.finalPrice;
 
   /**
-   * Les leurres du carrousel : tout le catalogue.
+   * Les leurres du carrousel.
    *
    * Ils n'ont aucune existence dans la partie — ils passent sous le repère et
    * disparaissent. Les prendre dans le vrai catalogue plutôt que d'inventer des
    * formes est ce qui rend le rail crédible : on reconnaît des cartes qu'on
    * possède, et on les voit filer.
+   *
+   * Seules les cartes qui ont une illustration entrent dans le rail. Le
+   * catalogue contient aussi les cartes Joueur et Moment, créées par la
+   * modération et sans dessin : elles défilaient en tuiles grises et vides, au
+   * milieu des autres. Une carte vide dans une bande d'ouverture ne se lit pas
+   * comme « pas encore illustrée », elle se lit comme un bogue.
    */
   const leurres = useMemo(
     () =>
-      Object.entries(catalog).map(([cardId, c]) => ({
-        cardId,
-        name: c.name,
-        rarity: c.rarity,
-        glyph: c.glyph,
-      })),
+      Object.entries(catalog)
+        .filter(([cardId]) => aUneIllustration(cardId))
+        .map(([cardId, c]) => ({
+          cardId,
+          name: c.name,
+          description: c.description,
+          rarity: c.rarity,
+          glyph: c.glyph,
+          power: c.power,
+          nature: c.nature,
+        })),
     [catalog],
   );
 
@@ -216,8 +228,11 @@ export function BoosterOpening({
       pulled.map((c) => ({
         cardId: c.cardId,
         name: c.name,
+        description: c.description,
         rarity: c.rarity,
         glyph: c.glyph,
+        power: c.power,
+        nature: c.nature,
       })),
     [pulled],
   );

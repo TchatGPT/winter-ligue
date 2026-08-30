@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { aUneIllustration, CardArt } from '@/components/CardArt';
+import { CardFrame } from '@/components/CardFrame';
 import { RarityIcon } from '@/components/RarityIcon';
 import { bruitDeCran, bruitDeGain, bruitDeRoulement } from '@/components/bruitage';
 import { RARITY_META } from '@/lib/domain/catalog';
@@ -11,8 +12,11 @@ import type { Rarity } from '@/lib/domain/types';
 export interface CarteTirage {
   cardId: string;
   name: string;
+  description: string;
   rarity: string;
   glyph: string;
+  power: number;
+  nature: 'bonus' | 'malus';
 }
 
 /**
@@ -28,15 +32,34 @@ const AVANT = 26;
 /** Combien restent après elle, pour qu'aucune piste ne finisse sur du vide. */
 const APRES = 4;
 
-/** Durée du défilement de la première piste, en millisecondes. */
-const DUREE = 3800;
+/**
+ * Durée du défilement de la première piste, en millisecondes.
+ *
+ * Cinq secondes deux. Les versions à trois et à trois huit se lisaient comme un
+ * mécanisme qui se replace, pas comme un tirage : le temps de comprendre ce qui
+ * défile, c'était fini. C'est long — et c'est le sujet : ce qu'on achète en
+ * ouvrant un booster, c'est cette attente-là.
+ */
+const DUREE = 5200;
 const DUREE_REDUITE = 900;
 
-/** Décalage d'arrêt d'une piste à la suivante. */
-const RELAIS = 550;
+/**
+ * Décalage d'arrêt d'une piste à la suivante.
+ *
+ * Assez large pour que chaque arrêt soit un évènement séparé. À cinq cent
+ * cinquante millisecondes, les cinq clacs se fondaient en un roulement et les
+ * pistes semblaient s'arrêter ensemble.
+ */
+const RELAIS = 900;
 
-/** Gouttière horizontale entre deux cartes, en pixels. */
-const GOUTTIERE = 8;
+/**
+ * Gouttière horizontale entre deux cartes, en pixels.
+ *
+ * Huit pixels pour des cartes de cent vingt : la bande se lisait comme une
+ * grille collée, sans respiration. Le double sépare les cartes sans qu'on cesse
+ * de les voir défiler ensemble.
+ */
+const GOUTTIERE = 18;
 
 /** Rapport hauteur/largeur d'une carte du rail — celui du cadre peint. */
 const RATIO = 1.4;
@@ -192,6 +215,7 @@ function Piste({
 }) {
   const cadre = useRef<HTMLDivElement>(null);
   const rail = useRef<HTMLDivElement>(null);
+  const [arrete, setArrete] = useState(false);
 
   const fini = useRef(onFini);
   useEffect(() => {
@@ -293,6 +317,7 @@ function Piste({
       }
       el.style.filter = '';
       boite.dataset.arrete = 'true';
+      setArrete(true);
       bruitDeGain(RARITY_ORDER[gagnante.rarity as Rarity] ?? 0);
       fini.current();
     };
@@ -355,6 +380,32 @@ function Piste({
           );
         })}
       </div>
+
+      {/*
+       * La vraie carte, à l'arrêt.
+       *
+       * Le rail ne peut pas faire défiler des cartes complètes : cent cinquante
+       * cadres peints, avec leur image et leur rotation de teinte, ne tiennent
+       * pas la cadence. Il fait donc défiler des tuiles simplifiées — et c'est
+       * exactement pour ça qu'on « ne voyait pas les vraies cartes ».
+       *
+       * La solution n'est pas d'alourdir le rail mais de poser la vraie carte au
+       * moment où elle compte : à l'arrêt, une seule par piste, celle qu'on a
+       * gagnée. Elle recouvre sa tuile et c'est elle qu'on regarde.
+       */}
+      {arrete && (
+        <div className="tirage-gagnee">
+          <CardFrame
+            cardId={gagnante.cardId}
+            name={gagnante.name}
+            description={gagnante.description}
+            rarity={gagnante.rarity}
+            glyph={gagnante.glyph}
+            power={gagnante.power}
+            nature={gagnante.nature}
+          />
+        </div>
+      )}
     </div>
   );
 }
