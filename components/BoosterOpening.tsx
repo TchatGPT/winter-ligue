@@ -6,8 +6,9 @@ import { CardDetailModal, type CarteDetail } from '@/components/CardDetailModal'
 import { Tirage } from '@/components/Tirage';
 import { bruitDeDechirure, bruitDeSelection } from '@/components/bruitage';
 import { CardTile, Notice, RarityChip, flakes, rarityMeta } from '@/components/ui';
+import { aUneIllustration, CardArt } from '@/components/CardArt';
 import { boosterArt, boosterSize } from '@/lib/domain/catalog';
-import { atLeastOnePercent, rarityPercent } from '@/lib/domain/rules';
+import { atLeastOnePercent, RARITY_ORDER, rarityPercent } from '@/lib/domain/rules';
 import type { BoosterDefinition, Rarity } from '@/lib/domain/types';
 
 const RARITY_LADDER: Rarity[] = ['C', 'PC', 'R', 'SR', 'UR', 'L'];
@@ -183,6 +184,28 @@ export function BoosterOpening({
   }, []);
 
   const affordable = balance !== null && booster !== undefined && balance >= booster.finalPrice;
+
+  /**
+   * Le contenu possible du sachet retenu.
+   *
+   * Les sites d'ouverture de caisses montrent toujours ce qu'une caisse peut
+   * donner, et la cote de chaque palier, **avant** qu'on paie. Ce n'est pas de
+   * la générosité : une machine qui cache ses chances se fait soupçonner de
+   * tricher, et une machine qui les affiche fait rêver sur la ligne du bas.
+   *
+   * La cote vient des poids du booster choisi, donc elle change quand on change
+   * de sachet — c'est exactement ce qu'on achète en payant plus cher.
+   */
+  const contenu = useMemo(() => {
+    if (!booster) return [];
+    return Object.entries(catalog)
+      .map(([cardId, c]) => ({ cardId, ...c }))
+      .sort(
+        (a, b) =>
+          (RARITY_ORDER[b.rarity as Rarity] ?? 0) - (RARITY_ORDER[a.rarity as Rarity] ?? 0) ||
+          a.name.localeCompare(b.name, 'fr'),
+      );
+  }, [booster, catalog]);
 
   /**
    * Les leurres du carrousel : tout le catalogue.
@@ -465,6 +488,56 @@ export function BoosterOpening({
                     <span aria-hidden="true">›</span>
                   </button>
                 )}
+              </div>
+
+              {/* -------------------- Contenu possible -------------------- */}
+              <div className="apercu">
+                <div className="apercu-tete">
+                  <h3 className="apercu-titre">Ce que {booster.name} peut donner</h3>
+                  <span className="apercu-note">
+                    {boosterSize(booster)} cartes · cote par carte tirée
+                  </span>
+                </div>
+
+                <div className="apercu-piste scroll-x-clean">
+                  {contenu.map((c) => {
+                    const meta = rarityMeta(c.rarity);
+                    const pour = rarityPercent(booster.weights, c.rarity as Rarity);
+                    return (
+                      <button
+                        key={c.cardId}
+                        type="button"
+                        className="apercu-carte"
+                        style={{ ['--r']: meta.color, ['--d']: meta.deep } as React.CSSProperties}
+                        onClick={() =>
+                          setFiche({
+                            cardId: c.cardId,
+                            name: c.name,
+                            subtitle: c.subtitle,
+                            description: c.description,
+                            rarity: c.rarity,
+                            glyph: c.glyph,
+                            power: c.power,
+                            nature: c.nature,
+                          })
+                        }
+                      >
+                        <span className="apercu-vignette">
+                          {aUneIllustration(c.cardId) ? (
+                            <CardArt cardId={c.cardId} className="apercu-art" />
+                          ) : (
+                            <span className="text-lg">{c.glyph}</span>
+                          )}
+                          <span className="apercu-barre" aria-hidden="true" />
+                        </span>
+                        <span className="apercu-nom">{c.name}</span>
+                        <span className="num apercu-cote">
+                          {pour < 1 ? pour.toFixed(2) : pour.toFixed(1)} %
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
               <div className="flex flex-col items-center gap-2">

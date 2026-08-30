@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { aUneIllustration, CardArt } from '@/components/CardArt';
 import { RarityIcon } from '@/components/RarityIcon';
-import { bruitDArret, bruitDeCran } from '@/components/bruitage';
+import { bruitDeCran, bruitDeGain, bruitDeRoulement } from '@/components/bruitage';
 import { RARITY_META } from '@/lib/domain/catalog';
 import { RARITY_ORDER } from '@/lib/domain/rules';
 import type { Rarity } from '@/lib/domain/types';
@@ -18,28 +18,25 @@ export interface CarteTirage {
 /**
  * Combien de leurres défilent avant la gagnante.
  *
- * Vingt-six, et pas davantage : il y a maintenant une colonne par carte, donc
- * cinq rails montés d'un coup sur un gros booster. Chaque carte porte une
- * illustration vectorielle d'une quinzaine de tracés — à trente-quatre leurres,
- * la révélation commençait par mettre en page deux cents dessins.
- *
- * Le raccourcissement sert aussi le rythme : moins de cartes sur la même durée,
- * c'est un défilement plus lent, donc des hésitations plus lisibles.
+ * Il y a une piste par carte, donc jusqu'à cinq rails montés d'un coup, et
+ * chaque carte porte une illustration vectorielle d'une quinzaine de tracés.
+ * Vingt-six tient la charge, et sert le rythme : moins de cartes sur la même
+ * durée, c'est un défilement plus lent, donc des hésitations plus lisibles.
  */
 const AVANT = 26;
 
-/** Combien restent après elle, pour qu'aucune colonne ne finisse sur du vide. */
+/** Combien restent après elle, pour qu'aucune piste ne finisse sur du vide. */
 const APRES = 4;
 
-/** Durée du défilement de la première colonne, en millisecondes. */
+/** Durée du défilement de la première piste, en millisecondes. */
 const DUREE = 3800;
 const DUREE_REDUITE = 900;
 
-/** Décalage d'arrêt d'une colonne à la suivante. */
+/** Décalage d'arrêt d'une piste à la suivante. */
 const RELAIS = 550;
 
-/** Gouttière verticale entre deux cartes d'une colonne, en pixels. */
-const GOUTTIERE = 10;
+/** Gouttière horizontale entre deux cartes, en pixels. */
+const GOUTTIERE = 8;
 
 /** Rapport hauteur/largeur d'une carte du rail — celui du cadre peint. */
 const RATIO = 1.4;
@@ -51,6 +48,11 @@ const RATIO = 1.4;
  * jusqu'à l'arrêt avant de repartir. `force` est la fraction de vitesse retirée
  * au creux : à 0,9 il ne reste qu'un dixième de l'élan, et on croit vraiment que
  * c'est fini.
+ *
+ * Les trois sont groupées dans le dernier tiers, et ce n'est pas un choix
+ * esthétique : plus tôt, le rail avale trop de cartes par seconde pour qu'un
+ * freinage se voie. Placés à sept et onze cartes de la fin, les mêmes creux ne
+ * rapportaient que soixante millisecondes — invisibles.
  */
 const APPATS = [
   { avant: 5, force: 0.9, largeur: 0.016 },
@@ -63,9 +65,8 @@ const APPATS = [
  *
  * L'exposant valait cinq. Simulation à l'appui, une queue aussi raide donnait
  * une seconde et demie sur la dernière carte et cinquante millisecondes sur
- * chacune des dix précédentes : les appâts n'avaient nulle part où mordre, et
- * les deux premiers passaient inaperçus. À 2,8, le temps se répartit sur les
- * six dernières cartes, ce qui laisse le freinage se voir.
+ * chacune des dix précédentes : les appâts n'avaient nulle part où mordre. À
+ * 2,8, le temps se répartit sur les six dernières cartes.
  *
  * En dessous, on devine la gagnante trop tôt et il ne se passe plus rien.
  */
@@ -75,24 +76,24 @@ const amorti = (t: number) => 1 - Math.pow(1 - t, 2.8);
 const PAS_TABLE = 600;
 
 /**
- * Construit la table qui fait hésiter le rail.
+ * Intègre le poids de vitesse pour en faire une position.
  *
- * ## Pourquoi une table, et pourquoi une intégrale
+ * ## Pourquoi une intégrale
  *
  * L'effet recherché — le rail freine sur une légendaire, s'y attarde, puis
  * repart — se décrit naturellement comme une **vitesse** qui s'effondre à
- * certains endroits. Mais l'animation, elle, a besoin d'une **position** à
- * chaque image.
+ * certains endroits. Mais l'animation a besoin d'une **position** à chaque
+ * image.
  *
  * Retirer directement une bosse à la position aurait été plus court à écrire, et
  * faux : la courbe cesserait d'être croissante et le rail reculerait au sortir
- * du creux. On part donc d'un poids stricement positif — `1` moins des cloches
+ * du creux. On part donc d'un poids strictement positif — `1` moins des cloches
  * dont la somme reste sous 1 — et on l'intègre. Une intégrale de fonction
  * positive est croissante par construction : le rail ne peut pas revenir en
  * arrière, quelles que soient les valeurs choisies plus haut.
  *
  * La table est normalisée pour finir exactement à 1, donc l'arrêt tombe sur la
- * gagnante à l'unité près, appâts ou pas.
+ * gagnante, appâts ou pas.
  */
 function integre(centres: number[]): Float64Array {
   const table = new Float64Array(PAS_TABLE + 1);
@@ -156,13 +157,26 @@ function gauchit(table: Float64Array, u: number): number {
 }
 
 /**
- * Une colonne : un rail vertical qui s'arrête sur une carte.
+ * Le flou de vitesse, par paliers.
  *
- * Les mesures sont prises au montage sur la largeur réelle de la colonne, et
- * non figées en constantes : la grille se resserre sur téléphone, et un pas
- * codé en dur y décalerait l'arrêt de plusieurs cartes.
+ * Une valeur continue serait plus juste et beaucoup plus chère : un `filter`
+ * force le navigateur à re-tramer toute la bande, et le refaire à chaque image
+ * coûterait plus que l'animation elle-même. Arrondi à six paliers, le
+ * re-tramage n'a lieu que six fois par tirage, et l'œil ne fait pas la
+ * différence — c'est la traînée qu'il perçoit, pas son rayon exact.
  */
-function Colonne({
+function flou(vitesse: number): number {
+  return Math.min(5, Math.round(vitesse / 9));
+}
+
+/**
+ * Une piste : un rail horizontal qui s'arrête sur une carte.
+ *
+ * Les mesures sont prises au montage sur la hauteur réelle de la piste, et non
+ * figées en constantes : elle se resserre sur téléphone, et un pas codé en dur
+ * y décalerait l'arrêt de plusieurs cartes.
+ */
+function Piste({
   cartes,
   gagnante,
   duree,
@@ -172,7 +186,7 @@ function Colonne({
   cartes: CarteTirage[];
   gagnante: CarteTirage;
   duree: number;
-  /** Horodatage du dernier cran, partagé par toutes les colonnes. */
+  /** Horodatage du dernier cran, partagé par toutes les pistes. */
   cran: React.RefObject<number>;
   onFini: () => void;
 }) {
@@ -218,35 +232,44 @@ function Colonne({
 
     const largeur = boite.clientWidth;
     const hauteur = boite.clientHeight;
-    const hCarte = largeur * RATIO;
-    const pas = hCarte + GOUTTIERE;
+    const lCarte = hauteur / RATIO;
+    const pas = lCarte + GOUTTIERE;
 
     // L'arrivée est décalée dans la carte, jamais pile au centre : un rail qui
     // s'immobilise exactement sur l'axe se lit comme une grille qui se replace,
     // pas comme un objet lancé qui s'arrête.
     const dedans = (Math.random() - 0.5) * pas * 0.28;
-    const cible = AVANT * pas + hCarte / 2 - hauteur / 2 + dedans;
+    const cible = AVANT * pas + lCarte / 2 - largeur / 2 + dedans;
 
     // Les appâts, exprimés en fraction du trajet : c'est ce que la table attend.
     const table = tableAppats(
-      APPATS.map((a) => ((AVANT - a.avant) * pas + hCarte / 2 - hauteur / 2) / cible),
+      APPATS.map((a) => ((AVANT - a.avant) * pas + lCarte / 2 - largeur / 2) / cible),
     );
 
     let debut = 0;
     let dernier = -1;
+    let precedentX = 0;
+    let precedentFlou = -1;
     let trame = 0;
 
     const image = (temps: number) => {
       if (!debut) debut = temps;
       const t = Math.min(1, (temps - debut) / total);
       const x = gauchit(table, amorti(t)) * cible;
-      el.style.transform = `translate3d(0, ${-x.toFixed(1)}px, 0)`;
+      el.style.transform = `translate3d(${-x.toFixed(1)}px, 0, 0)`;
 
-      const index = Math.round((x + hauteur / 2 - hCarte / 2) / pas);
+      const f = reduit ? 0 : flou(x - precedentX);
+      if (f !== precedentFlou) {
+        precedentFlou = f;
+        el.style.filter = f > 0 ? `blur(${f}px)` : '';
+      }
+      precedentX = x;
+
+      const index = Math.round((x + largeur / 2 - lCarte / 2) / pas);
       if (index !== dernier) {
         dernier = index;
-        // Le cran est étranglé à l'échelle de toutes les colonnes : cinq rails
-        // qui sonnent chacun pour soi font un bourdonnement, pas un rythme.
+        // Le cran est étranglé à l'échelle de toutes les pistes : cinq rails qui
+        // sonnent chacun pour soi font un bourdonnement, pas un rythme.
         if (temps - cran.current > 55) {
           cran.current = temps;
           bruitDeCran();
@@ -257,8 +280,9 @@ function Colonne({
         trame = requestAnimationFrame(image);
         return;
       }
+      el.style.filter = '';
       boite.dataset.arrete = 'true';
-      bruitDArret();
+      bruitDeGain(RARITY_ORDER[gagnante.rarity as Rarity] ?? 0);
       fini.current();
     };
 
@@ -280,20 +304,25 @@ function Colonne({
       cancelAnimationFrame(amorce);
       cancelAnimationFrame(trame);
     };
-  }, [duree, cran]);
+  }, [duree, cran, gagnante.rarity]);
+
+  const meta = RARITY_META[gagnante.rarity as Rarity] ?? RARITY_META.C;
 
   return (
-    <div className="tirage-colonne" ref={cadre} data-arrete="false">
-      <span className="tirage-repere" aria-hidden="true" />
-
+    <div
+      className="tirage-piste"
+      ref={cadre}
+      data-arrete="false"
+      style={{ ['--gagne' as string]: meta.color }}
+    >
       <div className="tirage-rail" ref={rail}>
         {bande.map((c, i) => {
-          const meta = RARITY_META[c.rarity as Rarity] ?? RARITY_META.C;
+          const m = RARITY_META[c.rarity as Rarity] ?? RARITY_META.C;
           return (
             <div
               key={`${c.cardId}-${i}`}
-              className="tirage-carte"
-              style={{ ['--r' as string]: meta.color, ['--d' as string]: meta.deep }}
+              className={`tirage-carte ${i === AVANT ? 'tirage-carte-gagnante' : ''}`}
+              style={{ ['--r' as string]: m.color, ['--d' as string]: m.deep }}
               aria-hidden={i !== AVANT}
             >
               {aUneIllustration(c.cardId) ? (
@@ -302,46 +331,49 @@ function Colonne({
                 <span className="tirage-glyphe">{c.glyph}</span>
               )}
               <span className="tirage-gemme">
-                <RarityIcon rarity={c.rarity} taille={16} />
+                <RarityIcon rarity={c.rarity} taille={14} />
               </span>
+              {/* La barre de rareté en pied de carte : c'est elle qui donne le
+                  ton d'une bande qui défile trop vite pour être lue. */}
+              <span className="tirage-barre" aria-hidden="true" />
             </div>
           );
         })}
       </div>
-
-      <span className="tirage-voile tirage-voile-haut" aria-hidden="true" />
-      <span className="tirage-voile tirage-voile-bas" aria-hidden="true" />
     </div>
   );
 }
 
 /**
- * Le tirage d'un booster : une colonne par carte.
+ * Le tirage d'un booster : une piste horizontale par carte.
  *
  * Rien n'est tiré ici. Les cartes gagnantes arrivent en propriété, décidées par
  * le serveur au moment de l'achat ; les rails ne mettent en scène que le rythme
  * de leur révélation. Les cartes qui défilent autour sont des leurres pris dans
  * le catalogue et n'ont aucune existence dans la partie.
  *
- * ## Une colonne par carte, et des arrêts en cascade
+ * ## Une piste par carte, et des arrêts en cascade
  *
- * Une seule colonne, sur la meilleure carte du lot, faisait durer le suspense
- * une fois puis livrait le reste en grille. On voyait donc le booster s'ouvrir
- * une fois pour cinq cartes. Les colonnes s'arrêtent maintenant l'une après
- * l'autre, à `RELAIS` d'intervalle : la tension redémarre à chaque carte, et
- * c'est cette répétition qui donne envie d'en ouvrir un autre.
+ * Une seule piste, sur la meilleure carte du lot, faisait durer le suspense une
+ * fois puis livrait le reste en grille : on voyait le booster s'ouvrir une fois
+ * pour cinq cartes. Les pistes s'arrêtent maintenant l'une après l'autre, à
+ * `RELAIS` d'intervalle, et la tension redémarre à chaque carte.
+ *
+ * Un seul repère traverse toutes les pistes, plutôt qu'un par ligne : c'est lui
+ * qui fait tenir l'empilement comme une seule machine.
  *
  * ## Les appâts
  *
  * Aux trois positions de `APPATS`, le rail rencontre une carte de rareté haute
  * et y freine presque jusqu'à l'arrêt avant de repartir. Le joueur croit tenir
- * une ultra rare, et la voit glisser. C'est délibérément frustrant — et c'est
+ * une ultra rare et la voit glisser. C'est délibérément frustrant — et c'est
  * honnête : la carte gagnante est décidée avant que la première image ne
  * s'affiche, et aucun appât ne peut devenir la carte sur laquelle on s'arrête.
  *
  * Le défilement est piloté en JavaScript et non en CSS parce qu'il faut savoir,
- * à chaque image, quelle carte passe sous le repère — pour le cran sonore. Une
- * animation CSS ne le dit pas sans forcer un recalcul de style par image.
+ * à chaque image, quelle carte passe sous le repère — pour le cran sonore et
+ * pour le flou de vitesse. Une animation CSS ne le dit pas sans forcer un
+ * recalcul de style par image.
  */
 export function Tirage({
   cartes,
@@ -361,17 +393,22 @@ export function Tirage({
     fini.current = onFini;
   });
 
+  // Le roulement couvre tout le tirage et s'arrête avec le composant. Il est
+  // monté ici et non dans chaque piste : cinq roulements superposés ne font pas
+  // un roulement plus fort, ils font de la boue.
+  useEffect(() => bruitDeRoulement(), []);
+
   const uneDeMoins = () => {
     restantes.current -= 1;
     // Une pause après le dernier arrêt : sans elle, la grille remplace les rails
     // dans l'image qui suit le clac final, et on n'a rien vu.
-    if (restantes.current <= 0) setTimeout(() => fini.current(), 700);
+    if (restantes.current <= 0) setTimeout(() => fini.current(), 900);
   };
 
   return (
-    <div className="tirage" style={{ ['--colonnes' as string]: gagnantes.length }}>
+    <div className="tirage">
       {gagnantes.map((g, i) => (
-        <Colonne
+        <Piste
           key={`${g.cardId}-${i}`}
           cartes={cartes}
           gagnante={g}
@@ -380,6 +417,11 @@ export function Tirage({
           onFini={uneDeMoins}
         />
       ))}
+
+      {/* Le repère, posé au-dessus de toutes les pistes. */}
+      <span className="tirage-repere" aria-hidden="true" />
+      <span className="tirage-voile tirage-voile-gauche" aria-hidden="true" />
+      <span className="tirage-voile tirage-voile-droite" aria-hidden="true" />
     </div>
   );
 }

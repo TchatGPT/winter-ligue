@@ -192,19 +192,97 @@ export function bruitDeCran() {
 }
 
 /**
- * L'arrêt d'une colonne du tirage : deux notes qui se posent.
+ * Le roulement de fond, pendant tout le tirage.
  *
- * Une quinte descendante, très courte. Elle sonne une fois par carte, à
- * quelques centaines de millisecondes d'écart d'une colonne à l'autre — d'où sa
- * brièveté : cinq arrêts en trois secondes, s'ils traînaient, se
- * chevaucheraient en bouillie.
+ * C'est ce qui manquait le plus par rapport aux sites d'ouverture de caisses :
+ * chez eux, la bande n'est pas seulement une suite de clics, elle **gronde**.
+ * Le grondement porte l'attente entre deux crans, et son arrêt est ce qui rend
+ * le silence final audible.
  *
- * Plus grave que le cran, et c'est ce qui compte : le cran dit « ça défile »,
- * l'arrêt dit « c'est joué ». Deux hauteurs éloignées pour deux sens éloignés.
+ * Deux dents de scie graves, désaccordées de trois hertz. Le battement qui en
+ * résulte donne au son une épaisseur qu'un oscillateur seul n'a pas, sans
+ * coûter un générateur de bruit ni un fichier. Le passe-bas à 220 Hz retire
+ * tout ce qui piquerait sous les crans, qui vivent, eux, autour de 1 kHz : les
+ * deux sons occupent des étages séparés et ne se masquent pas.
+ *
+ * Rend la fonction d'arrêt : l'appelant la rend à React, qui l'exécute au
+ * démontage. Un roulement qui survivrait à la fin du tirage tournerait jusqu'à
+ * la fermeture de l'onglet.
  */
-export function bruitDArret() {
+export function bruitDeRoulement(): () => void {
+  const ctx = contexte();
+  if (!ctx) return () => {};
+
+  const filtre = ctx.createBiquadFilter();
+  filtre.type = 'lowpass';
+  filtre.frequency.value = 220;
+  filtre.Q.value = 0.7;
+
+  const volume = ctx.createGain();
+  volume.gain.setValueAtTime(0.0001, ctx.currentTime);
+  // Une montée d'une demi-seconde : un grondement qui démarre à plein volume
+  // s'entend comme un défaut de lecture.
+  volume.gain.exponentialRampToValueAtTime(0.05, ctx.currentTime + 0.5);
+  filtre.connect(volume).connect(ctx.destination);
+
+  const oscillateurs = [56, 59].map((hz) => {
+    const o = ctx.createOscillator();
+    o.type = 'sawtooth';
+    o.frequency.value = hz;
+    o.connect(filtre);
+    o.start();
+    return o;
+  });
+
+  return () => {
+    const fin = ctx.currentTime + 0.35;
+    volume.gain.cancelScheduledValues(ctx.currentTime);
+    volume.gain.setValueAtTime(Math.max(0.0001, volume.gain.value), ctx.currentTime);
+    volume.gain.exponentialRampToValueAtTime(0.0001, fin);
+    for (const o of oscillateurs) o.stop(fin + 0.05);
+  };
+}
+
+/**
+ * La carte qui se pose, d'autant plus éclatante qu'elle est rare.
+ *
+ * `ordre` va de 0 pour une commune à 5 pour une légendaire. Trois choses en
+ * dépendent, et c'est le cumul qui fait la différence entre « encore une
+ * commune » et « oh » :
+ *
+ *  — la hauteur monte d'une quinte sur l'échelle, donc une légendaire sonne
+ *    plus haut et plus tendu ;
+ *  — le nombre de notes passe de une à trois, l'accord se déployant en arpège ;
+ *  — la durée double, ce qui laisse la dernière note résonner.
+ *
+ * Une commune obtient donc une note sèche, une légendaire une petite fanfare.
+ * C'est exactement le contrat des sites d'ouverture de caisses : on sait ce
+ * qu'on a eu avant d'avoir lu quoi que ce soit.
+ */
+export function bruitDeGain(ordre: number) {
   const ctx = contexte();
   if (!ctx) return;
-  joue(ctx, ctx.destination, { hz: 392, duree: 0.16, niveau: 0.1 });
-  joue(ctx, ctx.destination, { hz: 262, duree: 0.24, niveau: 0.09, retard: 0.06 });
+
+  const rang = Math.min(5, Math.max(0, ordre));
+  const fondamentale = 262 * Math.pow(2, rang / 6);
+  const notes = rang >= 4 ? 3 : rang >= 2 ? 2 : 1;
+  const duree = 0.2 + rang * 0.07;
+
+  const doux = ctx.createBiquadFilter();
+  doux.type = 'lowpass';
+  doux.frequency.value = 4200;
+  doux.Q.value = 0.6;
+  doux.connect(ctx.destination);
+
+  // Fondamentale, quinte, octave : les trois premiers harmoniques justes, donc
+  // un accord qui ne peut pas sonner faux quelle que soit la fondamentale.
+  const rapports = [1, 1.5, 2];
+  for (let i = 0; i < notes; i += 1) {
+    joue(ctx, doux, {
+      hz: fondamentale * rapports[i],
+      duree,
+      niveau: 0.1 - i * 0.015,
+      retard: i * 0.07,
+    });
+  }
 }

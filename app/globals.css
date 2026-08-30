@@ -391,74 +391,203 @@
 
 
 
-  /* -- Le carrousel de tirage --------------------------------------------- */
+  /* -- L'aperçu du contenu d'un sachet ------------------------------------- */
 
   /*
-   * Une colonne par carte du booster, côte à côte.
+   * La bande des cartes possibles, avec leur cote.
    *
-   * Le nombre de colonnes vient du composant, en `--colonnes` : un booster en
-   * donne trois à cinq selon le sachet, et une grille figée laisserait un trou
-   * ou serrerait selon le cas.
+   * Elle défile horizontalement plutôt que de s'étaler en grille : vingt-quatre
+   * cartes en grille repousseraient le bouton d'achat hors de l'écran, et c'est
+   * lui qu'on est venu chercher. Une bande se parcourt d'un geste et laisse le
+   * reste de la scène en place.
    */
-  .tirage {
-    display: grid;
-    grid-template-columns: repeat(var(--colonnes, 3), minmax(0, 1fr));
-    gap: 10px;
+  .apercu {
     width: 100%;
-    max-width: 760px;
+    max-width: 720px;
     margin-inline: auto;
   }
 
+  .apercu-tete {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .apercu-titre {
+    font-family: var(--font-display);
+    font-size: 0.8125rem;
+    font-weight: 900;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .apercu-note {
+    font-size: 0.8125rem;
+    color: var(--faint);
+  }
+
+  .apercu-piste {
+    display: flex;
+    gap: 8px;
+    padding-bottom: 6px;
+  }
+
+  .apercu-carte {
+    display: flex;
+    flex: 0 0 auto;
+    width: 76px;
+    flex-direction: column;
+    gap: 3px;
+    text-align: left;
+    transition: transform 0.2s ease;
+  }
+
+  .apercu-carte:hover {
+    transform: translateY(-3px);
+  }
+
+  .apercu-vignette {
+    position: relative;
+    display: grid;
+    place-items: center;
+    aspect-ratio: 1 / 1.4;
+    overflow: hidden;
+    border-radius: 7px;
+    border: 1px solid color-mix(in srgb, var(--r) 40%, transparent);
+    background: linear-gradient(158deg, color-mix(in srgb, var(--r) 26%, var(--d)), var(--d));
+  }
+
+  .apercu-art {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .apercu-barre {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    height: 3px;
+    background: var(--r);
+  }
+
+  .apercu-nom {
+    overflow: hidden;
+    font-size: 0.6875rem;
+    line-height: 1.2;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    color: var(--muted);
+  }
+
+  /* La cote prend la couleur de la rareté : c'est la seule ligne qu'on lit
+     vraiment en parcourant la bande, et on la lit pour comparer. */
+  .apercu-cote {
+    font-family: var(--font-display);
+    font-size: 0.6875rem;
+    font-weight: 900;
+    color: var(--r);
+  }
+
+  /* -- Le carrousel de tirage --------------------------------------------- */
+
   /*
-   * Une colonne.
+   * Les pistes empilées, et un seul repère qui les traverse toutes.
    *
-   * Sa hauteur suit sa largeur par `aspect-ratio`, et ce n'est pas cosmétique :
-   * le composant calcule le pas du rail à partir de la largeur mesurée, et une
-   * hauteur venue d'ailleurs décalerait l'arrêt de plusieurs cartes. Le rapport
-   * vaut deux cartes et quart — assez pour voir arriver la suivante, trop peu
-   * pour lire la bande à l'avance.
+   * C'est la disposition des sites d'ouverture de caisses : une ligne par objet,
+   * et une barre verticale unique au centre. Un repère par ligne donnerait des
+   * machines juxtaposées ; une seule barre en fait un seul appareil.
    */
-  .tirage-colonne {
+  .tirage {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    max-width: 720px;
+    margin-inline: auto;
+    padding: 10px 0;
+  }
+
+  /*
+   * Une piste.
+   *
+   * Sa hauteur commande tout : le composant en tire la largeur d'une carte, donc
+   * le pas du rail et la position d'arrêt. La changer ici change l'animation.
+   */
+  .tirage-piste {
     position: relative;
     overflow: hidden;
-    aspect-ratio: 1 / 3.2;
+    height: 104px;
     border-radius: var(--r-md);
     border: 1px solid var(--glass-edge);
-    background: linear-gradient(180deg, rgb(4 10 20 / 0.55), rgb(6 14 26 / 0.75));
-    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.16);
+    background: linear-gradient(180deg, rgb(4 10 20 / 0.6), rgb(6 14 26 / 0.8));
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.14);
+    transition: box-shadow 0.4s ease;
+  }
+
+  @media (max-width: 640px) {
+    .tirage-piste {
+      height: 82px;
+    }
   }
 
   .tirage-rail {
     display: flex;
-    flex-direction: column;
-    gap: 10px;
+    height: 100%;
+    gap: 8px;
+    width: max-content;
     /* Promu sur sa propre couche : il se déplace à chaque image, et sans
        promotion le navigateur repeindrait la bande entière à chaque fois. */
-    will-change: transform;
+    will-change: transform, filter;
   }
 
   /*
    * Une carte du rail.
    *
-   * Volontairement pauvre. Elles sont deux cents à défiler d'un coup sur cinq
-   * colonnes : y mettre le cadre peint, avec son image et ses filtres de teinte,
-   * effondrerait la cadence au moment précis où elle compte le plus.
+   * Volontairement pauvre. Elles sont plus de cent cinquante à défiler d'un coup
+   * sur cinq pistes : y mettre le cadre peint, avec son image et ses filtres de
+   * teinte, effondrerait la cadence au moment précis où elle compte le plus.
    */
   .tirage-carte {
     position: relative;
     display: grid;
     place-items: center;
     flex: 0 0 auto;
+    height: 100%;
     aspect-ratio: 1 / 1.4;
-    border-radius: 10px;
+    border-radius: 8px;
     overflow: hidden;
     border: 1px solid color-mix(in srgb, var(--r) 42%, transparent);
     background: linear-gradient(158deg, color-mix(in srgb, var(--r) 26%, var(--d)), var(--d));
     box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.18);
+    transition:
+      opacity 0.45s ease,
+      filter 0.45s ease;
+  }
+
+  /* La barre de rareté en pied de carte. À pleine vitesse on ne lit rien d'une
+     carte, mais on voit passer les couleurs — et c'est ce qui fait espérer. */
+  .tirage-barre {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 2;
+    height: 4px;
+    background: var(--r);
+    box-shadow: 0 0 8px color-mix(in srgb, var(--r) 70%, transparent);
   }
 
   .tirage-glyphe {
-    font-size: 2rem;
+    font-size: 1.6rem;
     line-height: 1;
     opacity: 0.9;
   }
@@ -474,15 +603,15 @@
 
   .tirage-gemme {
     position: absolute;
-    top: 6px;
-    left: 6px;
+    top: 4px;
+    left: 4px;
     z-index: 2;
     line-height: 0;
-    filter: drop-shadow(0 2px 5px rgb(0 0 0 / 0.7));
+    filter: drop-shadow(0 2px 4px rgb(0 0 0 / 0.7));
   }
 
   /*
-   * Le repère : un trait horizontal en travers de la colonne.
+   * Le repère : une barre verticale au centre, par-dessus toutes les pistes.
    *
    * Un trait et deux pointes, pas un cadre : un cadre autour de la carte
    * gagnante donnerait envie de la lire pendant qu'elle défile, alors que tout
@@ -490,82 +619,111 @@
    */
   .tirage-repere {
     position: absolute;
-    left: 0;
-    right: 0;
-    top: 50%;
-    z-index: 3;
-    height: 2px;
-    margin-top: -1px;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    z-index: 4;
+    width: 2px;
+    margin-left: -1px;
     pointer-events: none;
     background: linear-gradient(
-      90deg,
+      180deg,
       transparent,
-      var(--ice) 18%,
+      var(--ice) 8%,
       #ffffff 50%,
-      var(--ice) 82%,
+      var(--ice) 92%,
       transparent
     );
-    box-shadow: 0 0 14px rgb(143 220 255 / 0.75);
+    box-shadow: 0 0 12px rgb(143 220 255 / 0.8);
   }
 
   .tirage-repere::before,
   .tirage-repere::after {
     content: '';
     position: absolute;
-    top: 50%;
+    left: 50%;
     width: 0;
     height: 0;
-    margin-top: -7px;
-    border-top: 7px solid transparent;
-    border-bottom: 7px solid transparent;
+    margin-left: -7px;
+    border-left: 7px solid transparent;
+    border-right: 7px solid transparent;
   }
 
   .tirage-repere::before {
-    left: 0;
-    border-left: 9px solid var(--ice);
+    top: 0;
+    border-top: 9px solid var(--ice);
   }
 
   .tirage-repere::after {
-    right: 0;
-    border-right: 9px solid var(--ice);
+    bottom: 0;
+    border-bottom: 9px solid var(--ice);
   }
 
-  /* Les deux fondus : le rail doit avoir l'air de continuer au-delà de la
-     colonne, pas d'y être coupé. */
+  /* Les deux fondus : les rails doivent avoir l'air de continuer au-delà du
+     cadre, pas d'y être coupés. */
   .tirage-voile {
     position: absolute;
-    left: 0;
-    right: 0;
-    z-index: 2;
-    height: 18%;
+    top: 0;
+    bottom: 0;
+    z-index: 3;
+    width: 12%;
     pointer-events: none;
   }
 
-  .tirage-voile-haut {
-    top: 0;
-    background: linear-gradient(180deg, var(--bg), transparent);
+  .tirage-voile-gauche {
+    left: 0;
+    background: linear-gradient(90deg, var(--bg), transparent);
   }
 
-  .tirage-voile-bas {
-    bottom: 0;
-    background: linear-gradient(0deg, var(--bg), transparent);
+  .tirage-voile-droite {
+    right: 0;
+    background: linear-gradient(270deg, var(--bg), transparent);
   }
 
-  /* À l'arrêt, le repère de la colonne s'allume. C'est la seule récompense
-     visuelle du rail lui-même : le reste se joue dans la grille qui suit. */
-  .tirage-colonne[data-arrete='true'] .tirage-repere {
-    animation: tirage-eclat 700ms ease-out;
+  /* -- L'arrêt ------------------------------------------------------------- */
+
+  /*
+   * Trois choses arrivent d'un coup quand une piste s'immobilise : elle se
+   * cercle de la couleur de la carte gagnée, tout ce qui n'est pas cette carte
+   * s'éteint, et la carte elle-même sursaute.
+   *
+   * Cet extinction du reste est le geste le plus important. Pendant le
+   * défilement, l'œil suit la bande ; à l'arrêt, il faut qu'il n'ait plus qu'un
+   * endroit où aller.
+   */
+  .tirage-piste[data-arrete='true'] {
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.14),
+      0 0 26px color-mix(in srgb, var(--gagne) 45%, transparent),
+      inset 0 0 0 1px color-mix(in srgb, var(--gagne) 70%, transparent);
   }
 
-  @keyframes tirage-eclat {
+  .tirage-piste[data-arrete='true'] .tirage-carte:not(.tirage-carte-gagnante) {
+    opacity: 0.28;
+    filter: saturate(0.35);
+  }
+
+  .tirage-piste[data-arrete='true'] .tirage-carte-gagnante {
+    animation: tirage-atterrit 620ms cubic-bezier(0.2, 1.4, 0.35, 1);
+    z-index: 2;
+  }
+
+  @keyframes tirage-atterrit {
     0% {
-      box-shadow: 0 0 14px rgb(143 220 255 / 0.75);
+      transform: scale(1);
+      box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.18);
     }
-    22% {
-      box-shadow: 0 0 70px 20px rgb(230 248 255 / 0.85);
+    28% {
+      transform: scale(1.14);
+      box-shadow:
+        inset 0 1px 0 rgb(255 255 255 / 0.5),
+        0 0 34px 6px color-mix(in srgb, var(--r) 85%, transparent);
     }
     100% {
-      box-shadow: 0 0 14px rgb(143 220 255 / 0.75);
+      transform: scale(1.06);
+      box-shadow:
+        inset 0 1px 0 rgb(255 255 255 / 0.3),
+        0 0 18px color-mix(in srgb, var(--r) 60%, transparent);
     }
   }
 
