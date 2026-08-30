@@ -4,14 +4,11 @@ import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { CardFrame } from '@/components/CardFrame';
 import { Countdown } from '@/components/Countdown';
-import { RarityIcon } from '@/components/RarityIcon';
+import { FiltreRarete } from '@/components/FiltreRarete';
 import { MarketViewModal } from '@/components/MarketViewModal';
 import { EmptyState, Notice, RarityChip, flakes, flakesShort, rarityMeta } from '@/components/ui';
 import { MARKET } from '@/lib/domain/rules';
-import type { Rarity } from '@/lib/domain/types';
 import { shortDateTime } from '@/lib/format';
-
-const RARITIES: Rarity[] = ['L', 'UR', 'SR', 'R', 'PC', 'C'];
 
 export interface MarketListing {
   id: string;
@@ -256,37 +253,13 @@ export function MarketBoard({
             </select>
           </div>
 
-          <div className="flex flex-wrap items-center gap-1.5">
-            {RARITIES.map((r) => {
-              const meta = rarityMeta(r);
-              const active = rarityFilter.has(r);
-              return (
-                <button
-                  key={r}
-                  onClick={() => toggleRarity(r)}
-                  aria-pressed={active}
-                  aria-label={meta.label}
-                  title={meta.label}
-                  className="grid place-items-center rounded-md border px-2 py-1.5 transition-colors"
-                  style={{
-                    borderColor: active ? meta.color : 'var(--line-2)',
-                    color: active ? '#060a12' : meta.color,
-                    background: active ? meta.color : 'transparent',
-                  }}
-                >
-                  <RarityIcon rarity={r} />
-                </button>
-              );
-            })}
-            {rarityFilter.size > 0 && (
-              <button className="btn btn-sm btn-ghost" onClick={() => setRarityFilter(new Set())}>
-                Tout
-              </button>
-            )}
-            <span className="ml-auto text-[13px] text-faint">
-              {filtered.length} vente{filtered.length > 1 ? 's' : ''}
-            </span>
-          </div>
+          <FiltreRarete
+            selection={rarityFilter}
+            onToggle={toggleRarity}
+            onReset={() => setRarityFilter(new Set())}
+          >
+            {filtered.length} vente{filtered.length > 1 ? 's' : ''}
+          </FiltreRarete>
         </div>
       )}
 

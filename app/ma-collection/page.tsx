@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { CollectionBoard } from '@/components/CollectionBoard';
-import { CardTile, StatTile, flakes } from '@/components/ui';
+import { GrilleCollection } from '@/components/GrilleCollection';
+import { StatTile, flakes } from '@/components/ui';
 import { getSession } from '@/lib/auth/session';
 import { getStore } from '@/lib/db/store';
 import { hasShield } from '@/lib/services/league';
@@ -77,28 +78,7 @@ export default async function MaCollectionPage() {
         <h2 className="mb-3 font-display text-xl font-black uppercase tracking-wide text-ink">
           Cartes découvertes
         </h2>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          {profile.collection.map((entry) => (
-            <CardTile
-              key={entry.cardId}
-              cardId={entry.cardId}
-              name={entry.discovered ? entry.name : '???'}
-              rarity={entry.rarity}
-              glyph={entry.discovered ? entry.glyph : '❔'}
-              copies={entry.copies}
-              dimmed={!entry.discovered}
-              footer={
-                <span className="text-[13px] uppercase tracking-wider text-faint">
-                  {entry.discovered
-                    ? entry.copies > 0
-                      ? `${entry.copies} en réserve`
-                      : 'Découverte — aucun exemplaire'
-                    : 'Non découverte'}
-                </span>
-              }
-            />
-          ))}
-        </div>
+        <GrilleCollection entrees={profile.collection} />
         <p className="mt-2 text-xs text-faint">
           Une carte jouée ou vendue reste découverte&nbsp;: la collection garde la trace de tout ce qui est passé entre tes mains.
         </p>

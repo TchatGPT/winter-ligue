@@ -1,10 +1,10 @@
 import { BoosterOpening, type CatalogCard, type ShopBooster } from '@/components/BoosterOpening';
-import { CardTile, PageHead, RarityChip } from '@/components/ui';
+import { CatalogueCartes, type CarteCatalogue } from '@/components/CatalogueCartes';
+import { PageHead, RarityChip } from '@/components/ui';
 import { getSession } from '@/lib/auth/session';
 import { getStore } from '@/lib/db/store';
-import { BOOSTERS, CARDS, cardsOfRarity, RARITY_META } from '@/lib/domain/catalog';
+import { BOOSTERS, CARDS } from '@/lib/domain/catalog';
 import { ECONOMY } from '@/lib/domain/rules';
-import { RARITIES } from '@/lib/domain/types';
 import { statsForCard } from '@/lib/services/market';
 
 export const dynamic = 'force-dynamic';
@@ -33,6 +33,18 @@ export default async function BoostersPage() {
   }));
 
   const boosters: ShopBooster[] = BOOSTERS.map((b) => ({ ...b, finalPrice: b.price }));
+
+  // Le catalogue tel que la grille filtrable l'attend.
+  const catalogue: CarteCatalogue[] = CARDS.map((c) => ({
+    id: c.id,
+    name: c.name,
+    description: c.description,
+    rarity: c.rarity,
+    glyph: c.glyph,
+    power: c.power,
+    nature: c.nature,
+    quote: quotes[c.id],
+  }));
 
   // Envoyé au client pour afficher les cartes tirées sans second aller-retour.
   const catalog: Record<string, CatalogCard> = Object.fromEntries(
@@ -86,44 +98,7 @@ export default async function BoostersPage() {
           </p>
         </div>
 
-        {[...RARITIES].reverse().map((rarity) => {
-          const meta = RARITY_META[rarity];
-          const cards = cardsOfRarity(rarity);
-          if (cards.length === 0) return null;
-
-          return (
-            <div key={rarity}>
-              <div
-                className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1 border-l-2 pl-3"
-                style={{ borderColor: meta.color }}
-              >
-                <h3 className="font-display text-lg font-black tracking-wide uppercase">
-                  <span style={{ color: meta.color }}>{meta.label}</span>
-                </h3>
-                <span className="ml-auto text-[13px] text-muted">
-                  <span className="num">{cards.length}</span> carte{cards.length > 1 ? 's' : ''}
-                </span>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
-                {cards.map((card) => (
-                  <CardTile
-                    key={card.id}
-                    cardId={card.id}
-                    name={card.name}
-                    subtitle={card.description}
-                    rarity={card.rarity}
-                    glyph={card.glyph}
-                    power={card.power}
-                    quote={quotes[card.id]}
-                    nature={card.nature}
-                    href={`/marche/${card.id}`}
-                  />
-                ))}
-              </div>
-            </div>
-          );
-        })}
+        <CatalogueCartes cartes={catalogue} />
       </section>
 
       <section className="glass px-4 py-3">
