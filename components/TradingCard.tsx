@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useRef, useState } from 'react';
+import { aUneIllustration, CardArt } from '@/components/CardArt';
 import { RarityIcon } from '@/components/RarityIcon';
 import { cardNumber, FOIL, RARITY_META, THEMES } from '@/lib/domain/catalog';
 import type { Rarity, ThemeId } from '@/lib/domain/types';
@@ -48,11 +49,14 @@ export function TradingCard({
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(false);
-  // Les 24 illustrations arrivent au fil de l'eau : tant qu'un fichier manque,
-  // l'image échoue silencieusement et la carte retombe sur son glyphe. Sans ce
-  // repli, le navigateur afficherait une icône d'image cassée.
+  // Une planche déposée dans `public/cartes/` prime sur le dessin vectoriel :
+  // c'est le seul moyen d'installer une vraie illustration pour une carte sans
+  // toucher au code. Si le fichier manque, l'image échoue silencieusement et on
+  // retombe sur `CardArt` — sans ce repli, le navigateur afficherait une icône
+  // d'image cassée.
   const [artBroken, setArtBroken] = useState(false);
   const showArt = Boolean(card.art) && !artBroken;
+  const showVector = !showArt && aUneIllustration(card.cardId);
 
   const meta = RARITY_META[card.rarity as Rarity] ?? RARITY_META.C;
   const theme = THEMES[card.theme as ThemeId];
@@ -137,7 +141,7 @@ export function TradingCard({
           </div>
 
           {/* ------------------------ Illustration --------------------- */}
-          <div className="tc-art" data-has-art={showArt ? 'true' : 'false'}>
+          <div className="tc-art" data-has-art={showArt || showVector ? 'true' : 'false'}>
             {showArt ? (
               // Balise native plutôt que next/image : l'illustration est déjà
               // au bon format et au bon poids, et le composant sert autant à
@@ -150,6 +154,8 @@ export function TradingCard({
                 decoding="async"
                 onError={() => setArtBroken(true)}
               />
+            ) : showVector ? (
+              <CardArt cardId={card.cardId} className="tc-art-vecteur" />
             ) : (
               <span className="tc-art-glyph" aria-hidden="true">
                 {card.glyph}

@@ -151,3 +151,23 @@ export function bruitDeDechirure() {
     void ctx.close();
   };
 }
+
+/**
+ * Le cran du carrousel de tirage.
+ *
+ * Très court et très bas : il part une fois par carte franchie, donc plusieurs
+ * dizaines de fois en cinq secondes. Ce qui compte n'est pas de l'entendre
+ * isolément mais d'entendre le **ralentissement** — les crans qui s'espacent
+ * sont ce qui rend le tirage haletant.
+ *
+ * Un sinus de 40 ms plutôt qu'un bruit filtré : à cette durée, du bruit ne fait
+ * qu'un « pfft » sourd, là où une note tient sa hauteur et se détache.
+ */
+export function bruitDeCran() {
+  const ctx = contexte();
+  if (!ctx) return;
+  joue(ctx, ctx.destination, { hz: 1180, vers: 880, duree: 0.045, niveau: 0.07 }).onended =
+    () => {
+      void ctx.close();
+    };
+}

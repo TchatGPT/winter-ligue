@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { aUneIllustration, CardArt } from '@/components/CardArt';
 import { RarityIcon } from '@/components/RarityIcon';
 import { RARITY_META, THEMES } from '@/lib/domain/catalog';
 import type { Rarity, ThemeId } from '@/lib/domain/types';
@@ -159,9 +160,13 @@ export function CardTile({
       style={{ ['--r' as string]: meta.color }}
     >
       <div className={`tcg-art ${meta.holo && !dimmed ? 'tcg-holo' : ''}`}>
-        <span className="tcg-glyph" aria-hidden="true">
-          {glyph}
-        </span>
+        {aUneIllustration(cardId) ? (
+          <CardArt cardId={cardId} className="tcg-vecteur" />
+        ) : (
+          <span className="tcg-glyph" aria-hidden="true">
+            {glyph}
+          </span>
+        )}
 
         <span className="absolute top-2 left-2">
           <RarityChip rarity={rarity} />

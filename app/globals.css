@@ -390,6 +390,168 @@
 
 
 
+
+  /* -- Le carrousel de tirage --------------------------------------------- */
+
+  /*
+   * Le rail défile sous un repère fixe et s'arrête sur la carte gagnante.
+   *
+   * Le cadre rogne : c'est lui qui donne l'impression que le rail continue
+   * au-delà de l'écran. Sans `overflow: hidden`, on verrait les soixante cartes
+   * d'un coup et il n'y aurait plus de tirage, seulement une liste qui glisse.
+   */
+  .tirage {
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+    padding: 18px 0;
+    border-radius: var(--r-lg);
+    border: 1px solid var(--glass-edge);
+    background: linear-gradient(180deg, rgb(4 10 20 / 0.55), rgb(6 14 26 / 0.75));
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.16);
+  }
+
+  .tirage-rail {
+    display: flex;
+    gap: 12px;
+    width: max-content;
+    /* Le rail est promu sur sa propre couche : il se déplace à chaque image, et
+       sans promotion le navigateur repeindrait la bande entière à chaque fois. */
+    will-change: transform;
+  }
+
+  /*
+   * Une carte du rail.
+   *
+   * Volontairement pauvre — un dégradé de rareté, un glyphe, une gemme. Elles
+   * sont soixante à défiler à pleine vitesse : y mettre le vrai rendu de carte,
+   * avec son foil et ses calques en fusion, effondrerait la cadence au moment
+   * précis où elle compte le plus.
+   */
+  .tirage-carte {
+    position: relative;
+    display: grid;
+    place-items: center;
+    flex: 0 0 120px;
+    height: 168px;
+    border-radius: 12px;
+    border: 1px solid color-mix(in srgb, var(--r) 42%, transparent);
+    background: linear-gradient(158deg, color-mix(in srgb, var(--r) 26%, var(--d)), var(--d));
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.18);
+  }
+
+  .tirage-glyphe {
+    font-size: 2.4rem;
+    line-height: 1;
+    opacity: 0.9;
+  }
+
+  /* L'illustration remplit la carte du rail : à cette taille et à cette vitesse,
+     une fenêtre d'illustration séparée ne se lirait pas. */
+  .tirage-vecteur {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: inherit;
+    opacity: 0.92;
+  }
+
+  .tirage-gemme {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    line-height: 0;
+  }
+
+  /*
+   * Le repère.
+   *
+   * Deux pointes et un trait, pas un cadre : un cadre autour de la carte
+   * gagnante donnerait envie de la lire pendant qu'elle défile, alors que tout
+   * l'intérêt est de ne pas savoir avant l'arrêt.
+   */
+  .tirage-repere {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    z-index: 3;
+    width: 2px;
+    margin-left: -1px;
+    pointer-events: none;
+    background: linear-gradient(
+      180deg,
+      transparent,
+      var(--ice) 18%,
+      #ffffff 50%,
+      var(--ice) 82%,
+      transparent
+    );
+    box-shadow: 0 0 14px rgb(143 220 255 / 0.75);
+  }
+
+  .tirage-repere::before,
+  .tirage-repere::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    width: 0;
+    height: 0;
+    margin-left: -7px;
+    border-left: 7px solid transparent;
+    border-right: 7px solid transparent;
+  }
+
+  .tirage-repere::before {
+    top: 0;
+    border-top: 9px solid var(--ice);
+  }
+
+  .tirage-repere::after {
+    bottom: 0;
+    border-bottom: 9px solid var(--ice);
+  }
+
+  /* Les deux fondus latéraux : le rail doit avoir l'air de continuer au-delà du
+     cadre, pas d'y être coupé. */
+  .tirage-voile {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    z-index: 2;
+    width: 15%;
+    pointer-events: none;
+  }
+
+  .tirage-voile-gauche {
+    left: 0;
+    background: linear-gradient(90deg, var(--bg), transparent);
+  }
+
+  .tirage-voile-droite {
+    right: 0;
+    background: linear-gradient(270deg, var(--bg), transparent);
+  }
+
+  /* À l'arrêt, la carte du repère s'allume. C'est la seule récompense visuelle
+     du rail lui-même : le reste se joue dans la grille qui suit. */
+  .tirage[data-arrete='true'] .tirage-repere {
+    animation: tirage-eclat 700ms ease-out;
+  }
+
+  @keyframes tirage-eclat {
+    0% {
+      box-shadow: 0 0 14px rgb(143 220 255 / 0.75);
+    }
+    22% {
+      box-shadow: 0 0 90px 26px rgb(230 248 255 / 0.85);
+    }
+    100% {
+      box-shadow: 0 0 14px rgb(143 220 255 / 0.75);
+    }
+  }
+
   /* La réflexion appuyée, pour les plaques qu'on veut voir briller. */
   .glass-reflet::before {
     background-image:
@@ -878,6 +1040,21 @@
     font-size: clamp(2.4rem, 9vw, 3.4rem);
     line-height: 1;
     filter: drop-shadow(0 6px 18px rgb(0 0 0 / 0.65));
+  }
+
+  /*
+   * L'illustration de la vignette.
+   *
+   * Elle est posée sous les incrustations — badge de rareté, mention « Malus »,
+   * marque de famille — qui restent en `absolute` par-dessus. D'où le `z-index`
+   * nul et non négatif : négatif la ferait passer derrière le fond de `.tcg-art`,
+   * qui est opaque.
+   */
+  .tcg-vecteur {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
   }
 
   /* Reflet holographique, réservé aux raretés Rare et au-dessus : il faut qu'il
@@ -1742,7 +1919,8 @@
       inset 0 10px 22px rgb(0 0 0 / 0.38);
   }
 
-  .tc-art img {
+  .tc-art img,
+  .tc-art-vecteur {
     position: absolute;
     inset: 0;
     width: 100%;

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BoosterPack3D } from '@/components/BoosterPack3D';
+import { Tirage } from '@/components/Tirage';
 import { bruitDeDechirure, bruitDeSelection } from '@/components/bruitage';
 import { TradingCard } from '@/components/TradingCard';
 import { Notice, RarityChip, flakes, rarityMeta } from '@/components/ui';
@@ -33,7 +34,7 @@ interface Pulled extends CatalogCard {
   flipped: boolean;
 }
 
-type Phase = 'repos' | 'achat' | 'secousse' | 'eclat' | 'reveal';
+type Phase = 'repos' | 'achat' | 'secousse' | 'eclat' | 'tirage' | 'reveal';
 
 /**
  * Achat et ouverture d'un booster, avec le sachet en 3D.
@@ -184,6 +185,51 @@ export function BoosterOpening({
 
   const affordable = balance !== null && booster !== undefined && balance >= booster.finalPrice;
 
+  /**
+   * Les leurres du carrousel : tout le catalogue.
+   *
+   * Ils n'ont aucune existence dans la partie — ils passent sous le repère et
+   * disparaissent. Les prendre dans le vrai catalogue plutôt que d'inventer des
+   * formes est ce qui rend le rail crédible : on reconnaît des cartes qu'on
+   * possède, et on les voit filer.
+   */
+  const leurres = useMemo(
+    () =>
+      Object.entries(catalog).map(([cardId, c]) => ({
+        cardId,
+        name: c.name,
+        rarity: c.rarity,
+        glyph: c.glyph,
+      })),
+    [catalog],
+  );
+
+  /**
+   * La carte que le rail met en scène : la plus rare du tirage.
+   *
+   * Un booster en donne trois à cinq, et faire défiler un rail par carte
+   * étirerait l'ouverture à une demi-minute. Une seule mise en scène, sur la
+   * carte qui compte, puis la grille révèle le reste — c'est le rythme des
+   * sites d'ouverture de caisses, et il tient parce qu'il ne fait durer que le
+   * moment qui le mérite.
+   */
+  const vedette = useMemo(() => {
+    let meilleure: Pulled | null = null;
+    for (const c of pulled) {
+      const rang = RARITY_LADDER.indexOf(c.rarity as Rarity);
+      const tenu = meilleure ? RARITY_LADDER.indexOf(meilleure.rarity as Rarity) : -1;
+      if (rang > tenu) meilleure = c;
+    }
+    return meilleure
+      ? {
+          cardId: meilleure.cardId,
+          name: meilleure.name,
+          rarity: meilleure.rarity,
+          glyph: meilleure.glyph,
+        }
+      : null;
+  }, [pulled]);
+
   async function open() {
     if (!booster || busy) return;
 
@@ -217,13 +263,18 @@ export function BoosterOpening({
       setSpent(payload.data.pricePaid);
       setNewBalance(payload.data.balance);
 
-      // Secousse, éclat, puis révélation : le rythme fait tout l'effet.
+      /*
+       * Secousse, éclat, tirage, puis révélation : le rythme fait tout l'effet.
+       *
+       * Les cartes sont posées avant le tirage et non après : le rail a besoin
+       * de connaître la gagnante pour la placer, et il ne tire rien lui-même.
+       * Tout est déjà décidé par le serveur à cet instant — le carrousel ne met
+       * en scène qu'un résultat acquis.
+       */
+      setPulled(cards);
       setPhase('secousse');
       schedule(() => setPhase('eclat'), 620);
-      schedule(() => {
-        setPulled(cards);
-        setPhase('reveal');
-      }, 1_060);
+      schedule(() => setPhase('tirage'), 1_060);
     } catch {
       setError('Le serveur n’a pas répondu. Réessaie dans un instant.');
       setPhase('repos');
@@ -275,7 +326,18 @@ export function BoosterOpening({
         />
 
         <div className="relative flex min-h-[400px] flex-col items-center justify-center gap-6 px-4 py-10 sm:min-h-[460px]">
-          {phase !== 'reveal' ? (
+          {phase === 'tirage' && vedette ? (
+            <>
+              <p className="font-display text-sm tracking-[0.18em] text-muted uppercase">
+                Tirage en cours
+              </p>
+              <Tirage
+                cartes={leurres}
+                gagnante={vedette}
+                onFini={() => setPhase('reveal')}
+              />
+            </>
+          ) : phase !== 'reveal' ? (
             <>
               {/* Ce que portaient les fiches supprimées : composition du sachet,
                   rareté garantie et promesse. Ici il n'y en a qu'une, celle du
