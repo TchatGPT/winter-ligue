@@ -1,108 +1,130 @@
-import { redirect } from 'next/navigation';
-import { AdminPanel, type AdminPlayer } from '@/components/AdminPanel';
-import {
-  AdminReglages,
-  type ReglageBooster,
-  type ReglageJoueur,
-} from '@/components/AdminReglages';
-import { getSession } from '@/lib/auth/session';
+import Link from 'next/link';
+import { StatTile, flakes } from '@/components/ui';
 import { getStore } from '@/lib/db/store';
-import { resolvedBoosters } from '@/lib/services/boosters';
-import { totalsOf } from '@/lib/services/league';
+import { nextMilestone } from '@/lib/domain/rules';
+import { shortDateTime } from '@/lib/format';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Modération' };
+export const metadata = { title: 'Tableau de bord — Administration' };
 
 /**
- * Panneau de modération.
+ * Le tableau de bord : ce qu'on regarde en arrivant.
  *
- * Le contrôle d'accès est ici, côté serveur, et de nouveau dans chaque route
- * d'API appelée par le panneau. Masquer l'onglet dans la navigation n'est qu'un
- * confort visuel.
+ * Des chiffres, et rien à remplir. C'est délibéré — un écran d'accueil qui
+ * porte un formulaire finit par recevoir des saisies faites sans le vouloir, et
+ * il n'y a aucune raison que le premier écran soit celui du geste le plus
+ * fréquent : celui-là a son onglet.
  */
-export default async function AdminPage() {
-  const session = await getSession();
-  // Les deux échelons entrent ; ce qu'ils voient diffère plus bas, et chaque
-  // route revérifie de son côté.
-  if (!session || (session.role !== 'admin' && session.role !== 'moderateur')) {
-    redirect('/connexion');
-  }
-  const estAdmin = session.role === 'admin';
-
+export default async function AdminAccueilPage() {
   const data = await getStore().read((db) => {
-    const players: AdminPlayer[] = db.players
-      .filter((p) => p.active)
-      .map((p) => {
-        const totals = totalsOf(db, p.id);
-        return {
-          id: p.id,
-          pseudo: p.pseudo,
-          slug: p.slug,
-          snowflakes: p.snowflakes,
-          games: totals.countedGames,
-          score: totals.totalScore,
-        };
-      })
-      .sort((a, b) => b.score - a.score);
+    const actifs = db.players.filter((p) => p.active);
+    const enVente = db.listings.filter((l) => l.status === 'ACTIVE').length;
+    const pseudo = (id: string) => db.players.find((p) => p.id === id)?.pseudo ?? 'Inconnu';
 
     return {
-      players,
-      config: {
-        maxGamesPerPlayer: db.config.maxGamesPerPlayer,
-        shopOpen: db.config.shopOpen,
-        marketOpen: db.config.marketOpen,
-        totalSubs: db.config.totalSubs,
-      },
-      roles: db.players
-        .filter((p) => p.active)
-        .map((p): ReglageJoueur => ({ id: p.id, pseudo: p.pseudo, role: p.role }))
-        .sort(
-          (a, b) =>
-            ['admin', 'moderateur', 'joueur'].indexOf(a.role) -
-              ['admin', 'moderateur', 'joueur'].indexOf(b.role) ||
-            a.pseudo.localeCompare(b.pseudo, 'fr'),
-        ),
-      boosters: resolvedBoosters(db).map(
-        (b): ReglageBooster => ({
-          id: b.id,
-          name: b.name,
-          price: b.price,
-          weights: b.weights,
-          slots: b.slots,
-          modifie: db.boosterSettings.some((r) => r.boosterId === b.id),
-        }),
-      ),
-      auditTrail: db.audit
-        .slice(-40)
+      joueurs: actifs.length,
+      moderateurs: actifs.filter((p) => p.role === 'moderateur' || p.role === 'admin').length,
+      games: db.games.length,
+      cartes: db.cards.length,
+      enVente,
+      subs: db.config.totalSubs,
+      shopOpen: db.config.shopOpen,
+      marketOpen: db.config.marketOpen,
+      reglages: db.boosterSettings.length,
+      dernieres: db.audit
+        .slice(-8)
         .reverse()
-        .map((e) => ({ at: e.at, actor: e.actor, action: e.action, detail: e.detail })),
+        .map((e) => ({ at: e.at, action: e.action, detail: e.detail })),
+      derniereGame: [...db.games].sort(
+        (a, b) => new Date(b.playedAt).getTime() - new Date(a.playedAt).getTime(),
+      )[0],
+      pseudo,
     };
   });
 
+  const prochain = nextMilestone(data.subs);
+
   return (
-    <div className="space-y-6">
-      <header>
-        <p className="eyebrow">Accès réservé</p>
-        <h1 className="section-title">
-          {estAdmin ? (
-            <>
-              Admini<em>stration</em>
-            </>
-          ) : (
-            <>
-              Modé<em>ration</em>
-            </>
-          )}
-        </h1>
-      </header>
+    <div className="space-y-5">
+      <section className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
+        <StatTile label="Joueurs actifs" value={data.joueurs} hint={`dont ${data.moderateurs} avec des droits`} />
+        <StatTile label="Games saisies" value={data.games} accent="ink" />
+        <StatTile label="Cartes en circulation" value={data.cartes} accent="violet" />
+        <StatTile
+          label="Subs de la saison"
+          value={flakes(data.subs)}
+          hint={prochain ? `${prochain.milestone.label} dans ${prochain.remaining}` : 'tous franchis'}
+          accent="gold"
+        />
+      </section>
 
-      <AdminPanel
-        players={data.players}
-        config={data.config}
-        auditTrail={data.auditTrail}
-      />
+      <section className="grid gap-4 lg:grid-cols-2">
+        <div className="glass p-4 sm:p-5">
+          <h2 className="font-display text-base font-black tracking-wide text-ice uppercase">
+            État de la ligue
+          </h2>
+          <dl className="mt-3 space-y-2 text-[14px]">
+            <div className="flex items-baseline justify-between gap-3 border-b border-white/8 pb-2">
+              <dt className="text-faint">Boutique</dt>
+              <dd className={data.shopOpen ? 'text-aurora' : 'text-danger'}>
+                {data.shopOpen ? 'ouverte' : 'fermée'}
+              </dd>
+            </div>
+            <div className="flex items-baseline justify-between gap-3 border-b border-white/8 pb-2">
+              <dt className="text-faint">Hôtel des ventes</dt>
+              <dd className={data.marketOpen ? 'text-aurora' : 'text-danger'}>
+                {data.marketOpen ? 'ouvert' : 'fermé'} · {data.enVente} en cours
+              </dd>
+            </div>
+            <div className="flex items-baseline justify-between gap-3 border-b border-white/8 pb-2">
+              <dt className="text-faint">Boosters réglés</dt>
+              <dd className={data.reglages > 0 ? 'text-gold' : 'text-muted'}>
+                {data.reglages === 0 ? 'aucun — valeurs du catalogue' : `${data.reglages} modifié(s)`}
+              </dd>
+            </div>
+            <div className="flex items-baseline justify-between gap-3">
+              <dt className="text-faint">Dernière game</dt>
+              <dd className="text-muted">
+                {data.derniereGame
+                  ? `${data.pseudo(data.derniereGame.playerId)} — ${shortDateTime(data.derniereGame.playedAt)}`
+                  : 'aucune'}
+              </dd>
+            </div>
+          </dl>
 
-      {estAdmin && <AdminReglages joueurs={data.roles} boosters={data.boosters} />}
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Link href="/admin/games" className="btn btn-sm btn-ice no-underline">
+              Saisir une game
+            </Link>
+            <Link href="/admin/saison" className="btn btn-sm no-underline">
+              Compteur de subs
+            </Link>
+          </div>
+        </div>
+
+        <div className="glass p-4 sm:p-5">
+          <div className="flex items-baseline justify-between gap-3">
+            <h2 className="font-display text-base font-black tracking-wide text-ice uppercase">
+              Dernières actions
+            </h2>
+            <Link href="/admin/journal" className="text-[13px] text-muted no-underline hover:text-ice">
+              Tout le journal →
+            </Link>
+          </div>
+          <ul className="mt-3 space-y-2">
+            {data.dernieres.length === 0 && <li className="text-[13px] text-faint">Rien encore.</li>}
+            {data.dernieres.map((e, i) => (
+              <li key={i} className="border-b border-white/8 pb-2 last:border-0 last:pb-0">
+                <div className="flex items-baseline justify-between gap-3">
+                  <span className="text-[13px] text-ink">{e.action.replaceAll('_', ' ')}</span>
+                  <span className="text-xs whitespace-nowrap text-faint">{shortDateTime(e.at)}</span>
+                </div>
+                <p className="truncate text-xs text-muted">{e.detail}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
     </div>
   );
 }

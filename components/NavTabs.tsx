@@ -26,7 +26,7 @@ const TABS: Tab[] = [
     player: true,
   },
   { href: '/regles', label: 'Règles', short: 'Règles', icon: 'book' },
-  { href: '/admin', label: 'Modération', short: 'Modé', icon: 'gear', admin: true },
+  { href: '/admin', label: 'Administration', short: 'Admin', icon: 'gear', admin: true },
 ];
 
 function visibleTabs(isAdmin: boolean, isPlayer: boolean) {
