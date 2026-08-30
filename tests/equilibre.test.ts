@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CARDS, cardsOfTheme } from '@/lib/domain/catalog';
+import { CARDS, cardsOfRarity } from '@/lib/domain/catalog';
 import { CARD_IMPACT_CAP, GAME_LIMITS, MALUS, PLACEMENT_POINTS } from '@/lib/domain/rules';
 import type { CardDefinition, CardEffect } from '@/lib/domain/types';
 
@@ -160,36 +160,22 @@ describe('protection contre l’acharnement', () => {
   });
 });
 
-describe('cohérence des familles', () => {
-  it('donne à chaque famille un rôle distinct', () => {
-    const kindsOf = (theme: Parameters<typeof cardsOfTheme>[0]) =>
-      cardsOfTheme(theme).map((c) => c.effect.kind);
-
-    // Aurore est purement économique : aucune de ses cartes ne touche au score.
-    const SCORE_KINDS = new Set<CardEffect['kind']>([
-      'bonus_points',
-      'points_per_kill',
-      'kill_multiplier',
-      'points_per_kill_above',
-      'double_placement',
-      'strike_best',
-      'strike_top',
-      'cancel_last_boost',
-    ]);
-    for (const kind of kindsOf('aurore')) {
-      expect(SCORE_KINDS.has(kind)).toBe(false);
-    }
-
-    // Solstice porte tous les malus du jeu, et elle seule.
+describe('cohérence du jeu de cartes', () => {
+  it('garde tous les malus dans les raretés hautes', () => {
+    // Un malus retire des points à un adversaire : il ne doit pas tomber d'un
+    // booster d'entrée de gamme, sinon la ligue devient un jeu de harcèlement
+    // à 150 flocons.
     const malus = CARDS.filter((c) => c.nature === 'malus');
-    expect(malus.every((c) => c.theme === 'solstice')).toBe(true);
     expect(malus.length).toBeGreaterThanOrEqual(4);
+    expect(malus.every((c) => c.rarity !== 'C')).toBe(true);
   });
 
   it('fait monter la puissance affichée avec la rareté', () => {
-    for (const theme of ['glace', 'tempete', 'aurore', 'solstice'] as const) {
-      const powers = cardsOfTheme(theme).map((c) => c.power);
-      expect(powers).toEqual([...powers].sort((a, b) => a - b));
+    let plafondPrecedent = -1;
+    for (const rarity of ['C', 'PC', 'R', 'SR', 'UR', 'L'] as const) {
+      const powers = cardsOfRarity(rarity).map((c) => c.power);
+      expect(Math.min(...powers)).toBeGreaterThan(plafondPrecedent);
+      plafondPrecedent = Math.max(...powers);
     }
   });
 

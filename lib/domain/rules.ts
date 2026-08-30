@@ -247,24 +247,6 @@ export function atLeastOnePercent(
 /* --------------------------- Cartes et collection ------------------------ */
 
 /**
- * Taille de la réserve : le nombre de copies qu'un joueur peut détenir en même
- * temps, avant bonus de collection.
- *
- * Cette limite n'est pas décorative, elle est appliquée à l'ouverture d'un
- * booster. Son rôle est économique : sans plafond, les cartes s'accumulent et
- * l'hôtel des ventes se vide. En obligeant à jouer ou à revendre le surplus,
- * on garde le marché alimenté.
- *
- * Une carte gagnée aux enchères, elle, arrive toujours — on ne fait pas perdre
- * une vente remportée pour une question de place.
- *
- * Dimensionnée pour 60 games : un joueur assidu ouvre environ 130 cartes sur
- * une saison, il devra donc arbitrer et revendre — ce qui est exactement le
- * but.
- */
-export const BASE_RESERVE_SLOTS = 60;
-
-/**
  * Encadrement des malus.
  *
  * Le ciblage reste libre — n'importe qui peut viser n'importe qui — mais deux
@@ -296,22 +278,9 @@ export const MALUS_COOLDOWN_HOURS = MALUS.cooldownHours;
  */
 export const CARD_IMPACT_CAP = 25;
 
-/** Nombre de cartes par famille. */
-export const CARDS_PER_THEME = 6;
-
-/**
- * Paliers de collection. Exiger les 6 cartes pour le moindre bonus rendrait
- * celui-ci inaccessible — la légendaire de la famille sort une fois sur mille.
- * Un palier intermédiaire à 4 cartes garde l'objectif atteignable, et réserve
- * la version pleine à ceux qui vont au bout.
- */
-export const SET_TIERS = { partial: 4, full: CARDS_PER_THEME } as const;
-
 /* --------------------------- Hôtel des ventes ---------------------------- */
 
 export const MARKET = {
-  /** Taxe prélevée sur chaque vente conclue, avant remise de collection. */
-  feeRate: 0.05,
   /** Prix plancher et plafond d'une mise en vente, en flocons. */
   minPrice: 10,
   maxPrice: 500_000,

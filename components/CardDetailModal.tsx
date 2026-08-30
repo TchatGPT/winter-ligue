@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import Link from 'next/link';
 import { CardFrame } from '@/components/CardFrame';
-import { rarityMeta, themeMeta } from '@/components/ui';
+import { rarityMeta } from '@/components/ui';
 import { cardNumber } from '@/lib/domain/catalog';
 
 export interface CarteDetail {
@@ -12,7 +12,6 @@ export interface CarteDetail {
   subtitle: string;
   description: string;
   rarity: string;
-  theme: string;
   glyph: string;
   power: number;
   nature: 'bonus' | 'malus';
@@ -64,7 +63,6 @@ export function CardDetailModal({
   }, [onClose]);
 
   const meta = rarityMeta(carte.rarity);
-  const famille = themeMeta(carte.theme);
 
   return (
     <div
@@ -86,7 +84,6 @@ export function CardDetailModal({
               name={carte.name}
               description={carte.description}
               rarity={carte.rarity}
-              theme={carte.theme}
               glyph={carte.glyph}
               power={carte.power}
               nature={carte.nature}
@@ -133,12 +130,8 @@ export function CardDetailModal({
                 </span>{' '}
                 <span className="text-faint">/ 100</span>
               </Ligne>
-              <Ligne label="Famille">
-                {famille ? (
-                  <span style={{ color: famille.color }}>{famille.name}</span>
-                ) : (
-                  '—'
-                )}
+              <Ligne label="Rareté">
+                <span style={{ color: meta.color }}>{meta.label}</span>
               </Ligne>
               <Ligne label="Nature">
                 <span className={carte.nature === 'malus' ? 'text-danger' : 'text-ice'}>

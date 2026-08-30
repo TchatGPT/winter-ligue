@@ -39,7 +39,6 @@ export async function GET(
         name: card.name,
         subtitle: card.subtitle,
         rarity: card.rarity,
-        theme: card.theme,
         glyph: card.glyph,
         description: card.description,
         nature: card.nature,

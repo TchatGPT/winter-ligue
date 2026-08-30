@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildStats, checkBid, isExpired, marketFee, minimumBid, sellerPayout } from '@/lib/domain/market';
+import { buildStats, checkBid, isExpired, minimumBid } from '@/lib/domain/market';
 import { MARKET } from '@/lib/domain/rules';
 import type { Listing, Sale } from '@/lib/domain/types';
 
@@ -127,24 +127,6 @@ describe('validation d’une enchère', () => {
   });
 });
 
-describe('taxe de vente', () => {
-  it('prélève 5 % au vendeur', () => {
-    expect(marketFee(1000)).toBe(50);
-    expect(sellerPayout(1000)).toBe(950);
-  });
-
-  it('réduit la taxe de moitié avec la famille Solstice', () => {
-    expect(marketFee(1000, 0.5)).toBe(25);
-    expect(sellerPayout(1000, 0.5)).toBe(975);
-  });
-
-  it('ne fabrique jamais de flocons : versement + taxe = prix', () => {
-    for (const price of [10, 137, 999, 12_345]) {
-      expect(sellerPayout(price) + marketFee(price)).toBe(price);
-    }
-  });
-});
-
 describe('échéance', () => {
   it('reconnaît une vente échue encore active', () => {
     expect(isExpired(listing({ endsAt: '2027-01-15T11:00:00.000Z' }), NOW)).toBe(true);
@@ -161,7 +143,6 @@ describe('statistiques de marché', () => {
     sellerId: 's',
     buyerId: `acheteur-${price}`,
     price,
-    fee: Math.floor(price * 0.05),
     method: 'ENCHERE',
     soldAt: new Date(NOW.getTime() - daysAgo * 86_400_000).toISOString(),
   });

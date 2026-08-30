@@ -19,12 +19,10 @@ import 'server-only';
 import type { Database } from '@/lib/db/entities';
 import { newId } from '@/lib/db/store';
 import { getCard } from '@/lib/domain/catalog';
-import { buildStats, checkBid, minimumBid, sellerPayout, marketFee } from '@/lib/domain/market';
+import { buildStats, checkBid, minimumBid } from '@/lib/domain/market';
 import { MARKET } from '@/lib/domain/rules';
 import type { Bid, Listing, MarketStats } from '@/lib/domain/types';
 import { audit, credit, debit } from './ledger';
-import { consumeBoon } from './effects';
-import { bonusesFor } from './league';
 
 export class MarketError extends Error {
   constructor(
@@ -297,7 +295,7 @@ function refundCurrentBidder(db: Database, listing: Listing): void {
 /* -------------------------------- Clôture -------------------------------- */
 
 /**
- * Conclut une vente : transfert de la carte, versement au vendeur taxe déduite,
+ * Conclut une vente : transfert de la carte, versement au vendeur,
  * enregistrement dans l'historique de prix.
  */
 function settle(
@@ -319,16 +317,11 @@ function settle(
     }
   }
 
-  // La remise de collection et la faveur « Mécène » se cumulent, plafonnées à
-  // 100 % : une vente ne peut jamais rapporter plus que son prix.
-  const mecene = consumeBoon(db, listing.sellerId, 'TAXE_REDUITE');
-  const feeDiscount = Math.min(
-    1,
-    bonusesFor(db, listing.sellerId).marketFeeDiscount + (mecene ? Number(mecene.value ?? 0) : 0),
-  );
-  const fee = marketFee(price, feeDiscount);
-  const payout = sellerPayout(price, feeDiscount);
-  credit(db, listing.sellerId, payout, 'VENTE_MARCHE', listing.id);
+  // Le vendeur touche le prix, entier : l'hôtel des ventes ne prélève plus
+  // rien. La taxe existait pour éponger les flocons créés par les games ; elle
+  // le faisait au détriment de ceux qui font vivre le marché, ce qui est
+  // exactement le contraire du but.
+  credit(db, listing.sellerId, price, 'VENTE_MARCHE', listing.id);
 
   // Transfert de propriété de la copie, et déverrouillage.
   const instance = db.cards.find((c) => c.id === listing.cardInstanceId);
@@ -362,7 +355,6 @@ function settle(
     sellerId: listing.sellerId,
     buyerId,
     price,
-    fee,
     method,
     soldAt: now.toISOString(),
   });
@@ -372,7 +364,7 @@ function settle(
     buyerId,
     method === 'ENCHERE' ? 'VENTE_ADJUGEE' : 'ACHAT_IMMEDIAT',
     listing.id,
-    `${listing.cardId} pour ${price} ❄ (taxe ${fee})`,
+    `${listing.cardId} pour ${price} ❄`,
   );
 }
 
@@ -411,7 +403,7 @@ export function closeExpiredListings(db: Database, now = new Date()): number {
 /* ------------------------------ Vues de lecture -------------------------- */
 
 export interface ListingView extends Listing {
-  card: { id: string; name: string; rarity: string; theme: string; glyph: string };
+  card: { id: string; name: string; rarity: string; glyph: string };
   sellerPseudo: string;
   currentBidderPseudo: string | null;
   minimumNextBid: number;
@@ -433,7 +425,6 @@ export function viewListing(db: Database, listing: Listing): ListingView | null 
       id: card.id,
       name: card.name,
       rarity: card.rarity,
-      theme: card.theme,
       glyph: card.glyph,
     },
     sellerPseudo: seller ? seller.pseudo : 'Inconnu',

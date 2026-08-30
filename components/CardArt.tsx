@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
-import { EFFECT_CARDS, THEMES } from '@/lib/domain/catalog';
-import type { ThemeId } from '@/lib/domain/types';
+import { EFFECT_CARDS, RARITY_META } from '@/lib/domain/catalog';
+import type { Rarity } from '@/lib/domain/types';
 
 /**
  * Les 24 illustrations de cartes, dessinées.
@@ -17,22 +17,22 @@ import type { ThemeId } from '@/lib/domain/types';
  *
  * - le cadre est en `cqw`, l'illustration suit la carte de la vignette de
  *   collection au plein écran de l'ouverture, sans jamais crêper ;
- * - la couleur sort de la famille — `THEMES[…].color` — donc changer une teinte
- *   de saison repeint les six cartes concernées d'un coup ;
+ * - la couleur sort de la rareté — `RARITY_META[…]` — donc changer une teinte de
+ *   saison repeint d'un coup les quatre cartes concernées ;
  * - 24 images de bonne facture pèseraient plusieurs centaines de kilooctets et
  *   arriveraient après le reste, alors que l'ouverture d'un booster révèle cinq
  *   cartes d'un coup.
  *
  * `CARD_ART` n'est pas abandonné pour autant : si une vraie illustration est
- * déposée dans `public/cartes/`, {@link TradingCard} la préfère. Ce fichier est
+ * déposée dans `public/cartes/`, {@link CardFrame} la préfère. Ce fichier est
  * le fond de panier, pas un plafond.
  *
  * ## Une grammaire commune, sinon ce n'est pas un jeu de cartes
  *
- * Chaque scène partage le même ciel — un dégradé teinté par la famille, une
+ * Chaque scène partage le même ciel — un dégradé teinté par la rareté, une
  * lueur basse, une vignette qui enfonce les bords dans le cadre. Ce qui change
- * est la silhouette. C'est ce qui fait qu'on reconnaît une carte Glace d'une
- * carte Solstice à un mètre de l'écran, avant même de lire son nom.
+ * est la silhouette. C'est ce qui fait qu'on reconnaît une commune d'une
+ * légendaire à un mètre de l'écran, avant même de lire son nom.
  */
 
 /** Le repère dans lequel les scènes sont dessinées : un 4/3 paysage. */
@@ -59,17 +59,24 @@ const DECALAGE = 52;
 const TRAIT = '#eaf6ff';
 
 /**
- * Le ciel de chaque famille.
+ * Le haut du ciel, par rareté.
+ *
+ * Le bas vient de `RARITY_META[…].deep`, qui est déjà la teinte sombre de la
+ * rareté : une seule des deux extrémités est écrite ici, l'autre suit la
+ * palette. Indexer le ciel sur la rareté fait de la couleur d'une illustration
+ * une information : une carte chaude est une carte rare.
  *
  * Volontairement sombre et peu saturé : la couleur vive est réservée au sujet.
  * Un ciel qui pousse déjà à fond laisse la silhouette sans nulle part où
  * ressortir.
  */
-const CIEL: Record<ThemeId, { haut: string; bas: string }> = {
-  glace: { haut: '#081d31', bas: '#16455f' },
-  tempete: { haut: '#07181f', bas: '#0f3a37' },
-  aurore: { haut: '#130d2b', bas: '#2c1c4d' },
-  solstice: { haut: '#190f04', bas: '#33220a' },
+const CIEL_HAUT: Record<Rarity, string> = {
+  C: '#0a141d',
+  PC: '#04171f',
+  R: '#0f0a24',
+  SR: '#1c0716',
+  UR: '#1a0c04',
+  L: '#1a1203',
 };
 
 /** Une étoile à quatre branches, la forme d'éclat de tout le jeu. */
@@ -140,8 +147,9 @@ function Neige({ pts }: { pts: [number, number, number][] }) {
  * Le halo est placé bas et large : il fait office de source lumineuse au sol,
  * et c'est lui qui détache toutes les silhouettes, qui sont posées dessus.
  */
-function Fond({ u, theme, c }: { u: string; theme: ThemeId; c: string }) {
-  const { haut, bas } = CIEL[theme];
+function Fond({ u, rarity, c }: { u: string; rarity: Rarity; c: string }) {
+  const haut = CIEL_HAUT[rarity];
+  const bas = RARITY_META[rarity].deep;
   return (
     <>
       <defs>
@@ -244,7 +252,7 @@ const SCENES: Record<string, (u: string, c: string) => ReactNode> = {
        * Peint en blanc translucide, il laissait voir les piquets au travers —
        * et une clôture qu'on voit sous la neige n'est pas ensevelie, elle est
        * derrière une vitre. C'est aussi pour cela que le banc a sa propre
-       * rampe de gris bleutés plutôt que la teinte de la famille : de la neige
+       * rampe de gris bleutés plutôt que la teinte de la rareté : de la neige
        * de nuit n'est pas bleue, c'est son ombre qui l'est.
        */}
       <defs>
@@ -1059,23 +1067,23 @@ const SCENES: Record<string, (u: string, c: string) => ReactNode> = {
   ),
 };
 
-/** La famille de chaque carte, pour choisir le ciel et la couleur d'accent. */
-const THEME_DE: Record<string, ThemeId> = Object.fromEntries(
-  EFFECT_CARDS.map((carte) => [carte.id, carte.theme]),
+/** La rareté de chaque carte, pour choisir le ciel et la couleur d'accent. */
+const RARETE_DE: Record<string, Rarity> = Object.fromEntries(
+  EFFECT_CARDS.map((carte) => [carte.id, carte.rarity]),
 );
 
 /**
  * L'illustration d'une carte.
  *
  * Rend `null` pour un identifiant inconnu : c'est l'appelant qui décide du
- * repli — {@link TradingCard} retombe alors sur le glyphe.
+ * repli — {@link CardFrame} retombe alors sur le glyphe.
  */
 export function CardArt({ cardId, className }: { cardId: string; className?: string }) {
-  const theme = THEME_DE[cardId];
+  const rarity = RARETE_DE[cardId];
   const scene = SCENES[cardId];
-  if (!theme || !scene) return null;
+  if (!rarity || !scene) return null;
 
-  const c = THEMES[theme].color;
+  const c = RARITY_META[rarity].color;
   return (
     <svg
       className={className}
@@ -1084,7 +1092,7 @@ export function CardArt({ cardId, className }: { cardId: string; className?: str
       aria-hidden="true"
       focusable="false"
     >
-      <Fond u={cardId} theme={theme} c={c} />
+      <Fond u={cardId} rarity={rarity} c={c} />
       <g transform={`translate(0 ${DECALAGE})`}>{scene(cardId, c)}</g>
       <Vignette u={cardId} />
     </svg>
@@ -1093,5 +1101,5 @@ export function CardArt({ cardId, className }: { cardId: string; className?: str
 
 /** Y a-t-il une illustration dessinée pour cette carte ? */
 export function aUneIllustration(cardId: string): boolean {
-  return cardId in SCENES && cardId in THEME_DE;
+  return cardId in SCENES && cardId in RARETE_DE;
 }

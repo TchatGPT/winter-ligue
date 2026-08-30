@@ -62,7 +62,6 @@ export async function POST(request: Request): Promise<NextResponse> {
             cardId: g.body.cardId,
             firstObtainedAt: new Date().toISOString(),
           });
-          // Une famille vient peut-être d'être complétée : les scores changent.
           recomputePlayerGames(db, player.id);
         }
       }

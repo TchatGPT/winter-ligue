@@ -66,7 +66,7 @@ export function consume(key: string, limit: number, windowMs: number): RateLimit
   return { ok: true, retryAfter: 0, remaining: Math.floor(bucket.tokens) };
 }
 
-/** Barèmes par famille d'action. */
+/** Barèmes par type d'action. */
 export const LIMITS = {
   /** Connexion admin : volontairement très strict. */
   login: { limit: 5, windowMs: 15 * 60_000 },

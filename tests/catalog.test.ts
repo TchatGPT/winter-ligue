@@ -1,37 +1,22 @@
 import { describe, expect, it } from 'vitest';
+import { BOOSTERS, boosterSize, CARDS, cardsOfRarity, RARITY_META } from '@/lib/domain/catalog';
+import { completionRatio } from '@/lib/domain/collection';
+import { rewardForGame } from '@/lib/domain/economy';
 import {
-  BOOSTERS,
-  boosterSize,
-  CARDS,
-  cardsOfRarity,
-  cardsOfTheme,
-  RARITY_META,
-  THEMES,
-} from '@/lib/domain/catalog';
-import { completionRatio, handSlotsFor, setBonusesFor, themeProgress } from '@/lib/domain/collection';
-import { discountedPrice, rewardForGame } from '@/lib/domain/economy';
-import {
-  BASE_RESERVE_SLOTS,
   crossedMilestones,
   ECONOMY,
   nextMilestone,
   rarityPercent,
   RARITY_WEIGHTS_BASE,
-  SET_TIERS,
   SUB_MILESTONES,
   WEIGHT_TOTAL,
 } from '@/lib/domain/rules';
-import type { Rarity, ThemeId } from '@/lib/domain/types';
+import type { Rarity } from '@/lib/domain/types';
 
 const LADDER: Rarity[] = ['C', 'PC', 'R', 'SR', 'UR', 'L'];
 
 describe('cohérence du catalogue', () => {
-  it('contient 4 familles de 6 cartes, une par rareté', () => {
-    for (const theme of Object.keys(THEMES) as ThemeId[]) {
-      const cards = cardsOfTheme(theme);
-      expect(cards).toHaveLength(6);
-      expect(cards.map((c) => c.rarity)).toEqual(LADDER);
-    }
+  it('contient 24 cartes', () => {
     expect(CARDS).toHaveLength(24);
   });
 
@@ -55,11 +40,15 @@ describe('cohérence du catalogue', () => {
     }
   });
 
-  it('fait monter la puissance avec la rareté, dans chaque famille', () => {
-    for (const theme of Object.keys(THEMES) as ThemeId[]) {
-      const powers = cardsOfTheme(theme).map((c) => c.power);
-      const sorted = [...powers].sort((a, b) => a - b);
-      expect(powers).toEqual(sorted);
+  it('fait monter la puissance avec la rareté', () => {
+    // Rareté par rareté : la carte la plus faible d'un palier doit rester
+    // au-dessus de la plus forte du palier précédent. C'est ce qui fait qu'une
+    // ultra rare vaut son prix, et c'est la seule promesse d'un booster cher.
+    let plafondPrecedent = -1;
+    for (const rarity of LADDER) {
+      const powers = cardsOfRarity(rarity).map((c) => c.power);
+      expect(Math.min(...powers)).toBeGreaterThan(plafondPrecedent);
+      plafondPrecedent = Math.max(...powers);
     }
   });
 
@@ -120,50 +109,7 @@ describe('tables de raretés', () => {
   });
 });
 
-describe('collection et paliers', () => {
-  const tempete = cardsOfTheme('tempete').map((c) => c.id);
-  const glace = cardsOfTheme('glace').map((c) => c.id);
-
-  it('n’accorde aucun bonus sous le palier partiel', () => {
-    const bonuses = setBonusesFor(tempete.slice(0, SET_TIERS.partial - 1));
-    expect(bonuses.partial).toEqual([]);
-    expect(bonuses.completed).toEqual([]);
-    expect(bonuses.killMultiplier).toBe(0);
-  });
-
-  it('accorde le bonus partiel à 4 cartes sur 6', () => {
-    const bonuses = setBonusesFor(tempete.slice(0, SET_TIERS.partial));
-    expect(bonuses.partial).toEqual(['tempete']);
-    expect(bonuses.completed).toEqual([]);
-    expect(bonuses.killMultiplier).toBeCloseTo(0.03);
-  });
-
-  it('remplace le bonus partiel par le plein à 6 sur 6, sans les cumuler', () => {
-    const bonuses = setBonusesFor(tempete);
-    expect(bonuses.completed).toEqual(['tempete']);
-    expect(bonuses.partial).toEqual([]);
-    expect(bonuses.killMultiplier).toBeCloseTo(0.07);
-  });
-
-  it('cumule les bonus de familles différentes', () => {
-    const bonuses = setBonusesFor([...tempete, ...glace.slice(0, 4)]);
-    expect(bonuses.completed).toEqual(['tempete']);
-    expect(bonuses.partial).toEqual(['glace']);
-    expect(bonuses.killMultiplier).toBeCloseTo(0.07);
-    expect(bonuses.handSlots).toBe(8);
-    expect(handSlotsFor([...tempete, ...glace.slice(0, 4)])).toBe(BASE_RESERVE_SLOTS + 8);
-    expect(handSlotsFor([...glace])).toBe(BASE_RESERVE_SLOTS + 20);
-  });
-
-  it('annonce combien de cartes restent avant le prochain palier', () => {
-    const [glaceProgress] = themeProgress(glace.slice(0, 2)).filter((p) => p.theme === 'glace');
-    expect(glaceProgress.toNextTier).toBe(2);
-
-    const [full] = themeProgress(glace).filter((p) => p.theme === 'glace');
-    expect(full.toNextTier).toBe(0);
-    expect(full.complete).toBe(true);
-  });
-
+describe('collection', () => {
   it('ignore les identifiants inconnus dans le taux de complétion', () => {
     expect(completionRatio(['carte-qui-n-existe-pas'])).toBe(0);
     expect(completionRatio(CARDS.map((c) => c.id))).toBe(1);
@@ -176,15 +122,12 @@ describe('économie de jeu', () => {
     expect(reward.total).toBe(10 * ECONOMY.perKill + ECONOMY.perPlacement['1'] + ECONOMY.participation);
   });
 
-  it('ajoute le bonus de la famille Aurore', () => {
-    expect(rewardForGame(0, null, 20).total).toBe(ECONOMY.participation + 20);
-  });
-
-  it('applique la remise de boutique en arrondissant au supérieur', () => {
-    expect(discountedPrice(1000, 0.18)).toBe(820);
-    expect(discountedPrice(1000, 0)).toBe(1000);
-    // Une remise absurde reste bornée : le prix ne tombe jamais à zéro.
-    expect(discountedPrice(100, 5)).toBe(10);
+  it('ne récompense que ce qui s’est passé en jeu', () => {
+    // Deux joueurs aux mêmes kills et au même placement touchent la même chose,
+    // quelle que soit leur collection. C'est l'invariant qui a coûté la vie aux
+    // bonus permanents.
+    expect(rewardForGame(0, null).total).toBe(ECONOMY.participation);
+    expect(rewardForGame(4, 2).total).toBe(rewardForGame(4, 2).total);
   });
 });
 
@@ -235,22 +178,6 @@ describe('économie des subs', () => {
     // Ni l'une ni l'autre ne doit écraser sa voisine : on tolère un facteur 2.
     expect(desSubs).toBeGreaterThan(duJeu / 2);
     expect(desSubs).toBeLessThan(duJeu * 2);
-  });
-});
-
-describe('places de réserve', () => {
-  it('plafonne la réserve à une valeur qui contraint sans étouffer', () => {
-    // Assez pour plusieurs boosters d'affilée, trop peu pour tout thésauriser :
-    // c'est ce qui pousse le surplus vers l'hôtel des ventes.
-    expect(BASE_RESERVE_SLOTS).toBeGreaterThanOrEqual(5 * 5);
-    expect(BASE_RESERVE_SLOTS).toBeLessThanOrEqual(80);
-  });
-
-  it('fait de la famille Glace un vrai gain de place', () => {
-    const glace = cardsOfTheme('glace').map((c) => c.id);
-    expect(handSlotsFor([])).toBe(BASE_RESERVE_SLOTS);
-    expect(handSlotsFor(glace.slice(0, 4))).toBeGreaterThan(handSlotsFor([]));
-    expect(handSlotsFor(glace)).toBeGreaterThan(handSlotsFor(glace.slice(0, 4)));
   });
 });
 

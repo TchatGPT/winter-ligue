@@ -1,8 +1,8 @@
 import { aUneIllustration, CardArt } from '@/components/CardArt';
 import { IconImpact, IconSnowflake } from '@/components/icons';
-import { RARITY_META, THEMES } from '@/lib/domain/catalog';
+import { RARITY_META } from '@/lib/domain/catalog';
 import { compact } from '@/lib/format';
-import type { Rarity, ThemeId } from '@/lib/domain/types';
+import type { Rarity } from '@/lib/domain/types';
 
 /**
  * La carte montée dans un cadre peint.
@@ -37,11 +37,18 @@ export interface CardFrameProps {
   name: string;
   description?: string;
   rarity: string;
-  theme: string;
   glyph: string;
   power?: number;
   quote?: number | null;
   nature?: 'bonus' | 'malus';
+  /**
+   * Exemplaires détenus. Au-delà de 1, la carte porte un compteur.
+   *
+   * La collection affichait autrefois une vignette par exemplaire : trois
+   * Congères occupaient trois cases identiques, et on ne voyait plus le
+   * catalogue derrière les doublons. Une seule carte, avec son compte.
+   */
+  copies?: number;
   dimmed?: boolean;
   /** Marque libre, posée en haut à droite de la fenêtre. */
   corner?: React.ReactNode;
@@ -52,16 +59,15 @@ export function CardFrame({
   name,
   description,
   rarity,
-  theme,
   glyph,
   power,
   quote,
   nature,
+  copies,
   dimmed,
   corner,
 }: CardFrameProps) {
   const meta = RARITY_META[rarity as Rarity] ?? RARITY_META.C;
-  const famille = THEMES[theme as ThemeId];
 
   return (
     <div
@@ -86,6 +92,11 @@ export function CardFrame({
       <img className="cadre-planche" src="/cadres/glace.webp" alt="" aria-hidden="true" />
 
       <span className="cadre-rarete">{meta.code}</span>
+      {copies !== undefined && copies > 1 && (
+        <span className="cadre-copies" title={`${copies} exemplaires en réserve`}>
+          ×{copies}
+        </span>
+      )}
       {nature === 'malus' && <span className="cadre-malus">Malus</span>}
       {corner && <span className="cadre-coin">{corner}</span>}
 
@@ -94,7 +105,8 @@ export function CardFrame({
         {description && <p className="cadre-desc">{description}</p>}
 
         <div className="cadre-pied">
-          {famille && <span className="cadre-famille">{famille.name}</span>}
+          {/* La rareté en toutes lettres : c'est le seul classement d'une carte. */}
+          <span className="cadre-classe">{meta.label}</span>
           <span className="cadre-chiffres">
             {power !== undefined && (
               <span className="cadre-stat cadre-stat-pui" title={`Puissance ${power} sur 100`}>

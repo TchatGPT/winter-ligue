@@ -11,35 +11,25 @@ import 'server-only';
 
 import type { Database, Game, Player } from '@/lib/db/entities';
 import { getStore } from '@/lib/db/store';
-import { setBonusesFor } from '@/lib/domain/collection';
 import { rank, scoreGame, totalsFor, type PlayerTotals, type ScoredGame } from '@/lib/domain/scoring';
 import { SEASON } from '@/lib/domain/rules';
-import type { SetBonuses } from '@/lib/domain/types';
 
 /** Identifiants de cartes déjà découvertes par un joueur (collection permanente). */
 export function discoveredCardIds(db: Database, playerId: string): string[] {
   return db.discoveries.filter((d) => d.playerId === playerId).map((d) => d.cardId);
 }
 
-export function bonusesFor(db: Database, playerId: string): SetBonuses {
-  return setBonusesFor(discoveredCardIds(db, playerId));
-}
-
 /** Réécrit le score d'une game à partir de ses composantes. À appeler après toute modification. */
 export function recomputeGame(db: Database, game: Game): Game {
-  const bonuses = bonusesFor(db, game.playerId);
-  game.score = scoreGame(
-    {
-      kills: game.kills,
-      placement: game.placement,
-      bonusPoints: game.bonusPoints,
-    },
-    bonuses.killMultiplier,
-  ).total;
+  game.score = scoreGame({
+    kills: game.kills,
+    placement: game.placement,
+    bonusPoints: game.bonusPoints,
+  }).total;
   return game;
 }
 
-/** Recalcule toutes les games d'un joueur (après complétion d'une famille, par exemple). */
+/** Recalcule toutes les games d'un joueur. */
 export function recomputePlayerGames(db: Database, playerId: string): void {
   for (const game of db.games) {
     if (game.playerId === playerId) recomputeGame(db, game);
@@ -87,10 +77,6 @@ export interface RankingRow {
   twitchLogin: string | null;
   snowflakes: number;
   totals: PlayerTotals;
-  /** Familles complétées à 6/6, affichées en pastilles pleines. */
-  completedThemes: string[];
-  /** Familles au palier 4/6, affichées estompées. */
-  partialThemes: string[];
   shielded: boolean;
   /** Vrai pour les places qualificatives pour la finale. */
   finalist: boolean;
@@ -117,8 +103,6 @@ export async function getRanking(): Promise<RankingRow[]> {
       twitchLogin: player.twitchLogin,
       snowflakes: player.snowflakes,
       totals,
-      completedThemes: setBonusesFor(discoveredCardIds(db as Database, player.id)).completed,
-      partialThemes: setBonusesFor(discoveredCardIds(db as Database, player.id)).partial,
       shielded: hasShield(db as Database, player.id),
       finalist: position <= SEASON.finalistCount,
     }));

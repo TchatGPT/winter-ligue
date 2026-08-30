@@ -15,12 +15,13 @@ describe('score d’une game', () => {
     expect(scoreGame({ kills: 8, placement: null, bonusPoints: -6 }).total).toBe(2);
   });
 
-  it('applique le bonus permanent de la famille Tempête aux kills seuls', () => {
-    const sans = scoreGame({ kills: 20, placement: 1, bonusPoints: 0 });
-    const avec = scoreGame({ kills: 20, placement: 1, bonusPoints: 0 }, 0.07);
-    // +7 % sur les 20 kills, mais les 20 points de Top 1 ne bougent pas.
-    expect(sans.total).toBe(40);
-    expect(avec.total).toBe(41.4);
+  it('compte un point par kill, pour tout le monde', () => {
+    // Il n'existe plus de multiplicateur permanent : le score d'une game ne
+    // dépend que de la game. Deux joueurs aux mêmes chiffres marquent pareil,
+    // quelle que soit leur collection.
+    const g = scoreGame({ kills: 20, placement: 1, bonusPoints: 0 });
+    expect(g.killPoints).toBe(20);
+    expect(g.total).toBe(40);
   });
 
   it('borne les entrées aberrantes plutôt que de les propager', () => {

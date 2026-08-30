@@ -14,43 +14,29 @@ export interface SnowflakeReward {
   killReward: number;
   placementReward: number;
   participation: number;
-  collectionBonus: number;
   total: number;
 }
 
-/** Flocons gagnés pour une game, bonus de collection compris. */
-export function rewardForGame(
-  kills: number,
-  placement: Placement,
-  snowflakesPerGameBonus = 0,
-): SnowflakeReward {
+/**
+ * Flocons gagnés pour une game.
+ *
+ * Les mêmes règles pour tout le monde : la récompense ne dépend que de ce qui
+ * s'est passé en jeu. Elle a porté un temps un bonus tiré de la collection —
+ * retiré avec le reste des avantages permanents, qui faisaient rapporter
+ * davantage à qui avait ouvert davantage.
+ */
+export function rewardForGame(kills: number, placement: Placement): SnowflakeReward {
   const safeKills = Math.max(0, Math.trunc(kills));
   const killReward = safeKills * ECONOMY.perKill;
   const placementReward =
     placement === null ? 0 : (ECONOMY.perPlacement[String(placement) as '1' | '2' | '3'] ?? 0);
   const participation = ECONOMY.participation;
-  const collectionBonus = Math.max(0, Math.trunc(snowflakesPerGameBonus));
   return {
     killReward,
     placementReward,
     participation,
-    collectionBonus,
-    total: killReward + placementReward + participation + collectionBonus,
+    total: killReward + placementReward + participation,
   };
-}
-
-/**
- * Prix d'un booster après remise de collection.
- *
- * On calcule le *montant de la remise* puis on le soustrait, au lieu de
- * multiplier le prix par (1 − remise). La différence n'est pas cosmétique :
- * `1 - 0.18` vaut 0.8200000000000001 en virgule flottante, et un arrondi au
- * supérieur ferait payer un flocon de trop sur un prix rond.
- */
-export function discountedPrice(basePrice: number, discount: number): number {
-  const safeDiscount = Math.min(0.9, Math.max(0, discount));
-  const off = Math.floor(basePrice * safeDiscount);
-  return Math.max(1, basePrice - off);
 }
 
 export type LedgerReason =
@@ -63,7 +49,6 @@ export type LedgerReason =
   | 'ACHAT_MARCHE'
   | 'ENCHERE_BLOQUEE'
   | 'ENCHERE_REMBOURSEE'
-  | 'TAXE_MARCHE'
   | 'AJUSTEMENT_ADMIN';
 
 /**

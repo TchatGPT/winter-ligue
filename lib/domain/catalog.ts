@@ -1,5 +1,5 @@
 /**
- * Catalogue figé de la saison : raretés, familles, 24 cartes, 4 boosters.
+ * Catalogue figé de la saison : raretés, 24 cartes, 4 boosters.
  *
  * C'est la source de vérité. Le client reçoit ce catalogue pour l'affichage,
  * mais toute résolution d'effet relit ces définitions côté serveur : une carte
@@ -8,13 +8,7 @@
 
 import { BOOSTER_ART, CARD_ART } from './card-art.generated';
 import { RARITY_ORDER, RARITY_WEIGHTS_BASE } from './rules';
-import type {
-  BoosterDefinition,
-  CardDefinition,
-  Rarity,
-  ThemeDefinition,
-  ThemeId,
-} from './types';
+import type { BoosterDefinition, CardDefinition, Rarity } from './types';
 
 /**
  * Palette de raretés : froide pour le banal, chaude pour le convoité. Sur un
@@ -99,54 +93,15 @@ export const RARITY_META: Record<
   },
 };
 
-export const THEMES: Record<ThemeId, ThemeDefinition> = {
-  glace: {
-    id: 'glace',
-    name: 'Glace Éternelle',
-    tagline: 'Verrouiller ce qui est acquis',
-    glyph: '❄',
-    color: '#7fd8ff',
-    partialBonusLabel: '+8 places de réserve',
-    fullBonusLabel: '+20 places de réserve',
-  },
-  tempete: {
-    id: 'tempete',
-    name: 'Tempête',
-    tagline: 'Multiplier la casse',
-    glyph: '🌪',
-    color: '#6ee7c7',
-    partialBonusLabel: '+3 % de kills en permanence',
-    fullBonusLabel: '+7 % de kills en permanence',
-  },
-  aurore: {
-    id: 'aurore',
-    name: 'Aurore Boréale',
-    tagline: 'Points et flocons',
-    glyph: '🌌',
-    color: '#b18cff',
-    partialBonusLabel: '+8 flocons par game',
-    fullBonusLabel: '+20 flocons par game',
-  },
-  solstice: {
-    id: 'solstice',
-    name: 'Solstice',
-    tagline: 'Le chaos et les malus',
-    glyph: '🎁',
-    color: '#e8c46a',
-    partialBonusLabel: '−8 % en boutique',
-    fullBonusLabel: '−18 % en boutique et −50 % de taxe de vente',
-  },
-};
-
 /**
- * 24 cartes : 4 familles × 6 raretés.
+ * 24 cartes, quatre par rareté.
  *
  * Le plafond d'impact est fixé à ~25 points, soit une bonne game. Sur une
  * saison qui en totalise environ 400, une carte à +100 volerait un quart du
  * classement en un clic — c'est ce qui rendait certaines roues de la Summer
  * Ligue insupportables.
  *
- * Trois interdits structurent la famille Solstice :
+ * Trois interdits structurent les malus :
  *   — aucune suppression définitive de la game d'autrui ;
  *   — aucun transfert : un malus retire des points, il n'en donne jamais à
  *     l'attaquant ;
@@ -158,7 +113,6 @@ export const EFFECT_CARDS: readonly CardDefinition[] = [
     id: 'congere',
     name: 'Congère',
     subtitle: 'Ce qui s’accumule reste',
-    theme: 'glace',
     rarity: 'C',
     glyph: '🌨',
     description: 'Ajoute +4 points à une de tes games.',
@@ -172,7 +126,6 @@ export const EFFECT_CARDS: readonly CardDefinition[] = [
     id: 'bouclier-givre',
     name: 'Bouclier de Givre',
     subtitle: 'Intouchable une nuit',
-    theme: 'glace',
     rarity: 'PC',
     glyph: '🛡',
     description: 'Immunise ton profil contre tous les malus pendant 12 heures.',
@@ -186,7 +139,6 @@ export const EFFECT_CARDS: readonly CardDefinition[] = [
     id: 'gel-eternel',
     name: 'Gel Éternel',
     subtitle: 'Ce qui est pris est pris',
-    theme: 'glace',
     rarity: 'R',
     glyph: '❅',
     description:
@@ -201,7 +153,6 @@ export const EFFECT_CARDS: readonly CardDefinition[] = [
     id: 'second-souffle',
     name: 'Second Souffle',
     subtitle: 'Rien n’est jamais perdu',
-    theme: 'glace',
     rarity: 'SR',
     glyph: '🌬',
     description:
@@ -216,7 +167,6 @@ export const EFFECT_CARDS: readonly CardDefinition[] = [
     id: 'rempart-polaire',
     name: 'Rempart Polaire',
     subtitle: 'Deux jours de silence',
-    theme: 'glace',
     rarity: 'UR',
     glyph: '🏰',
     description: 'Immunise ton profil pendant 48 heures et gèle ta meilleure game.',
@@ -230,7 +180,6 @@ export const EFFECT_CARDS: readonly CardDefinition[] = [
     id: 'sanctuaire',
     name: 'Sanctuaire',
     subtitle: 'Le socle ne bouge plus',
-    theme: 'glace',
     rarity: 'L',
     glyph: '🏔',
     description:
@@ -247,7 +196,6 @@ export const EFFECT_CARDS: readonly CardDefinition[] = [
     id: 'rafale',
     name: 'Rafale',
     subtitle: 'Chaque coup compte',
-    theme: 'tempete',
     rarity: 'C',
     glyph: '🍃',
     description: 'Ajoute +1 point par kill sur une de tes games, jusqu’à +8.',
@@ -261,7 +209,6 @@ export const EFFECT_CARDS: readonly CardDefinition[] = [
     id: 'vent-du-nord',
     name: 'Vent du Nord',
     subtitle: 'Le vent tourne',
-    theme: 'tempete',
     rarity: 'PC',
     glyph: '💨',
     description: 'Multiplie par 1,25 les kills d’une de tes games, jusqu’à +10 points.',
@@ -275,7 +222,6 @@ export const EFFECT_CARDS: readonly CardDefinition[] = [
     id: 'percee',
     name: 'Percée',
     subtitle: 'Récompense les gros scores',
-    theme: 'tempete',
     rarity: 'R',
     glyph: '⚔',
     description:
@@ -290,7 +236,6 @@ export const EFFECT_CARDS: readonly CardDefinition[] = [
     id: 'blizzard',
     name: 'Blizzard',
     subtitle: 'On n’y voit plus rien',
-    theme: 'tempete',
     rarity: 'SR',
     glyph: '🌪',
     description: 'Multiplie par 1,5 les kills d’une de tes games, jusqu’à +18 points.',
@@ -304,7 +249,6 @@ export const EFFECT_CARDS: readonly CardDefinition[] = [
     id: 'sang-froid',
     name: 'Sang-Froid',
     subtitle: 'La place avant les frags',
-    theme: 'tempete',
     rarity: 'UR',
     glyph: '🧊',
     description:
@@ -319,7 +263,6 @@ export const EFFECT_CARDS: readonly CardDefinition[] = [
     id: 'nuit-polaire',
     name: 'Nuit Polaire',
     subtitle: 'Le plus fort multiplicateur',
-    theme: 'tempete',
     rarity: 'L',
     glyph: '🌑',
     description: 'Multiplie par 1,8 les kills d’une de tes games, jusqu’à +25 points.',
@@ -335,7 +278,6 @@ export const EFFECT_CARDS: readonly CardDefinition[] = [
     id: 'etincelle',
     name: 'Étincelle',
     subtitle: 'Une lueur',
-    theme: 'aurore',
     rarity: 'C',
     glyph: '✦',
     description: 'Crédite immédiatement 80 flocons.',
@@ -349,7 +291,6 @@ export const EFFECT_CARDS: readonly CardDefinition[] = [
     id: 'etoile-polaire',
     name: 'Étoile Polaire',
     subtitle: 'Le cap au nord',
-    theme: 'aurore',
     rarity: 'PC',
     glyph: '⭐',
     description: 'Crédite immédiatement 250 flocons.',
@@ -363,7 +304,6 @@ export const EFFECT_CARDS: readonly CardDefinition[] = [
     id: 'pluie-de-flocons',
     name: 'Pluie de Flocons',
     subtitle: 'La caisse se remplit',
-    theme: 'aurore',
     rarity: 'R',
     glyph: '🌧',
     description: 'Crédite immédiatement 600 flocons.',
@@ -377,7 +317,6 @@ export const EFFECT_CARDS: readonly CardDefinition[] = [
     id: 'manne',
     name: 'Manne',
     subtitle: 'Jouer rapporte double',
-    theme: 'aurore',
     rarity: 'SR',
     glyph: '💠',
     description: 'Double les flocons gagnés sur tes 3 prochaines games enregistrées.',
@@ -390,13 +329,16 @@ export const EFFECT_CARDS: readonly CardDefinition[] = [
   {
     id: 'mecene',
     name: 'Mécène',
-    subtitle: 'Vendre coûte moins cher',
-    theme: 'aurore',
+    subtitle: 'Six games financées',
     rarity: 'UR',
     glyph: '👑',
-    description: 'Réduit de moitié la taxe de tes 5 prochaines ventes à l’hôtel des ventes.',
+    // Son effet était une remise sur la taxe de vente, supprimée avec elle.
+    // C'est donc la Manne poussée plus loin — six games au lieu de trois — et
+    // non un effet neuf : l'écart entre une super rare et une ultra rare se
+    // paie en durée, pas en mécanique de plus à équilibrer.
+    description: 'Double les flocons gagnés sur tes 6 prochaines games enregistrées.',
     target: 'none',
-    effect: { kind: 'boon', boon: 'TAXE_REDUITE', uses: 5, value: '0.5' },
+    effect: { kind: 'boon', boon: 'FLOCONS_DOUBLES', uses: 6 },
     nature: 'bonus',
     offensive: false,
     power: 82,
@@ -405,7 +347,6 @@ export const EFFECT_CARDS: readonly CardDefinition[] = [
     id: 'aurore-boreale',
     name: 'Aurore Boréale',
     subtitle: 'Le ciel s’embrase',
-    theme: 'aurore',
     rarity: 'L',
     glyph: '🌌',
     description:
@@ -428,7 +369,6 @@ export const EFFECT_CARDS: readonly CardDefinition[] = [
     id: 'boule-de-neige',
     name: 'Boule de Neige',
     subtitle: 'On efface la pire',
-    theme: 'solstice',
     rarity: 'C',
     glyph: '⛄',
     description: 'Supprime définitivement ta pire game comptabilisée.',
@@ -442,7 +382,6 @@ export const EFFECT_CARDS: readonly CardDefinition[] = [
     id: 'givre-mordant',
     name: 'Givre Mordant',
     subtitle: 'Une morsure légère',
-    theme: 'solstice',
     rarity: 'PC',
     glyph: '🥶',
     description: 'MALUS : retire 6 points à la meilleure game d’un adversaire.',
@@ -456,7 +395,6 @@ export const EFFECT_CARDS: readonly CardDefinition[] = [
     id: 'contre-courant',
     name: 'Contre-Courant',
     subtitle: 'Le contre-jeu',
-    theme: 'solstice',
     rarity: 'R',
     glyph: '🌀',
     description:
@@ -471,7 +409,6 @@ export const EFFECT_CARDS: readonly CardDefinition[] = [
     id: 'traineau-perce',
     name: 'Traîneau Percé',
     subtitle: 'Ça fuit de partout',
-    theme: 'solstice',
     rarity: 'SR',
     glyph: '🛷',
     description: 'MALUS : retire 12 points à la meilleure game d’un adversaire.',
@@ -485,7 +422,6 @@ export const EFFECT_CARDS: readonly CardDefinition[] = [
     id: 'tempete-de-verglas',
     name: 'Tempête de Verglas',
     subtitle: 'Tout se fissure',
-    theme: 'solstice',
     rarity: 'UR',
     glyph: '🌩',
     description: 'MALUS : retire 8 points à chacune des 3 meilleures games d’un adversaire.',
@@ -499,7 +435,6 @@ export const EFFECT_CARDS: readonly CardDefinition[] = [
     id: 'grand-froid',
     name: 'Grand Froid',
     subtitle: 'Plus un geste',
-    theme: 'solstice',
     rarity: 'L',
     glyph: '☠',
     description:
@@ -563,16 +498,14 @@ export function getCard(id: string): CardDefinition | null {
   return CARD_INDEX.get(id) ?? null;
 }
 
-/** Cartes d'une famille, triées de la commune à la légendaire. */
-export function cardsOfTheme(theme: ThemeId): CardDefinition[] {
-  return CARDS.filter((c) => c.theme === theme).sort(
-    (a, b) => RARITY_ORDER[a.rarity] - RARITY_ORDER[b.rarity],
-  );
-}
-
-/** Toutes les cartes d'une rareté donnée. */
+/** Toutes les cartes d'une rareté donnée, dans l'ordre du catalogue. */
 export function cardsOfRarity(rarity: Rarity): CardDefinition[] {
   return CARDS.filter((c) => c.rarity === rarity);
+}
+
+/** Le catalogue trié de la commune à la légendaire. */
+export function cardsByRarity(): CardDefinition[] {
+  return [...CARDS].sort((a, b) => RARITY_ORDER[a.rarity] - RARITY_ORDER[b.rarity]);
 }
 
 /**

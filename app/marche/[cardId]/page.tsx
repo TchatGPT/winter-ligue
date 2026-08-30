@@ -7,9 +7,8 @@ import { CardTile, RarityChip, StatTile, flakes, rarityMeta } from '@/components
 import { getSession } from '@/lib/auth/session';
 import type { Database } from '@/lib/db/entities';
 import { getStore } from '@/lib/db/store';
-import { cardsOfTheme, getCard, THEMES } from '@/lib/domain/catalog';
+import { cardsOfRarity, getCard } from '@/lib/domain/catalog';
 import { minimumBid } from '@/lib/domain/market';
-import type { ThemeId } from '@/lib/domain/types';
 import { closeExpiredListings, lastBuyerPseudo, statsForCard } from '@/lib/services/market';
 import { shortDateTime } from '@/lib/format';
 
@@ -60,7 +59,6 @@ export default async function CoteCartePage({ params }: { params: Promise<{ card
         name: card.name,
         subtitle: card.subtitle,
         rarity: card.rarity,
-        theme: card.theme,
         glyph: card.glyph,
         power: card.power,
         sellerId: l.sellerId,
@@ -98,8 +96,8 @@ export default async function CoteCartePage({ params }: { params: Promise<{ card
   });
 
   const meta = rarityMeta(card.rarity);
-  const theme = THEMES[card.theme as ThemeId];
-  const siblings = cardsOfTheme(card.theme).filter((c) => c.id !== card.id);
+  // Les voisines de rareté : c'est le seul voisinage qui reste à une carte.
+  const siblings = cardsOfRarity(card.rarity).filter((c) => c.id !== card.id);
 
   return (
     <div className="space-y-5">
@@ -125,7 +123,6 @@ export default async function CoteCartePage({ params }: { params: Promise<{ card
               name={card.name}
               description={card.description}
               rarity={card.rarity}
-              theme={card.theme}
               glyph={card.glyph}
               power={card.power}
               nature={card.nature}
@@ -146,12 +143,6 @@ export default async function CoteCartePage({ params }: { params: Promise<{ card
             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">{card.description}</p>
 
             <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-faint">
-              <span>
-                Famille{' '}
-                <span style={{ color: theme.color }}>
-                  {theme.glyph} {theme.name}
-                </span>
-              </span>
               <span>
                 Puissance <span className="num text-danger">⚡ {card.power}</span>
               </span>
@@ -264,7 +255,7 @@ export default async function CoteCartePage({ params }: { params: Promise<{ card
 
       <section>
         <h2 className="mb-3 font-display text-sm font-black tracking-wider text-muted uppercase">
-          Le reste de la famille {theme.name}
+          Les autres cartes {meta.label.toLowerCase()}s
         </h2>
         <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-5">
           {siblings.map((sibling) => (
@@ -274,7 +265,6 @@ export default async function CoteCartePage({ params }: { params: Promise<{ card
               name={sibling.name}
               subtitle={sibling.subtitle}
               rarity={sibling.rarity}
-              theme={sibling.theme}
               glyph={sibling.glyph}
               power={sibling.power}
               nature={sibling.nature}

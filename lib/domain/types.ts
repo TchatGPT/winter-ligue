@@ -11,9 +11,6 @@ export type Rarity = 'C' | 'PC' | 'R' | 'SR' | 'UR' | 'L';
 
 export const RARITIES: readonly Rarity[] = ['C', 'PC', 'R', 'SR', 'UR', 'L'];
 
-/** Les quatre familles de cartes à effet. Compléter une famille débloque un bonus. */
-export type ThemeId = 'glace' | 'tempete' | 'aurore' | 'solstice';
-
 /**
  * Ce qu'une carte est, avant ce qu'elle fait.
  *
@@ -44,7 +41,6 @@ export interface ResolvedCard {
   glyph: string;
   art: string | null;
   /** Renseignés pour les cartes à effet seulement. */
-  theme: ThemeId | null;
   nature: 'bonus' | 'malus' | null;
   power: number | null;
   /** Pour une carte Joueur : le participant représenté. */
@@ -64,8 +60,6 @@ export type CardTarget =
 export type BoonKind =
   /** Double les flocons gagnés à chaque game. */
   | 'FLOCONS_DOUBLES'
-  /** Réduit la taxe de l'hôtel des ventes. */
-  | 'TAXE_REDUITE'
   /** Garantit une rareté minimale à la prochaine ouverture de booster. */
   | 'GARANTIE_BOOSTER';
 
@@ -116,7 +110,6 @@ export interface CardDefinition {
   name: string;
   /** Sous-titre court affiché sous le nom, comme sur une vraie carte à collectionner. */
   subtitle: string;
-  theme: ThemeId;
   rarity: Rarity;
   /** Texte affiché au joueur. */
   description: string;
@@ -132,37 +125,6 @@ export interface CardDefinition {
   power: number;
 }
 
-export interface ThemeDefinition {
-  id: ThemeId;
-  name: string;
-  tagline: string;
-  glyph: string;
-  /** Couleur CSS utilisée pour les bordures et lueurs. */
-  color: string;
-  /** Bonus obtenu à 4 cartes sur 6. */
-  partialBonusLabel: string;
-  /** Bonus obtenu avec les 6 cartes. */
-  fullBonusLabel: string;
-}
-
-/** Bonus permanents cumulés, dérivés de la collection du joueur. */
-export interface SetBonuses {
-  /** Emplacements de main supplémentaires. */
-  handSlots: number;
-  /** Multiplicateur de kills additionnel et permanent (0.05 = +5 %). */
-  killMultiplier: number;
-  /** Flocons supplémentaires gagnés à chaque game. */
-  snowflakesPerGame: number;
-  /** Remise en boutique, entre 0 et 1. */
-  shopDiscount: number;
-  /** Remise sur la taxe de l'hôtel des ventes, entre 0 et 1. */
-  marketFeeDiscount: number;
-  /** Familles complétées à 6/6. */
-  completed: ThemeId[];
-  /** Familles atteignant le palier partiel (4/6 ou plus). */
-  partial: ThemeId[];
-}
-
 export type Placement = 1 | 2 | 3 | null;
 
 export interface BoosterDefinition {
@@ -172,7 +134,7 @@ export interface BoosterDefinition {
   glyph: string;
   /** Deux couleurs pour le dégradé du sachet en 3D. */
   gradient: [string, string];
-  /** Prix en flocons, avant remise de collection. */
+  /** Prix en flocons. */
   price: number;
   /**
    * Emplacements du sachet, par nature de carte.
@@ -244,8 +206,6 @@ export interface Sale {
   sellerId: string;
   buyerId: string;
   price: number;
-  /** Taxe prélevée, déjà déduite du versement au vendeur. */
-  fee: number;
   method: 'ENCHERE' | 'ACHAT_IMMEDIAT';
   soldAt: string;
 }

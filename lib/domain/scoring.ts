@@ -34,16 +34,21 @@ export interface GameBreakdown {
 /**
  * Score d'une game.
  *
- *   score = (kills × bonus permanent de collection) + points de classement + bonus de cartes
+ *   score = kills + points de classement + bonus de cartes
  *
- * Il n'existe plus de multiplicateur stocké sur la game. Une carte annoncée
- * « ×1,5 jusqu'à +18 » calcule son apport au moment où on la joue et l'inscrit
- * comme un bonus de points : c'est mathématiquement équivalent, mais ça rend
- * l'empilement de multiplicateurs impossible et chaque apport traçable.
+ * Un kill vaut un point, pour tout le monde. Le multiplicateur permanent tiré
+ * de la collection a été retiré : il réécrivait rétroactivement toutes les
+ * games de la saison, et faisait marquer davantage celui qui avait ouvert
+ * davantage de boosters.
+ *
+ * Il n'existe pas non plus de multiplicateur stocké sur la game. Une carte
+ * annoncée « ×1,5 jusqu'à +18 » calcule son apport au moment où on la joue et
+ * l'inscrit comme un bonus de points : c'est mathématiquement équivalent, mais
+ * ça rend l'empilement de multiplicateurs impossible et chaque apport traçable.
  */
-export function scoreGame(input: GameInput, permanentKillMultiplier = 0): GameBreakdown {
+export function scoreGame(input: GameInput): GameBreakdown {
   const kills = clampKills(input.kills);
-  const killPoints = round2(kills * (1 + permanentKillMultiplier));
+  const killPoints = round2(kills);
   const place = placementPoints(input.placement);
   const bonus = clampBonus(input.bonusPoints);
   return {

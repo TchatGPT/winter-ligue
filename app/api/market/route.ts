@@ -33,12 +33,11 @@ export async function GET(request: Request): Promise<NextResponse> {
     let listings = db.listings.filter((l) => l.status === 'ACTIVE');
 
     if (query.cardId) listings = listings.filter((l) => l.cardId === query.cardId);
-    if (query.rarity || query.theme) {
+    if (query.rarity) {
       listings = listings.filter((l) => {
         const card = getCard(l.cardId);
         if (!card) return false;
         if (query.rarity && card.rarity !== query.rarity) return false;
-        if (query.theme && card.theme !== query.theme) return false;
         return true;
       });
     }

@@ -163,9 +163,11 @@ méritent la même vigilance :
   (`ne verse jamais de flocons à un joueur nommé`) échoue si un palier individuel
   apparaît un jour dans la table. Sans cela, la communauté la plus généreuse achèterait
   le classement de son joueur.
-- **La réserve est plafonnée, et le plafond est vérifié avant le débit.** On ne fait
-  jamais payer un booster qu'on refuse ensuite de livrer. Le plafond force le surplus
-  vers l'hôtel des ventes plutôt que de le laisser dormir.
+- **Aucun avantage permanent ne se gagne en ouvrant des boosters.** Les bonus de
+  collection — places de réserve, multiplicateur de kills, flocons par game, remises —
+  ont été retirés, ainsi que la réserve et la taxe de vente. Ils faisaient marquer et
+  gagner davantage celui qui dépensait davantage, et le multiplicateur de kills réécrivait
+  rétroactivement toute la saison. Le score d'une game ne dépend plus que de la game.
 
 ### 12. Traçabilité
 

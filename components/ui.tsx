@@ -1,17 +1,13 @@
 import Link from 'next/link';
 import { CardFrame } from '@/components/CardFrame';
 import { RarityIcon } from '@/components/RarityIcon';
-import { RARITY_META, THEMES } from '@/lib/domain/catalog';
-import type { Rarity, ThemeId } from '@/lib/domain/types';
+import { RARITY_META } from '@/lib/domain/catalog';
+import type { Rarity } from '@/lib/domain/types';
 import { compact, num } from '@/lib/format';
 
 /** Une rareté inconnue retombe sur la commune plutôt que de casser le rendu. */
 export function rarityMeta(rarity: string) {
   return RARITY_META[rarity as Rarity] ?? RARITY_META.C;
-}
-
-export function themeMeta(theme: string) {
-  return THEMES[theme as ThemeId] ?? null;
 }
 
 /**
@@ -98,17 +94,6 @@ export function RarityBadge({ rarity }: { rarity: string }) {
   );
 }
 
-export function ThemeBadge({ theme }: { theme: string }) {
-  const meta = themeMeta(theme);
-  if (!meta) return null;
-  return (
-    <span className="badge" style={{ borderColor: `${meta.color}55`, color: meta.color }}>
-      <span aria-hidden="true">{meta.glyph}</span>
-      {meta.name}
-    </span>
-  );
-}
-
 /* --------------------------- Vignette de carte --------------------------- */
 
 export interface CardTileProps {
@@ -118,11 +103,12 @@ export interface CardTileProps {
   /** Le texte d'effet. Absent, la vignette retombe sur le sous-titre. */
   description?: string;
   rarity: string;
-  theme: string;
   glyph: string;
   power?: number;
   quote?: number | null;
   nature?: 'bonus' | 'malus';
+  /** Exemplaires détenus : au-delà de 1, la carte porte un compteur. */
+  copies?: number;
   dimmed?: boolean;
   footer?: React.ReactNode;
   corner?: React.ReactNode;
@@ -156,11 +142,11 @@ export function CardTile({
   subtitle,
   description,
   rarity,
-  theme,
   glyph,
   power,
   quote,
   nature,
+  copies,
   dimmed,
   footer,
   corner,
@@ -175,11 +161,11 @@ export function CardTile({
           name={name}
           description={description ?? subtitle}
           rarity={rarity}
-          theme={theme}
           glyph={glyph}
           power={power}
           quote={quote}
           nature={nature}
+          copies={copies}
           dimmed={dimmed}
           corner={corner}
         />

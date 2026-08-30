@@ -1,5 +1,5 @@
 import { PageHead, RarityChip, flakes } from '@/components/ui';
-import { BOOSTERS, RARITY_META, THEMES } from '@/lib/domain/catalog';
+import { BOOSTERS, RARITY_META } from '@/lib/domain/catalog';
 import {
   atLeastOnePercent,
   ECONOMY,
@@ -10,10 +10,9 @@ import {
   rarityPercent,
   RARITY_WEIGHTS_BASE,
   SEASON,
-  SET_TIERS,
   SUB_MILESTONES,
 } from '@/lib/domain/rules';
-import type { Rarity, ThemeId } from '@/lib/domain/types';
+import type { Rarity } from '@/lib/domain/types';
 
 export const metadata = { title: 'Règles de la saison' };
 
@@ -221,7 +220,7 @@ export default function ReglesPage() {
 
       <Rule title="Les cartes : bonus et malus">
         <p>
-          24 cartes, 4 familles × 6 raretés. Une carte est soit un{' '}
+          24 cartes, quatre par rareté. Une carte est soit un{' '}
           <strong className="text-ink">bonus</strong> à jouer sur soi, soit un{' '}
           <strong className="text-danger">malus</strong> à poser sur un adversaire.
         </p>
@@ -271,51 +270,6 @@ export default function ReglesPage() {
         </div>
       </Rule>
 
-      <Rule
-        title="Les familles et leurs bonus permanents"
-        lead={`Deux paliers : ${SET_TIERS.partial} cartes sur 6, puis les 6.`}
-      >
-        <p>
-          Posséder une carte suffit — même si tu l’as ensuite jouée ou revendue. La{' '}
-          <strong className="text-ink">découverte est définitive</strong>, les bonus de famille sont
-          donc un acquis.
-        </p>
-        <div className="grid gap-2 sm:grid-cols-2">
-          {(Object.keys(THEMES) as ThemeId[]).map((id) => {
-            const theme = THEMES[id];
-            return (
-              <div
-                key={id}
-                className="rounded-lg border border-white/10 bg-white/5 p-3"
-                style={{ borderLeft: `3px solid ${theme.color}` }}
-              >
-                <div
-                  className="font-display text-sm font-bold tracking-wide uppercase"
-                  style={{ color: theme.color }}
-                >
-                  <span aria-hidden="true">{theme.glyph}</span> {theme.name}
-                </div>
-                <dl className="mt-1.5 space-y-0.5 text-xs">
-                  <div className="flex gap-2">
-                    <dt className="num shrink-0 text-faint">4/6</dt>
-                    <dd className="text-muted">{theme.partialBonusLabel}</dd>
-                  </div>
-                  <div className="flex gap-2">
-                    <dt className="num shrink-0 text-faint">6/6</dt>
-                    <dd className="text-ink">{theme.fullBonusLabel}</dd>
-                  </div>
-                </dl>
-              </div>
-            );
-          })}
-        </div>
-        <p className="text-xs text-faint">
-          Le palier à 4 cartes existe pour une raison simple : la légendaire d’une famille sort une
-          ouverture sur mille. Exiger les six d’emblée rendrait le bonus décoratif. Il reste
-          possible d’acheter les cartes manquantes à l’hôtel des ventes.
-        </p>
-      </Rule>
-
       <Rule title="L’hôtel des ventes">
         <ul className="list-inside list-disc space-y-1">
           <li>
@@ -335,8 +289,7 @@ export default function ReglesPage() {
             rien.
           </li>
           <li>
-            Taxe de {Math.round(MARKET.feeRate * 100)} % prélevée au vendeur, réduite de moitié
-            avec la famille Solstice complète.
+            Aucune taxe : le vendeur touche le prix de vente en entier.
           </li>
           <li>Une vente ne peut être retirée que si personne n’a encore misé.</li>
           <li>

@@ -1,10 +1,9 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { CollectionBoard } from '@/components/CollectionBoard';
-import { CardTile, Meter, StatTile, flakes } from '@/components/ui';
+import { CardTile, StatTile, flakes } from '@/components/ui';
 import { getSession } from '@/lib/auth/session';
 import { getStore } from '@/lib/db/store';
-import { SET_TIERS } from '@/lib/domain/rules';
 import { hasShield } from '@/lib/services/league';
 import { getProfile } from '@/lib/services/profile';
 import { shortDateTime } from '@/lib/format';
@@ -71,73 +70,6 @@ export default async function MaCollectionPage() {
         />
       </section>
 
-      {/* ---------------------------- Bonus de familles -------------------- */}
-      <section>
-        <h2 className="mb-3 font-display text-xl font-black uppercase tracking-wide text-ink">
-          Bonus de familles
-        </h2>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {profile.themes.map((theme) => (
-            <div
-              key={theme.id}
-              className="glass p-3"
-              style={{
-                borderColor: theme.complete ? theme.color : undefined,
-                borderLeft: `3px solid ${theme.complete ? theme.color : `${theme.color}44`}`,
-              }}
-            >
-              <div className="flex items-center justify-between gap-2">
-                <span
-                  className="font-display text-sm font-bold tracking-wide uppercase"
-                  style={{ color: theme.color }}
-                >
-                  <span aria-hidden="true">{theme.glyph}</span> {theme.name}
-                </span>
-                <span className="num shrink-0 text-xs text-muted">
-                  {theme.owned}/{theme.total}
-                </span>
-              </div>
-
-              {/* Deux jalons visibles sur la barre : le palier 4/6 puis le 6/6. */}
-              <div className="relative mt-2">
-                <Meter ratio={theme.owned / theme.total} color={theme.color} />
-                <span
-                  className="absolute top-0 h-1 w-px bg-bg"
-                  style={{ left: `${(SET_TIERS.partial / theme.total) * 100}%` }}
-                  aria-hidden="true"
-                />
-              </div>
-
-              <dl className="mt-2 space-y-0.5 text-[13px]">
-                <div className="flex gap-1.5">
-                  <dt className={theme.partial ? 'text-aurora' : 'text-faint'}>
-                    {theme.partial ? '✓' : `${SET_TIERS.partial}/${theme.total}`}
-                  </dt>
-                  <dd className={theme.partial && !theme.complete ? 'text-ink' : 'text-faint'}>
-                    {theme.partialBonusLabel}
-                  </dd>
-                </div>
-                <div className="flex gap-1.5">
-                  <dt className={theme.complete ? 'text-aurora' : 'text-faint'}>
-                    {theme.complete ? '✓' : `${theme.total}/${theme.total}`}
-                  </dt>
-                  <dd className={theme.complete ? 'text-ink' : 'text-faint'}>
-                    {theme.fullBonusLabel}
-                  </dd>
-                </div>
-              </dl>
-
-              {!theme.complete && (
-                <p className="mt-1.5 text-[13px] text-faint">
-                  Encore {theme.toNextTier} carte{theme.toNextTier > 1 ? 's' : ''} avant le prochain
-                  palier.
-                </p>
-              )}
-            </div>
-          ))}
-        </div>
-      </section>
-
       <CollectionBoard profile={profile} opponents={opponents} />
 
       {/* ------------------------------ Collection ------------------------- */}
@@ -152,14 +84,14 @@ export default async function MaCollectionPage() {
               cardId={entry.cardId}
               name={entry.discovered ? entry.name : '???'}
               rarity={entry.rarity}
-              theme={entry.theme}
               glyph={entry.discovered ? entry.glyph : '❔'}
+              copies={entry.copies}
               dimmed={!entry.discovered}
               footer={
                 <span className="text-[13px] uppercase tracking-wider text-faint">
                   {entry.discovered
                     ? entry.copies > 0
-                      ? `${entry.copies} exemplaire${entry.copies > 1 ? 's' : ''} en réserve`
+                      ? `${entry.copies} en réserve`
                       : 'Découverte — aucun exemplaire'
                     : 'Non découverte'}
                 </span>
@@ -168,7 +100,7 @@ export default async function MaCollectionPage() {
           ))}
         </div>
         <p className="mt-2 text-xs text-faint">
-          Une carte jouée ou vendue reste découverte&nbsp;: les bonus de famille sont définitifs.
+          Une carte jouée ou vendue reste découverte&nbsp;: la collection garde la trace de tout ce qui est passé entre tes mains.
         </p>
       </section>
 

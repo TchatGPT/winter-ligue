@@ -19,7 +19,6 @@ export interface MarketListing {
   name: string;
   subtitle: string;
   rarity: string;
-  theme: string;
   glyph: string;
   power: number;
   sellerId: string;
@@ -464,7 +463,6 @@ function ListingCard({
           name={listing.name}
           description={listing.subtitle}
           rarity={listing.rarity}
-          theme={listing.theme}
           glyph={listing.glyph}
           power={listing.power}
           quote={listing.quote}

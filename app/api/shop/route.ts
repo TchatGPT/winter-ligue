@@ -4,10 +4,8 @@ import { fail, guard, ok } from '@/lib/api/respond';
 import { purchaseSchema } from '@/lib/api/schemas';
 import { getStore } from '@/lib/db/store';
 import { BOOSTERS } from '@/lib/domain/catalog';
-import { discountedPrice } from '@/lib/domain/economy';
 import { LIMITS } from '@/lib/security/ratelimit';
 import { purchaseAndOpen } from '@/lib/services/cards';
-import { bonusesFor } from '@/lib/services/league';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -17,21 +15,16 @@ export async function GET(request: Request): Promise<NextResponse> {
   const g = await guard(request, { scope: 'shop-read' });
   if (!g.ok) return g.response;
 
-  const playerId = g.session?.role === 'joueur' ? g.session.sub : null;
   const store = getStore();
 
-  const { discount, shopOpen } = await store.read((db) => ({
-    discount: playerId ? bonusesFor(db as never, playerId).shopDiscount : 0,
-    shopOpen: db.config.shopOpen,
-  }));
+  // Le prix affiché est le prix payé : il n'y a plus de remise de collection.
+  // Le champ reste nommé `finalPrice` pour que le client n'ait pas à savoir
+  // qu'il n'existe plus de prix « avant remise ».
+  const { shopOpen } = await store.read((db) => ({ shopOpen: db.config.shopOpen }));
 
   return ok({
     shopOpen,
-    discount,
-    boosters: BOOSTERS.map((b) => ({
-      ...b,
-      finalPrice: discountedPrice(b.price, discount),
-    })),
+    boosters: BOOSTERS.map((b) => ({ ...b, finalPrice: b.price })),
   });
 }
 

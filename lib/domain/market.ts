@@ -82,17 +82,6 @@ export function checkBid(input: BidCheckInput): BidCheckResult {
   return { ok: true, additionalEscrow, newEndsAt };
 }
 
-/** Taxe prélevée au vendeur, remise de collection appliquée. */
-export function marketFee(price: number, feeDiscount = 0): number {
-  const rate = MARKET.feeRate * (1 - Math.min(1, Math.max(0, feeDiscount)));
-  return Math.floor(price * rate);
-}
-
-/** Ce que le vendeur touche réellement. */
-export function sellerPayout(price: number, feeDiscount = 0): number {
-  return price - marketFee(price, feeDiscount);
-}
-
 /** Une vente est-elle arrivée à échéance et en attente de clôture ? */
 export function isExpired(listing: Listing, now: Date): boolean {
   return listing.status === 'ACTIVE' && new Date(listing.endsAt).getTime() <= now.getTime();

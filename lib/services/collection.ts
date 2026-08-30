@@ -19,7 +19,7 @@ import 'server-only';
 import type { Collectible, Database, Player } from '@/lib/db/entities';
 import { newId } from '@/lib/db/store';
 import { cardArt, EFFECT_CARDS, getCard } from '@/lib/domain/catalog';
-import type { CardKind, Rarity, ResolvedCard, ThemeId } from '@/lib/domain/types';
+import type { CardKind, Rarity, ResolvedCard } from '@/lib/domain/types';
 
 /** Préfixe des identifiants de cartes de collection, pour les distinguer d'un coup d'œil. */
 export const JOUEUR_PREFIX = 'joueur-';
@@ -38,7 +38,6 @@ function fromCollectible(item: Collectible, player: Player | undefined): Resolve
     rarity: item.rarity,
     glyph: item.glyph,
     art: item.art,
-    theme: null,
     nature: null,
     power: null,
     playerId: item.playerId,
@@ -65,7 +64,6 @@ export function resolveCard(db: Database, cardId: string): ResolvedCard | null {
       rarity: effect.rarity,
       glyph: effect.glyph,
       art: cardArt(effect.id),
-      theme: effect.theme as ThemeId,
       nature: effect.nature,
       power: effect.power,
       playerId: null,
@@ -105,7 +103,6 @@ export function getEffectPool(): ResolvedCard[] {
     rarity: effect.rarity,
     glyph: effect.glyph,
     art: cardArt(effect.id),
-    theme: effect.theme as ThemeId,
     nature: effect.nature,
     power: effect.power,
     playerId: null,

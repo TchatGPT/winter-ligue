@@ -12,15 +12,12 @@ import 'server-only';
 
 import type { CardInstance, Database } from '@/lib/db/entities';
 import { newId } from '@/lib/db/store';
-import { boosterSize, getBooster, getCard } from '@/lib/domain/catalog';
+import { getBooster, getCard } from '@/lib/domain/catalog';
 import { RARITY_ORDER } from '@/lib/domain/rules';
 import type { Rarity } from '@/lib/domain/types';
-import { discountedPrice } from '@/lib/domain/economy';
 import { rollBooster } from '@/lib/domain/rng';
 import { audit, debit } from './ledger';
 import { consumeBoon, isSilenced, resolve } from './effects';
-import { handSlotsFor } from '@/lib/domain/collection';
-import { bonusesFor, discoveredCardIds, recomputePlayerGames } from './league';
 import { resolveCard } from './collection';
 
 export class CardError extends Error {
@@ -38,7 +35,6 @@ export class CardError extends Error {
       | 'GAME_GELEE'
       | 'CIBLE_PROTEGEE'
       | 'DELAI_MALUS'
-      | 'RESERVE_PLEINE'
       | 'SILENCE'
       | 'FLOCONS_INSUFFISANTS',
   ) {
@@ -88,8 +84,6 @@ export interface OpenBoosterResult {
   pricePaid: number;
   cards: { instanceId: string; cardId: string; isNew: boolean }[];
   balance: number;
-  /** Familles complétées grâce à cette ouverture. */
-  newlyCompleted: string[];
 }
 
 /**
@@ -118,28 +112,17 @@ export function purchaseAndOpen(
       pricePaid: previous.pricePaid,
       cards: previous.cardIds.map((cardId) => ({ instanceId: '', cardId, isNew: false })),
       balance: player ? player.snowflakes : 0,
-      newlyCompleted: [],
     };
   }
 
   const booster = getBooster(boosterId);
   if (!booster) throw new CardError('Booster inconnu.', 'BOOSTER_INCONNU');
 
-  // La réserve est plafonnée, et le plafond est vérifié *avant* le débit : on
-  // ne fait jamais payer un booster qu'on refuse ensuite de livrer. C'est ce
-  // qui donne du sens aux places de réserve, et ce qui pousse le surplus vers
-  // l'hôtel des ventes au lieu de dormir dans les collections.
-  const slots = handSlotsFor(discoveredCardIds(db, playerId));
-  const held = handOf(db, playerId).length;
-  if (held + boosterSize(booster) > slots) {
-    throw new CardError(
-      `Réserve pleine : ${held}/${slots} places occupées, il en faut ${boosterSize(booster)} de libres. Joue ou revends des cartes.`,
-      'RESERVE_PLEINE',
-    );
-  }
-
-  const before = new Set(bonusesFor(db, playerId).completed);
-  const price = discountedPrice(booster.price, bonusesFor(db, playerId).shopDiscount);
+  // Il n'y a plus de plafond de détention : la réserve a été retirée en même
+  // temps que les bonus de collection qui l'agrandissaient. Un joueur garde ce
+  // qu'il veut, et c'est l'intérêt de jouer ou de revendre qui alimente le
+  // marché, plus la contrainte de place.
+  const price = booster.price;
 
   // Lève si le solde est insuffisant : la transaction est alors annulée.
   const balance = debit(db, playerId, price, 'ACHAT_BOOSTER', boosterId);
@@ -183,14 +166,9 @@ export function purchaseAndOpen(
     idempotencyKey,
   });
 
-  const after = bonusesFor(db, playerId).completed;
-  const newlyCompleted = after.filter((theme) => !before.has(theme));
-  // Un bonus de famille modifie le multiplicateur permanent : on réécrit les scores.
-  if (newlyCompleted.length > 0) recomputePlayerGames(db, playerId);
-
   audit(db, playerId, 'OUVERTURE_BOOSTER', boosterId, `${cardIds.join(', ')} pour ${price} flocons`);
 
-  return { boosterId, pricePaid: price, cards, balance, newlyCompleted };
+  return { boosterId, pricePaid: price, cards, balance };
 }
 
 /* ------------------------------ Jouer une carte -------------------------- */

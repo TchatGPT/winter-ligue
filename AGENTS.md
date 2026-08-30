@@ -46,6 +46,10 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   — c est ce journal qui rend Second Souffle et Contre-Courant possibles.
 - Les paliers de subs versent à **tous les joueurs actifs**. Ne jamais ajouter de
   récompense individuelle : c'est l'invariant anti-pay-to-win, et il est testé.
+- **Aucun avantage permanent ne se gagne en ouvrant des cartes.** Il n'y a ni familles,
+  ni bonus de collection, ni plafond de réserve, ni taxe de vente : tout cela existait et
+  a été retiré parce que cela faisait marquer davantage celui qui dépensait davantage.
+  Le score d'une game ne dépend que de la game et des cartes jouées dessus.
 - Les couleurs viennent des variables CSS de `app/globals.css`, jamais codées en dur.
 - Avant de livrer : `npm run typecheck && npm test && npm run build`.
 

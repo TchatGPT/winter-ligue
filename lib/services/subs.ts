@@ -122,7 +122,6 @@ export function addSubs(db: Database, delta: number, actor: string): AddSubsResu
         idempotencyKey: `subs-${to}-${boosterId}-${player.id}`,
       });
 
-      // Une famille vient peut-être d'être complétée : les scores en dépendent.
       if (discoveredSomething) recomputePlayerGames(db, player.id);
     }
   }

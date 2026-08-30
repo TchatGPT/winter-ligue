@@ -107,6 +107,24 @@ export function CollectionBoard({
     });
   }
 
+  /**
+   * La réserve, regroupée par carte.
+   *
+   * Une carte détenue en trois exemplaires occupait trois cases identiques, et
+   * il fallait faire défiler des doublons pour retrouver le reste. Une seule
+   * vignette porte désormais son compte, et les boutons agissent sur le premier
+   * exemplaire — jouer ou vendre en consomme un, peu importe lequel.
+   */
+  const reserve = useMemo(() => {
+    const par = new Map<string, { card: HandCard; copies: number }>();
+    for (const c of profile.hand) {
+      const vu = par.get(c.cardId);
+      if (vu) vu.copies += 1;
+      else par.set(c.cardId, { card: c, copies: 1 });
+    }
+    return [...par.values()];
+  }, [profile.hand]);
+
   const needsGame = dialog?.kind === 'jouer' && dialog.card.target === 'own_game';
   const needsOpponent = dialog?.kind === 'jouer' && dialog.card.target === 'opponent';
   const canPlay = !needsGame || gameId !== '';
@@ -123,9 +141,13 @@ export function CollectionBoard({
             Ta réserve
           </h2>
           <span className="text-xs text-muted">
-            <span className="num">{profile.hand.length}</span> / {profile.handSlots} places de réserve
-            {profile.bonuses.handSlots > 0 && (
-              <span className="text-aurora"> (+{profile.bonuses.handSlots} par collection)</span>
+            <span className="num">{profile.hand.length}</span> carte
+            {profile.hand.length > 1 ? 's' : ''}
+            {reserve.length !== profile.hand.length && (
+              <>
+                {' '}
+                · <span className="num">{reserve.length}</span> différentes
+              </>
             )}
           </span>
         </div>
@@ -137,13 +159,13 @@ export function CollectionBoard({
           />
         ) : (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {profile.hand.map((card) => (
+            {reserve.map(({ card, copies }) => (
               <CardTile
-                key={card.instanceId}
+                key={card.cardId}
+                copies={copies}
                 cardId={card.cardId}
                 name={card.name}
                 rarity={card.rarity}
-                theme={card.theme}
                 glyph={card.glyph}
                 subtitle={card.description}
                 nature={card.nature}
@@ -421,9 +443,8 @@ export function CollectionBoard({
                 </div>
 
                 <p className="text-xs text-faint">
-                  Taxe à la vente&nbsp;:{' '}
-                  {Math.round(MARKET.feeRate * (1 - profile.bonuses.marketFeeDiscount) * 100)} %.
-                  Une enchère de dernière minute repousse la clôture d’une minute.
+                  Tu touches le prix de vente en entier. Une enchère de dernière minute
+                  repousse la clôture d’une minute.
                 </p>
 
                 <div className="flex gap-2 pt-1">

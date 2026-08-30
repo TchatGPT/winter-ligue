@@ -48,7 +48,6 @@ export default async function MarchePage() {
         name: card.name,
         subtitle: card.subtitle,
         rarity: card.rarity,
-        theme: card.theme,
         glyph: card.glyph,
         power: card.power,
         sellerId: l.sellerId,
@@ -162,9 +161,9 @@ export default async function MarchePage() {
         />
         <StatTile label="Total historique" value={data.totalSales} accent="ink" />
         <StatTile
-          label="Taxe de vente"
-          value={`${Math.round(MARKET.feeRate * 100)} %`}
-          hint="−50 % avec la famille Solstice complète"
+          label="Ventes simultanées"
+          value={MARKET.maxActiveListingsPerPlayer}
+          hint="par joueur"
           accent="gold"
         />
       </section>

@@ -10,12 +10,10 @@ import 'server-only';
 
 import type { Database } from '@/lib/db/entities';
 import { getStore } from '@/lib/db/store';
-import { getCard, THEMES } from '@/lib/domain/catalog';
-import { handSlotsFor, themeProgress } from '@/lib/domain/collection';
-import type { SetBonuses } from '@/lib/domain/types';
+import { getCard } from '@/lib/domain/catalog';
 import { handOf } from './cards';
 import { allCards, resolveCard } from './collection';
-import { bonusesFor, discoveredCardIds, gamesOf, hasShield, totalsOf } from './league';
+import { discoveredCardIds, gamesOf, hasShield, totalsOf } from './league';
 import { closeExpiredListings, viewListing, type ListingView } from './market';
 
 export interface HandCard {
@@ -26,7 +24,6 @@ export interface HandCard {
   playable: boolean;
   name: string;
   rarity: string;
-  theme: string;
   glyph: string;
   description: string;
   nature: 'bonus' | 'malus';
@@ -40,8 +37,6 @@ export interface CollectionEntry {
   name: string;
   subtitle: string;
   rarity: string;
-  /** Vide pour une carte de collection, qui n'appartient à aucune famille. */
-  theme: string;
   glyph: string;
   discovered: boolean;
   /** Copies actuellement détenues. */
@@ -56,27 +51,9 @@ export interface ProfileView {
   twitchLogin: string | null;
   snowflakes: number;
   shielded: boolean;
-  handSlots: number;
   hand: HandCard[];
   collection: CollectionEntry[];
   completion: number;
-  bonuses: SetBonuses;
-  themes: {
-    id: string;
-    name: string;
-    glyph: string;
-    color: string;
-    /** Bonus effectivement actif, ou le prochain à atteindre. */
-    bonusLabel: string;
-    partialBonusLabel: string;
-    fullBonusLabel: string;
-    owned: number;
-    total: number;
-    partial: boolean;
-    complete: boolean;
-    /** Cartes restantes avant le prochain palier. */
-    toNextTier: number;
-  }[];
   totals: ReturnType<typeof totalsOf>;
   games: {
     id: string;
@@ -103,15 +80,12 @@ function buildProfile(db: Database, playerId: string): ProfileView | null {
 
   const discovered = discoveredCardIds(db, playerId);
   const discoveredSet = new Set(discovered);
-  const bonuses = bonusesFor(db, playerId);
   const hand = handOf(db, playerId);
 
   const copiesByCard = hand.reduce<Record<string, number>>((acc, instance) => {
     acc[instance.cardId] = (acc[instance.cardId] ?? 0) + 1;
     return acc;
   }, {});
-
-  const progress = themeProgress(discovered);
 
   return {
     id: player.id,
@@ -121,7 +95,6 @@ function buildProfile(db: Database, playerId: string): ProfileView | null {
     twitchLogin: player.twitchLogin,
     snowflakes: player.snowflakes,
     shielded: hasShield(db, playerId),
-    handSlots: handSlotsFor(discovered),
     hand: hand
       .map((instance): HandCard | null => {
         const card = resolveCard(db, instance.cardId);
@@ -133,7 +106,6 @@ function buildProfile(db: Database, playerId: string): ProfileView | null {
           kind: card.kind,
           name: card.name,
           rarity: card.rarity,
-          theme: card.theme ?? '',
           glyph: card.glyph,
           description: card.description,
           nature: card.nature ?? 'bonus',
@@ -152,7 +124,6 @@ function buildProfile(db: Database, playerId: string): ProfileView | null {
       name: card.name,
       subtitle: card.subtitle,
       rarity: card.rarity,
-      theme: card.theme ?? '',
       glyph: card.glyph,
       discovered: discoveredSet.has(card.id),
       copies: copiesByCard[card.id] ?? 0,
@@ -161,29 +132,6 @@ function buildProfile(db: Database, playerId: string): ProfileView | null {
       allCards(db).length === 0
         ? 0
         : allCards(db).filter((c) => discoveredSet.has(c.id)).length / allCards(db).length,
-    bonuses,
-    themes: progress.map((p) => {
-      const theme = THEMES[p.theme];
-      return {
-        id: theme.id,
-        name: theme.name,
-        glyph: theme.glyph,
-        color: theme.color,
-        // Le libellé mis en avant est celui qu'on a, ou celui qu'on vise.
-        bonusLabel: p.complete
-          ? theme.fullBonusLabel
-          : p.partial
-            ? theme.partialBonusLabel
-            : theme.partialBonusLabel,
-        partialBonusLabel: theme.partialBonusLabel,
-        fullBonusLabel: theme.fullBonusLabel,
-        owned: p.owned.length,
-        total: p.owned.length + p.missing.length,
-        partial: p.partial,
-        complete: p.complete,
-        toNextTier: p.toNextTier,
-      };
-    }),
     totals: totalsOf(db, playerId),
     games: gamesOf(db, playerId).map((g) => ({
       id: g.id,

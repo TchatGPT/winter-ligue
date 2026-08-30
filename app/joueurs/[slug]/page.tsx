@@ -46,18 +46,6 @@ export default async function ProfilJoueurPage({ params }: { params: Promise<{ s
           </h1>
           <div className="mt-1 flex flex-wrap gap-1.5">
             {profile.shielded && <span className="badge border-ice/50 text-ice">🛡 Protégé</span>}
-            {profile.themes
-              .filter((t) => t.complete)
-              .map((t) => (
-                <span
-                  key={t.id}
-                  className="badge"
-                  style={{ borderColor: `${t.color}55`, color: t.color }}
-                  title={t.bonusLabel}
-                >
-                  {t.glyph} {t.name}
-                </span>
-              ))}
           </div>
         </div>
         {profile.twitchLogin && (
@@ -189,7 +177,6 @@ export default async function ProfilJoueurPage({ params }: { params: Promise<{ s
               cardId={entry.cardId}
               name={entry.discovered ? entry.name : '???'}
               rarity={entry.rarity}
-              theme={entry.theme}
               glyph={entry.discovered ? entry.glyph : '❔'}
               dimmed={!entry.discovered}
             />

@@ -82,7 +82,7 @@ export interface CardInstance {
   consumeKey: string | null;
 }
 
-/** Première obtention d'une carte : définitive, elle porte les bonus de famille. */
+/** Première obtention d'une carte : définitive, même si la carte est ensuite jouée ou vendue. */
 export interface Discovery {
   playerId: string;
   cardId: string;

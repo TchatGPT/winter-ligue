@@ -2,33 +2,29 @@ import { BoosterOpening, type CatalogCard, type ShopBooster } from '@/components
 import { CardTile, PageHead, RarityChip } from '@/components/ui';
 import { getSession } from '@/lib/auth/session';
 import { getStore } from '@/lib/db/store';
-import { BOOSTERS, CARDS, cardsOfTheme, THEMES } from '@/lib/domain/catalog';
-import { discountedPrice } from '@/lib/domain/economy';
+import { BOOSTERS, CARDS, cardsOfRarity, RARITY_META } from '@/lib/domain/catalog';
 import { ECONOMY } from '@/lib/domain/rules';
-import type { ThemeId } from '@/lib/domain/types';
-import { bonusesFor } from '@/lib/services/league';
+import { RARITIES } from '@/lib/domain/types';
 import { statsForCard } from '@/lib/services/market';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Boosters' };
 
-const ORDER: ThemeId[] = ['glace', 'tempete', 'aurore', 'solstice'];
+
 
 /**
  * Boosters : achat, ouverture en 3D, et catalogue complet des 24 cartes.
  *
- * Le prix affiché est déjà celui que le serveur appliquera — la remise de
- * collection est calculée ici à partir des familles réellement complétées. Le
- * composant client n'a donc aucun calcul de prix à faire, et aucun moyen d'en
- * imposer un.
+ * Le catalogue est rangé par rareté : c'est le seul classement d'une carte
+ * depuis que les familles ont été retirées, et c'est aussi la seule chose
+ * qu'un booster promet.
  */
 export default async function BoostersPage() {
   const session = await getSession();
   const playerId = session?.role === 'joueur' ? session.sub : null;
 
-  const { balance, discount, shopOpen, quotes } = await getStore().read((db) => ({
+  const { balance, shopOpen, quotes } = await getStore().read((db) => ({
     balance: playerId ? (db.players.find((p) => p.id === playerId)?.snowflakes ?? null) : null,
-    discount: playerId ? bonusesFor(db, playerId).shopDiscount : 0,
     shopOpen: db.config.shopOpen,
     // Cote de chaque carte, pour que le catalogue affiche une valeur de marché.
     quotes: Object.fromEntries(
@@ -36,10 +32,7 @@ export default async function BoostersPage() {
     ) as Record<string, number | null>,
   }));
 
-  const boosters: ShopBooster[] = BOOSTERS.map((b) => ({
-    ...b,
-    finalPrice: discountedPrice(b.price, discount),
-  }));
+  const boosters: ShopBooster[] = BOOSTERS.map((b) => ({ ...b, finalPrice: b.price }));
 
   // Envoyé au client pour afficher les cartes tirées sans second aller-retour.
   const catalog: Record<string, CatalogCard> = Object.fromEntries(
@@ -49,7 +42,6 @@ export default async function BoostersPage() {
         name: c.name,
         subtitle: c.subtitle,
         rarity: c.rarity,
-        theme: c.theme,
         glyph: c.glyph,
         description: c.description,
         nature: c.nature,
@@ -61,7 +53,7 @@ export default async function BoostersPage() {
   return (
     <div className="space-y-8">
       <PageHead
-        eyebrow="24 cartes · 4 familles · 6 raretés"
+        eyebrow="24 cartes · 6 raretés"
         title="Ouvrir un"
         accent="Booster"
         lead={
@@ -89,35 +81,31 @@ export default async function BoostersPage() {
             Le <em>Catalogue</em>
           </h2>
           <p className="max-w-xl text-xs leading-relaxed text-faint">
-            Chaque famille suit la même montée en puissance : une carte se compare toujours à ses
-            homologues de rareté. Compléter 4 cartes sur 6 débloque un bonus permanent, les 6 le
-            doublent.
+            Rangé par rareté, parce que c’est tout ce qu’un booster promet : quatre cartes
+            par palier, et une puissance qui monte de palier en palier.
           </p>
         </div>
 
-        {ORDER.map((themeId) => {
-          const theme = THEMES[themeId];
-          const cards = cardsOfTheme(themeId);
+        {[...RARITIES].reverse().map((rarity) => {
+          const meta = RARITY_META[rarity];
+          const cards = cardsOfRarity(rarity);
+          if (cards.length === 0) return null;
 
           return (
-            <div key={themeId}>
+            <div key={rarity}>
               <div
                 className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1 border-l-2 pl-3"
-                style={{ borderColor: theme.color }}
+                style={{ borderColor: meta.color }}
               >
                 <h3 className="font-display text-lg font-black tracking-wide uppercase">
-                  <span aria-hidden="true">{theme.glyph}</span>{' '}
-                  <span style={{ color: theme.color }}>{theme.name}</span>
+                  <span style={{ color: meta.color }}>{meta.label}</span>
                 </h3>
-                <span className="text-xs text-faint">{theme.tagline}</span>
                 <span className="ml-auto text-[13px] text-muted">
-                  4/6 → <strong className="text-ink">{theme.partialBonusLabel}</strong>
-                  <span className="mx-1.5 text-faint">·</span>
-                  6/6 → <strong style={{ color: theme.color }}>{theme.fullBonusLabel}</strong>
+                  <span className="num">{cards.length}</span> carte{cards.length > 1 ? 's' : ''}
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-6">
+              <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
                 {cards.map((card) => (
                   <CardTile
                     key={card.id}
@@ -125,7 +113,6 @@ export default async function BoostersPage() {
                     name={card.name}
                     subtitle={card.description}
                     rarity={card.rarity}
-                    theme={card.theme}
                     glyph={card.glyph}
                     power={card.power}
                     quote={quotes[card.id]}

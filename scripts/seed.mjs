@@ -21,22 +21,22 @@ if (process.env.NODE_ENV === 'production') {
 
 const FILE = process.env.LEAGUE_DATA_FILE ?? join(process.cwd(), '.data', 'league.json');
 
-/* Doit refléter lib/domain/catalog.ts — 4 familles × 6 raretés. */
-const FAMILIES = {
-  glace: ['congere', 'bouclier-givre', 'gel-eternel', 'second-souffle', 'rempart-polaire', 'sanctuaire'],
-  tempete: ['rafale', 'vent-du-nord', 'percee', 'blizzard', 'sang-froid', 'nuit-polaire'],
-  aurore: ['etincelle', 'etoile-polaire', 'pluie-de-flocons', 'manne', 'mecene', 'aurore-boreale'],
-  solstice: ['boule-de-neige', 'givre-mordant', 'contre-courant', 'traineau-perce', 'tempete-de-verglas', 'grand-froid'],
-};
+/* Doit refléter lib/domain/catalog.ts — 24 cartes, quatre par rareté. */
 const LADDER = ['C', 'PC', 'R', 'SR', 'UR', 'L'];
+const PAR_RARETE = {
+  C: ['congere', 'rafale', 'etincelle', 'boule-de-neige'],
+  PC: ['bouclier-givre', 'vent-du-nord', 'etoile-polaire', 'givre-mordant'],
+  R: ['gel-eternel', 'percee', 'pluie-de-flocons', 'contre-courant'],
+  SR: ['second-souffle', 'blizzard', 'manne', 'traineau-perce'],
+  UR: ['rempart-polaire', 'sang-froid', 'mecene', 'tempete-de-verglas'],
+  L: ['sanctuaire', 'nuit-polaire', 'aurore-boreale', 'grand-froid'],
+};
 
 const RARITY_OF = {};
-for (const ids of Object.values(FAMILIES)) {
-  ids.forEach((id, i) => {
-    RARITY_OF[id] = LADDER[i];
-  });
+for (const [rarity, ids] of Object.entries(PAR_RARETE)) {
+  for (const id of ids) RARITY_OF[id] = rarity;
 }
-const ALL_CARDS = Object.values(FAMILIES).flat();
+const ALL_CARDS = Object.values(PAR_RARETE).flat();
 
 /* Cote de référence, alignée sur catalog.referencePrice(). */
 const BASE_PRICE = { C: 40, PC: 120, R: 500, SR: 2_000, UR: 8_000, L: 40_000 };
@@ -153,7 +153,7 @@ for (const player of db.players) {
     // Quelques games portent déjà un multiplicateur, comme si une carte avait été jouée.
     // Quelques games portent déjà l'effet d'une carte, avec son journal.
     const boosted = rnd() > 0.7;
-    const boostCard = boosted ? pick(FAMILIES.tempete.slice(0, 4)) : null;
+    const boostCard = boosted ? pick([...PAR_RARETE.C, ...PAR_RARETE.PC]) : null;
     const boostPoints = boosted ? between(4, 16) : 0;
     const struck = rnd() > 0.88;
     const strikePoints = struck ? -between(6, 12) : 0;
@@ -300,8 +300,8 @@ for (const player of db.players) {
   }
 }
 
-// Le premier joueur a bouclé la famille Tempête : ses bonus sont visibles au classement.
-for (const cardId of FAMILIES.tempete) {
+// Le premier joueur a découvert toutes les communes et toutes les peu communes.
+for (const cardId of [...PAR_RARETE.C, ...PAR_RARETE.PC]) {
   if (!db.discoveries.some((d) => d.playerId === db.players[0].id && d.cardId === cardId)) {
     db.discoveries.push({
       playerId: db.players[0].id,
@@ -310,8 +310,8 @@ for (const cardId of FAMILIES.tempete) {
     });
   }
 }
-// Le deuxième atteint le palier partiel sur Glace (4 cartes sur 6).
-for (const cardId of FAMILIES.glace.slice(0, 4)) {
+// Le deuxième n'a que quelques communes : une collection qui démarre.
+for (const cardId of PAR_RARETE.C.slice(0, 3)) {
   if (!db.discoveries.some((d) => d.playerId === db.players[1].id && d.cardId === cardId)) {
     db.discoveries.push({
       playerId: db.players[1].id,

@@ -20,7 +20,6 @@ export interface CatalogCard {
   name: string;
   subtitle: string;
   rarity: string;
-  theme: string;
   glyph: string;
   description: string;
   nature: 'bonus' | 'malus';
@@ -555,7 +554,6 @@ export function BoosterOpening({
                         name={card.name}
                         description={card.description}
                         rarity={card.rarity}
-                        theme={card.theme}
                         glyph={card.glyph}
                         power={card.power}
                         nature={card.nature}

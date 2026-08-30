@@ -7,7 +7,7 @@ import { getStore, newId } from '@/lib/db/store';
 import { rewardForGame } from '@/lib/domain/economy';
 import { LIMITS } from '@/lib/security/ratelimit';
 import { consumeBoon } from '@/lib/services/effects';
-import { bonusesFor, recomputeGame } from '@/lib/services/league';
+import { recomputeGame } from '@/lib/services/league';
 import { audit, credit } from '@/lib/services/ledger';
 
 export const runtime = 'nodejs';
@@ -56,8 +56,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       db.games.push(game);
       recomputeGame(db, game);
 
-      const bonuses = bonusesFor(db, player.id);
-      const reward = rewardForGame(game.kills, game.placement, bonuses.snowflakesPerGame);
+      const reward = rewardForGame(game.kills, game.placement);
 
       // La faveur « Manne » double les flocons de la game, et se consomme.
       const manne = consumeBoon(db, player.id, 'FLOCONS_DOUBLES');
