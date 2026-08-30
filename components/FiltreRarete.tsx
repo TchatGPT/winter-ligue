@@ -44,7 +44,19 @@ export function FiltreRarete({
   children?: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-wrap items-center gap-1.5">
+    <div className="glass flex flex-wrap items-center gap-1.5 px-3 py-2.5">
+      {/*
+       * Le libellé du filtre.
+       *
+       * Sans lui, six pastilles colorées posées seules se lisent comme une
+       * légende — quelque chose à consulter — et non comme une commande à
+       * actionner. La barre est dans un panneau de verre pour la même raison :
+       * flottant à même le fond, elle n'avait l'air d'appartenir à rien.
+       */}
+      <span className="mr-1 font-display text-[12px] font-black tracking-[0.12em] text-faint uppercase">
+        Rareté
+      </span>
+
       {/* De la plus rare à la plus commune : c'est ce qu'on cherche en premier. */}
       {[...RARITIES].reverse().map((r) => {
         const meta = rarityMeta(r);

@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { Countdown } from '@/components/Countdown';
+import { FiltreRarete } from '@/components/FiltreRarete';
 import { CardTile, EmptyState, Notice, flakes } from '@/components/ui';
 import { MARKET } from '@/lib/domain/rules';
 import type { HandCard, ProfileView } from '@/lib/services/profile';
@@ -125,6 +126,27 @@ export function CollectionBoard({
     return [...par.values()];
   }, [profile.hand]);
 
+  const [rarete, setRarete] = useState<Set<string>>(new Set());
+
+  const basculeRarete = (r: string) =>
+    setRarete((prev) => {
+      const next = new Set(prev);
+      if (next.has(r)) next.delete(r);
+      else next.add(r);
+      return next;
+    });
+
+  const affichees = reserve.filter(({ card }) => rarete.size === 0 || rarete.has(card.rarity));
+
+  /*
+   * Le filtre n'apparaît qu'à partir de deux raretés en réserve.
+   *
+   * Une barre de six boutons au-dessus de trois cartes toutes communes ne trie
+   * rien : elle occupe la place de ce qu'on est venu voir. Elle arrive quand
+   * elle sert.
+   */
+  const filtrable = new Set(reserve.map(({ card }) => card.rarity)).size > 1;
+
   const needsGame = dialog?.kind === 'jouer' && dialog.card.target === 'own_game';
   const needsOpponent = dialog?.kind === 'jouer' && dialog.card.target === 'opponent';
   const canPlay = !needsGame || gameId !== '';
@@ -158,37 +180,49 @@ export function CollectionBoard({
             hint="Ouvre un booster en boutique, ou achète une carte à l’hôtel des ventes."
           />
         ) : (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {reserve.map(({ card, copies }) => (
-              <CardTile
-                key={card.cardId}
-                copies={copies}
-                cardId={card.cardId}
-                name={card.name}
-                rarity={card.rarity}
-                glyph={card.glyph}
-                subtitle={card.description}
-                nature={card.nature}
-                footer={
-                  <div className="flex gap-1.5">
-                    <button
-                      className="btn btn-sm btn-ice flex-1"
-                      onClick={() => openDialog({ kind: 'jouer', card })}
-                      disabled={busy}
-                    >
-                      Jouer
-                    </button>
-                    <button
-                      className="btn btn-sm flex-1"
-                      onClick={() => openDialog({ kind: 'vendre', card })}
-                      disabled={busy}
-                    >
-                      Vendre
-                    </button>
-                  </div>
-                }
-              />
-            ))}
+          <div className="space-y-3">
+            {filtrable && (
+              <FiltreRarete
+                selection={rarete}
+                onToggle={basculeRarete}
+                onReset={() => setRarete(new Set())}
+              >
+                {affichees.length} carte{affichees.length > 1 ? 's' : ''}
+              </FiltreRarete>
+            )}
+
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {affichees.map(({ card, copies }) => (
+                <CardTile
+                  key={card.cardId}
+                  copies={copies}
+                  cardId={card.cardId}
+                  name={card.name}
+                  rarity={card.rarity}
+                  glyph={card.glyph}
+                  subtitle={card.description}
+                  nature={card.nature}
+                  footer={
+                    <div className="flex gap-1.5">
+                      <button
+                        className="btn btn-sm btn-ice flex-1"
+                        onClick={() => openDialog({ kind: 'jouer', card })}
+                        disabled={busy}
+                      >
+                        Jouer
+                      </button>
+                      <button
+                        className="btn btn-sm flex-1"
+                        onClick={() => openDialog({ kind: 'vendre', card })}
+                        disabled={busy}
+                      >
+                        Vendre
+                      </button>
+                    </div>
+                  }
+                />
+              ))}
+            </div>
           </div>
         )}
       </section>
