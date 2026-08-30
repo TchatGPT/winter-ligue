@@ -35,9 +35,25 @@ import type { ThemeId } from '@/lib/domain/types';
  * carte Solstice à un mètre de l'écran, avant même de lire son nom.
  */
 
-/** Le cadre de l'illustration est en 4/3 ; le repère l'est aussi. */
+/** Le repère dans lequel les scènes sont dessinées : un 4/3 paysage. */
 const L = 160;
-const H = 120;
+
+/**
+ * La hauteur réelle du dessin, et la descente de la scène dedans.
+ *
+ * Les scènes ont été composées en 4/3, mais la fenêtre du cadre peint est en
+ * portrait — 0,84 de rapport. Laisser `object-fit: cover` s'en charger coûtait
+ * 29 % de la largeur : la montagne du Sanctuaire, le cyclone du Blizzard et la
+ * clôture de la Congère y perdaient leurs bords, c'est-à-dire ce qui les rendait
+ * lisibles.
+ *
+ * Le dessin est donc rendu dans une boîte plus haute que les scènes. Le fond et
+ * la vignette la remplissent entièrement ; la scène y descend de `DECALAGE`,
+ * assez bas pour que les scènes bâties sur un sol le posent près du bord, assez
+ * haut pour que les scènes à sujet centré ne tombent pas dans le tiers bas.
+ */
+const HP = 190;
+const DECALAGE = 52;
 
 /** Le trait, partout le même : un blanc bleuté, jamais du blanc pur. */
 const TRAIT = '#eaf6ff';
@@ -133,28 +149,43 @@ function Fond({ u, theme, c }: { u: string; theme: ThemeId; c: string }) {
           <stop offset="0" stopColor={haut} />
           <stop offset="1" stopColor={bas} />
         </linearGradient>
-        <radialGradient id={`lueur-${u}`} cx="50%" cy="86%" r="70%">
+        {/* La lueur est calée sur le bas de la scène, pas sur le bas de la
+            boîte : c'est elle qui détache les silhouettes, et elles sont
+            posées là. */}
+        <radialGradient id={`lueur-${u}`} cx="50%" cy={`${((DECALAGE + 104) / HP) * 100}%`} r="62%">
           <stop offset="0" stopColor={c} stopOpacity="0.5" />
           <stop offset="1" stopColor={c} stopOpacity="0" />
         </radialGradient>
       </defs>
-      <rect width={L} height={H} fill={`url(#ciel-${u})`} />
-      <rect width={L} height={H} fill={`url(#lueur-${u})`} />
+      <rect width={L} height={HP} fill={`url(#ciel-${u})`} />
+      <rect width={L} height={HP} fill={`url(#lueur-${u})`} />
     </>
   );
 }
 
-/** La vignette, posée en dernier : elle assombrit les angles et creuse le cadre. */
+/**
+ * La vignette, posée en dernier : elle assombrit les angles et creuse le cadre.
+ *
+ * Le fondu du bas est ajouté par-dessus, et il n'est pas décoratif : les scènes
+ * bâties sur un sol s'arrêtent une dizaine d'unités avant le bord de la boîte
+ * portrait, et sans lui on verrait une bande de ciel sous la neige. Assombrie,
+ * la même bande se lit comme l'ombre au pied du décor.
+ */
 function Vignette({ u }: { u: string }) {
   return (
     <>
       <defs>
-        <radialGradient id={`vig-${u}`} cx="50%" cy="45%" r="74%">
+        <radialGradient id={`vig-${u}`} cx="50%" cy={`${((DECALAGE + 55) / HP) * 100}%`} r="70%">
           <stop offset="0.45" stopColor="#000" stopOpacity="0" />
           <stop offset="1" stopColor="#000" stopOpacity="0.6" />
         </radialGradient>
+        <linearGradient id={`pied-${u}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#000" stopOpacity="0" />
+          <stop offset="1" stopColor="#000" stopOpacity="0.72" />
+        </linearGradient>
       </defs>
-      <rect width={L} height={H} fill={`url(#vig-${u})`} />
+      <rect width={L} height={HP} fill={`url(#vig-${u})`} />
+      <rect y={HP - 34} width={L} height={34} fill={`url(#pied-${u})`} />
     </>
   );
 }
@@ -1048,13 +1079,13 @@ export function CardArt({ cardId, className }: { cardId: string; className?: str
   return (
     <svg
       className={className}
-      viewBox={`0 0 ${L} ${H}`}
+      viewBox={`0 0 ${L} ${HP}`}
       preserveAspectRatio="xMidYMid slice"
       aria-hidden="true"
       focusable="false"
     >
       <Fond u={cardId} theme={theme} c={c} />
-      {scene(cardId, c)}
+      <g transform={`translate(0 ${DECALAGE})`}>{scene(cardId, c)}</g>
       <Vignette u={cardId} />
     </svg>
   );

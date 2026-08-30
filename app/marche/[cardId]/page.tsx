@@ -2,12 +2,12 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { MarketBoard, type MarketListing } from '@/components/MarketBoard';
 import { PriceChart } from '@/components/PriceChart';
-import { TradingCard } from '@/components/TradingCard';
+import { CardFrame } from '@/components/CardFrame';
 import { CardTile, RarityChip, StatTile, flakes, rarityMeta } from '@/components/ui';
 import { getSession } from '@/lib/auth/session';
 import type { Database } from '@/lib/db/entities';
 import { getStore } from '@/lib/db/store';
-import { cardArt, cardsOfTheme, getCard, THEMES } from '@/lib/domain/catalog';
+import { cardsOfTheme, getCard, THEMES } from '@/lib/domain/catalog';
 import { minimumBid } from '@/lib/domain/market';
 import type { ThemeId } from '@/lib/domain/types';
 import { closeExpiredListings, lastBuyerPseudo, statsForCard } from '@/lib/services/market';
@@ -120,23 +120,16 @@ export default async function CoteCartePage({ params }: { params: Promise<{ card
         />
         <div className="relative flex flex-wrap items-start gap-5">
           <div className="mx-auto w-[240px] shrink-0 sm:mx-0 sm:w-[268px]">
-            <TradingCard
-              card={{
-                cardId: card.id,
-                name: card.name,
-                subtitle: card.subtitle,
-                description: card.description,
-                rarity: card.rarity,
-                theme: card.theme,
-                glyph: card.glyph,
-                power: card.power,
-                nature: card.nature,
-                art: cardArt(card.id),
-              }}
+            <CardFrame
+              cardId={card.id}
+              name={card.name}
+              description={card.description}
+              rarity={card.rarity}
+              theme={card.theme}
+              glyph={card.glyph}
+              power={card.power}
+              nature={card.nature}
             />
-            <p className="mt-2 text-center text-[13px] text-faint">
-              Survole la carte pour l’incliner
-            </p>
           </div>
 
           <div className="min-w-[240px] flex-1">

@@ -1264,6 +1264,263 @@
   }
 
   /* --------------------------------------------------------------------------
+     CARTE MONTÉE DANS UN CADRE PEINT
+     -------------------------------------------------------------------------- */
+
+  /*
+   * Toutes les mesures qui suivent sont en `cqw` — pourcentage de la largeur de
+   * la carte. La même carte sert donc de la vignette de collection au grand
+   * format de la fiche, sans un seul point de rupture.
+   *
+   * Le rapport 1514/2231 est celui du cadre peint. Toute autre valeur
+   * l'étirerait, et le cadre est une image : il ne se redimensionne pas
+   * indépendamment de ce qu'il encadre.
+   */
+  .cadre {
+    position: relative;
+    container-type: inline-size;
+    aspect-ratio: 1514 / 2231;
+    isolation: isolate;
+    filter: drop-shadow(0 10px 22px rgb(0 0 0 / 0.55));
+    transition:
+      transform 0.28s cubic-bezier(0.2, 0.8, 0.3, 1),
+      filter 0.28s ease;
+  }
+
+  .tcg-link:hover .cadre,
+  .cadre-survol:hover {
+    transform: translateY(-5px);
+    filter: drop-shadow(0 16px 30px rgb(0 0 0 / 0.6))
+      drop-shadow(0 0 14px color-mix(in srgb, var(--r, transparent) 55%, transparent));
+  }
+
+  /*
+   * La fenêtre d'illustration.
+   *
+   * Position et taille mesurées sur l'image : la carte occupe x 122→1635 et
+   * y 52→2282 dans le fichier d'origine, la fenêtre x 230→1529 et y 148→1692.
+   */
+  .cadre-fenetre {
+    position: absolute;
+    left: 7.13%;
+    top: 4.3%;
+    width: 85.8%;
+    height: 69.21%;
+    overflow: hidden;
+    border-radius: 3cqw;
+    background: #060d19;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .cadre-vecteur {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .cadre-glyphe {
+    font-size: 22cqw;
+    line-height: 1;
+    filter: drop-shadow(0 1cqw 2cqw rgb(0 0 0 / 0.7));
+  }
+
+  /* Le cadre passe par-dessus l'illustration : c'est ce qui laisse le fleuron
+     et les volutes déborder sur le dessin, comme sur la carte d'origine. */
+  .cadre-planche {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  /*
+   * Les six raretés, par rotation de teinte du seul cadre.
+   *
+   * Le cadre peint est violet glacé, de teinte 265°. Chaque angle ci-dessous
+   * est l'écart vers la teinte de la rareté dans `RARITY_META` — la palette
+   * reste donc celle du site, et changer une couleur de rareté demande de
+   * corriger l'angle ici. La désaturation des deux premières raretés est
+   * volontaire : commune et peu commune doivent rester ternes.
+   */
+  .cadre[data-r='C'] .cadre-planche {
+    filter: hue-rotate(-55deg) saturate(0.45);
+  }
+
+  .cadre[data-r='PC'] .cadre-planche {
+    filter: hue-rotate(-71deg) saturate(0.8);
+  }
+
+  .cadre[data-r='R'] .cadre-planche {
+    filter: hue-rotate(-19deg) saturate(1.05);
+  }
+
+  .cadre[data-r='SR'] .cadre-planche {
+    filter: hue-rotate(60deg) saturate(1.15);
+  }
+
+  .cadre[data-r='UR'] .cadre-planche {
+    filter: hue-rotate(122deg) saturate(1.2);
+  }
+
+  .cadre[data-r='L'] .cadre-planche {
+    filter: hue-rotate(138deg) saturate(1.3) brightness(1.06);
+  }
+
+  /* -- Les marques posées sur la fenêtre ---------------------------------- */
+
+  .cadre-rarete,
+  .cadre-malus,
+  .cadre-coin {
+    position: absolute;
+    z-index: 3;
+    font-family: var(--font-display);
+    font-weight: 900;
+    letter-spacing: 0.06em;
+    line-height: 1.5;
+  }
+
+  .cadre-rarete {
+    left: 10.5%;
+    top: 7%;
+    padding: 0.2cqw 1.6cqw;
+    border-radius: 1.4cqw;
+    background: var(--r, #6f8db0);
+    color: #0b1420;
+    font-size: 4.4cqw;
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.5),
+      0 0.4cqw 1.2cqw rgb(0 0 0 / 0.6);
+  }
+
+  .cadre-malus {
+    right: 10.5%;
+    bottom: 28.5%;
+    padding: 0.2cqw 1.4cqw;
+    border-radius: 1.4cqw;
+    background: rgb(255 122 122 / 0.94);
+    color: #1c0505;
+    font-size: 4cqw;
+    text-transform: uppercase;
+  }
+
+  .cadre-coin {
+    right: 10.5%;
+    top: 7%;
+  }
+
+  /* -- Le panneau de texte ------------------------------------------------- */
+
+  /*
+   * Le panneau du cadre est un aplat presque blanc : le texte y est sombre, et
+   * il l'est quelle que soit la rotation de teinte — celle-ci tourne la couleur
+   * sans toucher à la clarté.
+   */
+  .cadre-texte {
+    position: absolute;
+    left: 11%;
+    top: 76.2%;
+    width: 78%;
+    height: 16.6%;
+    z-index: 3;
+    display: flex;
+    flex-direction: column;
+    color: #131c2a;
+  }
+
+  .cadre-nom {
+    font-family: var(--font-display);
+    font-size: 6.4cqw;
+    font-weight: 900;
+    line-height: 1.08;
+    color: #101a28;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+
+  /*
+   * La description ne s'affiche qu'à partir de 300 px de carte.
+   *
+   * Le panneau du cadre est petit — un sixième de la hauteur. Sur une vignette
+   * de collection de 220 px, la description tomberait à huit pixels : elle
+   * remplirait le panneau sans être lisible, et masquerait le nom. La requête
+   * porte sur le conteneur et non sur l'écran : c'est la largeur de la carte
+   * qui décide, pas celle de la fenêtre.
+   */
+  .cadre-desc {
+    display: none;
+    margin-top: 0.6cqw;
+    font-size: 3.5cqw;
+    line-height: 1.28;
+    color: rgb(19 28 42 / 0.82);
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+  }
+
+  @container (min-width: 300px) {
+    .cadre-desc {
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      line-clamp: 3;
+    }
+  }
+
+  .cadre-pied {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1.5cqw;
+    margin-top: auto;
+    font-family: var(--font-display);
+    font-size: 4cqw;
+    font-weight: 900;
+  }
+
+  .cadre-famille {
+    font-size: 3.2cqw;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgb(19 28 42 / 0.6);
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .cadre-chiffres {
+    display: inline-flex;
+    flex-shrink: 0;
+    gap: 2.4cqw;
+  }
+
+  .cadre-stat {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.8cqw;
+  }
+
+  /* Mesurées sur le panneau, qui reste au-dessus de 230 de clarté quelle que
+     soit la rotation de teinte : 8:1 pour le rouge, 9:1 pour le bleu. */
+  .cadre-stat-pui {
+    color: #8e1119;
+  }
+
+  .cadre-stat-cote {
+    color: #0d3f74;
+  }
+
+  .cadre-eteint {
+    filter: grayscale(0.9) brightness(0.55);
+    opacity: 0.6;
+  }
+
+  /* --------------------------------------------------------------------------
      BOOSTER 3D
      -------------------------------------------------------------------------- */
 

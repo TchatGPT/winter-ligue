@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
+import { CardFrame } from '@/components/CardFrame';
 import { Countdown } from '@/components/Countdown';
 import { RarityIcon } from '@/components/RarityIcon';
 import { MarketViewModal } from '@/components/MarketViewModal';
@@ -449,7 +450,7 @@ function ListingCard({
 
   return (
     <article
-      className={`tcg tcg-hover h-full ${leading ? 'ring-1 ring-aurora/50' : ''}`}
+      className={`flex h-full flex-col gap-2 ${leading ? 'rounded-xl ring-1 ring-aurora/50' : ''}`}
       style={{ ['--r' as string]: meta.color }}
     >
       <button
@@ -458,24 +459,20 @@ function ListingCard({
         className="block w-full text-left"
         aria-label={`Voir la cote de ${listing.name}`}
       >
-        <div className={`tcg-art ${meta.holo ? 'tcg-holo' : ''}`}>
-          <span className="tcg-glyph" aria-hidden="true">
-            {listing.glyph}
-          </span>
-          <span className="absolute top-1.5 left-1.5">
-            <RarityChip rarity={listing.rarity} />
-          </span>
-          <span className="absolute top-1.5 right-1.5 rounded bg-black/55 px-1 py-px text-[13px] font-bold text-ink/90 backdrop-blur-sm">
-            ⚡ {listing.power}
-          </span>
-        </div>
+        <CardFrame
+          cardId={listing.cardId}
+          name={listing.name}
+          description={listing.subtitle}
+          rarity={listing.rarity}
+          theme={listing.theme}
+          glyph={listing.glyph}
+          power={listing.power}
+          quote={listing.quote}
+        />
       </button>
 
-      <div className="tcg-body">
-        <h3 className="tcg-name">{listing.name}</h3>
-        <p className="tcg-sub">{listing.subtitle}</p>
-
-        <dl className="mt-2 space-y-0.5 border-t border-white/10 pt-1.5 text-[13px]">
+      <div className="tcg-foot rounded-lg">
+        <dl className="mb-1.5 space-y-0.5 border-b border-white/10 pb-1.5 text-[13px]">
           <div className="flex items-baseline justify-between gap-1">
             <dt className="tracking-wider text-faint uppercase">
               {listing.bidCount > 0 ? 'Mise actuelle' : 'Mise de départ'}
@@ -493,16 +490,8 @@ function ListingCard({
               <Countdown endsAt={listing.endsAt} onExpire={onExpire} />
             </dd>
           </div>
-          {listing.quote !== null && (
-            <div className="flex items-baseline justify-between gap-1">
-              <dt className="tracking-wider text-faint uppercase">Cote</dt>
-              <dd className="num text-[13px] text-muted">❄ {flakesShort(listing.quote)}</dd>
-            </div>
-          )}
         </dl>
-      </div>
 
-      <div className="tcg-foot">
         <p className="truncate text-faint">
           {seller ? (
             <span className="text-muted">Ta vente</span>

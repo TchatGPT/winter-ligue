@@ -2,9 +2,9 @@
 
 import { useEffect } from 'react';
 import Link from 'next/link';
-import { TradingCard } from '@/components/TradingCard';
+import { CardFrame } from '@/components/CardFrame';
 import { rarityMeta, themeMeta } from '@/components/ui';
-import { cardArt, cardNumber } from '@/lib/domain/catalog';
+import { cardNumber } from '@/lib/domain/catalog';
 
 export interface CarteDetail {
   cardId: string;
@@ -37,10 +37,9 @@ function Ligne({ label, children }: { label: string; children: React.ReactNode }
  * et il n'y a rien à charger — la cote, elle, vit sur la page de marché, qui est
  * à un lien d'ici.
  *
- * Le grand format à gauche est volontairement `TradingCard` et non la vignette
- * agrandie : c'est le seul endroit avec l'ouverture de booster où la carte est
- * le sujet, donc le seul où l'inclinaison au pointeur et le vernis
- * holographique valent leur coût de rendu.
+ * Le grand format à gauche est la même carte que dans la grille, simplement
+ * plus large : ses tailles sont en `cqw`, donc la description, masquée sur une
+ * vignette faute de place, réapparaît ici sans autre réglage.
  */
 export function CardDetailModal({
   carte,
@@ -82,19 +81,15 @@ export function CardDetailModal({
         <div className="grid gap-5 p-4 sm:grid-cols-[minmax(0,272px)_1fr] sm:p-5">
           {/* ------------------------ Le grand format ------------------- */}
           <div className="mx-auto w-full max-w-[300px]">
-            <TradingCard
-              card={{
-                cardId: carte.cardId,
-                name: carte.name,
-                subtitle: carte.subtitle,
-                description: carte.description,
-                rarity: carte.rarity,
-                theme: carte.theme,
-                glyph: carte.glyph,
-                power: carte.power,
-                nature: carte.nature,
-                art: cardArt(carte.cardId),
-              }}
+            <CardFrame
+              cardId={carte.cardId}
+              name={carte.name}
+              description={carte.description}
+              rarity={carte.rarity}
+              theme={carte.theme}
+              glyph={carte.glyph}
+              power={carte.power}
+              nature={carte.nature}
             />
           </div>
 

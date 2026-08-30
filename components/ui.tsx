@@ -1,6 +1,5 @@
 import Link from 'next/link';
-import { aUneIllustration, CardArt } from '@/components/CardArt';
-import { IconImpact, IconSnowflake } from '@/components/icons';
+import { CardFrame } from '@/components/CardFrame';
 import { RarityIcon } from '@/components/RarityIcon';
 import { RARITY_META, THEMES } from '@/lib/domain/catalog';
 import type { Rarity, ThemeId } from '@/lib/domain/types';
@@ -168,63 +167,26 @@ export function CardTile({
   href,
   onClick,
 }: CardTileProps) {
-  const meta = rarityMeta(rarity);
-  const th = themeMeta(theme);
-
   const body = (
-    <article
-      className={`tcg h-full ${dimmed ? 'tcg-dim' : ''} ${href || onClick ? '' : 'tcg-hover'}`}
-      style={{ ['--r' as string]: meta.color }}
-    >
-      <div className={`tcg-art ${meta.holo && !dimmed ? 'tcg-holo' : ''}`}>
-        {aUneIllustration(cardId) ? (
-          <CardArt cardId={cardId} className="tcg-vecteur" />
-        ) : (
-          <span className="tcg-glyph" aria-hidden="true">
-            {glyph}
-          </span>
-        )}
-
-        {/* La pastille de rareté : le sigle, pas la gemme. Sur l'illustration
-            elle doit se lire à la taille d'une vignette, et une gemme de dix
-            pixels ne se distingue plus d'une autre. */}
-        <span className="tcg-pastille">{meta.code}</span>
-
-        {nature === 'malus' && <span className="tcg-malus">Malus</span>}
-
-        {corner && <span className="absolute top-2 right-2 z-[2]">{corner}</span>}
+    <div className="flex h-full flex-col gap-2">
+      <div className={href || onClick ? '' : 'cadre-survol'}>
+        <CardFrame
+          cardId={cardId}
+          name={name}
+          description={description ?? subtitle}
+          rarity={rarity}
+          theme={theme}
+          glyph={glyph}
+          power={power}
+          quote={quote}
+          nature={nature}
+          dimmed={dimmed}
+          corner={corner}
+        />
       </div>
 
-      <div className="tcg-body">
-        <h3 className="tcg-name">{name}</h3>
-        {(description ?? subtitle) && <p className="tcg-sub">{description ?? subtitle}</p>}
-
-        {(power !== undefined || quote !== undefined) && (
-          <div className="tcg-stats">
-            {power !== undefined && (
-              <span className="tcg-stat tcg-stat-pui" title={`Puissance ${power} sur 100`}>
-                <IconImpact className="h-[15px] w-[15px]" />
-                <span className="num">{power}</span>
-              </span>
-            )}
-            {quote !== undefined && (
-              <span className="tcg-stat tcg-stat-cote" title="Cote : dernier prix constaté">
-                <IconSnowflake className="h-[15px] w-[15px]" />
-                <span className="num">{quote === null ? '—' : flakesShort(quote)}</span>
-              </span>
-            )}
-          </div>
-        )}
-
-        {th && (
-          <span className="tcg-famille" style={{ ['--f' as string]: th.color }}>
-            {th.name}
-          </span>
-        )}
-      </div>
-
-      {footer && <div className="tcg-foot">{footer}</div>}
-    </article>
+      {footer && <div className="tcg-foot rounded-lg">{footer}</div>}
+    </div>
   );
 
   if (onClick) {
