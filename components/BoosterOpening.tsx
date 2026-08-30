@@ -204,30 +204,23 @@ export function BoosterOpening({
   );
 
   /**
-   * La carte que le rail met en scène : la plus rare du tirage.
+   * Les cartes que les rails mettent en scène : toutes celles du booster.
    *
-   * Un booster en donne trois à cinq, et faire défiler un rail par carte
-   * étirerait l'ouverture à une demi-minute. Une seule mise en scène, sur la
-   * carte qui compte, puis la grille révèle le reste — c'est le rythme des
-   * sites d'ouverture de caisses, et il tient parce qu'il ne fait durer que le
-   * moment qui le mérite.
+   * Une seule colonne, sur la meilleure du lot, faisait durer le suspense une
+   * fois puis livrait le reste en grille — on voyait le booster s'ouvrir une
+   * fois pour cinq cartes. Les colonnes s'arrêtent maintenant l'une après
+   * l'autre, et la tension redémarre à chaque carte.
    */
-  const vedette = useMemo(() => {
-    let meilleure: Pulled | null = null;
-    for (const c of pulled) {
-      const rang = RARITY_LADDER.indexOf(c.rarity as Rarity);
-      const tenu = meilleure ? RARITY_LADDER.indexOf(meilleure.rarity as Rarity) : -1;
-      if (rang > tenu) meilleure = c;
-    }
-    return meilleure
-      ? {
-          cardId: meilleure.cardId,
-          name: meilleure.name,
-          rarity: meilleure.rarity,
-          glyph: meilleure.glyph,
-        }
-      : null;
-  }, [pulled]);
+  const vedettes = useMemo(
+    () =>
+      pulled.map((c) => ({
+        cardId: c.cardId,
+        name: c.name,
+        rarity: c.rarity,
+        glyph: c.glyph,
+      })),
+    [pulled],
+  );
 
   async function open() {
     if (!booster || busy) return;
@@ -324,14 +317,14 @@ export function BoosterOpening({
         />
 
         <div className="relative flex min-h-[400px] flex-col items-center justify-center gap-6 px-4 py-10 sm:min-h-[460px]">
-          {phase === 'tirage' && vedette ? (
+          {phase === 'tirage' && vedettes.length > 0 ? (
             <>
               <p className="font-display text-sm tracking-[0.18em] text-muted uppercase">
                 Tirage en cours
               </p>
               <Tirage
                 cartes={leurres}
-                gagnante={vedette}
+                gagnantes={vedettes}
                 onFini={() => setPhase('reveal')}
               />
             </>

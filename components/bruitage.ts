@@ -190,3 +190,21 @@ export function bruitDeCran() {
   if (!ctx) return;
   joue(ctx, ctx.destination, { hz: 1180, vers: 880, duree: 0.045, niveau: 0.07 });
 }
+
+/**
+ * L'arrêt d'une colonne du tirage : deux notes qui se posent.
+ *
+ * Une quinte descendante, très courte. Elle sonne une fois par carte, à
+ * quelques centaines de millisecondes d'écart d'une colonne à l'autre — d'où sa
+ * brièveté : cinq arrêts en trois secondes, s'ils traînaient, se
+ * chevaucheraient en bouillie.
+ *
+ * Plus grave que le cran, et c'est ce qui compte : le cran dit « ça défile »,
+ * l'arrêt dit « c'est joué ». Deux hauteurs éloignées pour deux sens éloignés.
+ */
+export function bruitDArret() {
+  const ctx = contexte();
+  if (!ctx) return;
+  joue(ctx, ctx.destination, { hz: 392, duree: 0.16, niveau: 0.1 });
+  joue(ctx, ctx.destination, { hz: 262, duree: 0.24, niveau: 0.09, retard: 0.06 });
+}

@@ -394,18 +394,35 @@
   /* -- Le carrousel de tirage --------------------------------------------- */
 
   /*
-   * Le rail défile sous un repère fixe et s'arrête sur la carte gagnante.
+   * Une colonne par carte du booster, côte à côte.
    *
-   * Le cadre rogne : c'est lui qui donne l'impression que le rail continue
-   * au-delà de l'écran. Sans `overflow: hidden`, on verrait les soixante cartes
-   * d'un coup et il n'y aurait plus de tirage, seulement une liste qui glisse.
+   * Le nombre de colonnes vient du composant, en `--colonnes` : un booster en
+   * donne trois à cinq selon le sachet, et une grille figée laisserait un trou
+   * ou serrerait selon le cas.
    */
   .tirage {
+    display: grid;
+    grid-template-columns: repeat(var(--colonnes, 3), minmax(0, 1fr));
+    gap: 10px;
+    width: 100%;
+    max-width: 760px;
+    margin-inline: auto;
+  }
+
+  /*
+   * Une colonne.
+   *
+   * Sa hauteur suit sa largeur par `aspect-ratio`, et ce n'est pas cosmétique :
+   * le composant calcule le pas du rail à partir de la largeur mesurée, et une
+   * hauteur venue d'ailleurs décalerait l'arrêt de plusieurs cartes. Le rapport
+   * vaut deux cartes et quart — assez pour voir arriver la suivante, trop peu
+   * pour lire la bande à l'avance.
+   */
+  .tirage-colonne {
     position: relative;
     overflow: hidden;
-    width: 100%;
-    padding: 18px 0;
-    border-radius: var(--r-lg);
+    aspect-ratio: 1 / 3.2;
+    border-radius: var(--r-md);
     border: 1px solid var(--glass-edge);
     background: linear-gradient(180deg, rgb(4 10 20 / 0.55), rgb(6 14 26 / 0.75));
     box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.16);
@@ -413,78 +430,75 @@
 
   .tirage-rail {
     display: flex;
-    gap: 12px;
-    width: max-content;
-    /* Le rail est promu sur sa propre couche : il se déplace à chaque image, et
-       sans promotion le navigateur repeindrait la bande entière à chaque fois. */
+    flex-direction: column;
+    gap: 10px;
+    /* Promu sur sa propre couche : il se déplace à chaque image, et sans
+       promotion le navigateur repeindrait la bande entière à chaque fois. */
     will-change: transform;
   }
 
   /*
    * Une carte du rail.
    *
-   * Volontairement pauvre — un dégradé de rareté, un glyphe, une gemme. Elles
-   * sont soixante à défiler à pleine vitesse : y mettre le vrai rendu de carte,
-   * avec son foil et ses calques en fusion, effondrerait la cadence au moment
-   * précis où elle compte le plus.
+   * Volontairement pauvre. Elles sont deux cents à défiler d'un coup sur cinq
+   * colonnes : y mettre le cadre peint, avec son image et ses filtres de teinte,
+   * effondrerait la cadence au moment précis où elle compte le plus.
    */
   .tirage-carte {
     position: relative;
     display: grid;
     place-items: center;
-    /* 150 + 12 de gouttière = le PAS de components/Tirage.tsx. Les deux valeurs
-       doivent bouger ensemble. */
-    flex: 0 0 150px;
-    height: 210px;
-    border-radius: 14px;
+    flex: 0 0 auto;
+    aspect-ratio: 1 / 1.4;
+    border-radius: 10px;
+    overflow: hidden;
     border: 1px solid color-mix(in srgb, var(--r) 42%, transparent);
     background: linear-gradient(158deg, color-mix(in srgb, var(--r) 26%, var(--d)), var(--d));
     box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.18);
   }
 
   .tirage-glyphe {
-    font-size: 2.4rem;
+    font-size: 2rem;
     line-height: 1;
     opacity: 0.9;
   }
 
-  /* L'illustration remplit la carte du rail : à cette taille et à cette vitesse,
-     une fenêtre d'illustration séparée ne se lirait pas. */
   .tirage-vecteur {
     position: absolute;
     inset: 0;
     width: 100%;
     height: 100%;
-    border-radius: inherit;
+    object-fit: cover;
     opacity: 0.92;
   }
 
   .tirage-gemme {
     position: absolute;
-    top: 9px;
-    left: 9px;
+    top: 6px;
+    left: 6px;
+    z-index: 2;
     line-height: 0;
     filter: drop-shadow(0 2px 5px rgb(0 0 0 / 0.7));
   }
 
   /*
-   * Le repère.
+   * Le repère : un trait horizontal en travers de la colonne.
    *
-   * Deux pointes et un trait, pas un cadre : un cadre autour de la carte
+   * Un trait et deux pointes, pas un cadre : un cadre autour de la carte
    * gagnante donnerait envie de la lire pendant qu'elle défile, alors que tout
    * l'intérêt est de ne pas savoir avant l'arrêt.
    */
   .tirage-repere {
     position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 50%;
+    left: 0;
+    right: 0;
+    top: 50%;
     z-index: 3;
-    width: 2px;
-    margin-left: -1px;
+    height: 2px;
+    margin-top: -1px;
     pointer-events: none;
     background: linear-gradient(
-      180deg,
+      90deg,
       transparent,
       var(--ice) 18%,
       #ffffff 50%,
@@ -498,48 +512,48 @@
   .tirage-repere::after {
     content: '';
     position: absolute;
-    left: 50%;
+    top: 50%;
     width: 0;
     height: 0;
-    margin-left: -7px;
-    border-left: 7px solid transparent;
-    border-right: 7px solid transparent;
+    margin-top: -7px;
+    border-top: 7px solid transparent;
+    border-bottom: 7px solid transparent;
   }
 
   .tirage-repere::before {
-    top: 0;
-    border-top: 9px solid var(--ice);
+    left: 0;
+    border-left: 9px solid var(--ice);
   }
 
   .tirage-repere::after {
-    bottom: 0;
-    border-bottom: 9px solid var(--ice);
+    right: 0;
+    border-right: 9px solid var(--ice);
   }
 
-  /* Les deux fondus latéraux : le rail doit avoir l'air de continuer au-delà du
-     cadre, pas d'y être coupé. */
+  /* Les deux fondus : le rail doit avoir l'air de continuer au-delà de la
+     colonne, pas d'y être coupé. */
   .tirage-voile {
     position: absolute;
-    top: 0;
-    bottom: 0;
+    left: 0;
+    right: 0;
     z-index: 2;
-    width: 15%;
+    height: 18%;
     pointer-events: none;
   }
 
-  .tirage-voile-gauche {
-    left: 0;
-    background: linear-gradient(90deg, var(--bg), transparent);
+  .tirage-voile-haut {
+    top: 0;
+    background: linear-gradient(180deg, var(--bg), transparent);
   }
 
-  .tirage-voile-droite {
-    right: 0;
-    background: linear-gradient(270deg, var(--bg), transparent);
+  .tirage-voile-bas {
+    bottom: 0;
+    background: linear-gradient(0deg, var(--bg), transparent);
   }
 
-  /* À l'arrêt, la carte du repère s'allume. C'est la seule récompense visuelle
-     du rail lui-même : le reste se joue dans la grille qui suit. */
-  .tirage[data-arrete='true'] .tirage-repere {
+  /* À l'arrêt, le repère de la colonne s'allume. C'est la seule récompense
+     visuelle du rail lui-même : le reste se joue dans la grille qui suit. */
+  .tirage-colonne[data-arrete='true'] .tirage-repere {
     animation: tirage-eclat 700ms ease-out;
   }
 
@@ -548,7 +562,7 @@
       box-shadow: 0 0 14px rgb(143 220 255 / 0.75);
     }
     22% {
-      box-shadow: 0 0 90px 26px rgb(230 248 255 / 0.85);
+      box-shadow: 0 0 70px 20px rgb(230 248 255 / 0.85);
     }
     100% {
       box-shadow: 0 0 14px rgb(143 220 255 / 0.75);
