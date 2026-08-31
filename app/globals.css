@@ -408,15 +408,29 @@
     width: 100%;
   }
 
+  /*
+   * Les colonnes ont une largeur fixe, et la grille se centre.
+   *
+   * Elles se partageaient la largeur disponible : à trois rouleaux, chaque
+   * carte montait à 375 pixels de haut et il n'en restait qu'une et demie de
+   * visible — on ne voyait plus une bande défiler mais une carte grandir. Une
+   * largeur fixe donne la même carte quel que soit le nombre de rouleaux, et
+   * deux cartes et demie visibles dans tous les cas.
+   */
   .tirage-scene {
     position: relative;
     display: grid;
-    grid-template-columns: repeat(var(--rouleaux, 5), minmax(0, 1fr));
-    /* Large : les colonnes se touchaient, et deux cartes bord à bord ne se
-       lisent plus comme deux objets mais comme une planche découpée. */
-    gap: 18px;
+    /* Plafonnées, pas figées : `minmax` laisse les colonnes rétrécir si le
+       panneau est trop étroit — cinq colonnes de 160 plus les gouttières font
+       896 pixels, et rien ne garantit qu'on les ait. Le pas d'arrêt suit tout
+       seul, puisque le composant mesure la tuile au lieu de la supposer. */
+    grid-template-columns: repeat(var(--rouleaux, 5), minmax(0, 160px));
+    justify-content: center;
+    /* Deux cartes bord à bord ne se lisent plus comme deux objets mais comme
+       une planche découpée. */
+    gap: 24px;
     width: 100%;
-    max-width: 820px;
+    max-width: 100%;
   }
 
   /*
@@ -429,7 +443,7 @@
   .tirage-piste {
     position: relative;
     overflow: hidden;
-    height: 560px;
+    height: 660px;
     border-radius: var(--r-lg);
     border: 1px solid var(--glass-edge);
     background: linear-gradient(180deg, var(--glass-2) 0%, var(--glass-1) 100%);
@@ -439,17 +453,25 @@
 
   @media (max-width: 900px) {
     .tirage-piste {
-      height: 400px;
+      height: 450px;
+    }
+  }
+
+  @media (max-width: 900px) {
+    .tirage-scene {
+      grid-template-columns: repeat(var(--rouleaux, 5), minmax(0, 108px));
+      gap: 12px;
     }
   }
 
   @media (max-width: 640px) {
     .tirage-scene {
-      gap: 10px;
+      grid-template-columns: repeat(var(--rouleaux, 5), minmax(0, 76px));
+      gap: 8px;
     }
 
     .tirage-piste {
-      height: 300px;
+      height: 340px;
     }
   }
 
@@ -563,25 +585,32 @@
     border-right: 12px solid #ffffff;
   }
 
-  /* Les fondus : les bandes doivent avoir l'air de continuer au-delà de la
-     fenêtre, pas d'y être coupées. */
+  /*
+   * Les fondus : les bandes doivent avoir l'air de continuer au-delà de la
+   * fenêtre, pas d'y être coupées.
+   *
+   * Ils peignaient `--bg` opaque sur un cinquième de la hauteur, en haut comme
+   * en bas — c'est-à-dire deux larges bandes de noir plein posées sur la scène.
+   * C'était ça, le « fond noir ». Ils sont maintenant translucides et ne font
+   * qu'assombrir ce qui passe dessous.
+   */
   .tirage-voile {
     position: absolute;
     right: 0;
     left: 0;
     z-index: 3;
-    height: 20%;
+    height: 16%;
     pointer-events: none;
   }
 
   .tirage-voile-gauche {
     top: 0;
-    background: linear-gradient(180deg, var(--bg) 10%, transparent);
+    background: linear-gradient(180deg, rgb(3 7 17 / 0.72), transparent);
   }
 
   .tirage-voile-droite {
     bottom: 0;
-    background: linear-gradient(0deg, var(--bg) 10%, transparent);
+    background: linear-gradient(0deg, rgb(3 7 17 / 0.72), transparent);
   }
 
   /*

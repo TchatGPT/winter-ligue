@@ -20,15 +20,23 @@ export interface CarteTirage {
 /**
  * Combien de leurres défilent avant la gagnante.
  *
- * Seize, et pas davantage. Chaque tuile est désormais une **vraie carte** — son
- * cadre peint, sa rotation de teinte, son illustration vectorielle — et il faut
- * monter toute la bande avant que la première image ne s'affiche. Cinq rouleaux
- * de vingt tuiles font déjà cent cartes à mettre en page d'un coup.
+ * Dix. C'est le réglage qui commande la douceur, et de loin le plus sensible de
+ * tout le fichier.
  *
- * C'est aussi ce qui règle le rythme : moins de tuiles sur la même durée, c'est
- * un défilement plus lent, donc des hésitations plus lisibles.
+ * Seize cartes à parcourir dans le même temps, c'est une bande qui file à
+ * dix-huit pixels par image, qu'il faut ensuite arrêter — et tout ce que
+ * l'amortissement rattrape à la fin se paie en à-coups. À dix, la pointe tombe à
+ * huit pixels par image et la secousse maximale est divisée par deux.
+ *
+ * Le second effet est qu'il reste du temps pour les hésitations. Sur seize
+ * cartes, la queue d'amortissement mangeait tout et les appâts n'avaient nulle
+ * part où mordre ; sur dix, l'appât final tient une seconde et demie.
+ *
+ * C'est enfin ce qui règle le coût : chaque tuile est une vraie carte — cadre
+ * peint, rotation de teinte, illustration vectorielle — et cinq rouleaux de
+ * quatorze font déjà soixante-dix cartes à mettre en page d'un coup.
  */
-const AVANT = 16;
+const AVANT = 10;
 
 /**
  * Combien restent au-dessus d'elle.
@@ -48,14 +56,14 @@ const APRES = 3;
 const RATIO_CARTE = 2231 / 1514;
 
 /**
- * Durée du défilement de la première piste, en millisecondes.
+ * Durée du défilement du premier rouleau, en millisecondes.
  *
- * Quatre secondes deux pour le premier rouleau, et le dernier s'arrête à 6,3 —
- * la cascade allonge l'ensemble sans allonger chaque rouleau. Le temps de
- * comprendre ce qui défile, il faut que ça dure ; mais cinq rouleaux à cinq
- * secondes chacun feraient une ouverture interminable.
+ * Huit secondes pour le premier, dix et demie pour le dernier : la cascade
+ * allonge l'ensemble sans allonger chaque rouleau. Le temps de comprendre ce qui
+ * défile, il faut que ça dure — et c'est cette durée, plus que tout le reste,
+ * qui laisse la place aux trois hésitations.
  */
-const DUREE = 6000;
+const DUREE = 8000;
 const DUREE_REDUITE = 900;
 
 /**
@@ -67,7 +75,7 @@ const DUREE_REDUITE = 900;
  * arrêt est un évènement, et le dernier rouleau qui tourne encore tient le
  * regard à lui seul.
  */
-const RELAIS = 700;
+const RELAIS = 600;
 
 /**
  * Espace vertical entre deux cartes d'un rouleau, en pixels.
@@ -83,40 +91,45 @@ const GOUTTIERE = 14;
  *
  * Chacune reçoit un leurre de rareté haute, et la bande y ralentit presque
  * jusqu'à l'arrêt avant de repartir. `force` est la fraction de vitesse retirée
- * au creux : à 0,965 il n'en reste qu'un trentième, la bande paraît immobile
- * pendant plus d'une seconde, puis repart et bascule d'une tuile.
+ * au creux, `largeur` son étalement en fraction du trajet.
  *
- * C'est là tout le sujet. Un freinage qu'on remarque à peine ne trompe
- * personne ; il faut y croire pour que la reprise fasse quelque chose. Le
- * dernier creux est donc deux fois plus large et beaucoup plus profond que les
- * deux autres.
+ * ## Le dernier creux est étroit, et c'est contre-intuitif
  *
- * Les trois sont groupées dans le dernier tiers, et ce n'est pas un choix
- * esthétique : plus tôt, le rail avale trop de cartes par seconde pour qu'un
- * freinage se voie. Placés à sept et onze cartes de la fin, les mêmes creux ne
- * rapportaient que soixante millisecondes — invisibles.
+ * Les deux premiers sont larges : loin de l'arrivée la bande va vite, et un
+ * freinage brusque s'y sentirait comme un à-coup plutôt que comme une
+ * hésitation. Le dernier, lui, a été **rétréci** de 0,085 à 0,04. Un creux large
+ * juste avant la fin se confond avec l'amortissement — tout est lent à cet
+ * endroit, donc un ralentissement de plus ne se remarque pas. Simulation à
+ * l'appui : à 0,085 le leurre ne tenait que 800 ms contre 650 pour sa voisine,
+ * un rapport de 1,2 que personne ne perçoit ; à 0,04 il tient **1 533 ms contre
+ * 783**, soit deux fois plus.
+ *
+ * Le chiffre qui compte est le dernier : l'appât s'arrête **plus longtemps que
+ * la gagnante** (1 533 ms contre 900). C'est ce renversement qui fait qu'on y
+ * croit vraiment, et que la reprise fait quelque chose.
  */
 const APPATS = [
-  { avant: 8, force: 0.88, largeur: 0.02 },
-  { avant: 4, force: 0.93, largeur: 0.026 },
-  { avant: 1, force: 0.99, largeur: 0.07 },
+  { avant: 6, force: 0.9, largeur: 0.032 },
+  { avant: 3, force: 0.94, largeur: 0.042 },
+  { avant: 1, force: 0.95, largeur: 0.04 },
 ];
 
 /**
  * L'amortissement.
  *
- * L'exposant valait cinq. Simulation à l'appui, une queue aussi raide donnait
- * une seconde et demie sur la dernière carte et cinquante millisecondes sur
- * chacune des dix précédentes : les appâts n'avaient nulle part où mordre. À
- * 2, le temps se répartit sur les six dernières tuiles. Simulation à l'appui,
- * l'appât final tient alors 467 ms et la gagnante 550 : l'arrêt sur le leurre
- * dure presque aussi longtemps que le vrai, ce qui est exactement ce qu'il faut
- * pour y croire. À 2,6 la gagnante en prenait le double et l'appât passait
- * inaperçu.
+ * L'exposant a valu cinq, puis deux ; il vaut 1,4. Une queue raide concentre
+ * toute la décélération sur la dernière poignée d'images : c'est là que naissent
+ * les à-coups, et c'est aussi ce qui écrase les appâts, puisque tout est déjà
+ * lent quand ils arrivent.
  *
- * En dessous, on devine la gagnante trop tôt et il ne se passe plus rien.
+ * Simulation à l'appui, en passant de 2,4 à 1,4 : la vitesse de pointe tombe de
+ * 14,6 à 8,5 pixels par image et la secousse maximale de 9,7 à 4,9. La bande
+ * ralentit sur presque tout son trajet au lieu de freiner d'un coup à la fin —
+ * c'est exactement ce qu'on appelle un mouvement fluide.
+ *
+ * En dessous, la bande garde sa vitesse jusqu'au bout et l'arrêt claque.
  */
-const amorti = (t: number) => 1 - Math.pow(1 - t, 2);
+const amorti = (t: number) => 1 - Math.pow(1 - t, 1.4);
 
 /** Résolution de la table de gauchissement. */
 const PAS_TABLE = 600;
@@ -152,8 +165,16 @@ function integre(centres: number[]): Float64Array {
       const d = (u - centres[k]) / a.largeur;
       poids -= a.force * Math.exp(-d * d);
     }
-    // Jamais nul : un poids nul immobiliserait le rail pour de bon.
-    cumul += Math.max(0.05, poids);
+    /*
+     * Jamais nul : un poids nul immobiliserait le rail pour de bon.
+     *
+     * Mais pas trop haut non plus. À 0,05, le plancher rognait le fond des
+     * creux les plus profonds — la bande les traversait plus vite que demandé et
+     * les hésitations perdaient un tiers de leur durée sans que rien ne le
+     * signale. C'est le genre de garde-fou qui fausse silencieusement le réglage
+     * qu'il protège.
+     */
+    cumul += Math.max(0.02, poids);
     table[i] = cumul;
   }
   for (let i = 0; i <= PAS_TABLE; i += 1) table[i] /= cumul;
@@ -305,20 +326,33 @@ function Piste({
 
     const hauteur = boite.clientHeight;
     /*
-     * La hauteur d'une tuile se déduit de la largeur de la colonne.
+     * La hauteur d'une tuile se déduit de la largeur **mesurée** de la tuile.
+     *
+     * Pas de celle du rouleau : le rail a des marges intérieures pour laisser
+     * respirer le halo, et une carte y est plus étroite que sa colonne. Déduire
+     * le pas de la colonne le surestimait de vingt pixels par tuile, soit
+     * l'équivalent d'une carte entière au bout de seize — le rail se serait
+     * arrêté à côté.
      *
      * Une tuile est une vraie carte, donc son rapport est fixé par le cadre
-     * peint : le style n'a rien à décider, et les deux côtés ne peuvent pas
-     * diverger. Une hauteur fixée des deux côtés l'a déjà fait, et le rail
-     * s'arrêtait alors deux tuiles à côté de la bonne.
+     * peint : le style n'a rien à décider au-delà de la largeur, et les deux
+     * côtés ne peuvent pas diverger sur la hauteur. Une hauteur fixée des deux
+     * côtés l'a déjà fait, et le rail s'arrêtait deux tuiles trop loin.
      */
-    const hTuile = boite.clientWidth * RATIO_CARTE;
+    const tuile = el.firstElementChild;
+    const large = tuile ? tuile.getBoundingClientRect().width : boite.clientWidth;
+    const hTuile = large * RATIO_CARTE;
     const pas = hTuile + GOUTTIERE;
 
-    // L'arrivée est décalée dans la tuile, jamais pile au centre : une bande qui
-    // s'immobilise exactement sur l'axe se lit comme une grille qui se replace,
-    // pas comme un objet lancé qui s'arrête.
-    const dedans = (Math.random() - 0.5) * pas * 0.24;
+    /*
+     * L'arrivée tombe pile au centre.
+     *
+     * Un décalage aléatoire avait été introduit pour que l'alignement ne soit pas
+     * rigide au pixel près. Avec de vraies cartes, l'effet s'inverse : une carte
+     * qui dépasse du repère se lit comme un arrêt raté, pas comme un objet lancé.
+     * Ce qui vaut pour des jetons ne vaut pas pour un objet qu'on veut regarder.
+     */
+    const dedans = 0;
 
     /*
      * La bande descend, donc elle part d'en haut et revient.
