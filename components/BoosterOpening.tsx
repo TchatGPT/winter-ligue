@@ -5,7 +5,6 @@ import { BoosterPack3D } from '@/components/BoosterPack3D';
 import { aUneIllustration } from '@/components/CardArt';
 import { CardDetailModal, type CarteDetail } from '@/components/CardDetailModal';
 import { Tirage } from '@/components/Tirage';
-import { bruitDeDechirure, bruitDeSelection } from '@/components/bruitage';
 import { CardTile, Notice, RarityChip, flakes, rarityMeta } from '@/components/ui';
 import { boosterArt, boosterSize } from '@/lib/domain/catalog';
 import { atLeastOnePercent, rarityPercent } from '@/lib/domain/rules';
@@ -108,7 +107,6 @@ export function BoosterOpening({
   const choisir = useCallback((id: string) => {
     setSelected((actuel) => {
       if (actuel === id) return actuel;
-      bruitDeSelection();
       return id;
     });
   }, []);
@@ -441,7 +439,6 @@ export function BoosterOpening({
                               // double-clic hors connexion ou à découvert partait
                               // en requête vouée à revenir en erreur.
                               if (!actif || busy || !connected || !shopOpen || !affordable) return;
-                              bruitDeDechirure();
                               void open();
                             }}
                           >

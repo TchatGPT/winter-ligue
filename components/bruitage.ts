@@ -1,6 +1,15 @@
 /**
  * Les bruits des sachets, synthétisés.
  *
+ * ## Ce module n'est appelé nulle part
+ *
+ * Tous les sons ont été retirés de l'ouverture sur demande. Le module est
+ * conservé plutôt que supprimé parce qu'il porte des décisions coûteuses à
+ * refaire — le choix des deux notes à l'oreille parmi dix candidates, la
+ * descente du cran sous la zone sensible de l'audition, le bus à compresseur qui
+ * empêchait l'écrêtage quand quatre sons se superposaient. Le rebrancher, c'est
+ * un import.
+ *
  * Pas de fichier audio. Deux sinus et quelques enveloppes tiennent en trente
  * lignes, là où des échantillons demanderaient des fichiers à héberger, des
  * allers-retours réseau et un préchargement pour que le son ne traîne pas

@@ -1,14 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { aUneIllustration, CardArt } from '@/components/CardArt';
 import { CardFrame } from '@/components/CardFrame';
-import {
-  bruitDeCran,
-  bruitDeGain,
-  bruitDeRoulement,
-  bruitDeTension,
-} from '@/components/bruitage';
 import { RARITY_META } from '@/lib/domain/catalog';
 import { RARITY_ORDER } from '@/lib/domain/rules';
 import type { Rarity } from '@/lib/domain/types';
@@ -27,12 +20,15 @@ export interface CarteTirage {
 /**
  * Combien de leurres défilent avant la gagnante.
  *
- * Vingt-six : chaque tuile porte une illustration vectorielle d'une quinzaine
- * de tracés, et il faut monter toute la bande avant que la première image ne
- * s'affiche. C'est aussi ce qui règle le rythme — moins de tuiles sur la même
- * durée, c'est un défilement plus lent, donc des hésitations plus lisibles.
+ * Seize, et pas davantage. Chaque tuile est désormais une **vraie carte** — son
+ * cadre peint, sa rotation de teinte, son illustration vectorielle — et il faut
+ * monter toute la bande avant que la première image ne s'affiche. Cinq rouleaux
+ * de vingt tuiles font déjà cent cartes à mettre en page d'un coup.
+ *
+ * C'est aussi ce qui règle le rythme : moins de tuiles sur la même durée, c'est
+ * un défilement plus lent, donc des hésitations plus lisibles.
  */
-const AVANT = 26;
+const AVANT = 16;
 
 /**
  * Combien restent au-dessus d'elle.
@@ -42,8 +38,14 @@ const AVANT = 26;
  */
 const APRES = 3;
 
-/** Combien de tuiles tiennent dans la hauteur de la fenêtre. */
-const VISIBLES = 3.2;
+/**
+ * Le rapport hauteur/largeur d'une carte, celui du cadre peint.
+ *
+ * C'est lui qui donne la hauteur d'une tuile, à partir de la largeur mesurée de
+ * la colonne. Le nombre de cartes visibles en découle au lieu d'être imposé :
+ * les deux ne peuvent pas diverger.
+ */
+const RATIO_CARTE = 2231 / 1514;
 
 /**
  * Durée du défilement de la première piste, en millisecondes.
@@ -53,7 +55,7 @@ const VISIBLES = 3.2;
  * comprendre ce qui défile, il faut que ça dure ; mais cinq rouleaux à cinq
  * secondes chacun feraient une ouverture interminable.
  */
-const DUREE = 4200;
+const DUREE = 6000;
 const DUREE_REDUITE = 900;
 
 /**
@@ -65,20 +67,16 @@ const DUREE_REDUITE = 900;
  * arrêt est un évènement, et le dernier rouleau qui tourne encore tient le
  * regard à lui seul.
  */
-const RELAIS = 520;
+const RELAIS = 700;
 
 /**
- * Gouttière horizontale entre deux tuiles, en pixels.
+ * Espace vertical entre deux cartes d'un rouleau, en pixels.
  *
- * Zéro : les tuiles sont jointives, découpées par un liseré et non par un vide.
- * C'est la disposition des sites d'ouverture, et elle tient à une raison — une
- * bande continue défile, des tuiles espacées glissent. Le vide entre deux objets
- * casse la lecture du mouvement.
- *
- * Doit rester d'accord avec le `gap` de `.tirage-rail` : c'est de ce pas que
- * le composant déduit la position d'arrêt.
+ * Doit rester d'accord avec l'espacement de `.tirage-rail` : c'est de ce pas
+ * que le composant déduit la position d'arrêt, et un écart de quelques pixels
+ * décalerait l'arrêt d'une carte entière au bout de seize.
  */
-const GOUTTIERE = 0;
+const GOUTTIERE = 14;
 
 /**
  * Les positions où le rail hésite, en index de carte avant la gagnante.
@@ -99,9 +97,9 @@ const GOUTTIERE = 0;
  * rapportaient que soixante millisecondes — invisibles.
  */
 const APPATS = [
-  { avant: 7, force: 0.9, largeur: 0.016 },
-  { avant: 4, force: 0.93, largeur: 0.02 },
-  { avant: 1, force: 0.99, largeur: 0.055 },
+  { avant: 8, force: 0.88, largeur: 0.02 },
+  { avant: 4, force: 0.93, largeur: 0.026 },
+  { avant: 1, force: 0.99, largeur: 0.07 },
 ];
 
 /**
@@ -228,17 +226,11 @@ function Piste({
   cartes,
   gagnante,
   duree,
-  cran,
-  tension,
   onFini,
 }: {
   cartes: CarteTirage[];
   gagnante: CarteTirage;
   duree: number;
-  /** Horodatage du dernier cran, partagé par tous les rouleaux. */
-  cran: React.RefObject<number>;
-  /** Horodatage de la dernière montée de tension, partagé lui aussi. */
-  tension: React.RefObject<number>;
   onFini: () => void;
 }) {
   const cadre = useRef<HTMLDivElement>(null);
@@ -313,16 +305,15 @@ function Piste({
 
     const hauteur = boite.clientHeight;
     /*
-     * La hauteur d'une tuile est déduite de celle de la fenêtre, et posée en
-     * variable CSS.
+     * La hauteur d'une tuile se déduit de la largeur de la colonne.
      *
-     * C'est ce qui garantit que le style et le calcul d'arrêt parlent de la même
-     * chose. Une hauteur fixée des deux côtés a déjà divergé une fois, et le
-     * rail s'arrêtait alors deux tuiles à côté de la bonne.
+     * Une tuile est une vraie carte, donc son rapport est fixé par le cadre
+     * peint : le style n'a rien à décider, et les deux côtés ne peuvent pas
+     * diverger. Une hauteur fixée des deux côtés l'a déjà fait, et le rail
+     * s'arrêtait alors deux tuiles à côté de la bonne.
      */
-    const hTuile = hauteur / VISIBLES - GOUTTIERE;
+    const hTuile = boite.clientWidth * RATIO_CARTE;
     const pas = hTuile + GOUTTIERE;
-    el.style.setProperty('--h-tuile', `${hTuile.toFixed(1)}px`);
 
     // L'arrivée est décalée dans la tuile, jamais pile au centre : une bande qui
     // s'immobilise exactement sur l'axe se lit comme une grille qui se replace,
@@ -353,27 +344,7 @@ function Piste({
      * moment où le rail franchit le dernier appât — le joueur entend que ça
      * tourne bien avant de voir sur quoi.
      */
-    const rang = RARITY_ORDER[gagnante.rarity as Rarity] ?? 0;
-    /*
-     * Une seule montée de tension pour toute l'ouverture.
-     *
-     * Cinq rouleaux qui la déclenchent chacun de leur côté ne font pas cinq fois
-     * plus de tension : ils font une nappe continue, et une nappe continue
-     * n'annonce plus rien. Le premier rouleau qui y a droit la réserve pour tout
-     * le monde.
-     */
-    const minuterie =
-      rang >= 4
-        ? setTimeout(() => {
-            const maintenant = performance.now();
-            if (maintenant - tension.current < 2_000) return;
-            tension.current = maintenant;
-            bruitDeTension();
-          }, Math.max(0, total - 800))
-        : null;
-
     let debut = 0;
-    let dernier = -1;
     let precedentX = 0;
     let precedentFlou = -1;
     let trame = 0;
@@ -391,17 +362,6 @@ function Piste({
       }
       precedentX = x;
 
-      const index = Math.round((hauteur / 2 - (yDebut + x) - hTuile / 2) / pas);
-      if (index !== dernier) {
-        dernier = index;
-        // Le cran est étranglé à l'échelle de toutes les pistes : cinq rails qui
-        // sonnent chacun pour soi font un bourdonnement, pas un rythme.
-        if (temps - cran.current > 55) {
-          cran.current = temps;
-          bruitDeCran();
-        }
-      }
-
       if (t < 1) {
         trame = requestAnimationFrame(image);
         return;
@@ -409,7 +369,6 @@ function Piste({
       el.style.filter = '';
       boite.dataset.arrete = 'true';
       setArrete(true);
-      bruitDeGain(rang);
       fini.current();
     };
 
@@ -430,9 +389,8 @@ function Piste({
     return () => {
       cancelAnimationFrame(amorce);
       cancelAnimationFrame(trame);
-      if (minuterie) clearTimeout(minuterie);
     };
-  }, [duree, cran, tension, gagnante.rarity]);
+  }, [duree]);
 
   const meta = RARITY_META[gagnante.rarity as Rarity] ?? RARITY_META.C;
 
@@ -448,35 +406,30 @@ function Piste({
         {bande.map((c, i) => {
           const m = RARITY_META[c.rarity as Rarity] ?? RARITY_META.C;
           return (
+            /*
+             * La tuile est la carte elle-même, dans son cadre peint.
+             *
+             * Elle a longtemps été une pastille — un disque d'illustration dans
+             * un anneau — pour tenir la cadence. Mais on ouvre un booster pour
+             * voir passer des cartes, pas des logos : la pastille ne disait ni
+             * ce qu'on frôlait ni ce qu'on ratait. Le nombre de leurres a été
+             * divisé pour compenser le coût.
+             */
             <div
               key={`${c.cardId}-${i}`}
               className={`tirage-carte ${i === APRES ? 'tirage-carte-gagnante' : ''}`}
               data-rang={RARITY_ORDER[c.rarity as Rarity] ?? 0}
-              style={{ ['--r' as string]: m.color, ['--d' as string]: m.deep }}
+              style={{ ['--r' as string]: m.color }}
               aria-hidden={i !== APRES}
             >
-              {/* La barre de rareté, en tête de tuile. Dans une colonne
-                  étroite, c'est elle qu'on voit passer : le nom et le palier ne
-                  se lisent qu'une fois la bande ralentie. */}
-              <span className="tirage-barre" aria-hidden="true" />
-
-              {/* L'objet dans son anneau pointillé. Le disque isole
-                  l'illustration du dégradé de la tuile : sans lui, une scène
-                  sombre sur un fond sombre n'a plus de contour. */}
-              <span className="tirage-rond">
-                {aUneIllustration(c.cardId) ? (
-                  <CardArt cardId={c.cardId} className="tirage-vecteur" />
-                ) : (
-                  <span className="tirage-glyphe">{c.glyph}</span>
-                )}
-                <span className="tirage-anneau" aria-hidden="true" />
-              </span>
-
-              {/* Le nom, puis le palier. Sans le nom, une bande d'illustrations
-                  vues à cent pixels n'est qu'une suite de taches colorées : on ne
-                  reconnaît pas ce qui passe, donc on n'espère rien. */}
-              <span className="tirage-nom">{c.name}</span>
-              <span className="tirage-palier">{m.label}</span>
+              <CardFrame
+                cardId={c.cardId}
+                name={c.name}
+                rarity={c.rarity}
+                glyph={c.glyph}
+                power={c.power}
+                nature={c.nature}
+              />
             </div>
           );
         })}
@@ -498,20 +451,6 @@ function Piste({
           gradient de récompense, et il ne vaut que s'il reste rare. */}
       {arrete && (RARITY_ORDER[gagnante.rarity as Rarity] ?? 0) >= 3 && (
         <span className="tirage-rayons" aria-hidden="true" />
-      )}
-
-      {arrete && (
-        <div className="tirage-gagnee">
-          <CardFrame
-            cardId={gagnante.cardId}
-            name={gagnante.name}
-            description={gagnante.description}
-            rarity={gagnante.rarity}
-            glyph={gagnante.glyph}
-            power={gagnante.power}
-            nature={gagnante.nature}
-          />
-        </div>
       )}
     </div>
   );
@@ -558,18 +497,13 @@ export function Tirage({
   gagnantes: CarteTirage[];
   onFini: () => void;
 }) {
-  const cran = useRef(0);
-  const tension = useRef(0);
+
   const restants = useRef(gagnantes.length);
 
   const fini = useRef(onFini);
   useEffect(() => {
     fini.current = onFini;
   });
-
-  // Le roulement couvre toute l'ouverture. Un par rouleau ne ferait pas un
-  // grondement cinq fois plus fort, il ferait de la boue.
-  useEffect(() => bruitDeRoulement(), []);
 
   const unDeMoins = () => {
     restants.current -= 1;
@@ -590,8 +524,6 @@ export function Tirage({
             cartes={cartes}
             gagnante={g}
             duree={DUREE + i * RELAIS}
-            cran={cran}
-            tension={tension}
             onFini={unDeMoins}
           />
         ))}
