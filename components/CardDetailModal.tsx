@@ -13,8 +13,9 @@ export interface CarteDetail {
   description: string;
   rarity: string;
   glyph: string;
-  power: number;
-  nature: 'bonus' | 'malus';
+  /** Absents pour une carte de collection, qui ne se joue pas. */
+  power?: number;
+  nature?: 'bonus' | 'malus';
   isNew?: boolean;
 }
 
@@ -123,21 +124,28 @@ export function CardDetailModal({
               {carte.description}
             </div>
 
+            {/* Puissance et nature n'existent que pour une carte à effet. Les
+                afficher à vide pour une carte Joueur ou Moment lui prêterait des
+                caractéristiques de jeu qu'elle n'a pas. */}
             <div className="mt-4">
-              <Ligne label="Puissance">
-                <span className="num" style={{ color: meta.color }}>
-                  {carte.power}
-                </span>{' '}
-                <span className="text-faint">/ 100</span>
-              </Ligne>
+              {carte.power !== undefined && (
+                <Ligne label="Puissance">
+                  <span className="num" style={{ color: meta.color }}>
+                    {carte.power}
+                  </span>{' '}
+                  <span className="text-faint">/ 100</span>
+                </Ligne>
+              )}
               <Ligne label="Rareté">
                 <span style={{ color: meta.color }}>{meta.label}</span>
               </Ligne>
-              <Ligne label="Nature">
-                <span className={carte.nature === 'malus' ? 'text-danger' : 'text-ice'}>
-                  {carte.nature === 'malus' ? 'Malus' : 'Bonus'}
-                </span>
-              </Ligne>
+              {carte.nature !== undefined && (
+                <Ligne label="Nature">
+                  <span className={carte.nature === 'malus' ? 'text-danger' : 'text-ice'}>
+                    {carte.nature === 'malus' ? 'Malus' : 'Bonus'}
+                  </span>
+                </Ligne>
+              )}
               <Ligne label="Numéro">
                 <span className="num text-faint">{cardNumber(carte.cardId)}</span>
               </Ligne>

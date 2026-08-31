@@ -6,6 +6,7 @@ import { getStore } from '@/lib/db/store';
 import { CARDS } from '@/lib/domain/catalog';
 import { ECONOMY } from '@/lib/domain/rules';
 import { resolvedBoosters } from '@/lib/services/boosters';
+import { allCards } from '@/lib/services/collection';
 import { statsForCard } from '@/lib/services/market';
 
 export const dynamic = 'force-dynamic';
@@ -24,12 +25,22 @@ export default async function BoostersPage() {
   const session = await getSession();
   const playerId = playerIdOf(session);
 
-  const { balance, shopOpen, quotes, catalogueBoosters } = await getStore().read((db) => ({
+  const { balance, shopOpen, quotes, catalogueBoosters, pool } = await getStore().read((db) => ({
     balance: playerId ? (db.players.find((p) => p.id === playerId)?.snowflakes ?? null) : null,
     shopOpen: db.config.shopOpen,
     // Prix et taux tels que l'administration les a réglés, pas ceux du
     // catalogue : la page doit annoncer ce que le serveur appliquera.
     catalogueBoosters: resolvedBoosters(db),
+    /*
+     * Le pool **entier** : cartes à effet, cartes Joueur et cartes Moment.
+     *
+     * Un booster tire ses emplacements de collection dans `db.collectibles`,
+     * qui vit en base et n'est donc pas dans le catalogue figé. Envoyer le seul
+     * catalogue laissait le client sans rien à afficher pour ces cartes-là : la
+     * révélation montrait des cadres vides, sans nom ni illustration, pour des
+     * cartes qui existaient pourtant bel et bien.
+     */
+    pool: allCards(db),
     // Cote de chaque carte, pour que le catalogue affiche une valeur de marché.
     quotes: Object.fromEntries(
       CARDS.map((c) => [c.id, statsForCard(db, c.id).lastPrice]),
@@ -52,7 +63,7 @@ export default async function BoostersPage() {
 
   // Envoyé au client pour afficher les cartes tirées sans second aller-retour.
   const catalog: Record<string, CatalogCard> = Object.fromEntries(
-    CARDS.map((c) => [
+    pool.map((c) => [
       c.id,
       {
         name: c.name,
@@ -60,8 +71,10 @@ export default async function BoostersPage() {
         rarity: c.rarity,
         glyph: c.glyph,
         description: c.description,
-        nature: c.nature,
-        power: c.power,
+        // Une carte de collection n'a ni nature ni puissance : elle ne se joue
+        // pas. Mettre zéro afficherait une puissance qu'elle n'a pas.
+        nature: c.nature ?? undefined,
+        power: c.power ?? undefined,
       },
     ]),
   );

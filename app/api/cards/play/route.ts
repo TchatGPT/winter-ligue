@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { toResponse } from '@/lib/api/errors';
 import { fail, guard, ok } from '@/lib/api/respond';
+import { playerIdOf } from '@/lib/auth/session';
 import { playCardSchema } from '@/lib/api/schemas';
 import { getStore } from '@/lib/db/store';
 import { LIMITS } from '@/lib/security/ratelimit';
@@ -25,13 +26,16 @@ export async function POST(request: Request): Promise<NextResponse> {
     schema: playCardSchema,
   });
   if (!g.ok) return g.response;
-  if (g.session!.role !== 'joueur') {
+  // L'identité, pas le rôle : un administrateur qui joue reste un joueur.
+  // Seule la session de secours, qui n'a aucun compte derrière, est écartée.
+  const joueurId = playerIdOf(g.session);
+  if (!joueurId) {
     return fail('NON_AUTORISE', 'Seul un joueur peut jouer une carte.');
   }
 
   try {
     const result = await getStore().transaction((db) =>
-      playCard(db, g.session!.sub, {
+      playCard(db, joueurId, {
         cardInstanceId: g.body.cardInstanceId,
         gameId: g.body.gameId,
         targetPlayerId: g.body.targetPlayerId,

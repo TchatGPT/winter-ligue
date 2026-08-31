@@ -15,8 +15,9 @@ export interface CarteTirage {
   description: string;
   rarity: string;
   glyph: string;
-  power: number;
-  nature: 'bonus' | 'malus';
+  /** Absents pour une carte de collection, qui ne se joue pas. */
+  power?: number;
+  nature?: 'bonus' | 'malus';
 }
 
 /**

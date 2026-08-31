@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { toResponse } from '@/lib/api/errors';
 import { fail, guard, ok } from '@/lib/api/respond';
+import { playerIdOf } from '@/lib/auth/session';
 import { cancelListingSchema, createListingSchema } from '@/lib/api/schemas';
 import { getStore } from '@/lib/db/store';
 import { LIMITS } from '@/lib/security/ratelimit';
@@ -18,13 +19,16 @@ export async function POST(request: Request): Promise<NextResponse> {
     schema: createListingSchema,
   });
   if (!g.ok) return g.response;
-  if (g.session!.role !== 'joueur') {
+  // L'identité, pas le rôle : un administrateur qui joue reste un joueur.
+  // Seule la session de secours, qui n'a aucun compte derrière, est écartée.
+  const joueurId = playerIdOf(g.session);
+  if (!joueurId) {
     return fail('NON_AUTORISE', 'Seul un joueur peut vendre une carte.');
   }
 
   try {
     const listing = await getStore().transaction((db) => {
-      const created = createListing(db, g.session!.sub, {
+      const created = createListing(db, joueurId, {
         cardInstanceId: g.body.cardInstanceId,
         startPrice: g.body.startPrice,
         buyoutPrice: g.body.buyoutPrice,
@@ -48,9 +52,12 @@ export async function DELETE(request: Request): Promise<NextResponse> {
   });
   if (!g.ok) return g.response;
 
+  const joueurId = playerIdOf(g.session);
+  if (!joueurId) return fail('NON_AUTORISE', 'Seul un joueur peut retirer une vente.');
+
   try {
     const listing = await getStore().transaction((db) =>
-      cancelListing(db, g.session!.sub, g.body.listingId),
+      cancelListing(db, joueurId, g.body.listingId),
     );
     return ok({ id: listing.id, status: listing.status });
   } catch (error) {

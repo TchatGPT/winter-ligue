@@ -23,8 +23,9 @@ export interface CatalogCard {
   rarity: string;
   glyph: string;
   description: string;
-  nature: 'bonus' | 'malus';
-  power: number;
+  /** Absents pour une carte de collection, qui ne se joue pas. */
+  nature?: 'bonus' | 'malus';
+  power?: number;
 }
 
 interface Pulled extends CatalogCard {
