@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { aUneIllustration, CardArt } from '@/components/CardArt';
 import { CardFrame } from '@/components/CardFrame';
-import { RarityIcon } from '@/components/RarityIcon';
 import {
   bruitDeCran,
   bruitDeGain,
@@ -59,13 +58,17 @@ const DUREE_REDUITE = 900;
 const RELAIS = 900;
 
 /**
- * Gouttière horizontale entre deux cartes, en pixels.
+ * Gouttière horizontale entre deux tuiles, en pixels.
  *
- * Huit pixels pour des cartes de cent vingt : la bande se lisait comme une
- * grille collée, sans respiration. Le double sépare les cartes sans qu'on cesse
- * de les voir défiler ensemble.
+ * Zéro : les tuiles sont jointives, découpées par un liseré et non par un vide.
+ * C'est la disposition des sites d'ouverture, et elle tient à une raison — une
+ * bande continue défile, des tuiles espacées glissent. Le vide entre deux objets
+ * casse la lecture du mouvement.
+ *
+ * Doit rester d'accord avec le `gap` de `.tirage-rail` : c'est de ce pas que
+ * le composant déduit la position d'arrêt.
  */
-const GOUTTIERE = 18;
+const GOUTTIERE = 0;
 
 /** Rapport hauteur/largeur d'une carte du rail — celui du cadre peint. */
 const RATIO = 1.4;
@@ -381,21 +384,31 @@ function Piste({
               style={{ ['--r' as string]: m.color, ['--d' as string]: m.deep }}
               aria-hidden={i !== AVANT}
             >
-              {aUneIllustration(c.cardId) ? (
-                <CardArt cardId={c.cardId} className="tirage-vecteur" />
-              ) : (
-                <span className="tirage-glyphe">{c.glyph}</span>
-              )}
-              <span className="tirage-gemme">
-                <RarityIcon rarity={c.rarity} taille={14} />
+              {/* La pilule, en haut à gauche. Elle ne dit rien que la couleur
+                  ne dise déjà — c'est justement son rôle : une marque qu'on
+                  repère du coin de l'œil quand la bande file trop vite pour
+                  qu'on lise le palier écrit en face. */}
+              <span className="tirage-pilule" aria-hidden="true" />
+              <span className="tirage-palier">{m.label}</span>
+
+              {/* L'objet dans son anneau pointillé. Le disque isole
+                  l'illustration du dégradé de la tuile : sans lui, une scène
+                  sombre sur un fond sombre n'a plus de contour. */}
+              <span className="tirage-rond">
+                {aUneIllustration(c.cardId) ? (
+                  <CardArt cardId={c.cardId} className="tirage-vecteur" />
+                ) : (
+                  <span className="tirage-glyphe">{c.glyph}</span>
+                )}
+                <span className="tirage-anneau" aria-hidden="true" />
               </span>
-              {/* Le nom, en pied de carte.
-                  Sans lui, une bande d'illustrations vues à cent pixels n'est
-                  qu'une suite de taches colorées : on ne reconnaît pas ce qui
-                  passe, donc on n'espère rien. C'est ce que montrent tous les
-                  sites d'ouverture, et c'est ce qui manquait le plus. */}
+
+              {/* Le nom, puis la puissance. Sans le nom, une bande
+                  d'illustrations vues à cent pixels n'est qu'une suite de taches
+                  colorées : on ne reconnaît pas ce qui passe, donc on n'espère
+                  rien. */}
               <span className="tirage-nom">{c.name}</span>
-              <span className="tirage-barre" aria-hidden="true" />
+              {c.power !== undefined && <span className="tirage-valeur num">{c.power}</span>}
             </div>
           );
         })}

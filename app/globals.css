@@ -440,8 +440,9 @@
     display: flex;
     height: 100%;
     /* Doit rester d'accord avec GOUTTIERE dans components/Tirage.tsx : c'est de
-       ce pas que le composant déduit la position d'arrêt. */
-    gap: 18px;
+       ce pas que le composant déduit la position d'arrêt. Zéro : les tuiles sont
+       jointives, séparées par un liseré et non par un vide. */
+    gap: 0;
     width: max-content;
     /* Promu sur sa propre couche : il se déplace à chaque image, et sans
        promotion le navigateur repeindrait la bande entière à chaque fois. */
@@ -449,128 +450,155 @@
   }
 
   /*
-   * Une carte du rail.
+   * Une tuile du rail.
    *
-   * Volontairement pauvre. Elles sont plus de cent cinquante à défiler d'un coup
-   * sur cinq pistes : y mettre le cadre peint, avec son image et ses filtres de
-   * teinte, effondrerait la cadence au moment précis où elle compte le plus.
+   * Calquée sur la capture : un dégradé qui monte de la couleur de rareté vers
+   * le noir, une pilule en haut à gauche, le palier écrit en haut à droite,
+   * l'objet dans un anneau pointillé, le nom et la valeur en pied.
+   *
+   * Volontairement pauvre en rendu. Elles sont plus de cent cinquante à défiler
+   * d'un coup sur cinq pistes : y mettre le cadre peint, avec son image et ses
+   * filtres de teinte, effondrerait la cadence au moment précis où elle compte.
    */
   .tirage-carte {
     position: relative;
-    display: grid;
-    place-items: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     flex: 0 0 auto;
     height: 100%;
     aspect-ratio: 1 / 1.4;
-    border-radius: 10px;
+    padding: 8px 8px 10px;
     overflow: hidden;
-    border: 1px solid color-mix(in srgb, var(--r) 55%, transparent);
-    background: linear-gradient(158deg, color-mix(in srgb, var(--r) 26%, var(--d)), var(--d));
-    box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / 0.2),
-      inset 0 -28px 30px -20px color-mix(in srgb, var(--r) 60%, transparent);
+    /*
+     * La teinte monte du bas et s'éteint à mi-hauteur.
+     *
+     * Elle occupe la moitié basse et pas toute la tuile : une tuile teintée de
+     * bout en bout se lit comme un bloc de couleur, et six blocs côte à côte
+     * redeviennent le papier peint qu'on cherchait à éviter.
+     */
+    background:
+      linear-gradient(
+        0deg,
+        color-mix(in srgb, var(--r) 26%, transparent) 0%,
+        transparent 55%
+      ),
+      #05070c;
     transition:
       opacity 0.45s ease,
       filter 0.45s ease;
   }
 
-  /*
-   * Le nom, en pied de carte.
-   *
-   * Sans lui, une bande d'illustrations vues à cent pixels n'est qu'une suite de
-   * taches colorées : on ne reconnaît pas ce qui passe, donc on n'espère rien.
-   * Il est posé sur un fond sombre plutôt que sur l'illustration, faute de quoi
-   * il devient illisible sur les scènes claires.
-   */
-  .tirage-nom {
+  /* Le trait qui sépare deux tuiles. Les tuiles sont jointives : c'est ce fin
+     liseré, et non une gouttière, qui les découpe. */
+  .tirage-carte + .tirage-carte {
+    box-shadow: inset 1px 0 0 rgb(255 255 255 / 0.06);
+  }
+
+  .tirage-pilule {
     position: absolute;
-    right: 0;
-    bottom: 4px;
-    left: 0;
-    z-index: 2;
-    padding: 2px 5px;
+    top: 10px;
+    left: 10px;
+    width: 26px;
+    height: 7px;
+    border-radius: 999px;
+    background: var(--r);
+    box-shadow: 0 0 10px color-mix(in srgb, var(--r) 75%, transparent);
+  }
+
+  .tirage-palier {
+    position: absolute;
+    top: 6px;
+    right: 9px;
+    max-width: 66%;
     overflow: hidden;
-    background: linear-gradient(0deg, rgb(3 8 16 / 0.92), rgb(3 8 16 / 0));
-    font-family: var(--font-display);
-    font-size: 0.625rem;
-    font-weight: 900;
-    line-height: 1.15;
-    letter-spacing: 0.02em;
-    text-align: center;
+    font-size: 0.6875rem;
+    line-height: 1.5;
     white-space: nowrap;
     text-overflow: ellipsis;
-    color: var(--frost);
+    color: var(--r);
   }
 
   /*
-   * La barre de rareté, en haut de la tuile.
+   * Le disque de l'objet, et son anneau pointillé.
    *
-   * En haut et non en bas : c'est la convention des sites d'ouverture, et elle
-   * a une raison. Le nom occupe le pied de la carte ; une barre juste en dessous
-   * se lit comme le soulignement du nom, pas comme la marque d'un palier. En
-   * tête, elle coiffe la tuile entière et se voit même quand le nom est coupé.
+   * L'anneau est un dégradé conique répété, découpé en couronne par un masque.
+   * Une bordure pointillée native aurait été plus courte à écrire et fausse : les tirets
+   * du navigateur suivent le périmètre sans jamais se refermer proprement, et
+   * leur nombre change avec le diamètre — sur six tuiles côte à côte, la
+   * différence se voit.
    */
-  .tirage-barre {
-    position: absolute;
-    top: 0;
-    right: 0;
-    left: 0;
-    z-index: 3;
-    height: 4px;
-    background: var(--r);
-    box-shadow: 0 0 12px color-mix(in srgb, var(--r) 85%, transparent);
-  }
-
-  /*
-   * L'aura de rareté, derrière l'illustration.
-   *
-   * C'est la signature de ces sites : sur un fond quasi noir, chaque objet
-   * baigne dans une lueur de sa couleur. À pleine vitesse on ne lit ni les noms
-   * ni les cadres — on ne voit que des halos passer, et c'est ce qui fait
-   * espérer quand un halo doré traverse le champ.
-   */
-  .tirage-carte::before {
-    content: '';
-    position: absolute;
-    inset: 12% 8% 22%;
-    z-index: 0;
+  .tirage-rond {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 74%;
+    aspect-ratio: 1;
+    margin-top: 14%;
     border-radius: 50%;
-    background: radial-gradient(ellipse at center, var(--r) 0%, transparent 68%);
-    opacity: 0.32;
-    filter: blur(10px);
-    pointer-events: none;
+    overflow: hidden;
+    background: radial-gradient(circle, rgb(255 255 255 / 0.06), transparent 70%);
   }
 
-  .tirage-glyphe {
-    font-size: 2rem;
-    line-height: 1;
-    opacity: 0.9;
+  .tirage-anneau {
+    position: absolute;
+    inset: 0;
+    background: repeating-conic-gradient(
+      from 0deg,
+      var(--r) 0deg 3.2deg,
+      transparent 3.2deg 7.2deg
+    );
+    mask-image: radial-gradient(
+      circle,
+      transparent 0 46%,
+      #000 47% 50%,
+      transparent 51% 100%
+    );
+    filter: drop-shadow(0 0 6px color-mix(in srgb, var(--r) 60%, transparent));
   }
 
   .tirage-vecteur {
     position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
+    inset: 8%;
+    width: 84%;
+    height: 84%;
+    border-radius: 50%;
     object-fit: cover;
   }
 
-  .tirage-gemme {
-    position: absolute;
-    top: 5px;
-    left: 5px;
-    z-index: 2;
-    line-height: 0;
-    filter: drop-shadow(0 2px 4px rgb(0 0 0 / 0.8));
+  .tirage-glyphe {
+    font-size: 1.8rem;
+    line-height: 1;
+    opacity: 0.9;
+  }
+
+  .tirage-nom {
+    margin-top: auto;
+    max-width: 100%;
+    overflow: hidden;
+    font-size: 0.6875rem;
+    line-height: 1.25;
+    text-align: center;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    color: var(--muted);
+  }
+
+  .tirage-valeur {
+    font-family: var(--font-display);
+    font-size: 0.875rem;
+    font-weight: 900;
+    line-height: 1.3;
+    color: var(--frost);
   }
 
   /*
-   * Le repère : une fenêtre éclairée au centre, pas un cheveu.
+   * Le repère : deux triangles, en haut et en bas, sans ligne entre eux.
    *
-   * Un trait de deux pixels se perd dès qu'une carte claire passe dessous. Une
-   * bande lumineuse de la largeur d'une carte donne au contraire un emplacement
-   * — on voit *où* ça va s'arrêter avant que ça s'arrête, et c'est là qu'on
-   * regarde pendant toute la descente.
+   * La barre verticale lumineuse qui les reliait traversait chaque carte et
+   * coupait en deux celle sur laquelle on s'arrête — c'est-à-dire précisément
+   * celle qu'on veut regarder. Deux pointes suffisent à désigner la colonne ;
+   * l'œil complète le trait tout seul.
    */
   .tirage-repere {
     position: absolute;
@@ -578,18 +606,8 @@
     bottom: 0;
     left: 50%;
     z-index: 4;
-    width: 2px;
-    margin-left: -1px;
+    width: 0;
     pointer-events: none;
-    background: linear-gradient(
-      180deg,
-      transparent,
-      var(--ice) 6%,
-      #ffffff 50%,
-      var(--ice) 94%,
-      transparent
-    );
-    box-shadow: 0 0 16px 2px rgb(143 220 255 / 0.9);
   }
 
   .tirage-repere::before,
@@ -602,16 +620,17 @@
     margin-left: -8px;
     border-left: 8px solid transparent;
     border-right: 8px solid transparent;
+    filter: drop-shadow(0 0 6px rgb(255 255 255 / 0.55));
   }
 
   .tirage-repere::before {
-    top: -2px;
-    border-top: 11px solid var(--ice);
+    top: -3px;
+    border-top: 11px solid #ffffff;
   }
 
   .tirage-repere::after {
-    bottom: -2px;
-    border-bottom: 11px solid var(--ice);
+    bottom: -3px;
+    border-bottom: 11px solid #ffffff;
   }
 
   /* Les deux fondus. Larges : ils rognent la bande bien avant le bord, ce qui
