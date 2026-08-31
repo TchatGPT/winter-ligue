@@ -428,7 +428,7 @@
     justify-content: center;
     /* Deux cartes bord à bord ne se lisent plus comme deux objets mais comme
        une planche découpée. */
-    gap: 24px;
+    gap: 34px;
     width: 100%;
     max-width: 100%;
   }
@@ -480,9 +480,13 @@
     flex-direction: column;
     /* Doit rester d'accord avec GOUTTIERE dans components/Tirage.tsx : c'est de
        ce pas que le composant déduit la position d'arrêt. */
-    gap: 14px;
+    gap: 34px;
     padding: 0 10px;
-    will-change: transform, filter;
+    /* `transform` seul, sans `filter`. Le rail est une couche promue : lui
+       annoncer un filtre le fait rastériser hors composition, et le flou de
+       mouvement qui le justifiait a été retiré — à cinq pixels par image, il n'y
+       a plus de traînée à simuler. */
+    will-change: transform;
   }
 
   /*
@@ -503,35 +507,64 @@
   }
 
   /*
-   * Le halo permanent des raretés hautes.
+   * Une carte de rouleau ne porte pas son ombre portée.
    *
-   * Il bat lentement pendant tout le défilement, et c'est délibérément visible
-   * de loin : c'est ce qui fait qu'on repère une légendaire qui approche avant
-   * de pouvoir lire son nom. Réservé aux trois paliers du haut — allumé partout,
-   * il ne signalerait plus rien.
+   * `.cadre` en pose une par défaut, ce qui est juste sur une grille de
+   * collection et ruineux ici : douze tuiles par rouleau, cinq rouleaux, soit
+   * soixante passes de flou hors écran à rastériser avant la première image. Le
+   * rouleau a déjà son propre fond et son propre cadre — l'ombre n'y sépare rien
+   * de ce qui l'entoure.
+   */
+  .tirage-carte .cadre {
+    filter: none;
+  }
+
+  /*
+   * Le halo des raretés hautes — **fixe** pendant le défilement.
+   *
+   * Il battait, et c'était la cause du hachage. Le rail est une couche promue au
+   * compositeur ; animer un `filter` sur l'un de ses enfants oblige le
+   * navigateur à re-tramer toute la bande à chaque image — douze cartes, chacune
+   * avec son cadre filtré, cinq rouleaux, soixante fois par seconde. La
+   * simulation annonçait cinq pixels par image, le navigateur n'en tenait aucune.
+   *
+   * Fixe, il rend exactement le même service : on repère de loin une légendaire
+   * qui approche avant de pouvoir lire son nom. C'est le battement qui coûtait
+   * cher, pas la lueur. Réservé aux trois paliers du haut — allumé partout, il
+   * ne signalerait plus rien.
    */
   .tirage-carte[data-rang='3'],
   .tirage-carte[data-rang='4'],
   .tirage-carte[data-rang='5'] {
+    filter: drop-shadow(0 0 14px color-mix(in srgb, var(--r) 65%, transparent));
+  }
+
+  /*
+   * Le battement revient une fois le rouleau arrêté.
+   *
+   * Là, plus rien ne bouge : re-tramer une seule carte immobile ne coûte rien,
+   * et c'est le moment où la lueur sert à quelque chose — elle désigne ce qu'on
+   * vient de gagner.
+   */
+  .tirage-piste[data-arrete='true'] .tirage-carte-gagnante[data-rang='3'],
+  .tirage-piste[data-arrete='true'] .tirage-carte-gagnante[data-rang='4'],
+  .tirage-piste[data-arrete='true'] .tirage-carte-gagnante[data-rang='5'] {
     animation: tirage-halo 2s ease-in-out infinite;
   }
 
   @keyframes tirage-halo {
     0%,
     100% {
-      filter: drop-shadow(0 0 6px color-mix(in srgb, var(--r) 40%, transparent));
+      filter: drop-shadow(0 0 8px color-mix(in srgb, var(--r) 45%, transparent));
     }
     50% {
-      filter: drop-shadow(0 0 22px color-mix(in srgb, var(--r) 85%, transparent));
+      filter: drop-shadow(0 0 24px color-mix(in srgb, var(--r) 90%, transparent));
     }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .tirage-carte[data-rang='3'],
-    .tirage-carte[data-rang='4'],
-    .tirage-carte[data-rang='5'] {
+    .tirage-piste[data-arrete='true'] .tirage-carte-gagnante {
       animation: none;
-      filter: drop-shadow(0 0 14px color-mix(in srgb, var(--r) 60%, transparent));
     }
   }
 

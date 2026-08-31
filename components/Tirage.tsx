@@ -20,23 +20,23 @@ export interface CarteTirage {
 /**
  * Combien de leurres défilent avant la gagnante.
  *
- * Dix. C'est le réglage qui commande la douceur, et de loin le plus sensible de
- * tout le fichier.
+ * Huit. C'est le réglage qui commande la douceur, et de loin le plus sensible
+ * de tout le fichier.
  *
  * Seize cartes à parcourir dans le même temps, c'est une bande qui file à
  * dix-huit pixels par image, qu'il faut ensuite arrêter — et tout ce que
- * l'amortissement rattrape à la fin se paie en à-coups. À dix, la pointe tombe à
- * huit pixels par image et la secousse maximale est divisée par deux.
+ * l'amortissement rattrape à la fin se paie en à-coups. À huit, la pointe tombe
+ * à **cinq** pixels par image et la secousse maximale est divisée par huit.
  *
  * Le second effet est qu'il reste du temps pour les hésitations. Sur seize
  * cartes, la queue d'amortissement mangeait tout et les appâts n'avaient nulle
- * part où mordre ; sur dix, l'appât final tient une seconde et demie.
+ * part où mordre ; sur huit, l'appât final tient près de deux secondes.
  *
  * C'est enfin ce qui règle le coût : chaque tuile est une vraie carte — cadre
  * peint, rotation de teinte, illustration vectorielle — et cinq rouleaux de
- * quatorze font déjà soixante-dix cartes à mettre en page d'un coup.
+ * douze font déjà soixante cartes à mettre en page d'un coup.
  */
-const AVANT = 10;
+const AVANT = 8;
 
 /**
  * Combien restent au-dessus d'elle.
@@ -58,12 +58,13 @@ const RATIO_CARTE = 2231 / 1514;
 /**
  * Durée du défilement du premier rouleau, en millisecondes.
  *
- * Huit secondes pour le premier, dix et demie pour le dernier : la cascade
+ * Neuf secondes et demie pour le premier, onze et demie pour le dernier : la
+ * cascade
  * allonge l'ensemble sans allonger chaque rouleau. Le temps de comprendre ce qui
  * défile, il faut que ça dure — et c'est cette durée, plus que tout le reste,
  * qui laisse la place aux trois hésitations.
  */
-const DUREE = 8000;
+const DUREE = 9500;
 const DUREE_REDUITE = 900;
 
 /**
@@ -75,16 +76,20 @@ const DUREE_REDUITE = 900;
  * arrêt est un évènement, et le dernier rouleau qui tourne encore tient le
  * regard à lui seul.
  */
-const RELAIS = 600;
+const RELAIS = 500;
 
 /**
  * Espace vertical entre deux cartes d'un rouleau, en pixels.
+ *
+ * Trente-quatre, et non quatorze. Quatorze pixels entre deux cartes de deux
+ * cents, c'est un empilement : on lit une planche découpée, pas des objets qui
+ * défilent. Il en faut assez pour voir le fond passer entre deux.
  *
  * Doit rester d'accord avec l'espacement de `.tirage-rail` : c'est de ce pas
  * que le composant déduit la position d'arrêt, et un écart de quelques pixels
  * décalerait l'arrêt d'une carte entière au bout de seize.
  */
-const GOUTTIERE = 14;
+const GOUTTIERE = 34;
 
 /**
  * Les positions où le rail hésite, en index de carte avant la gagnante.
@@ -117,19 +122,19 @@ const APPATS = [
 /**
  * L'amortissement.
  *
- * L'exposant a valu cinq, puis deux ; il vaut 1,4. Une queue raide concentre
+ * L'exposant a valu cinq, puis deux ; il vaut 1,25. Une queue raide concentre
  * toute la décélération sur la dernière poignée d'images : c'est là que naissent
  * les à-coups, et c'est aussi ce qui écrase les appâts, puisque tout est déjà
  * lent quand ils arrivent.
  *
- * Simulation à l'appui, en passant de 2,4 à 1,4 : la vitesse de pointe tombe de
- * 14,6 à 8,5 pixels par image et la secousse maximale de 9,7 à 4,9. La bande
+ * Simulation à l'appui, en passant de 2,4 à 1,25 : la vitesse de pointe tombe
+ * de 14,6 à 5,2 pixels par image et la secousse maximale de 9,7 à 3,9. La bande
  * ralentit sur presque tout son trajet au lieu de freiner d'un coup à la fin —
  * c'est exactement ce qu'on appelle un mouvement fluide.
  *
  * En dessous, la bande garde sa vitesse jusqu'au bout et l'arrêt claque.
  */
-const amorti = (t: number) => 1 - Math.pow(1 - t, 1.4);
+const amorti = (t: number) => 1 - Math.pow(1 - t, 1.25);
 
 /** Résolution de la table de gauchissement. */
 const PAS_TABLE = 600;
@@ -221,19 +226,6 @@ function gauchit(table: Float64Array, u: number): number {
   const i = Math.floor(x);
   if (i >= PAS_TABLE) return table[PAS_TABLE];
   return table[i] + (table[i + 1] - table[i]) * (x - i);
-}
-
-/**
- * Le flou de vitesse, par paliers.
- *
- * Une valeur continue serait plus juste et beaucoup plus chère : un `filter`
- * force le navigateur à re-tramer toute la bande, et le refaire à chaque image
- * coûterait plus que l'animation elle-même. Arrondi à six paliers, le
- * re-tramage n'a lieu que six fois par tirage, et l'œil ne fait pas la
- * différence — c'est la traînée qu'il perçoit, pas son rayon exact.
- */
-function flou(vitesse: number): number {
-  return Math.min(5, Math.round(vitesse / 9));
 }
 
 /**
@@ -379,8 +371,6 @@ function Piste({
      * tourne bien avant de voir sur quoi.
      */
     let debut = 0;
-    let precedentX = 0;
-    let precedentFlou = -1;
     let trame = 0;
 
     const image = (temps: number) => {
@@ -389,18 +379,10 @@ function Piste({
       const x = gauchit(table, amorti(t)) * cible;
       el.style.transform = `translate3d(0, ${(yDebut + x).toFixed(1)}px, 0)`;
 
-      const f = reduit ? 0 : flou(x - precedentX);
-      if (f !== precedentFlou) {
-        precedentFlou = f;
-        el.style.filter = f > 0 ? `blur(0 ${f}px)`.replace('blur(0 ', 'blur(') : '';
-      }
-      precedentX = x;
-
       if (t < 1) {
         trame = requestAnimationFrame(image);
         return;
       }
-      el.style.filter = '';
       boite.dataset.arrete = 'true';
       setArrete(true);
       fini.current();
