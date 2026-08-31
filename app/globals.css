@@ -437,145 +437,133 @@
   }
 
   /*
-   * Les colonnes ont une largeur fixe, et la grille se centre.
+   * Le bandeau : **un seul panneau**, large et bas.
    *
-   * Elles se partageaient la largeur disponible : à trois rouleaux, chaque
-   * carte montait à 375 pixels de haut et il n'en restait qu'une et demie de
-   * visible — on ne voyait plus une bande défiler mais une carte grandir. Une
-   * largeur fixe donne la même carte quel que soit le nombre de rouleaux, et
-   * deux cartes et demie visibles dans tous les cas.
+   * C'est le point que j'avais complètement manqué. Il y avait cinq boîtes de
+   * verre hautes, chacune avec son cadre et son fond ; chez eux il y a un seul
+   * rectangle sombre de 1340 sur 293 pixels, sans la moindre séparation entre
+   * les colonnes. Un bandeau, pas cinq machines à sous.
+   *
+   * Le fond est presque noir, avec une grille de points à peine visible — le
+   * même motif que sur leur capture, obtenu par un dégradé radial répété.
    */
+  .tirage {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+  }
+
   .tirage-scene {
     position: relative;
     display: grid;
-    /* Plafonnées, pas figées : `minmax` laisse les colonnes rétrécir si le
-       panneau est trop étroit — cinq colonnes de 160 plus les gouttières font
-       896 pixels, et rien ne garantit qu'on les ait. Le pas d'arrêt suit tout
-       seul, puisque le composant mesure la tuile au lieu de la supposer. */
-    grid-template-columns: repeat(var(--rouleaux, 5), minmax(0, 160px));
-    justify-content: center;
-    /* Deux cartes bord à bord ne se lisent plus comme deux objets mais comme
-       une planche découpée. */
-    gap: 26px;
+    grid-template-columns: repeat(var(--rouleaux, 5), minmax(0, 1fr));
     width: 100%;
-    max-width: 100%;
+    overflow: hidden;
+    border-radius: var(--r-lg);
+    border: 1px solid rgb(255 255 255 / 0.06);
+    background-color: #07070d;
+    background-image: radial-gradient(circle, rgb(255 255 255 / 0.07) 1px, transparent 1px);
+    background-size: 22px 22px;
   }
 
   /*
-   * Un rouleau.
+   * Une colonne : rien qu'une fenêtre découpée dans le bandeau.
    *
-   * Le fond reprend le verre du site plutôt qu'un noir plein. Le noir isolait
-   * la scène du reste de la page comme une vidéo incrustée ; le verre la pose
-   * dedans.
+   * Ni fond, ni bordure, ni ombre — sa seule fonction est de rogner ce qui
+   * dépasse. Sa hauteur est posée par le composant, à `VISIBLES` fois le pas.
    */
   .tirage-piste {
     position: relative;
     overflow: hidden;
-    /* La hauteur est posée par le composant : elle vaut VISIBLES fois le pas,
-       et le pas dépend du rapport de la carte. La fixer ici la ferait diverger
-       du calcul d'arrêt — ce qui est déjà arrivé. Cette valeur ne sert que
-       jusqu'à la première mesure. */
-    height: 590px;
-    border-radius: var(--r-lg);
-    border: 1px solid var(--glass-edge);
-    background: linear-gradient(180deg, var(--glass-2) 0%, var(--glass-1) 100%);
-    box-shadow: inset 0 1px 0 var(--glass-hi);
-    transition: box-shadow 0.4s ease;
+    height: 300px;
   }
 
-  @media (max-width: 900px) {
-    .tirage-scene {
-      grid-template-columns: repeat(var(--rouleaux, 5), minmax(0, 108px));
-      gap: 12px;
-    }
-  }
-
-  @media (max-width: 640px) {
-    .tirage-scene {
-      grid-template-columns: repeat(var(--rouleaux, 5), minmax(0, 76px));
-      gap: 8px;
-    }
-
-  }
-
-  /*
-   * Le rail n'est plus une colonne qui glisse : c'est un plan.
-   *
-   * Les tuiles y sont posées en absolu et placées une par une, par un modulo,
-   * à chaque image. C'est ce qui permet de recycler : seize cartes tournent en
-   * rond au lieu que quarante-six défilent. Le `gap` d'une colonne flex ne
-   * servirait plus à rien — l'espacement est dans le pas calculé, et
-   * `GOUTTIERE` en est la seule source.
-   */
   .tirage-rail {
     position: absolute;
     inset: 0;
   }
 
   /*
-   * Une tuile : la carte elle-même, dans son cadre peint.
+   * Un jeton : un disque de la taille du pas, placé par le composant.
    *
-   * Elle est posée en absolu et placée par le composant, à partir d'un modulo
-   * recalculé à chaque image : c'est ce qui la recycle — sortie par le bas, elle
-   * réapparaît en haut sans qu'on ait à la déplacer. Sa hauteur n'est pas fixée
-   * ici, elle découle du rapport de la carte que le composant mesure.
-   *
-   * `will-change` la promeut au compositeur, ce qui est justifié ici puisque
-   * chaque tuile bouge indépendamment des autres : seize petites couches par
-   * rouleau coûtent moins qu'un re-tramage de la bande entière à chaque image.
+   * Les jetons se touchent presque — le pas relevé (125 px) dépasse à peine le
+   * diamètre. `will-change` les promeut au compositeur, ce qui se justifie
+   * puisque chacun bouge indépendamment.
    */
-  .tirage-carte {
+  .tirage-jeton {
     position: absolute;
     top: 0;
-    right: 0;
-    left: 0;
-    border-radius: 14px;
+    left: 50%;
+    display: grid;
+    place-items: center;
+    width: var(--pas, 120px);
+    height: var(--pas, 120px);
+    margin-left: calc(var(--pas, 120px) / -2);
     will-change: transform;
   }
 
   /*
-   * Une carte de rouleau ne porte pas son ombre portée.
+   * L'anneau pointillé, en couleur de rareté.
    *
-   * `.cadre` en pose une par défaut, ce qui est juste sur une grille de
-   * collection et ruineux ici : seize tuiles par rouleau, cinq rouleaux, soit
-   * quatre-vingts passes de flou hors écran à rastériser avant la première image. Le
-   * rouleau a déjà son propre fond et son propre cadre — l'ombre n'y sépare rien
-   * de ce qui l'entoure.
+   * Un dégradé conique répété, masqué en couronne. Une bordure `dashed` native
+   * ne se referme jamais proprement et son nombre de tirets change avec le
+   * diamètre ; ici on en a trente, quel que soit l'écran.
+   *
+   * C'est la seule chose qui se lise d'un jeton lancé à cent quarante items par
+   * seconde — donc c'est elle qui porte toute l'information : la rareté.
    */
-  .tirage-carte .cadre {
-    filter: none;
+  .tirage-anneau {
+    position: absolute;
+    inset: 8%;
+    background: repeating-conic-gradient(
+      from 0deg,
+      var(--r) 0deg 6deg,
+      transparent 6deg 12deg
+    );
+    mask-image: radial-gradient(circle, transparent 0 44%, #000 45% 50%, transparent 51% 100%);
+    filter: drop-shadow(0 0 6px color-mix(in srgb, var(--r) 75%, transparent));
   }
 
   /*
-   * Le halo des raretés hautes — **fixe** pendant le défilement.
+   * L'illustration, par-dessus l'anneau et **débordant** de lui.
    *
-   * Il battait, et c'était la cause du hachage. Le rail est une couche promue au
-   * compositeur ; animer un `filter` sur l'un de ses enfants oblige le
-   * navigateur à re-tramer toute la bande à chaque image — douze cartes, chacune
-   * avec son cadre filtré, cinq rouleaux, soixante fois par seconde. La
-   * simulation annonçait cinq pixels par image, le navigateur n'en tenait aucune.
-   *
-   * Fixe, il rend exactement le même service : on repère de loin une légendaire
-   * qui approche avant de pouvoir lire son nom. C'est le battement qui coûtait
-   * cher, pas la lueur. Réservé aux trois paliers du haut — allumé partout, il
-   * ne signalerait plus rien.
+   * Chez eux la photo du produit sort franchement du cercle, ce qui donne au
+   * jeton son relief — l'anneau est derrière, l'objet devant.
    */
-  .tirage-carte[data-rang='3'],
-  .tirage-carte[data-rang='4'],
-  .tirage-carte[data-rang='5'] {
-    filter: drop-shadow(0 0 14px color-mix(in srgb, var(--r) 65%, transparent));
+  .tirage-art {
+    position: relative;
+    z-index: 1;
+    width: 104%;
+    height: 104%;
+    filter: drop-shadow(0 2px 6px rgb(0 0 0 / 0.75));
+  }
+
+  .tirage-glyphe {
+    position: relative;
+    z-index: 1;
+    font-size: calc(var(--pas, 120px) * 0.34);
+    line-height: 1;
   }
 
   /*
-   * Le battement revient une fois le rouleau arrêté.
+   * Le halo des raretés hautes, fixe.
    *
-   * Là, plus rien ne bouge : re-tramer une seule carte immobile ne coûte rien,
-   * et c'est le moment où la lueur sert à quelque chose — elle désigne ce qu'on
-   * vient de gagner.
+   * Il ne bat pas pendant le défilement : animer un filtre force le re-tramage
+   * de la couche à chaque image, et c'était la cause du hachage. Fixe, il rend
+   * le même service — on repère une légendaire qui approche avant de pouvoir
+   * distinguer quoi que ce soit d'autre.
    */
-  .tirage-piste[data-arrete='true'] .tirage-carte-gagnante[data-rang='3'],
-  .tirage-piste[data-arrete='true'] .tirage-carte-gagnante[data-rang='4'],
-  .tirage-piste[data-arrete='true'] .tirage-carte-gagnante[data-rang='5'] {
+  .tirage-jeton[data-rang='3'],
+  .tirage-jeton[data-rang='4'],
+  .tirage-jeton[data-rang='5'] {
+    filter: drop-shadow(0 0 14px color-mix(in srgb, var(--r) 70%, transparent));
+  }
+
+  .tirage-piste[data-arrete='true'] .tirage-jeton-gagnant[data-rang='3'],
+  .tirage-piste[data-arrete='true'] .tirage-jeton-gagnant[data-rang='4'],
+  .tirage-piste[data-arrete='true'] .tirage-jeton-gagnant[data-rang='5'] {
     animation: tirage-halo 2s ease-in-out infinite;
   }
 
@@ -590,87 +578,80 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .tirage-piste[data-arrete='true'] .tirage-carte-gagnante {
+    .tirage-piste[data-arrete='true'] .tirage-jeton-gagnant {
       animation: none;
     }
   }
 
   /*
-   * Le repère : un trait en travers des colonnes, et deux pointes aux bords.
+   * Le nom, sous la gagnante et seulement une fois posée.
    *
-   * Une ligne unique, et non une par rouleau : c'est elle qui fait tenir
-   * l'ensemble comme un seul appareil plutôt que comme des machines posées côte
-   * à côte.
+   * Rien n'est écrit pendant que ça tourne : à cent quarante items par seconde
+   * un nom n'est pas du texte, c'est du bruit.
    */
-  .tirage-repere {
+  .tirage-etiquette {
     position: absolute;
-    top: 50%;
-    right: -6px;
-    left: -6px;
-    z-index: 4;
-    height: 2px;
-    margin-top: -1px;
+    top: calc(50% + var(--pas, 120px) * 0.52);
+    right: 4px;
+    left: 4px;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
     pointer-events: none;
-    background: linear-gradient(
-      90deg,
-      transparent,
-      rgb(255 255 255 / 0.9) 5%,
-      #ffffff 50%,
-      rgb(255 255 255 / 0.9) 95%,
-      transparent
-    );
-    box-shadow: 0 0 14px rgb(255 255 255 / 0.6);
+    animation: tirage-etiquette-arrive 0.3s ease both;
   }
 
-  .tirage-repere::before,
-  .tirage-repere::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    width: 0;
-    height: 0;
-    margin-top: -9px;
-    border-top: 9px solid transparent;
-    border-bottom: 9px solid transparent;
-    filter: drop-shadow(0 0 6px rgb(255 255 255 / 0.6));
+  @keyframes tirage-etiquette-arrive {
+    from {
+      opacity: 0;
+      transform: translateY(-6px);
+    }
   }
 
-  .tirage-repere::before {
-    left: -12px;
-    border-left: 12px solid #ffffff;
+  .tirage-etiquette-nom {
+    max-width: 100%;
+    overflow: hidden;
+    font-size: 0.75rem;
+    line-height: 1.2;
+    text-align: center;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    color: var(--muted);
   }
 
-  .tirage-repere::after {
-    right: -12px;
-    border-right: 12px solid #ffffff;
+  .tirage-etiquette-valeur {
+    font-family: var(--font-display);
+    font-size: 0.875rem;
+    font-weight: 900;
+    color: var(--frost);
   }
 
   /*
-   * Les fondus : les bandes doivent avoir l'air de continuer au-delà de la
-   * fenêtre, pas d'y être coupées.
+   * Les fondus, en haut et en bas du bandeau entier.
    *
-   * Ils peignaient `--bg` opaque sur un cinquième de la hauteur, en haut comme
-   * en bas — c'est-à-dire deux larges bandes de noir plein posées sur la scène.
-   * C'était ça, le « fond noir ». Ils sont maintenant translucides et ne font
-   * qu'assombrir ce qui passe dessous.
+   * Les jetons doivent avoir l'air de continuer au-delà, pas d'y être coupés.
+   * Chez eux les voisins du haut et du bas sont tranchés net par le bord et
+   * s'assombrissent — c'est ce que ces deux voiles reproduisent.
    */
   .tirage-voile {
     position: absolute;
     right: 0;
     left: 0;
     z-index: 3;
-    height: 16%;
+    height: 26%;
     pointer-events: none;
   }
 
-  .tirage-voile-gauche {
+  .tirage-voile-haut {
     top: 0;
-    background: linear-gradient(180deg, rgb(3 7 17 / 0.72), transparent);
+    background: linear-gradient(180deg, #07070d 15%, transparent);
   }
 
-  .tirage-voile-droite {
+  .tirage-voile-bas {
     bottom: 0;
-    background: linear-gradient(0deg, rgb(3 7 17 / 0.72), transparent);
+    background: linear-gradient(0deg, #07070d 15%, transparent);
   }
 
   /*
@@ -814,39 +795,41 @@
     }
   }
 
-  .tirage-piste[data-arrete='true'] .tirage-carte:not(.tirage-carte-gagnante) {
-    opacity: 0.22;
-    filter: saturate(0.3);
+  /*
+   * À l'arrêt, les voisins s'effacent et la gagnante se pose.
+   *
+   * L'animation porte sur `scale`, **jamais sur `transform`** : c'est le
+   * composant qui écrit la translation de chaque jeton à chaque image, et une
+   * image-clé sur `transform` l'écraserait — le jeton gagnant sauterait en haut
+   * de la colonne à la seconde où il se pose. `scale` est une propriété
+   * indépendante, qui se compose avec la translation au lieu de la remplacer.
+   */
+  .tirage-piste[data-arrete='true'] .tirage-jeton:not(.tirage-jeton-gagnant) {
+    opacity: 0.34;
+    filter: saturate(0.45);
   }
 
-  .tirage-piste[data-arrete='true'] .tirage-carte-gagnante {
+  .tirage-piste[data-arrete='true'] .tirage-jeton-gagnant {
     animation: tirage-atterrit 620ms cubic-bezier(0.2, 1.4, 0.35, 1);
     z-index: 2;
   }
 
-  /* Les hautes raretés se posent plus lentement et plus haut : un dixième de
-     seconde de plus suffit à faire la différence entre « encore une » et « oh ». */
-  .tirage-piste[data-arrete='true'][data-rang='4'] .tirage-carte-gagnante,
-  .tirage-piste[data-arrete='true'][data-rang='5'] .tirage-carte-gagnante {
+  /* Les hautes raretés se posent plus lentement : un dixième de seconde de plus
+     suffit à faire la différence entre « encore une » et « oh ». */
+  .tirage-piste[data-arrete='true'][data-rang='4'] .tirage-jeton-gagnant,
+  .tirage-piste[data-arrete='true'][data-rang='5'] .tirage-jeton-gagnant {
     animation-duration: 820ms;
   }
 
   @keyframes tirage-atterrit {
     0% {
-      transform: scale(1);
-      box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.2);
+      scale: 1;
     }
     28% {
-      transform: scale(1.12);
-      box-shadow:
-        inset 0 1px 0 rgb(255 255 255 / 0.5),
-        0 0 40px 8px color-mix(in srgb, var(--r) 90%, transparent);
+      scale: 1.18;
     }
     100% {
-      transform: scale(1.05);
-      box-shadow:
-        inset 0 1px 0 rgb(255 255 255 / 0.3),
-        0 0 22px color-mix(in srgb, var(--r) 65%, transparent);
+      scale: 1;
     }
   }
 

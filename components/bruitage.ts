@@ -275,9 +275,16 @@ function charge(ctx: AudioContext, nom: NomSon): Promise<AudioBuffer | null> {
 
   let encours = chargements.get(nom);
   if (!encours) {
-    encours = fetch(SONS[nom])
-      .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(String(r.status)))))
-      .then((d) => ctx.decodeAudioData(d))
+    const dejaLa = octets.get(nom);
+    encours = (dejaLa
+      ? Promise.resolve(dejaLa)
+      : fetch(SONS[nom]).then((r) =>
+          r.ok ? r.arrayBuffer() : Promise.reject(new Error(String(r.status))),
+        )
+    )
+      // `decodeAudioData` consomme le tampon : on lui en donne une copie, sans
+      // quoi un second décodage — après un changement de contexte — échouerait.
+      .then((d) => ctx.decodeAudioData(d.slice(0)))
       .then((b) => {
         tampons.set(nom, b);
         return b;
@@ -288,17 +295,47 @@ function charge(ctx: AudioContext, nom: NomSon): Promise<AudioBuffer | null> {
   return encours;
 }
 
+/** Les octets déjà rapatriés, en attente d'un contexte pour les décoder. */
+const octets = new Map<NomSon, ArrayBuffer>();
+
 /**
- * Précharge tout ce que l'ouverture va jouer.
+ * Rapatrie les fichiers, **sans ouvrir de contexte audio**.
  *
- * Le décodage est asynchrone : demandé au démarrage du rail, le cliquet
- * arriverait après lui, et l'appât — cent soixante-dix kilo-octets — bien plus
- * tard encore. On décode pendant que le joueur choisit son sachet.
+ * ## Pourquoi c'est la seule chose à faire ici
  *
- * Sans effet si le son est coupé : on ne va pas chercher trois cents
- * kilo-octets que personne n'entendra.
+ * Un `AudioContext` créé hors d'un geste de l'utilisateur naît **suspendu** :
+ * son horloge ne tourne pas. Tout ce qu'on lui programme à `currentTime` se
+ * range donc au même instant, et part d'un bloc quand il se réveille enfin —
+ * un tirage entier de crans lâché d'un coup, plusieurs secondes en retard.
+ *
+ * C'était exactement le défaut : le préchargement ouvrait le contexte au
+ * montage de l'écran, bien avant le clic d'ouverture.
+ *
+ * On se contente donc de remplir le cache : trois cents kilo-octets rapatriés
+ * pendant que le joueur choisit son sachet, et le décodage n'attend plus que le
+ * contexte, qui naîtra dans le geste.
  */
 export function prechargeSons() {
+  if (!sonActif() || typeof fetch !== 'function') return;
+  for (const nom of Object.keys(SONS) as NomSon[]) {
+    if (octets.has(nom)) continue;
+    void fetch(SONS[nom])
+      .then((r) => (r.ok ? r.arrayBuffer() : null))
+      .then((d) => {
+        if (d) octets.set(nom, d);
+      })
+      .catch(() => null);
+  }
+}
+
+/**
+ * Ouvre et réveille le contexte, puis décode tout.
+ *
+ * **À appeler depuis le gestionnaire du clic**, et de nulle part ailleurs :
+ * c'est le geste qui autorise le navigateur à démarrer l'horloge audio. Appelé
+ * une image trop tard, la permission est perdue.
+ */
+export function reveilleSon() {
   const ctx = contexte();
   if (!ctx) return;
   for (const nom of Object.keys(SONS) as NomSon[]) void charge(ctx, nom);
@@ -317,6 +354,15 @@ export function joueSon(nom: NomSon, quand = 0) {
 
   void charge(ctx, nom).then((tampon) => {
     if (!tampon) return;
+    /*
+     * Rien sur une horloge arrêtée.
+     *
+     * Si le contexte n'a pas encore démarré — geste trop récent, autorisation
+     * refusée — `currentTime` ne progresse pas et tout ce qu'on programme
+     * s'entasse sur le même instant. Perdre un cran vaut infiniment mieux que
+     * les lâcher tous en retard, d'un bloc.
+     */
+    if (ctx.state !== 'running') return;
     const volume = ctx.createGain();
     volume.gain.value = NIVEAUX[nom];
     volume.connect(sortie(ctx));

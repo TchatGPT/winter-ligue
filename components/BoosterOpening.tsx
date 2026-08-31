@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
-import { abonneSon, basculeSon, prechargeSons, sonActif } from '@/components/bruitage';
+import { abonneSon, basculeSon, prechargeSons, reveilleSon, sonActif } from '@/components/bruitage';
 import { BoosterPack3D } from '@/components/BoosterPack3D';
 import { aUneIllustration } from '@/components/CardArt';
 import { CardDetailModal, type CarteDetail } from '@/components/CardDetailModal';
@@ -261,6 +261,18 @@ export function BoosterOpening({
 
   async function open() {
     if (!booster || busy) return;
+
+    /*
+     * Le contexte audio s'ouvre **ici**, dans le geste, et nulle part ailleurs.
+     *
+     * Un `AudioContext` créé hors d'un clic naît suspendu : son horloge ne
+     * tourne pas, et tout ce qu'on lui programme s'entasse sur le même instant
+     * pour partir d'un bloc quand il se réveille. C'était le défaut du son en
+     * retard — le contexte s'ouvrait à l'affichage de l'écran, bien avant le
+     * clic. Appelé une image plus tard, la permission serait déjà perdue :
+     * l'appel doit rester synchrone, avant le premier `await`.
+     */
+    reveilleSon();
 
     setError(null);
     setPulled([]);

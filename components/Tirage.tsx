@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { joueSon, programmeFin, sonDeFete } from '@/components/bruitage';
-import { CardFrame } from '@/components/CardFrame';
+import { aUneIllustration, CardArt } from '@/components/CardArt';
 import { RARITY_META } from '@/lib/domain/catalog';
 import { RARITY_ORDER } from '@/lib/domain/rules';
 import type { Rarity } from '@/lib/domain/types';
@@ -54,22 +54,24 @@ const PARCOURS = 49;
 const TUILES = 16;
 
 /**
- * Combien de tuiles tiennent dans la hauteur de la fenêtre.
+ * Combien de jetons tiennent dans la hauteur de la fenêtre.
  *
  * Mesuré : leur bandeau fait 293 pixels pour un pas de 125, soit 2,4 items. La
- * fenêtre est **basse**, et c'est délibéré — on ne voit presque rien à la fois,
- * ce qui concentre le regard sur ce qui passe au milieu.
+ * fenêtre est **basse et large**, et c'est tout le contraire de ce que j'avais
+ * fait — cinq colonnes hautes où l'on voyait trois cartes entières. On ne doit
+ * presque rien voir à la fois : c'est ce qui concentre le regard sur le milieu.
  */
 const VISIBLES = 2.4;
 
 /**
- * Le rapport hauteur/largeur d'une carte, celui du cadre peint.
+ * Le pas vertical, en fraction de la largeur d'une colonne.
  *
- * C'est lui qui donne la hauteur d'une tuile à partir de la largeur mesurée de
- * la colonne, donc le pas, donc la hauteur de la fenêtre. Rien n'est fixé deux
- * fois.
+ * Mesuré : leurs colonnes font 268 pixels de large pour un pas de 125, soit
+ * 0,47. Les jetons se touchent presque — le pas est à peine plus grand que le
+ * disque. Toute la géométrie découle de ce seul rapport : hauteur de la
+ * fenêtre, taille de l'anneau, débord de l'illustration.
  */
-const RATIO_CARTE = 2231 / 1514;
+const PAS_RELATIF = 0.47;
 
 /**
  * Durée du défilement, en millisecondes.
@@ -80,15 +82,6 @@ const RATIO_CARTE = 2231 / 1514;
  */
 const DUREE = 6800;
 const DUREE_REDUITE = 900;
-
-/**
- * Espace vertical entre deux cartes d'un rouleau, en pixels.
- *
- * C'est la seule source du pas : la hauteur d'une tuile vient du rapport de la
- * carte, et la hauteur de la fenêtre vaut `VISIBLES` pas. Rien n'est fixé deux
- * fois, donc rien ne peut diverger.
- */
-const GOUTTIERE = 20;
 
 /**
  * Écart minimal entre deux dents, en millisecondes.
@@ -237,10 +230,13 @@ function Piste({
      * s'arrêtait alors deux tuiles à côté.
      */
     const tuiles = Array.from(el.children) as HTMLElement[];
-    const large = tuiles[0]?.getBoundingClientRect().width || boite.clientWidth;
-    const hTuile = large * RATIO_CARTE;
-    const pas = hTuile + GOUTTIERE;
+    const large = boite.clientWidth;
+    const pas = large * PAS_RELATIF;
+    const hTuile = pas;
     const hauteur = VISIBLES * pas;
+    // Le pas commande tout : c'est lui qui donne la taille des jetons, posée en
+    // variable pour que le style n'ait rien à recalculer de son côté.
+    boite.style.setProperty('--pas', `${pas.toFixed(1)}px`);
     boite.style.height = `${hauteur.toFixed(1)}px`;
 
     const boucle = TUILES * pas;
@@ -337,25 +333,47 @@ function Piste({
         {bande.map((c, i) => {
           const m = RARITY_META[c.rarity as Rarity] ?? RARITY_META.C;
           return (
+            /*
+             * Le jeton : un anneau pointillé de rareté, et l'illustration qui
+             * déborde par-dessus.
+             *
+             * C'est leur objet, relevé sur la vidéo. J'avais mis la carte
+             * entière dans son cadre peint, ce qui n'avait rien à voir : à
+             * cette vitesse un cadre n'est plus lisible, et cinq colonnes de
+             * cartes hautes ne font pas un bandeau. Ce qui se lit d'un jeton
+             * qui passe, c'est la **couleur de l'anneau** — donc la rareté.
+             */
             <div
               key={`${c.cardId}-${i}`}
-              className={`tirage-carte ${i === 0 ? 'tirage-carte-gagnante' : ''}`}
+              className={`tirage-jeton ${i === 0 ? 'tirage-jeton-gagnant' : ''}`}
               data-rang={RARITY_ORDER[c.rarity as Rarity] ?? 0}
               style={{ ['--r' as string]: m.color }}
               aria-hidden={i !== 0}
             >
-              <CardFrame
-                cardId={c.cardId}
-                name={c.name}
-                rarity={c.rarity}
-                glyph={c.glyph}
-                power={c.power}
-                nature={c.nature}
-              />
+              <span className="tirage-anneau" aria-hidden="true" />
+              {aUneIllustration(c.cardId) ? (
+                <CardArt cardId={c.cardId} className="tirage-art" />
+              ) : (
+                <span className="tirage-glyphe" aria-hidden="true">
+                  {c.glyph}
+                </span>
+              )}
             </div>
           );
         })}
       </div>
+
+      {/* Le nom et la puissance, sous la gagnante et seulement à l'arrêt. C'est
+          ainsi chez eux : rien n'est écrit pendant que ça tourne, et la carte
+          obtenue se nomme d'elle-même une fois posée. */}
+      {arrete && (
+        <span className="tirage-etiquette">
+          <span className="tirage-etiquette-nom">{gagnante.name}</span>
+          {gagnante.power !== undefined && (
+            <span className="tirage-etiquette-valeur num">{gagnante.power}</span>
+          )}
+        </span>
+      )}
 
       {arrete && (RARITY_ORDER[gagnante.rarity as Rarity] ?? 0) >= 3 && (
         <span className="tirage-rayons" aria-hidden="true" />
@@ -474,10 +492,12 @@ export function Tirage({
           />
         ))}
 
-        {/* Le repère, posé au-dessus des cinq colonnes. */}
-        <span className="tirage-repere" aria-hidden="true" />
-        <span className="tirage-voile tirage-voile-gauche" aria-hidden="true" />
-        <span className="tirage-voile tirage-voile-droite" aria-hidden="true" />
+        {/* Aucun repère. La vidéo n'en a pas : le milieu se lit tout seul,
+            parce que c'est le seul endroit où un jeton est entier. Le trait
+            blanc et ses deux flèches, que j'avais ajoutés, n'existent nulle
+            part chez eux. */}
+        <span className="tirage-voile tirage-voile-haut" aria-hidden="true" />
+        <span className="tirage-voile tirage-voile-bas" aria-hidden="true" />
       </div>
     </div>
   );
