@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { CollectionBoard } from '@/components/CollectionBoard';
 import { GrilleCollection } from '@/components/GrilleCollection';
 import { StatTile, flakes } from '@/components/ui';
-import { getSession } from '@/lib/auth/session';
+import { getSession, playerIdOf } from '@/lib/auth/session';
 import { getStore } from '@/lib/db/store';
 import { hasShield } from '@/lib/services/league';
 import { getProfile } from '@/lib/services/profile';
@@ -21,14 +21,17 @@ export const metadata = { title: 'Ma collection' };
  */
 export default async function MaCollectionPage() {
   const session = await getSession();
-  if (!session || session.role !== 'joueur') redirect('/connexion');
+  // Un administrateur reste un joueur : c'est son compte qui décide, pas son
+  // rôle. Seule la session de secours, qui n'a aucun compte derrière, est exclue.
+  const playerId = playerIdOf(session);
+  if (!playerId) redirect('/connexion');
 
-  const profile = await getProfile(session.sub);
+  const profile = await getProfile(playerId);
   if (!profile) redirect('/connexion');
 
   const opponents = await getStore().read((db) =>
     db.players
-      .filter((p) => p.active && p.id !== session.sub)
+      .filter((p) => p.active && p.id !== playerId)
       .map((p) => ({ id: p.id, pseudo: p.pseudo, shielded: hasShield(db, p.id) }))
       .sort((a, b) => a.pseudo.localeCompare(b.pseudo, 'fr')),
   );

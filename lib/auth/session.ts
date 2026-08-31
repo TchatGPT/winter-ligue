@@ -119,6 +119,30 @@ export async function getSession(): Promise<SessionPayload | null> {
   return verifyToken(jar.get(SESSION_COOKIE)?.value);
 }
 
+/**
+ * Le sujet de la session de secours, ouverte par `ADMIN_PASSWORD_HASH`.
+ *
+ * Ce n'est l'identifiant d'aucun joueur : c'est une session sans compte
+ * derrière, gardée pour reprendre la main si plus personne n'a le rôle.
+ */
+export const SUJET_SECOURS = 'admin';
+
+/**
+ * L'identifiant du joueur derrière une session, ou null.
+ *
+ * À utiliser partout où l'on veut savoir « qui joue », par opposition à « qui a
+ * le droit de faire quoi ». Les deux questions ont été confondues tant qu'il n'y
+ * avait que deux rôles : tester `role === 'joueur'` répondait aux deux à la
+ * fois. Depuis qu'un joueur peut être modérateur ou administrateur, ce test
+ * exclut du jeu ceux à qui on vient de donner des droits — ils se voyaient
+ * refuser l'ouverture d'un booster avec un « connexion requise » alors qu'ils
+ * étaient connectés.
+ */
+export function playerIdOf(session: SessionPayload | null): string | null {
+  if (!session) return null;
+  return session.sub === SUJET_SECOURS ? null : session.sub;
+}
+
 export async function isAdmin(): Promise<boolean> {
   return (await getSession())?.role === 'admin';
 }

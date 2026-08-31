@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { MarketBoard, type MarketListing, type MarketSale } from '@/components/MarketBoard';
 import { PageHead, StatTile, flakes } from '@/components/ui';
-import { getSession } from '@/lib/auth/session';
+import { getSession, playerIdOf } from '@/lib/auth/session';
 import type { Database } from '@/lib/db/entities';
 import { getStore } from '@/lib/db/store';
 import { getCard } from '@/lib/domain/catalog';
@@ -25,7 +25,7 @@ const MAX_ROWS = 300;
  */
 export default async function MarchePage() {
   const session = await getSession();
-  const viewerId = session?.role === 'joueur' ? session.sub : null;
+  const viewerId = playerIdOf(session);
 
   const data = await getStore().transaction((db) => {
     closeExpiredListings(db);

@@ -4,7 +4,7 @@ import { MarketBoard, type MarketListing } from '@/components/MarketBoard';
 import { PriceChart } from '@/components/PriceChart';
 import { CardFrame } from '@/components/CardFrame';
 import { CardTile, RarityChip, StatTile, flakes, rarityMeta } from '@/components/ui';
-import { getSession } from '@/lib/auth/session';
+import { getSession, playerIdOf } from '@/lib/auth/session';
 import type { Database } from '@/lib/db/entities';
 import { getStore } from '@/lib/db/store';
 import { cardsOfRarity, getCard } from '@/lib/domain/catalog';
@@ -43,7 +43,7 @@ export default async function CoteCartePage({ params }: { params: Promise<{ card
   if (!card) notFound();
 
   const session = await getSession();
-  const viewerId = session?.role === 'joueur' ? session.sub : null;
+  const viewerId = playerIdOf(session);
 
   const data = await getStore().transaction((db) => {
     closeExpiredListings(db);

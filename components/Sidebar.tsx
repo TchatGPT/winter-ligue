@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { getSession } from '@/lib/auth/session';
+import { getSession, playerIdOf } from '@/lib/auth/session';
 import { getStore } from '@/lib/db/store';
 import { SEASON, nextMilestone } from '@/lib/domain/rules';
 import { BottomNav, SidebarNav } from './NavTabs';
@@ -21,7 +21,7 @@ export async function Sidebar() {
   const session = await getSession();
   // Les deux échelons voient l'onglet ; la page décide ensuite quoi montrer.
   const isAdmin = session?.role === 'admin' || session?.role === 'moderateur';
-  const isPlayer = session?.role === 'joueur';
+  const isPlayer = playerIdOf(session) !== null;
 
   const { player, totalSubs } = await getStore().read((db) => {
     const found = isPlayer ? db.players.find((p) => p.id === session!.sub) : undefined;

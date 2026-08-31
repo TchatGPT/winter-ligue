@@ -1,7 +1,7 @@
 import { BoosterOpening, type CatalogCard, type ShopBooster } from '@/components/BoosterOpening';
 import { CatalogueCartes, type CarteCatalogue } from '@/components/CatalogueCartes';
 import { PageHead, RarityChip } from '@/components/ui';
-import { getSession } from '@/lib/auth/session';
+import { getSession, playerIdOf } from '@/lib/auth/session';
 import { getStore } from '@/lib/db/store';
 import { CARDS } from '@/lib/domain/catalog';
 import { ECONOMY } from '@/lib/domain/rules';
@@ -22,7 +22,7 @@ export const metadata = { title: 'Boosters' };
  */
 export default async function BoostersPage() {
   const session = await getSession();
-  const playerId = session?.role === 'joueur' ? session.sub : null;
+  const playerId = playerIdOf(session);
 
   const { balance, shopOpen, quotes, catalogueBoosters } = await getStore().read((db) => ({
     balance: playerId ? (db.players.find((p) => p.id === playerId)?.snowflakes ?? null) : null,

@@ -58,15 +58,29 @@ export function SidebarNav({ isAdmin, isPlayer }: { isAdmin: boolean; isPlayer: 
         {visible.map((tab) => {
           const active = isActive(pathname, tab.href);
           const Icon = NAV_ICONS[tab.icon];
+          /*
+           * L'entrée d'administration se détache du reste.
+           *
+           * Elle avait exactement l'apparence des autres, alors qu'elle ne mène
+           * pas au même endroit : les cinq premières sont le site, celle-ci est
+           * la salle des machines. Un trait au-dessus, la teinte d'or et le mot
+           * « réservé » suffisent — sans quoi on clique dessus par erreur, et
+           * surtout on ne la trouve pas quand on la cherche.
+           */
+          const reserve = tab.admin === true;
           return (
-            <li key={tab.href}>
+            <li key={tab.href} className={reserve ? 'mt-3 border-t border-white/10 pt-3' : undefined}>
               <Link
                 href={tab.href}
                 aria-current={active ? 'page' : undefined}
                 className={`group flex min-h-[46px] items-center gap-3 rounded-2xl px-3.5 py-2.5 no-underline transition-colors ${
                   active
-                    ? 'bg-ice/12 text-ice'
-                    : 'text-muted hover:bg-white/6 hover:text-ink'
+                    ? reserve
+                      ? 'bg-gold/12 text-gold'
+                      : 'bg-ice/12 text-ice'
+                    : reserve
+                      ? 'text-gold/70 hover:bg-gold/8 hover:text-gold'
+                      : 'text-muted hover:bg-white/6 hover:text-ink'
                 }`}
                 style={
                   active
@@ -77,11 +91,19 @@ export function SidebarNav({ isAdmin, isPlayer }: { isAdmin: boolean; isPlayer: 
                 <Icon className="h-[22px] w-[22px] shrink-0" />
                 <span className="min-w-0 flex-1 truncate font-display text-[15px] font-bold tracking-wide">
                   {tab.label}
+                  {reserve && (
+                    <span className="ml-1.5 align-middle text-[10px] font-black tracking-[0.14em] text-gold/60 uppercase">
+                      réservé
+                    </span>
+                  )}
                 </span>
                 {active && (
                   <span
-                    className="h-1.5 w-1.5 shrink-0 rounded-full bg-ice"
-                    style={{ boxShadow: '0 0 10px var(--ice)' }}
+                    className="h-1.5 w-1.5 shrink-0 rounded-full"
+                    style={{
+                      background: reserve ? 'var(--gold)' : 'var(--ice)',
+                      boxShadow: `0 0 10px ${reserve ? 'var(--gold)' : 'var(--ice)'}`,
+                    }}
                     aria-hidden="true"
                   />
                 )}
