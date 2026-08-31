@@ -1,11 +1,8 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
-import { abonneSon, basculeSon, prechargeSons, sonActif } from '@/components/bruitage';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BoosterPack3D } from '@/components/BoosterPack3D';
-import { aUneIllustration } from '@/components/CardArt';
 import { CardDetailModal, type CarteDetail } from '@/components/CardDetailModal';
-import { Tirage } from '@/components/Tirage';
 import { CardTile, Notice, RarityChip, flakes, rarityMeta } from '@/components/ui';
 import { boosterArt, boosterSize } from '@/lib/domain/catalog';
 import { atLeastOnePercent, rarityPercent } from '@/lib/domain/rules';
@@ -33,7 +30,15 @@ interface Pulled extends CatalogCard {
   isNew: boolean;
 }
 
-type Phase = 'repos' | 'achat' | 'secousse' | 'eclat' | 'tirage' | 'reveal';
+/**
+ * Les trois états de l'écran.
+ *
+ * Il y en avait six : `secousse`, `eclat` et `tirage` mettaient en scène le
+ * résultat entre l'achat et son affichage. Toute cette couche a été retirée pour
+ * être reprise de zéro ; il ne reste que la mécanique, qui elle fonctionne — on
+ * clique, le serveur tire, les cartes s'affichent.
+ */
+type Phase = 'repos' | 'achat' | 'reveal';
 
 /**
  * Achat et ouverture d'un booster, avec le sachet en 3D.
@@ -61,35 +66,7 @@ export function BoosterOpening({
   /** La carte dont la fiche est ouverte, s'il y en a une. */
   const [fiche, setFiche] = useState<CarteDetail | null>(null);
 
-  /*
-   * Le son, lu dans son magasin plutôt que recopié dans un état.
-   *
-   * La préférence vit dans `localStorage`, qui n'existe pas au rendu serveur :
-   * la lire à l'initialisation ferait diverger le HTML du serveur de celui du
-   * client. `useSyncExternalStore` est fait pour ça — il prend un instantané
-   * serveur distinct (allumé, la valeur par défaut) et se resynchronise au
-   * montage sans rendu supplémentaire, là où un `setState` dans un effet en
-   * coûterait un et déclencherait des rendus en cascade.
-   */
-  const son = useSyncExternalStore(abonneSon, sonActif, () => true);
-
-  /*
-   * Les sons sont chargés et décodés pendant qu'on choisit son sachet.
-   *
-   * Le décodage est asynchrone : demandé au démarrage du rail, le cliquet
-   * arriverait après lui, et l'appât — cent soixante-dix kilo-octets — bien plus
-   * tard encore.
-   *
-   * Il n'y a plus rien à réveiller dans le gestionnaire du clic : Howler pose
-   * lui-même ses écouteurs sur le premier geste de la page et reprend le
-   * contexte. C'est le seul vrai service qu'il rend ici, mais il évite une
-   * classe entière de bogues — celle où un `await` glissé avant l'appel fait
-   * perdre l'autorisation sans que rien ne le signale.
-   */
-  useEffect(() => {
-    prechargeSons();
-  }, []);
-  const [error, setError] = useState<string | null>(null);
+ const [error, setError] = useState<string | null>(null);
   const [pulled, setPulled] = useState<Pulled[]>([]);
   const [spent, setSpent] = useState<number | null>(null);
   const [newBalance, setNewBalance] = useState<number | null>(null);
@@ -199,8 +176,8 @@ export function BoosterOpening({
     event.preventDefault();
     decale(pas);
   };
-  // Les minuteries de l'animation doivent mourir avec le composant, sinon un
-  // changement de page en cours d'ouverture déclencherait un setState fantôme.
+  // Les minuteries restantes doivent mourir avec le composant, sinon un
+  // changement de page en cours d'achat déclencherait un setState fantôme.
   useEffect(
     () => () => {
       timers.current.forEach(clearTimeout);
@@ -208,63 +185,8 @@ export function BoosterOpening({
     [],
   );
 
-  const schedule = useCallback((fn: () => void, delay: number) => {
-    timers.current.push(setTimeout(fn, delay));
-  }, []);
-
   const affordable = balance !== null && booster !== undefined && balance >= booster.finalPrice;
 
-  /**
-   * Les leurres du carrousel.
-   *
-   * Ils n'ont aucune existence dans la partie — ils passent sous le repère et
-   * disparaissent. Les prendre dans le vrai catalogue plutôt que d'inventer des
-   * formes est ce qui rend le rail crédible : on reconnaît des cartes qu'on
-   * possède, et on les voit filer.
-   *
-   * Seules les cartes qui ont une illustration entrent dans le rail. Le
-   * catalogue contient aussi les cartes Joueur et Moment, créées par la
-   * modération et sans dessin : elles défilaient en tuiles grises et vides, au
-   * milieu des autres. Une carte vide dans une bande d'ouverture ne se lit pas
-   * comme « pas encore illustrée », elle se lit comme un bogue.
-   */
-  const leurres = useMemo(
-    () =>
-      Object.entries(catalog)
-        .filter(([cardId]) => aUneIllustration(cardId))
-        .map(([cardId, c]) => ({
-          cardId,
-          name: c.name,
-          description: c.description,
-          rarity: c.rarity,
-          glyph: c.glyph,
-          power: c.power,
-          nature: c.nature,
-        })),
-    [catalog],
-  );
-
-  /**
-   * Les cartes que les rails mettent en scène : toutes celles du booster.
-   *
-   * Une seule colonne, sur la meilleure du lot, faisait durer le suspense une
-   * fois puis livrait le reste en grille — on voyait le booster s'ouvrir une
-   * fois pour cinq cartes. Les colonnes s'arrêtent maintenant l'une après
-   * l'autre, et la tension redémarre à chaque carte.
-   */
-  const vedettes = useMemo(
-    () =>
-      pulled.map((c) => ({
-        cardId: c.cardId,
-        name: c.name,
-        description: c.description,
-        rarity: c.rarity,
-        glyph: c.glyph,
-        power: c.power,
-        nature: c.nature,
-      })),
-    [pulled],
-  );
 
   async function open() {
     if (!booster || busy) return;
@@ -313,10 +235,16 @@ export function BoosterOpening({
        * ponctuer le clic, pas faire patienter : dès qu'ils durent assez pour
        * qu'on les regarde, ils sont trop longs.
        */
+      /*
+       * Le résultat s'affiche directement.
+       *
+       * Tout est déjà décidé par le serveur à cet instant : `purchaseAndOpen`
+       * a tiré les cartes, débité le prix et renvoyé le tableau. Ce qui vivait
+       * ici — secousse du sachet, éclat, puis carrousel — ne faisait que mettre
+       * en scène un résultat acquis, et sera repris de zéro.
+       */
       setPulled(cards);
-      setPhase('secousse');
-      schedule(() => setPhase('eclat'), 200);
-      schedule(() => setPhase('tirage'), 460);
+      setPhase('reveal');
     } catch {
       setError('Le serveur n’a pas répondu. Réessaie dans un instant.');
       setPhase('repos');
@@ -352,18 +280,6 @@ export function BoosterOpening({
 
       {/* ------------------------- Scène 3D ------------------------------ */}
       <div className="glass glass-reflet relative overflow-hidden">
-        {/* Un son d'interface qu'on ne peut pas éteindre est un défaut. Le
-            choix se retient d'une visite à l'autre. */}
-        <button
-          type="button"
-          className="tirage-son"
-          onClick={() => basculeSon()}
-          aria-pressed={son}
-          title={son ? 'Couper le son' : 'Activer le son'}
-        >
-          <span aria-hidden="true">{son ? '🔊' : '🔇'}</span>
-          <span className="sr-only">{son ? 'Couper le son' : 'Activer le son'}</span>
-        </button>
         <div
           className="pointer-events-none absolute inset-0 opacity-60"
           style={{
@@ -373,18 +289,7 @@ export function BoosterOpening({
         />
 
         <div className="relative flex min-h-[400px] flex-col items-center justify-center gap-6 px-4 py-10 sm:min-h-[460px]">
-          {phase === 'tirage' && vedettes.length > 0 ? (
-            <>
-              <p className="font-display text-sm tracking-[0.18em] text-muted uppercase">
-                Tirage en cours
-              </p>
-              <Tirage
-                cartes={leurres}
-                gagnantes={vedettes}
-                onFini={() => setPhase('reveal')}
-              />
-            </>
-          ) : phase !== 'reveal' ? (
+          {phase !== 'reveal' ? (
             <>
               {/* Ce que portaient les fiches supprimées : composition du sachet,
                   rareté garantie et promesse. Ici il n'y en a qu'une, celle du
@@ -485,9 +390,7 @@ export function BoosterOpening({
                             }}
                           >
                             <div
-                              className={`scene ${actif && phase === 'secousse' ? 'pack-shake' : ''} ${
-                                actif && phase === 'eclat' ? 'pack-burst' : ''
-                              }`}
+                              className="scene"
                             >
                               <BoosterPack3D
                                 name={b.name}
@@ -498,9 +401,6 @@ export function BoosterOpening({
                                 rarete={b.guaranteed}
                                 vignette={!actif}
                               />
-                              {actif && phase === 'eclat' && (
-                                <span className="shockwave" aria-hidden="true" />
-                              )}
                             </div>
                           </button>
                         </div>
