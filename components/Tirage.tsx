@@ -45,17 +45,16 @@ const APRES = 4;
  * défile, c'était fini. C'est long — et c'est le sujet : ce qu'on achète en
  * ouvrant un booster, c'est cette attente-là.
  */
-const DUREE = 5200;
+const DUREE = 4600;
 const DUREE_REDUITE = 900;
 
 /**
- * Décalage d'arrêt d'une piste à la suivante.
+ * Durée des bandes suivantes.
  *
- * Assez large pour que chaque arrêt soit un évènement séparé. À cinq cent
- * cinquante millisecondes, les cinq clacs se fondaient en un roulement et les
- * pistes semblaient s'arrêter ensemble.
+ * Deux fois plus court. Le suspense d'un booster se joue à la première carte :
+ * après, on veut savoir, on ne veut plus attendre.
  */
-const RELAIS = 900;
+const DUREE_SUIVANTE = 2400;
 
 /**
  * Gouttière horizontale entre deux tuiles, en pixels.
@@ -450,83 +449,119 @@ function Piste({
 }
 
 /**
- * Le tirage d'un booster : une piste horizontale par carte.
+ * Le tirage : une bande, une carte à la fois.
  *
- * Rien n'est tiré ici. Les cartes gagnantes arrivent en propriété, décidées par
- * le serveur au moment de l'achat ; les rails ne mettent en scène que le rythme
- * de leur révélation. Les cartes qui défilent autour sont des leurres pris dans
- * le catalogue et n'ont aucune existence dans la partie.
+ * ## Pourquoi une seule bande
  *
- * ## Une piste par carte, et des arrêts en cascade
+ * Il y en avait une par carte, empilées. À cinq pistes dans la hauteur d'un
+ * panneau, chacune tombait à cent soixante-dix pixels et les tuiles à cent
+ * vingt de large : trop petites pour qu'on lise quoi que ce soit, et cinq
+ * rangées qui s'arrêtent à contretemps donnent une grille agitée, pas une
+ * machine. Les sites d'ouverture n'en montrent qu'une, et large.
  *
- * Une seule piste, sur la meilleure carte du lot, faisait durer le suspense une
- * fois puis livrait le reste en grille : on voyait le booster s'ouvrir une fois
- * pour cinq cartes. Les pistes s'arrêtent maintenant l'une après l'autre, à
- * `RELAIS` d'intervalle, et la tension redémarre à chaque carte.
+ * Les cartes se tirent donc l'une après l'autre, et celles déjà gagnées
+ * s'alignent en dessous. On voit ce qu'on a, on attend ce qui vient.
  *
- * Un seul repère traverse toutes les pistes, plutôt qu'un par ligne : c'est lui
- * qui fait tenir l'empilement comme une seule machine.
+ * ## Le rythme
  *
- * ## Les appâts
+ * La première bande prend son temps ; les suivantes vont deux fois plus vite.
+ * Le suspense d'un booster se joue à la première carte — après, on veut savoir,
+ * on ne veut plus attendre. Cinq cartes tiennent ainsi en une douzaine de
+ * secondes au lieu d'une éternité.
  *
- * Aux trois positions de `APPATS`, le rail rencontre une carte de rareté haute
- * et y freine presque jusqu'à l'arrêt avant de repartir. Le joueur croit tenir
- * une ultra rare et la voit glisser. C'est délibérément frustrant — et c'est
- * honnête : la carte gagnante est décidée avant que la première image ne
- * s'affiche, et aucun appât ne peut devenir la carte sur laquelle on s'arrête.
+ * ## Ce qui n'est pas de moi
  *
- * Le défilement est piloté en JavaScript et non en CSS parce qu'il faut savoir,
- * à chaque image, quelle carte passe sous le repère — pour le cran sonore et
- * pour le flou de vitesse. Une animation CSS ne le dit pas sans forcer un
- * recalcul de style par image.
+ * La disposition de la tuile et du repère est calquée sur une capture
+ * d'EmpireDrop fournie par le commanditaire. Leur code est inaccessible — le
+ * site répond par une page de vérification de navigateur qui exige d'exécuter
+ * du JavaScript — donc rien n'en est copié : seule l'apparence visible a été
+ * reproduite, et les mécaniques (table d'appâts, flou de vitesse, graduation
+ * par rareté) sont écrites ici.
+ *
+ * Rien n'est tiré ici non plus. Les cartes gagnantes arrivent en propriété,
+ * décidées par le serveur au moment de l'achat ; la bande ne met en scène que
+ * le rythme de leur révélation.
  */
 export function Tirage({
   cartes,
   gagnantes,
   onFini,
 }: {
-  /** Le catalogue, pour peupler les rails de leurres. */
+  /** Le catalogue, pour peupler la bande de leurres. */
   cartes: CarteTirage[];
   gagnantes: CarteTirage[];
   onFini: () => void;
 }) {
   const cran = useRef(0);
-  const restantes = useRef(gagnantes.length);
+  const [courante, setCourante] = useState(0);
 
   const fini = useRef(onFini);
   useEffect(() => {
     fini.current = onFini;
   });
 
-  // Le roulement couvre tout le tirage et s'arrête avec le composant. Il est
-  // monté ici et non dans chaque piste : cinq roulements superposés ne font pas
-  // un roulement plus fort, ils font de la boue.
+  // Le roulement couvre tout le tirage et s'arrête avec le composant. Un
+  // roulement par bande se rallumerait à chaque carte, ce qui hache l'attente
+  // au lieu de la porter.
   useEffect(() => bruitDeRoulement(), []);
 
-  const uneDeMoins = () => {
-    restantes.current -= 1;
-    // Une pause après le dernier arrêt : sans elle, la grille remplace les rails
-    // dans l'image qui suit le clac final, et on n'a rien vu.
-    if (restantes.current <= 0) setTimeout(() => fini.current(), 900);
+  const gagnante = gagnantes[courante];
+  const acquises = gagnantes.slice(0, courante);
+
+  const passeALaSuivante = () => {
+    // Une pause après l'arrêt : sans elle, la bande suivante démarre dans
+    // l'image qui suit le clac, et on n'a pas vu ce qu'on a gagné.
+    setTimeout(() => {
+      if (courante + 1 >= gagnantes.length) fini.current();
+      else setCourante((n) => n + 1);
+    }, 1_100);
   };
+
+  if (!gagnante) return null;
 
   return (
     <div className="tirage">
-      {gagnantes.map((g, i) => (
-        <Piste
-          key={`${g.cardId}-${i}`}
-          cartes={cartes}
-          gagnante={g}
-          duree={DUREE + i * RELAIS}
-          cran={cran}
-          onFini={uneDeMoins}
-        />
-      ))}
+      <div className="tirage-compte">
+        Carte <span className="num">{courante + 1}</span> sur{' '}
+        <span className="num">{gagnantes.length}</span>
+      </div>
 
-      {/* Le repère, posé au-dessus de toutes les pistes. */}
-      <span className="tirage-repere" aria-hidden="true" />
-      <span className="tirage-voile tirage-voile-gauche" aria-hidden="true" />
-      <span className="tirage-voile tirage-voile-droite" aria-hidden="true" />
+      <div className="tirage-scene">
+        <Piste
+          // La clé porte l'index : changer de carte doit remonter la bande, pas
+          // la réutiliser — sinon l'animation reprendrait là où elle s'est
+          // arrêtée.
+          key={courante}
+          cartes={cartes}
+          gagnante={gagnante}
+          duree={courante === 0 ? DUREE : DUREE_SUIVANTE}
+          cran={cran}
+          onFini={passeALaSuivante}
+        />
+
+        <span className="tirage-repere" aria-hidden="true" />
+        <span className="tirage-voile tirage-voile-gauche" aria-hidden="true" />
+        <span className="tirage-voile tirage-voile-droite" aria-hidden="true" />
+      </div>
+
+      {/* Les cartes déjà gagnées, alignées sous la bande. */}
+      {acquises.length > 0 && (
+        <div className="tirage-acquises">
+          {acquises.map((c, i) => (
+            <div key={`${c.cardId}-${i}`} className="tirage-acquise">
+              <CardFrame
+                cardId={c.cardId}
+                name={c.name}
+                description={c.description}
+                rarity={c.rarity}
+                glyph={c.glyph}
+                power={c.power}
+                nature={c.nature}
+              />
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
