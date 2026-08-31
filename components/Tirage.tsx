@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { boucleDeSpin, bruitDeGain } from '@/components/bruitage';
+import { joueSon, programmeFin, sonDeFete } from '@/components/bruitage';
 import { CardFrame } from '@/components/CardFrame';
 import { RARITY_META } from '@/lib/domain/catalog';
 import { RARITY_ORDER } from '@/lib/domain/rules';
@@ -119,6 +119,27 @@ const APPATS = [
   { avant: 3, force: 0.94, largeur: 0.042 },
   { avant: 1, force: 0.95, largeur: 0.04 },
 ];
+
+/**
+ * Écart minimal entre deux dents, toutes pistes confondues, en millisecondes.
+ *
+ * Une dent par carte franchissant le repère, et par rouleau : c'est le rouleau
+ * qui fait le bruit, pas une horloge. Huit cartes pour cinq rouleaux, cela fait
+ * quarante dents, denses au départ quand les cinq filent ensemble, isolées à la
+ * fin quand il n'en reste qu'un qui hésite.
+ *
+ * L'étranglement est là contre les coïncidences : deux rouleaux qui franchissent
+ * une carte à quelques images d'écart font un « flam » de batterie, un coup
+ * dédoublé qu'on entend comme une erreur. L'échantillon dure 209 ms, donc il en
+ * faut au moins la moitié entre deux attaques pour qu'on les distingue.
+ *
+ * Le compromis est assumé, et mesuré : à 90 ms, dix des quarante-cinq
+ * franchissements restent muets — une carte passe la barre sans bruit — mais
+ * aucune des trente-cinq dents restantes n'est à moins de 100 ms de sa voisine.
+ * À 30 ms on les gardait toutes, avec des paires à 33 ms qui sonnaient comme un
+ * bégaiement. Mieux vaut un cliquet régulier qu'un cliquet exhaustif.
+ */
+const ETRANGLEMENT = 90;
 
 /**
  * L'amortissement.
@@ -240,22 +261,14 @@ function Piste({
   cartes,
   gagnante,
   duree,
-  vitesses,
-  rang: place,
+  cran,
   onFini,
 }: {
   cartes: CarteTirage[];
   gagnante: CarteTirage;
   duree: number;
-  /**
-   * Le tableau des vitesses, partagé, et la case de ce rouleau.
-   *
-   * Un tableau simple plutôt qu'un rappel : passé en propriété, un rappel change
-   * d'identité à chaque rendu et devrait entrer dans les dépendances de l'effet,
-   * qui relancerait alors l'animation. Le tableau, lui, est stable.
-   */
-  vitesses: number[];
-  rang: number;
+  /** Horodatage de la dernière dent, partagé par tous les rouleaux. */
+  cran: React.RefObject<number>;
   onFini: () => void;
 }) {
   const cadre = useRef<HTMLDivElement>(null);
@@ -382,13 +395,11 @@ function Piste({
      * moment où le rail franchit le dernier appât — le joueur entend que ça
      * tourne bien avant de voir sur quoi.
      */
-    const rang = RARITY_ORDER[gagnante.rarity as Rarity] ?? 0;
 
     let debut = 0;
     let trame = 0;
-    let precedentX = 0;
-    /** La vitesse la plus haute vue jusqu'ici, pour normaliser. */
-    let pointe = 0;
+    /** L'index sous le repère à l'image précédente. */
+    let dernier = -1;
 
     const image = (temps: number) => {
       if (!debut) debut = temps;
@@ -397,31 +408,30 @@ function Piste({
       el.style.transform = `translate3d(0, ${(yDebut + x).toFixed(1)}px, 0)`;
 
       /*
-       * La vitesse, normalisée et déposée pour le cliquet.
+       * La dent du cliquet : une carte vient de franchir le repère.
        *
-       * Rapportée en fraction de la pointe du rouleau, et non en pixels : la
-       * largeur des colonnes dépend de l'écran, donc les pixels par image aussi,
-       * alors que la fraction ne dépend que de la courbe. Le maximum est relevé
-       * au vol — le rail est à sa vitesse maximale dès la première image, si
-       * bien qu'il est juste tout de suite.
+       * Le déclencheur est l'index sous la barre, donc le son est exactement
+       * l'évènement qu'on voit. C'est aussi ce qui fait le ralentissement sans
+       * qu'il soit écrit nulle part : la cadence est celle des franchissements,
+       * donc elle épouse la courbe, hésitations comprises. Les trois appâts
+       * s'entendent sans qu'une ligne ne les mentionne — le cliquet s'étire quand
+       * la bande s'attarde sur une fausse légendaire, et repart avec elle.
        */
-      const v = x - precedentX;
-      precedentX = x;
-      if (v > pointe) pointe = v;
-      vitesses[place] = pointe > 0 ? v / pointe : 0;
+      const index = Math.round((hauteur / 2 - (yDebut + x) - hTuile / 2) / pas);
+      if (index !== dernier && !reduit) {
+        dernier = index;
+        if (temps - cran.current >= ETRANGLEMENT) {
+          cran.current = temps;
+          joueSon('cran');
+        }
+      }
 
       if (t < 1) {
         trame = requestAnimationFrame(image);
         return;
       }
-      // Ce rouleau ne compte plus dans le pilotage du cliquet.
-      vitesses[place] = 0;
       boite.dataset.arrete = 'true';
       setArrete(true);
-      // La résolution, graduée par la rareté : c'est le seul son qui dise ce
-      // qu'on a obtenu, et il tombe dans le silence que le cliquet vient de
-      // laisser.
-      bruitDeGain(rang);
       fini.current();
     };
 
@@ -443,7 +453,7 @@ function Piste({
       cancelAnimationFrame(amorce);
       cancelAnimationFrame(trame);
     };
-  }, [duree, vitesses, place, gagnante.rarity]);
+  }, [duree, cran]);
 
   const meta = RARITY_META[gagnante.rarity as Rarity] ?? RARITY_META.C;
 
@@ -551,45 +561,53 @@ export function Tirage({
   onFini: () => void;
 }) {
 
-  /*
-   * Les vitesses des rouleaux, dans un tableau partagé et stable.
-   *
-   * `useState` avec un initialisateur, et non `useRef` : le tableau doit exister
-   * dès le premier rendu pour être passé aux pistes, et il ne doit jamais être
-   * reconstruit — une nouvelle identité relancerait leurs effets, donc leur
-   * animation.
-   */
-  const [vitesses] = useState<number[]>(() => gagnantes.map(() => 0));
+  const cran = useRef(0);
   const restants = useRef(gagnantes.length);
+  const dernier = gagnantes.length - 1;
 
   /*
-   * Le cliquet, lancé une fois et piloté par le rouleau le plus rapide.
+   * Le meilleur du lot, et le rouleau qui le porte.
    *
-   * La boucle de pilotage est ici et non dans les pistes : c'est le maximum qui
-   * commande, donc il faut un endroit qui les voie toutes. Elle tourne à part de
-   * l'animation, et ne fait qu'une lecture de tableau par image.
+   * Une seule fête par ouverture, à l'arrêt du rouleau concerné. Les rouleaux
+   * s'arrêtent à une demi-seconde d'intervalle : cinq fanfares de plusieurs
+   * secondes s'empileraient en bouillie, et surtout la meilleure carte se
+   * noierait au milieu des autres au lieu d'être ce qu'on retient.
+   */
+  const [fete] = useState(() => {
+    let place = 0;
+    let haut = -1;
+    gagnantes.forEach((g, i) => {
+      const r = RARITY_ORDER[g.rarity as Rarity] ?? 0;
+      if (r > haut) {
+        haut = r;
+        place = i;
+      }
+    });
+    return { place, son: sonDeFete(haut) };
+  });
+
+  /*
+   * L'appât, calé pour résoudre à l'arrêt du dernier rouleau.
+   *
+   * Cinq secondes sept de montée, et c'est sa fin qui compte : elle doit tomber
+   * sur le dernier clac, pas quelque part avant. `programmeFin` s'en charge à
+   * partir de la durée du tampon décodé.
    */
   useEffect(() => {
-    const spin = boucleDeSpin();
-    let trame = requestAnimationFrame(function suit() {
-      let haute = 0;
-      for (const v of vitesses) if (v > haute) haute = v;
-      spin.vitesse(haute);
-      trame = requestAnimationFrame(suit);
-    });
-    return () => {
-      cancelAnimationFrame(trame);
-      spin.arrete();
-    };
-  }, [vitesses]);
+    programmeFin('appat', DUREE + dernier * RELAIS);
+  }, [dernier]);
 
   const fini = useRef(onFini);
   useEffect(() => {
     fini.current = onFini;
   });
 
-  const unDeMoins = () => {
+  const unDeMoins = (place: number) => {
     restants.current -= 1;
+    // Le claquement d'arrêt, pour chaque rouleau ; la fanfare, pour le seul qui
+    // porte la meilleure carte.
+    joueSon('commun');
+    if (place === fete.place && fete.son) joueSon(fete.son);
     // Une pause après le dernier arrêt : sans elle, la grille remplace les
     // rouleaux dans l'image qui suit le dernier clac, et on n'a rien vu.
     if (restants.current <= 0) setTimeout(() => fini.current(), 1_200);
@@ -607,9 +625,8 @@ export function Tirage({
             cartes={cartes}
             gagnante={g}
             duree={DUREE + i * RELAIS}
-            vitesses={vitesses}
-            rang={i}
-            onFini={unDeMoins}
+            cran={cran}
+            onFini={() => unDeMoins(i)}
           />
         ))}
 

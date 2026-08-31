@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
-import { abonneSon, basculeSon, prechargeSpin, sonActif } from '@/components/bruitage';
+import { abonneSon, basculeSon, prechargeSons, sonActif } from '@/components/bruitage';
 import { BoosterPack3D } from '@/components/BoosterPack3D';
 import { aUneIllustration } from '@/components/CardArt';
 import { CardDetailModal, type CarteDetail } from '@/components/CardDetailModal';
@@ -80,7 +80,7 @@ export function BoosterOpening({
    * asynchrone : demandé au démarrage du rail, le son arriverait après lui.
    */
   useEffect(() => {
-    if (son) prechargeSpin();
+    if (son) prechargeSons();
   }, [son]);
   const [error, setError] = useState<string | null>(null);
   const [pulled, setPulled] = useState<Pulled[]>([]);
