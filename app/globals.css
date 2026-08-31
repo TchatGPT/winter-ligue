@@ -432,10 +432,18 @@
    * donc le pas du rail et la position d'arrêt. La changer ici change
    * l'animation.
    */
+  /*
+   * Hauteur mesurée sur la référence, pas choisie.
+   *
+   * Leur bande fait 430 × 80 pixels dans la capture, soit un rapport de 5,4:1
+   * avec six tuiles visibles ; la mienne était à 3,4:1 avec des tuiles nettement
+   * plus hautes que larges. Une bande trop haute cesse d'être une bande : elle
+   * devient une rangée de cartes, et le mouvement s'y lit moins bien.
+   */
   .tirage-piste {
     position: relative;
     overflow: hidden;
-    height: 268px;
+    height: 168px;
     border-radius: var(--r-md);
     border: 1px solid var(--glass-edge);
     background: #05070c;
@@ -445,7 +453,7 @@
 
   @media (max-width: 640px) {
     .tirage-piste {
-      height: 196px;
+      height: 124px;
     }
   }
 
@@ -506,8 +514,10 @@
     align-items: center;
     flex: 0 0 auto;
     height: 100%;
-    aspect-ratio: 1 / 1.4;
-    padding: 8px 8px 10px;
+    /* 0,90 sur la référence : presque carré. En 1/1,4 les tuiles étaient des
+       cartes, et six cartes de front ne défilent pas, elles s'alignent. */
+    aspect-ratio: 1 / 1.11;
+    padding: 7px 7px 8px;
     overflow: hidden;
     /*
      * La teinte monte du bas et s'éteint à mi-hauteur.
@@ -536,10 +546,10 @@
 
   .tirage-pilule {
     position: absolute;
-    top: 10px;
-    left: 10px;
-    width: 26px;
-    height: 7px;
+    top: 8px;
+    left: 8px;
+    width: 22px;
+    height: 6px;
     border-radius: 999px;
     background: var(--r);
     box-shadow: 0 0 10px color-mix(in srgb, var(--r) 75%, transparent);
@@ -547,8 +557,8 @@
 
   .tirage-palier {
     position: absolute;
-    top: 6px;
-    right: 9px;
+    top: 5px;
+    right: 8px;
     max-width: 66%;
     overflow: hidden;
     font-size: 0.6875rem;
@@ -571,9 +581,11 @@
     position: relative;
     display: grid;
     place-items: center;
-    width: 74%;
+    /* 37 % sur la référence ; 44 ici parce qu'une scène dessinée a besoin de
+       plus de place qu'une photo de produit détourée. */
+    width: 44%;
     aspect-ratio: 1;
-    margin-top: 14%;
+    margin-top: 9%;
     border-radius: 50%;
     overflow: hidden;
     background: radial-gradient(circle, rgb(255 255 255 / 0.06), transparent 70%);
@@ -606,7 +618,7 @@
   }
 
   .tirage-glyphe {
-    font-size: 1.8rem;
+    font-size: 1.3rem;
     line-height: 1;
     opacity: 0.9;
   }
