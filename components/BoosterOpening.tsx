@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { abonneSon, basculeSon, prechargeSpin, sonActif } from '@/components/bruitage';
 import { BoosterPack3D } from '@/components/BoosterPack3D';
 import { aUneIllustration } from '@/components/CardArt';
 import { CardDetailModal, type CarteDetail } from '@/components/CardDetailModal';
@@ -59,6 +60,28 @@ export function BoosterOpening({
   const [phase, setPhase] = useState<Phase>('repos');
   /** La carte dont la fiche est ouverte, s'il y en a une. */
   const [fiche, setFiche] = useState<CarteDetail | null>(null);
+
+  /*
+   * Le son, lu dans son magasin plutôt que recopié dans un état.
+   *
+   * La préférence vit dans `localStorage`, qui n'existe pas au rendu serveur :
+   * la lire à l'initialisation ferait diverger le HTML du serveur de celui du
+   * client. `useSyncExternalStore` est fait pour ça — il prend un instantané
+   * serveur distinct (allumé, la valeur par défaut) et se resynchronise au
+   * montage sans rendu supplémentaire, là où un `setState` dans un effet en
+   * coûterait un et déclencherait des rendus en cascade.
+   */
+  const son = useSyncExternalStore(abonneSon, sonActif, () => true);
+
+  /*
+   * Le cliquet est décodé pendant qu'on choisit son sachet.
+   *
+   * Décoder cinquante kilo-octets prend quelques millisecondes, mais l'appel est
+   * asynchrone : demandé au démarrage du rail, le son arriverait après lui.
+   */
+  useEffect(() => {
+    if (son) prechargeSpin();
+  }, [son]);
   const [error, setError] = useState<string | null>(null);
   const [pulled, setPulled] = useState<Pulled[]>([]);
   const [spent, setSpent] = useState<number | null>(null);
@@ -322,6 +345,18 @@ export function BoosterOpening({
 
       {/* ------------------------- Scène 3D ------------------------------ */}
       <div className="glass glass-reflet relative overflow-hidden">
+        {/* Un son d'interface qu'on ne peut pas éteindre est un défaut. Le
+            choix se retient d'une visite à l'autre. */}
+        <button
+          type="button"
+          className="tirage-son"
+          onClick={() => basculeSon()}
+          aria-pressed={son}
+          title={son ? 'Couper le son' : 'Activer le son'}
+        >
+          <span aria-hidden="true">{son ? '🔊' : '🔇'}</span>
+          <span className="sr-only">{son ? 'Couper le son' : 'Activer le son'}</span>
+        </button>
         <div
           className="pointer-events-none absolute inset-0 opacity-60"
           style={{

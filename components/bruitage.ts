@@ -1,14 +1,34 @@
 /**
  * Les bruits des sachets, synthétisés.
  *
- * ## Ce module n'est appelé nulle part
+ * ## Le spin vient d'un fichier, le reste est synthétisé
  *
- * Tous les sons ont été retirés de l'ouverture sur demande. Le module est
- * conservé plutôt que supprimé parce qu'il porte des décisions coûteuses à
- * refaire — le choix des deux notes à l'oreille parmi dix candidates, la
- * descente du cran sous la zone sensible de l'audition, le bus à compresseur qui
- * empêchait l'écrêtage quand quatre sons se superposaient. Le rebrancher, c'est
- * un import.
+ * `public/sons/spin.mp3` est un lit de cliquet à cadence **constante** : 2,424 s,
+ * 24 kHz, et une enveloppe plate d'un bout à l'autre — vérifié en lisant le
+ * `global_gain` de ses cent un granules, sans le décoder. Il ne ralentit donc
+ * pas tout seul, et c'est exactement ce qu'il fallait : le fichier apporte le
+ * timbre, l'animation apporte la décélération en pilotant sa vitesse de lecture.
+ * Un fichier qui aurait déjà son propre ralenti aurait été inutilisable, puisque
+ * le rail met 9,5 s là où l'échantillon en fait 2,4.
+ *
+ * ## Les sons synthétisés qui restent
+ *
+ * Tous les sons avaient été retirés de l'ouverture : ils cassaient les oreilles.
+ * Un seul revient — la **résolution** à l'arrêt, qui gradue ce qu'on vient
+ * d'obtenir. Le roulement de fond, la montée de tension et le cran synthétisé
+ * restent au placard : c'est leur superposition qui faisait la nappe fatigante,
+ * et le cliquet du fichier dit désormais tout ce qu'il y a à dire.
+ *
+ * Le module avait été conservé plutôt que supprimé parce qu'il portait des
+ * décisions coûteuses à refaire — le choix des notes à l'oreille parmi dix
+ * candidates, la descente du cran sous la zone sensible de l'audition, le bus à
+ * compresseur qui empêchait l'écrêtage. C'est ce qui rend ce retour bon marché.
+ *
+ * ## Le son se coupe, et le choix se retient
+ *
+ * Un son d'interface qu'on ne peut pas éteindre est un défaut, et celui-ci a
+ * déjà agacé une fois. `basculeSon()` le coupe pour de bon, `contexte()` refuse
+ * de s'ouvrir tant qu'il l'est, et le choix survit au rechargement.
  *
  * Pas de fichier audio. Deux sinus et quelques enveloppes tiennent en trente
  * lignes, là où des échantillons demanderaient des fichiers à héberger, des
@@ -37,6 +57,63 @@
  */
 
 /** L'unique contexte audio de la page, ouvert au premier son. */
+const CLE_SON = 'winter.son';
+
+/** `null` tant que la préférence n'a pas été lue. */
+let actif: boolean | null = null;
+
+/**
+ * Le son est-il allumé ?
+ *
+ * Allumé par défaut : l'ouverture d'un booster est le seul endroit du site qui
+ * en émette, et c'est un geste que l'on déclenche exprès. Mais le choix
+ * contraire se retient — rien n'est plus agaçant qu'un réglage à refaire à
+ * chaque visite.
+ */
+export function sonActif(): boolean {
+  if (actif === null) {
+    try {
+      actif = localStorage.getItem(CLE_SON) !== 'non';
+    } catch {
+      // Navigation privée, stockage refusé : on ne coupe pas le son pour ça.
+      actif = true;
+    }
+  }
+  return actif;
+}
+
+const abonnes = new Set<() => void>();
+
+/**
+ * S'abonne au réglage.
+ *
+ * Le réglage vit hors de React — dans `localStorage` et dans une variable de
+ * module — et c'est bien ce qu'il doit faire, puisque les émetteurs de son le
+ * consultent sans passer par un composant. Un magasin observable est la façon
+ * dont React lit ce genre de source : `useSyncExternalStore` s'en sert pour
+ * afficher la bonne icône sans jamais désynchroniser le rendu serveur du rendu
+ * client, ce qu'un `setState` dans un effet ferait au prix d'un rendu de plus.
+ */
+export function abonneSon(rappel: () => void): () => void {
+  abonnes.add(rappel);
+  return () => {
+    abonnes.delete(rappel);
+  };
+}
+
+/** Bascule, retient, prévient, et renvoie le nouvel état. */
+export function basculeSon(): boolean {
+  const suivant = !sonActif();
+  actif = suivant;
+  try {
+    localStorage.setItem(CLE_SON, suivant ? 'oui' : 'non');
+  } catch {
+    // Le réglage ne survivra pas au rechargement, mais il tient pour la session.
+  }
+  for (const rappel of abonnes) rappel();
+  return suivant;
+}
+
 let partage: AudioContext | null = null;
 
 /**
@@ -62,6 +139,9 @@ let partage: AudioContext | null = null;
  * empêcher le geste.
  */
 function contexte(): AudioContext | null {
+  // Un seul point de coupure pour tous les sons : aucun émetteur ne peut
+  // l'oublier, puisque tous passent par ici et abandonnent sur `null`.
+  if (!sonActif()) return null;
   if (partage && partage.state !== 'closed') {
     // Un contexte ouvert avant le premier geste de l'utilisateur naît suspendu,
     // et le reste jusqu'à ce qu'on le réveille explicitement.
@@ -243,9 +323,11 @@ export function bruitDeDechirure() {
  * descend aussi de moitié : il n'a jamais eu besoin d'être fort, il a besoin
  * d'être **régulier**.
  */
-export function bruitDeCran() {
+export function bruitDeCran(intensite = 1) {
   const ctx = contexte();
   if (!ctx) return;
+
+  const v = Math.min(1, Math.max(0, intensite));
 
   const doux = ctx.createBiquadFilter();
   doux.type = 'lowpass';
@@ -253,7 +335,22 @@ export function bruitDeCran() {
   doux.Q.value = 0.5;
   doux.connect(sortie(ctx));
 
-  joue(ctx, doux, { hz: 420, vers: 300, duree: 0.05, niveau: 0.035 });
+  /*
+   * La hauteur et le niveau suivent la vitesse du rail.
+   *
+   * Ce n'est pas un ornement : c'est ce qui fait entendre le ralentissement
+   * autrement que par l'espacement des clics. Une bande lancée cliquette clair
+   * et fort, une bande qui s'arrête fait des clics graves et mous — la
+   * différence est celle d'un mécanisme qui perd son élan. L'écart reste
+   * volontairement étroit (470 à 330 hertz) : au-delà on entend deux sons
+   * distincts au lieu d'un seul qui décélère.
+   */
+  joue(ctx, doux, {
+    hz: 330 + v * 140,
+    vers: 240 + v * 90,
+    duree: 0.05,
+    niveau: 0.022 + v * 0.02,
+  });
 }
 
 /**
@@ -386,4 +483,113 @@ export function bruitDeTension() {
   o.connect(volume);
   o.start();
   o.stop(ctx.currentTime + 0.95);
+}
+
+/* -------------------------------------------------------------------------- */
+
+/** Niveau du lit de cliquet, une fois lancé. */
+const NIVEAU_SPIN = 0.5;
+
+/** Vitesse de lecture au ralenti, quand le rail s'immobilise. */
+const LENTEUR = 0.3;
+
+let tampon: AudioBuffer | null = null;
+let chargement: Promise<AudioBuffer | null> | null = null;
+
+/**
+ * Le lit de cliquet, décodé une fois pour la vie de la page.
+ *
+ * Le décodage d'un MP3 de deux secondes coûte quelques millisecondes, mais il
+ * est asynchrone : demandé au moment où le rail démarre, le son arriverait après
+ * lui. D'où `prechargeSpin()`, appelé à l'affichage de l'écran d'ouverture.
+ */
+function tamponDeSpin(ctx: AudioContext): Promise<AudioBuffer | null> {
+  if (tampon) return Promise.resolve(tampon);
+  if (!chargement) {
+    chargement = fetch('/sons/spin.mp3')
+      .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(String(r.status)))))
+      .then((d) => ctx.decodeAudioData(d))
+      .then((b) => {
+        tampon = b;
+        return b;
+      })
+      .catch(() => null);
+  }
+  return chargement;
+}
+
+/**
+ * Précharge le cliquet.
+ *
+ * Sans effet si le son est coupé : on ne va pas chercher cinquante kilo-octets
+ * que personne n'entendra.
+ */
+export function prechargeSpin() {
+  const ctx = contexte();
+  if (ctx) void tamponDeSpin(ctx);
+}
+
+/**
+ * Le cliquet du rail, en boucle, piloté par la vitesse.
+ *
+ * ## Un seul pour toute l'ouverture
+ *
+ * Cinq rouleaux, un seul lit. Cinq boucles superposées ne font pas un cliquet
+ * cinq fois plus riche : elles se déphasent et font un bourdonnement. Le
+ * pilotage prend donc la vitesse **du rouleau le plus rapide encore en course**,
+ * si bien que le son reste vivant tant que quelque chose tourne, et ne s'éteint
+ * qu'avec le dernier.
+ *
+ * ## Le ralentissement n'est écrit nulle part
+ *
+ * C'est tout l'intérêt de piloter `playbackRate` plutôt que de programmer des
+ * clics. La cadence du cliquet est la vitesse du rail, donc elle épouse
+ * exactement le mouvement — hésitations comprises. Les trois appâts s'entendent
+ * sans qu'une ligne ne les mentionne : le cliquet s'étire quand la bande
+ * s'attarde sur une fausse légendaire, et repart avec elle.
+ *
+ * La hauteur descend avec la cadence, puisque c'est le même réglage — ce qui est
+ * précisément le bruit d'un mécanisme qui perd son élan. On ne descend pas en
+ * dessous de 0,3 : plus bas, on n'entend plus un cliquet qui ralentit mais une
+ * bande magnétique qui meurt.
+ */
+export function boucleDeSpin(): { vitesse: (v: number) => void; arrete: () => void } {
+  const ctx = contexte();
+  let source: AudioBufferSourceNode | null = null;
+  let volume: GainNode | null = null;
+  let mort = false;
+
+  if (ctx) {
+    void tamponDeSpin(ctx).then((buf) => {
+      if (!buf || mort) return;
+      volume = ctx.createGain();
+      volume.gain.setValueAtTime(0.0001, ctx.currentTime);
+      volume.gain.exponentialRampToValueAtTime(NIVEAU_SPIN, ctx.currentTime + 0.15);
+      volume.connect(sortie(ctx));
+
+      source = ctx.createBufferSource();
+      source.buffer = buf;
+      source.loop = true;
+      source.connect(volume);
+      source.start();
+    });
+  }
+
+  return {
+    vitesse(v: number) {
+      if (!ctx || !source || !volume) return;
+      const n = Math.min(1, Math.max(0, v));
+      // `setTargetAtTime` et non `value` : appelé à chaque image, un saut brut
+      // ferait craquer le son à chaque changement. La constante de temps lisse
+      // sans traîner derrière l'animation.
+      source.playbackRate.setTargetAtTime(LENTEUR + (1 - LENTEUR) * n, ctx.currentTime, 0.06);
+      volume.gain.setTargetAtTime(NIVEAU_SPIN * (0.3 + 0.7 * n), ctx.currentTime, 0.1);
+    },
+    arrete() {
+      mort = true;
+      if (!ctx || !source || !volume) return;
+      volume.gain.setTargetAtTime(0.0001, ctx.currentTime, 0.15);
+      source.stop(ctx.currentTime + 0.8);
+    },
+  };
 }

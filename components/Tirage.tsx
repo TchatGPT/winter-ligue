@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { boucleDeSpin, bruitDeGain } from '@/components/bruitage';
 import { CardFrame } from '@/components/CardFrame';
 import { RARITY_META } from '@/lib/domain/catalog';
 import { RARITY_ORDER } from '@/lib/domain/rules';
@@ -239,11 +240,22 @@ function Piste({
   cartes,
   gagnante,
   duree,
+  vitesses,
+  rang: place,
   onFini,
 }: {
   cartes: CarteTirage[];
   gagnante: CarteTirage;
   duree: number;
+  /**
+   * Le tableau des vitesses, partagé, et la case de ce rouleau.
+   *
+   * Un tableau simple plutôt qu'un rappel : passé en propriété, un rappel change
+   * d'identité à chaque rendu et devrait entrer dans les dépendances de l'effet,
+   * qui relancerait alors l'animation. Le tableau, lui, est stable.
+   */
+  vitesses: number[];
+  rang: number;
   onFini: () => void;
 }) {
   const cadre = useRef<HTMLDivElement>(null);
@@ -370,8 +382,13 @@ function Piste({
      * moment où le rail franchit le dernier appât — le joueur entend que ça
      * tourne bien avant de voir sur quoi.
      */
+    const rang = RARITY_ORDER[gagnante.rarity as Rarity] ?? 0;
+
     let debut = 0;
     let trame = 0;
+    let precedentX = 0;
+    /** La vitesse la plus haute vue jusqu'ici, pour normaliser. */
+    let pointe = 0;
 
     const image = (temps: number) => {
       if (!debut) debut = temps;
@@ -379,12 +396,32 @@ function Piste({
       const x = gauchit(table, amorti(t)) * cible;
       el.style.transform = `translate3d(0, ${(yDebut + x).toFixed(1)}px, 0)`;
 
+      /*
+       * La vitesse, normalisée et déposée pour le cliquet.
+       *
+       * Rapportée en fraction de la pointe du rouleau, et non en pixels : la
+       * largeur des colonnes dépend de l'écran, donc les pixels par image aussi,
+       * alors que la fraction ne dépend que de la courbe. Le maximum est relevé
+       * au vol — le rail est à sa vitesse maximale dès la première image, si
+       * bien qu'il est juste tout de suite.
+       */
+      const v = x - precedentX;
+      precedentX = x;
+      if (v > pointe) pointe = v;
+      vitesses[place] = pointe > 0 ? v / pointe : 0;
+
       if (t < 1) {
         trame = requestAnimationFrame(image);
         return;
       }
+      // Ce rouleau ne compte plus dans le pilotage du cliquet.
+      vitesses[place] = 0;
       boite.dataset.arrete = 'true';
       setArrete(true);
+      // La résolution, graduée par la rareté : c'est le seul son qui dise ce
+      // qu'on a obtenu, et il tombe dans le silence que le cliquet vient de
+      // laisser.
+      bruitDeGain(rang);
       fini.current();
     };
 
@@ -406,7 +443,7 @@ function Piste({
       cancelAnimationFrame(amorce);
       cancelAnimationFrame(trame);
     };
-  }, [duree]);
+  }, [duree, vitesses, place, gagnante.rarity]);
 
   const meta = RARITY_META[gagnante.rarity as Rarity] ?? RARITY_META.C;
 
@@ -514,7 +551,37 @@ export function Tirage({
   onFini: () => void;
 }) {
 
+  /*
+   * Les vitesses des rouleaux, dans un tableau partagé et stable.
+   *
+   * `useState` avec un initialisateur, et non `useRef` : le tableau doit exister
+   * dès le premier rendu pour être passé aux pistes, et il ne doit jamais être
+   * reconstruit — une nouvelle identité relancerait leurs effets, donc leur
+   * animation.
+   */
+  const [vitesses] = useState<number[]>(() => gagnantes.map(() => 0));
   const restants = useRef(gagnantes.length);
+
+  /*
+   * Le cliquet, lancé une fois et piloté par le rouleau le plus rapide.
+   *
+   * La boucle de pilotage est ici et non dans les pistes : c'est le maximum qui
+   * commande, donc il faut un endroit qui les voie toutes. Elle tourne à part de
+   * l'animation, et ne fait qu'une lecture de tableau par image.
+   */
+  useEffect(() => {
+    const spin = boucleDeSpin();
+    let trame = requestAnimationFrame(function suit() {
+      let haute = 0;
+      for (const v of vitesses) if (v > haute) haute = v;
+      spin.vitesse(haute);
+      trame = requestAnimationFrame(suit);
+    });
+    return () => {
+      cancelAnimationFrame(trame);
+      spin.arrete();
+    };
+  }, [vitesses]);
 
   const fini = useRef(onFini);
   useEffect(() => {
@@ -540,6 +607,8 @@ export function Tirage({
             cartes={cartes}
             gagnante={g}
             duree={DUREE + i * RELAIS}
+            vitesses={vitesses}
+            rang={i}
             onFini={unDeMoins}
           />
         ))}

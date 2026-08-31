@@ -393,6 +393,34 @@
 
   /* -- Le carrousel de tirage --------------------------------------------- */
 
+  /* L'interrupteur du son, en haut à droite de la scène d'ouverture. */
+  .tirage-son {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 6;
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    font-size: 0.9rem;
+    line-height: 1;
+    border-radius: 50%;
+    border: 1px solid var(--glass-edge);
+    background: var(--glass-1);
+    cursor: pointer;
+    opacity: 0.55;
+    transition:
+      opacity 0.2s ease,
+      background 0.2s ease;
+  }
+
+  .tirage-son:hover,
+  .tirage-son:focus-visible {
+    opacity: 1;
+    background: var(--glass-2);
+  }
+
   /*
    * Les rouleaux verticaux, côte à côte, et un seul repère en travers.
    *
