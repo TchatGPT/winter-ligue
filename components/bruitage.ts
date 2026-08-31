@@ -69,10 +69,50 @@ function contexte(): AudioContext | null {
   if (!Fabrique) return null;
   try {
     partage = new Fabrique();
+    // Le bus appartient au contexte : un nouveau contexte en veut un neuf.
+    bus = null;
     return partage;
   } catch {
     return null;
   }
+}
+
+/** Le bus par lequel tout passe, créé avec le contexte. */
+let bus: AudioNode | null = null;
+
+/**
+ * La sortie commune de tous les sons.
+ *
+ * ## Pourquoi un bus, et pourquoi un compresseur
+ *
+ * Les sons étaient branchés en direct sur la sortie. Tant qu'ils ne se
+ * chevauchaient pas, ça tenait ; mais le tirage superpose un roulement continu,
+ * un cran toutes les cinquante millisecondes, une montée de tension et une
+ * résolution de trois notes. Les amplitudes s'additionnent, la somme dépasse
+ * l'unité, et la carte son écrête — c'est ce grésillement dur qu'on prenait pour
+ * un son aigu.
+ *
+ * Un compresseur avec un seuil bas et un ratio franc rattrape ces crêtes au lieu
+ * de les laisser saturer, et le gain général descend l'ensemble à un niveau
+ * qu'on peut écouter une soirée entière. Le son ne devient pas seulement moins
+ * fort : il devient propre.
+ */
+function sortie(ctx: AudioContext): AudioNode {
+  if (bus) return bus;
+
+  const limiteur = ctx.createDynamicsCompressor();
+  limiteur.threshold.value = -24;
+  limiteur.knee.value = 24;
+  limiteur.ratio.value = 12;
+  limiteur.attack.value = 0.004;
+  limiteur.release.value = 0.18;
+
+  const general = ctx.createGain();
+  general.gain.value = 0.62;
+
+  limiteur.connect(general).connect(ctx.destination);
+  bus = limiteur;
+  return bus;
 }
 
 interface Note {
@@ -128,8 +168,8 @@ function joue(ctx: BaseAudioContext, sortie: AudioNode, n: Note) {
  *
  * Aucun filtre : un sinus ne contient rien à filtrer.
  */
-function grapheSelection(ctx: BaseAudioContext) {
-  return joue(ctx, ctx.destination, { hz: 210, vers: 128, duree: 0.16, niveau: 0.16 });
+function grapheSelection(ctx: AudioContext) {
+  return joue(ctx, sortie(ctx), { hz: 210, vers: 128, duree: 0.16, niveau: 0.13 });
 }
 
 /**
@@ -142,12 +182,12 @@ function grapheSelection(ctx: BaseAudioContext) {
  * Le passe-bas à 3 kHz arrondit ce que les sinus ont de nu, et son Q reste bas :
  * une résonance à la coupure s'entendrait comme un sifflement ajouté.
  */
-function grapheDechirure(ctx: BaseAudioContext) {
+function grapheDechirure(ctx: AudioContext) {
   const doux = ctx.createBiquadFilter();
   doux.type = 'lowpass';
   doux.frequency.value = 3000;
   doux.Q.value = 0.6;
-  doux.connect(ctx.destination);
+  doux.connect(sortie(ctx));
 
   const notes: Note[] = [
     { hz: 523, duree: 0.42, niveau: 0.085, retard: 0 },
@@ -175,20 +215,36 @@ export function bruitDeDechirure() {
 }
 
 /**
- * Le cran du carrousel de tirage.
+ * Le cran de la bande.
  *
- * Très court et très bas : il part une fois par carte franchie, donc plusieurs
- * dizaines de fois en cinq secondes. Ce qui compte n'est pas de l'entendre
- * isolément mais d'entendre le **ralentissement** — les crans qui s'espacent
- * sont ce qui rend le tirage haletant.
+ * Il part une fois par tuile franchie, donc jusqu'à vingt fois par seconde au
+ * lancement. Ce qui compte n'est pas de l'entendre isolément mais d'entendre le
+ * **ralentissement** — les crans qui s'espacent sont ce qui rend le tirage
+ * haletant.
  *
- * Un sinus de 40 ms plutôt qu'un bruit filtré : à cette durée, du bruit ne fait
- * qu'un « pfft » sourd, là où une note tient sa hauteur et se détache.
+ * ## Pourquoi il a été redescendu d'une octave et demie
+ *
+ * Il sonnait à 1 180 Hz, soit en plein dans la zone où l'oreille est la plus
+ * sensible — celle des courbes isosoniques, entre 2 et 5 kHz pour le pic, mais
+ * déjà bien engagée à 1 kHz. Vingt répétitions par seconde d'une note dans cette
+ * bande sont fatigantes en quelques secondes, quel que soit le volume.
+ *
+ * À 420 Hz, avec un passe-bas qui coupe ce qui reste au-dessus de 1 200, le même
+ * rythme se lit comme un cliquet de mécanisme et non comme une alarme. Le niveau
+ * descend aussi de moitié : il n'a jamais eu besoin d'être fort, il a besoin
+ * d'être **régulier**.
  */
 export function bruitDeCran() {
   const ctx = contexte();
   if (!ctx) return;
-  joue(ctx, ctx.destination, { hz: 1180, vers: 880, duree: 0.045, niveau: 0.07 });
+
+  const doux = ctx.createBiquadFilter();
+  doux.type = 'lowpass';
+  doux.frequency.value = 1200;
+  doux.Q.value = 0.5;
+  doux.connect(sortie(ctx));
+
+  joue(ctx, doux, { hz: 420, vers: 300, duree: 0.05, niveau: 0.035 });
 }
 
 /**
@@ -222,8 +278,8 @@ export function bruitDeRoulement(): () => void {
   volume.gain.setValueAtTime(0.0001, ctx.currentTime);
   // Une montée d'une demi-seconde : un grondement qui démarre à plein volume
   // s'entend comme un défaut de lecture.
-  volume.gain.exponentialRampToValueAtTime(0.05, ctx.currentTime + 0.5);
-  filtre.connect(volume).connect(ctx.destination);
+  volume.gain.exponentialRampToValueAtTime(0.034, ctx.currentTime + 0.5);
+  filtre.connect(volume).connect(sortie(ctx));
 
   const oscillateurs = [56, 59].map((hz) => {
     const o = ctx.createOscillator();
@@ -272,7 +328,7 @@ export function bruitDeGain(ordre: number) {
   doux.type = 'lowpass';
   doux.frequency.value = 4200;
   doux.Q.value = 0.6;
-  doux.connect(ctx.destination);
+  doux.connect(sortie(ctx));
 
   // Fondamentale, quinte, octave : les trois premiers harmoniques justes, donc
   // un accord qui ne peut pas sonner faux quelle que soit la fondamentale.
@@ -281,7 +337,7 @@ export function bruitDeGain(ordre: number) {
     joue(ctx, doux, {
       hz: fondamentale * rapports[i],
       duree,
-      niveau: 0.1 - i * 0.015,
+      niveau: 0.075 - i * 0.012,
       retard: i * 0.07,
     });
   }
@@ -306,11 +362,11 @@ export function bruitDeTension() {
   const filtre = ctx.createBiquadFilter();
   filtre.type = 'lowpass';
   filtre.frequency.value = 2600;
-  filtre.connect(ctx.destination);
+  filtre.connect(sortie(ctx));
 
   const volume = ctx.createGain();
   volume.gain.setValueAtTime(0.0001, ctx.currentTime);
-  volume.gain.exponentialRampToValueAtTime(0.07, ctx.currentTime + 0.55);
+  volume.gain.exponentialRampToValueAtTime(0.05, ctx.currentTime + 0.55);
   volume.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.9);
   volume.connect(filtre);
 

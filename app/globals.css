@@ -394,18 +394,18 @@
   /* -- Le carrousel de tirage --------------------------------------------- */
 
   /*
-   * Une seule bande, large, et ce qu'on a déjà gagné en dessous.
+   * La bande descend, et on regarde ce qui passe au milieu.
    *
-   * Il y en avait une par carte, empilées : à cinq pistes dans la hauteur d'un
-   * panneau, les tuiles tombaient à cent vingt pixels et plus rien n'était
-   * lisible. Une bande large à la fois, et les cartes acquises s'alignent
-   * dessous à mesure.
+   * Verticale et non horizontale : les tuiles entrent par le haut, traversent le
+   * repère et sortent par le bas. La tuile devient donc une **ligne** — large et
+   * basse — parce qu'une tuile carrée empilée demanderait une fenêtre de mille
+   * pixels de haut pour en montrer trois.
    */
   .tirage {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 14px;
+    gap: 16px;
     width: 100%;
   }
 
@@ -418,33 +418,26 @@
     color: var(--faint);
   }
 
-  /* La scène porte le repère et les fondus, qui doivent recouvrir la bande. */
   .tirage-scene {
     position: relative;
     width: 100%;
-    max-width: 900px;
+    max-width: 560px;
   }
 
   /*
-   * La bande.
+   * La fenêtre.
    *
-   * Sa hauteur commande tout : le composant en tire la largeur d'une tuile,
-   * donc le pas du rail et la position d'arrêt. La changer ici change
-   * l'animation.
-   */
-  /*
-   * Hauteur mesurée sur la référence, pas choisie.
-   *
-   * Leur bande fait 430 × 80 pixels dans la capture, soit un rapport de 5,4:1
-   * avec six tuiles visibles ; la mienne était à 3,4:1 avec des tuiles nettement
-   * plus hautes que larges. Une bande trop haute cesse d'être une bande : elle
-   * devient une rangée de cartes, et le mouvement s'y lit moins bien.
+   * Sa hauteur commande tout : le composant en déduit la hauteur d'une tuile,
+   * donc le pas de la bande et la position d'arrêt, et la repose en variable
+   * CSS. Les deux côtés parlent ainsi de la même valeur par construction — une
+   * hauteur fixée des deux côtés a déjà divergé, et la bande s'arrêtait alors
+   * deux tuiles à côté.
    */
   .tirage-piste {
     position: relative;
     overflow: hidden;
-    height: 168px;
-    border-radius: var(--r-md);
+    height: 540px;
+    border-radius: var(--r-lg);
     border: 1px solid var(--glass-edge);
     background: #05070c;
     box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.1);
@@ -453,101 +446,87 @@
 
   @media (max-width: 640px) {
     .tirage-piste {
-      height: 124px;
-    }
-  }
-
-  /* Les cartes déjà gagnées, en rang sous la bande. */
-  .tirage-acquises {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 10px;
-    width: 100%;
-    max-width: 900px;
-  }
-
-  .tirage-acquise {
-    width: 104px;
-    animation: tirage-acquise-entree 420ms cubic-bezier(0.2, 1.3, 0.35, 1) both;
-  }
-
-  @keyframes tirage-acquise-entree {
-    from {
-      opacity: 0;
-      transform: translateY(-14px) scale(0.86);
-    }
-    to {
-      opacity: 1;
-      transform: none;
+      height: 400px;
     }
   }
 
   .tirage-rail {
     display: flex;
-    height: 100%;
-    /* Doit rester d'accord avec GOUTTIERE dans components/Tirage.tsx : c'est de
-       ce pas que le composant déduit la position d'arrêt. Zéro : les tuiles sont
-       jointives, séparées par un liseré et non par un vide. */
-    gap: 0;
-    width: max-content;
-    /* Promu sur sa propre couche : il se déplace à chaque image, et sans
-       promotion le navigateur repeindrait la bande entière à chaque fois. */
+    flex-direction: column;
+    gap: 10px;
+    padding: 0 10px;
     will-change: transform, filter;
   }
 
   /*
-   * Une tuile du rail.
+   * Une ligne de la bande.
    *
-   * Calquée sur la capture : un dégradé qui monte de la couleur de rareté vers
-   * le noir, une pilule en haut à gauche, le palier écrit en haut à droite,
-   * l'objet dans un anneau pointillé, le nom et la valeur en pied.
-   *
-   * Volontairement pauvre en rendu. Elles sont plus de cent cinquante à défiler
-   * d'un coup sur cinq pistes : y mettre le cadre peint, avec son image et ses
-   * filtres de teinte, effondrerait la cadence au moment précis où elle compte.
+   * Le disque à gauche, le nom et le palier au milieu, la valeur à droite. Une
+   * ligne se lit d'un balayage horizontal, ce qui est exactement le geste
+   * disponible quand le contenu, lui, défile verticalement.
    */
   .tirage-carte {
     position: relative;
     display: flex;
-    flex-direction: column;
     align-items: center;
+    gap: 14px;
     flex: 0 0 auto;
-    height: 100%;
-    /* 0,90 sur la référence : presque carré. En 1/1,4 les tuiles étaient des
-       cartes, et six cartes de front ne défilent pas, elles s'alignent. */
-    aspect-ratio: 1 / 1.11;
-    padding: 7px 7px 8px;
+    height: var(--h-tuile, 160px);
+    padding: 0 16px;
     overflow: hidden;
-    /*
-     * La teinte monte du bas et s'éteint à mi-hauteur.
-     *
-     * Elle occupe la moitié basse et pas toute la tuile : une tuile teintée de
-     * bout en bout se lit comme un bloc de couleur, et six blocs côte à côte
-     * redeviennent le papier peint qu'on cherchait à éviter.
-     */
+    border-radius: var(--r-md);
+    border: 1px solid color-mix(in srgb, var(--r) 30%, transparent);
     background:
-      linear-gradient(
-        0deg,
-        color-mix(in srgb, var(--r) 26%, transparent) 0%,
-        transparent 55%
-      ),
-      #05070c;
+      linear-gradient(90deg, color-mix(in srgb, var(--r) 24%, transparent) 0%, transparent 62%),
+      #080b12;
     transition:
       opacity 0.45s ease,
       filter 0.45s ease;
   }
 
-  /* Le trait qui sépare deux tuiles. Les tuiles sont jointives : c'est ce fin
-     liseré, et non une gouttière, qui les découpe. */
-  .tirage-carte + .tirage-carte {
-    box-shadow: inset 1px 0 0 rgb(255 255 255 / 0.06);
+  /*
+   * Le halo permanent des raretés hautes.
+   *
+   * Il bat lentement pendant tout le défilement, et c'est délibérément visible
+   * de loin : c'est ce qui fait qu'on repère une légendaire qui approche avant
+   * de pouvoir lire son nom. Réservé aux trois paliers du haut — allumé partout,
+   * il ne signalerait plus rien.
+   */
+  .tirage-carte[data-rang='3'],
+  .tirage-carte[data-rang='4'],
+  .tirage-carte[data-rang='5'] {
+    animation: tirage-halo 1.9s ease-in-out infinite;
+  }
+
+  @keyframes tirage-halo {
+    0%,
+    100% {
+      box-shadow:
+        inset 0 0 0 1px color-mix(in srgb, var(--r) 45%, transparent),
+        0 0 14px -2px color-mix(in srgb, var(--r) 45%, transparent);
+    }
+    50% {
+      box-shadow:
+        inset 0 0 0 1px color-mix(in srgb, var(--r) 85%, transparent),
+        0 0 30px 2px color-mix(in srgb, var(--r) 75%, transparent);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .tirage-carte[data-rang='3'],
+    .tirage-carte[data-rang='4'],
+    .tirage-carte[data-rang='5'] {
+      animation: none;
+      box-shadow:
+        inset 0 0 0 1px color-mix(in srgb, var(--r) 70%, transparent),
+        0 0 20px -2px color-mix(in srgb, var(--r) 60%, transparent);
+    }
   }
 
   .tirage-pilule {
     position: absolute;
-    top: 8px;
-    left: 8px;
+    top: 10px;
+    left: 16px;
     width: 22px;
     height: 6px;
     border-radius: 999px;
@@ -555,40 +534,19 @@
     box-shadow: 0 0 10px color-mix(in srgb, var(--r) 75%, transparent);
   }
 
-  .tirage-palier {
-    position: absolute;
-    top: 5px;
-    right: 8px;
-    max-width: 66%;
-    overflow: hidden;
-    font-size: 0.6875rem;
-    line-height: 1.5;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-    color: var(--r);
-  }
-
-  /*
-   * Le disque de l'objet, et son anneau pointillé.
-   *
-   * L'anneau est un dégradé conique répété, découpé en couronne par un masque.
-   * Une bordure pointillée native aurait été plus courte à écrire et fausse : les tirets
-   * du navigateur suivent le périmètre sans jamais se refermer proprement, et
-   * leur nombre change avec le diamètre — sur six tuiles côte à côte, la
-   * différence se voit.
-   */
+  /* Le disque de l'objet, et son anneau pointillé. L'anneau est un dégradé
+     conique masqué en couronne : les tirets d'une bordure pointillée native ne
+     se referment jamais proprement et leur nombre change avec le diamètre. */
   .tirage-rond {
     position: relative;
     display: grid;
     place-items: center;
-    /* 37 % sur la référence ; 44 ici parce qu'une scène dessinée a besoin de
-       plus de place qu'une photo de produit détourée. */
-    width: 44%;
+    flex: 0 0 auto;
+    height: 74%;
     aspect-ratio: 1;
-    margin-top: 9%;
     border-radius: 50%;
     overflow: hidden;
-    background: radial-gradient(circle, rgb(255 255 255 / 0.06), transparent 70%);
+    background: radial-gradient(circle, rgb(255 255 255 / 0.07), transparent 70%);
   }
 
   .tirage-anneau {
@@ -599,12 +557,7 @@
       var(--r) 0deg 3.2deg,
       transparent 3.2deg 7.2deg
     );
-    mask-image: radial-gradient(
-      circle,
-      transparent 0 46%,
-      #000 47% 50%,
-      transparent 51% 100%
-    );
+    mask-image: radial-gradient(circle, transparent 0 46%, #000 47% 50%, transparent 51% 100%);
     filter: drop-shadow(0 0 6px color-mix(in srgb, var(--r) 60%, transparent));
   }
 
@@ -618,91 +571,137 @@
   }
 
   .tirage-glyphe {
-    font-size: 1.3rem;
+    font-size: 1.6rem;
     line-height: 1;
     opacity: 0.9;
   }
 
   .tirage-nom {
-    margin-top: auto;
-    max-width: 100%;
+    flex: 1;
+    min-width: 0;
     overflow: hidden;
-    font-size: 0.6875rem;
-    line-height: 1.25;
-    text-align: center;
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-weight: 900;
+    line-height: 1.2;
     white-space: nowrap;
     text-overflow: ellipsis;
-    color: var(--muted);
+    color: var(--frost);
+  }
+
+  .tirage-palier {
+    flex: 0 0 auto;
+    font-size: 0.8125rem;
+    line-height: 1.4;
+    color: var(--r);
   }
 
   .tirage-valeur {
+    flex: 0 0 auto;
+    min-width: 3ch;
     font-family: var(--font-display);
-    font-size: 0.875rem;
+    font-size: 1.125rem;
     font-weight: 900;
-    line-height: 1.3;
+    text-align: right;
     color: var(--frost);
   }
 
   /*
-   * Le repère : deux triangles, en haut et en bas, sans ligne entre eux.
+   * Le repère : un trait en travers, et deux pointes aux bords.
    *
-   * La barre verticale lumineuse qui les reliait traversait chaque carte et
-   * coupait en deux celle sur laquelle on s'arrête — c'est-à-dire précisément
-   * celle qu'on veut regarder. Deux pointes suffisent à désigner la colonne ;
-   * l'œil complète le trait tout seul.
+   * Le trait était tombé au profit des seules pointes, sur la foi d'une capture
+   * où il n'apparaissait pas. Il manquait : sans lui on ne sait pas exactement
+   * quelle tuile est sous le repère quand deux se chevauchent à l'écran, et
+   * c'est précisément l'instant qui compte.
    */
   .tirage-repere {
     position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 50%;
+    top: 50%;
+    right: 0;
+    left: 0;
     z-index: 4;
-    width: 0;
+    height: 2px;
+    margin-top: -1px;
     pointer-events: none;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgb(255 255 255 / 0.85) 12%,
+      #ffffff 50%,
+      rgb(255 255 255 / 0.85) 88%,
+      transparent
+    );
+    box-shadow: 0 0 14px rgb(255 255 255 / 0.55);
   }
 
   .tirage-repere::before,
   .tirage-repere::after {
     content: '';
     position: absolute;
-    left: 50%;
+    top: 50%;
     width: 0;
     height: 0;
-    margin-left: -10px;
-    border-left: 10px solid transparent;
-    border-right: 10px solid transparent;
-    filter: drop-shadow(0 0 8px rgb(255 255 255 / 0.6));
+    margin-top: -9px;
+    border-top: 9px solid transparent;
+    border-bottom: 9px solid transparent;
+    filter: drop-shadow(0 0 6px rgb(255 255 255 / 0.6));
   }
 
   .tirage-repere::before {
-    top: -2px;
-    border-top: 14px solid #ffffff;
+    left: -1px;
+    border-left: 12px solid #ffffff;
   }
 
   .tirage-repere::after {
-    bottom: -2px;
-    border-bottom: 14px solid #ffffff;
+    right: -1px;
+    border-right: 12px solid #ffffff;
   }
 
-  /* Les deux fondus. Larges : ils rognent la bande bien avant le bord, ce qui
-     concentre le regard sur la fenêtre et masque la répétition des leurres. */
+  /* Les fondus, en haut et en bas : la bande doit avoir l'air de continuer
+     au-delà de la fenêtre, pas d'y être coupée. */
   .tirage-voile {
     position: absolute;
-    top: 0;
-    bottom: 0;
+    right: 0;
+    left: 0;
     z-index: 3;
-    width: 22%;
+    height: 26%;
     pointer-events: none;
   }
 
   .tirage-voile-gauche {
-    left: 0;
-    background: linear-gradient(90deg, var(--bg) 15%, transparent);
+    top: 0;
+    background: linear-gradient(180deg, #05070c 18%, transparent);
   }
 
   .tirage-voile-droite {
-    right: 0;
-    background: linear-gradient(270deg, var(--bg) 15%, transparent);
+    bottom: 0;
+    background: linear-gradient(0deg, #05070c 18%, transparent);
+  }
+
+  /* Les cartes déjà gagnées, en rang sous la bande. */
+  .tirage-acquises {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    max-width: 560px;
+  }
+
+  .tirage-acquise {
+    width: 96px;
+    animation: tirage-acquise-entree 420ms cubic-bezier(0.2, 1.3, 0.35, 1) both;
+  }
+
+  @keyframes tirage-acquise-entree {
+    from {
+      opacity: 0;
+      transform: translateY(-14px) scale(0.86);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
   }
 
   /*

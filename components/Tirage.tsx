@@ -27,15 +27,23 @@ export interface CarteTirage {
 /**
  * Combien de leurres défilent avant la gagnante.
  *
- * Il y a une piste par carte, donc jusqu'à cinq rails montés d'un coup, et
- * chaque carte porte une illustration vectorielle d'une quinzaine de tracés.
- * Vingt-six tient la charge, et sert le rythme : moins de cartes sur la même
+ * Vingt-six : chaque tuile porte une illustration vectorielle d'une quinzaine
+ * de tracés, et il faut monter toute la bande avant que la première image ne
+ * s'affiche. C'est aussi ce qui règle le rythme — moins de tuiles sur la même
  * durée, c'est un défilement plus lent, donc des hésitations plus lisibles.
  */
 const AVANT = 26;
 
-/** Combien restent après elle, pour qu'aucune piste ne finisse sur du vide. */
-const APRES = 4;
+/**
+ * Combien restent au-dessus d'elle.
+ *
+ * La bande descend : ce sont donc les tuiles qui restent visibles **après**
+ * l'arrêt, au-dessus du repère. Sans elles, la bande finirait sur du vide.
+ */
+const APRES = 3;
+
+/** Combien de tuiles tiennent dans la hauteur de la fenêtre. */
+const VISIBLES = 3.2;
 
 /**
  * Durée du défilement de la première piste, en millisecondes.
@@ -69,16 +77,18 @@ const DUREE_SUIVANTE = 2400;
  */
 const GOUTTIERE = 0;
 
-/** Rapport hauteur/largeur d'une carte du rail — celui du cadre peint. */
-const RATIO = 1.4;
-
 /**
  * Les positions où le rail hésite, en index de carte avant la gagnante.
  *
- * Chacune reçoit un leurre de rareté haute, et le rail y ralentit presque
+ * Chacune reçoit un leurre de rareté haute, et la bande y ralentit presque
  * jusqu'à l'arrêt avant de repartir. `force` est la fraction de vitesse retirée
- * au creux : à 0,9 il ne reste qu'un dixième de l'élan, et on croit vraiment que
- * c'est fini.
+ * au creux : à 0,965 il n'en reste qu'un trentième, la bande paraît immobile
+ * pendant plus d'une seconde, puis repart et bascule d'une tuile.
+ *
+ * C'est là tout le sujet. Un freinage qu'on remarque à peine ne trompe
+ * personne ; il faut y croire pour que la reprise fasse quelque chose. Le
+ * dernier creux est donc deux fois plus large et beaucoup plus profond que les
+ * deux autres.
  *
  * Les trois sont groupées dans le dernier tiers, et ce n'est pas un choix
  * esthétique : plus tôt, le rail avale trop de cartes par seconde pour qu'un
@@ -86,9 +96,9 @@ const RATIO = 1.4;
  * rapportaient que soixante millisecondes — invisibles.
  */
 const APPATS = [
-  { avant: 5, force: 0.9, largeur: 0.016 },
-  { avant: 3, force: 0.9, largeur: 0.015 },
-  { avant: 1, force: 0.88, largeur: 0.014 },
+  { avant: 7, force: 0.9, largeur: 0.016 },
+  { avant: 4, force: 0.93, largeur: 0.02 },
+  { avant: 1, force: 0.985, largeur: 0.042 },
 ];
 
 /**
@@ -97,11 +107,13 @@ const APPATS = [
  * L'exposant valait cinq. Simulation à l'appui, une queue aussi raide donnait
  * une seconde et demie sur la dernière carte et cinquante millisecondes sur
  * chacune des dix précédentes : les appâts n'avaient nulle part où mordre. À
- * 2,8, le temps se répartit sur les six dernières cartes.
+ * 2,6, le temps se répartit sur les six dernières tuiles, ce qui laisse à
+ * l'appât final de quoi tenir près de six dixièmes de seconde — contre cent à
+ * cent cinquante millisecondes pour une tuile ordinaire.
  *
  * En dessous, on devine la gagnante trop tôt et il ne se passe plus rien.
  */
-const amorti = (t: number) => 1 - Math.pow(1 - t, 2.8);
+const amorti = (t: number) => 1 - Math.pow(1 - t, 2.6);
 
 /** Résolution de la table de gauchissement. */
 const PAS_TABLE = 600;
@@ -239,8 +251,18 @@ function Piste({
    */
   const [bande] = useState<CarteTirage[]>(() => {
     const pioche = cartes.length ? cartes : [gagnante];
-    const hautes = pioche.filter((c) => (RARITY_ORDER[c.rarity as Rarity] ?? 0) >= 4);
+    const rang = (c: CarteTirage) => RARITY_ORDER[c.rarity as Rarity] ?? 0;
+    const hautes = pioche.filter((c) => rang(c) >= 4);
     const rares = hautes.length ? hautes : pioche;
+
+    /*
+     * Le dernier appât prend la carte la plus rare qui existe.
+     *
+     * Pas une rare au hasard : c'est celle sur laquelle la bande va rester
+     * immobile plus d'une demi-seconde, à un cran de l'arrêt. Une ultra rare y
+     * fait déjà de l'effet ; une légendaire fait le sien.
+     */
+    const sommet = pioche.reduce((a, b) => (rang(b) > rang(a) ? b : a), pioche[0]);
 
     /*
      * Aucun doublon à moins de trois cases d'écart.
@@ -257,10 +279,18 @@ function Piste({
       const source = libres.length ? libres : pioche;
       items.push(source[Math.floor(Math.random() * source.length)]);
     }
+    /*
+     * La gagnante est en tête de bande, les leurres derrière elle.
+     *
+     * La bande descend : ce sont donc les index **supérieurs** à celui de la
+     * gagnante qui traversent le repère avant elle. Un appât « à une tuile
+     * avant » est celui juste en dessous dans le tableau.
+     */
     for (const a of APPATS) {
-      items[AVANT - a.avant] = rares[Math.floor(Math.random() * rares.length)];
+      items[APRES + a.avant] =
+        a.avant === 1 ? sommet : rares[Math.floor(Math.random() * rares.length)];
     }
-    items[AVANT] = gagnante;
+    items[APRES] = gagnante;
     return items;
   });
 
@@ -273,21 +303,38 @@ function Piste({
       typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
     const total = reduit ? DUREE_REDUITE : duree;
 
-    const largeur = boite.clientWidth;
     const hauteur = boite.clientHeight;
-    const lCarte = hauteur / RATIO;
-    const pas = lCarte + GOUTTIERE;
+    /*
+     * La hauteur d'une tuile est déduite de celle de la fenêtre, et posée en
+     * variable CSS.
+     *
+     * C'est ce qui garantit que le style et le calcul d'arrêt parlent de la même
+     * chose. Une hauteur fixée des deux côtés a déjà divergé une fois, et le
+     * rail s'arrêtait alors deux tuiles à côté de la bonne.
+     */
+    const hTuile = hauteur / VISIBLES - GOUTTIERE;
+    const pas = hTuile + GOUTTIERE;
+    el.style.setProperty('--h-tuile', `${hTuile.toFixed(1)}px`);
 
-    // L'arrivée est décalée dans la carte, jamais pile au centre : un rail qui
+    // L'arrivée est décalée dans la tuile, jamais pile au centre : une bande qui
     // s'immobilise exactement sur l'axe se lit comme une grille qui se replace,
     // pas comme un objet lancé qui s'arrête.
-    const dedans = (Math.random() - 0.5) * pas * 0.28;
-    const cible = AVANT * pas + lCarte / 2 - largeur / 2 + dedans;
+    const dedans = (Math.random() - 0.5) * pas * 0.24;
+
+    /*
+     * La bande descend, donc elle part d'en haut et revient.
+     *
+     * La gagnante est à l'index `APRES` ; les leurres qui défilent sont ceux
+     * qui la suivent dans le tableau. On démarre la bande remontée de tout le
+     * trajet et on la laisse redescendre : les tuiles traversent le repère du
+     * haut vers le bas, et l'index sous le repère décroît jusqu'à `APRES`.
+     */
+    const yFin = hauteur / 2 - (APRES * pas + hTuile / 2) + dedans;
+    const cible = AVANT * pas;
+    const yDebut = yFin - cible;
 
     // Les appâts, exprimés en fraction du trajet : c'est ce que la table attend.
-    const table = tableAppats(
-      APPATS.map((a) => ((AVANT - a.avant) * pas + lCarte / 2 - largeur / 2) / cible),
-    );
+    const table = tableAppats(APPATS.map((a) => (cible - a.avant * pas) / cible));
 
     /*
      * La montée de tension, programmée avant l'arrêt.
@@ -311,16 +358,16 @@ function Piste({
       if (!debut) debut = temps;
       const t = Math.min(1, (temps - debut) / total);
       const x = gauchit(table, amorti(t)) * cible;
-      el.style.transform = `translate3d(${-x.toFixed(1)}px, 0, 0)`;
+      el.style.transform = `translate3d(0, ${(yDebut + x).toFixed(1)}px, 0)`;
 
       const f = reduit ? 0 : flou(x - precedentX);
       if (f !== precedentFlou) {
         precedentFlou = f;
-        el.style.filter = f > 0 ? `blur(${f}px)` : '';
+        el.style.filter = f > 0 ? `blur(0 ${f}px)`.replace('blur(0 ', 'blur(') : '';
       }
       precedentX = x;
 
-      const index = Math.round((x + largeur / 2 - lCarte / 2) / pas);
+      const index = Math.round((hauteur / 2 - (yDebut + x) - hTuile / 2) / pas);
       if (index !== dernier) {
         dernier = index;
         // Le cran est étranglé à l'échelle de toutes les pistes : cinq rails qui
@@ -379,9 +426,10 @@ function Piste({
           return (
             <div
               key={`${c.cardId}-${i}`}
-              className={`tirage-carte ${i === AVANT ? 'tirage-carte-gagnante' : ''}`}
+              className={`tirage-carte ${i === APRES ? 'tirage-carte-gagnante' : ''}`}
+              data-rang={RARITY_ORDER[c.rarity as Rarity] ?? 0}
               style={{ ['--r' as string]: m.color, ['--d' as string]: m.deep }}
-              aria-hidden={i !== AVANT}
+              aria-hidden={i !== APRES}
             >
               {/* La pilule, en haut à gauche. Elle ne dit rien que la couleur
                   ne dise déjà — c'est justement son rôle : une marque qu'on
