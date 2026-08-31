@@ -153,32 +153,31 @@ let bus: AudioNode | null = null;
 /**
  * La sortie commune de tous les sons.
  *
- * ## Pourquoi un bus, et pourquoi un compresseur
+ * ## Un limiteur de sécurité, et rien de plus
  *
- * Les sons étaient branchés en direct sur la sortie. Tant qu'ils ne se
- * chevauchaient pas, ça tenait ; mais le tirage superpose un roulement continu,
- * un cran toutes les cinquante millisecondes, une montée de tension et une
- * résolution de trois notes. Les amplitudes s'additionnent, la somme dépasse
- * l'unité, et la carte son écrête — c'est ce grésillement dur qu'on prenait pour
- * un son aigu.
+ * Le compresseur écrasait à `-24` dBFS avec un rapport de 12. C'était réglé pour
+ * des sinus synthétisés, dont les crêtes s'additionnaient sans contrôle. Les
+ * échantillons d'EmpireDrop sont déjà masterisés : leurs crêtes vont de `-21` à
+ * `-6` dBFS, si bien que le compresseur mordait en permanence et pompait sur
+ * chaque fanfare.
  *
- * Un compresseur avec un seuil bas et un ratio franc rattrape ces crêtes au lieu
- * de les laisser saturer, et le gain général descend l'ensemble à un niveau
- * qu'on peut écouter une soirée entière. Le son ne devient pas seulement moins
- * fort : il devient propre.
+ * Le seuil remonte à `-6` : il ne sert plus qu'à rattraper la somme quand une
+ * fanfare, le cliquet et l'appât tombent ensemble — cas mesuré à `-3` dBFS, donc
+ * juste sous l'écrêtage. Le reste du temps le limiteur ne fait rien, ce qui est
+ * exactement ce qu'on attend d'un filet de sécurité.
  */
 function sortie(ctx: AudioContext): AudioNode {
   if (bus) return bus;
 
   const limiteur = ctx.createDynamicsCompressor();
-  limiteur.threshold.value = -24;
-  limiteur.knee.value = 24;
+  limiteur.threshold.value = -6;
+  limiteur.knee.value = 4;
   limiteur.ratio.value = 12;
-  limiteur.attack.value = 0.004;
-  limiteur.release.value = 0.18;
+  limiteur.attack.value = 0.003;
+  limiteur.release.value = 0.25;
 
   const general = ctx.createGain();
-  general.gain.value = 0.62;
+  general.gain.value = VOLUME;
 
   limiteur.connect(general).connect(ctx.destination);
   bus = limiteur;
@@ -198,16 +197,66 @@ const SONS = {
 
 export type NomSon = keyof typeof SONS;
 
-/** Le niveau propre à chaque son, avant le bus. */
+/**
+ * Le volume général.
+ *
+ * **C'est le seul nombre à toucher pour « plus fort » ou « moins fort ».** Les
+ * niveaux par son, plus bas, sont un équilibre entre eux et non des volumes :
+ * les bouger un par un défait la mesure qui les a produits.
+ *
+ * À 0,9, la chronologie complète — trente-cinq crans, cinq claquements, une
+ * fanfare et l'appât, mixés et mesurés hors ligne — culmine à −6,5 dBFS, soit
+ * juste au seuil du limiteur : il ne fait rien sauf sur les crêtes les plus
+ * hautes. Le niveau court terme monte de −44 dB pendant le défilement à −26 dB
+ * sur la fanfare, ce qui est la montée qu'on veut entendre.
+ */
+const VOLUME = 0.9;
+
+/**
+ * Le niveau de chaque son, avant le bus.
+ *
+ * ## Ces nombres sont mesurés, pas estimés
+ *
+ * Les six fichiers ne sont **pas au même niveau**, et de très loin. Décodés puis
+ * mesurés — RMS pondéré des 20 % de fenêtres les plus fortes, ce qui ignore les
+ * silences de tête et de queue :
+ *
+ * | fichier      | crête      | corps      | écart au plus fort |
+ * | ------------ | ---------- | ---------- | ------------------ |
+ * | `tick`       | −21,6 dBFS | −36,8 dBFS | −11,9 dB           |
+ * | `common`     | −16,7      | −33,6      | −8,7               |
+ * | `spin-bait`  | −20,9      | −31,5      | −6,6               |
+ * | `rare`       | −9,4       | −26,5      | −1,6               |
+ * | `legendary`  | −9,9       | −25,2      | −0,3               |
+ * | `ultra_rare` | −6,3       | −24,9      | 0                  |
+ *
+ * Les premiers réglages étaient posés au jugé, par rôle : cliquet discret à
+ * 0,32, fanfare à 0,70. Ils allaient donc dans le **mauvais sens** — ils
+ * baissaient encore le fichier déjà le plus faible. Résultat mesuré : le cliquet
+ * sortait dix-huit décibels sous la fanfare, c'est-à-dire inaudible pendant
+ * qu'elle sature.
+ *
+ * Chaque gain ci-dessous est donc le produit de deux choses :
+ *
+ * 1. une **normalisation** qui ramène le fichier au niveau de `ultra_rare` ;
+ * 2. un **écart de rôle** délibéré, en décibels, seule partie discutable.
+ *
+ * Les écarts retenus : le cliquet à −8 dB parce qu'il revient trente-cinq fois
+ * et doit être la texture et non le sujet ; l'appât à −6 parce qu'il passe sous
+ * tout le reste ; le claquement d'arrêt à −4 ; les trois fanfares à 0, elles
+ * sont ce qu'on attend.
+ *
+ * Aucune crête ne dépasse −6 dBFS après gain, et leur somme dans le pire cas —
+ * fanfare, cliquet et appât ensemble — atteint −3 dBFS : le limiteur a de quoi
+ * travailler sans jamais écrêter.
+ */
 const NIVEAUX: Record<NomSon, number> = {
-  // Le cliquet se répète des dizaines de fois : il doit se poser sous le reste,
-  // sinon il devient le son de l'ouverture au lieu d'en être la texture.
-  cran: 0.32,
-  appat: 0.5,
-  commun: 0.55,
-  rare: 0.6,
-  ultra: 0.65,
-  legendaire: 0.7,
+  cran: 1.57, // ×3,94 pour normaliser, −8 dB de rôle
+  appat: 1.07, // ×2,14, −6 dB
+  commun: 1.72, // ×2,72, −4 dB
+  rare: 1.2, // ×1,20, 0 dB
+  ultra: 1.0, // référence
+  legendaire: 1.04, // ×1,04, 0 dB
 };
 
 const tampons = new Map<NomSon, AudioBuffer>();
