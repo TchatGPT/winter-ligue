@@ -40,7 +40,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             )}
           </h1>
         </div>
-        <span className="badge" style={estAdmin ? { borderColor: 'var(--gold)', color: 'var(--gold)' } : undefined}>
+        <span className="badge" style={estAdmin ? { borderColor: 'var(--danger)', color: 'var(--danger)' } : undefined}>
           {estAdmin ? 'Administrateur' : 'Modérateur'}
         </span>
       </header>

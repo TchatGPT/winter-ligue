@@ -63,9 +63,13 @@ export function SidebarNav({ isAdmin, isPlayer }: { isAdmin: boolean; isPlayer: 
            *
            * Elle avait exactement l'apparence des autres, alors qu'elle ne mène
            * pas au même endroit : les cinq premières sont le site, celle-ci est
-           * la salle des machines. Un trait au-dessus, la teinte d'or et le mot
+           * la salle des machines. Un trait au-dessus, le rouge et le mot
            * « réservé » suffisent — sans quoi on clique dessus par erreur, et
            * surtout on ne la trouve pas quand on la cherche.
+           *
+           * Le rouge au repos est à 80 % d'opacité et pas moins : mesuré sur le
+           * fond de la colonne, il donne 5,3:1, quand 70 % tombait à 4,3 —
+           * au-dessous du seuil pour un libellé de quinze pixels.
            */
           const reserve = tab.admin === true;
           return (
@@ -76,10 +80,10 @@ export function SidebarNav({ isAdmin, isPlayer }: { isAdmin: boolean; isPlayer: 
                 className={`group flex min-h-[46px] items-center gap-3 rounded-2xl px-3.5 py-2.5 no-underline transition-colors ${
                   active
                     ? reserve
-                      ? 'bg-gold/12 text-gold'
+                      ? 'bg-danger/12 text-danger'
                       : 'bg-ice/12 text-ice'
                     : reserve
-                      ? 'text-gold/70 hover:bg-gold/8 hover:text-gold'
+                      ? 'text-danger/80 hover:bg-danger/10 hover:text-danger'
                       : 'text-muted hover:bg-white/6 hover:text-ink'
                 }`}
                 style={
@@ -92,7 +96,7 @@ export function SidebarNav({ isAdmin, isPlayer }: { isAdmin: boolean; isPlayer: 
                 <span className="min-w-0 flex-1 truncate font-display text-[15px] font-bold tracking-wide">
                   {tab.label}
                   {reserve && (
-                    <span className="ml-1.5 align-middle text-[10px] font-black tracking-[0.14em] text-gold/60 uppercase">
+                    <span className="ml-1.5 align-middle text-[10px] font-black tracking-[0.14em] text-danger/70 uppercase">
                       réservé
                     </span>
                   )}
@@ -101,8 +105,8 @@ export function SidebarNav({ isAdmin, isPlayer }: { isAdmin: boolean; isPlayer: 
                   <span
                     className="h-1.5 w-1.5 shrink-0 rounded-full"
                     style={{
-                      background: reserve ? 'var(--gold)' : 'var(--ice)',
-                      boxShadow: `0 0 10px ${reserve ? 'var(--gold)' : 'var(--ice)'}`,
+                      background: reserve ? 'var(--danger)' : 'var(--ice)',
+                      boxShadow: `0 0 10px ${reserve ? 'var(--danger)' : 'var(--ice)'}`,
                     }}
                     aria-hidden="true"
                   />

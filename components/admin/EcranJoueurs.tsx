@@ -257,7 +257,7 @@ export function EcranJoueurs({
                       className="badge"
                       style={
                         p.role === 'admin'
-                          ? { borderColor: 'var(--gold)', color: 'var(--gold)' }
+                          ? { borderColor: 'var(--danger)', color: 'var(--danger)' }
                           : p.role === 'moderateur'
                             ? { borderColor: 'var(--ice)', color: 'var(--ice)' }
                             : undefined
