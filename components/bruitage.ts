@@ -286,3 +286,39 @@ export function bruitDeGain(ordre: number) {
     });
   }
 }
+
+/**
+ * La montée de tension, juste avant qu'une carte rare se pose.
+ *
+ * Un balayage qui monte d'une octave et demie en huit dixièmes de seconde, sous
+ * les crans du rail. C'est le seul son du tirage qui **annonce** au lieu de
+ * commenter : quand il démarre, la carte est déjà décidée depuis longtemps, mais
+ * le joueur sait qu'il se passe quelque chose avant de l'avoir vu.
+ *
+ * Réservé aux ultra rares et aux légendaires. Le déclencher sur une commune
+ * userait l'effet en trois ouvertures — et c'est exactement pour ça qu'il
+ * marche : on l'entend rarement.
+ */
+export function bruitDeTension() {
+  const ctx = contexte();
+  if (!ctx) return;
+
+  const filtre = ctx.createBiquadFilter();
+  filtre.type = 'lowpass';
+  filtre.frequency.value = 2600;
+  filtre.connect(ctx.destination);
+
+  const volume = ctx.createGain();
+  volume.gain.setValueAtTime(0.0001, ctx.currentTime);
+  volume.gain.exponentialRampToValueAtTime(0.07, ctx.currentTime + 0.55);
+  volume.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.9);
+  volume.connect(filtre);
+
+  const o = ctx.createOscillator();
+  o.type = 'triangle';
+  o.frequency.setValueAtTime(180, ctx.currentTime);
+  o.frequency.exponentialRampToValueAtTime(520, ctx.currentTime + 0.8);
+  o.connect(volume);
+  o.start();
+  o.stop(ctx.currentTime + 0.95);
+}

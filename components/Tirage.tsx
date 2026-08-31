@@ -4,7 +4,12 @@ import { useEffect, useRef, useState } from 'react';
 import { aUneIllustration, CardArt } from '@/components/CardArt';
 import { CardFrame } from '@/components/CardFrame';
 import { RarityIcon } from '@/components/RarityIcon';
-import { bruitDeCran, bruitDeGain, bruitDeRoulement } from '@/components/bruitage';
+import {
+  bruitDeCran,
+  bruitDeGain,
+  bruitDeRoulement,
+  bruitDeTension,
+} from '@/components/bruitage';
 import { RARITY_META } from '@/lib/domain/catalog';
 import { RARITY_ORDER } from '@/lib/domain/rules';
 import type { Rarity } from '@/lib/domain/types';
@@ -282,6 +287,18 @@ function Piste({
       APPATS.map((a) => ((AVANT - a.avant) * pas + lCarte / 2 - largeur / 2) / cible),
     );
 
+    /*
+     * La montée de tension, programmée avant l'arrêt.
+     *
+     * Elle ne se déclenche qu'à partir de l'ultra rare, et c'est ce qui la rend
+     * efficace : entendue à chaque ouverture, elle ne voudrait plus rien dire.
+     * Elle démarre huit dixièmes de seconde avant l'arrêt, soit à peu près au
+     * moment où le rail franchit le dernier appât — le joueur entend que ça
+     * tourne bien avant de voir sur quoi.
+     */
+    const rang = RARITY_ORDER[gagnante.rarity as Rarity] ?? 0;
+    const tension = rang >= 4 ? setTimeout(bruitDeTension, Math.max(0, total - 800)) : null;
+
     let debut = 0;
     let dernier = -1;
     let precedentX = 0;
@@ -319,7 +336,7 @@ function Piste({
       el.style.filter = '';
       boite.dataset.arrete = 'true';
       setArrete(true);
-      bruitDeGain(RARITY_ORDER[gagnante.rarity as Rarity] ?? 0);
+      bruitDeGain(rang);
       fini.current();
     };
 
@@ -340,6 +357,7 @@ function Piste({
     return () => {
       cancelAnimationFrame(amorce);
       cancelAnimationFrame(trame);
+      if (tension) clearTimeout(tension);
     };
   }, [duree, cran, gagnante.rarity]);
 
@@ -350,6 +368,7 @@ function Piste({
       className="tirage-piste"
       ref={cadre}
       data-arrete="false"
+      data-rang={RARITY_ORDER[gagnante.rarity as Rarity] ?? 0}
       style={{ ['--gagne' as string]: meta.color }}
     >
       <div className="tirage-rail" ref={rail}>
@@ -394,6 +413,12 @@ function Piste({
        * moment où elle compte : à l'arrêt, une seule par piste, celle qu'on a
        * gagnée. Elle recouvre sa tuile et c'est elle qu'on regarde.
        */}
+      {/* Les rayons n'apparaissent qu'à partir de la super rare : c'est le
+          gradient de récompense, et il ne vaut que s'il reste rare. */}
+      {arrete && (RARITY_ORDER[gagnante.rarity as Rarity] ?? 0) >= 3 && (
+        <span className="tirage-rayons" aria-hidden="true" />
+      )}
+
       {arrete && (
         <div className="tirage-gagnee">
           <CardFrame

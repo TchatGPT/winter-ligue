@@ -425,7 +425,7 @@
     height: 172px;
     border-radius: var(--r-md);
     border: 1px solid var(--glass-edge);
-    background: linear-gradient(180deg, rgb(3 8 16 / 0.75), rgb(6 14 26 / 0.9));
+    background: linear-gradient(180deg, rgb(2 4 9 / 0.92), rgb(4 8 16 / 0.96));
     box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.12);
     transition: box-shadow 0.4s ease;
   }
@@ -502,15 +502,43 @@
     color: var(--frost);
   }
 
+  /*
+   * La barre de rareté, en haut de la tuile.
+   *
+   * En haut et non en bas : c'est la convention des sites d'ouverture, et elle
+   * a une raison. Le nom occupe le pied de la carte ; une barre juste en dessous
+   * se lit comme le soulignement du nom, pas comme la marque d'un palier. En
+   * tête, elle coiffe la tuile entière et se voit même quand le nom est coupé.
+   */
   .tirage-barre {
     position: absolute;
+    top: 0;
     right: 0;
-    bottom: 0;
     left: 0;
     z-index: 3;
     height: 4px;
     background: var(--r);
-    box-shadow: 0 0 10px color-mix(in srgb, var(--r) 80%, transparent);
+    box-shadow: 0 0 12px color-mix(in srgb, var(--r) 85%, transparent);
+  }
+
+  /*
+   * L'aura de rareté, derrière l'illustration.
+   *
+   * C'est la signature de ces sites : sur un fond quasi noir, chaque objet
+   * baigne dans une lueur de sa couleur. À pleine vitesse on ne lit ni les noms
+   * ni les cadres — on ne voit que des halos passer, et c'est ce qui fait
+   * espérer quand un halo doré traverse le champ.
+   */
+  .tirage-carte::before {
+    content: '';
+    position: absolute;
+    inset: 12% 8% 22%;
+    z-index: 0;
+    border-radius: 50%;
+    background: radial-gradient(ellipse at center, var(--r) 0%, transparent 68%);
+    opacity: 0.32;
+    filter: blur(10px);
+    pointer-events: none;
   }
 
   .tirage-glyphe {
@@ -648,11 +676,104 @@
    * défilement, l'œil suit la bande ; à l'arrêt, il faut qu'il n'ait plus qu'un
    * endroit où aller.
    */
+  /*
+   * L'éclat de la piste à l'arrêt, gradué par rareté.
+   *
+   * Une commune et une légendaire ne peuvent pas se poser de la même façon,
+   * sinon la rareté n'existe que dans un chiffre. Le halo double entre les deux
+   * bouts de l'échelle, et les deux paliers hauts ajoutent des rayons.
+   *
+   * C'est le principe qu'on retrouve partout dans le genre : la récompense se
+   * mesure à ce que l'écran fait, pas à ce qu'il écrit.
+   */
   .tirage-piste[data-arrete='true'] {
     box-shadow:
       inset 0 1px 0 rgb(255 255 255 / 0.14),
-      0 0 30px color-mix(in srgb, var(--gagne) 50%, transparent),
-      inset 0 0 0 1px color-mix(in srgb, var(--gagne) 75%, transparent);
+      0 0 22px color-mix(in srgb, var(--gagne) 38%, transparent),
+      inset 0 0 0 1px color-mix(in srgb, var(--gagne) 60%, transparent);
+  }
+
+  .tirage-piste[data-arrete='true'][data-rang='2'],
+  .tirage-piste[data-arrete='true'][data-rang='3'] {
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.16),
+      0 0 34px color-mix(in srgb, var(--gagne) 55%, transparent),
+      inset 0 0 0 1px color-mix(in srgb, var(--gagne) 78%, transparent);
+  }
+
+  .tirage-piste[data-arrete='true'][data-rang='4'],
+  .tirage-piste[data-arrete='true'][data-rang='5'] {
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.2),
+      0 0 56px 6px color-mix(in srgb, var(--gagne) 70%, transparent),
+      inset 0 0 0 2px var(--gagne);
+  }
+
+  /*
+   * Les rayons, réservés aux trois raretés hautes.
+   *
+   * Un cône de lumière qui balaie derrière la carte gagnée. Il tourne lentement
+   * et ne s'arrête jamais : c'est ce qui distingue une carte qu'on garde à
+   * l'écran d'une carte qui vient de se poser.
+   */
+  .tirage-rayons {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    z-index: 1;
+    width: 420px;
+    height: 420px;
+    margin: -210px 0 0 -210px;
+    pointer-events: none;
+    background: conic-gradient(
+      from 0deg,
+      transparent 0deg,
+      color-mix(in srgb, var(--gagne) 55%, transparent) 12deg,
+      transparent 24deg,
+      transparent 45deg,
+      color-mix(in srgb, var(--gagne) 45%, transparent) 57deg,
+      transparent 69deg,
+      transparent 90deg,
+      color-mix(in srgb, var(--gagne) 55%, transparent) 102deg,
+      transparent 114deg,
+      transparent 180deg,
+      color-mix(in srgb, var(--gagne) 45%, transparent) 192deg,
+      transparent 204deg,
+      transparent 270deg,
+      color-mix(in srgb, var(--gagne) 55%, transparent) 282deg,
+      transparent 294deg,
+      transparent 360deg
+    );
+    mask-image: radial-gradient(circle, #000 12%, transparent 62%);
+    opacity: 0;
+    animation:
+      tirage-rayons-entree 500ms ease-out forwards,
+      tirage-rayons-tour 14s linear infinite;
+  }
+
+  @keyframes tirage-rayons-entree {
+    from {
+      opacity: 0;
+      transform: scale(0.6);
+    }
+    to {
+      opacity: 0.5;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes tirage-rayons-tour {
+    to {
+      rotate: 360deg;
+    }
+  }
+
+  /* Une préférence de mouvement réduit coupe la rotation, pas la lueur : on
+     garde l'information de rareté, on retire ce qui tourne. */
+  @media (prefers-reduced-motion: reduce) {
+    .tirage-rayons {
+      animation: tirage-rayons-entree 1ms linear forwards;
+    }
   }
 
   .tirage-piste[data-arrete='true'] .tirage-carte:not(.tirage-carte-gagnante) {
@@ -663,6 +784,13 @@
   .tirage-piste[data-arrete='true'] .tirage-carte-gagnante {
     animation: tirage-atterrit 620ms cubic-bezier(0.2, 1.4, 0.35, 1);
     z-index: 2;
+  }
+
+  /* Les hautes raretés se posent plus lentement et plus haut : un dixième de
+     seconde de plus suffit à faire la différence entre « encore une » et « oh ». */
+  .tirage-piste[data-arrete='true'][data-rang='4'] .tirage-carte-gagnante,
+  .tirage-piste[data-arrete='true'][data-rang='5'] .tirage-carte-gagnante {
+    animation-duration: 820ms;
   }
 
   @keyframes tirage-atterrit {
