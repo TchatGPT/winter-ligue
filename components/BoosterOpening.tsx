@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
-import { abonneSon, basculeSon, prechargeSons, reveilleSon, sonActif } from '@/components/bruitage';
+import { abonneSon, basculeSon, prechargeSons, sonActif } from '@/components/bruitage';
 import { BoosterPack3D } from '@/components/BoosterPack3D';
 import { aUneIllustration } from '@/components/CardArt';
 import { CardDetailModal, type CarteDetail } from '@/components/CardDetailModal';
@@ -74,14 +74,21 @@ export function BoosterOpening({
   const son = useSyncExternalStore(abonneSon, sonActif, () => true);
 
   /*
-   * Le cliquet est décodé pendant qu'on choisit son sachet.
+   * Les sons sont chargés et décodés pendant qu'on choisit son sachet.
    *
-   * Décoder cinquante kilo-octets prend quelques millisecondes, mais l'appel est
-   * asynchrone : demandé au démarrage du rail, le son arriverait après lui.
+   * Le décodage est asynchrone : demandé au démarrage du rail, le cliquet
+   * arriverait après lui, et l'appât — cent soixante-dix kilo-octets — bien plus
+   * tard encore.
+   *
+   * Il n'y a plus rien à réveiller dans le gestionnaire du clic : Howler pose
+   * lui-même ses écouteurs sur le premier geste de la page et reprend le
+   * contexte. C'est le seul vrai service qu'il rend ici, mais il évite une
+   * classe entière de bogues — celle où un `await` glissé avant l'appel fait
+   * perdre l'autorisation sans que rien ne le signale.
    */
   useEffect(() => {
-    if (son) prechargeSons();
-  }, [son]);
+    prechargeSons();
+  }, []);
   const [error, setError] = useState<string | null>(null);
   const [pulled, setPulled] = useState<Pulled[]>([]);
   const [spent, setSpent] = useState<number | null>(null);
@@ -261,18 +268,6 @@ export function BoosterOpening({
 
   async function open() {
     if (!booster || busy) return;
-
-    /*
-     * Le contexte audio s'ouvre **ici**, dans le geste, et nulle part ailleurs.
-     *
-     * Un `AudioContext` créé hors d'un clic naît suspendu : son horloge ne
-     * tourne pas, et tout ce qu'on lui programme s'entasse sur le même instant
-     * pour partir d'un bloc quand il se réveille. C'était le défaut du son en
-     * retard — le contexte s'ouvrait à l'affichage de l'écran, bien avant le
-     * clic. Appelé une image plus tard, la permission serait déjà perdue :
-     * l'appel doit rester synchrone, avant le premier `await`.
-     */
-    reveilleSon();
 
     setError(null);
     setPulled([]);

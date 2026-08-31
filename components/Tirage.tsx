@@ -1,5 +1,6 @@
 'use client';
 
+import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
 import { joueSon, programmeFin, sonDeFete } from '@/components/bruitage';
 import { aUneIllustration, CardArt } from '@/components/CardArt';
@@ -25,9 +26,7 @@ export interface CarteTirage {
  *
  * Il valait huit. Mesuré image par image sur l'ouverture d'EmpireDrop — suivi
  * du décalage vertical par corrélation, puis déroulement de l'aliasing dû à la
- * répétition des items — leur rail en parcourt **quarante-neuf**. Le chiffre est
- * confirmé deux fois : par l'ajustement de la courbe de vitesse, et par
- * l'intégration directe des vitesses relevées, qui donnent l'une et l'autre 49.
+ * répétition des items — leur rail en parcourt **trente-sept**.
  *
  * C'est la différence entre une roue lancée et un diaporama. À huit items en
  * neuf secondes, chaque carte reste plus d'une seconde à l'écran : on ne voit
@@ -35,7 +34,7 @@ export interface CarteTirage {
  * c'est le but — une machine dont on ne peut pas suivre le contenu est une
  * machine dont on attend l'arrêt.
  */
-const PARCOURS = 49;
+const PARCOURS = 37;
 
 /**
  * Combien de tuiles existent réellement dans un rouleau.
@@ -100,42 +99,52 @@ const ETRANGLEMENT = 15;
 /**
  * La décélération : deux frottements, pas un.
  *
- * ## Ce que la vidéo dit vraiment
+ * ## Ce que la vidéo dit
  *
  * Vitesse relevée sur leur rouleau, en items par seconde depuis le départ :
  *
  *     +0,35 s → 35,0    +0,75 s → 14,4    +1,15 s → 7,7    +1,55 s → 5,3
  *     +2,15 s →  3,8    +2,75 s →  2,4    +3,55 s → 1,4    +4,35 s → 0,5
  *
- * Une exponentielle simple, essayée d'abord, se trompe de 45 % au milieu : la
- * courbe réelle **chute plus vite au début et traîne plus longtemps à la fin**
- * qu'aucune exponentielle unique ne peut le faire.
+ * Une exponentielle simple se trompe de 45 % au milieu : la courbe réelle chute
+ * plus vite au début et traîne plus longtemps à la fin qu'aucune exponentielle
+ * unique ne le peut. La somme de deux la décrit — un lancer bref qui meurt,
+ * puis une glisse longue, chacun parcourant à peu près la moitié du trajet.
  *
- * La somme de deux la décrit à 11 % près (contre 25 % pour une seule) :
+ * ## Le plafond, et pourquoi il n'est pas négociable
  *
- *     v(t) = 124·e^(−t/0,19) + 21·e^(−t/1,22)   items par seconde
+ * Le premier ajustement, libre, donnait `124·e^(−t/0,19) + 21·e^(−t/1,22)` —
+ * soit **145 items par seconde au départ**. Erreur la plus faible, et résultat
+ * inutilisable : le premier point mesuré est à +0,35 s, tout ce qui précède
+ * était de l'extrapolation, et c'est précisément cette extrapolation qui pilote
+ * la demi-seconde la plus visible.
  *
- * Ce n'est pas une astuce d'ajustement, c'est un mécanisme : **un lancer
- * violent qui meurt en deux dixièmes de seconde, puis une glisse longue**. Les
- * deux termes se partagent le trajet presque à égalité — 48 % pour le lancer,
- * 52 % pour la glisse. C'est cette double nature qui donne la sensation
- * particulière d'une caisse qui s'ouvre : le coup de fouet du départ, puis
- * l'attente.
+ * À 145 items par seconde, le rail avance de 294 pixels par image sur une
+ * fenêtre qui en fait 305. Entre deux images le contenu change entièrement :
+ * ce n'est plus du mouvement, c'est un stroboscope. Cela se voit comme du
+ * hachage **et** comme de la vitesse excessive, les deux à la fois.
  *
- * Les courbes en puissance essayées avant — exposants 5, puis 2, puis 1,25 —
- * ne pouvaient reproduire ni l'un ni l'autre : elles gardent leur vitesse
- * longtemps puis s'arrêtent d'un coup, l'exact contraire.
+ * Six images consécutives extraites au moment le plus rapide de la vidéo le
+ * tranchent : les objets y sont nets, reconnaissables d'une image à l'autre, et
+ * décalés d'environ **un item par image**. Le plafond réel est donc de soixante
+ * items par seconde, et l'ajustement est refait sous cette contrainte :
+ *
+ *     v(t) = 41·e^(−t/0,33) + 19·e^(−t/1,26)   items par seconde
+ *
+ * L'erreur passe de 11 % à 15 % — un ajustement un peu moins bon, mais qui
+ * décrit ce qu'on voit au lieu de ce que la courbe imaginait avant le premier
+ * point.
  */
-const ELAN = { part: 23.56, tau: 190 };
-const GLISSE = { part: 25.62, tau: 1220 };
+const ELAN = { part: 13.53, tau: 330 };
+const GLISSE = { part: 23.83, tau: 1260 };
 
 /**
  * L'avancement, de 0 à 1, à l'instant `ms`.
  *
  * L'intégrale d'une vitesse en `e^(-t/τ)` est en `τ·(1 − e^(-t/τ))` : la somme
- * de deux exponentielles s'intègre donc aussi simplement qu'une seule. `part`
- * est la distance que chaque terme parcourt à lui seul, ce qui rend leur
- * pondération lisible — presque moitié-moitié.
+ * de deux exponentielles s'intègre aussi simplement qu'une seule. `part` est la
+ * distance que chaque terme parcourt à lui seul, ce qui rend leur pondération
+ * lisible — un tiers pour l'élan, deux tiers pour la glisse.
  *
  * On normalise par la valeur atteinte à `DUREE` pour que l'arrivée tombe
  * exactement sur la gagnante : sans cela une exponentielle n'arrive jamais.
@@ -148,12 +157,27 @@ function brut(ms: number): number {
 const AVANCE_FIN = brut(DUREE);
 const avance = (ms: number) => brut(ms) / AVANCE_FIN;
 
+/**
+ * Étalement des arrêts, en millisecondes.
+ *
+ * Les cinq rouleaux ne s'arrêtent pas ensemble, et pas non plus dans l'ordre.
+ * Relevé sur la vidéo : 5,97 · 6,07 · 6,17 · 6,47 s — un demi-seconde
+ * d'étalement, dans un ordre qui n'est pas celui des colonnes. C'est donc un
+ * tirage au sort et non une cascade, ce que j'avais d'abord programmé.
+ *
+ * L'écart est petit exprès. Une demi-seconde suffit à ce que chaque arrêt soit
+ * un évènement séparé ; au-delà, la dernière colonne tourne seule trop
+ * longtemps et l'ouverture traîne.
+ */
+const ETALEMENT = 500;
+
 /** Modulo positif : `%` renvoie un négatif pour un dividende négatif. */
 const cycle = (v: number, m: number) => ((v % m) + m) % m;
 
 function Piste({
   cartes,
   gagnante,
+  duree,
   mene,
   cran,
   onFini,
@@ -169,6 +193,8 @@ function Piste({
    * identiques superposés ne font pas un mécanisme plus riche, ils gaspillent
    * des voix.
    */
+  /** La durée propre à ce rouleau : `DUREE` plus son grain de retard. */
+  duree: number;
   mene: boolean;
   /** Horodatage de la dernière dent. */
   cran: React.RefObject<number>;
@@ -219,7 +245,7 @@ function Piste({
 
     const reduit =
       typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const total = reduit ? DUREE_REDUITE : DUREE;
+    const total = reduit ? DUREE_REDUITE : duree;
 
     /*
      * Toute la géométrie découle de la largeur mesurée d'une tuile.
@@ -317,7 +343,7 @@ function Piste({
       cancelAnimationFrame(amorce);
       cancelAnimationFrame(trame);
     };
-  }, [mene, cran]);
+  }, [duree, mene, cran]);
 
   const meta = RARITY_META[gagnante.rarity as Rarity] ?? RARITY_META.C;
 
@@ -363,17 +389,34 @@ function Piste({
         })}
       </div>
 
-      {/* Le nom et la puissance, sous la gagnante et seulement à l'arrêt. C'est
-          ainsi chez eux : rien n'est écrit pendant que ça tourne, et la carte
-          obtenue se nomme d'elle-même une fois posée. */}
-      {arrete && (
-        <span className="tirage-etiquette">
-          <span className="tirage-etiquette-nom">{gagnante.name}</span>
-          {gagnante.power !== undefined && (
-            <span className="tirage-etiquette-valeur num">{gagnante.power}</span>
-          )}
-        </span>
-      )}
+      {/*
+        Le nom et la puissance, sous la gagnante et seulement à l'arrêt.
+
+        C'est ainsi chez eux : rien n'est écrit pendant que ça tourne — à
+        soixante items par seconde un nom n'est pas du texte, c'est du bruit — et
+        la carte obtenue se nomme d'elle-même une fois posée.
+
+        L'apparition passe par Framer Motion plutôt que par une image-clé CSS.
+        Ce n'est pas gratuit : `AnimatePresence` permet de jouer aussi la
+        **sortie**, ce qu'une animation CSS ne sait pas faire sur un élément que
+        React démonte — l'étiquette s'effacerait d'un coup en fin d'ouverture.
+      */}
+      <AnimatePresence>
+        {arrete && (
+          <motion.span
+            className="tirage-etiquette"
+            initial={{ opacity: 0, scale: 0.8, y: -8 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            transition={{ duration: 0.34, ease: [0.2, 0.9, 0.3, 1] }}
+          >
+            <span className="tirage-etiquette-nom">{gagnante.name}</span>
+            {gagnante.power !== undefined && (
+              <span className="tirage-etiquette-valeur num">{gagnante.power}</span>
+            )}
+          </motion.span>
+        )}
+      </AnimatePresence>
 
       {arrete && (RARITY_ORDER[gagnante.rarity as Rarity] ?? 0) >= 3 && (
         <span className="tirage-rayons" aria-hidden="true" />
@@ -428,6 +471,21 @@ export function Tirage({
   const restants = useRef(gagnantes.length);
 
   /*
+   * Les durées, tirées une fois pour toutes.
+   *
+   * Chaque rouleau reçoit un grain de retard au hasard dans `ETALEMENT`. C'est
+   * ce que fait la vidéo : les arrêts s'y étalent sur une demi-seconde, et pas
+   * dans l'ordre des colonnes — donc un tirage, pas une cascade.
+   *
+   * Le meneur du cliquet est le rouleau **le plus long**, celui qui tourne
+   * encore quand les autres se sont tus : c'est le seul choix qui garde le son
+   * vivant jusqu'au dernier arrêt.
+   */
+  const [durees] = useState(() => gagnantes.map(() => DUREE + Math.random() * ETALEMENT));
+  const meneur = durees.indexOf(Math.max(...durees));
+  const finale = Math.max(...durees);
+
+  /*
    * Le meilleur du lot, et le rouleau qui le porte.
    *
    * Une seule fête par ouverture, à l'arrêt du rouleau concerné. Les rouleaux
@@ -455,9 +513,7 @@ export function Tirage({
    * sur l'arrêt, pas quelque part avant. `programmeFin` s'en charge à partir de
    * la durée du tampon décodé.
    */
-  useEffect(() => {
-    programmeFin('appat', DUREE);
-  }, []);
+  useEffect(() => programmeFin('appat', finale), [finale]);
 
   const fini = useRef(onFini);
   useEffect(() => {
@@ -486,7 +542,8 @@ export function Tirage({
             key={`${g.cardId}-${i}`}
             cartes={cartes}
             gagnante={g}
-            mene={i === 0}
+            duree={durees[i]}
+            mene={i === meneur}
             cran={cran}
             onFini={() => unDeMoins(i)}
           />
