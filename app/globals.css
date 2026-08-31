@@ -456,7 +456,7 @@
     justify-content: center;
     /* Deux cartes bord à bord ne se lisent plus comme deux objets mais comme
        une planche découpée. */
-    gap: 34px;
+    gap: 26px;
     width: 100%;
     max-width: 100%;
   }
@@ -471,18 +471,16 @@
   .tirage-piste {
     position: relative;
     overflow: hidden;
-    height: 660px;
+    /* La hauteur est posée par le composant : elle vaut VISIBLES fois le pas,
+       et le pas dépend du rapport de la carte. La fixer ici la ferait diverger
+       du calcul d'arrêt — ce qui est déjà arrivé. Cette valeur ne sert que
+       jusqu'à la première mesure. */
+    height: 590px;
     border-radius: var(--r-lg);
     border: 1px solid var(--glass-edge);
     background: linear-gradient(180deg, var(--glass-2) 0%, var(--glass-1) 100%);
     box-shadow: inset 0 1px 0 var(--glass-hi);
     transition: box-shadow 0.4s ease;
-  }
-
-  @media (max-width: 900px) {
-    .tirage-piste {
-      height: 450px;
-    }
   }
 
   @media (max-width: 900px) {
@@ -498,48 +496,49 @@
       gap: 8px;
     }
 
-    .tirage-piste {
-      height: 340px;
-    }
   }
 
+  /*
+   * Le rail n'est plus une colonne qui glisse : c'est un plan.
+   *
+   * Les tuiles y sont posées en absolu et placées une par une, par un modulo,
+   * à chaque image. C'est ce qui permet de recycler : seize cartes tournent en
+   * rond au lieu que quarante-six défilent. Le `gap` d'une colonne flex ne
+   * servirait plus à rien — l'espacement est dans le pas calculé, et
+   * `GOUTTIERE` en est la seule source.
+   */
   .tirage-rail {
-    display: flex;
-    flex-direction: column;
-    /* Doit rester d'accord avec GOUTTIERE dans components/Tirage.tsx : c'est de
-       ce pas que le composant déduit la position d'arrêt. */
-    gap: 34px;
-    padding: 0 10px;
-    /* `transform` seul, sans `filter`. Le rail est une couche promue : lui
-       annoncer un filtre le fait rastériser hors composition, et le flou de
-       mouvement qui le justifiait a été retiré — à cinq pixels par image, il n'y
-       a plus de traînée à simuler. */
-    will-change: transform;
+    position: absolute;
+    inset: 0;
   }
 
   /*
    * Une tuile : la carte elle-même, dans son cadre peint.
    *
-   * L'enveloppe ne sert qu'au halo et au sursaut d'arrivée ; tout le rendu vient
-   * de `CardFrame`. Sa hauteur n'est pas fixée ici — elle découle du rapport de
-   * la carte, que le composant recalcule à partir de la largeur mesurée de la
-   * colonne.
+   * Elle est posée en absolu et placée par le composant, à partir d'un modulo
+   * recalculé à chaque image : c'est ce qui la recycle — sortie par le bas, elle
+   * réapparaît en haut sans qu'on ait à la déplacer. Sa hauteur n'est pas fixée
+   * ici, elle découle du rapport de la carte que le composant mesure.
+   *
+   * `will-change` la promeut au compositeur, ce qui est justifié ici puisque
+   * chaque tuile bouge indépendamment des autres : seize petites couches par
+   * rouleau coûtent moins qu'un re-tramage de la bande entière à chaque image.
    */
   .tirage-carte {
-    position: relative;
-    flex: 0 0 auto;
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
     border-radius: 14px;
-    transition:
-      opacity 0.45s ease,
-      filter 0.45s ease;
+    will-change: transform;
   }
 
   /*
    * Une carte de rouleau ne porte pas son ombre portée.
    *
    * `.cadre` en pose une par défaut, ce qui est juste sur une grille de
-   * collection et ruineux ici : douze tuiles par rouleau, cinq rouleaux, soit
-   * soixante passes de flou hors écran à rastériser avant la première image. Le
+   * collection et ruineux ici : seize tuiles par rouleau, cinq rouleaux, soit
+   * quatre-vingts passes de flou hors écran à rastériser avant la première image. Le
    * rouleau a déjà son propre fond et son propre cadre — l'ombre n'y sépare rien
    * de ce qui l'entoure.
    */

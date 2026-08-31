@@ -48,3 +48,5 @@ next-env.d.ts
 
 # Index des illustrations : généré par `npm run cartes`, mais versionné pour
 # que le build fonctionne sur une machine neuve sans étape préalable.
+2026-08-31 13-08-56.mp4
+*.mp4

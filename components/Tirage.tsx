@@ -19,255 +19,165 @@ export interface CarteTirage {
 }
 
 /**
- * Combien de leurres défilent avant la gagnante.
+ * Combien d'items le rail parcourt, du départ à l'arrêt.
  *
- * Huit. C'est le réglage qui commande la douceur, et de loin le plus sensible
- * de tout le fichier.
+ * ## Quarante-trois, et c'est le chiffre qui change tout
  *
- * Seize cartes à parcourir dans le même temps, c'est une bande qui file à
- * dix-huit pixels par image, qu'il faut ensuite arrêter — et tout ce que
- * l'amortissement rattrape à la fin se paie en à-coups. À huit, la pointe tombe
- * à **cinq** pixels par image et la secousse maximale est divisée par huit.
+ * Il valait huit. Mesuré image par image sur l'ouverture d'EmpireDrop — suivi
+ * du décalage vertical par corrélation, puis déroulement de l'aliasing dû à la
+ * répétition des items — leur rail en parcourt **quarante-neuf**. Le chiffre est
+ * confirmé deux fois : par l'ajustement de la courbe de vitesse, et par
+ * l'intégration directe des vitesses relevées, qui donnent l'une et l'autre 49.
  *
- * Le second effet est qu'il reste du temps pour les hésitations. Sur seize
- * cartes, la queue d'amortissement mangeait tout et les appâts n'avaient nulle
- * part où mordre ; sur huit, l'appât final tient près de deux secondes.
- *
- * C'est enfin ce qui règle le coût : chaque tuile est une vraie carte — cadre
- * peint, rotation de teinte, illustration vectorielle — et cinq rouleaux de
- * douze font déjà soixante cartes à mettre en page d'un coup.
+ * C'est la différence entre une roue lancée et un diaporama. À huit items en
+ * neuf secondes, chaque carte reste plus d'une seconde à l'écran : on ne voit
+ * pas défiler, on voit apparaître. À quarante-trois, le début est illisible et
+ * c'est le but — une machine dont on ne peut pas suivre le contenu est une
+ * machine dont on attend l'arrêt.
  */
-const AVANT = 8;
+const PARCOURS = 49;
 
 /**
- * Combien restent au-dessus d'elle.
+ * Combien de tuiles existent réellement dans un rouleau.
  *
- * La bande descend : ce sont donc les tuiles qui restent visibles **après**
- * l'arrêt, au-dessus du repère. Sans elles, la bande finirait sur du vide.
+ * Seize, recyclées : une tuile qui sort par le bas est remise en haut. Sans ce
+ * recyclage, parcourir quarante-trois items voudrait dire monter quarante-six
+ * cartes par rouleau, soit **deux cent trente cadres peints** pour une
+ * ouverture à cinq — chacun avec son illustration vectorielle et sa rotation de
+ * teinte. La mise en page seule aurait fait sauter le démarrage.
+ *
+ * Seize et pas moins : c'est le nombre d'items **lisibles** avant l'arrêt.
+ * Passé la première seconde et demie, il reste environ onze items à défiler ;
+ * avec seize tuiles distinctes, aucune ne repasse pendant qu'on peut la lire.
+ * Les répétitions n'ont lieu que dans le flou.
  */
-const APRES = 3;
+const TUILES = 16;
+
+/**
+ * Combien de tuiles tiennent dans la hauteur de la fenêtre.
+ *
+ * Mesuré : leur bandeau fait 293 pixels pour un pas de 125, soit 2,4 items. La
+ * fenêtre est **basse**, et c'est délibéré — on ne voit presque rien à la fois,
+ * ce qui concentre le regard sur ce qui passe au milieu.
+ */
+const VISIBLES = 2.4;
 
 /**
  * Le rapport hauteur/largeur d'une carte, celui du cadre peint.
  *
- * C'est lui qui donne la hauteur d'une tuile, à partir de la largeur mesurée de
- * la colonne. Le nombre de cartes visibles en découle au lieu d'être imposé :
- * les deux ne peuvent pas diverger.
+ * C'est lui qui donne la hauteur d'une tuile à partir de la largeur mesurée de
+ * la colonne, donc le pas, donc la hauteur de la fenêtre. Rien n'est fixé deux
+ * fois.
  */
 const RATIO_CARTE = 2231 / 1514;
 
 /**
- * Durée du défilement du premier rouleau, en millisecondes.
+ * Durée du défilement, en millisecondes.
  *
- * Neuf secondes et demie pour le premier, onze et demie pour le dernier : la
- * cascade
- * allonge l'ensemble sans allonger chaque rouleau. Le temps de comprendre ce qui
- * défile, il faut que ça dure — et c'est cette durée, plus que tout le reste,
- * qui laisse la place aux trois hésitations.
+ * Mesurée : leur rail démarre à 1,8 s et ne bouge plus à 8,6 s — **6,8
+ * secondes**, à l'aide de l'énergie de changement image à image, qui ne peut
+ * pas se tromper là où la corrélation devenait ambiguë.
  */
-const DUREE = 9500;
+const DUREE = 6800;
 const DUREE_REDUITE = 900;
-
-/**
- * Décalage d'arrêt d'un rouleau au suivant, en millisecondes.
- *
- * Les cinq partent ensemble et s'arrêtent de gauche à droite. C'est ce décalage
- * qui fait tout le suspense d'une ouverture à cinq : arrêtés en même temps, on
- * ne regarde nulle part et on ne voit rien ; espacés d'une demi-seconde, chaque
- * arrêt est un évènement, et le dernier rouleau qui tourne encore tient le
- * regard à lui seul.
- */
-const RELAIS = 500;
 
 /**
  * Espace vertical entre deux cartes d'un rouleau, en pixels.
  *
- * Trente-quatre, et non quatorze. Quatorze pixels entre deux cartes de deux
- * cents, c'est un empilement : on lit une planche découpée, pas des objets qui
- * défilent. Il en faut assez pour voir le fond passer entre deux.
- *
- * Doit rester d'accord avec l'espacement de `.tirage-rail` : c'est de ce pas
- * que le composant déduit la position d'arrêt, et un écart de quelques pixels
- * décalerait l'arrêt d'une carte entière au bout de seize.
+ * C'est la seule source du pas : la hauteur d'une tuile vient du rapport de la
+ * carte, et la hauteur de la fenêtre vaut `VISIBLES` pas. Rien n'est fixé deux
+ * fois, donc rien ne peut diverger.
  */
-const GOUTTIERE = 34;
+const GOUTTIERE = 20;
 
 /**
- * Les positions où le rail hésite, en index de carte avant la gagnante.
+ * Écart minimal entre deux dents, en millisecondes.
  *
- * Chacune reçoit un leurre de rareté haute, et la bande y ralentit presque
- * jusqu'à l'arrêt avant de repartir. `force` est la fraction de vitesse retirée
- * au creux, `largeur` son étalement en fraction du trajet.
+ * Très court, et c'est voulu. Au départ le rail franchit cent quarante items
+ * par seconde : les crans se recouvrent alors largement — l'échantillon en dure
+ * 209 — et se fondent en un grondement. C'est exactement ce qu'on entend chez
+ * eux, et c'est ce grondement qui se résout peu à peu en clics distincts, puis
+ * en clics isolés. L'étranglement ne sert qu'à borner le nombre de voix
+ * simultanées, pas à espacer les dents.
  *
- * ## Le dernier creux est étroit, et c'est contre-intuitif
- *
- * Les deux premiers sont larges : loin de l'arrivée la bande va vite, et un
- * freinage brusque s'y sentirait comme un à-coup plutôt que comme une
- * hésitation. Le dernier, lui, a été **rétréci** de 0,085 à 0,04. Un creux large
- * juste avant la fin se confond avec l'amortissement — tout est lent à cet
- * endroit, donc un ralentissement de plus ne se remarque pas. Simulation à
- * l'appui : à 0,085 le leurre ne tenait que 800 ms contre 650 pour sa voisine,
- * un rapport de 1,2 que personne ne perçoit ; à 0,04 il tient **1 533 ms contre
- * 783**, soit deux fois plus.
- *
- * Le chiffre qui compte est le dernier : l'appât s'arrête **plus longtemps que
- * la gagnante** (1 533 ms contre 900). C'est ce renversement qui fait qu'on y
- * croit vraiment, et que la reprise fait quelque chose.
+ * Un seul rouleau émet, puisqu'ils sont synchrones.
  */
-const APPATS = [
-  { avant: 6, force: 0.9, largeur: 0.032 },
-  { avant: 3, force: 0.94, largeur: 0.042 },
-  { avant: 1, force: 0.95, largeur: 0.04 },
-];
+const ETRANGLEMENT = 15;
 
 /**
- * Écart minimal entre deux dents, toutes pistes confondues, en millisecondes.
+ * La décélération : deux frottements, pas un.
  *
- * Une dent par carte franchissant le repère, et par rouleau : c'est le rouleau
- * qui fait le bruit, pas une horloge. Huit cartes pour cinq rouleaux, cela fait
- * quarante dents, denses au départ quand les cinq filent ensemble, isolées à la
- * fin quand il n'en reste qu'un qui hésite.
+ * ## Ce que la vidéo dit vraiment
  *
- * L'étranglement est là contre les coïncidences : deux rouleaux qui franchissent
- * une carte à quelques images d'écart font un « flam » de batterie, un coup
- * dédoublé qu'on entend comme une erreur. L'échantillon dure 209 ms, donc il en
- * faut au moins la moitié entre deux attaques pour qu'on les distingue.
+ * Vitesse relevée sur leur rouleau, en items par seconde depuis le départ :
  *
- * Le compromis est assumé, et mesuré : à 90 ms, dix des quarante-cinq
- * franchissements restent muets — une carte passe la barre sans bruit — mais
- * aucune des trente-cinq dents restantes n'est à moins de 100 ms de sa voisine.
- * À 30 ms on les gardait toutes, avec des paires à 33 ms qui sonnaient comme un
- * bégaiement. Mieux vaut un cliquet régulier qu'un cliquet exhaustif.
+ *     +0,35 s → 35,0    +0,75 s → 14,4    +1,15 s → 7,7    +1,55 s → 5,3
+ *     +2,15 s →  3,8    +2,75 s →  2,4    +3,55 s → 1,4    +4,35 s → 0,5
+ *
+ * Une exponentielle simple, essayée d'abord, se trompe de 45 % au milieu : la
+ * courbe réelle **chute plus vite au début et traîne plus longtemps à la fin**
+ * qu'aucune exponentielle unique ne peut le faire.
+ *
+ * La somme de deux la décrit à 11 % près (contre 25 % pour une seule) :
+ *
+ *     v(t) = 124·e^(−t/0,19) + 21·e^(−t/1,22)   items par seconde
+ *
+ * Ce n'est pas une astuce d'ajustement, c'est un mécanisme : **un lancer
+ * violent qui meurt en deux dixièmes de seconde, puis une glisse longue**. Les
+ * deux termes se partagent le trajet presque à égalité — 48 % pour le lancer,
+ * 52 % pour la glisse. C'est cette double nature qui donne la sensation
+ * particulière d'une caisse qui s'ouvre : le coup de fouet du départ, puis
+ * l'attente.
+ *
+ * Les courbes en puissance essayées avant — exposants 5, puis 2, puis 1,25 —
+ * ne pouvaient reproduire ni l'un ni l'autre : elles gardent leur vitesse
+ * longtemps puis s'arrêtent d'un coup, l'exact contraire.
  */
-const ETRANGLEMENT = 90;
+const ELAN = { part: 23.56, tau: 190 };
+const GLISSE = { part: 25.62, tau: 1220 };
 
 /**
- * L'amortissement.
+ * L'avancement, de 0 à 1, à l'instant `ms`.
  *
- * L'exposant a valu cinq, puis deux ; il vaut 1,25. Une queue raide concentre
- * toute la décélération sur la dernière poignée d'images : c'est là que naissent
- * les à-coups, et c'est aussi ce qui écrase les appâts, puisque tout est déjà
- * lent quand ils arrivent.
+ * L'intégrale d'une vitesse en `e^(-t/τ)` est en `τ·(1 − e^(-t/τ))` : la somme
+ * de deux exponentielles s'intègre donc aussi simplement qu'une seule. `part`
+ * est la distance que chaque terme parcourt à lui seul, ce qui rend leur
+ * pondération lisible — presque moitié-moitié.
  *
- * Simulation à l'appui, en passant de 2,4 à 1,25 : la vitesse de pointe tombe
- * de 14,6 à 5,2 pixels par image et la secousse maximale de 9,7 à 3,9. La bande
- * ralentit sur presque tout son trajet au lieu de freiner d'un coup à la fin —
- * c'est exactement ce qu'on appelle un mouvement fluide.
- *
- * En dessous, la bande garde sa vitesse jusqu'au bout et l'arrêt claque.
+ * On normalise par la valeur atteinte à `DUREE` pour que l'arrivée tombe
+ * exactement sur la gagnante : sans cela une exponentielle n'arrive jamais.
  */
-const amorti = (t: number) => 1 - Math.pow(1 - t, 1.25);
-
-/** Résolution de la table de gauchissement. */
-const PAS_TABLE = 600;
-
-/**
- * Intègre le poids de vitesse pour en faire une position.
- *
- * ## Pourquoi une intégrale
- *
- * L'effet recherché — le rail freine sur une légendaire, s'y attarde, puis
- * repart — se décrit naturellement comme une **vitesse** qui s'effondre à
- * certains endroits. Mais l'animation a besoin d'une **position** à chaque
- * image.
- *
- * Retirer directement une bosse à la position aurait été plus court à écrire, et
- * faux : la courbe cesserait d'être croissante et le rail reculerait au sortir
- * du creux. On part donc d'un poids strictement positif — `1` moins des cloches
- * dont la somme reste sous 1 — et on l'intègre. Une intégrale de fonction
- * positive est croissante par construction : le rail ne peut pas revenir en
- * arrière, quelles que soient les valeurs choisies plus haut.
- *
- * La table est normalisée pour finir exactement à 1, donc l'arrêt tombe sur la
- * gagnante, appâts ou pas.
- */
-function integre(centres: number[]): Float64Array {
-  const table = new Float64Array(PAS_TABLE + 1);
-  let cumul = 0;
-  for (let i = 0; i <= PAS_TABLE; i += 1) {
-    const u = i / PAS_TABLE;
-    let poids = 1;
-    for (let k = 0; k < centres.length; k += 1) {
-      const a = APPATS[k];
-      const d = (u - centres[k]) / a.largeur;
-      poids -= a.force * Math.exp(-d * d);
-    }
-    /*
-     * Jamais nul : un poids nul immobiliserait le rail pour de bon.
-     *
-     * Mais pas trop haut non plus. À 0,05, le plancher rognait le fond des
-     * creux les plus profonds — la bande les traversait plus vite que demandé et
-     * les hésitations perdaient un tiers de leur durée sans que rien ne le
-     * signale. C'est le genre de garde-fou qui fausse silencieusement le réglage
-     * qu'il protège.
-     */
-    cumul += Math.max(0.02, poids);
-    table[i] = cumul;
-  }
-  for (let i = 0; i <= PAS_TABLE; i += 1) table[i] /= cumul;
-  return table;
+function brut(ms: number): number {
+  return (
+    ELAN.part * (1 - Math.exp(-ms / ELAN.tau)) + GLISSE.part * (1 - Math.exp(-ms / GLISSE.tau))
+  );
 }
+const AVANCE_FIN = brut(DUREE);
+const avance = (ms: number) => brut(ms) / AVANCE_FIN;
 
-/** L'abscisse dont la table donne `valeur`. */
-function antecedent(table: Float64Array, valeur: number): number {
-  let bas = 0;
-  let haut = PAS_TABLE;
-  while (bas < haut) {
-    const milieu = (bas + haut) >> 1;
-    if (table[milieu] < valeur) bas = milieu + 1;
-    else haut = milieu;
-  }
-  return bas / PAS_TABLE;
-}
+/** Modulo positif : `%` renvoie un négatif pour un dividende négatif. */
+const cycle = (v: number, m: number) => ((v % m) + m) % m;
 
-/**
- * La table, avec les creux calés sur les bonnes cartes.
- *
- * Les positions données sont des fractions du trajet, c'est-à-dire des valeurs
- * en **sortie** de la table ; les creux, eux, se placent en entrée. Les poser
- * directement aux positions visées décalait chaque hésitation d'une carte — le
- * rail freinait sur la voisine du leurre, ce qui ne veut rien dire.
- *
- * Quelques allers-retours suffisent à converger : on construit, on cherche
- * l'antécédent de chaque position, on reconstruit. La table étant strictement
- * croissante, l'antécédent est unique.
- */
-function tableAppats(positions: number[]): Float64Array {
-  let centres = positions.slice();
-  let table = integre(centres);
-  for (let n = 0; n < 4; n += 1) {
-    centres = positions.map((p) => antecedent(table, p));
-    table = integre(centres);
-  }
-  return table;
-}
-
-/** Lit la table avec une interpolation linéaire. */
-function gauchit(table: Float64Array, u: number): number {
-  const x = Math.min(1, Math.max(0, u)) * PAS_TABLE;
-  const i = Math.floor(x);
-  if (i >= PAS_TABLE) return table[PAS_TABLE];
-  return table[i] + (table[i + 1] - table[i]) * (x - i);
-}
-
-/**
- * Une piste : un rail horizontal qui s'arrête sur une carte.
- *
- * Les mesures sont prises au montage sur la hauteur réelle de la piste, et non
- * figées en constantes : elle se resserre sur téléphone, et un pas codé en dur
- * y décalerait l'arrêt de plusieurs cartes.
- */
 function Piste({
   cartes,
   gagnante,
-  duree,
+  mene,
   cran,
   onFini,
 }: {
   cartes: CarteTirage[];
   gagnante: CarteTirage;
-  duree: number;
-  /** Horodatage de la dernière dent, partagé par tous les rouleaux. */
+  /**
+   * Ce rouleau émet-il le cliquet ?
+   *
+   * Un seul le fait. Les cinq sont synchrones — mesuré : chez EmpireDrop les
+   * cinq colonnes démarrent, ralentissent et s'arrêtent ensemble, à l'image
+   * près — donc leurs franchissements tombent aux mêmes instants. Cinq cliquets
+   * identiques superposés ne font pas un mécanisme plus riche, ils gaspillent
+   * des voix.
+   */
+  mene: boolean;
+  /** Horodatage de la dernière dent. */
   cran: React.RefObject<number>;
   onFini: () => void;
 }) {
@@ -281,54 +191,31 @@ function Piste({
   });
 
   /*
-   * La bande, construite une seule fois.
+   * La bande : seize tuiles, la gagnante en tête.
    *
-   * Les appâts sont placés ici et pas au hasard : aux index désignés par
-   * `APPATS`, on force une carte de rareté haute. C'est tout l'effet — le rail
-   * ne peut pas ralentir sur une commune et faire croire à quoi que ce soit.
+   * Aucun appât n'y est placé, et ce n'est pas un oubli. La vidéo n'en contient
+   * pas : la vitesse relevée décroît strictement, sans la moindre hésitation,
+   * sur les deux ouvertures. Les trois creux que le rail portait jusqu'ici ont
+   * donc été retirés — avec toute la machinerie d'intégration et d'antécédents
+   * qui les rendait possibles sans faire reculer la bande.
+   *
+   * La gagnante occupe le rang 0 : c'est le rang qui, par construction du
+   * décalage de départ, se trouve pile sur le repère quand le rail s'arrête.
+   * Le recyclage la fait passer deux fois avant, mais dans le flou.
    */
   const [bande] = useState<CarteTirage[]>(() => {
     const pioche = cartes.length ? cartes : [gagnante];
-    const rang = (c: CarteTirage) => RARITY_ORDER[c.rarity as Rarity] ?? 0;
-    const hautes = pioche.filter((c) => rang(c) >= 4);
-    const rares = hautes.length ? hautes : pioche;
-
-    /*
-     * Le dernier appât prend la carte la plus rare qui existe.
-     *
-     * Pas une rare au hasard : c'est celle sur laquelle la bande va rester
-     * immobile plus d'une demi-seconde, à un cran de l'arrêt. Une ultra rare y
-     * fait déjà de l'effet ; une légendaire fait le sien.
-     */
-    const sommet = pioche.reduce((a, b) => (rang(b) > rang(a) ? b : a), pioche[0]);
-
-    /*
-     * Aucun doublon à moins de trois cases d'écart.
-     *
-     * Tiré à plat, le hasard collait deux fois la même carte dans le champ de
-     * vision une fois sur trois — et avec vingt-quatre cartes pour cent
-     * soixante cases, la bande donnait l'impression d'un jeu de six. Ce n'est
-     * pas la fréquence des répétitions qui gêne, c'est de les voir ensemble.
-     */
-    const items: CarteTirage[] = [];
-    for (let i = 0; i < AVANT + 1 + APRES; i += 1) {
-      const recents = items.slice(-3).map((c) => c.cardId);
+    const items: CarteTirage[] = [gagnante];
+    for (let i = 1; i < TUILES; i += 1) {
+      // Aucun doublon à moins de trois cases, en tenant compte du bouclage :
+      // la première et la dernière tuile sont voisines à l'écran.
+      const recents = [...items.slice(-3), ...(i > TUILES - 4 ? items.slice(0, 3) : [])].map(
+        (c) => c.cardId,
+      );
       const libres = pioche.filter((c) => !recents.includes(c.cardId));
       const source = libres.length ? libres : pioche;
       items.push(source[Math.floor(Math.random() * source.length)]);
     }
-    /*
-     * La gagnante est en tête de bande, les leurres derrière elle.
-     *
-     * La bande descend : ce sont donc les index **supérieurs** à celui de la
-     * gagnante qui traversent le repère avant elle. Un appât « à une tuile
-     * avant » est celui juste en dessous dans le tableau.
-     */
-    for (const a of APPATS) {
-      items[APRES + a.avant] =
-        a.avant === 1 ? sommet : rares[Math.floor(Math.random() * rares.length)];
-    }
-    items[APRES] = gagnante;
     return items;
   });
 
@@ -339,90 +226,71 @@ function Piste({
 
     const reduit =
       typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const total = reduit ? DUREE_REDUITE : duree;
+    const total = reduit ? DUREE_REDUITE : DUREE;
 
-    const hauteur = boite.clientHeight;
     /*
-     * La hauteur d'une tuile se déduit de la largeur **mesurée** de la tuile.
+     * Toute la géométrie découle de la largeur mesurée d'une tuile.
      *
-     * Pas de celle du rouleau : le rail a des marges intérieures pour laisser
-     * respirer le halo, et une carte y est plus étroite que sa colonne. Déduire
-     * le pas de la colonne le surestimait de vingt pixels par tuile, soit
-     * l'équivalent d'une carte entière au bout de seize — le rail se serait
-     * arrêté à côté.
-     *
-     * Une tuile est une vraie carte, donc son rapport est fixé par le cadre
-     * peint : le style n'a rien à décider au-delà de la largeur, et les deux
-     * côtés ne peuvent pas diverger sur la hauteur. Une hauteur fixée des deux
-     * côtés l'a déjà fait, et le rail s'arrêtait deux tuiles trop loin.
+     * La hauteur de la fenêtre est posée ici, et non en CSS : elle vaut
+     * `VISIBLES` pas, et le pas dépend du rapport de la carte. Les deux côtés
+     * ne peuvent donc pas diverger — ce qui est déjà arrivé, et le rail
+     * s'arrêtait alors deux tuiles à côté.
      */
-    const tuile = el.firstElementChild;
-    const large = tuile ? tuile.getBoundingClientRect().width : boite.clientWidth;
+    const tuiles = Array.from(el.children) as HTMLElement[];
+    const large = tuiles[0]?.getBoundingClientRect().width || boite.clientWidth;
     const hTuile = large * RATIO_CARTE;
     const pas = hTuile + GOUTTIERE;
+    const hauteur = VISIBLES * pas;
+    boite.style.height = `${hauteur.toFixed(1)}px`;
 
-    /*
-     * L'arrivée tombe pile au centre.
-     *
-     * Un décalage aléatoire avait été introduit pour que l'alignement ne soit pas
-     * rigide au pixel près. Avec de vraies cartes, l'effet s'inverse : une carte
-     * qui dépasse du repère se lit comme un arrêt raté, pas comme un objet lancé.
-     * Ce qui vaut pour des jetons ne vaut pas pour un objet qu'on veut regarder.
-     */
-    const dedans = 0;
-
-    /*
-     * La bande descend, donc elle part d'en haut et revient.
-     *
-     * La gagnante est à l'index `APRES` ; les leurres qui défilent sont ceux
-     * qui la suivent dans le tableau. On démarre la bande remontée de tout le
-     * trajet et on la laisse redescendre : les tuiles traversent le repère du
-     * haut vers le bas, et l'index sous le repère décroît jusqu'à `APRES`.
-     */
-    const yFin = hauteur / 2 - (APRES * pas + hTuile / 2) + dedans;
-    const cible = AVANT * pas;
-    const yDebut = yFin - cible;
-
-    // Les appâts, exprimés en fraction du trajet : c'est ce que la table attend.
-    const table = tableAppats(APPATS.map((a) => (cible - a.avant * pas) / cible));
-
-    /*
-     * La montée de tension, programmée avant l'arrêt.
-     *
-     * Elle ne se déclenche qu'à partir de l'ultra rare, et c'est ce qui la rend
-     * efficace : entendue à chaque ouverture, elle ne voudrait plus rien dire.
-     * Elle démarre huit dixièmes de seconde avant l'arrêt, soit à peu près au
-     * moment où le rail franchit le dernier appât — le joueur entend que ça
-     * tourne bien avant de voir sur quoi.
-     */
+    const boucle = TUILES * pas;
+    const trajet = PARCOURS * pas;
+    const centre = hauteur / 2 - hTuile / 2;
+    // Le décalage de départ, choisi pour que le rang 0 tombe pile au centre à
+    // l'arrivée. Tout le reste en découle par simple modulo.
+    const base = cycle(centre - trajet, boucle);
 
     let debut = 0;
     let trame = 0;
-    /** L'index sous le repère à l'image précédente. */
-    let dernier = -1;
+    let franchis = -1;
 
     const image = (temps: number) => {
       if (!debut) debut = temps;
       const t = Math.min(1, (temps - debut) / total);
-      const x = gauchit(table, amorti(t)) * cible;
-      el.style.transform = `translate3d(0, ${(yDebut + x).toFixed(1)}px, 0)`;
+      const x = avance(t * total) * trajet;
 
       /*
-       * La dent du cliquet : une carte vient de franchir le repère.
+       * Chaque tuile est placée par un modulo, ce qui la recycle toute seule.
        *
-       * Le déclencheur est l'index sous la barre, donc le son est exactement
-       * l'évènement qu'on voit. C'est aussi ce qui fait le ralentissement sans
-       * qu'il soit écrit nulle part : la cadence est celle des franchissements,
-       * donc elle épouse la courbe, hésitations comprises. Les trois appâts
-       * s'entendent sans qu'une ligne ne les mentionne — le cliquet s'étire quand
-       * la bande s'attarde sur une fausse légendaire, et repart avec elle.
+       * C'est ce qui remplace la longue bande d'autrefois : au lieu de
+       * quarante-six cartes translatées d'un bloc, seize cartes tournent en
+       * rond. Une tuile qui sort par le bas réapparaît en haut sans qu'on ait
+       * à la déplacer explicitement — le modulo s'en charge à chaque image.
        */
-      const index = Math.round((hauteur / 2 - (yDebut + x) - hTuile / 2) / pas);
-      if (index !== dernier && !reduit) {
-        dernier = index;
-        if (temps - cran.current >= ETRANGLEMENT) {
-          cran.current = temps;
-          joueSon('cran');
+      for (let k = 0; k < tuiles.length; k += 1) {
+        const y = cycle(base + x + k * pas, boucle);
+        tuiles[k].style.transform = `translate3d(0, ${y.toFixed(1)}px, 0)`;
+      }
+
+      /*
+       * La dent du cliquet : un item vient de franchir le repère.
+       *
+       * Le compteur est la distance parcourue divisée par le pas, donc le son
+       * est exactement l'évènement qu'on voit. Vérifié sur la vidéo : entre
+       * chaque franchissement mesuré et l'attaque sonore la plus proche, l'écart
+       * tient dans ±65 ms sur toute la phase lisible.
+       *
+       * Le `while` n'est pas une précaution de style : au démarrage le rail
+       * franchit deux items par image, et un `if` en avalerait la moitié.
+       */
+      if (mene && !reduit) {
+        const n = Math.floor(x / pas);
+        while (franchis < n) {
+          franchis += 1;
+          if (temps - cran.current >= ETRANGLEMENT) {
+            cran.current = temps;
+            joueSon('cran');
+          }
         }
       }
 
@@ -453,7 +321,7 @@ function Piste({
       cancelAnimationFrame(amorce);
       cancelAnimationFrame(trame);
     };
-  }, [duree, cran]);
+  }, [mene, cran]);
 
   const meta = RARITY_META[gagnante.rarity as Rarity] ?? RARITY_META.C;
 
@@ -469,21 +337,12 @@ function Piste({
         {bande.map((c, i) => {
           const m = RARITY_META[c.rarity as Rarity] ?? RARITY_META.C;
           return (
-            /*
-             * La tuile est la carte elle-même, dans son cadre peint.
-             *
-             * Elle a longtemps été une pastille — un disque d'illustration dans
-             * un anneau — pour tenir la cadence. Mais on ouvre un booster pour
-             * voir passer des cartes, pas des logos : la pastille ne disait ni
-             * ce qu'on frôlait ni ce qu'on ratait. Le nombre de leurres a été
-             * divisé pour compenser le coût.
-             */
             <div
               key={`${c.cardId}-${i}`}
-              className={`tirage-carte ${i === APRES ? 'tirage-carte-gagnante' : ''}`}
+              className={`tirage-carte ${i === 0 ? 'tirage-carte-gagnante' : ''}`}
               data-rang={RARITY_ORDER[c.rarity as Rarity] ?? 0}
               style={{ ['--r' as string]: m.color }}
-              aria-hidden={i !== APRES}
+              aria-hidden={i !== 0}
             >
               <CardFrame
                 cardId={c.cardId}
@@ -498,20 +357,6 @@ function Piste({
         })}
       </div>
 
-      {/*
-       * La vraie carte, à l'arrêt.
-       *
-       * Le rail ne peut pas faire défiler des cartes complètes : cent cinquante
-       * cadres peints, avec leur image et leur rotation de teinte, ne tiennent
-       * pas la cadence. Il fait donc défiler des tuiles simplifiées — et c'est
-       * exactement pour ça qu'on « ne voyait pas les vraies cartes ».
-       *
-       * La solution n'est pas d'alourdir le rail mais de poser la vraie carte au
-       * moment où elle compte : à l'arrêt, une seule par piste, celle qu'on a
-       * gagnée. Elle recouvre sa tuile et c'est elle qu'on regarde.
-       */}
-      {/* Les rayons n'apparaissent qu'à partir de la super rare : c'est le
-          gradient de récompense, et il ne vaut que s'il reste rare. */}
       {arrete && (RARITY_ORDER[gagnante.rarity as Rarity] ?? 0) >= 3 && (
         <span className="tirage-rayons" aria-hidden="true" />
       )}
@@ -563,7 +408,6 @@ export function Tirage({
 
   const cran = useRef(0);
   const restants = useRef(gagnantes.length);
-  const dernier = gagnantes.length - 1;
 
   /*
    * Le meilleur du lot, et le rouleau qui le porte.
@@ -590,12 +434,12 @@ export function Tirage({
    * L'appât, calé pour résoudre à l'arrêt du dernier rouleau.
    *
    * Cinq secondes sept de montée, et c'est sa fin qui compte : elle doit tomber
-   * sur le dernier clac, pas quelque part avant. `programmeFin` s'en charge à
-   * partir de la durée du tampon décodé.
+   * sur l'arrêt, pas quelque part avant. `programmeFin` s'en charge à partir de
+   * la durée du tampon décodé.
    */
   useEffect(() => {
-    programmeFin('appat', DUREE + dernier * RELAIS);
-  }, [dernier]);
+    programmeFin('appat', DUREE);
+  }, []);
 
   const fini = useRef(onFini);
   useEffect(() => {
@@ -624,7 +468,7 @@ export function Tirage({
             key={`${g.cardId}-${i}`}
             cartes={cartes}
             gagnante={g}
-            duree={DUREE + i * RELAIS}
+            mene={i === 0}
             cran={cran}
             onFini={() => unDeMoins(i)}
           />
