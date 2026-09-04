@@ -4,6 +4,7 @@ import { RarityIcon } from '@/components/RarityIcon';
 import { RARITY_META } from '@/lib/domain/catalog';
 import type { Rarity } from '@/lib/domain/types';
 import { compact, num } from '@/lib/format';
+import { TitreGlace } from '@/components/TitreGlace';
 
 /** Une rareté inconnue retombe sur la commune plutôt que de casser le rendu. */
 export function rarityMeta(rarity: string) {
@@ -70,7 +71,16 @@ export function StatTile({
  * Le nom accessible est repris sur la pastille elle-même. Le sigle en tenait
  * lieu jusqu'ici sans qu'on ait à y penser ; un dessin, non.
  */
-export function RarityChip({ rarity, title }: { rarity: string; title?: string }) {
+export function RarityChip({
+  rarity,
+  title,
+  taille,
+}: {
+  rarity: string;
+  title?: string;
+  /** Taille du flocon, en pixels. 18 par défaut. */
+  taille?: number;
+}) {
   const meta = rarityMeta(rarity);
   return (
     <span
@@ -80,7 +90,7 @@ export function RarityChip({ rarity, title }: { rarity: string; title?: string }
       role="img"
       aria-label={title ?? meta.label}
     >
-      <RarityIcon rarity={rarity} />
+      <RarityIcon rarity={rarity} taille={taille} />
     </span>
   );
 }
@@ -272,10 +282,9 @@ export function PageHead({
   return (
     <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
       <div className="min-w-0">
-        <p className="eyebrow">{eyebrow}</p>
-        <h1 className="section-title mt-1">
-          {title} <em>{accent}</em>
-        </h1>
+        <TitreGlace taille="page" eyebrow={eyebrow}>
+          {`${title} ${accent}`}
+        </TitreGlace>
         {lead && (
           <p className="mt-3 max-w-3xl text-[15px] leading-relaxed text-ink-2 sm:text-base">
             {lead}

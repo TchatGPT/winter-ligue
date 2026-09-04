@@ -27,6 +27,7 @@ import { GAME_LIMITS, MALUS } from '@/lib/domain/rules';
 import type { BoonKind, CardDefinition, CardEffect } from '@/lib/domain/types';
 import { credit } from './ledger';
 import { gamesOf, hasShield, recomputeGame } from './league';
+import { facteurCartes } from '@/lib/services/evenements';
 
 export class EffectError extends Error {
   constructor(
@@ -91,9 +92,13 @@ function applyPoints(
   requested: number,
 ): number {
   const before = game.bonusPoints;
+  // Un évènement « cartes renforcées » majore la demande **avant** le plafond :
+  // le plafond reste, une carte majorée n'en sort pas. Arrondi à l'entier, et
+  // le signe est conservé — un malus renforcé retire davantage.
+  const majore = Math.round(requested * facteurCartes(db));
   const after = Math.max(
     GAME_LIMITS.minBonusPoints,
-    Math.min(GAME_LIMITS.maxBonusPoints, before + requested),
+    Math.min(GAME_LIMITS.maxBonusPoints, before + majore),
   );
   const effective = after - before;
 

@@ -1,13 +1,13 @@
 import { BoosterOpening, type CatalogCard, type ShopBooster } from '@/components/BoosterOpening';
 import { CatalogueCartes, type CarteCatalogue } from '@/components/CatalogueCartes';
-import { PageHead, RarityChip } from '@/components/ui';
+import { RarityChip } from '@/components/ui';
 import { getSession, playerIdOf } from '@/lib/auth/session';
 import { getStore } from '@/lib/db/store';
 import { CARDS } from '@/lib/domain/catalog';
-import { ECONOMY } from '@/lib/domain/rules';
-import { resolvedBoosters } from '@/lib/services/boosters';
+import { prixSansEvenement, resolvedBoosters } from '@/lib/services/boosters';
 import { allCards } from '@/lib/services/collection';
 import { statsForCard } from '@/lib/services/market';
+import { TitreGlace } from '@/components/TitreGlace';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Boosters' };
@@ -25,12 +25,17 @@ export default async function BoostersPage() {
   const session = await getSession();
   const playerId = playerIdOf(session);
 
-  const { balance, shopOpen, quotes, catalogueBoosters, pool } = await getStore().read((db) => ({
+  const { balance, shopOpen, marketOpen, quotes, catalogueBoosters, pool } = await getStore().read((db) => ({
     balance: playerId ? (db.players.find((p) => p.id === playerId)?.snowflakes ?? null) : null,
     shopOpen: db.config.shopOpen,
+    marketOpen: db.config.marketOpen,
     // Prix et taux tels que l'administration les a réglés, pas ceux du
     // catalogue : la page doit annoncer ce que le serveur appliquera.
-    catalogueBoosters: resolvedBoosters(db),
+    catalogueBoosters: resolvedBoosters(db).map((b) => ({
+      ...b,
+      // Le prix hors évènement, pour le barrer pendant une braderie.
+      basePrice: prixSansEvenement(db, b.id) ?? b.price,
+    })),
     /*
      * Le pool **entier** : cartes à effet, cartes Joueur et cartes Moment.
      *
@@ -81,39 +86,39 @@ export default async function BoostersPage() {
 
   return (
     <div className="space-y-8">
-      <PageHead
-        eyebrow="24 cartes · 6 raretés"
-        title="Ouvrir un"
-        accent="Booster"
-        lead={
-          <>
-            Les flocons se gagnent en jouant — {ECONOMY.perKill} ❄ par kill,{' '}
-            {ECONOMY.perPlacement['1']} ❄ pour un Top&nbsp;1 — et tombent aussi à chaque palier de
-            subs, pour tous les joueurs à parts égales. Ils s’échangent ici contre des boosters, ou
-            à l’hôtel des ventes contre les cartes des autres.
-          </>
-        }
-      />
+      {/*
+        Le titre reprend sa pleine taille, et les explications descendent.
+
+        Les trois cadres numérotés qui occupaient cette place ont sauté : trois
+        boîtes à lire avant d'atteindre les sachets, pour dire ce qui se dit en
+        une ligne. Ce qu'elles portaient est maintenant sous le nom du sachet, à
+        l'endroit où l'on regarde déjà — et le nom du sachet, lui, a la taille
+        d'un titre, puisque c'est le seul mot qui change quand on fait défiler la
+        rangée.
+      */}
+      <header>
+        <TitreGlace taille="page" eyebrow="24 cartes · 6 raretés">
+          Ouvrir un booster
+        </TitreGlace>
+      </header>
 
       <BoosterOpening
         boosters={boosters}
         balance={balance}
         shopOpen={shopOpen}
+        marketOpen={marketOpen}
         connected={playerId !== null}
         catalog={catalog}
       />
 
       {/* ---------------------------- Catalogue ------------------------- */}
       <section className="space-y-7 pt-2">
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <h2 className="section-title text-2xl">
-            Le <em>Catalogue</em>
-          </h2>
-          <p className="max-w-xl text-xs leading-relaxed text-faint">
-            Rangé par rareté, parce que c’est tout ce qu’un booster promet : quatre cartes
-            par palier, et une puissance qui monte de palier en palier.
-          </p>
-        </div>
+        <TitreGlace
+          taille="bloc"
+          lead="Rangé par rareté, parce que c’est tout ce qu’un booster promet : quatre cartes par palier, et une puissance qui monte de palier en palier."
+        >
+          Le catalogue
+        </TitreGlace>
 
         <CatalogueCartes cartes={catalogue} />
       </section>

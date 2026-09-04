@@ -5,7 +5,7 @@ import { playerIdOf } from '@/lib/auth/session';
 import { purchaseSchema } from '@/lib/api/schemas';
 import { getStore } from '@/lib/db/store';
 import { LIMITS } from '@/lib/security/ratelimit';
-import { resolvedBoosters } from '@/lib/services/boosters';
+import { prixSansEvenement, resolvedBoosters } from '@/lib/services/boosters';
 import { purchaseAndOpen } from '@/lib/services/cards';
 
 export const runtime = 'nodejs';
@@ -23,7 +23,12 @@ export async function GET(request: Request): Promise<NextResponse> {
   // qu'il n'existe plus de prix « avant remise ».
   const { shopOpen, boosters } = await store.read((db) => ({
     shopOpen: db.config.shopOpen,
-    boosters: resolvedBoosters(db as never),
+    // Le prix du jour, et le prix hors évènement à côté : c'est ce qui permet
+    // à l'écran de barrer l'ancien pendant une braderie.
+    boosters: resolvedBoosters(db as never).map((b) => ({
+      ...b,
+      basePrice: prixSansEvenement(db as never, b.id) ?? b.price,
+    })),
   }));
 
   return ok({

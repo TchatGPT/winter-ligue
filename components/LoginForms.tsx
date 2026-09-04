@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Notice } from '@/components/ui';
+import { TitreGlace } from '@/components/TitreGlace';
 
 /**
  * Connexion.
@@ -69,9 +70,7 @@ export function LoginForms({
   return (
     <div className="grid gap-4 lg:grid-cols-2">
       <section className="glass p-5">
-        <h2 className="font-display text-lg font-black uppercase tracking-wide text-ink">
-          Joueurs
-        </h2>
+        <TitreGlace taille="petit">Joueurs</TitreGlace>
         {twitchEnabled ? (
           <>
             <p className="mt-1 text-sm text-muted">
@@ -116,9 +115,7 @@ export function LoginForms({
       </section>
 
       <section className="glass p-5">
-        <h2 className="font-display text-lg font-black uppercase tracking-wide text-ink">
-          Modération
-        </h2>
+        <TitreGlace taille="petit">Modération</TitreGlace>
         <p className="mt-1 text-sm text-muted">
           Saisie des games, réglages de saison, sauvegarde.
         </p>

@@ -13,10 +13,10 @@ import 'server-only';
 import type { CardInstance, Database } from '@/lib/db/entities';
 import { newId } from '@/lib/db/store';
 import { getCard } from '@/lib/domain/catalog';
-import { RARITY_ORDER } from '@/lib/domain/rules';
+import { ECONOMY, RARITY_ORDER } from '@/lib/domain/rules';
 import type { Rarity } from '@/lib/domain/types';
 import { rollBooster } from '@/lib/domain/rng';
-import { audit, debit } from './ledger';
+import { audit, credit, debit } from './ledger';
 import { consumeBoon, isSilenced, resolve } from './effects';
 import { resolveCard } from './collection';
 import { resolvedBooster } from './boosters';
@@ -83,7 +83,7 @@ function createInstance(
 export interface OpenBoosterResult {
   boosterId: string;
   pricePaid: number;
-  cards: { instanceId: string; cardId: string; isNew: boolean }[];
+  cards: { instanceId: string; cardId: string; isNew: boolean; relance: boolean }[];
   balance: number;
 }
 
@@ -111,7 +111,14 @@ export function purchaseAndOpen(
     return {
       boosterId: previous.boosterId,
       pricePaid: previous.pricePaid,
-      cards: previous.cardIds.map((cardId) => ({ instanceId: '', cardId, isNew: false })),
+      // La relance est relue du journal, et non retirée : rejouer la requête
+      // doit rendre exactement la même ouverture, mise en scène comprise.
+      cards: previous.cardIds.map((cardId, i) => ({
+        instanceId: '',
+        cardId,
+        isNew: false,
+        relance: (previous.relances ?? []).includes(i),
+      })),
       balance: player ? player.snowflakes : 0,
     };
   }
@@ -159,11 +166,13 @@ export function purchaseAndOpen(
     return acc;
   }, {});
 
-  const cardIds = rollBooster(effective, collectionPool as never);
-  const cards = cardIds.map((cardId) => {
+  const { cards: cardIds, relances } = rollBooster(effective, collectionPool as never);
+  const cards = cardIds.map((cardId, i) => {
     const instance = createInstance(db, playerId, cardId, 'BOOSTER');
     const isNew = recordDiscovery(db, playerId, cardId);
-    return { instanceId: instance.id, cardId, isNew };
+    // La relance est déjà faite : ce drapeau ne sert qu'à ce que l'écran la
+    // rejoue en images. Le client ne peut ni la provoquer ni la refuser.
+    return { instanceId: instance.id, cardId, isNew, relance: relances.includes(i) };
   });
 
   db.openings.push({
@@ -172,6 +181,7 @@ export function purchaseAndOpen(
     boosterId,
     pricePaid: price,
     cardIds,
+    relances,
     openedAt: new Date().toISOString(),
     idempotencyKey,
   });
@@ -272,4 +282,52 @@ export function playCard(
     targetPlayerId: outcome.targetPlayerId,
     balance: player ? player.snowflakes : 0,
   };
+}
+
+/* ------------------------------- La défausse ------------------------------ */
+
+/**
+ * Détruit une carte de la réserve et rend un flocon.
+ *
+ * ## Pourquoi un flocon, et pas une fraction du prix
+ *
+ * La défausse n'est pas une revente : c'est une sortie pour les doublons dont
+ * personne ne veut, pas même au marché. Un gain proportionnel en ferait un
+ * rendement — on ouvrirait des sachets pour défausser — et il court-circuiterait
+ * le prix plancher de l'hôtel des ventes, qui est la vraie manière de valoriser
+ * une carte. Le montant vit dans `ECONOMY.defausse`, et nulle part ailleurs.
+ *
+ * ## L'exemplaire est retiré, la découverte reste
+ *
+ * On supprime l'exemplaire au lieu de le marquer consommé : une carte
+ * consommée reste dans l'historique d'une game, ce qui n'est pas le cas ici —
+ * elle n'a rien fait, elle a disparu. La découverte, elle, est définitive : on
+ * l'a bien eue une fois, et le compteur « 36 / 36 » ne doit pas reculer parce
+ * qu'on a fait le ménage.
+ */
+export function defausseCarte(
+  db: Database,
+  playerId: string,
+  cardInstanceId: string,
+): { gain: number; balance: number } {
+  const index = db.cards.findIndex((c) => c.id === cardInstanceId);
+  const instance = index >= 0 ? db.cards[index] : undefined;
+
+  if (!instance || instance.playerId !== playerId || instance.consumed) {
+    throw new CardError('Carte introuvable dans ta réserve.', 'CARTE_INTROUVABLE');
+  }
+  // Une carte en vente est sous séquestre : la défausser laisserait une vente
+  // active pointant vers un exemplaire qui n'existe plus.
+  if (instance.listingId) {
+    throw new CardError(
+      'Cette carte est en vente. Annule la vente avant de la défausser.',
+      'CARTE_VERROUILLEE',
+    );
+  }
+
+  db.cards.splice(index, 1);
+  const balance = credit(db, playerId, ECONOMY.defausse, 'DEFAUSSE_CARTE', instance.cardId);
+  audit(db, playerId, 'DEFAUSSE', instance.id, instance.cardId);
+
+  return { gain: ECONOMY.defausse, balance };
 }

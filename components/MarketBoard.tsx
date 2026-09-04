@@ -4,8 +4,8 @@ import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { CardFrame } from '@/components/CardFrame';
 import { Countdown } from '@/components/Countdown';
-import { FiltreRarete } from '@/components/FiltreRarete';
 import { MarketViewModal } from '@/components/MarketViewModal';
+import { RARITIES } from '@/lib/domain/types';
 import { EmptyState, Notice, RarityChip, flakes, flakesShort, rarityMeta } from '@/components/ui';
 import { MARKET } from '@/lib/domain/rules';
 import { shortDateTime } from '@/lib/format';
@@ -253,15 +253,53 @@ export function MarketBoard({
             </select>
           </div>
 
-          <FiltreRarete
-            selection={rarityFilter}
-            onToggle={toggleRarity}
-            onReset={() => setRarityFilter(new Set())}
-            compte={(r) => String(source.filter((l) => l.rarity === r).length)}
-            aide="Sous chaque palier, le nombre de ventes en cours. La recherche et le tri s'appliquent en plus du filtre."
-          >
-            {filtered.length} vente{filtered.length > 1 ? 's' : ''}
-          </FiltreRarete>
+          {/*
+            Les raretés en six lettres, et non en six pavés.
+
+            Le panneau qui les portait faisait la hauteur de trois rangées de
+            cartes pour six cases à cocher, et il s'intercalait entre la
+            recherche et les ventes — c'est-à-dire au seul endroit du marché où
+            l'on ne veut rien avoir à lire. Les six sigles suffisent : ils sont
+            colorés par palier, comme partout ailleurs sur le site, et le compte
+            de ventes tient dans l'infobulle.
+          */}
+          <div className="flex flex-wrap items-center gap-1.5">
+            {[...RARITIES].reverse().map((r) => {
+              const m = rarityMeta(r);
+              const actif = rarityFilter.has(r);
+              const n = source.filter((l) => l.rarity === r).length;
+              return (
+                <button
+                  key={r}
+                  type="button"
+                  aria-pressed={actif}
+                  title={`${m.label} — ${n} vente${n > 1 ? 's' : ''}`}
+                  onClick={() => toggleRarity(r)}
+                  className="rounded-lg px-2.5 py-1 font-display text-[12px] font-black tracking-wider transition-colors"
+                  style={{
+                    color: actif ? '#060a12' : m.color,
+                    background: actif ? m.color : 'transparent',
+                    boxShadow: `inset 0 0 0 1px color-mix(in srgb, ${m.color} ${actif ? 100 : 32}%, transparent)`,
+                    opacity: n === 0 && !actif ? 0.45 : 1,
+                  }}
+                >
+                  {m.code}
+                </button>
+              );
+            })}
+            {rarityFilter.size > 0 && (
+              <button
+                type="button"
+                className="ml-1 text-[12px] text-faint underline"
+                onClick={() => setRarityFilter(new Set())}
+              >
+                tout afficher
+              </button>
+            )}
+            <span className="ml-auto text-[12px] text-faint">
+              {filtered.length} vente{filtered.length > 1 ? 's' : ''}
+            </span>
+          </div>
         </div>
       )}
 
@@ -285,7 +323,10 @@ export function MarketBoard({
             }
           />
         ) : (
-          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+          /* Plus dense : les vignettes tenaient à six par rangée sur un écran
+             large, ce qui laissait deux ventes seules au milieu d'un hectare de
+             vide. Un marché se parcourt du regard, il se remplit. */
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 2xl:grid-cols-10 2xl:grid-cols-10">
             {filtered.map((listing) => (
               <ListingCard
                 key={listing.id}

@@ -32,7 +32,7 @@ export async function POST(request: Request): Promise<NextResponse> {
         cardInstanceId: g.body.cardInstanceId,
         startPrice: g.body.startPrice,
         buyoutPrice: g.body.buyoutPrice,
-        durationHours: g.body.durationHours,
+        durationMinutes: g.body.durationMinutes,
       });
       return viewListing(db, created);
     });

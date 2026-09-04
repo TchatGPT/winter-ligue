@@ -29,6 +29,7 @@ import type { BoosterSetting, Database } from '@/lib/db/entities';
 import { BOOSTERS, getBooster } from '@/lib/domain/catalog';
 import { WEIGHT_TOTAL } from '@/lib/domain/rules';
 import { RARITIES, type BoosterDefinition, type Rarity } from '@/lib/domain/types';
+import { facteurPrix } from '@/lib/services/evenements';
 
 export class BoosterError extends Error {
   constructor(
@@ -55,22 +56,56 @@ function fusionne(base: BoosterDefinition, reglage: BoosterSetting | undefined):
 }
 
 /** Tous les boosters, réglages appliqués, dans l'ordre du catalogue. */
-export function resolvedBoosters(db: Database): BoosterDefinition[] {
-  return BOOSTERS.map((b) =>
-    fusionne(
-      b,
-      db.boosterSettings.find((r) => r.boosterId === b.id),
-    ),
-  );
-}
-
-/** Un booster, réglages appliqués, ou null si l'identifiant est inconnu. */
-export function resolvedBooster(db: Database, boosterId: string): BoosterDefinition | null {
+/**
+ * Le prix d'un sachet **hors évènement** : celui que l'administration a réglé,
+ * ou celui du catalogue. C'est le prix barré à l'écran pendant une braderie, et
+ * le seul que l'administration doit voir dans son panneau.
+ */
+export function prixSansEvenement(db: Database, boosterId: string): number | null {
   const base = getBooster(boosterId);
   if (!base) return null;
   return fusionne(
     base,
     db.boosterSettings.find((r) => r.boosterId === boosterId),
+  ).price;
+}
+
+/**
+ * Applique le facteur de prix des évènements en cours.
+ *
+ * C'est **ici** que la braderie s'applique, et nulle part ailleurs : la
+ * boutique, les affrontements et l'affichage lisent tous `resolvedBooster`,
+ * conformément à la règle du projet. Le prix est arrondi à l'entier — un
+ * flocon ne se divise pas — et jamais en dessous de un.
+ */
+function auPrixDuJour(db: Database, booster: BoosterDefinition): BoosterDefinition {
+  const facteur = facteurPrix(db);
+  if (facteur === 1) return booster;
+  return { ...booster, price: Math.max(1, Math.round(booster.price * facteur)) };
+}
+
+export function resolvedBoosters(db: Database): BoosterDefinition[] {
+  return BOOSTERS.map((b) =>
+    auPrixDuJour(
+      db,
+      fusionne(
+        b,
+        db.boosterSettings.find((r) => r.boosterId === b.id),
+      ),
+    ),
+  );
+}
+
+/** Un booster, réglages et évènements appliqués, ou null si l'identifiant est inconnu. */
+export function resolvedBooster(db: Database, boosterId: string): BoosterDefinition | null {
+  const base = getBooster(boosterId);
+  if (!base) return null;
+  return auPrixDuJour(
+    db,
+    fusionne(
+      base,
+      db.boosterSettings.find((r) => r.boosterId === boosterId),
+    ),
   );
 }
 

@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { MarketBoard, type MarketListing, type MarketSale } from '@/components/MarketBoard';
-import { PageHead, StatTile, flakes } from '@/components/ui';
+import { flakes } from '@/components/ui';
 import { getSession, playerIdOf } from '@/lib/auth/session';
 import type { Database } from '@/lib/db/entities';
 import { getStore } from '@/lib/db/store';
@@ -9,6 +9,7 @@ import { MARKET } from '@/lib/domain/rules';
 import type { Listing } from '@/lib/domain/types';
 import { closeExpiredListings, recentSales, statsForCard } from '@/lib/services/market';
 import { minimumBid } from '@/lib/domain/market';
+import { TitreGlace } from '@/components/TitreGlace';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Hôtel des ventes' };
@@ -133,40 +134,42 @@ export default async function MarchePage() {
 
   return (
     <div className="space-y-5">
-      <PageHead
-        eyebrow="Enchères entre joueurs"
-        title="Hôtel des"
-        accent="Ventes"
-        lead="Enchéris sur les cartes des autres, ou vends les tiennes contre des flocons. Les flocons misés sont bloqués en séquestre et te reviennent dès qu’on te dépasse."
-        actions={
-          viewerId ? (
-            <Link href="/ma-collection#vendre" className="btn btn-ice no-underline">
-              Vendre une carte
-            </Link>
-          ) : (
-            <Link href="/connexion" className="btn no-underline">
-              Se connecter
-            </Link>
-          )
-        }
-      />
+      {/*
+        Un entête d'une ligne, et quatre chiffres réduits à une phrase.
 
-      <section className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
-        <StatTile label="Ventes en cours" value={data.totalActive} />
-        <StatTile
-          label="Conclues (24 h)"
-          value={data.volume24h.length}
-          hint={volumeFlakes > 0 ? `❄ ${flakes(volumeFlakes)} échangés` : undefined}
-          accent="aurora"
-        />
-        <StatTile label="Total historique" value={data.totalSales} accent="ink" />
-        <StatTile
-          label="Ventes simultanées"
-          value={MARKET.maxActiveListingsPerPlayer}
-          hint="par joueur"
-          accent="gold"
-        />
-      </section>
+        Il occupait la moitié de l'écran : un titre de couverture, trois lignes
+        de règles, et quatre grands pavés de statistiques. Or on ne vient pas au
+        marché lire le total historique — on vient voir ce qui est en vente.
+        Tout tenait à défiler avant d'apercevoir la première carte.
+
+        Les chiffres ne disparaissent pas : ils passent en une ligne de contexte
+        sous le titre, où on les lit sans qu'ils prennent la place des cartes.
+      */}
+      <header className="flex flex-wrap items-end justify-between gap-3">
+        <div className="min-w-0">
+          <TitreGlace taille="page">Le marché</TitreGlace>
+          <p className="mt-1 text-[15px] text-muted">
+            Enchéris sur les cartes des autres, ou vends les tiennes contre des flocons.
+          </p>
+          <p className="mt-1 text-[13px] text-faint">
+            <strong className="text-ink-2">{data.totalActive}</strong> en vente ·{' '}
+            <strong className="text-ink-2">{data.volume24h.length}</strong> conclues en 24 h
+            {volumeFlakes > 0 && <> pour {flakes(volumeFlakes)} ❄</>} ·{' '}
+            <strong className="text-ink-2">{data.totalSales}</strong> depuis le début ·{' '}
+            {MARKET.maxActiveListingsPerPlayer} ventes simultanées par joueur
+          </p>
+        </div>
+
+        {viewerId ? (
+          <Link href="/ma-collection#vendre" className="btn btn-ice shrink-0 no-underline">
+            Vendre une carte
+          </Link>
+        ) : (
+          <Link href="/connexion" className="btn shrink-0 no-underline">
+            Se connecter
+          </Link>
+        )}
+      </header>
 
       <MarketBoard
         listings={data.listings}

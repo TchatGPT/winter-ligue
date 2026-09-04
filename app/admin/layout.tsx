@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { AdminNav } from '@/components/admin/Cadre';
 import { getSession } from '@/lib/auth/session';
+import { TitreGlace } from '@/components/TitreGlace';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Administration' };
@@ -27,18 +28,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     <div className="space-y-5">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="eyebrow">Accès réservé</p>
-          <h1 className="section-title">
-            {estAdmin ? (
-              <>
-                Admini<em>stration</em>
-              </>
-            ) : (
-              <>
-                Modé<em>ration</em>
-              </>
-            )}
-          </h1>
+          <TitreGlace taille="page" eyebrow="Accès réservé">
+            {estAdmin ? 'Administration' : 'Modération'}
+          </TitreGlace>
         </div>
         <span className="badge" style={estAdmin ? { borderColor: 'var(--danger)', color: 'var(--danger)' } : undefined}>
           {estAdmin ? 'Administrateur' : 'Modérateur'}

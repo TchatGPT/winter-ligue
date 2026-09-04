@@ -9,6 +9,7 @@ import { LIMITS } from '@/lib/security/ratelimit';
 import { consumeBoon } from '@/lib/services/effects';
 import { recomputeGame } from '@/lib/services/league';
 import { audit, credit } from '@/lib/services/ledger';
+import { facteurGain } from '@/lib/services/evenements';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -60,7 +61,10 @@ export async function POST(request: Request): Promise<NextResponse> {
 
       // La faveur « Manne » double les flocons de la game, et se consomme.
       const manne = consumeBoon(db, player.id, 'FLOCONS_DOUBLES');
-      const payout = manne ? reward.total * 2 : reward.total;
+      // Un évènement « flocons doublés » en cours s'applique à tout le monde,
+      // et se cumule avec la faveur : elle est personnelle et consommée, lui est
+      // collectif et gratuit — ce sont deux choses différentes.
+      const payout = Math.round(reward.total * (manne ? 2 : 1) * facteurGain(db));
       credit(db, player.id, payout, 'GAME', game.id);
       audit(db, 'admin', 'GAME_ENREGISTREE', player.id, `${game.kills} kills — ${game.score} pts`);
 

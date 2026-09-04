@@ -67,7 +67,7 @@ export function SessionBadge({
         <div className="truncate text-center font-display text-sm font-bold tracking-wide text-muted uppercase">
           {role === 'admin' ? 'Administration' : role === 'moderateur' ? 'Modération' : pseudo}
         </div>
-        <button className="btn btn-sm btn-ghost w-full" onClick={logout} disabled={busy || pending}>
+        <button className="btn btn-sm w-full" onClick={logout} disabled={busy || pending}>
           Se déconnecter
         </button>
       </div>

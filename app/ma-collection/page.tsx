@@ -8,6 +8,7 @@ import { getStore } from '@/lib/db/store';
 import { hasShield } from '@/lib/services/league';
 import { getProfile } from '@/lib/services/profile';
 import { shortDateTime } from '@/lib/format';
+import { TitreGlace } from '@/components/TitreGlace';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Ma collection' };
@@ -41,12 +42,9 @@ export default async function MaCollectionPage() {
   return (
     <div className="space-y-8">
       <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p className="eyebrow">{profile.pseudo}</p>
-          <h1 className="section-title">
-            Ma <em>Collection</em>
-          </h1>
-        </div>
+        <TitreGlace taille="page" eyebrow={profile.pseudo}>
+          Ma collection
+        </TitreGlace>
         <Link href={`/joueurs/${profile.slug}`} className="btn btn-sm">
           Voir mon profil public
         </Link>
@@ -76,11 +74,12 @@ export default async function MaCollectionPage() {
 
       <CollectionBoard profile={profile} opponents={opponents} />
 
+      <div className="grid gap-8 xl:grid-cols-[3fr_2fr] xl:items-start">
       {/* ------------------------------ Collection ------------------------- */}
       <section>
-        <h2 className="mb-3 font-display text-xl font-black uppercase tracking-wide text-ink">
+        <TitreGlace taille="bloc" className="mb-3">
           Cartes découvertes
-        </h2>
+        </TitreGlace>
         <GrilleCollection entrees={profile.collection} />
         <p className="mt-2 text-xs text-faint">
           Une carte jouée ou vendue reste découverte&nbsp;: la collection garde la trace de tout ce qui est passé entre tes mains.
@@ -89,9 +88,9 @@ export default async function MaCollectionPage() {
 
       {/* ----------------------------- Grand livre ------------------------- */}
       <section>
-        <h2 className="mb-3 font-display text-xl font-black uppercase tracking-wide text-ink">
+        <TitreGlace taille="bloc" className="mb-3">
           Derniers mouvements de flocons
-        </h2>
+        </TitreGlace>
         <div className="glass scroll-x">
           <table className="grid-table min-w-[420px]">
             <thead>
@@ -122,6 +121,7 @@ export default async function MaCollectionPage() {
           </table>
         </div>
       </section>
+      </div>
     </div>
   );
 }

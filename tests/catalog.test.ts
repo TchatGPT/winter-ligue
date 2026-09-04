@@ -10,6 +10,7 @@ import {
   RARITY_WEIGHTS_BASE,
   SUB_MILESTONES,
   WEIGHT_TOTAL,
+  WINTER_SPIN,
 } from '@/lib/domain/rules';
 import type { Rarity } from '@/lib/domain/types';
 
@@ -213,10 +214,59 @@ describe('emplacements de booster', () => {
     }
   });
 
-  it('garde des sachets d’une taille lisible', () => {
+  it('donne exactement trois cartes, quel que soit le sachet', () => {
+    /*
+     * Le prix n'achète pas de la quantité : il achète une courbe de raretés,
+     * une garantie, et une part de jouable. Tout le monde ouvre trois cartes.
+     *
+     * Ce test n'est pas cosmétique. Trois est aussi ce que le rail montre — une
+     * colonne par carte — et c'est ce qui décide de leur taille à l'écran : à
+     * cinq colonnes, les cartes deviennent illisibles.
+     */
     for (const booster of BOOSTERS) {
-      expect(boosterSize(booster)).toBeGreaterThanOrEqual(3);
-      expect(boosterSize(booster)).toBeLessThanOrEqual(6);
+      expect(boosterSize(booster)).toBe(3);
+    }
+  });
+});
+
+describe('le jeton Winter Spin', () => {
+  const total = (w: Record<string, number>) =>
+    Object.values(w).reduce((a, b) => a + b, 0);
+
+  it('a une table de relance qui somme exactement à 100 000', () => {
+    // Même règle que toutes les autres tables : c'est la plage dans laquelle
+    // `pickWeighted` tire, et une somme fausse rend les taux mensongers sans
+    // que personne puisse s'en apercevoir.
+    expect(total(WINTER_SPIN.weights)).toBe(WEIGHT_TOTAL);
+    for (const poids of Object.values(WINTER_SPIN.weights)) {
+      expect(Number.isInteger(poids)).toBe(true);
+      expect(poids).toBeGreaterThanOrEqual(0);
+    }
+  });
+
+  it('relance vers le haut, sans quoi le jeton ne vaudrait rien', () => {
+    // Ce qui est promis au joueur : une chance accrue d'ultra rare ou de
+    // légendaire. Si ce test tombe, le jeton est devenu un simple re-tirage et
+    // il faut soit rétablir les taux, soit cesser de le présenter ainsi.
+    const haut = WINTER_SPIN.weights.UR + WINTER_SPIN.weights.L;
+    expect(haut / WEIGHT_TOTAL).toBeGreaterThan(0.5);
+    expect(WINTER_SPIN.weights.C).toBe(0);
+    expect(WINTER_SPIN.weights.PC).toBe(0);
+  });
+
+  it('reste très rare, et jamais impossible', () => {
+    // Une chance nulle retirerait la mécanique en silence ; une chance élevée
+    // ferait du jeton la règle plutôt que l'évènement. Les bornes sont larges,
+    // elles ne verrouillent qu'un ordre de grandeur.
+    expect(WINTER_SPIN.chance).toBeGreaterThan(0);
+    expect(WINTER_SPIN.chance / WEIGHT_TOTAL).toBeLessThan(0.005);
+  });
+
+  it('ne touche pas aux tables des boosters', () => {
+    // Le jeton se tire séparément de la rareté, précisément pour que les taux
+    // affichés sous le sachet restent ceux qui sont appliqués.
+    for (const booster of BOOSTERS) {
+      expect(total(booster.weights)).toBe(WEIGHT_TOTAL);
     }
   });
 });

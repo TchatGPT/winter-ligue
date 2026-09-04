@@ -65,6 +65,30 @@ export function IconGavel(props: IconProps) {
   );
 }
 
+/** Batailles — deux lames croisées. */
+export function IconSwords(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M14.5 3.5H20v5.5l-8.5 8.5-5.5-5.5 8.5-8.5Z" />
+      <path d="m3.5 20.5 3-3" />
+      <path d="M9.5 3.5H4v5.5l3.2 3.2" />
+      <path d="m20.5 20.5-3-3" />
+      <path d="m12.3 12.3 3.2 3.2" />
+    </Svg>
+  );
+}
+
+/** Le reste — trois points, la convention pour « et le reste ». */
+export function IconPlus(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <circle cx="5.5" cy="12" r="1.4" fill="currentColor" stroke="none" />
+      <circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none" />
+      <circle cx="18.5" cy="12" r="1.4" fill="currentColor" stroke="none" />
+    </Svg>
+  );
+}
+
 /** Collection — des cartes empilées. */
 export function IconLayers(props: IconProps) {
   return (
@@ -137,13 +161,26 @@ export function IconImpact(props: IconProps) {
   );
 }
 
+/** Administration — un bouclier, avec un flocon en son cœur. */
+export function IconShield(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M12 3 4.5 6v5c0 4.6 3.1 8 7.5 10 4.4-2 7.5-5.4 7.5-10V6L12 3Z" />
+      <path d="M12 8v8M8.6 10l6.8 4M8.6 14l6.8-4" />
+    </Svg>
+  );
+}
+
 export const NAV_ICONS = {
   trophy: IconTrophy,
   pack: IconPack,
   gavel: IconGavel,
+  swords: IconSwords,
+  plus: IconPlus,
   layers: IconLayers,
   book: IconBook,
   gear: IconGear,
+  shield: IconShield,
   user: IconUser,
 } as const;
 

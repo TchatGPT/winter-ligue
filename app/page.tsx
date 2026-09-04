@@ -1,76 +1,43 @@
-import Link from 'next/link';
+import { Classement } from '@/components/Classement';
 import { SubsBanner } from '@/components/SubsBanner';
-import { DataRow, EmptyState, PageHead, StatTile, flakes, flakesShort } from '@/components/ui';
+import { Hero } from '@/components/Hero';
+import { EmptyState } from '@/components/ui';
 import { getStore } from '@/lib/db/store';
-import { SEASON } from '@/lib/domain/rules';
-import { getOverview, getRanking, type RankingRow } from '@/lib/services/league';
+import { evenementsActifs } from '@/lib/services/evenements';
+import { getOverview, getRanking } from '@/lib/services/league';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Classement général' };
 
-const MEDALS = ['🥇', '🥈', '🥉'];
-
-
-function PlayerName({ row }: { row: RankingRow }) {
-  return (
-    <span className="flex min-w-0 items-center gap-2">
-      <Link
-        href={`/joueurs/${row.slug}`}
-        className="truncate font-display text-[17px] font-bold tracking-wide text-ink no-underline hover:text-ice"
-      >
-        {row.pseudo}
-      </Link>
-      {row.shielded && (
-        <span title="Protégé par un bouclier" aria-label="Protégé" className="shrink-0">
-          🛡
-        </span>
-      )}
-    </span>
-  );
-}
-
 export default async function ClassementPage() {
-  const [ranking, overview, totalSubs] = await Promise.all([
+  const [ranking, overview, subs] = await Promise.all([
     getRanking(),
     getOverview(),
-    getStore().read((db) => db.config.totalSubs),
+    getStore().read((db) => ({
+      totalSubs: db.config.totalSubs,
+      evenements: evenementsActifs(db),
+    })),
   ]);
 
   return (
     <div className="space-y-6">
-      <PageHead
-        eyebrow={`${SEASON.name} · ${SEASON.edition}`}
-        title="Classement"
-        accent="Général"
-        actions={
-          <div className="glass glass-soft px-4 py-3">
-            <div className="text-[13px] tracking-[0.16em] text-faint uppercase">
-              Qualification finale
-            </div>
-            <div className="font-display text-base font-bold text-gold">
-              🏆 Top {SEASON.finalistCount} — session de 3 h
-            </div>
-          </div>
+      {/* Sur grand écran, le hero et les subs se partagent la largeur ; en
+          dessous, ils s'empilent. Chacun se réorganise selon sa propre
+          largeur, pas celle de la fenêtre. */}
+      <div className="grid gap-6 xl:grid-cols-[1.15fr_1fr] xl:items-stretch">
+      <Hero
+        leader={
+          ranking[0]
+            ? { pseudo: ranking[0].pseudo, slug: ranking[0].slug, score: ranking[0].totals.totalScore }
+            : null
         }
+        joueurs={overview.playerCount}
+        games={overview.gameCount}
+        kills={overview.totalKills}
       />
 
-      <SubsBanner totalSubs={totalSubs} />
-
-      <section className="grid grid-cols-2 gap-3 lg:grid-cols-5">
-        <StatTile label="Joueurs" value={overview.playerCount} />
-        <StatTile label="Games jouées" value={overview.gameCount} accent="ink" />
-        <StatTile label="Kills cumulés" value={flakes(overview.totalKills)} accent="aurora" />
-        {/* Sans mention secondaire : elle tombait dans la bande de givre du bas
-            de la tuile, où un gris fin ne se lit plus. Le nom du meilleur joueur
-            et le nombre d'annonces se retrouvent l'un dans le classement juste
-            en dessous, l'autre à l'hôtel des ventes. */}
-        <StatTile label="Meilleure game" value={overview.bestScore} accent="gold" />
-        <StatTile
-          label="Cartes en jeu"
-          value={overview.cardsInCirculation}
-          accent="violet"
-        />
-      </section>
+      <SubsBanner totalSubs={subs.totalSubs} evenements={subs.evenements} />
+      </div>
 
       {ranking.length === 0 ? (
         <EmptyState
@@ -78,120 +45,8 @@ export default async function ClassementPage() {
           hint="La modération ajoute les participants depuis l’onglet Modération. La connexion Twitch les inscrira automatiquement une fois activée."
         />
       ) : (
-        <>
-          {/* -------- Mobile : une carte par joueur, rien ne défile ------- */}
-          <section className="space-y-2.5 md:hidden" aria-label="Classement">
-            {ranking.map((row) => (
-              <DataRow
-                key={row.id}
-                highlight={row.finalist}
-                lead={
-                  <div className="flex items-center gap-3">
-                    <span className="w-8 shrink-0 text-center font-display text-xl font-black text-muted">
-                      {row.rank <= 3 ? MEDALS[row.rank - 1] : row.rank}
-                    </span>
-                    <div className="min-w-0">
-                      <PlayerName row={row} />
-                      <div className="mt-0.5">
-                      </div>
-                    </div>
-                  </div>
-                }
-                trail={
-                  <div>
-                    <div className="num font-display text-2xl leading-none font-black text-ice">
-                      {row.totals.totalScore}
-                    </div>
-                    <div className="text-[13px] tracking-wider text-faint uppercase">points</div>
-                  </div>
-                }
-                fields={[
-                  { label: 'Games', value: row.totals.countedGames },
-                  { label: 'Kills', value: row.totals.totalKills },
-                  { label: 'Moyenne', value: row.totals.averageScore },
-                  {
-                    label: 'Top 1/2/3',
-                    value: (
-                      <>
-                        <span className={row.totals.top1 > 0 ? 'text-gold' : 'text-faint'}>
-                          {row.totals.top1}
-                        </span>
-                        <span className="text-faint">/{row.totals.top2}</span>
-                        <span className="text-faint">/{row.totals.top3}</span>
-                      </>
-                    ),
-                  },
-                  {
-                    label: 'Meilleure',
-                    value: <span className="text-aurora">{row.totals.bestScore}</span>,
-                  },
-                  { label: 'Flocons', value: `❄ ${flakesShort(row.snowflakes)}` },
-                ]}
-              />
-            ))}
-          </section>
-
-          {/* -------- Écran large : le tableau complet -------------------- */}
-          <section className="glass hidden overflow-hidden md:block">
-            <table className="grid-table">
-              <thead>
-                <tr>
-                  <th className="w-14">#</th>
-                  <th>Joueur</th>
-                  <th className="text-right">Points</th>
-                  <th className="text-right">Games</th>
-                  <th className="text-right">Moy.</th>
-                  <th className="text-right">Kills</th>
-                  <th className="text-center">Top 1/2/3</th>
-                  <th className="text-right">Meilleure</th>
-                  <th className="text-center">Collection</th>
-                  <th className="text-right">❄</th>
-                </tr>
-              </thead>
-              <tbody>
-                {ranking.map((row) => (
-                  <tr key={row.id} className={row.finalist ? 'finalist' : undefined}>
-                    <td className="font-display text-lg font-black text-muted">
-                      {row.rank <= 3 ? MEDALS[row.rank - 1] : row.rank}
-                    </td>
-                    <td>
-                      <PlayerName row={row} />
-                    </td>
-                    <td className="num text-right font-display text-xl font-black text-ice">
-                      {row.totals.totalScore}
-                    </td>
-                    <td className="num text-right text-muted">{row.totals.countedGames}</td>
-                    <td className="num text-right text-muted">{row.totals.averageScore}</td>
-                    <td className="num text-right text-muted">{row.totals.totalKills}</td>
-                    <td className="num text-center">
-                      <span className={row.totals.top1 > 0 ? 'text-gold' : 'text-faint'}>
-                        {row.totals.top1}
-                      </span>
-                      <span className="text-faint"> / </span>
-                      <span className={row.totals.top2 > 0 ? 'text-ink' : 'text-faint'}>
-                        {row.totals.top2}
-                      </span>
-                      <span className="text-faint"> / </span>
-                      <span className={row.totals.top3 > 0 ? 'text-muted' : 'text-faint'}>
-                        {row.totals.top3}
-                      </span>
-                    </td>
-                    <td className="num text-right text-aurora">{row.totals.bestScore}</td>
-                    <td className="text-center">
-                    </td>
-                    <td className="num text-right text-muted">{flakesShort(row.snowflakes)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </section>
-        </>
+        <Classement rows={ranking} />
       )}
-
-      <p className="px-1 text-[13px] leading-relaxed text-faint">
-        Égalité départagée par le nombre de Top 1, puis les kills, puis la meilleure game. Liseré
-        doré : places qualificatives. Pastilles de collection pleines à 6/6, estompées à 4/6.
-      </p>
     </div>
   );
 }

@@ -11,7 +11,7 @@ import 'server-only';
 
 import { randomInt } from 'node:crypto';
 import { CARDS } from './catalog';
-import { RARITY_ORDER, WEIGHT_TOTAL } from './rules';
+import { RARITY_ORDER, WEIGHT_TOTAL, WINTER_SPIN } from './rules';
 import type { BoosterDefinition, Rarity } from './types';
 
 /** Entier uniforme dans [0, maxExclusive). */
@@ -75,6 +75,20 @@ function pickFromPool(pool: Record<Rarity, string[]>, wanted: Rarity): string | 
   return null;
 }
 
+/** Ce qu'une ouverture produit : des cartes, et les emplacements rejoués. */
+export interface TirageBooster {
+  /** Les identifiants de cartes, dans l'ordre des emplacements. */
+  cards: string[];
+  /**
+   * Les emplacements d'effet où le jeton Winter Spin est tombé.
+   *
+   * Le client s'en sert pour montrer la relance : la colonne s'arrête sur le
+   * jeton, puis repart. Il ne la **décide** pas — elle est déjà faite ici, dans
+   * la même transaction que le débit.
+   */
+  relances: number[];
+}
+
 /**
  * Ouvre un booster et retourne les identifiants de cartes obtenus.
  *
@@ -90,10 +104,29 @@ function pickFromPool(pool: Record<Rarity, string[]>, wanted: Rarity): string | 
 export function rollBooster(
   booster: BoosterDefinition,
   collectionPool: Record<Rarity, string[]> = {} as Record<Rarity, string[]>,
-): string[] {
+): TirageBooster {
   const effetRarities: Rarity[] = [];
+
+  /*
+   * Les emplacements où le jeton Winter Spin est tombé.
+   *
+   * Le jeton se tire **avant** la rareté et séparément d'elle : la table du
+   * booster garde sa somme exacte de cent mille, et le taux affiché sous le
+   * sachet reste vrai. Quand il tombe, l'emplacement est rejoué immédiatement
+   * avec la table du jeton — le joueur ne détient jamais le jeton, il n'en voit
+   * que la conséquence.
+   *
+   * **Une seule relance.** Le second tirage ne peut pas retomber sur le jeton :
+   * une chaîne sans borne serait invérifiable, et l'attente à l'écran aussi.
+   */
+  const relances: number[] = [];
   for (let i = 0; i < booster.slots.effet; i += 1) {
-    effetRarities.push(pickWeighted(booster.weights));
+    if (secureInt(WEIGHT_TOTAL) < WINTER_SPIN.chance) {
+      relances.push(i);
+      effetRarities.push(pickWeighted(WINTER_SPIN.weights));
+    } else {
+      effetRarities.push(pickWeighted(booster.weights));
+    }
   }
 
   if (booster.guaranteed && effetRarities.length > 0) {
@@ -115,7 +148,7 @@ export function rollBooster(
     drawn.push(card ?? pickFromPool(EFFECT_BY_RARITY, 'C')!);
   }
 
-  return drawn;
+  return { cards: drawn, relances };
 }
 
 /** Vérifie qu'une table de poids est exploitable. Utilisée par les tests. */

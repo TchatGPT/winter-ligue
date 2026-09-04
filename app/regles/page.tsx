@@ -6,15 +6,18 @@ import {
   atLeastOnePercent,
   ECONOMY,
   CARD_IMPACT_CAP,
+  libelleDuree,
   MALUS,
   MARKET,
   PLACEMENT_POINTS,
   rarityPercent,
   RARITY_WEIGHTS_BASE,
   SEASON,
+  EVENEMENTS_SUBS,
   SUB_MILESTONES,
 } from '@/lib/domain/rules';
 import type { Rarity } from '@/lib/domain/types';
+import { TitreGlace } from '@/components/TitreGlace';
 
 export const metadata = { title: 'Règles de la saison' };
 
@@ -30,8 +33,8 @@ function Rule({
   children: React.ReactNode;
 }) {
   return (
-    <section className="glass p-5">
-      <h2 className="font-display text-lg font-black tracking-wide text-ice uppercase">{title}</h2>
+    <section className="glass p-5 2xl:mb-5 2xl:break-inside-avoid">
+      <TitreGlace taille="petit">{title}</TitreGlace>
       {lead && <p className="mt-0.5 text-xs text-faint">{lead}</p>}
       <div className="mt-3 space-y-2.5 text-sm leading-relaxed text-muted">{children}</div>
     </section>
@@ -60,6 +63,10 @@ export default async function ReglesPage() {
   return (
     <div className="space-y-4">
       <PageHead eyebrow={SEASON.edition} title="Les" accent="Règles" />
+
+      {/* Deux colonnes sur grand écran, en flux de colonnes : les blocs n'ont
+          pas la même hauteur, une grille laisserait des trous. */}
+      <div className="space-y-4 2xl:columns-2 2xl:gap-5 2xl:space-y-0">
 
       <Rule title="Le score d’une game">
         <p className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 font-display text-base text-ink">
@@ -134,6 +141,27 @@ export default async function ReglesPage() {
             <p className="mt-2 text-xs text-faint">
               Ces récompenses tombent à chaque palier atteint, pour{' '}
               <strong className="text-muted">tous les joueurs actifs à parts égales</strong>.
+            </p>
+
+            <h4 className="mt-3 text-[11px] tracking-[0.16em] text-faint uppercase">
+              Et des évènements, le temps d’un live
+            </h4>
+            <ul className="mt-1.5 space-y-1 text-xs">
+              {EVENEMENTS_SUBS.map((e) => (
+                <li key={`evt-${e.every}`} className="flex gap-2">
+                  <span className="num shrink-0 font-display font-black text-aurora">
+                    {e.every}
+                  </span>
+                  <span>
+                    <strong className="text-ink">{e.label}</strong> — {e.description}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-2 text-xs text-faint">
+              Un évènement ne verse rien à personne : il change les règles pour tout le monde
+              pendant sa fenêtre, puis s’arrête. Deux évènements du même genre ne se cumulent pas —
+              ils se suivent.
             </p>
           </div>
         </div>
@@ -287,7 +315,7 @@ export default async function ReglesPage() {
         <ul className="list-inside list-disc space-y-1">
           <li>
             Tu choisis un prix de départ, un achat immédiat facultatif et une durée (
-            {MARKET.durationsHours.join(', ')} heures).
+            {MARKET.durationsMinutes.map(libelleDuree).join(', ')}).
           </li>
           <li>
             Enchérir <strong className="text-ink">bloque immédiatement tes flocons</strong>. Ils te
@@ -328,6 +356,7 @@ export default async function ReglesPage() {
           pour la finale.
         </p>
       </Rule>
+      </div>
     </div>
   );
 }

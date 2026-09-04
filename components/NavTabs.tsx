@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { NAV_ICONS, type NavIconName } from './icons';
 
 interface Tab {
@@ -17,6 +18,7 @@ interface Tab {
 const TABS: Tab[] = [
   { href: '/', label: 'Classement', short: 'Classement', icon: 'trophy' },
   { href: '/boosters', label: 'Boosters', short: 'Boosters', icon: 'pack' },
+  { href: '/affrontements', label: 'Affrontements', short: 'Duels', icon: 'swords' },
   { href: '/marche', label: 'Hôtel des ventes', short: 'Marché', icon: 'gavel' },
   {
     href: '/ma-collection',
@@ -26,7 +28,7 @@ const TABS: Tab[] = [
     player: true,
   },
   { href: '/regles', label: 'Règles', short: 'Règles', icon: 'book' },
-  { href: '/admin', label: 'Administration', short: 'Admin', icon: 'gear', admin: true },
+  { href: '/admin', label: 'Administration', short: 'Admin', icon: 'shield', admin: true },
 ];
 
 function visibleTabs(isAdmin: boolean, isPlayer: boolean) {
@@ -52,6 +54,54 @@ export function SidebarNav({ isAdmin, isPlayer }: { isAdmin: boolean; isPlayer: 
   const pathname = usePathname();
   const visible = visibleTabs(isAdmin, isPlayer);
 
+  /*
+   * Le dégivrage : au survol d'un item, la couche de givre de la colonne
+   * (`.givre-surface::before`) s'efface dans un cercle centré sur lui, via un
+   * masque radial piloté par trois variables CSS posées sur la colonne. Le
+   * cercle se referme en 600 ms à la sortie. Sous `prefers-reduced-motion`,
+   * la transition est coupée côté CSS.
+   */
+  const degivre = (e: React.PointerEvent<HTMLElement>) => {
+    const colonne = e.currentTarget.closest<HTMLElement>('.givre-surface');
+    if (!colonne) return;
+    const c = colonne.getBoundingClientRect();
+    const r = e.currentTarget.getBoundingClientRect();
+    colonne.style.setProperty('--gx', `${(r.left + r.width / 2 - c.left).toFixed(0)}px`);
+    colonne.style.setProperty('--gy', `${(r.top + r.height / 2 - c.top + colonne.scrollTop).toFixed(0)}px`);
+    colonne.style.setProperty('--givre-r', '130px');
+  };
+  const regivre = (e: React.PointerEvent<HTMLElement>) => {
+    e.currentTarget.closest<HTMLElement>('.givre-surface')?.style.setProperty('--givre-r', '0px');
+  };
+
+  /*
+   * L'item actif est une zone dégagée : la texture d'usure est masquée sous
+   * lui. On pose sa position et sa taille sur la colonne (`--ax`, `--ay`,
+   * `--aw`, `--ah`), et le masque des couches de texture y perce une
+   * ellipse. Recalculé à chaque changement de page et de taille.
+   */
+  useEffect(() => {
+    const mesure = () => {
+      const actif = document.querySelector<HTMLElement>('.menu-colle nav a[aria-current="page"]');
+      const colonne = document.querySelector<HTMLElement>('.menu-colle');
+      if (!colonne) return;
+      if (!actif) {
+        colonne.style.setProperty('--aw', '0px');
+        colonne.style.setProperty('--ah', '0px');
+        return;
+      }
+      const c = colonne.getBoundingClientRect();
+      const r = actif.getBoundingClientRect();
+      colonne.style.setProperty('--ax', `${(r.left + r.width / 2 - c.left).toFixed(0)}px`);
+      colonne.style.setProperty('--ay', `${(r.top + r.height / 2 - c.top + colonne.scrollTop).toFixed(0)}px`);
+      colonne.style.setProperty('--aw', `${(r.width / 2 + 10).toFixed(0)}px`);
+      colonne.style.setProperty('--ah', `${(r.height / 2 + 8).toFixed(0)}px`);
+    };
+    mesure();
+    window.addEventListener('resize', mesure);
+    return () => window.removeEventListener('resize', mesure);
+  }, [pathname]);
+
   return (
     <nav aria-label="Navigation principale">
       <ul className="space-y-1">
@@ -73,44 +123,27 @@ export function SidebarNav({ isAdmin, isPlayer }: { isAdmin: boolean; isPlayer: 
            */
           const reserve = tab.admin === true;
           return (
-            <li key={tab.href} className={reserve ? 'mt-3 border-t border-white/10 pt-3' : undefined}>
+            <li key={tab.href} className={reserve ? 'mt-3' : undefined}>
               <Link
                 href={tab.href}
                 aria-current={active ? 'page' : undefined}
-                className={`group flex min-h-[46px] items-center gap-3 rounded-2xl px-3.5 py-2.5 no-underline transition-colors ${
+                data-reserve={reserve ? '' : undefined}
+                onPointerEnter={degivre}
+                onPointerLeave={regivre}
+                className={`group flex min-h-[46px] items-center gap-3 rounded-full px-3.5 py-2.5 no-underline transition-colors ${
                   active
                     ? reserve
-                      ? 'bg-danger/12 text-danger'
-                      : 'bg-ice/12 text-ice'
+                      ? 'nav-pilule nav-pilule-admin nav-plaque text-aurora'
+                      : 'nav-pilule nav-plaque text-ice'
                     : reserve
-                      ? 'text-danger/80 hover:bg-danger/10 hover:text-danger'
+                      ? 'text-aurora/85 hover:text-aurora'
                       : 'text-muted hover:bg-white/6 hover:text-ink'
                 }`}
-                style={
-                  active
-                    ? { boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.14)' }
-                    : undefined
-                }
               >
                 <Icon className="h-[22px] w-[22px] shrink-0" />
                 <span className="min-w-0 flex-1 truncate font-display text-[15px] font-bold tracking-wide">
                   {tab.label}
-                  {reserve && (
-                    <span className="ml-1.5 align-middle text-[10px] font-black tracking-[0.14em] text-danger/70 uppercase">
-                      réservé
-                    </span>
-                  )}
                 </span>
-                {active && (
-                  <span
-                    className="h-1.5 w-1.5 shrink-0 rounded-full"
-                    style={{
-                      background: reserve ? 'var(--danger)' : 'var(--ice)',
-                      boxShadow: `0 0 10px ${reserve ? 'var(--danger)' : 'var(--ice)'}`,
-                    }}
-                    aria-hidden="true"
-                  />
-                )}
               </Link>
             </li>
           );
@@ -120,15 +153,37 @@ export function SidebarNav({ isAdmin, isPlayer }: { isAdmin: boolean; isPlayer: 
   );
 }
 
+
 /**
- * Barre de navigation du bas, sur mobile.
+ * Ce qui reste au pouce, et ce qui passe derrière.
  *
- * Une colonne latérale mangerait la moitié d'un écran de téléphone. Une barre
- * fixe met tout à portée du pouce, avec des cibles de 56 px.
+ * La barre portait **tout** — jusqu'à sept onglets sur un écran de téléphone.
+ * Cinquante pixels par cible, des libellés coupés au milieu d'un mot, et
+ * surtout aucune hiérarchie : « Règles », qu'on lit une fois dans la saison,
+ * occupait exactement la même place que « Boosters », qu'on ouvre dix fois par
+ * soir.
+ *
+ * Quatre destinations restent en bas — ce sont les quatre boucles du jeu :
+ * regarder le classement, ouvrir, se battre, échanger. Le reste tient dans un
+ * tiroir. Rien n'est retiré, tout est rangé.
  */
+const PRINCIPAUX = ['/', '/boosters', '/affrontements', '/marche'];
+
 export function BottomNav({ isAdmin, isPlayer }: { isAdmin: boolean; isPlayer: boolean }) {
   const pathname = usePathname();
   const visible = visibleTabs(isAdmin, isPlayer);
+  const [tiroir, setTiroir] = useState(false);
+
+  const bas = visible.filter((t) => PRINCIPAUX.includes(t.href));
+  const reste = visible.filter((t) => !PRINCIPAUX.includes(t.href));
+  // Le bouton du tiroir s'allume quand on est sur une des pages qu'il contient :
+  // sans ça, la barre entière paraît éteinte et l'on se croit nulle part.
+  const dansLeTiroir = reste.some((t) => isActive(pathname, t.href));
+
+  const classeOnglet = (actif: boolean) =>
+    `flex min-h-[56px] flex-col items-center justify-center gap-1 rounded-[18px] px-1 py-1.5 no-underline transition-colors ${
+      actif ? 'nav-pilule !rounded-[18px] text-ice' : 'text-muted'
+    }`;
 
   return (
     // Le positionnement et le verre vivent sur deux nœuds distincts : `.glass`
@@ -138,31 +193,109 @@ export function BottomNav({ isAdmin, isPlayer }: { isAdmin: boolean; isPlayer: b
       className="fixed right-3 bottom-3 left-3 z-40 lg:hidden"
       style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >
+      {/*
+        Le voile qui referme le tiroir.
+
+        Un tiroir qu'on ne peut fermer qu'en rappuyant sur le bouton qui l'a
+        ouvert se referme mal au pouce : la main est déjà partie ailleurs. Tout
+        le reste de l'écran le referme donc, ce qui est le geste qu'on fait
+        naturellement.
+      */}
+      {tiroir && (
+        <button
+          type="button"
+          className="fixed inset-0 z-0 cursor-default"
+          aria-label="Fermer le menu"
+          onClick={() => setTiroir(false)}
+        />
+      )}
+
+      {tiroir && reste.length > 0 && (
+        <nav
+          id="tiroir-navigation"
+          className="glass glass-strong givre-surface relative z-10 mb-2 !rounded-[22px] p-1.5"
+          aria-label="Autres pages"
+        >
+          <span className="givre-surface-couches" aria-hidden="true" />
+          <ul className="space-y-1">
+            {reste.map((tab) => {
+              const actif = isActive(pathname, tab.href);
+              const Icon = NAV_ICONS[tab.icon];
+              const reserve = tab.admin === true;
+              return (
+                <li key={tab.href}>
+                  <Link
+                    href={tab.href}
+                    aria-current={actif ? 'page' : undefined}
+                    onClick={() => setTiroir(false)}
+                    className={`flex min-h-[52px] items-center gap-3 rounded-full px-4 no-underline transition-colors ${
+                      actif
+                        ? reserve
+                          ? 'nav-pilule nav-pilule-admin text-aurora'
+                          : 'nav-pilule text-ice'
+                        : reserve
+                          ? 'text-danger/80'
+                          : 'text-muted'
+                    }`}
+                  >
+                    <Icon className="h-[22px] w-[22px] shrink-0" />
+                    <span className="min-w-0 flex-1 truncate font-display text-[15px] font-bold tracking-wide">
+                      {tab.label}
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
+      )}
+
       <nav
-        className="glass glass-strong !rounded-[22px] px-1 py-1"
+        className="glass glass-strong relative z-10 !rounded-[22px] px-1 py-1"
         aria-label="Navigation principale"
       >
         <ul className="flex items-stretch justify-around">
-          {visible.map((tab) => {
-            const active = isActive(pathname, tab.href);
+          {bas.map((tab) => {
+            const actif = isActive(pathname, tab.href);
             const Icon = NAV_ICONS[tab.icon];
             return (
               <li key={tab.href} className="min-w-0 flex-1">
                 <Link
                   href={tab.href}
-                  aria-current={active ? 'page' : undefined}
-                  className={`flex min-h-[56px] flex-col items-center justify-center gap-1 rounded-2xl px-1 py-1.5 no-underline transition-colors ${
-                    active ? 'bg-ice/14 text-ice' : 'text-muted'
-                  }`}
+                  aria-current={actif ? 'page' : undefined}
+                  onClick={() => setTiroir(false)}
+                  className={classeOnglet(actif)}
                 >
                   <Icon className="h-[21px] w-[21px]" />
-                  <span className="w-full truncate text-center font-display text-[11px] leading-tight font-bold tracking-wide uppercase">
+                  {/*
+                    Sous 380 px, l'icône reste seule. `sr-only` et non `hidden` :
+                    le nom reste lu par les lecteurs d'écran, qui n'ont que lui —
+                    l'icône, elle, est décorative.
+                  */}
+                  <span className="w-full truncate text-center font-display text-[11px] leading-tight font-bold tracking-wide uppercase max-[359px]:sr-only">
                     {tab.short}
                   </span>
                 </Link>
               </li>
             );
           })}
+
+          {reste.length > 0 && (
+            <li className="min-w-0 flex-1">
+              <button
+                type="button"
+                aria-expanded={tiroir}
+                aria-controls="tiroir-navigation"
+                onClick={() => setTiroir((v) => !v)}
+                className={`w-full ${classeOnglet(tiroir || dansLeTiroir)}`}
+              >
+                <NAV_ICONS.plus className="h-[21px] w-[21px]" />
+                <span className="w-full truncate text-center font-display text-[11px] leading-tight font-bold tracking-wide uppercase max-[359px]:sr-only">
+                  Plus
+                </span>
+              </button>
+            </li>
+          )}
         </ul>
       </nav>
     </div>

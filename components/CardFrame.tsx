@@ -83,6 +83,13 @@ export function CardFrame({
             {glyph}
           </span>
         )}
+
+        {/*
+          La rareté, en toutes lettres, au bas de l'illustration.
+          Elle était en sigle dans un coin — « L », « PC » — et il fallait
+          connaître le code pour le lire. Voir `.cadre-sceau`.
+        */}
+        <span className="cadre-sceau">{meta.label}</span>
       </div>
 
       {/* Balise native et non `next/image` : l'image est déjà au bon format et
@@ -91,7 +98,6 @@ export function CardFrame({
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img className="cadre-planche" src="/cadres/glace.webp" alt="" aria-hidden="true" />
 
-      <span className="cadre-rarete">{meta.code}</span>
       {copies !== undefined && copies > 1 && (
         <span className="cadre-copies" title={`${copies} exemplaires en réserve`}>
           ×{copies}
@@ -105,8 +111,10 @@ export function CardFrame({
         {description && <p className="cadre-desc">{description}</p>}
 
         <div className="cadre-pied">
-          {/* La rareté en toutes lettres : c'est le seul classement d'une carte. */}
-          <span className="cadre-classe">{meta.label}</span>
+          {/* La rareté n'est plus répétée ici : elle est posée au bas de
+              l'illustration, où elle se lit sans quitter le dessin des yeux. Le
+              pied ne porte plus que les chiffres, qui ont enfin la place de
+              respirer. */}
           <span className="cadre-chiffres">
             {power !== undefined && (
               <span className="cadre-stat cadre-stat-pui" title={`Puissance ${power} sur 100`}>

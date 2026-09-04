@@ -11,6 +11,7 @@ import 'server-only';
  */
 
 import { NextResponse } from 'next/server';
+import { BatailleError } from '@/lib/services/batailles';
 import { CardError } from '@/lib/services/cards';
 import { EffectError } from '@/lib/services/effects';
 import { LedgerError } from '@/lib/services/ledger';
@@ -20,6 +21,11 @@ import { fail } from './respond';
 
 export function toResponse(error: unknown): NextResponse {
   if (error instanceof CardError) {
+    return fail('CONFLIT', error.message, { code: error.code });
+  }
+  // Un refus de bataille — sachets hors bornes, bataille déjà jouée, hôte qui
+  // tente de rejoindre la sienne — est une réponse normale du jeu.
+  if (error instanceof BatailleError) {
     return fail('CONFLIT', error.message, { code: error.code });
   }
   // Un refus de règle — cible protégée, quota atteint, game gelée — est une

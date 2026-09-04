@@ -11,6 +11,7 @@ import { cardsOfRarity, getCard } from '@/lib/domain/catalog';
 import { minimumBid } from '@/lib/domain/market';
 import { closeExpiredListings, lastBuyerPseudo, statsForCard } from '@/lib/services/market';
 import { shortDateTime } from '@/lib/format';
+import { TitreGlace } from '@/components/TitreGlace';
 
 export const dynamic = 'force-dynamic';
 
@@ -131,9 +132,9 @@ export default async function CoteCartePage({ params }: { params: Promise<{ card
 
           <div className="min-w-[240px] flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="font-display text-2xl leading-none font-black tracking-wide text-ink uppercase">
+              <TitreGlace taille="bloc" niveau={1}>
                 {card.name}
-              </h1>
+              </TitreGlace>
               <RarityChip rarity={card.rarity} />
               {card.nature === 'malus' && (
                 <span className="badge border-danger/50 text-danger">Malus</span>
@@ -183,10 +184,11 @@ export default async function CoteCartePage({ params }: { params: Promise<{ card
         />
       </section>
 
+      <div className="grid gap-6 xl:grid-cols-2 xl:items-start">
       <section className="glass">
-        <h2 className="border-b border-white/10 px-4 py-2.5 font-display text-sm font-black tracking-wider text-ink uppercase">
-          Évolution des prix
-        </h2>
+        <div className="border-b border-white/10 px-4 py-3">
+          <TitreGlace taille="petit">Évolution des prix</TitreGlace>
+        </div>
         <div className="pt-2">
           <PriceChart
             points={data.stats.history}
@@ -197,9 +199,9 @@ export default async function CoteCartePage({ params }: { params: Promise<{ card
       </section>
 
       <section>
-        <h2 className="mb-3 font-display text-lg font-black tracking-wide text-ink uppercase">
+        <TitreGlace taille="bloc" className="mb-3">
           Ventes en cours
-        </h2>
+        </TitreGlace>
         <MarketBoard
           listings={data.listings}
           myListings={[]}
@@ -211,12 +213,13 @@ export default async function CoteCartePage({ params }: { params: Promise<{ card
           marketOpen={data.marketOpen}
         />
       </section>
+      </div>
 
       {data.sales.length > 0 && (
         <section className="glass">
-          <h2 className="border-b border-white/10 px-4 py-2.5 font-display text-sm font-black tracking-wider text-ink uppercase">
-            Historique des ventes
-          </h2>
+          <div className="border-b border-white/10 px-4 py-3">
+            <TitreGlace taille="petit">Historique des ventes</TitreGlace>
+          </div>
           <div className="scroll-x">
             <table className="grid-table min-w-[560px]">
               <thead>
@@ -254,10 +257,10 @@ export default async function CoteCartePage({ params }: { params: Promise<{ card
       )}
 
       <section>
-        <h2 className="mb-3 font-display text-sm font-black tracking-wider text-muted uppercase">
-          Les autres cartes {meta.label.toLowerCase()}s
-        </h2>
-        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-5">
+        <TitreGlace taille="petit" className="mb-3">
+          {`Les autres cartes ${meta.label.toLowerCase()}s`}
+        </TitreGlace>
+        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8">
           {siblings.map((sibling) => (
             <CardTile
               key={sibling.id}

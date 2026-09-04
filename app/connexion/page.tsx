@@ -1,6 +1,7 @@
 import { LoginForms } from '@/components/LoginForms';
 import { isTwitchEnabled } from '@/lib/auth/twitch';
 import { getStore } from '@/lib/db/store';
+import { TitreGlace } from '@/components/TitreGlace';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Connexion' };
@@ -27,10 +28,9 @@ export default async function ConnexionPage() {
   return (
     <div className="space-y-6">
       <header>
-        <p className="eyebrow">Accès</p>
-        <h1 className="section-title">
-          Se <em>Connecter</em>
-        </h1>
+        <TitreGlace taille="page" eyebrow="Accès">
+          Se connecter
+        </TitreGlace>
       </header>
 
       <LoginForms twitchEnabled={isTwitchEnabled()} devPlayers={devPlayers} />

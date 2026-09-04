@@ -55,7 +55,7 @@ export function createListing(
     cardInstanceId: string;
     startPrice: number;
     buyoutPrice: number | null | undefined;
-    durationHours: number;
+    durationMinutes: number;
   },
 ): Listing {
   if (!db.config.marketOpen) throw new MarketError('L’hôtel des ventes est fermé.', 'MARCHE_FERME');
@@ -91,7 +91,7 @@ export function createListing(
     currentBidderId: null,
     bidCount: 0,
     createdAt: now.toISOString(),
-    endsAt: new Date(now.getTime() + input.durationHours * 60 * 60 * 1000).toISOString(),
+    endsAt: new Date(now.getTime() + input.durationMinutes * 60 * 1000).toISOString(),
     status: 'ACTIVE',
     buyerId: null,
     finalPrice: null,

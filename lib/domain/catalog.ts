@@ -509,9 +509,21 @@ export function cardsByRarity(): CardDefinition[] {
 }
 
 /**
- * Quatre boosters. Le prix ne fait pas qu'acheter des cartes : il achète une
- * courbe de raretés plus favorable et une garantie plus haute. Un joueur qui
- * économise pour un Everest sait exactement ce qu'il paie.
+ * Quatre boosters, **trois cartes chacun**.
+ *
+ * Le prix n'achète donc pas de la quantité : il achète une courbe de raretés
+ * plus favorable, une garantie plus haute, et une part plus grande de cartes
+ * jouables. Un joueur qui économise pour un Everest sait exactement ce qu'il
+ * paie, et il ouvre le même nombre de cartes que le voisin qui prend un Givre.
+ *
+ * Les sachets faisaient trois, cinq, cinq et cinq. Une taille unique a deux
+ * conséquences qui valent d'être dites : le rail montre toujours trois colonnes,
+ * donc des cartes bien plus grandes qu'à cinq ; et les trois sachets chers ont
+ * perdu deux cartes sans changer de prix — voir la note de `slots` sur Everest.
+ *
+ * La contrainte est verrouillée par un test : chaque sachet garde au moins un
+ * emplacement d'effet et au moins un de collection, ce qui ne laisse que deux
+ * répartitions possibles, et la part de jouable ne décroît jamais avec le prix.
  */
 export const BOOSTERS: readonly BoosterDefinition[] = [
   {
@@ -532,7 +544,7 @@ export const BOOSTERS: readonly BoosterDefinition[] = [
     glyph: '🌨',
     gradient: ['#2f6f8f', '#10283a'],
     price: 450,
-    slots: { collection: 3, effet: 2 },
+    slots: { collection: 2, effet: 1 },
     guaranteed: 'R',
     weights: { C: 62_000, PC: 26_000, R: 10_000, SR: 1_700, UR: 260, L: 40 },
   },
@@ -545,7 +557,7 @@ export const BOOSTERS: readonly BoosterDefinition[] = [
     glyph: '🎿',
     gradient: ['#6b4bab', '#241540'],
     price: 1_200,
-    slots: { collection: 3, effet: 2 },
+    slots: { collection: 1, effet: 2 },
     guaranteed: 'SR',
     weights: { C: 45_000, PC: 33_000, R: 17_000, SR: 4_200, UR: 720, L: 80 },
   },
@@ -556,9 +568,16 @@ export const BOOSTERS: readonly BoosterDefinition[] = [
     glyph: '🏔',
     gradient: ['#b07a2a', '#3d2708'],
     price: 3_000,
-    // Le sachet le plus cher donne plus de cartes jouables, pas seulement des
-    // raretés plus hautes : c'est ce qu'on achète.
-    slots: { collection: 2, effet: 3 },
+    /*
+     * Deux jouables sur trois, comme Hors-Piste.
+     *
+     * Il en donnait trois sur cinq, et le commentaire d'alors disait que le
+     * sachet le plus cher donnait plus de cartes jouables. Ce n'est plus vrai :
+     * à trois cartes et au moins une de collection, deux est le maximum, et
+     * Hors-Piste l'atteint déjà. Ce qu'Everest achète encore, et lui seul :
+     * l'ultra rare garantie, et la table de raretés la plus haute du catalogue.
+     */
+    slots: { collection: 1, effet: 2 },
     guaranteed: 'UR',
     weights: { C: 26_000, PC: 36_000, R: 27_000, SR: 9_000, UR: 1_800, L: 200 },
   },

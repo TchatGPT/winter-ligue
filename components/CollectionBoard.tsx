@@ -2,11 +2,13 @@
 
 import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
+import { CardDetailModal } from '@/components/CardDetailModal';
 import { Countdown } from '@/components/Countdown';
 import { FiltreRarete } from '@/components/FiltreRarete';
 import { CardTile, EmptyState, Notice, flakes } from '@/components/ui';
-import { MARKET } from '@/lib/domain/rules';
+import { ECONOMY, libelleDuree, MARKET } from '@/lib/domain/rules';
 import type { HandCard, ProfileView } from '@/lib/services/profile';
+import { TitreGlace } from '@/components/TitreGlace';
 
 interface Opponent {
   id: string;
@@ -17,6 +19,14 @@ interface Opponent {
 type Dialog =
   | { kind: 'jouer'; card: HandCard }
   | { kind: 'vendre'; card: HandCard }
+  /**
+   * La défausse a son dialogue, et pas un simple bouton.
+   *
+   * Elle détruit la carte sans recours : le geste doit demander une seconde
+   * intention, comme jouer ou vendre. Un bouton qui exécute au premier clic sur
+   * une grille de vignettes serrées est une légendaire perdue par mégarde.
+   */
+  | { kind: 'defausser'; card: HandCard }
   | null;
 
 /**
@@ -45,11 +55,14 @@ export function CollectionBoard({
     [profile.games],
   );
 
+  /** La carte dont la fiche est ouverte, s'il y en a une. */
+  const [fiche, setFiche] = useState<HandCard | null>(null);
+
   const [gameId, setGameId] = useState('');
   const [targetPlayerId, setTargetPlayerId] = useState('');
   const [startPrice, setStartPrice] = useState(100);
   const [buyoutPrice, setBuyoutPrice] = useState<number | ''>('');
-  const [durationHours, setDurationHours] = useState<number>(24);
+  const [durationMinutes, setDurationMinutes] = useState<number>(60);
 
   function openDialog(next: Dialog) {
     setMessage(null);
@@ -57,7 +70,7 @@ export function CollectionBoard({
     setTargetPlayerId('');
     setStartPrice(100);
     setBuyoutPrice('');
-    setDurationHours(24);
+    setDurationMinutes(60);
     setDialog(next);
   }
 
@@ -99,12 +112,39 @@ export function CollectionBoard({
     });
   }
 
+  /**
+   * Les actions de la fiche rendent un message plutôt que de lever.
+   *
+   * La fiche affiche l'erreur à l'endroit du geste — sous le bouton qu'on vient
+   * d'actionner — au lieu de la renvoyer en haut de la page, où elle passerait
+   * inaperçue derrière la fenêtre ouverte.
+   */
+  async function envoie(path: string, body: Record<string, unknown>): Promise<string | null> {
+    try {
+      const reponse = await fetch(path, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const charge = await reponse.json();
+      if (!charge.ok) return charge.error?.message ?? 'Action refusée.';
+      router.refresh();
+      return null;
+    } catch {
+      return 'Le serveur n’a pas répondu.';
+    }
+  }
+
+  function discardCard(card: HandCard) {
+    return post('/api/cards/defausser', { cardInstanceId: card.instanceId });
+  }
+
   function sellCard(card: HandCard) {
     return post('/api/market/listings', {
       cardInstanceId: card.instanceId,
       startPrice,
       buyoutPrice: buyoutPrice === '' ? null : buyoutPrice,
-      durationHours,
+      durationMinutes,
     });
   }
 
@@ -154,14 +194,47 @@ export function CollectionBoard({
 
   return (
     <div className="space-y-8">
+      {/* La fiche, ouverte au clic sur une carte de la réserve. */}
+      {fiche && (
+        <CardDetailModal
+          carte={{
+            cardId: fiche.cardId,
+            name: fiche.name,
+            subtitle: '',
+            description: fiche.description,
+            rarity: fiche.rarity,
+            glyph: fiche.glyph,
+            nature: fiche.nature,
+            instanceId: fiche.instanceId,
+          }}
+          onClose={() => setFiche(null)}
+          onJouer={
+            fiche.playable
+              ? () => {
+                  const carte = fiche;
+                  setFiche(null);
+                  openDialog({ kind: 'jouer', card: carte });
+                }
+              : undefined
+          }
+          onDefausse={(instanceId: string) => envoie('/api/cards/defausser', { cardInstanceId: instanceId })}
+          onVente={(instanceId: string, prixDepart: number, dureeMinutes: number) =>
+            envoie('/api/market/listings', {
+              cardInstanceId: instanceId,
+              startPrice: prixDepart,
+              buyoutPrice: null,
+              durationMinutes: dureeMinutes,
+            })
+          }
+        />
+      )}
+
       {message && <Notice kind={message.kind}>{message.text}</Notice>}
 
       {/* ------------------------------- Main ------------------------------ */}
       <section>
         <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
-          <h2 className="font-display text-xl font-black uppercase tracking-wide text-ink">
-            Ta réserve
-          </h2>
+          <TitreGlace taille="bloc">Ta réserve</TitreGlace>
           <span className="text-xs text-muted">
             <span className="num">{profile.hand.length}</span> carte
             {profile.hand.length > 1 ? 's' : ''}
@@ -197,7 +270,7 @@ export function CollectionBoard({
               </FiltreRarete>
             )}
 
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
               {affichees.map(({ card, copies }) => (
                 <CardTile
                   key={card.cardId}
@@ -208,24 +281,17 @@ export function CollectionBoard({
                   glyph={card.glyph}
                   subtitle={card.description}
                   nature={card.nature}
-                  footer={
-                    <div className="flex gap-1.5">
-                      <button
-                        className="btn btn-sm btn-ice flex-1"
-                        onClick={() => openDialog({ kind: 'jouer', card })}
-                        disabled={busy}
-                      >
-                        Jouer
-                      </button>
-                      <button
-                        className="btn btn-sm flex-1"
-                        onClick={() => openDialog({ kind: 'vendre', card })}
-                        disabled={busy}
-                      >
-                        Vendre
-                      </button>
-                    </div>
-                  }
+                  /*
+                   * La carte s'ouvre, elle ne porte plus ses commandes.
+                   *
+                   * Trois boutons sous chaque vignette faisaient une grille de
+                   * barres grises qui pesait autant que les cartes elles-mêmes,
+                   * et le geste le plus dangereux — la défausse — y était un
+                   * bouton de vingt pixels collé aux deux autres. Un clic ouvre
+                   * maintenant la fiche, où les trois actions ont la place de
+                   * s'expliquer et où chacune demande une confirmation.
+                   */
+                  onClick={() => setFiche(card)}
                 />
               ))}
             </div>
@@ -234,10 +300,11 @@ export function CollectionBoard({
       </section>
 
       {/* ---------------------------- Mes ventes --------------------------- */}
+      <div className="grid gap-8 xl:grid-cols-2 xl:items-start">
       <section id="vendre">
-        <h2 className="mb-3 font-display text-xl font-black uppercase tracking-wide text-ink">
+        <TitreGlace taille="bloc" className="mb-3">
           Mes ventes en cours
-        </h2>
+        </TitreGlace>
         {profile.myListings.length === 0 ? (
           <EmptyState
             title="Aucune vente en cours"
@@ -297,9 +364,9 @@ export function CollectionBoard({
       {/* --------------------------- Mes enchères -------------------------- */}
       {profile.myBids.length > 0 && (
         <section>
-          <h2 className="mb-3 font-display text-xl font-black uppercase tracking-wide text-ink">
+          <TitreGlace taille="bloc" className="mb-3">
             Enchères où je suis en tête
-          </h2>
+          </TitreGlace>
           <div className="glass scroll-x">
             <table className="grid-table min-w-[480px]">
               <thead>
@@ -341,7 +408,13 @@ export function CollectionBoard({
           className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-4 sm:items-center"
           role="dialog"
           aria-modal="true"
-          aria-label={dialog.kind === 'jouer' ? 'Jouer une carte' : 'Mettre en vente'}
+          aria-label={
+            dialog.kind === 'jouer'
+              ? 'Jouer une carte'
+              : dialog.kind === 'vendre'
+                ? 'Mettre en vente'
+                : 'Défausser une carte'
+          }
         >
           <div className="glass w-full max-w-md p-5">
             <div className="mb-3 flex items-start gap-3">
@@ -424,6 +497,25 @@ export function CollectionBoard({
                   </button>
                 </div>
               </div>
+            ) : dialog.kind === 'defausser' ? (
+              <div className="space-y-3">
+                <p className="text-[14px] leading-relaxed text-ink-2">
+                  <strong>{dialog.card.name}</strong> sera détruite. Tu récupères{' '}
+                  {ECONOMY.defausse} ❄, et c’est définitif — aucun moyen de la récupérer.
+                </p>
+                <div className="flex gap-2 pt-1">
+                  <button className="btn flex-1" onClick={() => setDialog(null)} disabled={busy}>
+                    Garder
+                  </button>
+                  <button
+                    className="btn btn-danger flex-1"
+                    disabled={busy}
+                    onClick={() => discardCard(dialog.card)}
+                  >
+                    {busy ? 'En cours…' : 'Oui, défausser'}
+                  </button>
+                </div>
+              </div>
             ) : (
               <div className="space-y-3">
                 <div>
@@ -468,18 +560,31 @@ export function CollectionBoard({
                   <label className="label" htmlFor="duree">
                     Durée de la vente
                   </label>
-                  <select
-                    id="duree"
-                    className="field"
-                    value={durationHours}
-                    onChange={(e) => setDurationHours(Number(e.target.value))}
-                  >
-                    {MARKET.durationsHours.map((h) => (
-                      <option key={h} value={h}>
-                        {h < 24 ? `${h} heure${h > 1 ? 's' : ''}` : `${h / 24} jour${h > 24 ? 's' : ''}`}
-                      </option>
-                    ))}
-                  </select>
+                  {/* Des pastilles et non une liste déroulante : sept durées se
+                      montrent, elles ne se déroulent pas — et c'est ce choix qui
+                      décide si la vente se conclut à l'antenne ou pendant la
+                      nuit. */}
+                  <div className="flex flex-wrap gap-1.5" id="duree">
+                    {MARKET.durationsMinutes.map((m) => {
+                      const actif = m === durationMinutes;
+                      return (
+                        <button
+                          key={m}
+                          type="button"
+                          aria-pressed={actif}
+                          onClick={() => setDurationMinutes(m)}
+                          className="rounded-full px-3 py-1.5 font-display text-[13px] font-bold transition-colors"
+                          style={{
+                            background: actif ? 'var(--ice)' : 'transparent',
+                            color: actif ? '#060a12' : 'var(--ink-2)',
+                            boxShadow: `inset 0 0 0 1px ${actif ? 'var(--ice)' : 'var(--glass-edge)'}`,
+                          }}
+                        >
+                          {libelleDuree(m)}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 <p className="text-xs text-faint">
@@ -504,6 +609,7 @@ export function CollectionBoard({
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }

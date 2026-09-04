@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Notice } from '@/components/ui';
 import type { Message } from '@/components/admin/action';
+import { TitreGlace } from '@/components/TitreGlace';
 
 export interface Section {
   href: string;
@@ -80,9 +81,7 @@ export function Ecran({
     <div className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 className="font-display text-xl font-black tracking-wide text-ink uppercase">
-            {titre}
-          </h2>
+          <TitreGlace taille="bloc">{titre}</TitreGlace>
           {lead && <p className="mt-1 max-w-2xl text-[13px] leading-relaxed text-faint">{lead}</p>}
         </div>
         {actions}

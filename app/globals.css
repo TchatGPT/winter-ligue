@@ -40,9 +40,13 @@
 
      L'arête, elle, monte : plus le verre est transparent, plus c'est son
      contour qui dit qu'il y a un objet. */
-  --glass-1: rgb(11 20 36 / 0.34);
-  --glass-2: rgb(16 28 48 / 0.44);
-  --glass-3: rgb(24 40 66 / 0.56);
+  /* Encore descendues au passage au verre liquide. Le flou est monté de 32 à
+     44 px et la plaque rehausse la luminance de ce qu'elle traverse : ce que la
+     teinte faisait pour la lisibilité, la lentille le fait mieux, et sans
+     boucher la vue. */
+  --glass-1: rgb(11 20 36 / 0.2);
+  --glass-2: rgb(16 28 48 / 0.3);
+  --glass-3: rgb(24 40 66 / 0.44);
   --glass-hi: rgb(255 255 255 / 0.42);
   --glass-hi-soft: rgb(255 255 255 / 0.16);
   --glass-edge: rgb(170 212 250 / 0.26);
@@ -85,18 +89,43 @@
   --r-ur: #ffab5e;
   --r-l: #ffdd85;
 
-  /* -- Profondeur -------------------------------------------------------- */
-  --lift-1: 0 2px 10px rgb(0 0 0 / 0.35);
-  --lift-2: 0 12px 40px rgb(0 0 0 / 0.45);
-  --lift-3: 0 30px 80px rgb(0 0 0 / 0.60);
+  /* -- Le biseau -----------------------------------------------------------
 
-  --r-sm: 12px;
-  --r-md: 18px;
-  --r-lg: 26px;
-  --r-xl: 34px;
+     Ce qui sépare une plaque de verre d'un rectangle translucide, c'est son
+     **épaisseur**, et l'épaisseur ne se voit que sur l'arête. Une arête réelle
+     n'a pas la même clarté sur ses quatre côtés : elle est vive là où la
+     lumière tombe, presque éteinte sur les flancs, et reprend un peu en bas où
+     le fond la renvoie. C'est cette variation continue que peint le dégradé
+     conique de `.glass::after`, et c'est elle qui donne l'impression que la
+     plaque a été taillée plutôt que dessinée.
+
+     Un liseré d'opacité constante donne l'inverse : un contour, donc un trait,
+     donc du dessin. */
+  --biseau-vif: rgb(255 255 255 / 0.72);
+  --biseau-retour: rgb(255 255 255 / 0.34);
+  --biseau-flanc: rgb(255 255 255 / 0.04);
+
+  /* -- Profondeur ----------------------------------------------------------
+
+     Des ombres plus larges et moins noires. Une ombre dense et courte colle
+     l'objet au fond et le fait lire comme une découpe ; une ombre étalée le
+     fait flotter, ce qui est tout le propos d'un matériau qu'on pose au-dessus
+     du contenu au lieu de l'y encastrer. */
+  --lift-1: 0 2px 12px rgb(1 5 14 / 0.3);
+  --lift-2: 0 18px 50px -12px rgb(1 5 14 / 0.5);
+  --lift-3: 0 40px 90px -20px rgb(1 5 14 / 0.62);
+
+  /* Rayons. Plus généreux : une plaque de verre épaisse n'a pas d'angle vif,
+     et c'est le rayon qui porte cette impression avant même la matière. */
+  --r-sm: 16px;
+  --r-md: 24px;
+  --r-lg: 36px;
+  --r-xl: 52px;
+  --r-pilule: 999px;
 
   /* Le flou du verre. Réduit sur petits écrans, où il coûte cher. */
-  --blur: 32px;
+  --blur: 44px;
+  --blur-fort: 64px;
 }
 
 @theme inline {
@@ -153,6 +182,102 @@
     scroll-behavior: smooth;
   }
 
+  /* --------------------------------------------------------------------------
+     LE CURSEUR
+     -------------------------------------------------------------------------- */
+
+  /*
+   * Un éclat de glace à la place de la flèche du système.
+   *
+   * ## Dessiné, et non trouvé
+   *
+   * Les curseurs de glace qui traînent en ligne sont presque tous sous licence
+   * incertaine, souvent au format `.cur` de Windows — que les navigateurs
+   * acceptent mal — et dans une palette qui n'est pas celle du site. Celui-ci
+   * est un tracé de `scripts/curseurs.mjs`, aux teintes de `--frost` et
+   * `--ice` : rien à créditer, rien à retélécharger, et il s'accorde au reste.
+   *
+   * ## Pourquoi du PNG et non du SVG
+   *
+   * `cursor: url(...)` n'accepte le SVG que dans une partie des navigateurs :
+   * là où il échoue, la déclaration entière est ignorée et l'on retombe sur la
+   * flèche du système, sans avertissement. Deux images matricielles, l'une pour
+   * les écrans ordinaires et l'autre pour ceux à double densité, fonctionnent
+   * partout.
+   *
+   * La double déclaration n'est pas une coquille : la première est le repli
+   * pour qui ne connaît pas `image-set`, la seconde la remplace ailleurs. Et le
+   * `auto` final compte autant que le reste — un navigateur qui ne charge pas
+   * l'image garde un curseur, au lieu de n'en avoir aucun.
+   *
+   * Le repère est à (2, 2) : la pointe de l'éclat, à l'échelle de l'image de
+   * 32 pixels. Un repère faux se paie cher — on clique à côté de ce qu'on vise.
+   */
+  body {
+    cursor: url('/curseur/glace.png') 2 2, auto;
+    cursor:
+      image-set(url('/curseur/glace.png') 1x, url('/curseur/glace-2x.png') 2x) 2 2,
+      auto;
+  }
+
+  /*
+   * Ce qui se clique porte l'étincelle. Sans variante, tout le site aurait le
+   * même curseur et l'on perdrait le seul signal qui dise « ceci répond » avant
+   * même le survol.
+   *
+   * ## La liste est longue, et elle est la seule
+   *
+   * Sept règles de cette feuille redéclaraient `cursor: pointer` — sur `.btn`,
+   * sur les onglets, sur les flèches du carrousel, sur le sachet en 3D. Toutes
+   * portaient une classe, donc toutes battaient en spécificité la règle
+   * générique posée sur `button` : la main du système revenait exactement là où
+   * l'on clique le plus. Elles ont été retirées plutôt que réécrites — un
+   * curseur qui se décide en sept endroits finit toujours par diverger, et le
+   * seul endroit correct pour cette décision est ici.
+   *
+   * Deux exceptions, gardées et retouchées : le sachet déjà retenu hérite du
+   * curseur de la page (il n'a pas d'action au clic simple), et une flèche de
+   * carrousel désactivée fait de même. `default` aurait redonné la flèche du
+   * système au beau milieu du site.
+   */
+  a,
+  button,
+  select,
+  summary,
+  label,
+  option,
+  area,
+  input[type='checkbox'],
+  input[type='radio'],
+  input[type='range'],
+  input[type='file'],
+  input[type='color'],
+  [role='button'],
+  [role='link'],
+  [role='option'],
+  [role='tab'],
+  [role='menuitem'],
+  [role='checkbox'],
+  [role='radio'],
+  [role='switch'] {
+    cursor: url('/curseur/glace-clic.png') 2 2, pointer;
+    cursor:
+      image-set(url('/curseur/glace-clic.png') 1x, url('/curseur/glace-clic-2x.png') 2x) 2 2,
+      pointer;
+  }
+
+  /* Un champ de saisie garde la barre du système : c'est elle qui montre où le
+     texte va s'insérer, et aucun dessin ne remplace cette information. */
+  input:not([type='checkbox']):not([type='radio']):not([type='range']),
+  textarea {
+    cursor: text;
+  }
+
+  button:disabled,
+  a[aria-disabled='true'] {
+    cursor: not-allowed;
+  }
+
   body {
     background-color: var(--bg);
     color: var(--ink);
@@ -203,7 +328,7 @@
     height: 46vw;
     top: 2%;
     left: -8%;
-    background: radial-gradient(circle, rgb(69 189 240 / 0.78) 0%, transparent 68%);
+    background: radial-gradient(circle, rgb(69 189 240 / 0.95) 0%, transparent 66%);
     animation: drift-1 34s ease-in-out infinite;
   }
 
@@ -212,7 +337,7 @@
     height: 42vw;
     top: -6%;
     right: -6%;
-    background: radial-gradient(circle, rgb(169 140 255 / 0.62) 0%, transparent 68%);
+    background: radial-gradient(circle, rgb(169 140 255 / 0.85) 0%, transparent 66%);
     animation: drift-2 42s ease-in-out infinite;
   }
 
@@ -221,7 +346,7 @@
     height: 40vw;
     bottom: -12%;
     left: 18%;
-    background: radial-gradient(circle, rgb(99 238 196 / 0.42) 0%, transparent 70%);
+    background: radial-gradient(circle, rgb(99 238 196 / 0.62) 0%, transparent 68%);
     animation: drift-3 50s ease-in-out infinite;
   }
 
@@ -230,7 +355,7 @@
     height: 36vw;
     top: 38%;
     left: 42%;
-    background: radial-gradient(circle, rgb(255 217 125 / 0.14) 0%, transparent 70%);
+    background: radial-gradient(circle, rgb(255 217 125 / 0.26) 0%, transparent 70%);
     animation: drift-2 60s ease-in-out infinite reverse;
   }
 
@@ -264,17 +389,6 @@
     }
   }
 
-  /* Grain fin : casse les dégradés et donne de la matière. */
-  .grain {
-    position: fixed;
-    inset: 0;
-    z-index: 1;
-    pointer-events: none;
-    opacity: 0.035;
-    background-image: radial-gradient(circle at 1px 1px, #fff 1px, transparent 0);
-    background-size: 3px 3px;
-  }
-
   /* --------------------------------------------------------------------------
      LE VERRE
      Trois épaisseurs. L'arête haute claire est ce qui fait lire « plaque » et
@@ -289,14 +403,72 @@
     isolation: isolate;
     border-radius: var(--r-lg);
     background: linear-gradient(158deg, var(--glass-2) 0%, var(--glass-1) 100%);
-    backdrop-filter: blur(var(--blur)) saturate(180%);
-    border: 1px solid var(--glass-edge);
+    /*
+     * `brightness` en plus du flou et de la saturation.
+     *
+     * C'est le geste qui change tout, et il est facile à manquer. Un flou seul
+     * donne une plaque terne : il moyenne l'arrière-plan, donc il tire tout
+     * vers le gris. Une vraie lentille, elle, **concentre** la lumière qu'elle
+     * traverse — ce qui est derrière ressort plus clair et plus coloré à
+     * travers le verre qu'à côté. Sans ce gain, on obtient du plastique dépoli.
+     */
+    backdrop-filter: blur(var(--blur)) saturate(200%) brightness(1.08);
+    /* Transparente : le biseau conique de `::after` tient lieu de contour, et
+       deux contours superposés se lisent comme un trait épais. La bordure reste
+       pour que rien ne bouge d'un pixel dans la page. */
+    border: 1px solid transparent;
     box-shadow:
+      /* L'arête haute, vive : la lumière tombe d'en haut. */
       inset 0 1px 0 var(--glass-hi),
-      inset 0 -1px 0 rgb(255 255 255 / 0.1),
-      inset 1px 0 0 var(--glass-fringe-a),
-      inset -1px 0 0 var(--glass-fringe-b),
+      /* L'arête basse, quatre fois plus faible : ce que le fond renvoie. */
+      inset 0 -1px 0 rgb(255 255 255 / 0.12),
+      /* L'épaisseur du verre, vue par la tranche haute — c'est ce qui donne à
+         la plaque un volume plutôt qu'une surface. */
+      inset 0 14px 26px -26px rgb(232 248 255 / 0.55),
+      /* Et le fond de la lentille, qui s'assombrit en s'éloignant de la source. */
+      inset 0 -26px 40px -38px rgb(1 5 14 / 0.75),
+      /* Le halo intérieur : la lumière piégée dans l'épaisseur, qui diffuse
+         depuis les quatre bords. C'est lui qui fait « verre épais » plutôt que
+         « vitre mince ». */
+      inset 0 0 22px -8px rgb(236 248 255 / 0.16),
       var(--lift-2);
+  }
+
+  /*
+   * Le biseau : un anneau d'un pixel dont la clarté tourne avec la lumière.
+   *
+   * Peint en dégradé conique puis découpé au masque en un anneau qui épouse le
+   * rayon, coins compris. Vif en haut, éteint sur les flancs, à demi rallumé en
+   * bas. C'est un pixel de haut sur toute la page, et c'est pourtant lui qu'on
+   * voit en premier : sans arête variable, la plaque redevient un rectangle.
+   */
+  .glass::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    border-radius: inherit;
+    padding: 1px;
+    background: conic-gradient(
+      from 205deg at 50% 50%,
+      var(--biseau-flanc) 0deg,
+      var(--biseau-retour) 55deg,
+      var(--biseau-flanc) 110deg,
+      var(--biseau-vif) 175deg,
+      var(--biseau-vif) 195deg,
+      var(--biseau-flanc) 250deg,
+      var(--biseau-retour) 305deg,
+      var(--biseau-flanc) 360deg
+    );
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
   }
 
   /* La réflexion.
@@ -326,46 +498,52 @@
       linear-gradient(180deg, rgb(255 255 255 / 0.07) 0%, transparent 16%);
   }
 
-  /* Reflet spéculaire : une bande claire posée en haut, comme sur du verre poli. */
-  .glass::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    padding: 1px;
-    background: linear-gradient(
-      150deg,
-      var(--glass-edge-lit) 0%,
-      transparent 32%,
-      transparent 70%,
-      rgb(255 255 255 / 0.10) 100%
-    );
-    -webkit-mask:
-      linear-gradient(#000 0 0) content-box,
-      linear-gradient(#000 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-    pointer-events: none;
-  }
+  /*
 
+
+  /* Une lame mince. Le biseau s'efface avec l'épaisseur : c'est la seule chose
+     à changer pour qu'une même matière paraisse moins profonde. */
   .glass-soft {
+    --biseau-vif: rgb(255 255 255 / 0.3);
+    --biseau-retour: rgb(255 255 255 / 0.14);
+    --biseau-flanc: rgb(255 255 255 / 0.03);
     background: linear-gradient(158deg, var(--glass-1) 0%, rgb(148 192 236 / 0.03) 100%);
-    backdrop-filter: blur(20px) saturate(150%);
+    backdrop-filter: blur(28px) saturate(170%) brightness(1.05);
     box-shadow:
       inset 0 1px 0 var(--glass-hi-soft),
+      inset 0 10px 20px -22px rgb(232 248 255 / 0.4),
       var(--lift-1);
+  }
+
+  /*
+   * La vitre : la plaque la plus transparente du jeu.
+   *
+   * Pour les scènes, et non pour le texte. Une plaque qui porte quatre sachets
+   * peints et un bouton n'a pas besoin de teinte : le contenu se suffit, et
+   * l'assombrir revient à poser un filtre gris sur les illustrations qu'on est
+   * venu regarder. Le flou reste — c'est lui qui tient le décor à distance — mais
+   * la nappe sombre s'efface presque entièrement.
+   *
+   * À ne pas utiliser sous un paragraphe : sans teinte, un texte fin posé sur le
+   * massif retombe sous le seuil de contraste.
+   */
+  .glass-vitre {
+    background: linear-gradient(158deg, rgb(16 28 48 / 0.07) 0%, rgb(11 20 36 / 0.03) 100%);
+    backdrop-filter: blur(var(--blur)) saturate(190%) brightness(1.04);
   }
 
   /* La plaque qui doit porter du texte fin ou flotter au-dessus du reste :
      plus floue, donc plus lisible, et son arête est franchement plus vive. */
   .glass-strong {
+    --biseau-vif: rgb(255 255 255 / 0.72);
+    --biseau-retour: rgb(255 255 255 / 0.38);
     background: linear-gradient(158deg, var(--glass-3) 0%, var(--glass-2) 100%);
-    backdrop-filter: blur(44px) saturate(200%);
+    backdrop-filter: blur(var(--blur-fort)) saturate(210%) brightness(1.1);
     box-shadow:
       inset 0 1px 0 rgb(255 255 255 / 0.5),
-      inset 0 -1px 0 rgb(255 255 255 / 0.12),
-      inset 1px 0 0 var(--glass-fringe-a),
-      inset -1px 0 0 var(--glass-fringe-b),
+      inset 0 -1px 0 rgb(255 255 255 / 0.14),
+      inset 0 18px 32px -30px rgb(232 248 255 / 0.6),
+      inset 0 -30px 46px -42px rgb(1 5 14 / 0.8),
       var(--lift-3);
   }
 
@@ -391,16 +569,778 @@
 
 
 
-  /* -- Le carrousel de tirage --------------------------------------------- */
+  /* -- Le rail d'ouverture ------------------------------------------------- */
 
   /*
-   * L'ouverture des boosters est repartie de zéro.
+   * Un seul bandeau sombre, et N rouleaux verticaux dedans.
    *
-   * Tout ce qui décrivait le carrousel — bandeau, jetons, anneaux de rareté,
-   * étiquettes, voiles, rayons, interrupteur de son — a été retiré d'un bloc.
-   * Les sons restent dans `public/sons/` : ils ont été mesurés et équilibrés,
-   * et c'est ce travail qu'il aurait fallu refaire.
+   * C'est le point qu'il fallait reprendre : il n'y a pas cinq machines à sous
+   * côte à côte, il y a **un bandeau** de 1 340 sur 293 pixels, sans la moindre
+   * séparation entre les colonnes. Bas et large. Le fond est presque noir, avec
+   * une grille de points à peine visible.
+   *
+   * La géométrie — `--pas` et `--rail-h` — est posée par `useSpinAnimation`,
+   * jamais ici. Les deux côtés ne peuvent donc pas diverger, ce qui est déjà
+   * arrivé : le rail s'arrêtait alors deux tuiles à côté du repère. Les valeurs
+   * par défaut ne servent qu'avant la mesure.
    */
+  /*
+   * La scène est un conteneur de requête, et c'est ce qui rend la géométrie
+   * calculable **avant** la première peinture.
+   *
+   * Elle l'était en JavaScript, posée par `useSpinAnimation` en variables CSS.
+   * Les valeurs par défaut de la feuille étaient donc fausses le temps d'une
+   * image — pas de largeur de carte du tout, un pas de 120 px au lieu de 305 —
+   * et l'on voyait, l'espace d'un battement, des cadres empilés les uns sur les
+   * autres. Ici tout se déduit de la largeur de la scène : il n'y a plus
+   * d'« avant ».
+   */
+  .rail-scene {
+    container-type: inline-size;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+  }
+
+  .rail {
+    /*
+     * Toute la géométrie, en une chaîne. Voir docs/SPEC.md §4 pour les nombres :
+     * 0,74 de la colonne pour la carte, le rapport du cadre peint pour sa
+     * hauteur, 28 px de gouttière, 1,6 carte visible dans la fenêtre.
+     */
+    --colonne: calc(100cqw / var(--bandes, 5));
+
+    /*
+     * La hauteur compte autant que la largeur, et elle était ignorée.
+     *
+     * La carte ne se dimensionnait que sur la largeur de son conteneur. Sur un
+     * téléphone tenu à l'horizontale — 844 sur 390, ce qui est le format d'un
+     * appareil courant — la colonne fait 281 px, la carte 208, et le bandeau
+     * réclame 535 px de haut dans une fenêtre qui en offre 390. Le rail passait
+     * entièrement sous la ligne de flottaison : on cliquait « Ouvrir », et il ne
+     * se passait rien à l'écran. C'est le pire défaut possible pour l'écran qui
+     * porte tout le suspense du site.
+     *
+     * On borne donc la carte par ce que la fenêtre peut montrer, en inversant la
+     * chaîne : de la hauteur disponible on retire la gouttière, on divise par
+     * les 1,6 carte visibles, et on repasse au rapport du cadre peint. Le `min`
+     * retient la plus contraignante des deux mesures.
+     *
+     * `svh` et non `vh` : sur mobile, `vh` compte la fenêtre barres d'outils
+     * rétractées, c'est-à-dire une hauteur qu'on n'a pas encore. Le rail
+     * dépasserait tant que les barres sont là — soit exactement au moment où on
+     * le regarde.
+     */
+    --haut-dispo: 58svh;
+    --carte-l-large: calc(var(--colonne) * 0.74);
+    --carte-l-haute: calc((var(--haut-dispo) / 1.6 - 28px) * 1514 / 2231);
+    --carte-l: clamp(64px, min(var(--carte-l-large), var(--carte-l-haute)), 232px);
+
+    --carte-h: calc(var(--carte-l) * 2231 / 1514);
+    --pas: calc(var(--carte-h) + 28px);
+    --rail-h: calc(var(--pas) * 1.6);
+    --flou: 0px;
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(var(--bandes, 5), minmax(0, 1fr));
+    width: 100%;
+    height: var(--rail-h);
+    overflow: hidden;
+    border-radius: var(--r-lg);
+    border: 1px solid rgb(255 255 255 / 0.06);
+    /*
+     * Une nuit polaire, et non un fond noir.
+     *
+     * Le bandeau était un aplat presque noir semé de points : le fond d'un site
+     * de caisses, pas d'une ligue d'hiver. Or c'est l'écran qu'on regarde le
+     * plus longtemps du site, et le seul qu'on regarde sans rien lire — donc
+     * celui où le décor a le plus de place pour exister.
+     *
+     * Quatre nappes, et pas une de plus :
+     *
+     *  - une **aurore** qui entre par le haut, froide, celle du reste du site ;
+     *  - un **reflet de glace** qui remonte du bas, plus pâle — le sol lumineux
+     *     d'un lac gelé sous la nappe ;
+     *  - une **dérive violette** décentrée, qui casse la symétrie : sans elle,
+     *     les deux premières se lisent comme un dégradé vertical et le bandeau
+     *     redevient plat ;
+     *  - le semis d'origine, **atténué de moitié**, qui donne le grain.
+     *
+     * Toutes restent sous 0,16 d'opacité : ce fond est là pour être traversé par
+     * des cartes, et une carte commune sur un fond trop clair perd son cadre.
+     */
+    --rail-fond: #060d18;
+    background-color: var(--rail-fond);
+    background-image:
+      /* Le givre qui prend aux angles, comme sur une vitre par grand froid.
+         C'est le seul élément franchement « hiver » du fond : les nappes, elles,
+         pourraient être n'importe quelle lueur. */
+      radial-gradient(38% 58% at 0% 0%, rgb(203 238 255 / 0.11) 0%, transparent 72%),
+      radial-gradient(38% 58% at 100% 0%, rgb(203 238 255 / 0.08) 0%, transparent 72%),
+      radial-gradient(34% 52% at 0% 100%, rgb(203 238 255 / 0.07) 0%, transparent 72%),
+      radial-gradient(34% 52% at 100% 100%, rgb(203 238 255 / 0.09) 0%, transparent 72%),
+      radial-gradient(115% 65% at 50% -12%, rgb(69 189 240 / 0.18) 0%, transparent 62%),
+      radial-gradient(95% 55% at 50% 112%, rgb(143 220 255 / 0.12) 0%, transparent 66%),
+      radial-gradient(70% 60% at 14% 34%, rgb(169 140 255 / 0.11) 0%, transparent 72%),
+      radial-gradient(circle, rgb(255 255 255 / 0.045) 1px, transparent 1px);
+    background-size:
+      auto,
+      auto,
+      auto,
+      auto,
+      auto,
+      auto,
+      auto,
+      22px 22px;
+    contain: paint;
+  }
+
+  /* Une colonne : rien qu'une fenêtre découpée dans le bandeau. Ni fond, ni
+     bordure, ni séparateur — sa seule fonction est de rogner ce qui dépasse. */
+  .rail-fenetre {
+    position: relative;
+    overflow: hidden;
+    transition: box-shadow 0.18s ease;
+  }
+
+  /*
+   * Le halo de la colonne, allumé par la rareté qui **passe** sous le repère.
+   *
+   * C'est le signal qui manquait : une rare qui approche doit se voir avant
+   * d'être lue. Le moteur programme les instants à l'avance, en inversant la
+   * courbe — les mêmes que ceux du cliquet, donc le halo s'allume pile sur le
+   * clic qu'on entend.
+   *
+   * Il ne s'allume que pour les raretés convoitées, et seulement quand la course
+   * a assez ralenti pour qu'on le voie : au départ, une carte passe toutes les
+   * vingt-cinq millisecondes et un halo à chacune serait un stroboscope coloré.
+   */
+  /*
+   * Il s'allume en haut et en bas de la colonne, et pas tout autour.
+   *
+   * L'ombre intérieure qui précédait cerclait la colonne sur ses quatre bords.
+   * Les deux bords verticaux étaient les seuls à ne rien signifier : ils
+   * longent la carte qui passe, donc la lueur y restait immobile pendant que
+   * tout défilait, et surtout elle venait se coller au bord de la colonne
+   * voisine — deux couleurs différentes à un pixel l'une de l'autre, ce qui
+   * salissait les deux.
+   *
+   * En haut et en bas, la lueur est là où la carte entre et sort. Elle est
+   * traversée, donc elle appartient au mouvement ; et comme elle se pose sur les
+   * fondus sombres qui bordent déjà le bandeau, elle se lit comme de la lumière
+   * plutôt que comme une bordure peinte.
+   */
+  .rail-fenetre::before,
+  .rail-fenetre::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    left: 0;
+    /* Au-dessus des fondus (3), sous rien : les deux bandes occupent le tiers
+       haut et le tiers bas, le repère est à mi-hauteur, ils ne se croisent
+       jamais. */
+    z-index: 5;
+    height: 26%;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.16s ease;
+  }
+
+  /*
+   * Un dôme, et non un bandeau.
+   *
+   * Un dégradé linéaire donne un rectangle teinté : sur un tiers de colonne il
+   * recouvre le haut de la carte au lieu de l'éclairer, et l'on voit un aplat
+   * dont on lit le bord inférieur. Un dégradé radial ancré au milieu du bord
+   * s'éteint dans les deux axes à la fois — il n'a plus de bord droit nulle
+   * part, et c'est ce qui le fait passer pour de la lumière.
+   */
+  .rail-fenetre::before {
+    top: 0;
+    background: radial-gradient(
+      88% 128% at 50% 0%,
+      color-mix(in srgb, var(--passe, transparent) 46%, transparent) 0%,
+      transparent 66%
+    );
+  }
+
+  .rail-fenetre::after {
+    bottom: 0;
+    background: radial-gradient(
+      88% 128% at 50% 100%,
+      color-mix(in srgb, var(--passe, transparent) 46%, transparent) 0%,
+      transparent 66%
+    );
+  }
+
+  /*
+   * Discret, et c'est tout l'enjeu.
+   *
+   * La lueur ne montre rien : elle **désigne**. Elle dit « regarde cette
+   * colonne », et il faut ensuite regarder la carte pour savoir ce qui s'y
+   * trouve. Assez forte pour couvrir la carte, elle répond à la question au
+   * lieu de la poser, et le rail se met à clignoter en couleurs au lieu de
+   * défiler.
+   */
+  .rail-fenetre[data-passe]::before,
+  .rail-fenetre[data-passe]::after {
+    opacity: 0.3;
+  }
+
+  /* Ultra rare et légendaire : à peine plus, et cela suffit à faire tourner la
+     tête — c'est la seule différence qu'on ait besoin de sentir. */
+  .rail-fenetre[data-passe='4']::before,
+  .rail-fenetre[data-passe='4']::after,
+  .rail-fenetre[data-passe='5']::before,
+  .rail-fenetre[data-passe='5']::after {
+    opacity: 0.46;
+  }
+
+  /*
+   * À l'arrêt, la lueur reste — mais seulement si la carte **gagnée** la mérite.
+   *
+   * C'est là qu'elle cesse de désigner pour féliciter, et la distinction compte :
+   * pendant la course, la dernière rareté passée n'est pas forcément celle qu'on
+   * gagne. Le moteur efface donc la lueur de passage au moment de l'arrêt, et
+   * celle-ci reprend depuis `--gagne`, la couleur de la carte réellement
+   * obtenue, lue sur la colonne et non sur la dernière tuile croisée.
+   */
+  .rail-fenetre[data-arrete='true']:is([data-rang='2'], [data-rang='3'])::before,
+  .rail-fenetre[data-arrete='true']:is([data-rang='2'], [data-rang='3'])::after {
+    --passe: var(--gagne);
+    opacity: 0.34;
+  }
+
+  .rail-fenetre[data-arrete='true']:is([data-rang='4'], [data-rang='5'])::before,
+  .rail-fenetre[data-arrete='true']:is([data-rang='4'], [data-rang='5'])::after {
+    --passe: var(--gagne);
+    opacity: 0.52;
+  }
+
+  /*
+   * Le rouleau, seule chose qui bouge, et qui bouge d'un bloc.
+   *
+   * Une animation WAAPI sur `transform`, donc sur le compositeur, donc sans une
+   * ligne de JavaScript par image. `will-change` la promeut, et
+   * `backface-visibility` évite qu'un moteur ne réserve la face arrière d'une
+   * couche haute de quarante-six tuiles.
+   */
+  .rail-ruban {
+    position: absolute;
+    inset: 0;
+    will-change: transform;
+    backface-visibility: hidden;
+  }
+
+  /*
+   * Le flou de mouvement, posé au départ, retiré aux sept dixièmes.
+   *
+   * Il est **fixe** : deux écritures d'attribut sur toute la course, et rien
+   * entre les deux. C'est ce qui le distingue du flou qui avait fait hacher le
+   * rail — celui-là était animé sur les enfants, et forçait le re-tramage de
+   * toute la couche à chaque image. Fixe, la couche est tramée une fois, floue,
+   * puis translatée.
+   *
+   * `filter` n'est volontairement **pas** annoncé dans `will-change` : le
+   * déclarer suffisait à sortir le rail de la composition.
+   */
+  .rail-ruban[data-flou='true'] {
+    filter: blur(var(--flou));
+  }
+
+
+  /*
+   * Une carte dans le rouleau.
+   *
+   * `--k` est son rang, écrit par le composant : une variable CSS est substituée
+   * comme du texte, donc `calc(var(--pas) * var(--k))` est un calcul valable. La
+   * position passe par `top` et non par une translation : cent cinquante-cinq
+   * `translate3d` demanderaient au navigateur autant de couches, là où la mise
+   * en page ne coûte qu'une fois.
+   *
+   * Pas d'ombre portée, pas de reflet, pas de dégradé conique : `.cadre` en pose
+   * un par carte, ce qui est juste pour une grille de collection et ruineux ici —
+   * cent cinquante-cinq passes de flou hors écran à rastériser avant la première
+   * image. Un bord d'un pixel dans la couleur de la rareté et un fond plat
+   * suffisent : ce qui se lit d'une carte lancée, c'est sa teinte et sa
+   * silhouette.
+   */
+  .rail-carte {
+    position: absolute;
+    top: calc(var(--pas) * var(--k));
+    left: 50%;
+    width: var(--carte-l);
+    aspect-ratio: 1514 / 2231;
+    margin-left: calc(var(--carte-l) / -2);
+  }
+
+  /*
+   * Le cadre peint, allégé de ce qui coûte par carte.
+   *
+   * `.cadre` pose une ombre portée et deux transitions : justes pour une grille
+   * de collection qu'on survole, ruineux ici — cent cinquante-cinq passes de flou
+   * hors écran à rastériser avant la première image. Le cadre lui-même ne coûte
+   * presque rien : c'est **une seule image WebP**, partagée par toutes les
+   * tuiles, colorée par rareté d'une rotation de teinte.
+   */
+  .rail-carte .cadre {
+    filter: none;
+    transition: none;
+    height: 100%;
+  }
+
+  .rail-carte .cadre-fenetre {
+    filter: none;
+  }
+
+  /*
+   * Le jeton Winter Spin : une fumée bleue et le logo. **Aucun fond.**
+   *
+   * Trois versions ont précédé celle-ci, et chacune traînait une boîte. Une
+   * boîte sombre cerclée d'un liseré se lisait comme un cadre qui n'aurait pas
+   * chargé. Un vrai cadre peint le rangeait parmi les cartes, alors que tout son
+   * intérêt est de ne pas en être une. Un fond plat couleur du bandeau, enfin,
+   * restait visible : le bandeau porte une trame de points, le jeton non, et le
+   * rectangle se voyait quand même.
+   *
+   * Ici il n'y a plus rien derrière le logo — voir `.rail-jeton-logo`.
+   */
+  .rail-jeton {
+    position: absolute;
+    inset: 0;
+  }
+
+  /*
+   * La fumée : deux nappes qui dérivent en sens contraires, sans jamais s'arrêter.
+   *
+   * Elles n'animent que `transform` et `opacity` — les deux seules propriétés que
+   * le compositeur sait interpoler sans re-tramer la couche. Un `filter: blur`
+   * qui respire aurait été plus simple à écrire et aurait fait hacher le rail,
+   * comme la première fois : le flou est ici **dans le dégradé**, une fois pour
+   * toutes, et seul le mouvement est animé.
+   *
+   * Deux durées premières entre elles, 9 s et 13 s : la figure ne se répète
+   * qu'au bout de deux minutes, donc jamais pendant une ouverture.
+   */
+  .rail-jeton::before,
+  .rail-jeton::after {
+    content: '';
+    position: absolute;
+    inset: -40%;
+    background: radial-gradient(closest-side, rgb(127 216 255 / 0.55), transparent 70%);
+    animation: rail-fumee 9s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  .rail-jeton::after {
+    background: radial-gradient(closest-side, rgb(79 201 240 / 0.42), transparent 72%);
+    animation-duration: 13s;
+    animation-direction: reverse;
+  }
+
+  @keyframes rail-fumee {
+    0% {
+      opacity: 0.5;
+      transform: translate3d(-9%, 7%, 0) scale(0.82) rotate(0deg);
+    }
+    50% {
+      opacity: 0.95;
+      transform: translate3d(10%, -8%, 0) scale(1.18) rotate(180deg);
+    }
+    100% {
+      opacity: 0.5;
+      transform: translate3d(-9%, 7%, 0) scale(0.82) rotate(360deg);
+    }
+  }
+
+  /*
+   * Le logo, posé par-dessus la fumée, et dont le noir disparaît.
+   *
+   * Le fichier déposé est un WebP **sans canal alpha** : 896 × 1200, fond noir
+   * opaque — vérifié en lisant son en-tête VP8L. Posé tel quel, il ferait un
+   * rectangle noir au milieu de la fumée.
+   *
+   * `mix-blend-mode: screen` règle exactement ça, sans retoucher l'image : le
+   * mélange par écran laisse passer le fond partout où le logo est noir et
+   * n'altère pas les zones claires. Sur fond sombre le résultat est celui
+   * qu'aurait donné une vraie transparence — et il est meilleur, puisque la
+   * fumée passe aussi à travers les parties sombres du blason, ce qu'un
+   * détourage aurait bouché.
+   *
+   * `z-index: 1` n'est pas décoratif : `::after` est le dernier enfant de la
+   * boîte et se peint donc **après** les enfants réels. Sans cette élévation, la
+   * seconde nappe passerait devant le logo.
+   *
+   * Une image de fond et non une balise : si le fichier manque, rien n'est peint
+   * et il ne reste que la fumée, sans erreur ni icône cassée.
+   */
+  .rail-jeton-logo {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    z-index: 1;
+    width: 94%;
+    aspect-ratio: 896 / 1200;
+    translate: -50% -50%;
+    background: url('/winter-spin.webp') center / 100% 100% no-repeat;
+    /* Le masque est l'image elle-même, lue en luminance : le noir devient
+       transparent, le clair reste opaque, et les gris intermédiaires laissent
+       passer la fumée. Le rapport et le cadrage doivent coïncider au pixel près
+       avec le fond, d'où `aspect-ratio` et `100% 100%`. */
+    -webkit-mask: url('#winter-spin-masque');
+    mask: url('#winter-spin-masque');
+    pointer-events: none;
+  }
+
+  /* La définition du masque : hors flux, sans jamais être `display: none`, ce
+     qui casserait la référence dans certains moteurs. */
+  .rail-masques {
+    position: absolute;
+    width: 0;
+    height: 0;
+    overflow: hidden;
+  }
+
+  /* La fumée dérive : c'est du mouvement, et une préférence de mouvement réduit
+     doit l'arrêter. La lueur, elle, reste — c'est elle qui porte l'information. */
+  @media (prefers-reduced-motion: reduce) {
+    .rail-jeton::before,
+    .rail-jeton::after {
+      animation: none;
+      opacity: 0.75;
+    }
+  }
+
+  /*
+   * Le palier sur le jeton : la colonne se signale pendant qu'elle attend.
+   *
+   * Sans marque, l'arrêt sur le jeton se lirait comme la fin de la colonne, et le
+   * redémarrage comme un défaut. Le battement dit qu'il se passe quelque chose —
+   * il ne dure qu'une seconde, et rien d'autre ne bouge à ce moment-là.
+   */
+  .rail-fenetre[data-relance] {
+    animation: rail-relance 450ms ease-in-out infinite alternate;
+  }
+
+  @keyframes rail-relance {
+    from {
+      box-shadow: inset 0 0 40px -10px rgb(127 216 255 / 0.55);
+    }
+    to {
+      box-shadow: inset 0 0 90px -8px rgb(127 216 255 / 0.95);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .rail-fenetre[data-relance] {
+      animation: none;
+      box-shadow: inset 0 0 70px -10px rgb(127 216 255 / 0.8);
+    }
+  }
+
+  /*
+   * Le halo des raretés hautes sur la carte elle-même, **fixe**.
+   *
+   * Il ne bat pas pendant le défilement : animer un filtre force le re-tramage
+   * de la couche à chaque image. Fixe, il rend le même service — on repère une
+   * légendaire qui approche avant de pouvoir lire quoi que ce soit d'autre. Et
+   * il ne touche qu'une poignée de cartes, ce qui est toute la différence.
+   */
+  .rail-carte[data-rang='3'],
+  .rail-carte[data-rang='4'],
+  .rail-carte[data-rang='5'] {
+    filter: drop-shadow(0 0 10px color-mix(in srgb, var(--r) 60%, transparent));
+  }
+
+  /*
+   * Le repère, en travers de tout le bandeau.
+   *
+   * C'est lui qui fait de l'arrêt un évènement : sans trait, une carte immobile
+   * au milieu d'autres cartes immobiles n'est pas une carte gagnée. Il traverse
+   * les cinq colonnes d'un seul trait, parce qu'il n'y a qu'un bandeau.
+   */
+  .rail-repere {
+    position: absolute;
+    top: 50%;
+    right: 0;
+    left: 0;
+    z-index: 4;
+    height: 2px;
+    margin-top: -1px;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      var(--ice) 6%,
+      var(--frost) 50%,
+      var(--ice) 94%,
+      transparent 100%
+    );
+    box-shadow: 0 0 14px rgb(127 216 255 / 0.55);
+    pointer-events: none;
+  }
+
+  /* Les fondus, en haut et en bas du bandeau entier. Les jetons doivent avoir
+     l'air de continuer au-delà, pas d'y être coupés net : chez eux les voisins
+     sont tranchés par le bord et s'assombrissent. */
+  .rail-voile {
+    position: absolute;
+    right: 0;
+    left: 0;
+    z-index: 3;
+    height: 26%;
+    pointer-events: none;
+  }
+
+  .rail-voile-avant {
+    top: 0;
+    background: linear-gradient(180deg, var(--rail-fond, #060d18) 14%, transparent);
+  }
+
+  .rail-voile-apres {
+    bottom: 0;
+    background: linear-gradient(0deg, var(--rail-fond, #060d18) 14%, transparent);
+  }
+
+  /* -- L'arrêt ------------------------------------------------------------- */
+
+  .rail-fenetre[data-arrete='true'] .rail-carte:not(.rail-carte-gagnante) {
+    opacity: 0.28;
+  }
+
+  /*
+   * La gagnante se pose.
+   *
+   * L'animation porte sur `scale`, **jamais sur `transform`** : c'est le rouleau
+   * qui porte la translation, et une image-clé sur `transform` l'écraserait.
+   * `scale` est une propriété indépendante, qui se compose avec elle au lieu de
+   * la remplacer.
+   */
+  .rail-fenetre[data-arrete='true'] .rail-carte-gagnante {
+    z-index: 3;
+    animation: rail-atterrit 620ms cubic-bezier(0.2, 1.4, 0.35, 1);
+  }
+
+  /* Les hautes raretés se posent plus lentement : un dixième de seconde de plus
+     suffit à faire la différence entre « encore une » et « oh ». */
+  .rail-fenetre[data-arrete='true'][data-rang='4'] .rail-carte-gagnante,
+  .rail-fenetre[data-arrete='true'][data-rang='5'] .rail-carte-gagnante {
+    animation-duration: 820ms;
+  }
+
+  /*
+   * Le néon de la gagnante, gradué par rareté.
+   *
+   * Il passe par `drop-shadow` et non par `box-shadow` : une ombre de boîte
+   * dessine le **rectangle englobant**, ce qui cerclait la carte d'un trait net
+   * là où elle a des angles ornés et des bords arrondis — un cadre bleu qui
+   * n'appartenait à rien. `drop-shadow` suit la silhouette réellement peinte,
+   * volutes comprises.
+   *
+   * Il ne s'allume qu'à l'arrêt, où plus rien ne bouge : son coût de tramage ne
+   * tombe donc sur aucune image de l'animation.
+   */
+  .rail-fenetre[data-arrete='true'] .rail-carte-gagnante {
+    filter: drop-shadow(0 0 16px color-mix(in srgb, var(--r) 70%, transparent));
+  }
+
+  .rail-fenetre[data-arrete='true'] .rail-carte-gagnante[data-rang='4'],
+  .rail-fenetre[data-arrete='true'] .rail-carte-gagnante[data-rang='5'] {
+    filter:
+      drop-shadow(0 0 10px var(--r))
+      drop-shadow(0 0 34px color-mix(in srgb, var(--r) 80%, transparent));
+  }
+
+
+  /*
+   * L'éclat de la colonne à l'arrêt, gradué par rareté.
+   *
+   * Une commune et une légendaire ne peuvent pas se poser de la même façon,
+   * sinon la rareté n'existe que dans un chiffre. Le halo double entre les deux
+   * bouts de l'échelle. C'est le principe du genre : la récompense se mesure à
+   * ce que l'écran fait, pas à ce qu'il écrit.
+   *
+   * Les ombres sont **toutes intérieures**. Le bandeau rogne ce qui dépasse pour
+   * garder ses coins arrondis : une lueur portée vers l'extérieur serait coupée
+   * net, donc invisible. Vers l'intérieur, elle éclaire la colonne depuis ses
+   * bords, ce qui est de toute façon le geste qu'on veut.
+   */
+  /* Aucun trait net : que des lueurs. Un liseré d'un pixel sur chaque colonne
+     dessinait une grille de rectangles bleus en travers du bandeau — trois
+     colonnes arrêtées faisaient trois cadres et deux barres verticales. */
+  .rail-fenetre[data-arrete='true'] {
+    box-shadow: inset 0 0 36px -12px color-mix(in srgb, var(--gagne) 45%, transparent);
+  }
+
+  .rail-fenetre[data-arrete='true'][data-rang='2'],
+  .rail-fenetre[data-arrete='true'][data-rang='3'] {
+    box-shadow: inset 0 0 52px -10px color-mix(in srgb, var(--gagne) 60%, transparent);
+  }
+
+  .rail-fenetre[data-arrete='true'][data-rang='4'],
+  .rail-fenetre[data-arrete='true'][data-rang='5'] {
+    box-shadow: inset 0 0 84px -12px color-mix(in srgb, var(--gagne) 85%, transparent);
+  }
+
+  @keyframes rail-atterrit {
+    0% {
+      scale: 1;
+    }
+    28% {
+      scale: 1.18;
+    }
+    100% {
+      scale: 1;
+    }
+  }
+
+  @keyframes rail-revele {
+    from {
+      opacity: 0;
+      scale: 0.82;
+    }
+    to {
+      opacity: 1;
+      scale: 1;
+    }
+  }
+
+  @keyframes rail-parait {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes rail-efface {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
+    }
+  }
+
+  /*
+   * Mouvement réduit : on retire le sursaut, et rien d'autre.
+   *
+   * La préférence ne commande **pas** le rail. Elle ne choisit même plus
+   * l'allure par défaut — mesuré : Windows l'annonce dès que ses effets
+   * d'animation sont coupés, ce qui est un réglage de vitesse et non
+   * d'accessibilité sur la plupart des machines concernées. Qui veut un écran
+   * sans mouvement choisit « Immédiat », et ce choix est retenu. Voir
+   * `components/allure.ts`.
+   */
+  @media (prefers-reduced-motion: reduce) {
+    .rail-fenetre[data-arrete='true'] .rail-carte-gagnante {
+      animation: none;
+    }
+  }
+
+  /*
+   * Un bloc de réglage replié, dans l'espace d'administration.
+   *
+   * `details` natif : l'état d'ouverture est géré par le navigateur, donc sans
+   * un octet de JavaScript et sans un rendu React de plus à chaque clic. Le
+   * résumé reste lisible fermé — c'est tout l'intérêt : on doit pouvoir savoir
+   * ce que contient le bloc sans l'ouvrir.
+   */
+  .reglage-repli {
+    border-radius: var(--r-md, 14px);
+    border: 1px solid var(--glass-edge);
+    background: var(--glass-1);
+  }
+
+  .reglage-repli > summary {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 10px;
+    padding: 8px 12px;
+    list-style: none;
+  }
+
+  .reglage-repli > summary::-webkit-details-marker {
+    display: none;
+  }
+
+  /* Le chevron, tourné à l'ouverture. Une flèche dessinée en CSS plutôt qu'un
+     glyphe : elle suit la couleur du texte et ne dépend d'aucune police. */
+  .reglage-repli > summary::before {
+    content: '';
+    width: 0.5em;
+    height: 0.5em;
+    margin-right: 2px;
+    border-right: 2px solid var(--faint);
+    border-bottom: 2px solid var(--faint);
+    rotate: -45deg;
+    transition: rotate 0.18s ease;
+  }
+
+  .reglage-repli[open] > summary::before {
+    rotate: 45deg;
+  }
+
+  .reglage-repli > summary:hover::before {
+    border-color: var(--frost);
+  }
+
+  .reglage-repli[open] > summary {
+    border-bottom: 1px solid var(--glass-edge);
+  }
+
+  .reglage-repli > *:not(summary) {
+    padding: 0 12px 12px;
+  }
+
+  /* -- Les deux commandes -------------------------------------------------- */
+
+  /*
+   * Le sélecteur segmenté du banc de réglage.
+   *
+   * Il servait aussi à choisir l'allure dans le jeu ; ce réglage a été retiré —
+   * l'ouverture se joue toujours à l'allure mesurée, et il n'y a plus rien à
+   * choisir. Ce qui reste ne sert qu'à /dev/rail, hors production.
+   */
+  .rail-allure {
+    display: flex;
+    padding: 2px;
+    gap: 2px;
+    border-radius: 999px;
+    border: 1px solid var(--glass-edge);
+    background: var(--glass-1);
+    opacity: 0.55;
+    transition: opacity 0.2s ease;
+  }
+
+  .rail-allure:hover,
+  .rail-allure:focus-within {
+    opacity: 1;
+  }
+
+  .rail-allure button {
+    padding: 2px 9px;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    line-height: 1.4;
+    color: var(--faint);
+    transition:
+      color 0.15s ease,
+      background 0.15s ease;
+  }
+
+  .rail-allure button:hover {
+    color: var(--frost);
+  }
+
+  .rail-allure button.rail-allure-actif {
+    color: #04121f;
+    background: var(--ice);
+  }
+
 
   /* La réflexion appuyée, pour les plaques qu'on veut voir briller. */
   .glass-reflet::before {
@@ -420,6 +1360,40 @@
       linear-gradient(180deg, rgb(255 255 255 / 0.1) 0%, transparent 14%);
   }
 
+
+  /*
+   * La pastille de navigation.
+   *
+   * L'onglet actif était un rectangle arrondi teinté en bleu : une zone
+   * coloriée, pas un objet. En capsule de verre, il devient une pièce posée
+   * **par-dessus** la colonne — il a une arête, une épaisseur, une ombre
+   * portée. C'est le geste central du matériau : la sélection n'est pas une
+   * couleur de fond, c'est un objet qui glisse d'une ligne à l'autre.
+   *
+   * `--teinte` porte la couleur, pour que la réserve d'administration reprenne
+   * exactement la même pastille en rouge sans dupliquer une ligne.
+   */
+  .nav-pilule {
+    --teinte: var(--ice);
+    position: relative;
+    border-radius: var(--r-pilule);
+    background: linear-gradient(
+      160deg,
+      color-mix(in srgb, var(--teinte) 22%, transparent) 0%,
+      color-mix(in srgb, var(--teinte) 8%, transparent) 100%
+    );
+    backdrop-filter: blur(22px) saturate(190%) brightness(1.12);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.42),
+      inset 0 -1px 0 rgb(255 255 255 / 0.1),
+      inset 0 9px 16px -16px rgb(232 248 255 / 0.6),
+      0 6px 18px -10px color-mix(in srgb, var(--teinte) 55%, transparent);
+  }
+
+  .nav-pilule-admin {
+    --teinte: var(--aurora);
+  }
+
   .glass-hover {
     transition:
       transform 0.28s cubic-bezier(0.2, 0.8, 0.3, 1),
@@ -434,6 +1408,192 @@
       inset 0 1px 0 rgb(255 255 255 / 0.40),
       0 18px 50px rgb(0 0 0 / 0.5),
       0 0 40px rgb(69 189 240 / 0.13);
+  }
+
+  /* --------------------------------------------------------------------------
+     Le hero de l'accueil
+     -------------------------------------------------------------------------- */
+
+  .hero {
+    border-radius: var(--r-xl);
+  }
+
+  /*
+   * La neige sur l'arête haute des grands panneaux est un composant, `SnowCap` :
+   * une silhouette SVG tirée d'une graine, découpée par le rayon du panneau.
+   */
+
+  /*
+   * Les titres en blocs de glace.
+   *
+   * Un titre du site est **taillé dans la glace**, à toutes les tailles : le
+   * hero, le titre d'une page, celui d'un container. Ce qui le fait lire comme
+   * un bloc et non comme un texte pâle :
+   *
+   *  - la **masse**, translucide : on voit la plaque à travers, presque
+   *    incolore en haut, plus bleue et plus dense vers le bas ;
+   *  - les **arêtes** : un fil blanc sur le bord haut, là où la lumière tombe,
+   *    un fil bleu nuit sur le bord bas ;
+   *  - les **facettes** : des stries obliques dans la masse ;
+   *  - une ombre de contact courte, pour poser le tout.
+   *
+   * Trois couches faites du même texte (`data-text`) : l'élément porte la
+   * masse, `::before` l'arête claire, `::after` l'arête sombre.
+   *
+   * Il y a eu une version avec une tranche extrudée sous les lettres, sept ombres
+   * empilées vers le bas à droite. Elle faisait « lettrage 3D », pas glace, et
+   * elle est partie.
+   */
+  .glace {
+    position: relative;
+    display: inline-block;
+    font-style: normal;
+    color: transparent;
+    -webkit-background-clip: text;
+    background-clip: text;
+    --glace-haut: rgb(250 253 255 / 0.96);
+    --glace-mi: rgb(228 243 255 / 0.72);
+    --glace-bas: rgb(160 206 246 / 0.58);
+    background-image:
+      /* les stries de taille */
+      repeating-linear-gradient(
+        112deg,
+        transparent 0 0.42em,
+        rgb(255 255 255 / 0.1) 0.42em 0.47em,
+        transparent 0.47em 1.05em
+      ),
+      /* la masse */
+      linear-gradient(180deg, var(--glace-haut) 0%, var(--glace-mi) 42%, var(--glace-bas) 100%);
+    /* l'ombre de contact */
+    filter: drop-shadow(0 2px 1.5px rgb(4 18 42 / 0.55));
+  }
+
+  .glace::before,
+  .glace::after {
+    content: attr(data-text);
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    color: transparent;
+    background: none;
+    -webkit-background-clip: border-box;
+    background-clip: border-box;
+  }
+
+  /* L'arête sombre : le contour bleu nuit, gardé sur le bas des lettres. */
+  .glace::after {
+    -webkit-text-stroke: 1px rgb(14 46 88 / 0.75);
+    mask-image: linear-gradient(0deg, #fff 0%, rgb(255 255 255 / 0.3) 38%, transparent 70%);
+  }
+
+  /* L'arête claire : le contour blanc, gardé sur le haut des lettres. */
+  .glace::before {
+    -webkit-text-stroke: 1.1px rgb(255 255 255 / 0.9);
+    mask-image: linear-gradient(180deg, #fff 0%, rgb(255 255 255 / 0.35) 45%, transparent 82%);
+  }
+
+  /* « Ligue » : la même glace, plus bleue, avec le reflet qui balaie. */
+  .hero-titre em.glace {
+    --glace-haut: rgb(240 250 255 / 0.92);
+    --glace-mi: rgb(160 220 255 / 0.7);
+    --glace-bas: rgb(92 168 236 / 0.66);
+    background-image:
+      repeating-linear-gradient(
+        112deg,
+        transparent 0 0.42em,
+        rgb(255 255 255 / 0.1) 0.42em 0.47em,
+        transparent 0.47em 1.05em
+      ),
+      linear-gradient(110deg, var(--glace-haut) 0%, var(--glace-mi) 35%, var(--glace-bas) 70%, var(--glace-haut) 100%);
+    background-size:
+      100% 100%,
+      220% 100%;
+    animation: hero-balaye 12s ease-in-out infinite;
+  }
+
+  .hero-titre {
+    font-family: var(--font-display);
+    /* Sur une seule ligne, toujours : la taille suit la largeur du hero
+       (cqw), pas celle de la fenêtre, puisque le hero partage l'écran avec
+       les subs sur grand écran. « Winter Ligue » sur deux lignes, c'était le
+       nom coupé en deux. */
+    font-size: clamp(2.2rem, 11.5cqw, 7rem);
+    white-space: nowrap;
+    font-weight: 900;
+    line-height: 0.92;
+    letter-spacing: -0.01em;
+    text-transform: uppercase;
+    color: var(--frost);
+  }
+
+  /* En ligne (hero large), le titre partage la largeur avec la colonne du
+     leader : il se mesure sur ce qui reste, sinon la colonne passait dessus. */
+  @container (min-width: 56rem) {
+    .hero-titre {
+      font-size: clamp(2.2rem, 7cqw, 7rem);
+    }
+  }
+
+  /*
+   * Les titres de page et de bloc, dans la même glace.
+   *
+   * Même matière, trois corps. Le titre de page est large et profond ; celui
+   * d'un container est plus serré et sa tranche plus fine, pour ne pas peser
+   * sur une plaque qui porte déjà une table ou une grille.
+   */
+  .titre-glace {
+    font-family: var(--font-display);
+    font-weight: 900;
+    line-height: 0.95;
+    letter-spacing: -0.005em;
+    text-transform: uppercase;
+    color: var(--frost);
+  }
+
+  .titre-glace-page {
+    font-size: clamp(2.1rem, 6vw, 3.4rem);
+  }
+
+  .titre-glace-bloc {
+    font-size: clamp(1.35rem, 3vw, 1.7rem);
+  }
+
+  .titre-glace-petit {
+    font-size: 1.05rem;
+    letter-spacing: 0.02em;
+  }
+
+  /* Petit corps : la tranche et les arêtes seraient plus grosses que les
+     lettres. On garde la masse et l'arête claire, on allège le reste. */
+  .titre-glace-petit .glace::after {
+    -webkit-text-stroke: 0.6px rgb(12 40 78 / 0.6);
+  }
+
+  .titre-glace-petit .glace::before {
+    -webkit-text-stroke: 0.7px rgb(255 255 255 / 0.85);
+  }
+
+  @keyframes hero-balaye {
+    0%,
+    78% {
+      background-position:
+        0 0,
+        0% 50%;
+    }
+    100% {
+      background-position:
+        0 0,
+        100% 50%;
+    }
+  }
+
+  /* La carte du leader ne réagit pas au survol : c'est un lien, le curseur
+     le dit, et une plaque qui s'éclaire sous la souris faisait bouton. */
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero-titre em.glace {
+      animation: none;
+    }
   }
 
   /* --------------------------------------------------------------------------
@@ -457,6 +1617,288 @@
     line-height: 0.95;
     letter-spacing: -0.005em;
     text-transform: uppercase;
+  }
+
+  /* --------------------------------------------------------------------------
+     LE GIVRE
+     Une surface givrée est une plaque `.glass` qui reçoit deux couches sous
+     son contenu : le dépôt — des halos blanc-bleutés diffus, denses sur le
+     bord droit et dans les coins, fins au centre — et le grain, un bruit
+     tuilable en screen. Les enfants passent au-dessus : le texte reste net.
+     -------------------------------------------------------------------------- */
+  @property --givre-r {
+    syntax: '<length>';
+    inherits: false;
+    initial-value: 0px;
+  }
+
+  .givre-surface {
+    --gx: 50%;
+    --gy: 50%;
+    --ax: -200px;
+    --ay: -200px;
+    --aw: 0px;
+    --ah: 0px;
+  }
+  .givre-surface > *:not(.givre-surface-couches) {
+    position: relative;
+    z-index: 1;
+  }
+  /* L'élément qui porte les deux couches — sur la plaque elle-même, ::after
+     est déjà le biseau de .glass, masqué en anneau. Sous tout le reste. */
+  .givre-surface-couches {
+    position: absolute !important;
+    inset: 0;
+    z-index: 0 !important;
+    pointer-events: none;
+    border-radius: inherit;
+    overflow: hidden;
+  }
+  /* La texture d'usure — griffures croisées, micro-fissures en étoile,
+     dépôts à bords doux, en clair sur le bleu nuit — sur deux calques de la
+     même tuile de 512 px : l'un tel quel à 0,35, l'autre à l'échelle 2 et
+     décalé, à 0,15, pour casser toute impression de répétition. Les deux
+     sont percés d'une ellipse sous l'item actif — du verre propre au milieu
+     de la surface usée — et d'un cercle sous l'item survolé (`--givre-r`),
+     qui s'ouvre en 200 ms et se referme en 600 ms. */
+  /* Le pavage de facettes — un Voronoï écrit une fois en SVG par
+     scripts/facettes.mjs, chaque plaque avec son dégradé orienté — à 0,45,
+     percé d'une ellipse sous l'item actif (le verre lisse posé sur la glace
+     fracturée) et d'un cercle sous l'item survolé. `cover` joue le rôle de
+     `slice` : les facettes gardent leur forme quand la hauteur change. */
+  .givre-surface-couches::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background: url(/fond/facettes.svg) center top / cover no-repeat;
+    opacity: 0.72;
+    mask-image:
+      radial-gradient(ellipse var(--aw) var(--ah) at var(--ax) var(--ay), transparent 0 64%, #000 100%),
+      radial-gradient(circle var(--givre-r) at var(--gx) var(--gy), transparent 0 55%, #000 100%);
+    mask-composite: intersect;
+    -webkit-mask-image:
+      radial-gradient(ellipse var(--aw) var(--ah) at var(--ax) var(--ay), transparent 0 64%, #000 100%),
+      radial-gradient(circle var(--givre-r) at var(--gx) var(--gy), transparent 0 55%, #000 100%);
+    -webkit-mask-composite: source-in;
+    transition: --givre-r 0.6s ease;
+  }
+  /* Par-dessus le pavage : la teinte bleu nuit à 0,35, un vignettage sombre
+     sur la colonne des libellés pour qu'aucune facette claire ne passe
+     derrière un mot, et le grain fin à 0,06 en screen. */
+  .givre-surface-couches::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background-image:
+      url(/fond/grain.png),
+      linear-gradient(90deg, rgb(6 18 32 / 0.82) 0%, rgb(6 18 32 / 0.72) 64%, rgb(6 18 32 / 0.06) 100%),
+      linear-gradient(rgb(10 28 48 / 0.18), rgb(10 28 48 / 0.18));
+    background-size:
+      200px 200px,
+      100% 100%,
+      100% 100%;
+    background-repeat: repeat, no-repeat, no-repeat;
+    background-blend-mode: screen, normal, normal;
+    /* le grain est porté par l'alpha du PNG : 0,06 au plus */
+    --grain: 0.06;
+  }
+  /* Le tiroir mobile : un pavage plus grossier, une dizaine de plaques. */
+  #tiroir-navigation .givre-surface-couches::before {
+    background-image: url(/fond/facettes-mobile.svg);
+  }
+  /* La congère : dans la colonne seulement, jamais dans le tiroir mobile. */
+  .givre-derive {
+    position: absolute !important;
+    bottom: 0;
+    left: 0;
+    z-index: 0 !important;
+    width: 120px;
+    height: 40px;
+    pointer-events: none;
+    opacity: 0.9;
+  }
+  .givre-felure {
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    left: 8px;
+    height: 6px;
+    width: auto;
+    pointer-events: none;
+  }
+  /* L'item actif : du verre liquide, la seule zone dégagée dans la surface
+     usée. La lisibilité vient du flou, pas de l'opacité ; la lentille vient
+     du bord réfractif — clair en haut à gauche, froid en bas à droite — et
+     du liseré spéculaire sur l'arête haute. Il se construit en 250 ms quand
+     on change de page. */
+  .nav-plaque {
+    position: relative;
+    border-radius: var(--r-pilule) !important;
+    background: rgb(226 242 255 / 0.1) !important;
+    backdrop-filter: blur(12px) saturate(180%) brightness(115%);
+    -webkit-backdrop-filter: blur(12px) saturate(180%) brightness(115%);
+    border: 1px solid rgb(236 248 255 / 0.28);
+    box-shadow:
+      inset 2px 2px 3px rgb(255 255 255 / 0.32),
+      inset -2px -2px 3px rgb(120 170 230 / 0.28),
+      inset 0 0 0 1px rgb(226 242 255 / 0.1),
+      0 8px 22px -12px rgb(143 220 255 / 0.5);
+    animation: plaque-arrive 0.25s ease-out;
+  }
+  /* Le liseré spéculaire : un pixel blanc sur l'arête haute, qui s'estompe
+     vers les côtés. */
+  .nav-plaque::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 12%;
+    left: 12%;
+    height: 1px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.5) 30%, rgb(255 255 255 / 0.5) 70%, transparent);
+    pointer-events: none;
+  }
+  @keyframes plaque-arrive {
+    from {
+      background: rgb(226 242 255 / 0);
+      backdrop-filter: blur(0) saturate(100%) brightness(100%);
+      box-shadow:
+        inset 0 0 0 rgb(255 255 255 / 0),
+        inset 0 0 0 rgb(120 170 230 / 0),
+        inset 0 0 0 1px rgb(226 242 255 / 0),
+        0 0 0 rgb(143 220 255 / 0);
+    }
+  }
+  @media (prefers-reduced-transparency: reduce) {
+    .nav-plaque {
+      background: #1d4470 !important;
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .nav-plaque {
+      animation: none;
+    }
+  }
+  .givre-surface:has(nav a:hover) .givre-surface-couches::before {
+    transition-duration: 0.2s;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .givre-surface-couches::before,
+    .givre-surface:has(nav a:hover) .givre-surface-couches::before {
+      transition: none;
+    }
+  }
+
+  /* --------------------------------------------------------------------------
+     LA COLONNE GELÉE
+     Ce qui fait que le panneau est gelé, et pas décoré.
+     -------------------------------------------------------------------------- */
+  .menu-colle {
+    backdrop-filter: blur(20px) saturate(115%);
+    -webkit-backdrop-filter: blur(20px) saturate(115%);
+    /* a) le fond : bleu nuit, éclairci vers le haut. La texture de givre (b)
+       et le dépôt (c) sont les deux couches de `givre-surface`. */
+    background-image:
+      radial-gradient(70% 38% at 104% -4%, rgb(226 242 255 / 0.1), transparent 70%),
+      radial-gradient(62% 34% at 102% 104%, rgb(226 242 255 / 0.09), transparent 70%),
+      radial-gradient(44% 26% at -6% 106%, rgb(226 242 255 / 0.07), transparent 70%),
+      radial-gradient(30% 48% at 106% 46%, rgb(226 242 255 / 0.08), transparent 70%),
+      radial-gradient(28% 22% at -8% 8%, rgb(226 242 255 / 0.05), transparent 70%),
+      linear-gradient(200deg, rgb(20 46 72 / 0.72) 0%, rgb(12 32 54 / 0.76) 55%, rgb(8 22 40 / 0.82) 100%);
+    /* le bord droit est la tranche du panneau : un liseré clair et un
+       glow bleu-blanc de huit pixels vers l'intérieur */
+    box-shadow:
+      inset -1px 0 0 rgb(240 250 255 / 0.7),
+      inset -9px 0 10px -6px rgb(230 246 255 / 0.4),
+      inset 0 1px 0 var(--glass-hi),
+      var(--lift-2);
+  }
+  /* Le contenu au-dessus des couches. La congère, elle, reste posée dans le
+     coin. */
+  .menu-colle > *:not(.givre-derive):not(.givre-surface-couches) {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Les icônes : un trait de verre teinté, net, clair en haut et bleu en bas,
+     avec un halo très léger. Celle de l'item actif est quasi blanche. Les
+     icônes de l'administration gardent leur rouge. */
+  .menu-colle nav a:not([data-reserve]) svg {
+    stroke: url(#icone-deg);
+    filter: drop-shadow(0 0 3px rgb(150 200 240 / 0.35));
+  }
+  .menu-colle nav a.nav-plaque:not([data-reserve]) svg {
+    stroke: #f4faff;
+    filter: drop-shadow(0 0 4px rgb(170 215 255 / 0.6));
+  }
+  .menu-colle .menu-logo svg {
+    stroke: url(#icone-deg-logo);
+    filter: drop-shadow(0 0 4px rgb(170 215 255 / 0.5));
+  }
+
+  /* Les items inactifs sont posés sous le givre : voilés, froids, sans fond.
+     Au survol, le voile se lève. L'administration garde son rouge. */
+  /* `!important` : les utilitaires Tailwind (`text-muted`, `hover:bg-white/6`)
+     vivent dans une couche qui passe devant celle-ci, quelle que soit la
+     spécificité. */
+  .menu-colle nav a:not(.nav-plaque):not([data-reserve]) {
+    color: rgb(246 250 255 / 0.95) !important;
+    background: none !important;
+    text-shadow: 0 1px 1px rgb(4 20 40 / 0.55);
+  }
+  .menu-colle nav a:not(.nav-plaque):not([data-reserve]):hover {
+    color: var(--ink) !important;
+  }
+  /* Sur la glace claire, l'item actif se lit en blanc : la teinte cyan de la
+     pilule ne laisse plus de place au bleu clair du texte. */
+  .menu-colle nav a.nav-plaque {
+    color: #ffffff !important;
+    text-shadow: 0 1px 1px rgb(4 20 40 / 0.6);
+    /* Sur la glace, la lentille garde son flou mais se teinte moins : le
+       blanc du libellé doit rester à 4,5:1 même sur une fracture claire. */
+    background: rgb(10 34 52 / 0.3) !important;
+    backdrop-filter: blur(12px) saturate(160%) brightness(104%);
+    -webkit-backdrop-filter: blur(12px) saturate(160%) brightness(104%);
+  }
+  .menu-colle nav a.nav-plaque[data-reserve] {
+    color: #eafff6 !important;
+  }
+  /* L'administration, en vert clair, avec une ombre pour tenir sur les
+     fractures claires. */
+  .menu-colle nav a[data-reserve] {
+    color: #c3fbec !important;
+    text-shadow: 0 1px 1px rgb(4 20 40 / 0.6);
+  }
+  .menu-colle nav a[data-reserve] svg {
+    filter: drop-shadow(0 1px 1px rgb(4 20 40 / 0.6));
+  }
+  /* Le sous-titre du logo, sur la glace claire. */
+  .menu-colle .menu-logo .text-faint {
+    color: rgb(236 246 255 / 0.78) !important;
+  }
+
+  /* Le menu latéral, collé au bord gauche : le verre garde sa matière mais
+     perd ses coins et sa marge. Le biseau conique ne se voit plus qu'à droite,
+     ce qui est exactement l'arête qu'on veut lire. */
+  .menu-colle {
+    border-radius: 0;
+    border-right: 1px solid rgb(255 255 255 / 0.08);
+  }
+
+  /* Un mot en givre, hors titre : le pseudo du leader, par exemple. Le même
+     dégradé que les titres, sans le halo qui, à cette taille, baverait. */
+  .givre-texte {
+    background: linear-gradient(115deg, var(--frost) 0%, var(--ice) 45%, var(--ice-3) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    filter: drop-shadow(0 1px 0 rgb(255 255 255 / 0.25)) drop-shadow(0 0 14px rgb(143 220 255 / 0.35));
   }
 
   .section-title em {
@@ -495,6 +1937,123 @@
   }
 
   /* --------------------------------------------------------------------------
+     LES AFFRONTEMENTS
+     -------------------------------------------------------------------------- */
+
+  /*
+   * Une ligne d'affrontement : du verre, mais **plus dense**.
+   *
+   * La plaque du site est faite pour flotter seule au-dessus d'un massif
+   * photographié, et c'est juste. Une **liste** de huit plaques, non : le fond
+   * change sous chacune, les contrastes bougent d'une ligne à l'autre, et
+   * l'ensemble devient une bouillie grise dont on ne détache plus rien.
+   *
+   * Elle garde donc tout le vocabulaire maison — le flou, le biseau conique, la
+   * lentille qui rehausse — et n'en change qu'une chose : sa teinte monte assez
+   * pour que huit lignes empilées se lisent comme huit objets et non comme un
+   * dégradé. C'est le même matériau, réglé pour un autre usage.
+   */
+  .duel {
+    background: linear-gradient(180deg, rgb(20 34 56 / 0.72) 0%, rgb(12 22 38 / 0.78) 100%);
+  }
+
+  button.duel {
+    transition:
+      transform 0.22s cubic-bezier(0.2, 0.8, 0.3, 1),
+      box-shadow 0.22s ease;
+  }
+
+  button.duel:hover {
+    transform: translateY(-2px);
+  }
+
+  /*
+   * La nappe de rareté, en travers de la ligne.
+   *
+   * C'est la traduction du grand pavé coloré de la référence dans la palette du
+   * site : au lieu d'un bloc plein qui couperait la ligne en deux, une nappe qui
+   * la traverse et s'éteint. La couleur reste celle de la plus haute carte
+   * sortie — on repère de loin la ligne qui vaut le clic, sans qu'aucun aplat ne
+   * vienne concurrencer les cartes elles-mêmes.
+   */
+  .duel-nappe {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background:
+      linear-gradient(
+        90deg,
+        color-mix(in srgb, var(--eclat) 18%, transparent) 0%,
+        transparent 46%
+      ),
+      radial-gradient(
+        60% 130% at 100% 50%,
+        color-mix(in srgb, var(--eclat) 22%, transparent) 0%,
+        transparent 70%
+      );
+  }
+
+  /* L'arête gauche, à la couleur de la rareté : le seul trait franc de la
+     ligne, et il porte l'information. */
+  .duel-nappe::before {
+    content: '';
+    position: absolute;
+    top: 12%;
+    bottom: 12%;
+    left: 0;
+    width: 3px;
+    border-radius: 3px;
+    background: var(--eclat);
+    box-shadow: 0 0 14px color-mix(in srgb, var(--eclat) 70%, transparent);
+  }
+
+  /*
+   * Le sachet, avec son illustration — **agrandie et recadrée**.
+   *
+   * Les planches sont des sachets photographiés sur fond sombre : posées
+   * entières dans une case de soixante pixels, les quatre donnaient quatre
+   * rectangles bleu nuit qu'on ne distinguait pas les uns des autres. Recadrées
+   * sur leur cœur, on voit le dragon, le loup, la muraille de glace — ce qui
+   * distingue un sachet d'un autre, et ce que la référence montre de ses boîtes.
+   */
+  .duel-sachet {
+    position: relative;
+    display: grid;
+    flex-shrink: 0;
+    place-items: center;
+    overflow: hidden;
+    border-radius: 16px;
+    background: linear-gradient(150deg, var(--haut, #22314a), var(--bas, #101a2c));
+    box-shadow:
+      inset 0 0 0 1px rgb(255 255 255 / 0.14),
+      inset 0 10px 18px -16px rgb(255 255 255 / 0.65),
+      0 4px 12px -6px rgb(1 5 14 / 0.8);
+  }
+
+  .duel-sachet img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    /* Le cœur de la planche, pas ses marges : au-dessous de 1,5 le sachet reste
+       entier et sombre, au-dessus de 1,9 l'illustration sort du cadre. */
+    transform: scale(1.7);
+    /* Les planches sont sombres pour aller sur un fond sombre ; dans une case de
+       soixante pixels, elles ont besoin d'être relevées. */
+    filter: saturate(1.3) brightness(1.2) contrast(1.05);
+  }
+
+  /* Un voile en bas : sans lui, une illustration claire mange le liseré et la
+     case perd son contour. */
+  .duel-sachet::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(180deg, transparent 42%, rgb(3 7 17 / 0.5) 100%);
+  }
+
+  /* --------------------------------------------------------------------------
      Boutons
      Hauteur minimale de 44 px : la cible tactile recommandée. En dessous, on
      rate le bouton une fois sur trois au pouce.
@@ -507,12 +2066,17 @@
     gap: 0.45rem;
     min-height: 44px;
     padding: 0.6rem 1.15rem;
-    border-radius: 999px;
+    border-radius: var(--r-pilule);
     border: 1px solid var(--glass-edge);
     background: linear-gradient(158deg, var(--glass-3), var(--glass-1));
-    backdrop-filter: blur(16px) saturate(160%);
+    backdrop-filter: blur(24px) saturate(180%) brightness(1.07);
     box-shadow:
+      /* Les deux arêtes, la vive et son retour : c'est la même lecture que sur
+         les plaques, à l'échelle d'une pastille. Sur un objet aussi petit, un
+         anneau conique serait invisible ; deux ombres internes suffisent. */
       inset 0 1px 0 var(--glass-hi),
+      inset 0 -1px 0 rgb(255 255 255 / 0.12),
+      inset 0 8px 14px -14px rgb(232 248 255 / 0.5),
       var(--lift-1);
     color: var(--ink);
     font-family: var(--font-display);
@@ -521,7 +2085,6 @@
     letter-spacing: 0.06em;
     text-transform: uppercase;
     white-space: nowrap;
-    cursor: pointer;
     transition:
       background 0.18s ease,
       border-color 0.18s ease,
@@ -730,18 +2293,415 @@
   }
 
   /* --------------------------------------------------------------------------
+     Le bouton d'ouverture
+     -------------------------------------------------------------------------- */
+
+  /*
+   * Le seul bouton du site qui ait le droit d'être un objet.
+   *
+   * Il portait « Ouvrir — ❄ 150 » sur une ligne, en capitales, comme les
+   * quarante autres boutons. C'est pourtant le geste qui fait exister le site :
+   * celui qu'on vient chercher, celui qui coûte, celui qu'on répète. Un libellé
+   * de plus au milieu d'une phrase ne lui donne aucune de ces trois qualités.
+   *
+   * Deux registres au lieu d'un seul : le verbe en grand, et le prix dans sa
+   * propre pastille. C'est la mise en page d'une étiquette, et elle dit d'un
+   * coup d'œil ce que la ligne unique obligeait à lire — ce qu'on fait, et ce
+   * que ça coûte. Le prix cesse au passage d'être une note de bas de ligne : il
+   * a un cadre, un fond, et se lit à un mètre.
+   */
+  .btn-ouvrir {
+    min-height: 62px;
+    padding: 0.55rem 0.75rem 0.55rem 1.9rem;
+    gap: 1rem;
+    font-size: 1.25rem;
+    letter-spacing: 0.09em;
+  }
+
+  /*
+   * La pastille de prix, creusée dans le bouton.
+   *
+   * Elle s'enfonce là où le bouton sort — l'arête vive en bas, l'ombre en haut,
+   * la même inversion que pour les champs. Posée en relief, elle aurait fait un
+   * second bouton dans le premier, et l'on aurait cherché lequel cliquer.
+   */
+  /* Prix barré pendant une braderie : lisible, mais visiblement l'ancien. */
+.prix-barre {
+  margin-right: 0.35em;
+  font-size: 0.78em;
+  font-weight: 600;
+  color: var(--faint);
+  text-decoration-thickness: 1.5px;
+}
+
+/* Un évènement en cours dans le bandeau des subs. */
+.evenement {
+  border-color: rgb(120 235 200 / 0.28);
+}
+.evenement-pastille {
+  width: 9px;
+  height: 9px;
+  flex: none;
+  border-radius: 999px;
+  background: var(--aurora);
+  box-shadow: 0 0 0 3px rgb(120 235 200 / 0.18), 0 0 14px rgb(120 235 200 / 0.6);
+  animation: evenement-pulse 1.8s ease-in-out infinite;
+}
+@keyframes evenement-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.55; transform: scale(0.8); }
+}
+/* Une frise d'étapes : des pastilles de glace reliées par un fil. */
+.etapes {
+  display: grid;
+  gap: 14px;
+}
+.etape {
+  position: relative;
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+/* Le fil, entre une pastille et la suivante. */
+.etape:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  top: 30px;
+  bottom: -14px;
+  left: 14px;
+  width: 2px;
+  background: linear-gradient(180deg, rgb(143 220 255 / 0.55), rgb(143 220 255 / 0.12));
+}
+.etape-pastille {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  flex: none;
+  place-items: center;
+  border-radius: 999px;
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 900;
+  color: #06121f;
+  background: linear-gradient(160deg, #f4fbff 0%, #bfe4ff 45%, #6fb4ea 100%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.9),
+    inset 0 -2px 3px rgb(30 80 140 / 0.35),
+    0 2px 4px rgb(3 14 34 / 0.55);
+}
+
+/* Les trois étapes en cartes, côte à côte : une pastille de glace qui porte
+   l'icône et le numéro, un titre, deux phrases. En colonne sous 768 px. */
+.etapes-cartes {
+  display: grid;
+  gap: 12px;
+}
+@media (min-width: 768px) {
+  .etapes-cartes {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+  }
+}
+.etape-carte {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 16px 18px;
+}
+.etape-icone {
+  /* Le dessin en glace, posé tel quel : pas de pastille derrière, la glace se
+     suffit sur le verre. */
+  position: relative;
+  display: grid;
+  width: 64px;
+  height: 64px;
+  flex: none;
+  place-items: center;
+}
+/* Le classement, en grand : corps de 17 px, lignes plus hautes, et une
+   plaque qui défile au-delà de 68 % de l'écran avec son en-tête collé. */
+.grid-table-grand th {
+  padding: 1rem 1.15rem;
+  font-size: 0.875rem;
+}
+.grid-table-grand td {
+  padding: 1.05rem 1.15rem;
+  font-size: 1.0625rem;
+}
+.classement-defile {
+  max-height: 68vh;
+  overflow-y: auto;
+  border-radius: inherit;
+}
+.classement-defile thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: rgb(9 20 38 / 0.94);
+  backdrop-filter: blur(10px);
+}
+
+/* ==========================================================================
+   LE TABLEAU DE VERRE — le classement, dans la matière du hero.
+
+   La surface n'est pas définie ici : c'est `.glass` (le conteneur) et
+   `.glass .glass-soft` (les tuiles mobiles), les classes mêmes des blocs du
+   hero. Ce fichier ne dit que ce qui est propre à une grille : les arêtes
+   entre les lignes, la bande d'en-tête, le survol, l'or des qualifiés.
+   ========================================================================== */
+
+/* L'en-tête : une bande à peine plus claire, fermée par une arête interne —
+   un pixel sombre, un pixel clair dessous, comme dans le hero. Collée en haut
+   quand le tableau défile. */
+.tableau-verre-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 0.85rem 1.15rem;
+  font-family: var(--font-display);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-align: left;
+  text-transform: uppercase;
+  color: var(--faint);
+  background: linear-gradient(180deg, rgb(226 242 255 / 0.07), rgb(226 242 255 / 0.03));
+  box-shadow:
+    inset 0 1px 0 rgb(226 242 255 / 0.16),
+    inset 0 -2px 0 rgb(6 18 38 / 0.6),
+    inset 0 -1px 0 rgb(226 242 255 / 0.14);
+}
+
+/* Les en-têtes cliquables : le libellé du hero, plus une flèche qui ne
+   s'allume que sur la colonne triée. */
+.tableau-verre-tri {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: inherit;
+  transition: color 0.15s ease;
+}
+.tableau-verre-tri:hover,
+.tableau-verre-tri.est-actif {
+  color: var(--ink);
+}
+.tableau-verre-fleche {
+  font-size: 0.7em;
+  opacity: 0.35;
+}
+.tableau-verre-tri.est-actif .tableau-verre-fleche {
+  opacity: 1;
+  color: var(--ice);
+}
+.tableau-verre-recherche {
+  min-height: 40px;
+  padding-block: 0.45rem;
+}
+
+.tableau-verre-defile {
+  max-height: 68vh;
+  overflow-y: auto;
+}
+
+.tableau-verre-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.tableau-verre-table td {
+  padding: 0.95rem 1.15rem;
+  font-size: 1rem;
+  vertical-align: middle;
+  transition: background-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+/* Les lignes : pas de fond, une arête interne sous chacune. */
+.tableau-verre-ligne td {
+  box-shadow:
+    inset 0 -2px 0 rgb(6 18 38 / 0.55),
+    inset 0 -1px 0 rgb(226 242 255 / 0.13);
+}
+
+/* Au survol : un éclaircissement léger du dégradé, et l'arête se renforce.
+   Jamais une couleur franche. */
+.tableau-verre-ligne:hover td {
+  background: linear-gradient(180deg, rgb(226 242 255 / 0.06), rgb(226 242 255 / 0.02));
+  box-shadow:
+    inset 0 1px 0 rgb(226 242 255 / 0.12),
+    inset 0 -2px 0 rgb(6 18 38 / 0.7),
+    inset 0 -1px 0 rgb(226 242 255 / 0.22);
+}
+
+/* Les places qualificatives : une arête dorée sur le flanc gauche, en biseau
+   comme les autres — un pixel sombre, puis un pixel doré clair. */
+.tableau-verre-or td:first-child {
+  box-shadow:
+    inset 1px 0 0 rgb(90 60 10 / 0.9),
+    inset 2px 0 0 rgb(255 226 150 / 0.9),
+    inset 0 -2px 0 rgb(6 18 38 / 0.55),
+    inset 0 -1px 0 rgb(226 242 255 / 0.13);
+}
+.tableau-verre-or:hover td:first-child {
+  box-shadow:
+    inset 1px 0 0 rgb(90 60 10 / 0.9),
+    inset 2px 0 0 rgb(255 226 150 / 0.95),
+    inset 0 1px 0 rgb(226 242 255 / 0.12),
+    inset 0 -2px 0 rgb(6 18 38 / 0.7),
+    inset 0 -1px 0 rgb(226 242 255 / 0.22);
+}
+
+/* ------------------------- Les tuiles mobiles ---------------------------- */
+/* La surface est celle des tuiles de stats du hero (`.glass .glass-soft`) ;
+   on n'ajoute que le dépli et l'or. */
+.tableau-verre-carte summary::-webkit-details-marker {
+  display: none;
+}
+.tableau-verre-carte summary {
+  list-style: none;
+}
+.tableau-verre-carte.tableau-verre-or {
+  box-shadow:
+    inset 1px 0 0 rgb(90 60 10 / 0.9),
+    inset 2px 0 0 rgb(255 226 150 / 0.9),
+    inset 0 1px 0 var(--glass-hi-soft),
+    inset 0 10px 20px -22px rgb(232 248 255 / 0.4),
+    var(--lift-1);
+}
+.tableau-verre-detail {
+  box-shadow:
+    inset 0 2px 0 rgb(6 18 38 / 0.55),
+    inset 0 3px 0 rgb(226 242 255 / 0.12);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tableau-verre-table td {
+    transition: none;
+  }
+}
+
+/* Le prochain évènement : une carte teintée aurore, à côté du compteur. */
+.evenement-prochain {
+  border-color: rgb(120 235 200 / 0.2);
+  background-image: linear-gradient(160deg, rgb(120 235 200 / 0.09), transparent 65%);
+}
+
+.btn-ouvrir-prix {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.42rem 0.95rem;
+    border-radius: var(--r-pilule);
+    /*
+     * Franchement sombre, et le prix en clair dessus.
+     *
+     * Un premier essai laissait la pastille à peine teintée et gardait l'encre
+     * sombre du bouton : le prix tombait alors à 3,4:1 sur le bleu pâle, soit
+     * la valeur la moins lisible de tout le bouton pour l'information qui décide
+     * du clic. Creusée pour de bon, elle inverse le contraste au lieu de le
+     * diluer — et l'on y lit un afficheur, ce qui est exactement le rôle.
+     */
+    background: rgb(2 26 42 / 0.72);
+    box-shadow:
+      inset 0 2px 4px rgb(1 14 24 / 0.55),
+      inset 0 -1px 0 rgb(255 255 255 / 0.28);
+    color: var(--frost);
+    /* L'ombre portée claire du bouton est faite pour de l'encre sombre ; sous un
+       texte clair elle ne fait que le rendre pâteux. */
+    text-shadow: none;
+    font-size: 1.0625rem;
+    letter-spacing: 0.02em;
+    /* Tabulaire : le prix change de sachet en sachet, et un chiffre qui saute
+       d'un pixel à chaque flèche du carrousel se remarque plus que le prix. */
+    font-variant-numeric: tabular-nums;
+  }
+
+  .btn-ouvrir:disabled .btn-ouvrir-prix {
+    background: rgb(2 26 42 / 0.5);
+  }
+
+  /* Le flocon du prix reprend la teinte de la glace : c'est la monnaie, et elle
+     a une couleur dans tout le reste du site. */
+  .btn-ouvrir-prix > span:first-child {
+    color: var(--ice);
+  }
+
+  /* --------------------------------------------------------------------------
+     Le solde
+     -------------------------------------------------------------------------- */
+
+  /*
+   * Il était en `text-xs text-faint` : douze pixels, et la teinte la plus pâle
+   * de la palette. Mesuré sur le panneau, cela donnait 4,1:1 — sous le seuil,
+   * pour la seule information qui dise si l'on peut se payer ce qu'on regarde.
+   *
+   * Il passe donc en pastille de verre, à quatorze pixels et en `--ink-2`, avec
+   * le montant en pleine encre. Il ne crie pas pour autant : c'est une valeur
+   * qu'on consulte, pas une qu'on annonce — l'étiquette reste en gris, seul le
+   * nombre est franc.
+   */
+  .solde {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    padding: 0.35rem 0.9rem;
+    border-radius: var(--r-pilule);
+    background: rgb(11 20 36 / 0.42);
+    backdrop-filter: blur(18px) saturate(160%);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.12),
+      inset 0 -1px 0 rgb(255 255 255 / 0.05);
+    font-size: 0.875rem;
+    color: var(--ink-2);
+  }
+
+  .solde-valeur {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+  }
+
+  /* Ce qui vient d'être dépensé, tant que la révélation dure. Le montant seul
+     ne dit pas qu'il a bougé ; c'est le delta qui le dit. */
+  .solde-delta {
+    font-variant-numeric: tabular-nums;
+    color: var(--danger);
+  }
+
+  /* --------------------------------------------------------------------------
      Champs
      -------------------------------------------------------------------------- */
 
+  /*
+   * Un champ est un creux, pas une plaque.
+   *
+   * C'est la seule inversion de tout le système, et elle est volontaire : sur
+   * une surface de verre, une zone où l'on écrit doit s'enfoncer. L'arête vive
+   * passe donc **en bas** et l'ombre en haut — l'exact contraire des boutons,
+   * qui, eux, sortent. Sans cette inversion, champ et bouton se ressemblent, et
+   * l'on ne sait plus lequel se clique.
+   */
   .field {
     width: 100%;
     min-height: 44px;
     padding: 0.6rem 1rem;
     border-radius: var(--r-sm);
-    background: rgb(3 7 17 / 0.55);
-    backdrop-filter: blur(14px);
+    background: rgb(3 7 17 / 0.4);
+    backdrop-filter: blur(20px) saturate(140%);
     border: 1px solid var(--glass-edge);
-    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.06);
+    box-shadow:
+      inset 0 1px 2px rgb(1 5 14 / 0.6),
+      inset 0 10px 14px -14px rgb(1 5 14 / 0.8),
+      inset 0 -1px 0 rgb(255 255 255 / 0.14);
     color: var(--ink);
     font-family: var(--font-sans);
     /* 16 px : en dessous, iOS zoome automatiquement au focus. */
@@ -1220,7 +3180,6 @@
 
   /* -- Les marques posées sur la fenêtre ---------------------------------- */
 
-  .cadre-rarete,
   .cadre-copies,
   .cadre-malus,
   .cadre-coin {
@@ -1232,17 +3191,76 @@
     line-height: 1.5;
   }
 
-  .cadre-rarete {
-    left: 10.5%;
-    top: 7%;
-    padding: 0.2cqw 1.6cqw;
-    border-radius: 1.4cqw;
-    background: var(--r, #6f8db0);
-    color: #0b1420;
-    font-size: 4.4cqw;
-    box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / 0.5),
-      0 0.4cqw 1.2cqw rgb(0 0 0 / 0.6);
+  /*
+   * Le sceau de rareté, au bas de l'illustration.
+   *
+   * ## Ce qu'il remplace
+   *
+   * Une pastille dans le coin haut-gauche portant le **sigle** — « L », « PC »,
+   * « SR ». Deux défauts, et le second est le vrai :
+   *
+   *  - il fallait connaître le code pour le lire. « PC » ne veut rien dire tant
+   *    qu'on n'a pas vu la légende, et la légende est en bas d'une autre page ;
+   *  - posée sur l'angle, elle mordait le fleuron et les volutes du cadre peint,
+   *    c'est-à-dire précisément l'endroit où le cadre est le plus travaillé. Une
+   *    étiquette collée sur l'ornement.
+   *
+   * ## Où il est, et pourquoi là
+   *
+   * Au bas de la fenêtre d'illustration, sur toute sa largeur. C'est la seule
+   * bande de la carte qui soit à la fois **dans** le dessin et **hors** du
+   * cadre : on lit la rareté sans quitter l'image des yeux, et aucun ornement
+   * n'est recouvert. Le dégradé qui l'assoit ne monte qu'au tiers de sa hauteur
+   * — assez pour porter le texte, pas assez pour manger l'illustration.
+   *
+   * Le nom complet plutôt que le sigle, et les lettres largement espacées : à
+   * cette taille, c'est l'espacement qui rend un petit texte lisible, pas la
+   * graisse.
+   */
+  .cadre-sceau {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 2;
+    padding: 3cqw 2.5cqw 1.6cqw;
+    background: linear-gradient(
+      180deg,
+      transparent 0%,
+      rgb(4 9 18 / 0.5) 42%,
+      rgb(4 9 18 / 0.88) 100%
+    );
+    color: var(--r, #6f8db0);
+    font-family: var(--font-display);
+    font-size: 3.4cqw;
+    font-weight: 900;
+    letter-spacing: 0.2em;
+    line-height: 1;
+    text-align: center;
+    text-transform: uppercase;
+    /* La lueur à la couleur de la rareté : c'est elle qui fait « sceau » plutôt
+       que « légende », et elle décolle le texte du dessin sans caisson. */
+    text-shadow:
+      0 0 1.4cqw color-mix(in srgb, var(--r, #6f8db0) 70%, transparent),
+      0 0.3cqw 0.6cqw rgb(0 0 0 / 0.9);
+  }
+
+  /* Un filet à la couleur de la rareté, sous le texte : il ferme la fenêtre
+     d'illustration par le bas et donne au sceau son assise. */
+  .cadre-sceau::after {
+    content: '';
+    position: absolute;
+    right: 22%;
+    bottom: 0.9cqw;
+    left: 22%;
+    height: 0.35cqw;
+    border-radius: 1cqw;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      color-mix(in srgb, var(--r, #6f8db0) 85%, transparent),
+      transparent
+    );
   }
 
   /*
@@ -1263,9 +3281,21 @@
     box-shadow: 0 0.4cqw 1.2cqw rgb(0 0 0 / 0.6);
   }
 
+  /*
+   * La marque « Malus » est remontée en haut de la fenêtre.
+   *
+   * Elle était posée en bas à droite de l'illustration, c'est-à-dire à
+   * l'emplacement qu'occupe désormais le sceau de rareté : les deux se
+   * chevauchaient, et le sceau d'une légendaire passait sous une étiquette
+   * rouge.
+   *
+   * Elle prend donc le coin **gauche**, libéré par le sigle de rareté. Pas le
+   * droit : c'est celui de la marque « Nouvelle », et une carte peut très bien
+   * être les deux à la fois — on aurait seulement déplacé la collision.
+   */
   .cadre-malus {
-    right: 10.5%;
-    bottom: 28.5%;
+    left: 10.5%;
+    top: 7%;
     padding: 0.2cqw 1.4cqw;
     border-radius: 1.4cqw;
     background: rgb(255 122 122 / 0.94);
@@ -1349,15 +3379,7 @@
     font-weight: 900;
   }
 
-  .cadre-classe {
-    font-size: 3.2cqw;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: rgb(19 28 42 / 0.6);
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-  }
+
 
   .cadre-chiffres {
     display: inline-flex;
@@ -1401,7 +3423,6 @@
     aspect-ratio: 5 / 7.4;
     transform-style: preserve-3d;
     transition: transform 0.6s cubic-bezier(0.2, 0.7, 0.3, 1);
-    cursor: pointer;
   }
 
   .pack-idle {
@@ -1552,7 +3573,6 @@
     color: var(--muted);
     white-space: nowrap;
     background: none;
-    cursor: pointer;
     transition: color 0.18s ease;
   }
 
@@ -1638,184 +3658,6 @@
   }
 
   /* --------------------------------------------------------------------------
-     LES FLOCONS
-     Trois plans de profondeur : les lointains sont petits, flous et lents ;
-     les proches sont gros, nets et rapides. C'est ce décalage qui donne le
-     volume — une seule couche fait « pluie de points ».
-     -------------------------------------------------------------------------- */
-
-  .snow {
-    position: fixed;
-    inset: 0;
-    z-index: 2;
-    pointer-events: none;
-    overflow: hidden;
-  }
-
-  .snow i {
-    position: absolute;
-    top: -8vh;
-    color: var(--frost);
-    font-style: normal;
-    line-height: 1;
-    will-change: transform;
-    animation-name: snow-fall;
-    animation-timing-function: linear;
-    animation-iteration-count: infinite;
-  }
-
-  /* Le balancement latéral est porté par un conteneur interne : on compose
-     ainsi deux animations sans qu'elles se contredisent. */
-  .snow i span {
-    display: block;
-    animation: snow-sway ease-in-out infinite alternate;
-  }
-
-  .snow .far {
-    filter: blur(1.6px);
-    opacity: 0.35;
-  }
-
-  .snow .mid {
-    filter: blur(0.4px);
-    opacity: 0.6;
-  }
-
-  .snow .near {
-    opacity: 0.85;
-    text-shadow: 0 0 12px rgb(190 230 255 / 0.6);
-  }
-
-  @keyframes snow-fall {
-    0% {
-      transform: translate3d(0, -8vh, 0);
-    }
-    100% {
-      transform: translate3d(0, 108vh, 0);
-    }
-  }
-
-  @keyframes snow-sway {
-    0% {
-      transform: translateX(-14px) rotate(-25deg);
-    }
-    100% {
-      transform: translateX(14px) rotate(25deg);
-    }
-  }
-
-  /* --------------------------------------------------------------------------
-     Divers
-     -------------------------------------------------------------------------- */
-
-  .scroll-x {
-    overflow-x: auto;
-    overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: thin;
-  }
-
-  .scroll-x-clean {
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-
-  .scroll-x-clean::-webkit-scrollbar {
-    display: none;
-  }
-
-  .sparkline-avg {
-    stroke-dasharray: 4 5;
-  }
-
-  ::selection {
-    background: rgb(69 189 240 / 0.35);
-    color: var(--frost);
-  }
-
-  :focus-visible {
-    outline: 2px solid var(--ice);
-    outline-offset: 3px;
-    border-radius: 6px;
-  }
-
-  ::-webkit-scrollbar {
-    width: 12px;
-    height: 12px;
-  }
-
-  ::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  ::-webkit-scrollbar-thumb {
-    background: rgb(148 192 236 / 0.18);
-    border-radius: 6px;
-    border: 3px solid transparent;
-    background-clip: content-box;
-  }
-
-  ::-webkit-scrollbar-thumb:hover {
-    background: rgb(148 192 236 / 0.35);
-    background-clip: content-box;
-  }
-
-  /* --------------------------------------------------------------------------
-     Adaptations
-     -------------------------------------------------------------------------- */
-
-  /* Sur mobile, le flou lourd coûte cher en rendu pour un gain invisible sur
-     une petite surface. On l'allège plutôt que de le supprimer. */
-  @media (max-width: 767px) {
-    :root {
-      --blur: 20px;
-      --r-lg: 20px;
-      --r-xl: 24px;
-    }
-
-    .glass-strong {
-      backdrop-filter: blur(22px) saturate(180%);
-    }
-  }
-
-  /* Le verre ne tient pas sans transparence : sur les navigateurs qui n'ont pas
-     backdrop-filter, on repasse sur des surfaces opaques lisibles. */
-  @supports not (backdrop-filter: blur(1px)) {
-    .glass,
-    .glass-soft,
-    .glass-strong,
-    .btn,
-    .field,
-    .badge,
-    .tcg {
-      background: rgb(10 18 32 / 0.94);
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .snow,
-    .reveal-halo {
-      display: none;
-    }
-
-    .aurora span {
-      animation: none;
-    }
-
-    *,
-    *::before,
-    *::after {
-      animation-duration: 0.01ms !important;
-      animation-iteration-count: 1 !important;
-      transition-duration: 0.01ms !important;
-    }
-
-    .reveal {
-      opacity: 1;
-    }
-  }
-
-  /* --------------------------------------------------------------------------
      LA CHAÎNE DE MONTAGNES
      Fixée au bas du viewport, sous le verre et sous les flocons. Chaque plan
      monte à une vitesse différente au défilement : c'est la parallaxe qui donne
@@ -1882,16 +3724,31 @@
       background-size: 700% auto;
     }
   }
-  /* Le voile, sans lequel le site n est pas lisible. Voir . */
+  /*
+   * Le voile, sans lequel le site n'est pas lisible.
+   *
+   * Il a été **éclairci** en passant au verre liquide, et c'est une décision qui
+   * se défend ligne à ligne plutôt qu'au jugé. Un verre ne se voit que par ce
+   * qu'il déforme : posé sur du noir, le meilleur matériau du monde reste un
+   * rectangle gris. Toute la matière est derrière, et le voile la mangeait.
+   *
+   * Ce qui rend le compromis tenable, c'est que la plaque compense elle-même :
+   * elle floute maintenant à 44 px au lieu de 32 et rehausse la luminance de son
+   * fond de 8 %, si bien que le texte **posé sur du verre** gagne en contraste
+   * pendant que le décor s'éclaire. Le voile ne protège donc plus que le texte
+   * posé à même la page — le chapeau des titres et les mentions sous les
+   * tableaux — et c'est sur ces deux-là qu'il reste le plus dense, en haut et
+   * en bas. Le ventre, où il n'y a que du verre, s'ouvre.
+   */
   .mt-voile {
     position: absolute;
     inset: 0;
     background-image: linear-gradient(
       180deg,
-      rgb(3 7 17 / 0.9) 0%,
-      rgb(3 7 17 / 0.8) 24%,
-      rgb(4 10 22 / 0.72) 52%,
-      rgb(3 7 17 / 0.82) 100%
+      rgb(3 7 17 / 0.8) 0%,
+      rgb(3 7 17 / 0.62) 24%,
+      rgb(4 10 22 / 0.46) 52%,
+      rgb(3 7 17 / 0.7) 100%
     );
   }
 
@@ -2623,7 +4480,6 @@
     padding: 0;
     border: 0;
     background: none;
-    cursor: pointer;
   }
 
   .rangee-case-actif .rangee-prise {
@@ -2649,7 +4505,6 @@
     color: var(--texte);
     font-size: 26px;
     line-height: 1;
-    cursor: pointer;
     backdrop-filter: blur(6px);
     transition:
       background 160ms ease,
@@ -2662,7 +4517,9 @@
 
   .rangee-fleche:disabled {
     opacity: 0.3;
-    cursor: default;
+    /* Le curseur de la page, et non celui du système : `default` rendait la
+       flèche blanche de Windows au beau milieu d'un site qui n'en a plus. */
+    cursor: inherit;
   }
 
   .rangee-fleche-avant {

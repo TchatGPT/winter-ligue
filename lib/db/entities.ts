@@ -110,6 +110,14 @@ export interface BoosterOpening {
   boosterId: string;
   pricePaid: number;
   cardIds: string[];
+  /**
+   * Emplacements où le jeton Winter Spin est tombé, et qui ont donc été rejoués.
+   *
+   * Consigné pour que rejouer la requête rende la même ouverture, mise en scène
+   * comprise. Absent des ouvertures antérieures au jeton, d'où le point
+   * d'interrogation.
+   */
+  relances?: number[];
   openedAt: string;
   /** Rejoue la même réponse si la requête est renvoyée (double clic, reprise réseau). */
   idempotencyKey: string;
@@ -241,6 +249,75 @@ export interface BoosterSetting {
   updatedAt: string;
 }
 
+/**
+ * Un affrontement de boosters.
+ *
+ * Deux camps ouvrent **la même liste de sachets**, manche par manche ; celui
+ * dont les cartes totalisent la plus haute somme de raretés remporte **tout**,
+ * les siennes et celles de l'autre.
+ *
+ * Les cartes tirées ne deviennent des exemplaires détenus qu'à la résolution, et
+ * seulement pour le vainqueur. Les créer pour chaque camp puis les transférer
+ * aurait laissé, le temps d'une transaction, des cartes appartenant à quelqu'un
+ * qui ne les gagnera pas — et une reprise après incident aurait pu les figer là.
+ */
+export interface Bataille {
+  id: string;
+  /**
+   * La liste des sachets mis en jeu, dans l'ordre où ils s'ouvriront.
+   *
+   * Une **liste**, et non un sachet répété. Un affrontement n'a pas de raison
+   * d'être monotone : trois Givre et un Everest se jouent très différemment de
+   * quatre Givre — la mise monte d'un coup à la dernière manche, et c'est elle
+   * qui décide. La contrainte est que les deux camps ouvrent exactement la même
+   * liste ; c'est ce qui rend la comparaison honnête.
+   *
+   * Les doublons sont permis : cinq fois le même sachet reste une liste valide,
+   * et c'est ce que faisait l'ancienne forme.
+   */
+  boosterIds: string[];
+  /** Nombre de sachets par camp. Toujours `boosterIds.length` — cache d'affichage. */
+  manches: number;
+  /** Prix payé par chaque camp humain, au moment de la mise. */
+  mise: number;
+  hoteId: string;
+  /** Nul tant que personne n'a rejoint. `BOT` désigne l'adversaire virtuel. */
+  adversaireId: string | null;
+  statut: 'ATTENTE' | 'TERMINEE' | 'ANNULEE';
+  /**
+   * Les cartes tirées par camp, dans l'ordre des manches. Vide tant qu'on attend.
+   *
+   * `relances` liste les emplacements où le jeton Winter Spin est tombé, comme
+   * pour une ouverture ordinaire : c'est ce qui permet de rejouer la bataille à
+   * l'écran, mise en scène comprise, sans que le client puisse rien décider.
+   */
+  tirages: { camp: string; cardIds: string[]; relances: number[]; score: number }[];
+  vainqueurId: string | null;
+  creeeA: string;
+  resolueA: string | null;
+}
+
+/** L'identifiant réservé à l'adversaire virtuel. Aucun joueur ne peut le porter. */
+export const CAMP_BOT = 'BOT';
+
+/**
+ * Un évènement déclenché par un palier de subs, avec sa fenêtre.
+ *
+ * Il est conservé après sa fin : c'est l'historique de ce que le chat a
+ * déclenché, et la modération doit pouvoir le relire. Ce qui compte pour le
+ * jeu, c'est `startsAt` et `endsAt` — voir `evenementsActifs`.
+ */
+export interface EvenementActif {
+  id: string;
+  kind: 'BOOSTERS_MOITIE' | 'FLOCONS_DOUBLES' | 'CARTES_RENFORCEES';
+  label: string;
+  description: string;
+  startsAt: string;
+  endsAt: string;
+  /** Le total de subs qui l'a déclenché. */
+  declencheA: number;
+}
+
 export interface Database {
   /** Incrémentée à chaque migration de forme. */
   version: number;
@@ -261,4 +338,6 @@ export interface Database {
   subEvents: SubEvent[];
   audit: AuditEntry[];
   boosterSettings: BoosterSetting[];
+  batailles: Bataille[];
+  evenements: EvenementActif[];
 }

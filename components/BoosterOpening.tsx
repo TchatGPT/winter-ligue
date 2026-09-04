@@ -1,17 +1,40 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { BoosterPack3D } from '@/components/BoosterPack3D';
+import { RangeeBoosters } from '@/components/RangeeBoosters';
+import { SnowCap } from '@/components/SnowCap';
+import { prechargeSons, reveilleSon } from '@/components/bruitage';
 import { CardDetailModal, type CarteDetail } from '@/components/CardDetailModal';
+import { SpinReel, type CarteRail } from '@/components/SpinReel';
 import { CardTile, Notice, RarityChip, flakes, rarityMeta } from '@/components/ui';
-import { boosterArt, boosterSize } from '@/lib/domain/catalog';
-import { atLeastOnePercent, rarityPercent } from '@/lib/domain/rules';
+import { boosterArt } from '@/lib/domain/catalog';
+import { rarityPercent } from '@/lib/domain/rules';
 import type { BoosterDefinition, Rarity } from '@/lib/domain/types';
+import { COURBE_MESUREE } from '@/lib/spin/courbe';
+import { TitreGlace } from '@/components/TitreGlace';
+import { GlaceCartes, GlaceEpees, GlaceSachet } from '@/components/DessinsGlace';
 
 const RARITY_LADDER: Rarity[] = ['C', 'PC', 'R', 'SR', 'UR', 'L'];
 
+/**
+ * Les taux, du blanc de la commune au vert des évènements pour la
+ * légendaire, en passant par le bleu ciel : une seule échelle de froid, qui
+ * monte avec la rareté. Ce n'est pas la palette des cartes — elle reste à
+ * elles — c'est celle de cette table.
+ */
+const COULEURS_TAUX: Record<Rarity, string> = {
+  C: '#ffffff',
+  PC: '#e4f3ff',
+  R: '#bfe6ff',
+  SR: '#93dcff',
+  UR: '#7cefe2',
+  L: '#63eec4',
+};
+
 export interface ShopBooster extends BoosterDefinition {
   finalPrice: number;
+  /** Le prix hors évènement. Barré à l'écran quand il dépasse `finalPrice`. */
+  basePrice?: number;
 }
 
 export interface CatalogCard {
@@ -27,18 +50,39 @@ export interface CatalogCard {
 
 interface Pulled extends CatalogCard {
   cardId: string;
+  /**
+   * L'exemplaire créé pour cette carte.
+   *
+   * Il était jeté à la réception : la fiche ouverte depuis la révélation ne
+   * pouvait donc rien proposer, alors que c'est le moment où l'on sait le mieux
+   * ce qu'on veut faire d'une carte — la garder, la vendre, ou s'en défaire.
+   *
+   * Vide quand le serveur rejoue une ouverture déjà faite (clé d'idempotence) :
+   * il ne renvoie alors que le contenu, sans recréer d'exemplaires. Les actions
+   * s'effacent dans ce cas plutôt que de porter sur un identifiant absent.
+   */
+  instanceId: string;
   isNew: boolean;
+  /** Mise en vente depuis la révélation : plus ni vendable ni défaussable. */
+  enVente?: boolean;
+  /** Le jeton Winter Spin est tombé sur cet emplacement, et le serveur a rejoué. */
+  relance: boolean;
 }
 
 /**
- * Les trois états de l'écran.
+ * Les quatre états de l'écran.
  *
- * Il y en avait six : `secousse`, `eclat` et `tirage` mettaient en scène le
- * résultat entre l'achat et son affichage. Toute cette couche a été retirée pour
- * être reprise de zéro ; il ne reste que la mécanique, qui elle fonctionne — on
- * clique, le serveur tire, les cartes s'affichent.
+ * Il y en avait six : `secousse` et `eclat` faisaient trembler puis briller le
+ * sachet entre le clic et le tirage. Ils ne reviennent pas. Le préambule durait
+ * 1,06 s et s'ajoutait à l'aller-retour au serveur, qui n'est pas instantané non
+ * plus : le joueur restait deux bonnes secondes devant un sachet qui tremble
+ * après avoir cliqué. Une ponctuation qui dure assez pour qu'on la regarde est
+ * déjà trop longue.
+ *
+ * Reste `tirage`, où le rail met en scène un résultat **déjà acquis** : le
+ * serveur a tiré et débité avant que la première tuile n'existe.
  */
-type Phase = 'repos' | 'achat' | 'reveal';
+type Phase = 'repos' | 'achat' | 'tirage' | 'reveal';
 
 /**
  * Achat et ouverture d'un booster, avec le sachet en 3D.
@@ -52,12 +96,15 @@ export function BoosterOpening({
   boosters,
   balance,
   shopOpen,
+  marketOpen,
   connected,
   catalog,
 }: {
   boosters: ShopBooster[];
   balance: number | null;
   shopOpen: boolean;
+  /** L’hôtel des ventes accepte-t-il de nouvelles ventes ? */
+  marketOpen: boolean;
   connected: boolean;
   catalog: Record<string, CatalogCard>;
 }) {
@@ -72,110 +119,43 @@ export function BoosterOpening({
   const [newBalance, setNewBalance] = useState<number | null>(null);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
+  /*
+   * Trois cents kilo-octets rapatriés et décodés pendant qu'on choisit son
+   * sachet, pour que la première dent ne se fasse pas attendre. Le décodage est
+   * la partie coûteuse, et il ne se fait qu'une fois.
+   */
+  useEffect(() => {
+    void prechargeSons();
+  }, []);
+
+  /** Tout ce que le rail peut montrer en leurre. */
+  const poolRail: CarteRail[] = useMemo(
+    () =>
+      Object.entries(catalog).map(([cardId, c]) => ({
+        cardId,
+        name: c.name,
+        rarity: c.rarity,
+        glyph: c.glyph,
+        description: c.description,
+        power: c.power,
+        nature: c.nature,
+      })),
+    [catalog],
+  );
+
   const booster = useMemo(
     () => boosters.find((b) => b.id === selected) ?? boosters[0],
     [boosters, selected],
-  );
-
-  const rang = Math.max(
-    0,
-    boosters.findIndex((b) => b.id === (booster?.id ?? selected)),
   );
 
   // Déclaré ici, et non plus bas avec le reste de l'ouverture : la rangée
   // s'en sert pour neutraliser la navigation pendant qu'un sachet s'ouvre.
   const busy = phase !== 'repos' && phase !== 'reveal';
 
-  const rangee = useRef<HTMLDivElement>(null);
-  const cases = useRef<(HTMLDivElement | null)[]>([]);
-
-  /**
-   * La rangée déborde-t-elle de sa boîte ?
-   *
-   * C'est ce qui décide de l'affichage des flèches. Une requête de média sur
-   * la largeur de l'écran s'en approcherait, sans jamais tomber juste : ce qui
-   * compte est de savoir si les quatre sachets tiennent côte à côte, ce qui
-   * dépend aussi de la largeur de la fenêtre sur un ordinateur, et du niveau
-   * de zoom.
-   */
-  const [deborde, setDeborde] = useState(false);
-
-  useEffect(() => {
-    const el = rangee.current;
-    if (!el || typeof ResizeObserver === 'undefined') return;
-    const mesure = () => setDeborde(el.scrollWidth > el.clientWidth + 4);
-    mesure();
-    const observateur = new ResizeObserver(mesure);
-    observateur.observe(el);
-    return () => observateur.disconnect();
-  }, [boosters.length]);
-
-  /** Retient un booster, et le fait entendre. */
+  /** Retient un booster. */
   const choisir = useCallback((id: string) => {
-    setSelected((actuel) => {
-      if (actuel === id) return actuel;
-      return id;
-    });
+    setSelected((actuel) => (actuel === id ? actuel : id));
   }, []);
-
-  /**
-   * Le sachet le plus proche du centre de la rangée devient le sachet retenu.
-   *
-   * C'est ce qui rend le balayage tactile équivalent au clic : on pousse la
-   * rangée, et chaque sachet qui passe devant marque son passage — il
-   * s'illumine, et on l'entend. Sur un écran large la rangée ne défile pas, et
-   * ce gestionnaire ne se déclenche jamais.
-   */
-  const onScroll = () => {
-    if (busy) return;
-    const el = rangee.current;
-    if (!el) return;
-    const milieu = el.scrollLeft + el.clientWidth / 2;
-    let plusProche = 0;
-    let ecart = Infinity;
-    cases.current.forEach((c, i) => {
-      if (!c) return;
-      const centre = c.offsetLeft + c.offsetWidth / 2;
-      const d = Math.abs(centre - milieu);
-      if (d < ecart) {
-        ecart = d;
-        plusProche = i;
-      }
-    });
-    const b = boosters[plusProche];
-    if (b) choisir(b.id);
-  };
-
-  /** Amène un sachet au centre de la rangée, quand elle défile. */
-  const defileVers = (i: number) => {
-    const el = rangee.current;
-    const c = cases.current[i];
-    if (!el || !c) return;
-    el.scrollTo({
-      left: c.offsetLeft + c.offsetWidth / 2 - el.clientWidth / 2,
-      behavior: 'smooth',
-    });
-  };
-
-  /** Un cran à gauche ou à droite, par les flèches ou par le clavier. */
-  const decale = useCallback(
-    (pas: number) => {
-      if (busy) return;
-      const cible = Math.max(0, Math.min(boosters.length - 1, rang + pas));
-      const b = boosters[cible];
-      if (!b) return;
-      choisir(b.id);
-      defileVers(cible);
-    },
-    [boosters, busy, choisir, rang],
-  );
-
-  const onKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
-    const pas = event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowRight' ? 1 : 0;
-    if (!pas) return;
-    event.preventDefault();
-    decale(pas);
-  };
   // Les minuteries restantes doivent mourir avec le composant, sinon un
   // changement de page en cours d'achat déclencherait un setState fantôme.
   useEffect(
@@ -187,9 +167,19 @@ export function BoosterOpening({
 
   const affordable = balance !== null && booster !== undefined && balance >= booster.finalPrice;
 
-
   async function open() {
     if (!booster || busy) return;
+
+    /*
+     * Le contexte audio se réveille ici, et nulle part ailleurs.
+     *
+     * Un contexte ouvert hors d'un geste de l'utilisateur naît suspendu : son
+     * horloge ne tourne pas, et tout ce qu'on lui programme s'entasse au même
+     * instant pour partir d'un bloc au réveil. C'était le défaut du « son en
+     * retard ». Ce clic est le geste ; l'appel doit être **avant** le premier
+     * `await`, sans quoi il n'en fait plus partie.
+     */
+    reveilleSon();
 
     setError(null);
     setPulled([]);
@@ -210,10 +200,12 @@ export function BoosterOpening({
       }
 
       const cards: Pulled[] = payload.data.cards.map(
-        (c: { cardId: string; isNew: boolean }) => ({
+        (c: { cardId: string; instanceId?: string; isNew: boolean; relance?: boolean }) => ({
           ...catalog[c.cardId],
           cardId: c.cardId,
+          instanceId: c.instanceId ?? '',
           isNew: c.isNew,
+          relance: c.relance === true,
         }),
       );
 
@@ -221,33 +213,35 @@ export function BoosterOpening({
       setNewBalance(payload.data.balance);
 
       /*
-       * Secousse, éclat, tirage, puis révélation : le rythme fait tout l'effet.
+       * Les cartes sont posées avant le rail, et non après.
        *
-       * Les cartes sont posées avant le tirage et non après : le rail a besoin
-       * de connaître la gagnante pour la placer, et il ne tire rien lui-même.
-       * Tout est déjà décidé par le serveur à cet instant — le carrousel ne met
-       * en scène qu'un résultat acquis.
-       *
-       * Le préambule dure moins d'une demi-seconde. Il en faisait 1,06 — et
-       * comme il s'ajoutait à l'aller-retour au serveur, qui n'est pas
-       * instantané non plus, le joueur restait deux bonnes secondes devant un
-       * sachet qui tremble après avoir cliqué. La secousse et l'éclat doivent
-       * ponctuer le clic, pas faire patienter : dès qu'ils durent assez pour
-       * qu'on les regarde, ils sont trop longs.
-       */
-      /*
-       * Le résultat s'affiche directement.
-       *
-       * Tout est déjà décidé par le serveur à cet instant : `purchaseAndOpen`
-       * a tiré les cartes, débité le prix et renvoyé le tableau. Ce qui vivait
-       * ici — secousse du sachet, éclat, puis carrousel — ne faisait que mettre
-       * en scène un résultat acquis, et sera repris de zéro.
+       * Le rail a besoin de connaître la gagnante pour la placer à son rang : il
+       * ne tire rien lui-même, il révèle. Tout est déjà décidé par le serveur à
+       * cet instant — `purchaseAndOpen` a tiré les cartes, débité le prix et
+       * renvoyé le tableau, dans la même transaction.
        */
       setPulled(cards);
-      setPhase('reveal');
+      setPhase('tirage');
     } catch {
       setError('Le serveur n’a pas répondu. Réessaie dans un instant.');
       setPhase('repos');
+    }
+  }
+
+  /** Rend le message d'erreur du serveur, ou rien si l'action a abouti. */
+  async function envoie(path: string, body: Record<string, unknown>): Promise<string | null> {
+    try {
+      const reponse = await fetch(path, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const charge = await reponse.json();
+      if (!charge.ok) return charge.error?.message ?? 'Action refusée.';
+      if (typeof charge.data?.balance === 'number') setNewBalance(charge.data.balance);
+      return null;
+    } catch {
+      return 'Le serveur n’a pas répondu.';
     }
   }
 
@@ -266,8 +260,37 @@ export function BoosterOpening({
   if (!booster) return null;
 
   return (
-    <div className="space-y-6">
-      {fiche && <CardDetailModal carte={fiche} onClose={() => setFiche(null)} />}
+    <div className="space-y-6 xl:grid xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] xl:items-start xl:gap-6 xl:space-y-0">
+      {fiche && (
+        <CardDetailModal
+          carte={fiche}
+          onClose={() => setFiche(null)}
+          marcheOuvert={marketOpen}
+          onDefausse={async (instanceId) => {
+            const message = await envoie('/api/cards/defausser', { cardInstanceId: instanceId });
+            // La carte n'existe plus : elle quitte la révélation, sans quoi on
+            // pourrait rouvrir sa fiche et la défausser une seconde fois.
+            if (!message) setPulled((liste) => liste.filter((c) => c.instanceId !== instanceId));
+            return message;
+          }}
+          onVente={async (instanceId, prixDepart, dureeMinutes) => {
+            const message = await envoie('/api/market/listings', {
+              cardInstanceId: instanceId,
+              startPrice: prixDepart,
+              buyoutPrice: null,
+              durationMinutes: dureeMinutes,
+            });
+            // Elle reste affichée — on vient de l'ouvrir — mais sous séquestre :
+            // le drapeau empêche de la remettre en vente ou de la défausser.
+            if (!message) {
+              setPulled((liste) =>
+                liste.map((c) => (c.instanceId === instanceId ? { ...c, enVente: true } : c)),
+              );
+            }
+            return message;
+          }}
+        />
+      )}
 
       {!shopOpen && <Notice kind="error">La boutique est fermée par la modération.</Notice>}
       {!connected && (
@@ -276,10 +299,59 @@ export function BoosterOpening({
           de collection.
         </Notice>
       )}
-      {error && <Notice kind="error">{error}</Notice>}
+      {error && (
+        <div className="xl:col-span-2">
+          <Notice kind="error">{error}</Notice>
+        </div>
+      )}
+
+      {/* Comment ça marche, en tête et en travers : trois cartes côte à côte,
+          une par étape, avant la scène. Chacune porte une pastille de glace
+          avec son dessin en glace, un titre, et deux phrases qui disent ce
+          qui se passe et ce que ça change pour le joueur. En colonne sur mobile. */}
+      <section className="glass px-6 py-6 xl:col-span-2">
+        <TitreGlace taille="bloc" eyebrow="En trois étapes" className="mb-5">
+          Comment ça marche
+        </TitreGlace>
+        <ol className="etapes-cartes">
+          {[
+            {
+              titre: 'Choisis ton booster',
+              texte:
+                'Quatre boosters, du Givre à l’Everest. Plus il coûte cher, plus ses cartes ont de chances d’être rares. Le prix se paie en flocons, ceux que tu gagnes sur tes games.',
+              icone: <GlaceSachet className="h-16 w-16" />,
+            },
+            {
+              titre: 'Ouvre-le',
+              texte:
+                'Le serveur tire tes trois cartes et débite le prix avant même que les rouleaux tournent. Rien ne dépend de ton écran : ferme la page, le résultat sera le même.',
+              icone: <GlaceCartes className="h-16 w-16" />,
+            },
+            {
+              titre: 'Garde, joue, vends ou mise',
+              texte:
+                'Les trois cartes vont dans ta réserve. Joue un bonus sur ta game ou un malus sur un adversaire, mets-en une aux enchères, ou mise-la dans un affrontement.',
+              icone: <GlaceEpees className="h-16 w-16" />,
+            },
+          ].map((etape) => (
+            <li key={etape.titre} className="etape-carte glass glass-soft">
+              <span className="etape-icone" aria-hidden="true">
+                {etape.icone}
+              </span>
+              <span className="min-w-0">
+                <span className="block font-display text-[17px] leading-tight font-black tracking-wide text-ink uppercase">
+                  {etape.titre}
+                </span>
+                <span className="mt-1.5 block text-[14px] leading-relaxed text-ink-2">{etape.texte}</span>
+              </span>
+            </li>
+          ))}
+        </ol>
+      </section>
 
       {/* ------------------------- Scène 3D ------------------------------ */}
-      <div className="glass glass-reflet relative overflow-hidden">
+      <div className="glass glass-reflet glass-vitre relative overflow-hidden">
+        <SnowCap radius="var(--r-lg)" seed="boosters" />
         <div
           className="pointer-events-none absolute inset-0 opacity-60"
           style={{
@@ -289,24 +361,35 @@ export function BoosterOpening({
         />
 
         <div className="relative flex min-h-[400px] flex-col items-center justify-center gap-6 px-4 py-10 sm:min-h-[460px]">
-          {phase !== 'reveal' ? (
+          {phase === 'tirage' ? (
+            <SpinReel
+              pool={poolRail}
+              poids={booster.weights}
+              gagnantes={pulled}
+              relances={pulled.map((c) => c.relance)}
+              duree={COURBE_MESUREE.duree}
+              onFini={() => setPhase('reveal')}
+            />
+          ) : phase !== 'reveal' ? (
             <>
               {/* Ce que portaient les fiches supprimées : composition du sachet,
                   rareté garantie et promesse. Ici il n'y en a qu'une, celle du
                   booster choisi — donc lisible au lieu d'être répétée quatre fois. */}
-              <div className="flex flex-col items-center gap-1 text-center">
-                <h2 className="font-display text-2xl leading-none font-black tracking-wide text-ink uppercase">
+              {/*
+                Le nom du sachet est le titre de cette scène, et il se comportait
+                comme une légende : deux fois plus petit que celui de la page,
+                alors que c'est lui qui change quand on fait défiler la rangée.
+                C'est le seul mot qui bouge à l'écran — il mérite la taille d'un
+                titre.
+
+                Les explications tiennent dessous, en une phrase. Elles étaient
+                en trois cadres au-dessus de la page : trois boîtes à lire avant
+                d'arriver aux sachets, pour dire ce qui se dit en une ligne.
+              */}
+              <div className="flex flex-col items-center gap-2 text-center">
+                <TitreGlace taille="page" niveau={2} align="center" givre={false}>
                   {booster.name}
-                </h2>
-                <p className="text-[13px] text-faint">
-                  {booster.slots.effet} effet{booster.slots.effet > 1 ? 's' : ''} +{' '}
-                  {booster.slots.collection} collection · {booster.tagline}
-                </p>
-                {booster.guaranteed && (
-                  <span className="flex items-center gap-1.5 text-[13px] text-faint">
-                    garanti <RarityChip rarity={booster.guaranteed} />
-                  </span>
-                )}
+                </TitreGlace>
               </div>
 
               {/* Les sachets sont posés côte à côte, sans rotation.
@@ -321,124 +404,67 @@ export function BoosterOpening({
 
                   Quand les quatre ne tiennent plus dans la largeur, la rangée
                   défile : au doigt, ou par les deux flèches. */}
-              <div className="rangee-cadre">
-                {deborde && (
-                  <button
-                    type="button"
-                    className="rangee-fleche rangee-fleche-avant"
-                    onClick={() => decale(-1)}
-                    disabled={busy || rang === 0}
-                    aria-label="Booster précédent"
-                  >
-                    <span aria-hidden="true">‹</span>
-                  </button>
-                )}
+              <RangeeBoosters
+                boosters={boosters}
+                selection={booster.id}
+                onSelection={choisir}
+                fige={busy}
+                ouvrable={connected && shopOpen && affordable}
+                onOuvrir={() => void open()}
+              />
 
-                <div
-                  ref={rangee}
-                  className={`rangee ${busy ? 'rangee-gros-plan' : ''}`}
-                  onScroll={onScroll}
-                  onKeyDown={onKeyDown}
-                  role="listbox"
-                  aria-label="Choix du booster"
-                  tabIndex={0}
-                >
-                  {/* La piste porte les sachets et se centre elle-même : un
-                      `justify-content: center` sur la boîte qui défile rogne le
-                      premier sachet dès que le contenu déborde, alors qu'une
-                      marge automatique sur une piste aussi large que son contenu
-                      reste centrée sans jamais rogner. */}
-                  <div className="rangee-piste">
-                    {boosters.map((b, i) => {
-                      const actif = b.id === booster.id;
-                      return (
-                        <div
-                          key={b.id}
-                          ref={(el) => {
-                            cases.current[i] = el;
-                          }}
-                          className={`rangee-case ${actif ? 'rangee-case-actif' : ''}`}
-                          role="option"
-                          aria-selected={actif}
-                        >
-                          <button
-                            type="button"
-                            className="rangee-prise"
-                            disabled={busy}
-                            aria-label={
-                              actif
-                                ? `Ouvrir le booster ${b.name} — double-clic`
-                                : `Choisir le booster ${b.name}`
-                            }
-                            onClick={() => {
-                              if (busy) return;
-                              // Un clic sur le sachet déjà retenu ne fait rien :
-                              // il n'y a qu'un seul geste sur cet objet, le
-                              // double-clic qui l'ouvre. Un simple clic qui
-                              // agirait aussi déclencherait l'ouverture au
-                              // premier des deux.
-                              if (actif) return;
-                              choisir(b.id);
-                              defileVers(i);
-                            }}
-                            onDoubleClick={() => {
-                              // Les mêmes conditions que le bouton : sans ça, un
-                              // double-clic hors connexion ou à découvert partait
-                              // en requête vouée à revenir en erreur.
-                              if (!actif || busy || !connected || !shopOpen || !affordable) return;
-                              void open();
-                            }}
-                          >
-                            <div
-                              className="scene"
-                            >
-                              <BoosterPack3D
-                                name={b.name}
-                                cardCount={boosterSize(b)}
-                                gradient={b.gradient}
-                                art={boosterArt(b.id)}
-                                frozen={busy}
-                                rarete={b.guaranteed}
-                                vignette={!actif}
-                              />
-                            </div>
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {deborde && (
-                  <button
-                    type="button"
-                    className="rangee-fleche rangee-fleche-apres"
-                    onClick={() => decale(1)}
-                    disabled={busy || rang === boosters.length - 1}
-                    aria-label="Booster suivant"
-                  >
-                    <span aria-hidden="true">›</span>
-                  </button>
-                )}
-              </div>
-
-              <div className="flex flex-col items-center gap-2">
-                <button
-                  className="btn btn-ice btn-lg"
-                  disabled={!connected || !shopOpen || !affordable || busy}
-                  onClick={open}
-                >
-                  {busy
+              <div className="flex flex-col items-center gap-3">
+                {/*
+                 * Le prix ne s'affiche que lorsqu'il y a un prix à payer.
+                 *
+                 * Hors connexion, ou à découvert, le bouton dit pourquoi il ne
+                 * marche pas — et une étiquette de prix à côté d'un refus ne
+                 * fait qu'ajouter du bruit à un message qui doit se lire d'un
+                 * coup.
+                 */}
+                {(() => {
+                  const empeche = !connected || !shopOpen || !affordable;
+                  const libelle = busy
                     ? 'Ouverture…'
                     : !connected
                       ? 'Connexion requise'
-                      : !affordable
-                        ? 'Flocons insuffisants'
-                        : `Ouvrir — ❄ ${flakes(booster.finalPrice)}`}
-                </button>
+                      : !shopOpen
+                        ? 'Boutique fermée'
+                        : !affordable
+                          ? 'Flocons insuffisants'
+                          : 'Ouvrir';
+                  return (
+                    <button
+                      className={`btn btn-ice ${empeche || busy ? 'btn-lg' : 'btn-ouvrir'}`}
+                      disabled={empeche || busy}
+                      onClick={open}
+                    >
+                      <span>{libelle}</span>
+                      {!empeche && !busy && (
+                        <span className="btn-ouvrir-prix">
+                          <span aria-hidden="true">❄</span>
+                          {booster.basePrice !== undefined && booster.basePrice > booster.finalPrice && (
+                            <s className="prix-barre">{flakes(booster.basePrice)}</s>
+                          )}
+                          {flakes(booster.finalPrice)}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })()}
+
                 {balance !== null && (
-                  <p className="num text-xs text-faint">
-                    Solde : ❄ {flakes(newBalance ?? balance)}
+                  <p className="solde">
+                    <span>Solde</span>
+                    <span className="solde-valeur">
+                      <span className="text-ice" aria-hidden="true">
+                        ❄
+                      </span>{' '}
+                      {flakes(newBalance ?? balance)}
+                    </span>
+                    {spent !== null && newBalance !== null && (
+                      <span className="solde-delta">−{flakes(spent)}</span>
+                    )}
                   </p>
                 )}
               </div>
@@ -505,7 +531,14 @@ export function BoosterOpening({
                         glyph={card.glyph}
                         power={card.power}
                         nature={card.nature}
-                        onClick={() => setFiche(card)}
+                        dimmed={card.enVente}
+                        onClick={() =>
+                          setFiche({
+                            ...card,
+                            instanceId: card.instanceId || undefined,
+                            enVente: card.enVente,
+                          })
+                        }
                         corner={
                           card.isNew ? (
                             <span
@@ -532,40 +565,132 @@ export function BoosterOpening({
         </div>
       </div>
 
-      {/* --------------------- Taux du booster choisi -------------------- */}
-      <section className="glass">
-        <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-white/10 px-4 py-2.5">
-          <h2 className="font-display text-sm font-black tracking-wider text-ink uppercase">
-            Taux du booster {booster.name}
-          </h2>
-          <span className="text-[13px] text-faint">
-            Taux des {booster.slots.effet} emplacement{booster.slots.effet > 1 ? 's' : ''} d’effet.
-            Les {booster.slots.collection} autres tirent des cartes Joueur et Moment.
-          </span>
-        </div>
-
-        <div className="grid grid-cols-2 divide-line sm:grid-cols-3 lg:grid-cols-6">
-          {RARITY_LADDER.map((rarity) => {
-            const meta = rarityMeta(rarity);
-            const per = rarityPercent(booster.weights, rarity);
-            const atLeast = atLeastOnePercent(booster.weights, rarity, booster.slots.effet);
-            return (
-              <div key={rarity} className="border-t border-white/10 px-3 py-2.5 sm:border-r">
-                <div className="flex items-center gap-1.5">
-                  <RarityChip rarity={rarity} />
-                  <span className="text-[13px] text-muted">{meta.label}</span>
-                </div>
-                <div className="num mt-1 font-display text-lg font-black" style={{ color: meta.color }}>
-                  {per < 0.1 ? per.toFixed(3) : per < 1 ? per.toFixed(2) : per.toFixed(1)} %
-                </div>
-                <div className="num text-[13px] text-faint">
-                  {atLeast < 0.1 ? atLeast.toFixed(3) : atLeast.toFixed(1)} % par booster
-                </div>
+      {/* ------------------------ La colonne du booster -------------------
+          À droite de la scène sur grand écran, dessous sinon. Trois cartes de
+          même largeur : ce qu'est le booster choisi, ses taux, et comment
+          l'ouverture fonctionne. Avant, seule la table des taux était là, en
+          bandeau sous la scène puis seule en haut d'une colonne vide — un
+          meuble dans une pièce sans rien d'autre. */}
+      <aside className="grid gap-4 sm:grid-cols-2 xl:flex xl:flex-col xl:self-stretch">
+        {/* 1. Le booster choisi. */}
+        <section className="glass @container relative overflow-hidden">
+          {(() => {
+            const art = boosterArt(booster.id);
+            return art ? (
+              <div
+                // Fondu vers le bas : le bandeau se dissout dans la plaque au lieu
+                // de s'y arrêter sur une ligne.
+                className="relative h-48 overflow-hidden [mask-image:linear-gradient(180deg,#000_45%,transparent_100%)] @md:h-56"
+              >
+                {/* Le fond : la même illustration, agrandie et floutée, comme
+                    une pochette vue à travers du givre. Elle donne au bandeau
+                    la couleur du booster sans qu'on ait à la choisir. */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={art}
+                  alt=""
+                  className="absolute inset-0 h-full w-full scale-[1.8] object-cover object-[50%_40%] opacity-90 blur-[22px] saturate-[1.3]"
+                  draggable={false}
+                  aria-hidden="true"
+                />
+                {/* Le dégradé : sombre à gauche pour la légende, et vers le bas
+                    pour se fondre dans la plaque. */}
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    background:
+                      'linear-gradient(90deg, rgb(6 14 28 / 0.72) 0%, rgb(6 14 28 / 0.25) 45%, transparent 70%), linear-gradient(180deg, rgb(6 14 28 / 0.15) 0%, transparent 35%, rgb(6 14 28 / 0.55) 100%)',
+                  }}
+                  aria-hidden="true"
+                />
+                {/* Le sachet, net, posé par-dessus. */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={art}
+                  alt=""
+                  className="absolute top-4 right-6 h-[calc(100%-2rem)] w-auto object-contain drop-shadow-[0_14px_22px_rgb(0_0_0/0.65)]"
+                  draggable={false}
+                />
               </div>
-            );
-          })}
-        </div>
-      </section>
+            ) : null;
+          })()}
+          <div className="relative -mt-16 px-4 pb-4">
+            <p className="eyebrow">Booster choisi</p>
+            <TitreGlace taille="bloc">{booster.name}</TitreGlace>
+            <p className="mt-1 text-[16px] text-ink-2">{booster.tagline}</p>
+            <dl className="mt-4 grid grid-cols-2 gap-x-3 gap-y-3 text-[16px]">
+              <div>
+                <dt className="text-[12px] tracking-[0.16em] text-faint uppercase">Contenu</dt>
+                <dd className="mt-0.5 font-display text-[22px] leading-none font-black text-ink">
+                  {booster.slots.effet + booster.slots.collection} cartes
+                </dd>
+              </div>
+              <div>
+                <dt className="text-[12px] tracking-[0.16em] text-faint uppercase">Prix</dt>
+                <dd className="num mt-0.5 font-display text-[22px] leading-none font-black text-ink">
+                  {booster.basePrice !== undefined && booster.basePrice > booster.finalPrice && (
+                    <s className="mr-1.5 text-[15px] font-semibold text-faint">
+                      {flakes(booster.basePrice)}
+                    </s>
+                  )}
+                  ❄ {flakes(booster.finalPrice)}
+                </dd>
+              </div>
+              <div className="col-span-2">
+                <dt className="text-[12px] tracking-[0.16em] text-faint uppercase">Garantie</dt>
+                <dd className="mt-1 text-[16px] text-ink">
+                  {booster.guaranteed ? (
+                    <span className="inline-flex flex-wrap items-center gap-1.5">
+                      Au moins une carte{' '}
+                      <strong style={{ color: rarityMeta(booster.guaranteed).color }}>
+                        {rarityMeta(booster.guaranteed).label}
+                      </strong>{' '}
+                      ou mieux <RarityChip rarity={booster.guaranteed} />
+                    </span>
+                  ) : (
+                    <span className="text-muted">
+                      Aucune : chaque carte est tirée aux taux ci-dessous.
+                    </span>
+                  )}
+                </dd>
+              </div>
+            </dl>
+          </div>
+        </section>
+
+        {/* 2. Les taux, une ligne par rareté. */}
+        {/* Sur grand écran, la table prend la hauteur qui reste, pour finir au
+            niveau de la scène : les lignes se répartissent. */}
+        <section className="glass xl:flex xl:flex-1 xl:flex-col">
+          <div className="border-b border-white/10 px-4 pt-4 pb-3">
+            <TitreGlace taille="bloc" eyebrow={booster.name}>
+              Taux de rareté
+            </TitreGlace>
+          </div>
+          {/* Six lignes, une par rareté : le flocon, le nom, le taux en grand.
+              Rien d'autre — la chance « au moins une par booster » a été
+              affichée dessous, en petit, et retirée : un seul nombre par ligne. */}
+          <ul className="divide-y divide-white/10 xl:flex xl:flex-1 xl:flex-col xl:justify-around">
+            {RARITY_LADDER.map((rarity) => {
+              const meta = rarityMeta(rarity);
+              const per = rarityPercent(booster.weights, rarity);
+              const fmt = (v: number) => (v < 0.1 ? v.toFixed(3) : v < 1 ? v.toFixed(2) : v.toFixed(1));
+              return (
+                <li key={rarity} className="flex items-center gap-3 px-4 py-2.5">
+                  <RarityChip rarity={rarity} taille={26} />
+                  <span className="min-w-0 flex-1 text-[15px] font-semibold text-ink">{meta.label}</span>
+                  <span
+                    className="num shrink-0 font-display text-[24px] leading-none font-black"
+                    style={{ color: COULEURS_TAUX[rarity] }}
+                  >
+                    {fmt(per)} %
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      </aside>
     </div>
   );
 }

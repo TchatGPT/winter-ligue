@@ -8,6 +8,7 @@
 
 import { z } from 'zod';
 import { BOOSTERS, CARDS } from '@/lib/domain/catalog';
+import { MANCHES_MAX, MANCHES_MIN } from '@/lib/domain/bataille';
 import { GAME_LIMITS, MARKET } from '@/lib/domain/rules';
 
 const cardIds = CARDS.map((c) => c.id) as [string, ...string[]];
@@ -93,8 +94,8 @@ export const createListingSchema = z
     cardInstanceId: uuid,
     startPrice: z.number().int().min(MARKET.minPrice).max(MARKET.maxPrice),
     buyoutPrice: z.number().int().min(MARKET.minPrice).max(MARKET.maxPrice).nullable().optional(),
-    durationHours: z.union(
-      MARKET.durationsHours.map((h) => z.literal(h)) as unknown as [
+    durationMinutes: z.union(
+      MARKET.durationsMinutes.map((m) => z.literal(m)) as unknown as [
         z.ZodLiteral<number>,
         z.ZodLiteral<number>,
         ...z.ZodLiteral<number>[],
@@ -113,6 +114,9 @@ export const bidSchema = z.object({
 
 export const buyoutSchema = z.object({ listingId: uuid });
 
+/** Défausse : un seul exemplaire, désigné par son identifiant. */
+export const defausseSchema = z.object({ cardInstanceId: uuid });
+
 export const cancelListingSchema = z.object({ listingId: uuid });
 
 export const marketQuerySchema = z.object({
@@ -121,6 +125,21 @@ export const marketQuerySchema = z.object({
   sort: z.enum(['fin', 'prix_asc', 'prix_desc', 'recent']).default('fin'),
   page: z.coerce.number().int().min(1).max(200).default(1),
 });
+
+/* ------------------------------- Batailles ------------------------------- */
+
+export const createBatailleSchema = z.object({
+  /**
+   * Le panier de sachets, dans l'ordre où ils s'ouvriront.
+   *
+   * Les doublons sont permis — cinq fois le même sachet reste un affrontement
+   * valide. Les bornes viennent de `lib/domain/bataille` ; le service les
+   * revérifie, Zod ne fait que refuser tôt ce qu'il refuserait de toute façon.
+   */
+  boosterIds: z.array(z.enum(boosterIds)).min(MANCHES_MIN).max(MANCHES_MAX),
+});
+
+export const batailleSchema = z.object({ batailleId: uuid });
 
 /* --------------------------------- Admin --------------------------------- */
 

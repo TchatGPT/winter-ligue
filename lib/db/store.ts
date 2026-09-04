@@ -43,6 +43,8 @@ export function emptyDatabase(): Database {
     collectibles: [],
     discoveries: [],
     openings: [],
+    batailles: [],
+    evenements: [],
     effects: [],
     boons: [],
     ledger: [],
@@ -160,6 +162,21 @@ function migrate(db: Partial<Database>): Database {
     collectibles: db.collectibles ?? [],
     discoveries: db.discoveries ?? [],
     openings: db.openings ?? [],
+    /*
+     * Les affrontements d'avant le panier ne portaient qu'un `boosterId` et un
+     * nombre de manches. On les relit comme la liste équivalente — le même
+     * sachet répété — plutôt que de les jeter : leurs tirages et leur vainqueur
+     * restent lisibles, et le tableau des dernières parties ne se vide pas.
+     */
+    batailles: (db.batailles ?? []).map((b) => {
+      const ancien = b as typeof b & { boosterId?: string };
+      if (b.boosterIds?.length) return b;
+      return {
+        ...b,
+        boosterIds: Array.from({ length: b.manches ?? 1 }, () => ancien.boosterId ?? 'givre'),
+      };
+    }),
+    evenements: db.evenements ?? [],
     effects: db.effects ?? [],
     boons: db.boons ?? [],
     ledger: db.ledger ?? [],

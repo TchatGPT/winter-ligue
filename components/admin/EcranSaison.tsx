@@ -47,13 +47,16 @@ export function EcranSaison({
       snowflakesEach: number;
       boostersEach: string[];
       recipients: number;
+      evenements?: { label: string; endsAt: string }[];
     };
+    const evenements = (d.evenements ?? []).map((e) => e.label);
     setDernierVersement(
-      d.milestones.length === 0
+      (d.milestones.length === 0
         ? `+${delta} subs — aucun palier franchi`
         : `${d.milestones.join(', ')} — ${d.snowflakesEach} ❄${
             d.boostersEach.length ? ` + ${d.boostersEach.length} booster(s)` : ''
-          } pour ${d.recipients} joueur(s)`,
+          } pour ${d.recipients} joueur(s)`) +
+        (evenements.length ? ` · évènements ouverts : ${evenements.join(', ')}` : ''),
     );
   }
 

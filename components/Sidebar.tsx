@@ -1,11 +1,10 @@
 import Link from 'next/link';
 import { getSession, playerIdOf } from '@/lib/auth/session';
 import { getStore } from '@/lib/db/store';
-import { SEASON, nextMilestone } from '@/lib/domain/rules';
 import { BottomNav, SidebarNav } from './NavTabs';
 import { SessionBadge } from './SessionBadge';
+import { DeriveNeige } from './GivreCristaux';
 import { IconSnowflake } from './icons';
-import { Meter, flakes } from './ui';
 
 /** Largeur de la colonne. Reprise dans le décalage du contenu, dans `layout.tsx`. */
 export const SIDEBAR_WIDTH = 272;
@@ -23,18 +22,15 @@ export async function Sidebar() {
   const isAdmin = session?.role === 'admin' || session?.role === 'moderateur';
   const isPlayer = playerIdOf(session) !== null;
 
-  const { player, totalSubs } = await getStore().read((db) => {
+  const { player } = await getStore().read((db) => {
     const found = isPlayer ? db.players.find((p) => p.id === session!.sub) : undefined;
     return {
       player: found ? { pseudo: found.pseudo, snowflakes: found.snowflakes } : null,
-      totalSubs: db.config.totalSubs,
     };
   });
 
-  const next = nextMilestone(totalSubs);
-
   const brand = (
-    <Link href="/" className="flex items-center gap-3 no-underline">
+    <Link href="/" className="menu-logo flex items-center gap-3 no-underline">
       <span
         className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl text-ice"
         style={{
@@ -60,42 +56,41 @@ export async function Sidebar() {
     <>
       {/* ---------------- Colonne, à partir de lg ---------------- */}
       <div
-        className="fixed inset-y-0 left-0 z-30 hidden p-4 lg:block"
+        className="fixed inset-y-0 left-0 z-30 hidden lg:block"
         style={{ width: SIDEBAR_WIDTH }}
       >
-        <div className="glass flex h-full flex-col gap-5 overflow-y-auto px-4 py-5">
+        {/* Collé au bord : pas de marge, pas de coin arrondi, une seule arête
+            à droite. Un menu qui flotte dans une marge fait « widget » ; celui-ci
+            est le bord de l'écran. */}
+        {/* Le panneau lui-même est gelé : trois couches de matière sous le
+            contenu — le fond, la texture de givre, le dépôt inégal — et une
+            arête de glace sur le bord droit. Le texte reste net au-dessus. */}
+        <div className="glass menu-colle givre-surface flex h-full flex-col gap-5 overflow-y-auto px-4 py-5">
+          <span className="givre-surface-couches" aria-hidden="true" />
+          {/* Les dégradés des icônes : un trait de verre teinté, clair en haut,
+              bleu en bas ; le logo reçoit en plus un reflet oblique. */}
+          <svg width="0" height="0" className="absolute" aria-hidden="true">
+            <defs>
+              <linearGradient id="icone-deg" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="24">
+                <stop offset="0" stopColor="#e8f4ff" />
+                <stop offset="1" stopColor="#7ba8cc" />
+              </linearGradient>
+              <linearGradient id="icone-deg-logo" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="24" y2="24">
+                <stop offset="0" stopColor="#d6ecff" />
+                <stop offset="0.42" stopColor="#ffffff" />
+                <stop offset="0.5" stopColor="#c2e2ff" />
+                <stop offset="1" stopColor="#6f9fc6" />
+              </linearGradient>
+            </defs>
+          </svg>
+          <DeriveNeige />
           {brand}
 
-          <div className="border-t border-white/8 pt-4">
+          <div className="pt-1">
             <SidebarNav isAdmin={isAdmin} isPlayer={isPlayer} />
           </div>
 
-          {/* Le compteur de subs vit ici : c'est l'information qu'on regarde
-              le plus souvent pendant un live, elle doit rester à l'écran. */}
-          {next && (
-            <div className="mt-auto rounded-2xl border border-white/10 bg-white/4 px-3.5 py-3">
-              <div className="flex items-baseline justify-between gap-2">
-                <span className="font-display text-[12px] font-bold tracking-[0.16em] text-violet uppercase">
-                  Subs
-                </span>
-                <span className="num font-display text-lg leading-none font-black text-ink">
-                  {flakes(totalSubs)}
-                </span>
-              </div>
-              <div className="mt-2">
-                <Meter ratio={next.progress} color="#a98cff" />
-              </div>
-              <p className="mt-2 text-[12px] leading-snug text-faint">
-                {next.milestone.label} dans{' '}
-                <strong className="text-ink-2">{next.remaining}</strong>
-              </p>
-            </div>
-          )}
-
-          <div className="space-y-3 border-t border-white/8 pt-4">
-            <div className="text-[11px] tracking-[0.18em] text-faint uppercase">
-              {SEASON.edition}
-            </div>
+          <div className="mt-auto">
             <SessionBadge
               role={session?.role ?? null}
               pseudo={player?.pseudo ?? null}
@@ -109,7 +104,10 @@ export async function Sidebar() {
       {/* ---------------- Entête, sous lg ---------------- */}
       <header className="sticky top-0 z-30 px-3 pt-3 sm:px-5 sm:pt-4 lg:hidden">
         <div className="glass flex items-center gap-3 px-4 py-3">
-          <Link href="/" className="flex shrink-0 items-center gap-2.5 no-underline">
+          {/* `min-w-0` sur le lien, et non `shrink-0` : c'est le titre qui doit
+              céder quand la place manque, jamais la pastille de session — le
+              solde et la sortie sont les deux seules commandes de cette barre. */}
+          <Link href="/" className="flex min-w-0 items-center gap-2.5 no-underline">
             <span
               className="grid h-10 w-10 place-items-center rounded-2xl text-ice"
               style={{
@@ -120,7 +118,9 @@ export async function Sidebar() {
             >
               <IconSnowflake className="h-5 w-5" />
             </span>
-            <span className="font-display text-xl font-black tracking-tight text-ink">
+            {/* Sous 380 px, le blason suffit : il est déjà l'accès à l'accueil,
+                et le nom du site poussait la pastille de session hors du cadre. */}
+            <span className="truncate font-display text-xl font-black tracking-tight text-ink max-[379px]:sr-only">
               WINTER<span className="text-ice"> LIGUE</span>
             </span>
           </Link>

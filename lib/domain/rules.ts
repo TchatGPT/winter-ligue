@@ -80,6 +80,16 @@ export const ECONOMY = {
   participation: 150,
   /** Dotation de départ à l'inscription : de quoi ouvrir deux Givre. */
   welcomeGrant: 400,
+  /**
+   * Ce que rapporte une carte défaussée. **Un flocon**, et c'est voulu.
+   *
+   * La défausse n'est pas une source de revenu : c'est une sortie pour les
+   * doublons dont personne ne veut, y compris au marché. Un gain réel en ferait
+   * un rendement — on ouvrirait des sachets pour défausser — et rendrait le prix
+   * plancher du marché inutile. Un flocon dit « ça vaut quelque chose, mais pas
+   * grand-chose », ce qui est exactement le message.
+   */
+  defausse: 1,
 } as const;
 
 /* --------------------------- Subs Twitch --------------------------------- */
@@ -153,6 +163,131 @@ export const SUBS = {
   /** Incréments proposés dans le panneau de modération. */
   adminSteps: [1, 5, 10, 25, 50, 100] as const,
 } as const;
+
+/* ----------------------- Évènements de subs ------------------------------ */
+
+/**
+ * Ce qu'un évènement change, le temps qu'il dure.
+ *
+ *  - `BOOSTERS_MOITIE`   — les boosters à moitié prix ;
+ *  - `FLOCONS_DOUBLES`   — les gains de game doublés ;
+ *  - `CARTES_RENFORCEES` — les points des cartes jouées majorés de moitié.
+ */
+export type EvenementKind = 'BOOSTERS_MOITIE' | 'FLOCONS_DOUBLES' | 'CARTES_RENFORCEES';
+
+export interface EvenementSubs {
+  /** Tous les N subs cumulés. */
+  every: number;
+  kind: EvenementKind;
+  dureeMinutes: number;
+  label: string;
+  /** La phrase entière, pour le bandeau et les règles. */
+  description: string;
+  /** Le même effet en trois mots, pour une carte : « Boosters −50 % ». */
+  resume: string;
+}
+
+/**
+ * Les paliers qui déclenchent un évènement, et ce qu'ils déclenchent.
+ *
+ * Ils s'ajoutent aux paliers de flocons, ils ne les remplacent pas : un palier
+ * de flocons donne quelque chose à garder, un évènement donne quelque chose à
+ * **faire maintenant**. C'est pour ça que les fenêtres sont courtes — une ou
+ * deux heures, le temps d'un live. Un évènement de vingt-quatre heures serait
+ * un réglage, pas un évènement.
+ *
+ * Tous s'appliquent à tout le monde. Ils ne versent rien à personne, ils
+ * changent les règles pendant leur fenêtre — c'est ce qui les garde du bon côté
+ * de l'invariant anti-pay-to-win.
+ */
+export const EVENEMENTS_SUBS: readonly EvenementSubs[] = [
+  {
+    every: 50,
+    kind: 'BOOSTERS_MOITIE',
+    dureeMinutes: 120,
+    label: 'Braderie',
+    description: 'Tous les boosters à moitié prix pendant deux heures.',
+    resume: 'Boosters −50 %',
+  },
+  {
+    every: 100,
+    kind: 'FLOCONS_DOUBLES',
+    dureeMinutes: 60,
+    label: 'Avalanche',
+    description: 'Les flocons de chaque game sont doublés pendant une heure.',
+    resume: 'Flocons ×2',
+  },
+  {
+    every: 200,
+    kind: 'CARTES_RENFORCEES',
+    dureeMinutes: 60,
+    label: 'Blizzard',
+    description: 'Les cartes jouées valent une fois et demie leurs points pendant une heure.',
+    resume: 'Cartes ×1,5',
+  },
+  {
+    every: 500,
+    kind: 'FLOCONS_DOUBLES',
+    dureeMinutes: 120,
+    label: 'Tempête',
+    description: 'Les flocons de chaque game sont doublés pendant deux heures.',
+    resume: 'Flocons ×2',
+  },
+];
+
+/** Les facteurs qu'un évènement applique. Un seul par genre, jamais cumulés. */
+export const FACTEURS_EVENEMENTS: Record<EvenementKind, number> = {
+  BOOSTERS_MOITIE: 0.5,
+  FLOCONS_DOUBLES: 2,
+  CARTES_RENFORCEES: 1.5,
+};
+
+/** Les évènements dont un palier a été franchi entre deux totaux de subs. */
+export function evenementsDeclenches(from: number, to: number): EvenementSubs[] {
+  const declenches: EvenementSubs[] = [];
+  for (const e of EVENEMENTS_SUBS) {
+    const avant = Math.floor(from / e.every);
+    const apres = Math.floor(to / e.every);
+    for (let i = 0; i < apres - avant; i += 1) declenches.push(e);
+  }
+  return declenches;
+}
+
+/**
+ * Le facteur en vigueur pour un genre, à partir des genres actifs.
+ *
+ * Pas de cumul : plusieurs évènements du même genre donnent le facteur du
+ * genre, une fois. Deux braderies ne font pas des boosters à un quart du prix.
+ */
+export function facteurEvenement(kind: EvenementKind, actifs: readonly EvenementKind[]): number {
+  return actifs.includes(kind) ? FACTEURS_EVENEMENTS[kind] : 1;
+}
+
+/**
+ * Le prochain évènement à tomber, celui dont le palier est le plus proche.
+ *
+ * À égalité de distance, le plus grand palier gagne : c'est lui qu'on annonce,
+ * les autres tombent de toute façon en même temps.
+ */
+export function prochainEvenement(totalSubs: number): {
+  evenement: EvenementSubs;
+  remaining: number;
+  progress: number;
+} | null {
+  let meilleur: { evenement: EvenementSubs; remaining: number; progress: number } | null = null;
+  for (const e of EVENEMENTS_SUBS) {
+    const dans = e.every - (totalSubs % e.every);
+    const candidat = { evenement: e, remaining: dans, progress: (totalSubs % e.every) / e.every };
+    if (
+      !meilleur ||
+      dans < meilleur.remaining ||
+      (dans === meilleur.remaining && e.every > meilleur.evenement.every)
+    ) {
+      meilleur = candidat;
+    }
+  }
+  return meilleur;
+}
 
 /** Prochain palier atteint pour chaque type, à partir d'un total de subs. */
 export function nextMilestone(
@@ -229,6 +364,51 @@ export const RARITY_WEIGHTS_BASE: Record<Rarity, number> = {
 /** Total attendu de n'importe quelle table de poids. */
 export const WEIGHT_TOTAL = 100_000;
 
+/**
+ * Le jeton **Winter Spin** : l'emplacement se rejoue, avec de meilleurs taux.
+ *
+ * ## Ce que c'est, et ce que ce n'est pas
+ *
+ * Ce n'est **pas une carte**. Le joueur ne le garde pas, il n'entre pas dans la
+ * collection, il ne se revend pas, il n'a pas d'effet en jeu. C'est un résultat
+ * d'emplacement, consommé dans l'instant par un second tirage — d'où son absence
+ * du catalogue et de `applyEffect`.
+ *
+ * C'est donc compatible avec l'invariant anti-pay-to-win : rien de permanent ne
+ * s'acquiert ici, et la carte finalement obtenue reste soumise à
+ * `CARD_IMPACT_CAP` comme toutes les autres.
+ *
+ * ## Les deux nombres
+ *
+ * `chance` est tirée **avant** la rareté, et séparément d'elle. C'est ce qui
+ * permet de la régler sans toucher aux tables de raretés, qui doivent sommer
+ * exactement à `WEIGHT_TOTAL` — y glisser le jeton aurait obligé à retirer son
+ * poids à une rareté, et le taux affiché sous le sachet serait devenu faux.
+ *
+ * Quatre-vingts sur cent mille, soit 0,08 % par emplacement d'effet : un booster
+ * Givre sur 1 250, un Everest sur 420. Assez rare pour qu'on s'en souvienne,
+ * assez fréquent pour que la communauté l'ait déjà vu.
+ *
+ * `weights` sert au second tirage, et **ne remplace jamais** la table du booster
+ * ailleurs. Soixante pour cent d'ultra rare ou de légendaire, contre moins d'un
+ * pour cent d'ordinaire : c'est ce qui fait du jeton un évènement. L'effet sur le
+ * taux global de légendaires reste négligeable — 0,08 % × 20 % — précisément
+ * parce que le jeton est rare.
+ */
+export const WINTER_SPIN = {
+  /** Chance par emplacement d'effet, sur `WEIGHT_TOTAL`. */
+  chance: 80,
+  /** La table du second tirage. Somme exacte de `WEIGHT_TOTAL`. */
+  weights: {
+    C: 0,
+    PC: 0,
+    R: 15_000,
+    SR: 25_000,
+    UR: 40_000,
+    L: 20_000,
+  } as Record<Rarity, number>,
+} as const;
+
 /** Probabilité d'une rareté, en pourcentage, pour l'affichage. */
 export function rarityPercent(weights: Record<Rarity, number>, rarity: Rarity): number {
   return (weights[rarity] / WEIGHT_TOTAL) * 100;
@@ -290,8 +470,15 @@ export const MARKET = {
   minIncrementRate: 0.05,
   /** Une enchère dans cette fenêtre finale repousse la clôture d'autant. */
   antiSnipeWindowMs: 60_000,
-  /** Durées de vente proposées au vendeur, en heures. */
-  durationsHours: [1, 6, 12, 24, 48, 72] as const,
+  /**
+   * Durées de vente proposées au vendeur, **en minutes**.
+   *
+   * En heures jusqu'ici, ce qui interdisait tout ce qui dure moins d'une heure.
+   * Or c'est précisément ce qu'on veut pendant un live : une vente de dix
+   * minutes se conclut à l'antenne, sous les yeux du chat, quand une vente de
+   * vingt-quatre heures se conclut pendant que tout le monde dort.
+   */
+  durationsMinutes: [10, 30, 60, 240, 360, 720, 1440] as const,
   /** Ventes actives simultanées par joueur. */
   maxActiveListingsPerPlayer: 10,
   /** Profondeur de la courbe de prix affichée. */
@@ -300,4 +487,9 @@ export const MARKET = {
   pageSize: 48,
 } as const;
 
-export type MarketDuration = (typeof MARKET.durationsHours)[number];
+export type MarketDuration = (typeof MARKET.durationsMinutes)[number];
+
+/** Une durée de vente, telle qu'on l'écrit : « 10 min », « 4 h », « 24 h ». */
+export function libelleDuree(minutes: number): string {
+  return minutes < 60 ? `${minutes} min` : `${minutes / 60} h`;
+}

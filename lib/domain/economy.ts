@@ -49,6 +49,12 @@ export type LedgerReason =
   | 'ACHAT_MARCHE'
   | 'ENCHERE_BLOQUEE'
   | 'ENCHERE_REMBOURSEE'
+  /** Mise engagée dans une bataille de boosters, débitée à la création ou à l'entrée. */
+  | 'MISE_BATAILLE'
+  /** Mise rendue quand une bataille est annulée faute d'adversaire. */
+  | 'REMBOURSEMENT_BATAILLE'
+  /** Le flocon rendu par une carte défaussée. */
+  | 'DEFAUSSE_CARTE'
   | 'AJUSTEMENT_ADMIN';
 
 /**

@@ -2,9 +2,6 @@ import type { Metadata, Viewport } from 'next';
 import { Barlow, Barlow_Condensed } from 'next/font/google';
 import { MountainRange } from '@/components/MountainRange';
 import { Sidebar, SIDEBAR_WIDTH } from '@/components/Sidebar';
-import { SiteFooter } from '@/components/SiteFooter';
-import { Snowfall } from '@/components/Snowfall';
-import { SEASON } from '@/lib/domain/rules';
 import './globals.css';
 
 const barlow = Barlow({
@@ -52,9 +49,11 @@ export const viewport: Viewport = {
  *
  * L'empilement est volontaire, du fond vers la surface :
  *   0. l'aurore et les montagnes — ce que le verre laisse passer,
- *   1. le grain, qui casse les dégradés,
- *   2. la neige,
- *   3. le contenu, en verre translucide.
+ *   1. le contenu, en verre translucide.
+ *
+ * Il y avait un grain entre les deux, une trame de points à 3 % d'opacité
+ * censée casser les dégradés. Elle se voyait comme une grille sur les fonds
+ * sombres, et elle est partie.
  */
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -67,8 +66,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <span className="a4" />
         </div>
         <MountainRange />
-        <div className="grain" aria-hidden="true" />
-        <Snowfall />
 
         <Sidebar />
 
@@ -80,11 +77,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           style={{ ['--sidebar' as string]: `${SIDEBAR_WIDTH}px` }}
         >
           <div className="flex flex-1 flex-col lg:pl-[var(--sidebar)]">
-            <main className="relative z-10 mx-auto w-full max-w-[1320px] flex-1 px-4 pt-6 pb-16 sm:px-6 sm:pt-8 lg:pt-6">
+            {/* La réserve du bas doit dégager la barre de navigation flottante,
+                qui fait 78 px du bord de l'écran. Elle était à 64 : le bouton
+                d'ouverture et le solde passaient dessous, en bas de la page des
+                boosters. Sur grand écran la barre n'existe pas, et la réserve
+                redevient une simple marge. */}
+            <main className="relative z-10 mx-auto w-full max-w-[1880px] flex-1 px-4 pt-6 pb-28 sm:px-6 sm:pt-8 lg:px-8 lg:pt-6 lg:pb-16 2xl:px-10">
               {children}
             </main>
 
-            <SiteFooter season={`${SEASON.name} — ${SEASON.edition}`} />
           </div>
         </div>
       </body>

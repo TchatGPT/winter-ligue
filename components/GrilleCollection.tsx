@@ -63,7 +63,7 @@ export function GrilleCollection({ entrees }: { entrees: EntreeCollection[] }) {
         {visibles.length > 1 ? 's' : ''}
       </FiltreRarete>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8">
         {visibles.map((entry) => (
           <CardTile
             key={entry.cardId}

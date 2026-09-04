@@ -21,6 +21,7 @@ import { crossedMilestones, nextMilestone, SUBS } from '@/lib/domain/rules';
 import { secureInt } from '@/lib/domain/rng';
 import { audit, credit } from './ledger';
 import { recomputePlayerGames } from './league';
+import { declencheEvenements } from '@/lib/services/evenements';
 
 export class SubError extends Error {
   constructor(
@@ -36,6 +37,8 @@ export interface AddSubsResult {
   totalSubs: number;
   /** Libellés des paliers franchis, dans l'ordre. */
   milestones: string[];
+  /** Les évènements ouverts par cette saisie, avec leur heure de fin. */
+  evenements: { label: string; endsAt: string }[];
   snowflakesEach: number;
   boostersEach: string[];
   recipients: number;
@@ -83,7 +86,9 @@ export function addSubs(db: Database, delta: number, actor: string): AddSubsResu
 
       // Chaque joueur tire son propre booster : deux joueurs n'obtiennent pas
       // le même contenu, et le tirage reste serveur.
-      const cardIds = rollBooster(booster);
+      // Les paliers de subs ne mettent rien en scène : seules les cartes
+      // comptent, et le jeton Winter Spin a déjà été résolu par le tirage.
+      const { cards: cardIds, relances } = rollBooster(booster);
       let discoveredSomething = false;
 
       for (const cardId of cardIds) {
@@ -118,6 +123,7 @@ export function addSubs(db: Database, delta: number, actor: string): AddSubsResu
         boosterId,
         pricePaid: 0,
         cardIds,
+        relances,
         openedAt: new Date().toISOString(),
         idempotencyKey: `subs-${to}-${boosterId}-${player.id}`,
       });
@@ -127,6 +133,11 @@ export function addSubs(db: Database, delta: number, actor: string): AddSubsResu
   }
 
   const milestones = crossed.map((m) => m.label);
+
+  // Les évènements se déclenchent sur les mêmes franchissements, dans la même
+  // transaction : un palier ne peut pas verser ses flocons sans ouvrir sa
+  // fenêtre, ni l'inverse.
+  const evenements = declencheEvenements(db, from, to);
 
   if (crossed.length > 0) {
     db.subEvents.push({
@@ -146,12 +157,15 @@ export function addSubs(db: Database, delta: number, actor: string): AddSubsResu
     actor,
     'SUBS_AJOUTES',
     null,
-    `+${delta} subs (total ${to})${milestones.length ? ` — ${milestones.join(', ')}` : ''}`,
+    `+${delta} subs (total ${to})${milestones.length ? ` — ${milestones.join(', ')}` : ''}${
+      evenements.length ? ` — évènements : ${evenements.map((e) => e.label).join(', ')}` : ''
+    }`,
   );
 
   return {
     totalSubs: to,
     milestones,
+    evenements: evenements.map((e) => ({ label: e.label, endsAt: e.endsAt })),
     snowflakesEach,
     boostersEach,
     recipients: recipients.length,

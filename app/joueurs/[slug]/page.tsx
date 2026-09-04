@@ -4,6 +4,7 @@ import { CardTile, EmptyState, StatTile, flakes } from '@/components/ui';
 import { getCard } from '@/lib/domain/catalog';
 import { getPublicProfile } from '@/lib/services/profile';
 import { shortDateTime } from '@/lib/format';
+import { TitreGlace } from '@/components/TitreGlace';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,9 +42,9 @@ export default async function ProfilJoueurPage({ params }: { params: Promise<{ s
           {profile.pseudo.slice(0, 2).toUpperCase()}
         </div>
         <div className="min-w-0 flex-1">
-          <h1 className="font-display text-2xl font-black uppercase tracking-wide text-ink">
+          <TitreGlace taille="bloc" niveau={1}>
             {profile.pseudo}
-          </h1>
+          </TitreGlace>
           <div className="mt-1 flex flex-wrap gap-1.5">
             {profile.shielded && <span className="badge border-ice/50 text-ice">🛡 Protégé</span>}
           </div>
@@ -83,10 +84,11 @@ export default async function ProfilJoueurPage({ params }: { params: Promise<{ s
         />
       </section>
 
+      <div className="grid gap-6 xl:grid-cols-2 xl:items-start">
       <section>
-        <h2 className="mb-3 font-display text-xl font-black uppercase tracking-wide text-ink">
+        <TitreGlace taille="bloc" className="mb-3">
           Historique des games
-        </h2>
+        </TitreGlace>
         {profile.games.length === 0 ? (
           <EmptyState title="Aucune game enregistrée" />
         ) : (
@@ -162,15 +164,13 @@ export default async function ProfilJoueurPage({ params }: { params: Promise<{ s
 
       <section>
         <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
-          <h2 className="font-display text-xl font-black uppercase tracking-wide text-ink">
-            Collection
-          </h2>
+          <TitreGlace taille="bloc">Collection</TitreGlace>
           <span className="text-xs text-muted">
             {discovered.length} / {profile.collection.length} cartes découvertes ·{' '}
             <span className="num">❄ {flakes(profile.snowflakes)}</span>
           </span>
         </div>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8 2xl:grid-cols-10">
           {profile.collection.map((entry) => (
             <CardTile
               key={entry.cardId}
@@ -183,6 +183,7 @@ export default async function ProfilJoueurPage({ params }: { params: Promise<{ s
           ))}
         </div>
       </section>
+      </div>
     </div>
   );
 }
