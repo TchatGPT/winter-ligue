@@ -4,9 +4,10 @@ import { useMemo, useState } from 'react';
 import { useAction } from '@/components/admin/action';
 import { Bloc, Ecran } from '@/components/admin/Cadre';
 import { CardFrame } from '@/components/CardFrame';
+import { DestinCarte } from '@/components/DestinCarte';
 import { RailPack, type CarteRailPack } from '@/components/RailPack';
 import { prechargeSons, reveilleSon } from '@/components/bruitage';
-import { EmptyState, Notice, RarityChip, flakes, rarityMeta } from '@/components/ui';
+import { EmptyState, RarityChip, flakes, rarityMeta } from '@/components/ui';
 import { RARITIES, type PackId, type Rarity } from '@/lib/domain/types';
 import { libelleMultiplicateur, WEIGHT_TOTAL } from '@/lib/domain/rules';
 import type { OuvertureVue, PackDuVue } from '@/lib/services/packs';
@@ -229,6 +230,7 @@ export function EcranPacks({
                 <span className="font-display font-bold" style={{ color: rarityMeta(o.rarity).color }}>
                   {o.glyph} {o.nom}
                 </span>
+                {o.action && <span className="text-xs text-muted">{o.action}</span>}
                 <span className="text-ink-2">
                   →{' '}
                   {o.pseudo ? (
@@ -236,9 +238,14 @@ export function EcranPacks({
                   ) : o.tous ? (
                     'toute la ligue'
                   ) : (
-                    o.beneficiaires.join(' et ')
+                    o.beneficiaires.join(', ')
                   )}
                 </span>
+                {o.effets.length > 0 && !o.tous && (
+                  <span className="text-xs text-faint">
+                    {o.effets.map((e) => (o.beneficiaires.length > 1 ? `${e.pseudo} : ${e.resultat}` : e.resultat)).join(' · ')}
+                  </span>
+                )}
                 {o.chance > 0 && (
                   <span className="num text-xs text-faint">{libelleMultiplicateur(o.chance)}</span>
                 )}
@@ -352,20 +359,13 @@ function Scene({
             >
               {o.nom}
             </h3>
-            <p className="mt-2 text-[15px] text-ink-2">{o.description}</p>
-            <Notice kind={o.nature === 'malus' ? 'error' : 'success'}>
-              {o.pseudo ? (
-                <>
-                  Posée sur la prochaine game de <strong>{o.pseudo}</strong>.
-                </>
-              ) : o.tous ? (
-                <>Posée sur la prochaine game de <strong>chaque joueur actif</strong>.</>
-              ) : (
-                <>
-                  Posée sur la prochaine game de <strong>{o.beneficiaires.join(' et ')}</strong>.
-                </>
-              )}
-            </Notice>
+            {o.action && (
+              <p className="mt-2 font-display text-[15px] font-bold tracking-wide text-ink uppercase">
+                {o.action}
+              </p>
+            )}
+            <p className="mt-1.5 mb-2 text-[15px] text-ink-2">{o.description}</p>
+            <DestinCarte o={o} />
           </div>
         </div>
       )}

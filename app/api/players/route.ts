@@ -43,6 +43,8 @@ export async function POST(request: Request): Promise<NextResponse> {
         activisionId: g.body.activisionId ?? null,
         snowflakes: 0,
         subsOfferts: 0,
+        creneauxBonus: 0,
+        immuniseJusqua: null,
         joinedAt: new Date().toISOString(),
         active: true,
         role: 'joueur' as const,

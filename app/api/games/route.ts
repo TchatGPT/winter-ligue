@@ -8,8 +8,8 @@ import type { Game } from '@/lib/db/entities';
 import { getStore, newId } from '@/lib/db/store';
 import { rewardForGame } from '@/lib/domain/economy';
 import { LIMITS } from '@/lib/security/ratelimit';
-import { appliqueCartesEnAttente } from '@/lib/services/effects';
-import { recomputeGame } from '@/lib/services/league';
+import { appliqueCartesEnAttente, regleCartesSansAttendre } from '@/lib/services/effects';
+import { gamesComptees, limiteDe, recomputeGame } from '@/lib/services/league';
 import { audit, credit } from '@/lib/services/ledger';
 import { verifieFinisseur } from '@/lib/services/packs';
 import { facteurGain } from '@/lib/services/evenements';
@@ -25,6 +25,9 @@ export const dynamic = 'force-dynamic';
  * bonus — ceux-ci ne peuvent naître que d'une carte de pack posée sur ce
  * joueur, et c'est **ici** qu'elle s'applique, puis se consomme. Le score et
  * les flocons gagnés sont calculés ici.
+ *
+ * La limite de games est celle de la saison, plus les créneaux qu'une carte
+ * « Game supplémentaire » a donnés à ce joueur.
  */
 export async function POST(request: Request): Promise<NextResponse> {
   const g = await guard(request, {
@@ -42,8 +45,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       // La streameuse ne joue pas : quoi que propose l'écran, aucune game.
       if (estLaStreameuse(player, chaineDeLaLigue())) return { error: 'STREAMEUSE' as const };
 
-      const played = db.games.filter((x) => x.playerId === player.id && !x.skipped).length;
-      if (played >= db.config.maxGamesPerPlayer) return { error: 'LIMITE' as const };
+      if (gamesComptees(db, player.id) >= limiteDe(db, player)) return { error: 'LIMITE' as const };
 
       const now = new Date().toISOString();
       const game: Game = {
@@ -62,8 +64,8 @@ export async function POST(request: Request): Promise<NextResponse> {
       db.games.push(game);
       recomputeGame(db, game);
 
-      // Les cartes posées sur ce joueur tombent maintenant, et disparaissent.
-      const cartes = appliqueCartesEnAttente(db, game);
+      // La carte active de ce joueur tombe maintenant, et disparaît.
+      const cartes = appliqueCartesEnAttente(db, game, { meilleurKills: g.body.meilleurKills ?? null });
 
       const reward = rewardForGame(game.kills, game.placement);
       // Une Manne double les flocons de cette game ; un évènement « flocons
@@ -75,17 +77,23 @@ export async function POST(request: Request): Promise<NextResponse> {
       // La dernière game de la saison vaut un pack Finisseur, mis en file.
       const finisseur = verifieFinisseur(db, player.id);
 
+      // Ce qui n'attend pas une nouvelle game se règle : une carte qui relève
+      // une game déjà jouée, et, si c'était sa dernière game, celles qui
+      // attendaient encore une prochaine.
+      const suite = regleCartesSansAttendre(db, player.id);
+      const toutes = [...cartes.cartes, ...suite];
+
       audit(
         db,
         g.session?.sub ?? 'admin',
         'GAME_ENREGISTREE',
         player.id,
         `${game.kills} kills — ${game.score} pts${
-          cartes.cartes.length ? ` — cartes : ${cartes.cartes.map((c) => c.nom).join(', ')}` : ''
+          toutes.length ? ` — cartes : ${toutes.map((c) => `${c.nom} (${c.resultat})`).join(', ')}` : ''
         }`,
       );
 
-      return { game, reward, payout, cartes: cartes.cartes, finisseur: finisseur !== null };
+      return { game, reward, payout, cartes: toutes, finisseur: finisseur !== null };
     });
 
     if ('error' in result) {

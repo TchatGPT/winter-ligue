@@ -327,6 +327,11 @@ function Pseudo({ row }: { row: RankingRow }) {
       >
         {row.pseudo}
       </Link>
+      {row.immunise && (
+        <span className="pastille-immunite" title="Immunisé : aucun malus ne touche ses games">
+          Immunisé
+        </span>
+      )}
     </span>
   );
 }
@@ -363,7 +368,8 @@ function CarteActive({ row, onOuvrir }: { row: RankingRow; onOuvrir: () => void 
       </span>
       <span className="min-w-0 leading-tight">
         <span className="block truncate text-[14px] font-bold text-ink">{c.nom}</span>
-        <span className="block text-[13px] text-ink-2">{c.resume}</span>
+        <span className="block truncate text-[13px] text-ink-2">{c.action}</span>
+        <span className="block text-[12px] text-muted">{c.resume}</span>
         {row.enReserve > 0 && (
           <span className="block text-[11px] tracking-wider text-faint uppercase">
             +{row.enReserve} en réserve

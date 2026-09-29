@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { type Database, type Game, type Player } from '@/lib/db/entities';
 import { emptyDatabase } from '@/lib/db/store';
+import { getCard } from '@/lib/domain/catalog';
 import {
   CARD_IMPACT_CAP,
   EVENEMENTS_SUBS,
@@ -46,6 +47,8 @@ function joueur(id: string): Player {
     activisionId: null,
     snowflakes: 0,
     subsOfferts: 0,
+    creneauxBonus: 0,
+    immuniseJusqua: null,
     joinedAt: '2027-01-01T00:00:00.000Z',
     active: true,
     role: 'joueur',
@@ -245,16 +248,27 @@ describe('les cartes pendant un blizzard', () => {
 
   const enCours = () => avec('CARTES_RENFORCEES', new Date(Date.now() - 60_000), 60);
 
+  /** Ce qu'une carte à valeur simple annonce, lu dans le catalogue. */
+  const annonce = (cardId: string): number => {
+    const e = getCard(cardId)!.effect;
+    if (e.kind !== 'bonus_points' && e.kind !== 'malus_points') throw new Error(`${cardId} a changé de genre`);
+    return e.value;
+  };
+
   it('majore un bonus du facteur annoncé', () => {
-    const calme = partie(emptyDatabase(), 'poudreuse', 5);
-    const renforcee = partie(enCours(), 'poudreuse', 5);
-    expect(calme.bonusPoints).toBe(12);
-    expect(renforcee.bonusPoints).toBe(Math.round(12 * FACTEURS_EVENEMENTS.CARTES_RENFORCEES));
+    const calme = partie(emptyDatabase(), 'second-souffle', 5);
+    const renforcee = partie(enCours(), 'second-souffle', 5);
+    expect(calme.bonusPoints).toBe(annonce('second-souffle'));
+    expect(renforcee.bonusPoints).toBe(
+      Math.round(annonce('second-souffle') * FACTEURS_EVENEMENTS.CARTES_RENFORCEES),
+    );
   });
 
   it('majore un malus dans son sens : il retire davantage', () => {
     const renforcee = partie(enCours(), 'contre-courant', 20);
-    expect(renforcee.bonusPoints).toBe(-Math.round(10 * FACTEURS_EVENEMENTS.CARTES_RENFORCEES));
+    expect(renforcee.bonusPoints).toBe(
+      -Math.round(annonce('contre-courant') * FACTEURS_EVENEMENTS.CARTES_RENFORCEES),
+    );
   });
 
   it('reste sous les bornes d’une game, même sur la carte la plus forte', () => {

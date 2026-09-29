@@ -39,6 +39,12 @@ base serait effacée au prochain recalcul.
 `app/api/games/route.ts` n'accepte **ni multiplicateur ni bonus** dans son corps de
 requête : ces valeurs ne peuvent naître que d'une carte jouée, résolue serveur.
 
+La saisie porte un troisième fait brut, facultatif : `meilleurKills`, les kills du
+meilleur tueur de la partie lus sur la même capture. Il ne sert qu'à la carte « Clone
+kill du meilleur ». C'est une donnée de jeu comme les kills — saisie par la modération,
+bornée par le schéma de 0 à 60 — et la carte plafonne ce qu'elle en tire au budget de sa
+rareté.
+
 ### 2. Le hasard est serveur, et non observable
 
 `lib/domain/rng.ts` commence par `import 'server-only'`. Si ce module partait un jour
@@ -168,6 +174,15 @@ méritent la même vigilance :
   ont été retirés, ainsi que la réserve et la taxe de vente. Ils faisaient marquer et
   gagner davantage celui qui dépensait davantage, et le multiplicateur de kills réécrivait
   rétroactivement toute la saison. Le score d'une game ne dépend plus que de la game.
+  Seule exception, bornée : la carte « Game supplémentaire » ajoute un créneau de game,
+  trois au plus par joueur et par saison.
+- **Une carte pèse ce que sa rareté autorise.** Les actions des cartes reprennent celles
+  des roues de la Summer Ligue, pas leur force : `IMPACT_PAR_RARETE` fixe ce qu'une
+  carte peut faire bouger sur une game, de 4 points pour une commune à 25 pour une
+  légendaire, et `tests/equilibre.test.ts` le vérifie carte par carte, au pire cas. Une
+  game ne porte jamais deux cartes. Un malus ne tombe que sur la prochaine game d'un
+  joueur tiré au sort ou de la tête du classement ; il ne transfère rien, et la game
+  d'autrui n'est jamais supprimée, volée ni copiée. La streameuse n'est jamais tirée.
 
 ### 12. Rôles et réglages
 

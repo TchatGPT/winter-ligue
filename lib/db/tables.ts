@@ -53,6 +53,8 @@ export const COLLECTIONS: Collection[] = [
       c('activisionId', 'activision_id', 'text'),
       c('snowflakes', 'flocons', 'int'),
       c('subsOfferts', 'subs_offerts', 'int'),
+      c('creneauxBonus', 'creneaux_bonus', 'int'),
+      c('immuniseJusqua', 'immunise_jusqua', 'ts'),
       c('active', 'actif', 'bool'),
       c('joinedAt', 'inscrit_le', 'ts'),
     ],
@@ -236,6 +238,8 @@ create table if not exists joueurs (
   activision_id text,
   flocons integer not null default 0,
   subs_offerts integer not null default 0,
+  creneaux_bonus integer not null default 0,
+  immunise_jusqua timestamptz,
   actif boolean not null default true,
   inscrit_le timestamptz not null
 );
@@ -354,6 +358,11 @@ create table if not exists evenements (
 
 -- Le duel de flocons : ses lancers, à côté des cartes des anciens duels.
 alter table duels add column if not exists echanges jsonb not null default '[]';
+
+-- Les cartes « Game supplémentaire » et « Immunité » : ce qu'elles laissent
+-- au joueur.
+alter table joueurs add column if not exists creneaux_bonus integer not null default 0;
+alter table joueurs add column if not exists immunise_jusqua timestamptz;
 
 -- Les tables créées avant la suppression en cascade : leurs clés sont
 -- remplacées, une seule fois, par celles décrites ci-dessus.

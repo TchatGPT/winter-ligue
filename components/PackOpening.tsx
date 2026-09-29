@@ -5,6 +5,8 @@ import { RangeePacks } from '@/components/RangeePacks';
 import { SnowCap } from '@/components/SnowCap';
 import { prechargeSons, reveilleSon } from '@/components/bruitage';
 import { RailPack, type CarteRailPack } from '@/components/RailPack';
+import { CartesDuBooster, type CarteDuBooster } from '@/components/CartesDuBooster';
+import { DestinCarte } from '@/components/DestinCarte';
 import { CardTile, Notice, RarityChip, flakes, rarityMeta } from '@/components/ui';
 import { packArt } from '@/lib/domain/catalog';
 import { ECONOMY, libelleMultiplicateur, rarityPercent } from '@/lib/domain/rules';
@@ -33,6 +35,8 @@ const COULEURS_TAUX: Record<Rarity, string> = {
 export interface PackVitrine extends PackDefinition {
   /** Les cartes que ce pack peut donner : le pool des leurres du rail. */
   cartes: CarteRailPack[];
+  /** Les mêmes, avec ce qu'il faut pour les présenter action par action. */
+  catalogue: CarteDuBooster[];
 }
 
 export interface JoueurOuverture {
@@ -162,7 +166,7 @@ export function PackOpening({
             {
               titre: 'Un booster t’est dû',
               texte:
-                'Cinq subs offerts, c’est un Booster Perso pour toi. Cinquante subs de la saison, c’est un Booster Commu pour un ou deux joueurs au hasard. Ta dernière game de la saison, c’est le Booster Finisseur.',
+                'Cinq subs offerts, c’est un Booster Perso pour toi. Cinquante subs de la saison, c’est un Booster Commu pour ceux que le sort désigne. Ta dernière game de la saison, c’est le Booster Finisseur.',
               icone: <GlaceSachet className="h-16 w-16" />,
             },
             {
@@ -172,9 +176,9 @@ export function PackOpening({
               icone: <GlaceCartes className="h-16 w-16" />,
             },
             {
-              titre: 'Ta prochaine game l’encaisse',
+              titre: 'La carte se joue',
               texte:
-                'La carte attend ta prochaine game saisie, s’y applique, puis disparaît. Jamais plus de 25 points, dans un sens comme dans l’autre.',
+                'Le plus souvent sur ta prochaine game : elle s’y applique, puis disparaît. Certaines relèvent une game déjà jouée, ou donnent tout de suite des flocons, une game de plus, une immunité. Jamais plus de 25 points sur une game.',
               icone: <GlaceEpees className="h-16 w-16" />,
             },
           ].map((etape) => (
@@ -384,29 +388,19 @@ export function PackOpening({
                   >
                     {ouverture.nom}
                   </h3>
-                  <p className="mt-2 text-[15px] text-ink-2">{ouverture.description}</p>
+                  {ouverture.action && (
+                    <p className="mt-2 font-display text-[15px] font-bold tracking-wide text-ink uppercase">
+                      {ouverture.action}
+                    </p>
+                  )}
+                  <p className="mt-1.5 text-[15px] text-ink-2">{ouverture.description}</p>
                   {ouverture.joueurId && (
                     <p className="num mt-1 text-[13px] text-faint">
                       tirée avec un multiplicateur de {libelleMultiplicateur(ouverture.chance)}
                     </p>
                   )}
                   <div className="mt-3">
-                    <Notice kind={ouverture.nature === 'malus' ? 'error' : 'success'}>
-                      {ouverture.pseudo ? (
-                        <>
-                          Posée sur la prochaine game de <strong>{ouverture.pseudo}</strong>.
-                        </>
-                      ) : ouverture.tous ? (
-                        <>
-                          Posée sur la prochaine game de <strong>chaque joueur actif</strong>.
-                        </>
-                      ) : (
-                        <>
-                          Posée sur la prochaine game de{' '}
-                          <strong>{ouverture.beneficiaires.join(' et ')}</strong>.
-                        </>
-                      )}
-                    </Notice>
+                    <DestinCarte o={ouverture} />
                   </div>
                 </div>
               </div>
@@ -508,6 +502,17 @@ export function PackOpening({
           </ul>
         </section>
       </aside>
+
+      {/* ------------------------- Les cartes du booster --------------------
+          La planche des roues de la Summer, pour le booster choisi : ce qu'il
+          peut donner, action par action. Elle suit la sélection de la rangée. */}
+      <section className="glass relative overflow-hidden px-5 py-6 sm:px-6 xl:col-span-2">
+        <SnowCap radius="var(--r-lg)" seed={`cartes-${pack.id}`} epaisseur={14} />
+        <TitreGlace taille="bloc" eyebrow="Ce qu’il peut donner" className="mb-3">
+          {`Les cartes du ${pack.name}`}
+        </TitreGlace>
+        <CartesDuBooster nom={pack.name} cartes={pack.catalogue} pourUnJoueur={pourUnJoueur} />
+      </section>
     </div>
   );
 }

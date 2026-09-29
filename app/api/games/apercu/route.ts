@@ -5,7 +5,7 @@ import { uuid } from '@/lib/api/schemas';
 import type { Database, Game } from '@/lib/db/entities';
 import { getStore, newId } from '@/lib/db/store';
 import { GAME_LIMITS } from '@/lib/domain/rules';
-import { appliqueCartesEnAttente } from '@/lib/services/effects';
+import { appliqueCartesEnAttente, regleCartesSansAttendre } from '@/lib/services/effects';
 import { recomputeGame } from '@/lib/services/league';
 
 export const runtime = 'nodejs';
@@ -13,6 +13,14 @@ export const dynamic = 'force-dynamic';
 
 const apercuSchema = z.object({
   placement: z.union([z.literal(1), z.literal(2), z.literal(3), z.null()]),
+  /** Les kills du meilleur tueur de la partie, toutes lignes de la capture comprises. */
+  meilleurKills: z
+    .number()
+    .int()
+    .min(GAME_LIMITS.minKills)
+    .max(GAME_LIMITS.maxKills)
+    .optional()
+    .nullable(),
   lignes: z
     .array(
       z.object({
@@ -63,8 +71,11 @@ export async function POST(request: Request): Promise<NextResponse> {
       };
       db.games.push(game);
       recomputeGame(db, game);
-      const cartes = appliqueCartesEnAttente(db, game);
-      const carte = cartes.cartes[0] ?? null;
+      const cartes = appliqueCartesEnAttente(db, game, { meilleurKills: g.body.meilleurKills ?? null });
+      // Comme à la vraie saisie : une carte qui relève une game déjà jouée
+      // peut tomber sur celle-ci. On ne montre que ce qui la touche.
+      const suite = regleCartesSansAttendre(db, ligne.playerId).filter((c) => c.gameId === game.id);
+      const carte = cartes.cartes[0] ?? suite[0] ?? null;
       return {
         playerId: ligne.playerId,
         score: game.score,

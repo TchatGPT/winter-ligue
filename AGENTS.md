@@ -34,22 +34,35 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 - Interface, commentaires et messages d'erreur **en français**.
 - Les constantes de saison vivent dans `lib/domain/rules.ts`, nulle part ailleurs.
-- Le catalogue de cartes vit dans `lib/domain/catalog.ts`. Ajouter une carte, c'est
-  ajouter une entrée là et une branche dans `applyEffect()` de `lib/services/cards.ts`.
-- Les taux de rareté sont dans `RARITY_WEIGHTS_BASE` et dans `BOOSTERS[].weights`.
+- Le catalogue de cartes vit dans `lib/domain/catalog.ts`. Les actions sont celles des
+  roues de la Summer Ligue ; chaque carte porte un **nom d'hiver** (`name`) et
+  l'**intitulé de son action** (`subtitle`). Ajouter une carte, c'est ajouter une entrée
+  là ; ajouter un genre d'effet, c'est aussi une branche dans `lib/services/effects.ts`,
+  dans `impactMax()`, dans `momentDe()` et dans `resumeEffet()`.
+- Les taux de rareté sont dans `RARITY_WEIGHTS_BASE` et dans `PACKS[].weights`.
   Toute table doit sommer **exactement** à 100 000 — un test le vérifie.
-- **Aucune carte ne dépasse `CARD_IMPACT_CAP` (25 points).** Un malus retire des
-  points, il n en donne jamais à l attaquant, et ne supprime jamais définitivement la
-  game d autrui. `tests/equilibre.test.ts` verrouille ces trois règles.
+- **Une carte pèse ce que sa rareté autorise** : `IMPACT_PAR_RARETE`, de 4 points pour
+  une commune à `CARD_IMPACT_CAP` (25 points) pour une légendaire, au pire cas. Un
+  malus retire des points, il n'en donne jamais à l'attaquant, ne tombe que sur la
+  prochaine game de sa cible, et ne supprime, ne vole ni ne copie jamais la game
+  d'autrui. `tests/equilibre.test.ts` verrouille ces règles.
 - La résolution des effets vit dans `lib/services/effects.ts`, et nulle part ailleurs.
-  Chaque delta de points passe par `applyPoints`, qui le journalise dans `game.applied`
-  — c est ce journal qui rend Second Souffle et Contre-Courant possibles.
+  Chaque delta de points passe par `applyPoints`, qui le journalise dans `game.applied`.
+  **Une game ne porte jamais deux cartes** : une carte ne tombe que sur une game encore
+  sans carte (`gamesSansCarte`).
+- Une carte se joue à l'un de trois moments (`momentDe`) : sur la prochaine game, sur
+  une game déjà jouée, ou tout de suite. `regleCartesSansAttendre()` est appelé après
+  chaque ouverture de booster et après chaque saisie de game.
+- La streameuse n'est jamais bénéficiaire d'une carte : les tirages passent par
+  `joueursEnLice()`.
 - Les paliers de subs versent à **tous les joueurs actifs**. Ne jamais ajouter de
   récompense individuelle : c'est l'invariant anti-pay-to-win, et il est testé.
 - **Aucun avantage permanent ne se gagne en ouvrant des cartes.** Il n'y a ni familles,
   ni bonus de collection, ni plafond de réserve, ni taxe de vente : tout cela existait et
   a été retiré parce que cela faisait marquer davantage celui qui dépensait davantage.
-  Le score d'une game ne dépend que de la game et des cartes jouées dessus.
+  Le score d'une game ne dépend que de la game et des cartes jouées dessus. Seule
+  exception, bornée : la carte « Game supplémentaire » ajoute un créneau de game, trois
+  au plus par joueur et par saison (`CRENEAUX_BONUS`).
 - **Les boosters se lisent par `resolvedBooster()`, jamais par `getBooster()`, dès qu'ils
   servent au jeu.** Le catalogue reste le défaut ; l'administration le recouvre. Débiter
   le prix réglé en tirant avec les taux du catalogue serait pire que de ne rien pouvoir

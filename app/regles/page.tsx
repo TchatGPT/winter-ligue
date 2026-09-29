@@ -1,10 +1,13 @@
 import { PageHead, RarityChip } from '@/components/ui';
+import Link from 'next/link';
 import { CARDS, RARITY_META, cartesDuPack } from '@/lib/domain/catalog';
 import { getStore } from '@/lib/db/store';
 import { exigeSession } from '@/lib/auth/acces';
 import {
   CARD_IMPACT_CAP,
   CHANCE,
+  CRENEAUX_BONUS,
+  IMPACT_PAR_RARETE,
   DEFAULT_MAX_GAMES_PER_PLAYER,
   DUEL,
   ECONOMY,
@@ -77,15 +80,15 @@ export default async function ReglesPage(){
               <strong>+{PLACEMENT_POINTS['3']}</strong>. Sans classement, 0.
             </li>
             <li>
-              Les cartes s’appliquent à la game qui suit leur tirage, puis disparaissent. Aucune ne
-              fait bouger une game de plus de{' '}
-              <strong className="text-ink">{CARD_IMPACT_CAP} points</strong>, dans un sens comme
-              dans l’autre.
+              Une carte tombe sur une game, puis disparaît. Aucune ne fait bouger une game de plus
+              de <strong className="text-ink">{CARD_IMPACT_CAP} points</strong>, dans un sens comme
+              dans l’autre, et une game ne porte jamais deux cartes.
             </li>
             <li>
               {maxGames} games comptent par joueur
               {maxGames !== DEFAULT_MAX_GAMES_PER_PLAYER ? ' (réglé par la modération)' : ''}. La
-              dernière ouvre le Booster Finisseur.
+              dernière ouvre le Booster Finisseur. Une carte « Game supplémentaire » en ajoute une,
+              {CRENEAUX_BONUS.max} au plus par saison.
             </li>
           </ul>
           <p className="text-xs text-faint">
@@ -134,41 +137,88 @@ export default async function ReglesPage(){
           </p>
         </Rule>
 
-        <Rule title="Les cartes" lead="Toutes sur la prochaine game, toutes bornées.">
-          <ul className="grid gap-1 sm:grid-cols-2">
-            {CARDS.map((c) => (
-              <li key={c.id} className="flex items-start gap-2 text-xs">
-                <RarityChip rarity={c.rarity} />
-                <span>
-                  <strong className={c.nature === 'malus' ? 'text-danger' : 'text-ink'}>
-                    {c.glyph} {c.name}
-                  </strong>{' '}
-                  — {c.description}
-                </span>
+        <Rule
+          title="Les cartes"
+          lead="Les actions des roues de la Summer Ligue, à la mesure de l’hiver."
+        >
+          <p>
+            {CARDS.length} cartes. Chacune porte un nom d’hiver et l’intitulé de son action —
+            « Multiplicateur game », « Joker », « Clone kill du meilleur ». Ce qui a changé par
+            rapport aux roues, c’est la force : une carte pèse ce que sa rareté autorise.
+          </p>
+          <ul className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+            {LADDER.map((r) => (
+              <li
+                key={r}
+                className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs"
+              >
+                <RarityChip rarity={r} />
+                <span className="min-w-0 flex-1 truncate text-ink">{RARITY_META[r].label}</span>
+                <strong className="num text-ink">{IMPACT_PAR_RARETE[r]} pts</strong>
               </li>
             ))}
           </ul>
+          <p className="text-xs text-faint">
+            Ce qu’une carte peut faire bouger sur une game, au plus. Les flocons, la game
+            supplémentaire et l’immunité ne touchent pas au score.
+          </p>
+
+          <h3 className="pt-1 font-display text-sm font-bold tracking-wide text-ink uppercase">
+            Quand une carte se joue
+          </h3>
+          <ul className="list-inside list-disc space-y-1">
+            <li>
+              <strong className="text-ink">Sur ta prochaine game</strong>, le plus souvent : elle
+              s’y applique à la saisie, puis disparaît. Une seule carte active à la fois ; les
+              suivantes attendent, une par game.
+            </li>
+            <li>
+              <strong className="text-ink">Sur une game déjà jouée</strong> : « Pire game ×2 »,
+              « Pire game ramenée à la moyenne », « Meilleure game ×1,5 ». Elle tombe dès que tu as
+              deux games, dont une sans carte.
+            </li>
+            <li>
+              <strong className="text-ink">Tout de suite</strong> : les flocons, la game
+              supplémentaire, l’immunité.
+            </li>
+            <li>
+              Si tu as joué toutes tes games, une carte de prochaine game tombe sur une game déjà
+              jouée : un bonus là où il rapporte le plus, un malus sur la plus récente.
+            </li>
+          </ul>
+
+          <h3 className="pt-1 font-display text-sm font-bold tracking-wide text-ink uppercase">
+            Les malus
+          </h3>
           <ul className="list-inside list-disc space-y-1">
             <li>
               Un malus ne sort jamais d’un Booster Perso ni d’un Booster Finisseur : ce qu’on ouvre
               pour soi ne peut pas se retourner contre soi.
             </li>
             <li>
-              Un malus tombe sur un joueur tiré au sort ou sur la tête du classement — jamais sur
+              Il tombe sur un joueur tiré au sort ou sur la tête du classement — jamais sur
               quelqu’un que quelqu’un aurait choisi. Il retire des points, il n’en donne à personne.
             </li>
             <li>
-              Les cartes à deux — Chassé-Croisé, Duel de Glace — opposent deux joueurs tirés au
-              sort. Elles attendent la prochaine game de chacun, et se règlent quand la seconde est
-              saisie. Ce que l’un gagne, l’autre le perd, borné de chaque côté.
+              Il ne touche que la prochaine game de sa cible. Rien n’est supprimé, volé ni copié
+              chez un autre.
             </li>
-            <li>Une carte de flocons est créditée dans l’instant ; les autres attendent la game.</li>
             <li>
-              <strong className="text-ink">Une seule carte active à la fois.</strong> Si plusieurs
-              attendent, la plus ancienne tombe sur la prochaine game, les autres suivent, une par
-              game. Deux cartes ne s’empilent jamais sur une même game.
+              <strong className="text-ink">L’immunité</strong> pare tout malus qui tombe sur une de
+              tes games tant qu’elle court. Les bonus t’atteignent toujours.
             </li>
+            <li>
+              Le Chassé-Croisé oppose deux joueurs tirés au sort : ils échangent les kills de leur
+              prochaine game, et la carte se règle quand la seconde est saisie. Ce que l’un gagne,
+              l’autre le perd, borné de chaque côté.
+            </li>
+            <li>La streameuse ne joue pas : aucune carte ne tombe jamais sur elle.</li>
           </ul>
+          <p>
+            <Link href="/boosters" className="font-semibold text-aurora">
+              Toutes les cartes, booster par booster →
+            </Link>
+          </p>
         </Rule>
 
         <Rule title="Les flocons ❄" lead="Ils se gagnent en jouant, et se risquent en duel.">

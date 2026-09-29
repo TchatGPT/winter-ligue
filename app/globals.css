@@ -1974,6 +1974,120 @@
   }
 
   /* --------------------------------------------------------------------------
+     LES CARTES D'UN BOOSTER (components/CartesDuBooster.tsx)
+     La planche des actions : une tuile par carte. L'action en titre, la carte
+     en vignette à gauche, la rareté en liseré sur le flanc.
+     -------------------------------------------------------------------------- */
+  .actions-grille {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr));
+    gap: 0.75rem;
+  }
+  .action-tuile {
+    position: relative;
+    display: grid;
+    grid-template-columns: 58px minmax(0, 1fr);
+    align-items: start;
+    gap: 0.9rem;
+    overflow: hidden;
+    padding: 0.9rem 1rem 0.9rem 1.15rem;
+    border-radius: var(--r-md);
+    background: rgb(0 10 30 / 0.24);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.12),
+      inset 0 0 0 1px rgb(255 255 255 / 0.06);
+  }
+  /* Le liseré de rareté, sur le flanc gauche, découpé par l'arrondi de la tuile. */
+  .action-tuile::before {
+    content: '';
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 4px;
+    background: var(--r, var(--faint));
+  }
+  .action-tuile[data-nature='malus'] {
+    background: color-mix(in srgb, var(--danger) 9%, rgb(0 10 30 / 0.24));
+  }
+  .action-carte {
+    display: block;
+    width: 58px;
+  }
+  /* La vignette n'est qu'un repère : son ombre portée est réduite à la taille. */
+  .action-carte .cadre {
+    filter: drop-shadow(0 3px 5px rgb(0 0 0 / 0.5));
+  }
+  .action-titre {
+    font-family: var(--font-display);
+    font-size: 1.0625rem;
+    font-weight: 900;
+    letter-spacing: 0.04em;
+    line-height: 1.15;
+    text-transform: uppercase;
+    color: var(--ink);
+  }
+  .action-tuile[data-nature='malus'] .action-titre {
+    color: var(--danger);
+  }
+  .action-nom {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+    margin-top: 0.2rem;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--r, var(--ink-2));
+  }
+  .action-rarete {
+    font-weight: 500;
+    color: var(--faint);
+  }
+  .action-rarete::before {
+    content: '· ';
+  }
+  .action-texte {
+    margin-top: 0.4rem;
+    font-size: 0.875rem;
+    line-height: 1.45;
+    color: var(--ink-2);
+  }
+  .action-pied {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    margin-top: 0.55rem;
+  }
+  .action-pied > span {
+    padding: 0.1rem 0.5rem;
+    border-radius: var(--r-pilule);
+    background: rgb(255 255 255 / 0.08);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    color: var(--muted);
+  }
+  /* L'immunité d'un joueur, à côté de son pseudo dans le classement. */
+  .pastille-immunite {
+    flex-shrink: 0;
+    padding: 0.05rem 0.5rem;
+    border-radius: var(--r-pilule);
+    background: color-mix(in srgb, var(--aurora) 18%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--aurora) 55%, transparent);
+    font-family: var(--font-display);
+    font-size: 0.6875rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--aurora);
+  }
+
+  .action-pied > span[data-genre='malus'] {
+    background: color-mix(in srgb, var(--danger) 85%, transparent);
+    color: var(--nuit);
+    text-transform: uppercase;
+  }
+
+  /* --------------------------------------------------------------------------
      LES DUELS DE FLOCONS
      components/Affrontements.tsx (le salon) et BatailleArene.tsx (l'arène).
 
@@ -2885,6 +2999,10 @@
     /* La même glace bleutée que les cartes de la page : sur le voile sombre,
        le verre seul virait au gris. */
     background: linear-gradient(160deg, rgb(44 88 132 / 0.94) 0%, rgb(18 44 76 / 0.97) 100%);
+  }
+  /* La fiche d'une carte : la même fenêtre, plus étroite. */
+  .fiche-carte {
+    max-width: 44rem;
   }
 
   /* ---- L'arène : la course des boules de neige ---- */
@@ -4618,9 +4736,32 @@
   @container (min-width: 300px) {
     .cadre-desc {
       display: -webkit-box;
-      -webkit-line-clamp: 3;
-      line-clamp: 3;
+      /* Deux lignes, depuis que l'intitulé de l'action en prend une : à trois,
+         le pied sortait du panneau. */
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
     }
+  }
+
+  /*
+   * L'intitulé de l'action, sous le nom : « Multiplicateur game », « Joker ».
+   *
+   * C'est lui qui dit ce que fait la carte, à toutes les tailles — la
+   * description, elle, ne tient que sur une grande carte. Une ligne, dans la
+   * teinte de la rareté assombrie pour rester lisible sur le panneau clair.
+   */
+  .cadre-action {
+    margin-top: 0.4cqw;
+    overflow: hidden;
+    font-family: var(--font-display);
+    font-size: 4.2cqw;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    line-height: 1.15;
+    text-overflow: ellipsis;
+    text-transform: uppercase;
+    white-space: nowrap;
+    color: color-mix(in srgb, var(--r, #6f8db0) 45%, #0c1626);
   }
 
   .cadre-pied {

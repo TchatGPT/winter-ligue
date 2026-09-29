@@ -14,7 +14,7 @@ import { estLaStreameuse } from '@/lib/domain/streameuse';
 import type { Database, Game, Player } from '@/lib/db/entities';
 import { getStore } from '@/lib/db/store';
 import { rank, scoreGame, totalsFor, type PlayerTotals, type ScoredGame } from '@/lib/domain/scoring';
-import { getCard, resumeEffet } from '@/lib/domain/catalog';
+import { getCard, momentDe, resumeEffet } from '@/lib/domain/catalog';
 import { SEASON } from '@/lib/domain/rules';
 import type { Rarity } from '@/lib/domain/types';
 
@@ -33,6 +33,29 @@ export function recomputePlayerGames(db: Database, playerId: string): void {
   for (const game of db.games) {
     if (game.playerId === playerId) recomputeGame(db, game);
   }
+}
+
+/** Le nombre de games qui comptent pour ce joueur : les games passées n'en sont pas. */
+export function gamesComptees(db: Database, playerId: string): number {
+  return db.games.filter((g) => g.playerId === playerId && !g.skipped).length;
+}
+
+/**
+ * La limite de games d'un joueur : celle de la saison, plus les créneaux qu'une
+ * carte « Game supplémentaire » lui a donnés.
+ */
+export function limiteDe(db: Database, player: Pick<Player, 'creneauxBonus'>): number {
+  return db.config.maxGamesPerPlayer + Math.max(0, player.creneauxBonus ?? 0);
+}
+
+/** Vrai si le joueur n'a plus de game à jouer : une carte ne peut plus attendre la suivante. */
+export function aJoueToutesSesGames(db: Database, player: Player): boolean {
+  return gamesComptees(db, player.id) >= limiteDe(db, player);
+}
+
+/** L'immunité court-elle encore ? */
+export function estImmunise(player: Pick<Player, 'immuniseJusqua'>, now = new Date()): boolean {
+  return player.immuniseJusqua !== null && new Date(player.immuniseJusqua).getTime() > now.getTime();
 }
 
 export function gamesOf(db: Database, playerId: string): Game[] {
@@ -65,12 +88,16 @@ export interface RankingRow {
   twitchLogin: string | null;
   snowflakes: number;
   totals: PlayerTotals;
+  /** Vrai tant que son immunité court : aucun malus ne touche ses games. */
+  immunise: boolean;
   /** La carte active : celle qui tombera sur sa prochaine game. */
   carte: {
     cardId: string;
     nom: string;
     glyph: string;
     rarity: Rarity;
+    /** L'intitulé de l'action : « Multiplicateur game », « Joker »… */
+    action: string;
     description: string;
     resume: string;
     nature: 'bonus' | 'malus';
@@ -105,18 +132,29 @@ export async function getRanking(): Promise<RankingRow[]> {
       twitchLogin: player.twitchLogin,
       snowflakes: player.snowflakes,
       totals,
+      immunise: estImmunise(player),
       ...carteActive(db, player.id),
       finalist: position <= SEASON.finalistCount,
     }));
   });
 }
 
-/** La carte active d'un joueur et ce qui attend derrière. */
+/**
+ * La carte active d'un joueur et ce qui attend derrière.
+ *
+ * La carte active est la plus ancienne de celles qui attendent **la prochaine
+ * game**. Une carte qui relève une game déjà jouée n'attend pas la suivante :
+ * elle se règle dès qu'elle le peut, et ne passe devant personne.
+ */
 function carteActive(db: Database, playerId: string): Pick<RankingRow, 'carte' | 'enReserve'> {
   const attente = db.cartesEnAttente
     .filter((c) => c.joueurId === playerId && c.consommeeA === null)
     .sort((a, b) => a.creeA.localeCompare(b.creeA));
-  const premiere = attente[0];
+  const premiere =
+    attente.find((c) => {
+      const carte = getCard(c.cardId);
+      return carte !== null && momentDe(carte.effect) === 'PROCHAINE';
+    }) ?? attente[0];
   const card = premiere ? getCard(premiere.cardId) : null;
   return {
     carte:
@@ -126,6 +164,7 @@ function carteActive(db: Database, playerId: string): Pick<RankingRow, 'carte' |
             nom: card.name,
             glyph: card.glyph,
             rarity: card.rarity,
+            action: card.subtitle,
             description: card.description,
             resume: resumeEffet(card.effect),
             nature: card.nature,

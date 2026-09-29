@@ -160,6 +160,16 @@ function ChoixTop({ valeur, onChange, disabled }: { valeur: Placement; onChange:
 
 /* ------------------------------ Avec l'IA -------------------------------- */
 
+/**
+ * Les kills du meilleur tueur de la partie : toutes les lignes lues sur la
+ * capture, la streameuse et les coéquipiers hors ligue compris. C'est ce que
+ * la carte « Clone kill du meilleur » copie.
+ */
+function meilleurKillsDe(lignes: { kills: number }[]): number | null {
+  if (lignes.length === 0) return null;
+  return Math.max(...lignes.map((l) => l.kills));
+}
+
 function FenetreIA({ joueurs, active, ferme }: { joueurs: Joueur[]; active: boolean; ferme: () => void }) {
   const router = useRouter();
   const fichier = useRef<HTMLInputElement>(null);
@@ -190,6 +200,7 @@ function FenetreIA({ joueurs, active, ferme }: { joueurs: Joueur[]; active: bool
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({
             placement,
+            meilleurKills: meilleurKillsDe(lignes ?? []),
             lignes: lignesAssignees.map((l) => ({ playerId: l.joueurId, kills: l.kills })),
           }),
         });
@@ -308,7 +319,13 @@ function FenetreIA({ joueurs, active, ferme }: { joueurs: Joueur[]; active: bool
         const reponse = await fetch('/api/games', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ playerId: ligne.joueurId, kills: ligne.kills, placement, note: 'Saisie par capture' }),
+          body: JSON.stringify({
+            playerId: ligne.joueurId,
+            kills: ligne.kills,
+            placement,
+            meilleurKills: meilleurKillsDe(lignes),
+            note: 'Saisie par capture',
+          }),
         });
         const charge = await reponse.json();
         if (charge.ok) faites += 1;

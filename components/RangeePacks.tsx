@@ -133,7 +133,7 @@ export function RangeePacks({
         onScroll={onScroll}
         onKeyDown={onKeyDown}
         role="listbox"
-        aria-label="Choix du sachet"
+        aria-label="Choix du booster"
         tabIndex={0}
       >
         {/* La piste porte les sachets et se centre elle-même : un
@@ -159,8 +159,8 @@ export function RangeePacks({
                   disabled={fige}
                   aria-label={
                     actif && ouvrable
-                      ? `Ouvrir le sachet ${b.name} — double-clic`
-                      : `Choisir le sachet ${b.name}`
+                      ? `Ouvrir le ${b.name} — double-clic`
+                      : `Choisir le ${b.name}`
                   }
                   onClick={() => {
                     if (fige) return;

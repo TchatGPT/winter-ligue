@@ -345,6 +345,8 @@ function migrate(db: Partial<Database>): Database {
       ...p,
       role: p.role ?? 'joueur',
       subsOfferts: p.subsOfferts ?? 0,
+      creneauxBonus: p.creneauxBonus ?? 0,
+      immuniseJusqua: p.immuniseJusqua ?? null,
       activisionId: p.activisionId ?? null,
       snowflakes: Math.min(p.snowflakes ?? 0, ECONOMY.soldeMax),
     })),

@@ -24,27 +24,32 @@ import 'server-only';
  * légitime dès qu'un pack sert au jeu.
  */
 
+import { chaineDeLaLigue } from '@/lib/auth/twitch';
 import type { Database, OuverturePack, PackDu, Player } from '@/lib/db/entities';
 import { newId } from '@/lib/db/store';
-import { getCard, getPack, PACKS } from '@/lib/domain/catalog';
+import { getCard, getPack, momentDe, PACKS } from '@/lib/domain/catalog';
 import { pick, tirePack } from '@/lib/domain/rng';
 import {
   chanceDe,
   packsPersoAcquis,
   PACKS_REGLES,
   poidsAvecChance,
+  tailleDeLaQueue,
   WEIGHT_TOTAL,
 } from '@/lib/domain/rules';
 import { rank, totalsFor } from '@/lib/domain/scoring';
+import { estLaStreameuse } from '@/lib/domain/streameuse';
 import {
   type CardDefinition,
+  type MomentCarte,
   type PackDefinition,
   type PackId,
   RARITIES,
   type Rarity,
 } from '@/lib/domain/types';
-import { audit, credit } from './ledger';
-import { gamesOf } from './league';
+import { gamesSansCarte, regleCartesSansAttendre } from './effects';
+import { audit } from './ledger';
+import { aJoueToutesSesGames, gamesOf } from './league';
 
 export class PackError extends Error {
   constructor(
@@ -56,6 +61,7 @@ export class PackError extends Error {
       | 'DEJA_OUVERT'
       | 'JOUEUR_REQUIS'
       | 'JOUEUR_INTROUVABLE'
+      | 'STREAMEUSE'
       | 'AUCUN_BENEFICIAIRE',
   ) {
     super(message);
@@ -238,39 +244,92 @@ export function fileDesPacks(db: Database): PackDuVue[] {
 
 /* ------------------------------- L'ouverture ----------------------------- */
 
-/** Le joueur en tête du classement à cet instant, ou null s'il n'y a personne. */
-export function teteDuClassement(db: Database): Player | null {
-  const actifs = db.players.filter((p) => p.active);
-  if (actifs.length === 0) return null;
-  const classes = rank(
-    actifs.map((player) => ({
+/**
+ * Les joueurs en lice : actifs, et la streameuse n'en est pas. Elle administre
+ * la ligue, elle n'y joue pas — une carte tombée sur elle serait perdue.
+ */
+export function joueursEnLice(db: Database): Player[] {
+  const chaine = chaineDeLaLigue();
+  return db.players.filter((p) => p.active && !estLaStreameuse(p, chaine));
+}
+
+/**
+ * Peut-il encore recevoir une carte ? Il lui faut une game à jouer, ou une game
+ * déjà jouée encore sans carte. Un joueur qui a fini sa saison et dont toutes
+ * les games portent une carte ne peut plus rien en faire.
+ */
+export function peutRecevoir(db: Database, player: Player): boolean {
+  return !aJoueToutesSesGames(db, player) || gamesSansCarte(db, player.id).length > 0;
+}
+
+/**
+ * Ceux sur qui le sort peut tomber : les joueurs en lice qui peuvent encore
+ * recevoir une carte. Si personne ne le peut, tous les joueurs en lice — un
+ * booster s'ouvre toujours.
+ */
+function bassin(db: Database): Player[] {
+  const enLice = joueursEnLice(db);
+  const prets = enLice.filter((p) => peutRecevoir(db, p));
+  return prets.length > 0 ? prets : enLice;
+}
+
+/** Des joueurs, du premier au dernier du classement. */
+function classes(db: Database, joueurs: Player[]): Player[] {
+  return rank(
+    joueurs.map((player) => ({
       player,
       totals: totalsFor(db.games.filter((g) => g.playerId === player.id)),
     })),
-  );
-  return classes[0]?.player ?? null;
+  ).map((r) => r.player);
 }
 
-/** Sur qui la carte d'un pack collectif tombe. */
+/** Les joueurs en lice, du premier au dernier du classement. */
+const classement = (db: Database): Player[] => classes(db, joueursEnLice(db));
+
+/** Le joueur en tête du classement à cet instant, ou null s'il n'y a personne. */
+export function teteDuClassement(db: Database): Player | null {
+  return classement(db)[0] ?? null;
+}
+
+/** Les derniers du classement : le dernier tiers, un joueur au moins, trois au plus. */
+export function queueDuClassement(db: Database): Player[] {
+  const classes = classement(db);
+  return classes.slice(classes.length - tailleDeLaQueue(classes.length));
+}
+
+/**
+ * Sur qui la carte d'un pack collectif tombe.
+ *
+ * Une carte pour toute la ligue va à tous les joueurs en lice. Les autres ne
+ * tombent que sur ceux qui peuvent encore la recevoir (`bassin`) : tirée sur
+ * un joueur qui a fini sa saison et n'a plus de game libre, elle serait perdue
+ * — et la tête du classement deviendrait intouchable en finissant la première.
+ */
 function beneficiairesDe(db: Database, card: CardDefinition): Player[] {
-  const actifs = db.players.filter((p) => p.active);
-  if (actifs.length === 0) return [];
+  const enLice = joueursEnLice(db);
+  if (enLice.length === 0) return [];
+  const prets = bassin(db);
   switch (card.cible) {
     case 'TOUS':
-      return actifs;
+      return enLice;
     case 'HASARD':
-      return [pick(actifs)];
+      return [pick(prets)];
     case 'DEUX': {
-      // Deux joueurs distincts. À un seul joueur actif, la carte n'a pas de
+      // Deux joueurs distincts. À un seul joueur en lice, la carte n'a pas de
       // sens : on le dit plutôt que de faire jouer quelqu'un contre lui-même.
-      if (actifs.length < 2) return [];
-      const premier = pick(actifs);
-      const second = pick(actifs.filter((p) => p.id !== premier.id));
+      const parmi = prets.length >= 2 ? prets : enLice;
+      if (parmi.length < 2) return [];
+      const premier = pick(parmi);
+      const second = pick(parmi.filter((p) => p.id !== premier.id));
       return [premier, second];
     }
     case 'TETE': {
-      const tete = teteDuClassement(db);
+      const tete = classes(db, prets)[0];
       return tete ? [tete] : [];
+    }
+    case 'QUEUE': {
+      const ordre = classes(db, prets);
+      return ordre.slice(ordre.length - tailleDeLaQueue(ordre.length));
     }
   }
 }
@@ -288,9 +347,10 @@ export interface DemandeOuverture {
  * Ouvre un pack. À appeler dans une transaction.
  *
  * Tout se décide ici : la rareté, poussée par la chance du joueur si le pack
- * est pour lui ; la carte ; sur qui elle tombe. Une carte de flocons est
- * créditée dans l'instant ; toute autre carte se pose sur la prochaine game
- * de chacun de ses bénéficiaires.
+ * est pour lui ; la carte ; sur qui elle tombe. La carte est posée sur chacun
+ * de ses bénéficiaires, puis ce qui peut se régler sans attendre l'est — des
+ * flocons, un créneau, une immunité, une game déjà jouée à relever. Le reste
+ * attend la prochaine game.
  */
 export function ouvrePack(db: Database, demande: DemandeOuverture, ouvertPar: string): OuverturePack {
   const deja = db.ouvertures.find((o) => o.idempotencyKey === demande.idempotencyKey);
@@ -317,6 +377,12 @@ export function ouvrePack(db: Database, demande: DemandeOuverture, ouvertPar: st
     if (!joueurId) throw new PackError('Ce pack s’ouvre pour un joueur.', 'JOUEUR_REQUIS');
     joueur = db.players.find((p) => p.id === joueurId && p.active) ?? null;
     if (!joueur) throw new PackError('Joueur introuvable.', 'JOUEUR_INTROUVABLE');
+    if (estLaStreameuse(joueur, chaineDeLaLigue())) {
+      throw new PackError(
+        'La streameuse ne joue pas dans la ligue : aucun booster ne s’ouvre pour elle.',
+        'STREAMEUSE',
+      );
+    }
     chance = chanceDe(joueur.snowflakes);
   }
 
@@ -328,7 +394,7 @@ export function ouvrePack(db: Database, demande: DemandeOuverture, ouvertPar: st
     throw new PackError(
       card.cible === 'DEUX'
         ? 'Il faut deux joueurs actifs pour cette carte.'
-        : 'Aucun joueur actif pour recevoir la carte.',
+        : 'Aucun joueur en lice pour recevoir la carte.',
       'AUCUN_BENEFICIAIRE',
     );
   }
@@ -353,33 +419,20 @@ export function ouvrePack(db: Database, demande: DemandeOuverture, ouvertPar: st
   if (du) du.ouvertureId = ouverture.id;
 
   for (const b of beneficiaires) {
-    if (card.effect.kind === 'snowflakes') {
-      credit(db, b.id, card.effect.value, 'CARTE', ouverture.id);
-      db.cartesEnAttente.push({
-        id: newId(),
-        joueurId: b.id,
-        cardId,
-        ouvertureId: ouverture.id,
-        creeA: now,
-        consommeeA: now,
-        gameId: null,
-        resultat: `+${card.effect.value} flocons`,
-        paireId: null,
-      });
-    } else {
-      db.cartesEnAttente.push({
-        id: newId(),
-        joueurId: b.id,
-        cardId,
-        ouvertureId: ouverture.id,
-        creeA: now,
-        consommeeA: null,
-        gameId: null,
-        resultat: null,
-        paireId,
-      });
-    }
+    db.cartesEnAttente.push({
+      id: newId(),
+      joueurId: b.id,
+      cardId,
+      ouvertureId: ouverture.id,
+      creeA: now,
+      consommeeA: null,
+      gameId: null,
+      resultat: null,
+      paireId,
+    });
   }
+  // Ce qui n'attend pas une game se règle maintenant, à l'antenne.
+  for (const b of beneficiaires) regleCartesSansAttendre(db, b.id);
 
   audit(
     db,
@@ -391,7 +444,7 @@ export function ouvrePack(db: Database, demande: DemandeOuverture, ouvertPar: st
         ? joueur.pseudo
         : card.cible === 'TOUS'
           ? `${beneficiaires.length} joueur(s)`
-          : beneficiaires.map((b) => b.pseudo).join(' et ')
+          : beneficiaires.map((b) => b.pseudo).join(', ')
     }${chance > 0 ? ` — chance ${Math.round(chance * 100)} %` : ''}`,
   );
 
@@ -419,16 +472,31 @@ export interface OuvertureVue {
   tous: boolean;
   chance: number;
   openedAt: string;
+  /** L'intitulé de l'action : « Multiplicateur game », « Joker »… */
+  action: string;
+  /** Quand la carte se joue : à la prochaine game, sur une game jouée, tout de suite. */
+  moment: MomentCarte;
+  /**
+   * Ce que la carte a déjà fait, joueur par joueur : ce qui s'est réglé à
+   * l'ouverture, ou depuis. Six au plus — une carte tombée sur toute la ligue
+   * ne les liste pas tous.
+   */
+  effets: { pseudo: string; resultat: string }[];
+  /** Combien de joueurs ont vu la carte se régler. */
+  regles: number;
+  /** Combien de joueurs attendent encore que la carte se règle. */
+  enAttente: number;
 }
 
 export function vueOuverture(db: Database, o: OuverturePack): OuvertureVue {
   const card = getCard(o.cardId);
   const pseudoDe = (id: string) => db.players.find((p) => p.id === id)?.pseudo ?? 'Joueur inconnu';
-  const actifs = db.players.filter((p) => p.active).length;
+  const actifs = joueursEnLice(db).length;
   // « Toute la ligue » ne se dit que si la carte visait tout le monde : deux
   // joueurs tirés au sort dans une ligue de deux ne sont pas « la ligue ».
   const tous =
     o.joueurId === null && card?.cible === 'TOUS' && o.beneficiaires.length >= actifs;
+  const posees = db.cartesEnAttente.filter((c) => c.ouvertureId === o.id);
   return {
     id: o.id,
     packId: o.packId,
@@ -446,6 +514,14 @@ export function vueOuverture(db: Database, o: OuverturePack): OuvertureVue {
     tous,
     chance: o.chance,
     openedAt: o.openedAt,
+    action: card?.subtitle ?? '',
+    moment: card ? momentDe(card.effect) : 'PROCHAINE',
+    effets: posees
+      .filter((c) => c.consommeeA !== null && c.resultat)
+      .slice(0, 6)
+      .map((c) => ({ pseudo: pseudoDe(c.joueurId), resultat: c.resultat! })),
+    regles: posees.filter((c) => c.consommeeA !== null).length,
+    enAttente: posees.filter((c) => c.consommeeA === null).length,
   };
 }
 
@@ -461,6 +537,10 @@ export interface CarteEnAttenteVue {
   id: string;
   cardId: string;
   nom: string;
+  /** L'intitulé de l'action. */
+  action: string;
+  /** Ce qu'elle attend : la prochaine game, ou une game déjà jouée à relever. */
+  moment: MomentCarte;
   rarity: Rarity;
   glyph: string;
   description: string;
@@ -471,7 +551,7 @@ export interface CarteEnAttenteVue {
   creeA: string;
 }
 
-/** Les cartes posées sur la prochaine game d'un joueur, dans l'ordre d'arrivée. */
+/** Les cartes qu'un joueur a reçues et qui attendent encore, dans l'ordre d'arrivée. */
 export function cartesEnAttenteDe(db: Database, joueurId: string): CarteEnAttenteVue[] {
   return db.cartesEnAttente
     .filter((c) => c.joueurId === joueurId && c.consommeeA === null)
@@ -484,6 +564,8 @@ export function cartesEnAttenteDe(db: Database, joueurId: string): CarteEnAttent
         id: c.id,
         cardId: c.cardId,
         nom: card?.name ?? c.cardId,
+        action: card?.subtitle ?? '',
+        moment: card ? momentDe(card.effect) : 'PROCHAINE',
         rarity: card?.rarity ?? 'C',
         glyph: card?.glyph ?? '❄',
         description: card?.description ?? '',

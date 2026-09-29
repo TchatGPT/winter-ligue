@@ -36,6 +36,8 @@ function joueur(id: string, snowflakes = 0): Player {
     activisionId: null,
     snowflakes,
     subsOfferts: 0,
+    creneauxBonus: 0,
+    immuniseJusqua: null,
     joinedAt: '2027-01-01T00:00:00.000Z',
     active: true,
     role: 'joueur',
@@ -174,17 +176,22 @@ describe('ouvrir un booster', () => {
   });
 
   it('crédite une carte de flocons dans l’instant, par le grand livre', () => {
-    const db = ligue('a');
-    // Au Booster Commu, la seule ultra rare est une carte de flocons.
-    reglagePack(db, 'commu', seulement('UR'));
-    const o = ouvrePack(db, { packId: 'commu', idempotencyKey: 'k' }, 'modo');
-    const effet = getCard(o.cardId)!.effect;
-    if (effet.kind !== 'snowflakes') throw new Error('le pool du Booster Commu a changé');
+    // Le tirage est au sort, et les ultra rares du Booster Commu ne sont pas
+    // toutes des flocons : on rouvre, sur une base neuve, jusqu'à en tirer une.
+    for (let essai = 0; essai < 400; essai += 1) {
+      const db = ligue('a');
+      reglagePack(db, 'commu', seulement('UR'));
+      const o = ouvrePack(db, { packId: 'commu', idempotencyKey: `k${essai}` }, 'modo');
+      const effet = getCard(o.cardId)!.effect;
+      if (effet.kind !== 'snowflakes') continue;
 
-    expect(db.players[0].snowflakes).toBe(effet.value);
-    expect(db.ledger).toHaveLength(1);
-    expect(db.ledger[0].reason).toBe('CARTE');
-    expect(cartesEnAttenteDe(db, 'a')).toHaveLength(0);
+      expect(db.players[0].snowflakes).toBe(effet.value);
+      expect(db.ledger).toHaveLength(1);
+      expect(db.ledger[0].reason).toBe('CARTE');
+      expect(cartesEnAttenteDe(db, 'a')).toHaveLength(0);
+      return;
+    }
+    throw new Error('aucune carte de flocons en 400 ouvertures : le pool du Booster Commu a changé');
   });
 
   it('pousse les raretés avec le solde, sans dépenser un flocon', () => {

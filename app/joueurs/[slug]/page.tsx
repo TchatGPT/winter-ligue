@@ -164,10 +164,11 @@ export default async function ProfilJoueurPage({ params }: { params: Promise<{ s
         <div className="space-y-6">
           <section>
             <TitreGlace taille="bloc" className="mb-3">
-              Carte active
+              Cartes en attente
             </TitreGlace>
             <p className="-mt-2 mb-3 text-[13px] text-faint">
-              Une seule carte tombe par game. Les suivantes attendent leur tour, une par game.
+              Une seule carte tombe par game. Les suivantes attendent leur tour, une par game. Une
+              carte qui relève une game déjà jouée tombe dès qu’il y a deux games, dont une sans carte.
             </p>
             {profile.cartesEnAttente.length === 0 ? (
               <EmptyState
@@ -176,29 +177,41 @@ export default async function ProfilJoueurPage({ params }: { params: Promise<{ s
               />
             ) : (
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                {profile.cartesEnAttente.map((c, i) => (
-                  <CardTile
-                    key={c.id}
-                    cardId={c.cardId}
-                    name={c.nom}
-                    description={c.description}
-                    rarity={c.rarity}
-                    glyph={c.glyph}
-                    power={c.power}
-                    nature={c.nature}
-                    dimmed={i > 0}
-                    footer={
-                      <span className="text-[11px] text-faint">
-                        {i === 0 ? (
-                          <strong className="text-aurora">Active</strong>
-                        ) : (
-                          `En réserve, game +${i + 1}`
-                        )}{' '}
-                        · {c.pack}
-                      </span>
-                    }
-                  />
-                ))}
+                {profile.cartesEnAttente.map((c) => {
+                  // Le tour d'une carte se compte parmi celles qui attendent une
+                  // prochaine game : les autres ne passent devant personne.
+                  const tour =
+                    c.moment === 'PROCHAINE'
+                      ? profile.cartesEnAttente
+                          .filter((x) => x.moment === 'PROCHAINE')
+                          .findIndex((x) => x.id === c.id)
+                      : -1;
+                  return (
+                    <CardTile
+                      key={c.id}
+                      cardId={c.cardId}
+                      name={c.nom}
+                      description={c.description}
+                      rarity={c.rarity}
+                      glyph={c.glyph}
+                      power={c.power}
+                      nature={c.nature}
+                      dimmed={tour > 0}
+                      footer={
+                        <span className="text-[11px] text-faint">
+                          {tour === 0 ? (
+                            <strong className="text-aurora">Active</strong>
+                          ) : tour > 0 ? (
+                            `En réserve, game +${tour + 1}`
+                          ) : (
+                            'Attend une game à relever'
+                          )}{' '}
+                          · {c.pack}
+                        </span>
+                      }
+                    />
+                  );
+                })}
               </div>
             )}
           </section>

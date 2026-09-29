@@ -1,6 +1,6 @@
 import { aUneIllustration, CardArt } from '@/components/CardArt';
 import { IconImpact, IconSnowflake } from '@/components/icons';
-import { RARITY_META } from '@/lib/domain/catalog';
+import { getCard, RARITY_META } from '@/lib/domain/catalog';
 import { compact } from '@/lib/format';
 import type { Rarity } from '@/lib/domain/types';
 
@@ -68,6 +68,10 @@ export function CardFrame({
   corner,
 }: CardFrameProps) {
   const meta = RARITY_META[rarity as Rarity] ?? RARITY_META.C;
+  // L'intitulé de l'action — « Multiplicateur game », « Joker » — se lit dans
+  // le catalogue : la carte le porte partout où elle s'affiche, sans que
+  // chaque écran ait à le passer.
+  const action = getCard(cardId)?.subtitle;
 
   return (
     <div
@@ -108,6 +112,7 @@ export function CardFrame({
 
       <div className="cadre-texte">
         <h3 className="cadre-nom">{name}</h3>
+        {action && <p className="cadre-action">{action}</p>}
         {description && <p className="cadre-desc">{description}</p>}
 
         <div className="cadre-pied">

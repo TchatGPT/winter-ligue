@@ -64,6 +64,18 @@ export const gameSchema = z.object({
   placement: z.union([z.literal(1), z.literal(2), z.literal(3), z.null()]),
   note: z.string().trim().max(140).optional().nullable(),
   /**
+   * Les kills du meilleur tueur de la partie, lus sur la même capture. C'est
+   * une donnée de jeu, comme les kills : elle ne sert qu'à la carte « Clone
+   * kill du meilleur », qui la borne.
+   */
+  meilleurKills: z
+    .number()
+    .int()
+    .min(GAME_LIMITS.minKills)
+    .max(GAME_LIMITS.maxKills)
+    .optional()
+    .nullable(),
+  /**
    * Ni multiplicateur ni bonus ne sont acceptés du client : ils ne peuvent
    * venir que d'une carte de pack, résolue côté serveur à la saisie.
    */

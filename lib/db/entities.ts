@@ -49,6 +49,16 @@ export interface Player {
    * le pack est mis en file, jamais ouvert automatiquement.
    */
   subsOfferts: number;
+  /**
+   * Les créneaux de game gagnés par une carte « Game supplémentaire ». Ils
+   * s'ajoutent à la limite de la saison, pour ce joueur seulement.
+   */
+  creneauxBonus: number;
+  /**
+   * La fin de son immunité, ou nul. Tant qu'elle court, un malus qui tombe
+   * sur une de ses games est paré.
+   */
+  immuniseJusqua: string | null;
   joinedAt: string;
   active: boolean;
   role: PlayerRole;
@@ -126,11 +136,13 @@ export interface OuverturePack {
 }
 
 /**
- * Une carte posée sur la prochaine game d'un joueur.
+ * Une carte reçue par un joueur.
  *
- * Elle naît à l'ouverture d'un pack et meurt à la saisie de la game suivante,
- * où son effet est calculé, journalisé dans `game.applied`, et le résultat
- * écrit ici. Une carte de flocons est consommée dans l'instant.
+ * Elle naît à l'ouverture d'un pack. Le plus souvent elle attend la game
+ * suivante, où son effet est calculé, journalisé dans `game.applied`, et le
+ * résultat écrit ici. Une carte qui relève une game déjà jouée se règle dès
+ * que le joueur en a une sans carte ; des flocons, un créneau ou une immunité
+ * se règlent dans l'instant.
  */
 export interface CarteEnAttente {
   id: string;

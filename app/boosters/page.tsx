@@ -2,7 +2,7 @@ import { PackOpening, type JoueurOuverture, type PackVitrine } from '@/component
 import { getSession } from '@/lib/auth/session';
 import { exigeSession } from '@/lib/auth/acces';
 import { getStore } from '@/lib/db/store';
-import { cartesDuPack } from '@/lib/domain/catalog';
+import { cartesDuPack, impactMax, momentDe } from '@/lib/domain/catalog';
 import { chanceDe } from '@/lib/domain/rules';
 import { fileDesPacks, resolvedPacks } from '@/lib/services/packs';
 import { TitreGlace } from '@/components/TitreGlace';
@@ -35,6 +35,19 @@ export default async function PacksPage(){
           power: c.power,
           nature: c.nature,
         })),
+        catalogue: cartesDuPack(p.id).map((c) => ({
+          cardId: c.id,
+          name: c.name,
+          action: c.subtitle,
+          rarity: c.rarity,
+          glyph: c.glyph,
+          description: c.description,
+          power: c.power,
+          nature: c.nature,
+          moment: momentDe(c.effect),
+          cible: c.cible,
+          impact: impactMax(c.effect),
+        })),
       }),
     ),
     file: fileDesPacks(db),
@@ -59,7 +72,8 @@ export default async function PacksPage(){
       <header className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
         <TitreGlace taille="page">Les boosters</TitreGlace>
         <p className="text-[15px] text-muted">
-          Une carte par booster, ouverte à l’antenne, posée sur ta prochaine game.
+          Une carte par booster, ouverte à l’antenne. Les actions des roues de la Summer, à la mesure de
+          l’hiver.
         </p>
       </header>
 

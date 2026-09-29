@@ -27,62 +27,93 @@ export const PACK_IDS: readonly PackId[] = ['perso', 'commu', 'folie', 'finisseu
  * Sur qui une carte de pack tombe, quand elle ne tombe pas sur le joueur pour
  * qui le pack est ouvert.
  *
- *  - `TOUS` : chaque joueur actif.
- *  - `HASARD` : un joueur actif tiré au sort par le serveur.
- *  - `DEUX` : deux joueurs actifs tirés au sort, que la carte met face à face.
+ *  - `TOUS` : chaque joueur en lice.
+ *  - `HASARD` : un joueur tiré au sort par le serveur.
+ *  - `DEUX` : deux joueurs tirés au sort, que la carte met face à face.
  *  - `TETE` : celui qui mène le classement à cet instant.
+ *  - `QUEUE` : les derniers du classement — le coup de pouce.
  *
  * Un pack Perso ou Finisseur n'a pas de cible : sa carte va au joueur désigné.
- * Un pack Commu tombe sur un ou deux joueurs au hasard ; un pack Folie porte
- * la cible de sa carte, souvent toute la ligue.
+ * La streameuse n'est jamais tirée : elle ne joue pas.
  */
-export type CibleCarte = 'TOUS' | 'HASARD' | 'DEUX' | 'TETE';
+export type CibleCarte = 'TOUS' | 'HASARD' | 'DEUX' | 'TETE' | 'QUEUE';
 
 /**
- * Ce qu'une carte fait à la **prochaine game** du joueur qui la reçoit.
+ * Ce qu'une carte fait.
  *
- * Tout se résout au moment où la game est saisie, puis la carte est consommée.
- * Il n'y a ni carte en main, ni collection, ni marché : une carte est un effet
- * en attente, rien de plus.
+ * Les actions reprennent celles des roues de la Summer Ligue — le
+ * multiplicateur, le clone de kills, le joker, la game supplémentaire,
+ * l'immunité — mais ramenées à l'échelle de la Winter : une carte pèse ce que
+ * sa rareté autorise (`IMPACT_PAR_RARETE`), jamais davantage.
  *
- * Deux principes gouvernent cette liste :
+ * Trois moments, selon le genre (`momentDe`) :
  *
- *  1. **Tout est borné.** Une game moyenne vaut ~25 points et une saison ~1 000 :
- *     une carte qui en donnerait 100 volerait un dixième de saison en un tirage.
- *     Chaque effet porte donc son plafond, y compris les multiplicateurs.
- *  2. **Un malus retire, il ne transfère jamais.** Aucun effet ne prend des
- *     points à quelqu'un pour les donner à un autre.
+ *  - **la prochaine game** : la carte attend la game suivante du joueur, s'y
+ *    applique, puis disparaît ;
+ *  - **une game déjà jouée** : la carte relève une game du joueur, dès qu'il en
+ *    a une sans carte ;
+ *  - **tout de suite** : des flocons, un créneau de game, une immunité.
+ *
+ * Trois principes gouvernent cette liste :
+ *
+ *  1. **Tout est borné.** Chaque effet porte son plafond, y compris les
+ *     multiplicateurs, et ce plafond tient dans le budget de la rareté.
+ *  2. **Un malus retire, il ne transfère jamais** — sauf la carte à deux, qui
+ *     oppose deux joueurs tirés au sort et reste bornée de chaque côté.
+ *  3. **La game d'autrui est intouchable** : un malus ne tombe que sur une
+ *     game de sa cible, et ne supprime ni ne copie rien.
  */
 export type CardEffect =
-  /** +N points sur la prochaine game. */
+  /* ------------------------- Sur la prochaine game ------------------------ */
+  /** « +N pts bonus ». */
   | { kind: 'bonus_points'; value: number }
-  /** Les kills de la prochaine game multipliés, plafonné en points. */
-  | { kind: 'kill_multiplier'; value: number; cap: number }
-  /** +N par kill sur la prochaine game, plafonné. */
-  | { kind: 'points_per_kill'; perKill: number; cap: number }
-  /** Les points de classement de la prochaine game comptent deux fois. */
-  | { kind: 'double_placement' }
-  /** La prochaine game vaut au moins N points. */
-  | { kind: 'plancher'; value: number }
-  /** Des flocons, tout de suite. Aucune incidence au classement. */
-  | { kind: 'snowflakes'; value: number }
-  /** Les flocons de la prochaine game sont doublés. */
-  | { kind: 'flocons_doubles' }
-  /** −N points sur la prochaine game. */
+  /** « −N pts à un joueur ». */
   | { kind: 'malus_points'; value: number }
-  /*
-   * Les cartes à deux. Elles attendent la prochaine game de **chacun** des deux
-   * joueurs tirés au sort, et se résolvent quand la seconde est saisie.
+  /** « Multiplicateur game » : le score entier (kills + top) multiplié, plafonné en points. */
+  | { kind: 'multiplicateur_game'; value: number; cap: number }
+  /** « Une game ÷ N » : le score entier divisé, la perte plafonnée en points. */
+  | { kind: 'diviseur_game'; value: number; cap: number }
+  /** « Clone kill du meilleur » : les kills du meilleur tueur de la partie, plafonné. */
+  | { kind: 'clone_kills'; cap: number }
+  /** « Joker » : la game vaut au moins N points. */
+  | { kind: 'plancher'; value: number }
+  /** « +N pts à partir du Top X » : seulement si la game finit dans le Top. */
+  | { kind: 'bonus_top'; top: 1 | 2 | 3; value: number }
+  /** « +N pts petites games » : seulement sous un nombre de kills. */
+  | { kind: 'petite_game'; moinsDe: number; value: number }
+  /** Les flocons de la game sont doublés. Aucune incidence au classement. */
+  | { kind: 'flocons_doubles' }
+  /**
+   * La carte à deux : elle attend la prochaine game de **chacun** des deux
+   * joueurs tirés au sort, et se règle quand la seconde est saisie. Ils
+   * échangent leurs kills, ou leur score entier, borné de chaque côté.
    */
-  /** Les deux joueurs échangent les kills de leur prochaine game, borné. */
-  | { kind: 'echange_kills'; cap: number }
-  /** Celui des deux dont la prochaine game vaut le plus gagne, l'autre perd. */
-  | { kind: 'duel'; gain: number; perte: number };
+  | { kind: 'echange'; sur: 'kills' | 'score'; cap: number }
+  /* ------------------------ Sur une game déjà jouée ----------------------- */
+  /** « Pire game ramenée à la moyenne », plafonné. */
+  | { kind: 'releve_pire'; cap: number }
+  /** « Pire game ×2 », « Meilleure game ×1,5 » : une game jouée multipliée, plafonné. */
+  | { kind: 'multiplie_jouee'; cible: 'pire' | 'meilleure'; value: number; cap: number }
+  /* ------------------------------ Tout de suite --------------------------- */
+  /** Des flocons, dans l'instant. Aucune incidence au classement. */
+  | { kind: 'snowflakes'; value: number }
+  /** « Game supplémentaire » : un créneau de game de plus, hors limite. */
+  | { kind: 'game_supplementaire' }
+  /** « Immunité » : pendant N heures, aucun malus ne touche ses games. */
+  | { kind: 'immunite'; heures: number };
+
+/** Quand une carte se joue. Voir {@link CardEffect}. */
+export type MomentCarte = 'PROCHAINE' | 'JOUEE' | 'INSTANT';
 
 export interface CardDefinition {
   id: string;
+  /** Le nom de la carte : un mot de l'hiver. */
   name: string;
-  /** Sous-titre court affiché sous le nom, comme sur une vraie carte. */
+  /**
+   * L'intitulé de l'action, tel qu'on le disait sur les roues de la Summer
+   * Ligue : « Multiplicateur game », « Joker », « +8 pts bonus ». Affiché sous
+   * le nom.
+   */
   subtitle: string;
   rarity: Rarity;
   /** Texte affiché au joueur. */
@@ -101,7 +132,8 @@ export interface CardDefinition {
    *
    * Sans objet pour un pack Perso ou Finisseur, dont la carte va toujours au
    * joueur désigné. Un malus n'est jamais `TOUS` : retirer dix points à tout le
-   * monde ne change rien au classement.
+   * monde ne change rien au classement. Ni `QUEUE` : on n'enfonce pas les
+   * derniers.
    */
   cible: CibleCarte;
 }

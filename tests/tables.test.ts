@@ -9,7 +9,7 @@ function base(): Database {
     players: [
       {
         id: 'p1', slug: 'boreal', pseudo: 'Boreal', twitchId: null, twitchLogin: null, avatarUrl: null,
-        activisionId: null, snowflakes: 100, subsOfferts: 0, joinedAt: '2026-09-01T00:00:00.000Z', active: true, role: 'joueur',
+        activisionId: null, snowflakes: 100, subsOfferts: 0, creneauxBonus: 0, immuniseJusqua: null, joinedAt: '2026-09-01T00:00:00.000Z', active: true, role: 'joueur',
       },
     ],
     games: [], packsDus: [], ouvertures: [], cartesEnAttente: [], ledger: [], subEvents: [],

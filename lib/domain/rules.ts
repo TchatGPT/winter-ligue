@@ -140,7 +140,7 @@ export const SUB_MILESTONES: readonly SubMilestone[] = [
     kind: 'PACK',
     packId: 'commu',
     label: 'Booster Commu',
-    description: 'Un Booster Commu à ouvrir à l’antenne : sa carte tombe sur un ou deux joueurs au hasard.',
+    description: 'Un Booster Commu à ouvrir à l’antenne : sa carte tombe sur ceux que le sort désigne.',
   },
   {
     every: 500,
@@ -473,6 +473,56 @@ export function rarityPercent(weights: Record<Rarity, number>, rarity: Rarity): 
  * vérifie qu'aucune carte ne le dépasse.
  */
 export const CARD_IMPACT_CAP = 25;
+
+/**
+ * Le budget de chaque rareté : ce qu'une carte peut faire bouger sur une game,
+ * au pire cas, dans un sens comme dans l'autre.
+ *
+ * Les actions reprennent celles des roues de la Summer Ligue, mais pas leur
+ * force : là-bas un ×2 ou un échange de games pouvait valoir cinquante points
+ * d'un coup. Ici une commune pèse quatre points, et seules les trois raretés
+ * du haut pèsent vraiment — sans jamais dépasser `CARD_IMPACT_CAP`, une bonne
+ * game.
+ *
+ * Un test vérifie chaque carte contre le budget de sa rareté, et que les
+ * budgets montent avec elle.
+ */
+export const IMPACT_PAR_RARETE: Record<Rarity, number> = {
+  C: 4,
+  PC: 6,
+  R: 10,
+  SR: 15,
+  UR: 20,
+  L: CARD_IMPACT_CAP,
+};
+
+/**
+ * Les derniers du classement, pour les cartes qui leur donnent un coup de
+ * pouce : le dernier tiers de la ligue, un joueur au moins, trois au plus.
+ */
+export const QUEUE_DU_CLASSEMENT = { part: 3, max: 3 } as const;
+
+export function tailleDeLaQueue(joueurs: number): number {
+  if (joueurs <= 0) return 0;
+  return Math.max(
+    1,
+    Math.min(QUEUE_DU_CLASSEMENT.max, Math.floor(joueurs / QUEUE_DU_CLASSEMENT.part)),
+  );
+}
+
+/**
+ * Les créneaux de game gagnés par une carte « Game supplémentaire ».
+ *
+ * Trois au plus par joueur et par saison : c'est la seule carte dont l'effet
+ * dure au-delà d'une game, et sans borne elle ferait jouer davantage celui
+ * pour qui l'on ouvre davantage de boosters. Au-delà, la carte verse des
+ * flocons à la place.
+ */
+export const CRENEAUX_BONUS = {
+  max: 3,
+  /** Ce que la carte verse quand le joueur a déjà tous ses créneaux. */
+  floconsDeRepli: 1_000,
+} as const;
 
 /* ---------------------------- Les affrontements -------------------------- */
 
