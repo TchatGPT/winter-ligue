@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Barlow, Barlow_Condensed } from 'next/font/google';
 import { Analytics } from '@vercel/analytics/next';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 import { FondHiver } from '@/components/FondHiver';
 import { Sidebar, SIDEBAR_MARGE, SIDEBAR_WIDTH } from '@/components/Sidebar';
 import { getSession } from '@/lib/auth/session';
@@ -86,6 +87,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           </div>
         </div>
         <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
