@@ -133,6 +133,12 @@
   --r-xl: 52px;
   --r-pilule: 999px;
 
+  /* La neige des boutons et des tuiles prises, et la nuit du texte posé dessus. */
+  --neige-1: #ffffff;
+  --neige-2: #f1f9ff;
+  --neige-3: #cfe7f7;
+  --nuit: #06284a;
+
   /* Le flou du verre. Réduit sur petits écrans, où il coûte cher. */
   --blur: 44px;
   --blur-fort: 64px;
@@ -1955,82 +1961,74 @@
   }
 
   /* --------------------------------------------------------------------------
-     LES AFFRONTEMENTS
+     LES DUELS DE FLOCONS
+     components/Affrontements.tsx (le salon) et BatailleArene.tsx (l'arène).
+
+     Le salon se lit comme une affiche : à gauche le ring, où l'on monte son
+     duel ; à droite le fil, ce qui attend un adversaire et ce qui vient de se
+     jouer. L'arène s'ouvre par-dessus, au centre de l'écran.
+
+     Rien ne brille : les orbes, la boule et les tuiles tiennent par leur
+     ombre de contact et leur modelé, comme la neige des cartes.
      -------------------------------------------------------------------------- */
 
-  /*
-   * Une ligne d'affrontement : du verre, mais **plus dense**.
-   *
-   * La plaque du site est faite pour flotter seule au-dessus d'un massif
-   * photographié, et c'est juste. Une **liste** de huit plaques, non : le fond
-   * change sous chacune, les contrastes bougent d'une ligne à l'autre, et
-   * l'ensemble devient une bouillie grise dont on ne détache plus rien.
-   *
-   * Elle garde donc tout le vocabulaire maison — le flou, le biseau conique, la
-   * lentille qui rehausse — et n'en change qu'une chose : sa teinte monte assez
-   * pour que huit lignes empilées se lisent comme huit objets et non comme un
-   * dégradé. C'est le même matériau, réglé pour un autre usage.
-   */
-  /* --------------------------------------------------------------------------
-     LE DUEL DE FLOCONS — l'arène (components/BatailleArene.tsx)
-     Deux orbes face à face, deux jauges de puissance au milieu, une boule de
-     neige qui traverse la piste du plus fort vers l'autre.
-     -------------------------------------------------------------------------- */
-  .duel-scene {
+  /* ---- Un joueur : une boule de neige tassée, son initiale dessus ---- */
+  .orbe {
+    --taille: 88px;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) minmax(0, 1fr);
-    align-items: center;
-    gap: 1rem;
-  }
-  @media (max-width: 639px) {
-    .duel-scene {
-      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    }
-    .duel-scene > .duel-piste {
-      grid-column: 1 / -1;
-      grid-row: 2;
-    }
-  }
-  .duel-combattant {
-    display: flex;
-    min-width: 0;
-    flex-direction: column;
-  }
-  .duel-orbe {
-    display: grid;
-    width: 96px;
-    height: 96px;
+    width: var(--taille);
+    height: var(--taille);
+    flex-shrink: 0;
     place-items: center;
     border-radius: 999px;
     font-family: var(--font-display);
-    font-size: 40px;
+    font-size: calc(var(--taille) * 0.42);
     font-weight: 900;
-    color: #ffffff;
-    text-shadow: 0 2px 6px rgb(0 10 30 / 0.6);
-    background: radial-gradient(circle at 35% 28%, rgb(255 255 255 / 0.55) 0%, rgb(143 220 255 / 0.35) 38%, rgb(20 70 120 / 0.55) 100%);
+    line-height: 1;
+    color: var(--frost);
+    text-shadow: 0 2px 4px rgb(0 10 30 / 0.55);
+    background: radial-gradient(
+      circle at 34% 28%,
+      rgb(255 255 255 / 0.62) 0%,
+      rgb(143 220 255 / 0.34) 36%,
+      rgb(20 70 120 / 0.66) 100%
+    );
     box-shadow:
       inset 0 2px 0 rgb(255 255 255 / 0.7),
       inset 0 -10px 18px -8px rgb(0 20 50 / 0.6),
-      0 12px 30px -10px rgb(0 10 30 / 0.7);
+      0 10px 16px -10px rgb(0 8 24 / 0.8);
     transition:
       box-shadow 0.4s ease,
       transform 0.4s ease,
       filter 0.4s ease;
   }
-  .duel-orbe[data-touche] {
-    animation: duel-touche 0.5s ease-out;
+  .orbe-sm {
+    --taille: 44px;
   }
-  .duel-orbe[data-vainqueur] {
-    transform: scale(1.08);
+  /* Un adversaire qu'on ne connaît pas encore : la place, en pointillés. */
+  .orbe[data-inconnu] {
+    background: rgb(0 10 30 / 0.24);
+    box-shadow: inset 0 1px 3px rgb(0 8 24 / 0.5);
+    outline: 2px dashed rgb(255 255 255 / 0.42);
+    outline-offset: -2px;
+    color: var(--faint);
+    text-shadow: none;
+  }
+  .orbe[data-touche] {
+    animation: orbe-touche 0.5s ease-out;
+  }
+  .orbe[data-vainqueur] {
+    transform: scale(1.06);
     box-shadow:
       inset 0 2px 0 rgb(255 255 255 / 0.8),
+      inset 0 -10px 18px -8px rgb(0 20 50 / 0.5),
       0 0 0 3px var(--aurora),
-      0 0 40px -4px color-mix(in srgb, var(--aurora) 70%, transparent);
+      0 16px 20px -12px rgb(0 8 24 / 0.85);
   }
-  .duel-orbe[data-perdant] {
-    filter: grayscale(0.7) brightness(0.8);
+  .orbe[data-perdant] {
+    filter: grayscale(0.7) brightness(0.78);
   }
-  @keyframes duel-touche {
+  @keyframes orbe-touche {
     0% { transform: translateX(0); }
     20% { transform: translateX(-9px) rotate(-6deg); }
     40% { transform: translateX(8px) rotate(5deg); }
@@ -2038,47 +2036,722 @@
     80% { transform: translateX(3px); }
     100% { transform: translateX(0); }
   }
+
+  /* ---- Les choix en tuiles : glace au repos, bloc de neige une fois pris ---- */
+  .tuile-choix {
+    display: flex;
+    min-height: 62px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.1rem;
+    padding: 0.55rem 0.5rem;
+    border-radius: var(--r-sm);
+    border: 1px solid rgb(255 255 255 / 0.24);
+    background: linear-gradient(160deg, var(--glass-1) 0%, var(--glass-2) 100%);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.28),
+      0 6px 14px -10px rgb(0 8 24 / 0.7);
+    color: var(--ink);
+    text-align: center;
+    transition:
+      background 0.18s ease,
+      border-color 0.18s ease,
+      color 0.18s ease,
+      transform 0.1s ease;
+  }
+  .tuile-choix:hover:not(:disabled) {
+    border-color: rgb(255 255 255 / 0.55);
+  }
+  .tuile-choix:active:not(:disabled) {
+    transform: translateY(1px);
+  }
+  .tuile-choix:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+  }
+  .tuile-choix[aria-pressed='true'] {
+    border-color: rgb(255 255 255 / 0.95);
+    background: linear-gradient(178deg, var(--neige-1) 0%, var(--neige-2) 55%, var(--neige-3) 100%);
+    color: var(--nuit);
+    text-shadow: 0 1px 0 rgb(255 255 255 / 0.8);
+    box-shadow:
+      inset 0 2px 0 #ffffff,
+      inset 0 -8px 14px -10px rgb(110 170 215 / 0.6),
+      0 10px 18px -12px rgb(20 70 120 / 0.7);
+  }
+  .tuile-choix strong {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-weight: 900;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .tuile-choix small {
+    font-size: 0.75rem;
+    opacity: 0.82;
+  }
+
+  /* ---- Les onglets en segment : une rainure, et la neige sur l'onglet pris ---- */
+  .segment {
+    display: inline-flex;
+    max-width: 100%;
+    gap: 4px;
+    overflow-x: auto;
+    padding: 4px;
+    border-radius: var(--r-pilule);
+    background: rgb(0 10 30 / 0.3);
+    box-shadow:
+      inset 0 1px 3px rgb(0 8 24 / 0.55),
+      inset 0 -1px 0 rgb(255 255 255 / 0.12);
+    scrollbar-width: none;
+  }
+  .segment > button {
+    display: inline-flex;
+    min-height: 36px;
+    flex: 1 0 auto;
+    justify-content: center;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0 0.95rem;
+    border-radius: var(--r-pilule);
+    font-family: var(--font-display);
+    font-size: 0.8125rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    color: var(--muted);
+    transition:
+      background 0.18s ease,
+      color 0.18s ease;
+  }
+  .segment > button:hover {
+    color: var(--ink);
+  }
+  .segment > button[aria-pressed='true'] {
+    background: linear-gradient(178deg, var(--neige-1) 0%, var(--neige-2) 55%, var(--neige-3) 100%);
+    color: var(--nuit);
+    box-shadow:
+      inset 0 1px 0 #ffffff,
+      0 4px 10px -6px rgb(0 8 24 / 0.8);
+  }
+  .segment .compte {
+    min-width: 1.35rem;
+    padding: 0 0.3rem;
+    border-radius: var(--r-pilule);
+    background: rgb(255 255 255 / 0.12);
+    font-size: 0.6875rem;
+    text-align: center;
+  }
+  .segment > button[aria-pressed='true'] .compte {
+    background: rgb(6 40 74 / 0.12);
+  }
+
+  /* ---- Le ring : là où l'on monte son duel ---- */
+  .ring {
+    container-type: inline-size;
+    padding: 1.75rem 1.1rem 1.4rem;
+  }
+  @media (min-width: 640px) {
+    .ring {
+      padding: 2rem 1.9rem 1.7rem;
+    }
+  }
+
+  .ring-solde {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.15rem;
+    padding: 0.45rem 0.95rem;
+    border-radius: var(--r-sm);
+    background: rgb(0 10 30 / 0.24);
+    box-shadow:
+      inset 0 1px 2px rgb(0 8 24 / 0.5),
+      inset 0 -1px 0 rgb(255 255 255 / 0.1);
+  }
+  .ring-solde span {
+    font-family: var(--font-display);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--faint);
+  }
+  .ring-solde strong {
+    font-family: var(--font-display);
+    font-size: 1.35rem;
+    font-weight: 900;
+    line-height: 1;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* La session perdue : un encart franc, avec de quoi repartir. */
+  .ring-reconnexion {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.9rem;
+    margin-top: 1.1rem;
+    padding: 0.9rem 1.1rem;
+    border-radius: var(--r-md);
+    background: rgb(0 10 30 / 0.3);
+    box-shadow:
+      inset 0 0 0 1px color-mix(in srgb, var(--gold) 45%, transparent),
+      inset 0 1px 3px rgb(0 8 24 / 0.5);
+  }
+  .ring-reconnexion p {
+    min-width: 0;
+    flex: 1 1 16rem;
+    font-size: 0.9375rem;
+    line-height: 1.45;
+    color: var(--ink-2);
+  }
+  .ring-reconnexion strong {
+    color: var(--gold);
+  }
+
+  /*
+   * L'affiche : les deux camps face à face, et le pot au milieu. Creusée dans
+   * la plaque plutôt que posée dessus — c'est l'emplacement du duel, pas un
+   * objet de plus.
+   */
+  .ring-affiche {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 1.25rem;
+    padding: 1.4rem 0.75rem 1.25rem;
+    border-radius: calc(var(--r-lg) - 0.6rem);
+    background: rgb(0 10 30 / 0.22);
+    box-shadow:
+      inset 0 2px 4px rgb(0 8 24 / 0.5),
+      inset 0 -1px 0 rgb(255 255 255 / 0.12);
+  }
+  /* Étroite, l'affiche passe sur deux rangs : les deux camps côte à côte, le
+     pot dessous. Sur trois colonnes, un téléphone coupait les noms. */
+  @container (max-width: 519px) {
+    .ring-affiche {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-areas:
+        'moi adverse'
+        'pot pot';
+      row-gap: 1.1rem;
+    }
+    .ring-affiche > :nth-child(1) {
+      grid-area: moi;
+    }
+    .ring-affiche > :nth-child(2) {
+      grid-area: pot;
+    }
+    .ring-affiche > :nth-child(3) {
+      grid-area: adverse;
+    }
+  }
+  .ring-camp {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.55rem;
+    text-align: center;
+  }
+  .ring-camp .orbe {
+    --taille: clamp(58px, 13cqi, 96px);
+  }
+  .ring-camp b {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+    font-weight: 900;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--ink);
+  }
+  .ring-camp small {
+    margin-top: -0.35rem;
+    font-size: 0.75rem;
+    color: var(--faint);
+  }
+  .ring-pot {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0 0.25rem;
+    text-align: center;
+  }
+  .ring-pot strong {
+    font-family: var(--font-display);
+    font-size: clamp(2.1rem, 8cqi, 3.9rem);
+    font-weight: 900;
+    line-height: 0.95;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .ring-pot small {
+    font-family: var(--font-display);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .ring-reglages {
+    display: grid;
+    gap: 1.25rem;
+    margin-top: 1.4rem;
+  }
+  @container (min-width: 720px) {
+    .ring-reglages {
+      grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+      gap: 1.75rem;
+    }
+  }
+
+  /*
+   * Le curseur de mise : une rainure creusée, la glace qui la remplit, et une
+   * boule de neige pour poignée. Deux jeux de pseudo-éléments, parce que
+   * Chrome et Firefox ne partagent pas les leurs.
+   */
+  .curseur {
+    --rempli: 0%;
+    width: 100%;
+    height: 30px;
+    appearance: none;
+    background: transparent;
+    cursor: pointer;
+  }
+  .curseur:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+  }
+  .curseur::-webkit-slider-runnable-track {
+    height: 10px;
+    border-radius: var(--r-pilule);
+    background:
+      linear-gradient(90deg, var(--ice-3), var(--ice)) 0 0 / var(--rempli) 100% no-repeat,
+      rgb(0 10 30 / 0.42);
+    box-shadow:
+      inset 0 1px 2px rgb(0 8 24 / 0.6),
+      inset 0 -1px 0 rgb(255 255 255 / 0.14);
+  }
+  .curseur::-moz-range-track {
+    height: 10px;
+    border-radius: var(--r-pilule);
+    background:
+      linear-gradient(90deg, var(--ice-3), var(--ice)) 0 0 / var(--rempli) 100% no-repeat,
+      rgb(0 10 30 / 0.42);
+    box-shadow:
+      inset 0 1px 2px rgb(0 8 24 / 0.6),
+      inset 0 -1px 0 rgb(255 255 255 / 0.14);
+  }
+  .curseur::-webkit-slider-thumb {
+    width: 28px;
+    height: 28px;
+    margin-top: -9px;
+    appearance: none;
+    border-radius: 999px;
+    background: radial-gradient(circle at 35% 30%, var(--neige-1) 0%, var(--neige-2) 45%, var(--neige-3) 100%);
+    box-shadow:
+      inset 0 -3px 5px rgb(90 140 185 / 0.45),
+      0 3px 5px rgb(0 8 24 / 0.6);
+  }
+  .curseur::-moz-range-thumb {
+    width: 28px;
+    height: 28px;
+    border: 0;
+    border-radius: 999px;
+    background: radial-gradient(circle at 35% 30%, var(--neige-1) 0%, var(--neige-2) 45%, var(--neige-3) 100%);
+    box-shadow:
+      inset 0 -3px 5px rgb(90 140 185 / 0.45),
+      0 3px 5px rgb(0 8 24 / 0.6);
+  }
+  .curseur:focus-visible {
+    outline: 2px solid var(--ice);
+    outline-offset: 4px;
+    border-radius: var(--r-pilule);
+  }
+
+  /* Le bilan : ce qu'on gagne, ce qu'on perd, sur la même ligne des yeux. */
+  .ring-bilan {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.6rem;
+    margin-top: 1.25rem;
+  }
+  .ring-bilan > div {
+    padding: 0.6rem 0.9rem;
+    border-radius: var(--r-sm);
+    background: rgb(0 10 30 / 0.2);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.08);
+  }
+  .ring-bilan span {
+    display: block;
+    font-family: var(--font-display);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--faint);
+  }
+  .ring-bilan strong {
+    display: block;
+    margin-top: 0.1rem;
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 900;
+    line-height: 1.05;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .ring-actions {
+    display: grid;
+    gap: 0.9rem;
+    margin-top: 1.25rem;
+  }
+  @container (min-width: 560px) {
+    .ring-actions {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  .ring-actions p {
+    margin-top: 0.45rem;
+    font-size: 0.8125rem;
+    line-height: 1.4;
+    text-align: center;
+    color: var(--faint);
+  }
+
+  /* ---- Le fil : les duels ouverts, et ceux qui viennent de se jouer ---- */
+  .fil-ligne {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 0.7rem 0.85rem;
+    border-radius: var(--r-md);
+    background: rgb(0 10 30 / 0.22);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.12),
+      inset 0 0 0 1px rgb(255 255 255 / 0.05);
+    text-align: left;
+    transition: background 0.18s ease;
+  }
+  button.fil-ligne:hover,
+  .fil-ligne[data-mien] {
+    background: rgb(255 255 255 / 0.08);
+  }
+  .fil-ligne[data-mien] {
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.16),
+      inset 0 0 0 1px rgb(143 220 255 / 0.3);
+  }
+  .fil-liste {
+    display: grid;
+    gap: 0.5rem;
+    max-height: 26rem;
+    overflow-y: auto;
+    padding-right: 0.15rem;
+  }
+
+  /*
+   * Un duel ouvert : qui l'a lancé, la mise, et de quoi le relever. Étroite,
+   * la ligne passe ses boutons dessous — serrés à côté du texte, ils le
+   * pliaient sur quatre lignes.
+   */
+  .fil-ouverts {
+    container-type: inline-size;
+  }
+  .fil-ouvert {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      'orbe qui mise'
+      'actions actions actions';
+    gap: 0.7rem 0.8rem;
+  }
+  .fil-ouvert > :nth-child(1) {
+    grid-area: orbe;
+  }
+  .fil-ouvert > :nth-child(2) {
+    grid-area: qui;
+  }
+  .fil-ouvert > :nth-child(3) {
+    grid-area: mise;
+  }
+  .fil-actions {
+    display: flex;
+    grid-area: actions;
+    gap: 0.5rem;
+  }
+  .fil-actions > .btn {
+    flex: 1;
+  }
+  @container (min-width: 600px) {
+    .fil-ouvert {
+      grid-template-columns: auto minmax(0, 1fr) auto auto;
+      grid-template-areas: 'orbe qui mise actions';
+    }
+    .fil-actions > .btn {
+      flex: none;
+    }
+  }
+
+  /* Une liste vide : un creux dans la plaque, qui dit quoi faire. */
+  .fil-vide {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    padding: 1rem 1.1rem;
+    border-radius: var(--r-md);
+    background: rgb(0 10 30 / 0.2);
+    box-shadow:
+      inset 0 1px 3px rgb(0 8 24 / 0.45),
+      inset 0 -1px 0 rgb(255 255 255 / 0.08);
+  }
+
+  /* Un résultat : le vainqueur en aurore, le perdant éteint, le score au centre. */
+  .resultat {
+    display: grid;
+    min-width: 0;
+    flex: 1;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: center;
+    gap: 0.6rem;
+  }
+  .resultat > b {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--muted);
+  }
+  .resultat > b:last-child {
+    text-align: right;
+  }
+  .resultat > b[data-gagne] {
+    color: var(--aurora);
+  }
+  .resultat > em {
+    padding: 0.1rem 0.6rem;
+    border-radius: var(--r-pilule);
+    background: rgb(0 10 30 / 0.35);
+    font-family: var(--font-display);
+    font-size: 1.05rem;
+    font-style: normal;
+    font-weight: 900;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Les médailles du top de la semaine. */
+  .medaille {
+    display: grid;
+    width: 30px;
+    height: 30px;
+    flex-shrink: 0;
+    place-items: center;
+    border-radius: 999px;
+    background: rgb(255 255 255 / 0.08);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.25);
+    font-family: var(--font-display);
+    font-size: 0.875rem;
+    font-weight: 900;
+    color: var(--muted);
+  }
+  .medaille[data-rang='1'] {
+    background: linear-gradient(150deg, #ffe9a8, #d19a17);
+    color: #1a1305;
+  }
+  .medaille[data-rang='2'] {
+    background: linear-gradient(150deg, #e6eef7, #93a7bb);
+    color: #10161d;
+  }
+  .medaille[data-rang='3'] {
+    background: linear-gradient(150deg, #f0c9a0, #b0763c);
+    color: #1c1006;
+  }
+
+  /* ---- Le guide : les étapes numérotées (hors de la frise .etape, plus bas) ---- */
+  .duel-etape {
+    position: relative;
+    padding: 0.85rem 1rem 0.9rem 3.35rem;
+    border-radius: var(--r-md);
+    background: rgb(0 10 30 / 0.2);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.1);
+  }
+  .duel-etape > i {
+    position: absolute;
+    top: 0.85rem;
+    left: 0.9rem;
+    display: grid;
+    width: 1.75rem;
+    height: 1.75rem;
+    place-items: center;
+    border-radius: 999px;
+    background: linear-gradient(178deg, var(--neige-1) 0%, var(--neige-2) 55%, var(--neige-3) 100%);
+    box-shadow:
+      inset 0 -3px 5px rgb(110 170 215 / 0.5),
+      0 2px 4px rgb(0 8 24 / 0.5);
+    font-family: var(--font-display);
+    font-size: 0.9rem;
+    font-style: normal;
+    font-weight: 900;
+    color: var(--nuit);
+  }
+  .duel-etape > b {
+    display: block;
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-weight: 900;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--ink);
+  }
+  .duel-etape > p {
+    margin-top: 0.2rem;
+    font-size: 0.875rem;
+    line-height: 1.45;
+    color: var(--ink-2);
+  }
+
+  /* La chance aux boosters, de ×1 à ×2 : une rainure, et la glace jusqu'au solde. */
+  .jauge-chance {
+    position: relative;
+    height: 12px;
+    border-radius: var(--r-pilule);
+    background: rgb(0 10 30 / 0.42);
+    box-shadow:
+      inset 0 1px 2px rgb(0 8 24 / 0.6),
+      inset 0 -1px 0 rgb(255 255 255 / 0.14);
+  }
+  .jauge-chance > span {
+    position: absolute;
+    inset: 0 auto 0 0;
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--ice-3), var(--ice) 70%, var(--frost));
+  }
+
+  /* ---- La fenêtre de l'arène ---- */
+  .fenetre-voile {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.75rem;
+    background: rgb(4 16 31 / 0.62);
+    backdrop-filter: blur(10px);
+  }
+  @media (min-width: 640px) {
+    .fenetre-voile {
+      padding: 1.5rem;
+    }
+  }
+  .fenetre-carte {
+    display: flex;
+    width: 100%;
+    max-width: 60rem;
+    max-height: calc(100dvh - 1.5rem);
+    flex-direction: column;
+    overflow: hidden;
+    /* La même glace bleutée que les cartes de la page : sur le voile sombre,
+       le verre seul virait au gris. */
+    background: linear-gradient(160deg, rgb(44 88 132 / 0.94) 0%, rgb(18 44 76 / 0.97) 100%);
+  }
+
+  /* ---- L'arène ---- */
+  .arene {
+    container-type: inline-size;
+    position: relative;
+  }
+  .arene-pot {
+    margin-top: 0.4rem;
+    font-family: var(--font-display);
+    font-size: clamp(2.6rem, 9cqi, 4.2rem);
+    font-weight: 900;
+    line-height: 1;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+  .duel-scene {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr) minmax(0, 1fr);
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .duel-combattant {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  .duel-combattant .orbe {
+    --taille: clamp(60px, 15cqi, 124px);
+  }
   .duel-pip {
     width: 14px;
     height: 14px;
     border-radius: 999px;
-    background: rgb(255 255 255 / 0.12);
-    box-shadow: inset 0 0 0 1.5px rgb(255 255 255 / 0.35);
-    transition: background 0.3s ease, box-shadow 0.3s ease;
+    background: rgb(0 10 30 / 0.35);
+    box-shadow:
+      inset 0 1px 2px rgb(0 8 24 / 0.6),
+      inset 0 0 0 1.5px rgb(255 255 255 / 0.3);
+    transition: background 0.3s ease;
   }
   .duel-pip[data-plein] {
-    background: radial-gradient(circle at 35% 30%, #ffffff, var(--ice));
-    box-shadow: 0 0 12px -2px var(--ice);
+    background: radial-gradient(circle at 35% 30%, var(--neige-1), var(--ice) 80%);
+    box-shadow:
+      inset 0 -2px 3px rgb(20 90 140 / 0.45),
+      0 2px 3px rgb(0 8 24 / 0.55);
   }
   .duel-piste {
     position: relative;
     display: grid;
-    gap: 0.6rem;
+    gap: 0.55rem;
     padding: 0.5rem 0;
   }
   .duel-jauge {
     position: relative;
-    height: 26px;
+    height: 28px;
     overflow: hidden;
-    border-radius: 999px;
-    background: rgb(0 10 30 / 0.35);
-    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.18);
+    border-radius: var(--r-pilule);
+    background: rgb(0 10 30 / 0.4);
+    box-shadow:
+      inset 0 1px 3px rgb(0 8 24 / 0.6),
+      inset 0 -1px 0 rgb(255 255 255 / 0.14);
   }
   .duel-jauge > span {
     position: absolute;
     top: 0;
     bottom: 0;
-    border-radius: 999px;
-    background: linear-gradient(90deg, var(--ice-3), var(--ice) 70%, #ffffff);
-    box-shadow: 0 0 16px -2px var(--ice);
-    transition: width 0.65s cubic-bezier(0.2, 0.8, 0.3, 1);
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--ice-3), var(--ice) 70%, var(--frost));
+    transition: width 0.6s cubic-bezier(0.2, 0.8, 0.3, 1);
+  }
+  .duel-jauge[data-vide] > span {
+    transition: none;
   }
   .duel-jauge[data-cote='gauche'] > span {
     left: 0;
   }
   .duel-jauge[data-cote='droite'] > span {
     right: 0;
-    background: linear-gradient(270deg, var(--ice-3), var(--ice) 70%, #ffffff);
+    background: linear-gradient(270deg, var(--ice-3), var(--ice) 70%, var(--frost));
   }
   .duel-jauge > em {
     position: absolute;
@@ -2086,59 +2759,90 @@
     display: grid;
     place-items: center;
     font-family: var(--font-display);
-    font-size: 15px;
+    font-size: 1rem;
     font-style: normal;
     font-weight: 900;
     color: #ffffff;
-    text-shadow: 0 1px 3px rgb(0 10 30 / 0.8);
+    text-shadow: 0 1px 3px rgb(0 10 30 / 0.85);
+    font-variant-numeric: tabular-nums;
   }
   .duel-vs {
     text-align: center;
     font-family: var(--font-display);
-    font-size: 13px;
+    font-size: 0.8125rem;
     font-weight: 900;
     letter-spacing: 0.3em;
     color: var(--faint);
   }
+
+  /*
+   * La boule de neige, en deux pièces : l'enveloppe avance à vitesse
+   * constante d'un camp à l'autre, la boule dedans monte puis retombe. Deux
+   * mouvements séparés, et la trajectoire est une vraie parabole.
+   */
   .duel-boule {
     position: absolute;
     top: 50%;
     width: 30px;
     height: 30px;
     margin-top: -15px;
+    animation: 0.52s linear forwards;
+    pointer-events: none;
+  }
+  .duel-boule > i {
+    display: block;
+    width: 100%;
+    height: 100%;
     border-radius: 999px;
-    background: radial-gradient(circle at 35% 30%, #ffffff 0%, #eaf7ff 45%, #a9d6f2 100%);
-    box-shadow: 0 0 18px 2px rgb(255 255 255 / 0.55);
-    animation: 0.52s cubic-bezier(0.4, 0, 0.8, 0.6) forwards;
+    background: radial-gradient(circle at 35% 30%, var(--neige-1) 0%, var(--neige-2) 45%, var(--neige-3) 100%);
+    box-shadow:
+      inset 0 -4px 6px rgb(90 140 185 / 0.5),
+      0 6px 6px -3px rgb(0 8 24 / 0.55);
+    animation: duel-arc 0.52s linear forwards;
   }
   .duel-boule[data-vers='droite'] { animation-name: duel-vers-droite; }
   .duel-boule[data-vers='gauche'] { animation-name: duel-vers-gauche; }
   .duel-boule[data-vers='milieu-g'] { animation-name: duel-milieu-g; }
   .duel-boule[data-vers='milieu-d'] { animation-name: duel-milieu-d; }
   @keyframes duel-vers-droite {
-    from { left: -8%; transform: scale(0.7) rotate(0deg); }
-    to { left: 104%; transform: scale(1.1) rotate(540deg); }
+    from { left: -12%; }
+    to { left: 104%; }
   }
   @keyframes duel-vers-gauche {
-    from { left: 104%; transform: scale(0.7) rotate(0deg); }
-    to { left: -8%; transform: scale(1.1) rotate(-540deg); }
+    from { left: 104%; }
+    to { left: -12%; }
   }
   @keyframes duel-milieu-g {
-    from { left: -8%; }
+    from { left: -12%; }
     to { left: calc(50% - 30px); }
   }
   @keyframes duel-milieu-d {
     from { left: 104%; }
     to { left: 50%; }
   }
+  @keyframes duel-arc {
+    0% {
+      transform: translateY(0) scale(0.75) rotate(0deg);
+      animation-timing-function: cubic-bezier(0.3, 0.6, 0.5, 1);
+    }
+    50% {
+      transform: translateY(-44px) scale(1) rotate(260deg);
+      animation-timing-function: cubic-bezier(0.5, 0, 0.7, 0.4);
+    }
+    100% {
+      transform: translateY(0) scale(1.05) rotate(520deg);
+    }
+  }
+
+  /* L'impact : la boule éclate en poudre, là où elle frappe. */
   .duel-eclat {
     position: absolute;
     top: 50%;
-    width: 90px;
-    height: 90px;
-    margin: -45px 0 0 -45px;
+    width: 84px;
+    height: 84px;
+    margin: -42px 0 0 -42px;
     border-radius: 999px;
-    background: radial-gradient(circle, rgb(255 255 255 / 0.95) 0%, rgb(234 247 255 / 0.6) 30%, transparent 70%);
+    background: radial-gradient(circle, rgb(255 255 255 / 0.9) 0%, rgb(234 247 255 / 0.5) 32%, transparent 68%);
     animation: duel-eclat 0.6s ease-out forwards;
     pointer-events: none;
   }
@@ -2147,131 +2851,34 @@
   .duel-eclat[data-cote='milieu'] { left: 50%; }
   @keyframes duel-eclat {
     from { transform: scale(0.2); opacity: 1; }
-    to { transform: scale(1.6); opacity: 0; }
+    to { transform: scale(1.5); opacity: 0; }
   }
+
   .duel-verdict {
     animation: duel-verdict 0.6s cubic-bezier(0.2, 0.9, 0.3, 1.3);
-    color: var(--aurora);
   }
   @keyframes duel-verdict {
-    from { transform: scale(0.8); opacity: 0; }
+    from { transform: scale(0.85); opacity: 0; }
     to { transform: scale(1); opacity: 1; }
   }
+
+  /* Le relevé, échange par échange : des pastilles, pas un tableau. */
   .duel-releve {
-    display: grid;
-    grid-template-columns: 2.5rem 1fr 5rem 1fr;
+    display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
-    border-radius: 12px;
-    background: rgb(0 10 30 / 0.25);
-    padding: 0.3rem 0.8rem;
-    text-align: center;
+    gap: 0.4rem;
+    padding: 0.25rem 0.7rem;
+    border-radius: var(--r-pilule);
+    background: rgb(0 10 30 / 0.3);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.08);
     font-family: var(--font-display);
-    font-size: 15px;
+    font-size: 0.875rem;
     font-weight: 800;
+    font-variant-numeric: tabular-nums;
   }
+
   /* Pas d'exception au mouvement réduit : le duel se joue à l'écran, lancer
      par lancer. Sans l'animation, il n'y a plus de duel à regarder. */
-
-  .duel {
-    background: linear-gradient(180deg, rgb(20 34 56 / 0.72) 0%, rgb(12 22 38 / 0.78) 100%);
-  }
-
-  button.duel {
-    transition:
-      transform 0.22s cubic-bezier(0.2, 0.8, 0.3, 1),
-      box-shadow 0.22s ease;
-  }
-
-  button.duel:hover {
-    transform: translateY(-2px);
-  }
-
-  /*
-   * La nappe de rareté, en travers de la ligne.
-   *
-   * C'est la traduction du grand pavé coloré de la référence dans la palette du
-   * site : au lieu d'un bloc plein qui couperait la ligne en deux, une nappe qui
-   * la traverse et s'éteint. La couleur reste celle de la plus haute carte
-   * sortie — on repère de loin la ligne qui vaut le clic, sans qu'aucun aplat ne
-   * vienne concurrencer les cartes elles-mêmes.
-   */
-  .duel-nappe {
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    pointer-events: none;
-    background:
-      linear-gradient(
-        90deg,
-        color-mix(in srgb, var(--eclat) 18%, transparent) 0%,
-        transparent 46%
-      ),
-      radial-gradient(
-        60% 130% at 100% 50%,
-        color-mix(in srgb, var(--eclat) 22%, transparent) 0%,
-        transparent 70%
-      );
-  }
-
-  /* L'arête gauche, à la couleur de la rareté : le seul trait franc de la
-     ligne, et il porte l'information. */
-  .duel-nappe::before {
-    content: '';
-    position: absolute;
-    top: 12%;
-    bottom: 12%;
-    left: 0;
-    width: 3px;
-    border-radius: 3px;
-    background: var(--eclat);
-    box-shadow: 0 0 14px color-mix(in srgb, var(--eclat) 70%, transparent);
-  }
-
-  /*
-   * Le sachet, avec son illustration — **agrandie et recadrée**.
-   *
-   * Les planches sont des sachets photographiés sur fond sombre : posées
-   * entières dans une case de soixante pixels, les quatre donnaient quatre
-   * rectangles bleu nuit qu'on ne distinguait pas les uns des autres. Recadrées
-   * sur leur cœur, on voit le dragon, le loup, la muraille de glace — ce qui
-   * distingue un sachet d'un autre, et ce que la référence montre de ses boîtes.
-   */
-  .duel-sachet {
-    position: relative;
-    display: grid;
-    flex-shrink: 0;
-    place-items: center;
-    overflow: hidden;
-    border-radius: 16px;
-    background: linear-gradient(150deg, var(--haut, #22314a), var(--bas, #101a2c));
-    box-shadow:
-      inset 0 0 0 1px rgb(255 255 255 / 0.14),
-      inset 0 10px 18px -16px rgb(255 255 255 / 0.65),
-      0 4px 12px -6px rgb(1 5 14 / 0.8);
-  }
-
-  .duel-sachet img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    /* Le cœur de la planche, pas ses marges : au-dessous de 1,5 le sachet reste
-       entier et sombre, au-dessus de 1,9 l'illustration sort du cadre. */
-    transform: scale(1.7);
-    /* Les planches sont sombres pour aller sur un fond sombre ; dans une case de
-       soixante pixels, elles ont besoin d'être relevées. */
-    filter: saturate(1.3) brightness(1.2) contrast(1.05);
-  }
-
-  /* Un voile en bas : sans lui, une illustration claire mange le liseré et la
-     case perd son contour. */
-  .duel-sachet::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    background: linear-gradient(180deg, transparent 42%, rgb(3 7 17 / 0.5) 100%);
-  }
 
   /* --------------------------------------------------------------------------
      Boutons

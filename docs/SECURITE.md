@@ -212,6 +212,14 @@ joueur sans pseudo Activision, redirection vers `/bienvenue`. L'espace
 `/admin` garde son propre garde. Ce n'est qu'un aiguillage d'affichage : les
 routes d'API restent seules responsables de leurs contrôles.
 
+**Une session sans joueur ne reste pas sur une page de jeu.** La session de
+secours (`sub = 'admin'`) administre mais ne joue pas : sur `/duels`, elle voyait
+la page sans pouvoir miser ni affronter le bot. Dès que le site a une base
+durable, `exigeSession()` la renvoie donc se connecter sur un vrai compte — par
+`GET /api/auth/twitch/demo` tant que la connexion est simulée, par `/connexion`
+une fois Twitch branché. `/admin` lui reste ouvert. La décision est une fonction
+pure, `lib/domain/aiguillage.ts`, verrouillée par `tests/aiguillage.test.ts`.
+
 **Le pseudo Activision** (`Player.activisionId`) est la seule donnée qu'un joueur
 écrit sur son propre compte : `PATCH /api/me`, `guard({ role: 'joueur' })`, schéma
 `monActivisionSchema` (lettres, chiffres, `_ - .`, espace, suffixe `#chiffres`

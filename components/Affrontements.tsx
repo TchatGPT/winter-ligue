@@ -3,28 +3,39 @@
 /**
  * Le salon des duels.
  *
- * Quatre choses sur un même écran : de quoi en monter un, ceux qui cherchent un
- * adversaire, les plus gros de la semaine, et les derniers joués. La cinquième —
- * l'arène — recouvre tout dès qu'un duel se joue, parce qu'à ce
- * moment-là il n'y a plus rien d'autre à regarder.
+ * Il se lit comme une affiche. À gauche, le ring : on y règle sa mise et son
+ * format, on voit tout de suite ce qu'on peut gagner ou perdre, et deux
+ * boutons engagent — le bot, tout de suite, ou les joueurs, qui relèveront le
+ * défi. À droite, le fil : les duels qui attendent un adversaire, puis ceux qui
+ * viennent de se jouer.
+ *
+ * L'arène s'ouvre par-dessus, au centre de l'écran, dès le clic : on voit le
+ * duel se mettre en place pendant que le serveur le tire, puis se jouer lancer
+ * par lancer. Il n'y a rien à faire défiler pour le regarder.
  *
  * ## Le sondage plutôt que le temps réel
  *
- * Le projet n'a pas de canal permanent, et n'en a pas besoin ici. Un
- * duel se rejoint en un clic ; deux secondes de retard sur l'affichage
- * n'ont jamais fait rater personne, et un WebSocket ouvert en permanence pour
- * une poignée de joueurs coûterait plus qu'il ne rapporte. Le sondage s'arrête
- * d'ailleurs pendant qu'un duel se joue, où il ne servirait à rien.
+ * Le projet n'a pas de canal permanent, et n'en a pas besoin ici. Un duel se
+ * rejoint en un clic ; deux secondes de retard sur l'affichage n'ont jamais
+ * fait rater personne. Le sondage s'arrête pendant qu'un duel se joue, où il
+ * ne servirait à rien.
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { BatailleArene, type BatailleVueClient } from '@/components/BatailleArene';
-import { NAV_ICONS } from '@/components/icons';
-import { reveilleSon } from '@/components/bruitage';
-import { EmptyState, Notice, flakes } from '@/components/ui';
-import { MANCHES_POSSIBLES } from '@/lib/domain/bataille';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { createPortal } from 'react-dom';
+import {
+  ArenePreparation,
+  BatailleArene,
+  initiale,
+  type BatailleVueClient,
+  type CampApercu,
+} from '@/components/BatailleArene';
+import { prechargeSons, reveilleSon } from '@/components/bruitage';
+import { IconSwords } from '@/components/icons';
 import { SnowCap } from '@/components/SnowCap';
+import { Notice, flakes } from '@/components/ui';
+import { MANCHES_POSSIBLES, manchesAGagner } from '@/lib/domain/bataille';
+import { shortDateTime } from '@/lib/format';
 
 /** Le rythme du sondage, quand personne ne joue. */
 const SONDAGE = 2000;
@@ -37,268 +48,210 @@ interface Charge {
   moiId: string | null;
 }
 
-/** Les mises proposées d'un clic. Le champ accepte n'importe quoi entre les bornes. */
+/** Les mises proposées d'un clic. Le curseur et le champ font le reste. */
 const MISES = [100, 250, 500, 1000, 2500, 5000];
 
-/* -------------------------------------------------------------------------- */
+/** Ce que dit chaque format, sous son nombre de manches. */
+const FORMATS: Record<number, string> = {
+  1: 'Un lancer décide',
+  3: 'Le premier à 2',
+  5: 'Le premier à 3',
+};
 
-/* ============================ Les briques ================================= */
+const BOT: CampApercu = { pseudo: 'Le Bot', bot: true };
 
 /** Le pot : les deux mises réunies. C'est ce qui change de mains. */
 const pot = (b: BatailleVueClient) => b.mise * 2;
 
-/** Une pastille d'état : ce que la ligne raconte avant même qu'on la lise. */
-function Etat({ enAttente }: { enAttente: boolean }) {
-  return (
-    <span
-      className="inline-flex items-center gap-1.5 self-start rounded-full px-2.5 py-1 font-display text-[11px] font-black tracking-[0.14em] uppercase"
-      style={{
-        background: enAttente ? 'rgb(255 217 125 / 0.16)' : 'rgb(99 238 196 / 0.14)',
-        color: enAttente ? 'var(--gold)' : 'var(--aurora)',
-        boxShadow: 'inset 0 0 0 1px rgb(255 255 255 / 0.08)',
-      }}
-    >
-      <span
-        className="h-1.5 w-1.5 rounded-full"
-        style={{
-          background: 'currentColor',
-          boxShadow: '0 0 8px currentColor',
-        }}
-        aria-hidden="true"
-      />
-      {enAttente ? 'En attente' : 'Terminé'}
-    </span>
-  );
+/** Un duel dont on n'a que l'issue : il n'y a aucun lancer à rejouer. */
+const sansReleve = (b: BatailleVueClient) => b.ancien || b.echanges.length === 0;
+
+/* ------------------------------------------------------------------------ */
+/* Le curseur de mise                                                        */
+/* ------------------------------------------------------------------------ */
+
+/*
+ * Le curseur n'est pas linéaire : de 50 à 20 000, un pixel vaudrait trente
+ * flocons, et les petites mises — les plus jouées — tiendraient dans le
+ * premier centimètre. La position suit la racine carrée de la mise : la
+ * moitié de la course couvre le premier quart des montants.
+ */
+const COURSE = 1000;
+const PAS_MISE = 50;
+
+function versCurseur(mise: number, min: number, max: number): number {
+  if (max <= min) return COURSE;
+  const t = Math.min(1, Math.max(0, (mise - min) / (max - min)));
+  return Math.round(Math.sqrt(t) * COURSE);
 }
+
+function depuisCurseur(position: number, min: number, max: number): number {
+  const t = (position / COURSE) ** 2;
+  const brute = Math.round((min + t * (max - min)) / PAS_MISE) * PAS_MISE;
+  return Math.min(max, Math.max(min, brute));
+}
+
+/* ------------------------------------------------------------------------ */
+/* La fenêtre de l'arène                                                     */
+/* ------------------------------------------------------------------------ */
+
+const rienAEcouter = () => () => {};
 
 /**
- * Une ligne de duel, en trois bandes.
- *
- * ## Pourquoi elle a été refaite, deux fois
- *
- * D'abord une barre de quarante pixels : deux pseudos, un chiffre, des
- * pastilles grosses comme des confettis. Rien n'avait de poids, et rien ne
- * montrait ce qui s'était passé.
- *
- * Puis trois colonnes — qui joue, ce qui est en jeu, ce qu'il y a à gagner. La
- * structure était juste mais la répartition fausse : tout se tassait à gauche
- * dans une colonne trop étroite pendant qu'un panneau presque vide occupait le
- * quart droit de chaque ligne.
- *
- * Trois **bandes** horizontales, donc, qui occupent toute la largeur :
- *
- *  1. les sachets en jeu, et le pot à l'autre bout — ce qu'on met, ce qu'on
- *     gagne, sur la même ligne des yeux ;
- *  2. le duel lui-même : les deux camps face à face, leurs scores de
- *     part et d'autre du VS, et le bouton qui engage ;
- *  3. les cartes sorties, une fois la partie jouée.
- *
- * C'est la lecture d'une affiche de match, et c'est ce que la liste raconte.
+ * Vrai une fois la page montée dans le navigateur. Le portail vise
+ * `document.body`, qui n'existe pas au rendu serveur.
  */
-function Ligne({
-  affrontement,
-  moiId,
-  rang,
-  action,
-  onRelire,
-}: {
-  affrontement: BatailleVueClient;
-  moiId: string | null;
-  /** Le rang dans le classement de la semaine, s'il y en a un. */
-  rang?: number;
-  action?: React.ReactNode;
-  onRelire?: () => void;
-}) {
-  const b = affrontement;
-  const hote = b.camps[0];
-  const adverse = b.camps[1];
-  const fini = b.statut === 'TERMINEE';
-  const eclat = fini ? 'var(--aurora)' : 'var(--gold)';
-
-  /** Un camp, avec son score du côté du centre. */
-  const camp = (c: (typeof b.camps)[number] | undefined, cote: 'gauche' | 'droite') => {
-    const gagne = fini && c && b.vainqueurId === c.id;
-    const nom = (
-      <span className="flex min-w-0 items-center gap-2">
-        <span
-          className="grid h-9 w-9 shrink-0 place-items-center rounded-full font-display text-[13px] font-black"
-          style={{
-            background: gagne
-              ? 'linear-gradient(150deg, rgb(99 238 196 / 0.45), rgb(99 238 196 / 0.12))'
-              : 'rgb(255 255 255 / 0.07)',
-            boxShadow: gagne
-              ? 'inset 0 0 0 1px rgb(99 238 196 / 0.5), 0 0 14px rgb(99 238 196 / 0.28)'
-              : 'inset 0 0 0 1px rgb(255 255 255 / 0.12)',
-            color: gagne ? 'var(--aurora)' : 'var(--muted)',
-          }}
-          aria-hidden="true"
-        >
-          {c ? (c.bot ? '🤖' : (c.pseudo[0] ?? '?').toUpperCase()) : '?'}
-        </span>
-        <span
-          className={`min-w-0 truncate font-display text-[15px] font-bold ${
-            gagne ? 'text-aurora' : fini ? 'text-muted' : 'text-ink'
-          }`}
-        >
-          {c?.pseudo ?? <span className="font-normal text-faint">place libre</span>}
-          {moiId && c?.id === moiId && <span className="ml-1.5 text-[11px] text-muted">(toi)</span>}
-        </span>
-      </span>
-    );
-    const score = fini ? (
-      <span
-        className={`shrink-0 font-display text-2xl leading-none font-black tabular-nums ${
-          gagne ? 'text-aurora' : 'text-faint'
-        }`}
-      >
-        {c?.manches ?? 0}
-      </span>
-    ) : null;
-
-    return (
-      <div
-        className={`flex min-w-0 flex-1 items-center gap-3 ${
-          cote === 'droite' ? 'flex-row-reverse' : ''
-        }`}
-      >
-        {nom}
-        {score}
-      </div>
-    );
-  };
-
-  const corps = (
-    <>
-      <span className="duel-nappe" style={{ ['--eclat' as string]: eclat }} aria-hidden="true" />
-
-      <div className="relative flex flex-col gap-3 px-4 py-4 sm:px-5">
-        {/* ---- Bande 1 : ce qu'on met, et ce qu'on gagne ------------------ */}
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
-          {rang !== undefined && (
-            <span
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-full font-display text-[15px] font-black"
-              style={{
-                background:
-                  rang === 0
-                    ? 'linear-gradient(150deg, #ffe9a8, #d19a17)'
-                    : rang === 1
-                      ? 'linear-gradient(150deg, #e6eef7, #93a7bb)'
-                      : rang === 2
-                        ? 'linear-gradient(150deg, #f0c9a0, #b0763c)'
-                        : 'rgb(255 255 255 / 0.07)',
-                color: rang < 3 ? '#1a1305' : 'var(--muted)',
-                boxShadow: 'inset 0 1px 0 rgb(255 255 255 / 0.5)',
-              }}
-            >
-              {rang + 1}
-            </span>
-          )}
-
-          <span className="font-display text-[12px] font-bold tracking-wider text-faint uppercase">
-            Duel de flocons · au meilleur des {b.manches} manche{b.manches > 1 ? 's' : ''}
-          </span>
-
-          {/* Le pot pousse à droite : c'est le bout de la ligne des yeux. */}
-          <span className="ml-auto flex items-center gap-3 text-right">
-            <Etat enAttente={!fini} />
-            <span>
-              <span className="block font-display text-[26px] leading-none font-black tabular-nums text-ink sm:text-[30px]">
-                {flakes(pot(b))} <span className="text-ice">❄</span>
-              </span>
-              <span className="block font-display text-[11px] font-bold tracking-[0.16em] text-faint uppercase">
-                Pot total
-              </span>
-            </span>
-          </span>
-        </div>
-
-        {/* ---- Bande 2 : le duel ----------------------------------- */}
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-2xl bg-black/22 px-3 py-2.5">
-          {camp(hote, 'gauche')}
-          <span
-            className="shrink-0 font-display text-[13px] font-black tracking-[0.2em] text-faint"
-            aria-hidden="true"
-          >
-            VS
-          </span>
-          {camp(adverse, 'droite')}
-          {action && <span className="flex shrink-0 gap-2">{action}</span>}
-        </div>
-
-        {/* ---- Bande 3 : les lancers, en bref ------------------------------ */}
-        {fini && b.echanges.length > 0 && (
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className="mr-1 shrink-0 font-display text-[11px] font-bold tracking-[0.16em] text-faint uppercase">
-              Lancers
-            </span>
-            {b.echanges.map((e, i) => (
-              <span
-                key={i}
-                className="rounded-full bg-black/25 px-2 py-0.5 font-display text-[12px] font-bold tabular-nums"
-              >
-                <span className={e.hote > e.adversaire ? 'text-aurora' : 'text-muted'}>{e.hote}</span>
-                <span className="text-faint"> · </span>
-                <span className={e.adversaire > e.hote ? 'text-aurora' : 'text-muted'}>{e.adversaire}</span>
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
-    </>
-  );
-
-  const classes = 'glass duel relative w-full overflow-hidden text-left';
-
-  return (
-    <li>
-      {onRelire ? (
-        <button type="button" onClick={onRelire} className={classes}>
-          {corps}
-        </button>
-      ) : (
-        <div className={classes}>{corps}</div>
-      )}
-    </li>
+function useNavigateur(): boolean {
+  return useSyncExternalStore(
+    rienAEcouter,
+    () => true,
+    () => false,
   );
 }
 
-/* -------------------------------------------------------------------------- */
+function FenetreDuel({
+  titre,
+  ferme,
+  pied,
+  children,
+}: {
+  titre: string;
+  ferme: () => void;
+  pied?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  const navigateur = useNavigateur();
+  const boutonFermer = useRef<HTMLButtonElement>(null);
 
-export function Affrontements({ initial, soldeMax }: { initial: Charge; soldeMax: number }) {
+  // Le rappel change à chaque rendu du salon ; l'écoute du clavier, elle, ne
+  // doit s'installer qu'une fois — sinon le focus reviendrait sur la croix à
+  // chaque lancer.
+  const rappel = useRef(ferme);
+  useEffect(() => {
+    rappel.current = ferme;
+  }, [ferme]);
+
+  useEffect(() => {
+    if (!navigateur) return;
+    const surTouche = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') rappel.current();
+    };
+    window.addEventListener('keydown', surTouche);
+    boutonFermer.current?.focus();
+    // La page ne défile plus sous la fenêtre.
+    const avant = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', surTouche);
+      document.body.style.overflow = avant;
+    };
+  }, [navigateur]);
+
+  // Un portail vers <body> : les plaques de verre portent un backdrop-filter,
+  // qui ferait d'elles le bloc de référence d'un élément fixe. La fenêtre se
+  // cale sur l'écran, pas sur la plaque.
+  if (!navigateur) return null;
+  return createPortal(
+    <div className="fenetre-voile" role="dialog" aria-modal="true" aria-label={titre} onClick={ferme}>
+      <div className="fenetre-carte glass glass-reflet relative" onClick={(e) => e.stopPropagation()}>
+        <SnowCap radius="var(--r-lg)" seed="fenetre-duel" epaisseur={16} />
+        <button
+          ref={boutonFermer}
+          type="button"
+          className="btn btn-sm absolute top-5 right-5 z-10"
+          onClick={ferme}
+          aria-label="Fermer"
+        >
+          ✕
+        </button>
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 pt-10 pb-6 sm:px-8">{children}</div>
+        {pied && (
+          <footer className="relative flex flex-wrap justify-center gap-2 border-t border-white/15 px-4 py-4">
+            {pied}
+          </footer>
+        )}
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
+/* ------------------------------------------------------------------------ */
+/* Le salon                                                                  */
+/* ------------------------------------------------------------------------ */
+
+type Fenetre =
+  | { etat: 'attente'; jeton: number; gauche: CampApercu; droite: CampApercu; moi: 'gauche' | 'droite'; mise: number; manches: number }
+  | { etat: 'duel'; bataille: BatailleVueClient; anime: boolean; tour: number; fini: boolean }
+  | { etat: 'erreur'; message: string };
+
+type Resultat = { ok: true; data: BatailleVueClient } | { ok: false; message: string };
+
+/** Un numéro par fenêtre ouverte : il distingue une attente, ou un visionnage, du suivant. */
+let dernierNumero = 0;
+const nouveauNumero = () => ++dernierNumero;
+
+/**
+ * Attend la promesse, et au moins `ms` millisecondes : sans ce minimum, la
+ * réponse arrive si vite que l'attente clignote.
+ */
+async function auMoins<T>(ms: number, promesse: Promise<T>): Promise<T> {
+  const [valeur] = await Promise.all([promesse, new Promise((fin) => setTimeout(fin, ms))]);
+  return valeur;
+}
+
+async function poste(url: string, corps: unknown): Promise<Resultat> {
+  try {
+    const reponse = await fetch(url, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(corps),
+    });
+    const charge = await reponse.json();
+    if (!charge.ok) return { ok: false, message: charge.error?.message ?? 'Action impossible.' };
+    return { ok: true, data: charge.data as BatailleVueClient };
+  } catch {
+    return { ok: false, message: 'Le serveur n’a pas répondu. Réessaie dans un instant.' };
+  }
+}
+
+export function Affrontements({
+  initial,
+  moiPseudo,
+  soldeMax,
+}: {
+  initial: Charge;
+  moiPseudo: string | null;
+  soldeMax: number;
+}) {
   const [etat, setEtat] = useState<Charge>(initial);
   const [erreur, setErreur] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
   const [occupe, setOccupe] = useState(false);
 
-  /** La mise et le nombre de manches du duel qu'on monte. */
+  /** La mise et le format du duel qu'on monte. */
   const [mise, setMise] = useState(MISES[0]);
   const [manches, setManches] = useState<number>(3);
 
-  /** Quelle liste on regarde. Une à la fois, comme sur la référence. */
-  type Onglet = 'attente' | 'top' | 'miens' | 'jouees';
-  const [onglet, setOnglet] = useState<Onglet>('attente');
-  /** Le panneau de création, replié tant qu'on ne le demande pas. */
-  const [creation, setCreation] = useState(false);
+  type Onglet = 'recents' | 'miens' | 'top';
+  const [onglet, setOnglet] = useState<Onglet>('recents');
 
-  const parametres = useSearchParams();
-  const routeur = useRouter();
-  const demandee = parametres.get('duel');
+  const [fenetre, setFenetre] = useState<Fenetre | null>(null);
 
-  const [arene, setArene] = useState<BatailleVueClient | null>(
-    () => initial.batailles.find((b) => b.id === demandee && b.statut === 'TERMINEE') ?? null,
-  );
-  const [anime, setAnime] = useState(parametres.get('anime') === '1');
-  // À l'ouverture de l'arène, on l'amène à l'écran : elle s'ouvre sous les
-  // explications, et un duel qu'on ne voit pas se jouer ne sert à rien.
-  const refArene = useRef<HTMLDivElement>(null);
-  const areneId = arene?.id;
-  useEffect(() => {
-    if (areneId) refArene.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, [areneId]);
-
+  const moi: CampApercu = { pseudo: moiPseudo ?? 'Toi', bot: false };
+  const { min: miseMin, max: miseMax } = etat.bornes.mise;
   const solde = etat.balance;
+  const joueur = etat.moiId !== null;
+  const miseValide = Number.isInteger(mise) && mise >= miseMin && mise <= miseMax;
   const abordable = solde !== null && solde >= mise;
-  const miseValide =
-    Number.isInteger(mise) && mise >= etat.bornes.mise.min && mise <= etat.bornes.mise.max;
+  const peutJouer = joueur && miseValide && abordable && !occupe;
+  /** Le haut du curseur : ce qu'on peut se permettre, dans les bornes. */
+  const plafond = Math.max(miseMin, Math.min(miseMax, solde ?? miseMax));
+
+  // Les sons de l'arène se décodent pendant qu'on règle sa mise.
+  useEffect(() => {
+    void prechargeSons();
+  }, []);
 
   const recharge = useCallback(async () => {
     try {
@@ -310,362 +263,614 @@ export function Affrontements({ initial, soldeMax }: { initial: Charge; soldeMax
     }
   }, []);
 
-  const areneOuverte = arene !== null;
+  const fenetreOuverte = fenetre !== null;
   useEffect(() => {
-    if (areneOuverte) return;
+    if (fenetreOuverte) return;
     const t = setInterval(recharge, SONDAGE);
     return () => clearInterval(t);
-  }, [areneOuverte, recharge]);
+  }, [fenetreOuverte, recharge]);
+
+  /* ------------------------------ Les gestes ----------------------------- */
 
   const enCours = useRef(false);
+  /** Le jeton de l'attente affichée ; null si la fenêtre a été fermée entre-temps. */
+  const attenteOuverte = useRef<number | null>(null);
 
-  async function agit(url: string, corps: unknown, animer: boolean) {
+  /** Joue un duel : la fenêtre s'ouvre tout de suite, le serveur tire pendant ce temps. */
+  async function joue(
+    url: string,
+    corps: unknown,
+    apercu: { gauche: CampApercu; droite: CampApercu; moi: 'gauche' | 'droite'; mise: number; manches: number },
+  ) {
     if (enCours.current) return;
     enCours.current = true;
     setOccupe(true);
     setErreur(null);
+    setInfo(null);
+    // Le contexte audio se réveille ici, pendant le geste : ouvert plus tard,
+    // il naîtrait suspendu et les lancers seraient muets.
+    reveilleSon();
 
-    // Le contexte audio se réveille ici, avant le premier `await` : un contexte
-    // ouvert hors d'un geste naît suspendu, et tout ce qu'on lui programme part
-    // d'un bloc au réveil.
-    if (animer) reveilleSon();
+    const jeton = nouveauNumero();
+    attenteOuverte.current = jeton;
+    setFenetre({ etat: 'attente', jeton, ...apercu });
 
-    try {
-      const reponse = await fetch(url, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(corps),
-      });
-      const charge = await reponse.json();
-      if (!charge.ok) {
-        setErreur(charge.error?.message ?? 'Action impossible.');
-        return;
+    const resultat = await auMoins(500, poste(url, corps));
+
+    const toujoursLa = attenteOuverte.current === jeton;
+    attenteOuverte.current = null;
+    if (resultat.ok) {
+      if (toujoursLa) {
+        const b = resultat.data;
+        setFenetre({ etat: 'duel', bataille: b, anime: !sansReleve(b), tour: nouveauNumero(), fini: sansReleve(b) });
+      } else {
+        // Fenêtre fermée pendant le tirage : le duel est joué quand même, on le dit.
+        const b = resultat.data;
+        setInfo(
+          b.vainqueurId === etat.moiId
+            ? `Duel joué : tu as raflé ${flakes(pot(b))} ❄. Il est dans les résultats.`
+            : `Duel joué : perdu, ta mise de ${flakes(b.mise)} ❄ est partie. Il est dans les résultats.`,
+        );
       }
-      const vue = charge.data as BatailleVueClient;
-      if (vue.statut === 'TERMINEE') {
-        setAnime(animer);
-        setArene(vue);
-      }
-      await recharge();
-    } catch {
-      setErreur('Le serveur n’a pas répondu. Réessaie dans un instant.');
-    } finally {
-      enCours.current = false;
-      setOccupe(false);
+    } else if (toujoursLa) {
+      setFenetre({ etat: 'erreur', message: resultat.message });
+    } else {
+      setErreur(resultat.message);
     }
-  }
 
-  function ferme() {
-    setArene(null);
-    if (demandee) routeur.replace('/duels', { scroll: false });
+    enCours.current = false;
+    setOccupe(false);
     void recharge();
   }
 
-  /* --------------------------------- Arène -------------------------------- */
-
-  if (arene) {
-    return (
-      <div ref={refArene} className="scroll-mt-4 space-y-4">
-        <BatailleArene bataille={arene} moiId={etat.moiId} anime={anime} />
-        <div className="flex justify-center">
-          <button type="button" className="btn btn-ghost" onClick={ferme}>
-            Revenir au salon
-          </button>
-        </div>
-      </div>
-    );
+  /** Un geste sans arène : ouvrir son duel, ou l'annuler. */
+  async function agit(url: string, corps: unknown, succes: (b: BatailleVueClient) => string) {
+    if (enCours.current) return;
+    enCours.current = true;
+    setOccupe(true);
+    setErreur(null);
+    setInfo(null);
+    const resultat = await poste(url, corps);
+    if (resultat.ok) setInfo(succes(resultat.data));
+    else setErreur(resultat.message);
+    enCours.current = false;
+    setOccupe(false);
+    void recharge();
   }
 
-  /* --------------------------------- Salon -------------------------------- */
+  const affronteBot = () =>
+    joue('/api/affrontements/bot', { mise, manches }, { gauche: moi, droite: BOT, moi: 'gauche', mise, manches });
 
-  const attente = etat.batailles.filter((b) => b.statut === 'ATTENTE');
+  const ouvreAuxJoueurs = () =>
+    agit(
+      '/api/affrontements',
+      { mise, manches },
+      (b) =>
+        `Ton duel est ouvert : ${flakes(b.mise)} ❄ misés, au meilleur des ${b.manches}. Il attend un adversaire dans « Duels ouverts » — tu peux l’annuler tant que personne ne l’a relevé.`,
+    );
+
+  const releve = (b: BatailleVueClient) =>
+    joue(
+      '/api/affrontements/rejoindre',
+      { batailleId: b.id },
+      { gauche: { pseudo: b.camps[0]?.pseudo ?? '?', bot: false }, droite: moi, moi: 'droite', mise: b.mise, manches: b.manches },
+    );
+
+  const botSurLeMien = (b: BatailleVueClient) =>
+    joue(
+      '/api/affrontements/bot',
+      { batailleId: b.id },
+      { gauche: moi, droite: BOT, moi: 'gauche', mise: b.mise, manches: b.manches },
+    );
+
+  const annule = (b: BatailleVueClient) =>
+    agit('/api/affrontements/annuler', { batailleId: b.id }, () => `Duel annulé : ta mise de ${flakes(b.mise)} ❄ t’est rendue.`);
+
+  const revoit = (b: BatailleVueClient) =>
+    setFenetre({ etat: 'duel', bataille: b, anime: !sansReleve(b), tour: nouveauNumero(), fini: sansReleve(b) });
+
+  function ferme() {
+    attenteOuverte.current = null;
+    setFenetre(null);
+    void recharge();
+  }
+
+  const marqueFini = useCallback(() => {
+    setFenetre((f) => (f && f.etat === 'duel' ? { ...f, fini: true } : f));
+  }, []);
+
+  /* ------------------------------ Les listes ----------------------------- */
+
+  const ouverts = etat.batailles.filter((b) => b.statut === 'ATTENTE');
   const jouees = etat.batailles.filter((b) => b.statut === 'TERMINEE');
-  const miens = etat.batailles.filter(
-    (b) => etat.moiId !== null && b.camps.some((c) => c.id === etat.moiId),
-  );
-  const relire = (b: BatailleVueClient) => () => {
-    setAnime(false);
-    setArene(b);
+  const miens = jouees.filter((b) => joueur && b.camps.some((c) => c.id === etat.moiId));
+  const listes: Record<Onglet, { titre: string; lignes: BatailleVueClient[]; vide: string }> = {
+    recents: { titre: 'Récents', lignes: jouees, vide: 'Aucun duel joué pour l’instant.' },
+    miens: { titre: 'Les miens', lignes: miens, vide: 'Tu n’as encore joué aucun duel.' },
+    top: { titre: 'Top 7 jours', lignes: etat.top, vide: 'Aucun duel joué ces sept derniers jours.' },
   };
+  const liste = listes[onglet];
 
-  /** Les boutons d'une ligne en attente : rejoindre, ou disposer de la sienne. */
-  const actionsDe = (b: BatailleVueClient) => {
-    if (b.statut !== 'ATTENTE') return null;
-    const mien = b.hoteId === etat.moiId;
-    return mien ? (
+  /* ------------------------------- Le bilan ------------------------------ */
+
+  // Le solde est plafonné : au-delà, le gain d'une victoire serait perdu.
+  const gainReel =
+    solde !== null && miseValide ? Math.max(0, Math.min(mise * 2, soldeMax - (solde - mise)) - mise) : mise;
+  const gainPerdu = miseValide ? mise - gainReel : 0;
+
+  /* ------------------------------- La fenêtre ---------------------------- */
+
+  let contenuFenetre: React.ReactNode = null;
+  let piedFenetre: React.ReactNode = null;
+  if (fenetre?.etat === 'attente') {
+    // Le pied existe déjà pendant le tirage : sans lui, la fenêtre grandirait
+    // d'un cran au premier lancer.
+    piedFenetre = (
+      <button type="button" className="btn btn-ghost" disabled>
+        Tirage en cours…
+      </button>
+    );
+    contenuFenetre = (
+      <ArenePreparation
+        gauche={fenetre.gauche}
+        droite={fenetre.droite}
+        moi={fenetre.moi}
+        mise={fenetre.mise}
+        manches={fenetre.manches}
+      />
+    );
+  } else if (fenetre?.etat === 'erreur') {
+    contenuFenetre = (
+      <div className="py-6 text-center">
+        <p className="eyebrow">Duel impossible</p>
+        <p className="mx-auto mt-3 max-w-md text-[16px] leading-relaxed text-ink">{fenetre.message}</p>
+      </div>
+    );
+    piedFenetre = (
+      <button type="button" className="btn btn-ice" onClick={ferme}>
+        Revenir aux duels
+      </button>
+    );
+  } else if (fenetre?.etat === 'duel') {
+    const b = fenetre.bataille;
+    const contreLeBot = b.camps[1]?.bot === true && b.hoteId === etat.moiId;
+    const revanchePossible = contreLeBot && solde !== null && solde >= b.mise && !occupe;
+    contenuFenetre = (
+      <BatailleArene
+        key={fenetre.tour}
+        bataille={b}
+        moiId={etat.moiId}
+        anime={fenetre.anime}
+        onFini={marqueFini}
+      />
+    );
+    piedFenetre = fenetre.fini ? (
       <>
-        <button
-          type="button"
-          className="btn btn-ice btn-sm"
-          disabled={occupe}
-          onClick={() => agit('/api/affrontements/bot', { batailleId: b.id }, true)}
-        >
-          Contre le bot
-        </button>
-        <button
-          type="button"
-          className="btn btn-ghost btn-sm"
-          disabled={occupe}
-          onClick={() => agit('/api/affrontements/annuler', { batailleId: b.id }, false)}
-        >
-          Annuler
+        {contreLeBot && (
+          <button
+            type="button"
+            className="btn btn-ice"
+            disabled={!revanchePossible}
+            onClick={() =>
+              joue(
+                '/api/affrontements/bot',
+                { mise: b.mise, manches: b.manches },
+                { gauche: moi, droite: BOT, moi: 'gauche', mise: b.mise, manches: b.manches },
+              )
+            }
+          >
+            Revanche · {flakes(b.mise)} ❄
+          </button>
+        )}
+        {!sansReleve(b) && (
+          <button
+            type="button"
+            className="btn"
+            onClick={() => setFenetre({ ...fenetre, anime: true, tour: nouveauNumero(), fini: false })}
+          >
+            Revoir le duel
+          </button>
+        )}
+        <button type="button" className="btn btn-ghost" onClick={ferme}>
+          Fermer
         </button>
       </>
     ) : (
       <button
         type="button"
-        className="btn btn-ice btn-sm"
-        disabled={occupe || etat.moiId === null || (solde !== null && solde < b.mise)}
-        onClick={() => agit('/api/affrontements/rejoindre', { batailleId: b.id }, true)}
+        className="btn btn-ghost"
+        onClick={() => setFenetre({ ...fenetre, anime: false, tour: nouveauNumero(), fini: true })}
       >
-        Rejoindre · {flakes(b.mise)} ❄
+        Passer au résultat
       </button>
     );
-  };
+  }
 
-  const listes = {
-    attente: { titre: 'En attente', lignes: attente, rangs: false },
-    top: { titre: 'Top de la semaine', lignes: etat.top, rangs: true },
-    miens: { titre: 'Les miens', lignes: miens, rangs: false },
-    jouees: { titre: 'Terminés', lignes: jouees, rangs: false },
-  } as const;
-  const liste = listes[onglet];
+  /* -------------------------------- Rendu -------------------------------- */
 
   return (
     <div className="space-y-5">
-      {etat.moiId === null && (
-        <Notice>Connecte-toi pour lancer un duel ou en rejoindre un.</Notice>
-      )}
       {erreur && <Notice kind="error">{erreur}</Notice>}
+      {info && <Notice kind="success">{info}</Notice>}
 
-      {/* ------------------------------ Les onglets -------------------------
+      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
+        {/* =============================== Le ring ============================== */}
+        <section className="glass ring relative overflow-hidden" aria-labelledby="ring-titre">
+          <SnowCap radius="var(--r-lg)" seed="ring-duel" epaisseur={18} />
 
-          Quatre listes, une à la fois, plutôt que quatre sections empilées.
-          Empilées, il fallait faire défiler trois écrans pour voir le top de la
-          semaine, et la page n'avait pas de haut : on ne savait pas ce qu'on
-          regardait. Un onglet dit où l'on est, et son compteur dit s'il y a
-          quelque chose à y voir avant même d'y aller. */}
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-        {/* Les onglets défilent au doigt plutôt que de se replier : repliés,
-            quatre onglets prenaient quatre lignes sur un téléphone et
-            repoussaient la première ligne de la liste sous le pli. */}
-        <div className="scroll-x-clean flex min-w-0 flex-1 gap-2 overflow-x-auto">
-          {(['attente', 'top', 'miens', 'jouees'] as const)
-            .filter((cle) => cle !== 'miens' || etat.moiId !== null)
-            .map((cle) => {
-              const actif = onglet === cle;
-              const n = listes[cle].lignes.length;
-              return (
-                <button
-                  key={cle}
-                  type="button"
-                  aria-pressed={actif}
-                  onClick={() => setOnglet(cle)}
-                  className={`flex min-h-[46px] shrink-0 items-center gap-2 rounded-full px-4 font-display text-[14px] font-bold whitespace-nowrap tracking-wide transition-colors ${
-                    actif ? 'nav-pilule text-ice' : 'text-muted hover:text-ink'
-                  }`}
-                >
-                  <NAV_ICONS.swords className="h-[18px] w-[18px]" />
-                  {listes[cle].titre}
-                  {n > 0 && (
-                    <span
-                      className={`num rounded-full px-1.5 text-[11px] ${
-                        actif ? 'bg-ice/25 text-frost' : 'bg-white/8 text-faint'
-                      }`}
-                    >
-                      {n}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-        </div>
-
-        <button
-          type="button"
-          className="btn btn-ice shrink-0"
-          aria-expanded={creation}
-          onClick={() => setCreation((v) => !v)}
-        >
-          {creation ? 'Fermer' : '+ Lancer un duel'}
-        </button>
-      </div>
-
-      {/* ---------------------- Lancer un duel ------------------------------
-
-          Repliée par défaut, et c'est un changement de fond : le panneau de
-          création occupait le haut de la page en permanence, si bien qu'il
-          fallait faire défiler pour voir s'il y avait un adversaire à
-          affronter. On vient d'abord voir ce qui se joue ; on monte le sien
-          quand rien ne convient. */}
-      {creation && (
-        <section className="glass relative space-y-5 px-4 py-5">
-          <SnowCap radius="var(--r-lg)" seed="duels" />
-          <div className="flex flex-col items-center gap-1 text-center">
-            <h3 className="font-display text-2xl leading-none font-black tracking-wide text-ink uppercase">
-              Lancer un duel
-            </h3>
-            <p className="text-[13px] text-faint">
-              Ta mise, et le format. L’adversaire mise autant : le gagnant rafle les deux.
-            </p>
-          </div>
-
-          {/* La mise : six montants d'un clic, et un champ pour le reste. */}
-          <div className="space-y-2">
-            <p className="eyebrow text-center">La mise</p>
-            <div className="flex flex-wrap justify-center gap-2">
-              {MISES.map((m) => (
-                <button
-                  key={m}
-                  type="button"
-                  aria-pressed={mise === m}
-                  disabled={occupe}
-                  onClick={() => setMise(m)}
-                  className={`btn btn-sm ${mise === m ? 'btn-ice' : ''}`}
-                >
-                  {flakes(m)} ❄
-                </button>
-              ))}
-              <input
-                type="number"
-                className="field num max-w-[140px]"
-                min={etat.bornes.mise.min}
-                max={etat.bornes.mise.max}
-                value={mise}
-                disabled={occupe}
-                onChange={(e) => setMise(Number(e.target.value))}
-                aria-label="Mise en flocons"
-              />
+          <header className="relative flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="eyebrow">Nouveau duel</p>
+              <h2
+                id="ring-titre"
+                className="mt-1 font-display text-3xl leading-none font-black tracking-wide text-ink uppercase sm:text-4xl"
+              >
+                Lance ton duel
+              </h2>
             </div>
-          </div>
-
-          {/* Le format : au meilleur de 1, 3 ou 5 manches. */}
-          <div className="space-y-2">
-            <p className="eyebrow text-center">Au meilleur des…</p>
-            <div className="flex flex-wrap justify-center gap-2">
-              {MANCHES_POSSIBLES.map((n) => (
-                <button
-                  key={n}
-                  type="button"
-                  aria-pressed={manches === n}
-                  disabled={occupe}
-                  onClick={() => setManches(n)}
-                  className={`btn btn-sm ${manches === n ? 'btn-ice' : ''}`}
-                >
-                  {n} manche{n > 1 ? 's' : ''}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="flex flex-col items-center gap-3">
-            {(() => {
-              const empeche = !miseValide || etat.moiId === null || !abordable;
-              const libelle =
-                etat.moiId === null
-                  ? 'Connexion requise'
-                  : !miseValide
-                    ? `Mise entre ${flakes(etat.bornes.mise.min)} et ${flakes(etat.bornes.mise.max)} ❄`
-                    : !abordable
-                      ? 'Flocons insuffisants'
-                      : 'Miser';
-              return (
-                <button
-                  type="button"
-                  className={`btn btn-ice ${empeche || occupe ? 'btn-lg' : 'btn-ouvrir'}`}
-                  disabled={occupe || empeche}
-                  onClick={() => agit('/api/affrontements', { mise, manches }, false)}
-                >
-                  <span>{occupe ? 'Un instant…' : libelle === 'Miser' ? 'Ouvrir le duel aux joueurs' : libelle}</span>
-                  {!empeche && !occupe && (
-                    <span className="btn-ouvrir-prix">
-                      <span aria-hidden="true">❄</span>
-                      {flakes(mise)}
-                    </span>
-                  )}
-                </button>
-              );
-            })()}
-
-            {/* Le plus rapide pour essayer : monter et jouer d'un coup, contre le bot. */}
-            <button
-              type="button"
-              className="btn"
-              disabled={occupe || !miseValide || etat.moiId === null || !abordable}
-              onClick={() => agit('/api/affrontements/bot', { mise, manches }, true)}
-            >
-              🤖 Jouer tout de suite contre le bot
-            </button>
-
             {solde !== null && (
-              <p className="solde">
-                <span>Solde</span>
-                <span className="solde-valeur">
-                  <span className="text-ice" aria-hidden="true">
-                    ❄
-                  </span>{' '}
-                  {flakes(solde)}
-                </span>
-              </p>
+              <div className="ring-solde">
+                <span>Ton solde</span>
+                <strong>
+                  {flakes(solde)} <span className="text-ice">❄</span>
+                </strong>
+              </div>
             )}
+          </header>
 
-            <p className="max-w-2xl text-center text-[13px] leading-relaxed text-faint">
-              Les deux camps misent <strong>la même somme</strong>. À chaque manche, chacun lance
-              une boule de neige d’une puissance de 1 à 100, tirée par le serveur : la plus forte
-              gagne la manche, une égalité se rejoue. Le premier à la majorité des manches{' '}
-              <strong>rafle toute la mise</strong>. Une chance sur deux, pour tout le monde — le bot
-              compris.
-              {solde !== null && miseValide && abordable && solde - mise + mise * 2 > soldeMax && (
-                <> Attention : ton solde est plafonné à {flakes(soldeMax)} ❄, le gain au-delà serait perdu.</>
-              )}
-              {solde !== null && !abordable && miseValide && (
-                <> Il te manque {flakes(mise - solde)} ❄ pour cette mise.</>
-              )}
+          {/* La session s'est perdue en route — expirée, ou sans joueur derrière
+              elle. On le dit, et on donne de quoi repartir : un bouton grisé
+              « connexion requise » ne menait nulle part. */}
+          {!joueur && (
+            <div className="ring-reconnexion">
+              <p>
+                <strong>Ta session ne permet pas de jouer.</strong> Elle a expiré, ou elle n’est rattachée à aucun
+                joueur. Reconnecte-toi, et le ring est à toi.
+              </p>
+              <a href="/connexion" className="btn btn-ice no-underline">
+                Se reconnecter
+              </a>
+            </div>
+          )}
+
+          {/* ---- L'affiche : toi, le pot, l'adversaire ---- */}
+          <div className="ring-affiche" aria-hidden="true">
+            <div className="ring-camp">
+              <span className="orbe">{initiale(moi)}</span>
+              <b>{moi.pseudo}</b>
+              <small>toi</small>
+            </div>
+            <div className="ring-pot">
+              <small>En jeu</small>
+              <strong>
+                {miseValide ? flakes(mise * 2) : '—'} <span className="text-ice">❄</span>
+              </strong>
+              <small>
+                Au meilleur des {manches} · premier à {manchesAGagner(manches)}
+              </small>
+            </div>
+            <div className="ring-camp">
+              <span className="orbe" data-inconnu="">
+                ?
+              </span>
+              <b>Adversaire</b>
+              <small>un joueur ou le bot</small>
+            </div>
+          </div>
+
+          {/* ---- Les réglages ---- */}
+          <div className="ring-reglages">
+            <fieldset className="min-w-0 space-y-3">
+              <legend className="eyebrow mb-3">Ta mise</legend>
+              <div className="flex items-center gap-3">
+                <input
+                  type="range"
+                  className="curseur"
+                  min={0}
+                  max={COURSE}
+                  step={1}
+                  value={versCurseur(mise, miseMin, plafond)}
+                  style={{ ['--rempli' as string]: `${(versCurseur(mise, miseMin, plafond) / COURSE) * 100}%` }}
+                  disabled={!joueur || occupe || solde === null || solde < miseMin}
+                  onChange={(e) => setMise(depuisCurseur(Number(e.target.value), miseMin, plafond))}
+                  aria-label="Mise en flocons"
+                  aria-valuetext={`${flakes(mise)} flocons`}
+                />
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  className="field num w-[118px] shrink-0 text-right"
+                  min={miseMin}
+                  max={miseMax}
+                  step={PAS_MISE}
+                  value={Number.isFinite(mise) ? mise : ''}
+                  disabled={!joueur || occupe}
+                  onChange={(e) => setMise(Math.floor(Number(e.target.value)))}
+                  aria-label="Mise exacte en flocons"
+                />
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {MISES.map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    aria-pressed={mise === m}
+                    disabled={!joueur || occupe || (solde !== null && solde < m)}
+                    onClick={() => setMise(m)}
+                    className={`btn btn-sm ${mise === m ? 'btn-ice' : ''}`}
+                  >
+                    {flakes(m)}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  aria-pressed={mise === plafond && !MISES.includes(plafond)}
+                  disabled={!joueur || occupe || solde === null || solde < miseMin}
+                  onClick={() => setMise(plafond)}
+                  className={`btn btn-sm ${mise === plafond && !MISES.includes(plafond) ? 'btn-ice' : ''}`}
+                  title="Tout ce que tu peux miser"
+                >
+                  Tapis
+                </button>
+              </div>
+            </fieldset>
+
+            <fieldset className="min-w-0">
+              <legend className="eyebrow mb-3">Le format</legend>
+              <div className="grid grid-cols-3 gap-2">
+                {MANCHES_POSSIBLES.map((n) => (
+                  <button
+                    key={n}
+                    type="button"
+                    className="tuile-choix"
+                    aria-pressed={manches === n}
+                    disabled={!joueur || occupe}
+                    onClick={() => setManches(n)}
+                  >
+                    <strong>
+                      {n} manche{n > 1 ? 's' : ''}
+                    </strong>
+                    <small>{FORMATS[n]}</small>
+                  </button>
+                ))}
+              </div>
+              <p className="mt-3 text-[13px] leading-relaxed text-muted">
+                À chaque manche, une boule de neige chacun, d’une puissance de 1 à 100 tirée par le serveur.
+                La plus forte gagne ; une égalité se rejoue.
+              </p>
+            </fieldset>
+          </div>
+
+          {/* ---- Le bilan : ce qu'on gagne, ce qu'on perd ---- */}
+          <div className="ring-bilan">
+            <div>
+              <span>Si tu gagnes</span>
+              <strong className="text-aurora">{miseValide ? `+${flakes(gainReel)} ❄` : '—'}</strong>
+            </div>
+            <div>
+              <span>Si tu perds</span>
+              <strong className="text-ink">{miseValide ? `−${flakes(mise)} ❄` : '—'}</strong>
+            </div>
+          </div>
+          {joueur && !miseValide && (
+            <p className="mt-2 text-[13px] text-gold">
+              La mise va de {flakes(miseMin)} à {flakes(miseMax)} ❄.
             </p>
+          )}
+          {joueur && miseValide && !abordable && solde !== null && (
+            <p className="mt-2 text-[13px] text-gold">Il te manque {flakes(mise - solde)} ❄ pour cette mise.</p>
+          )}
+          {joueur && miseValide && abordable && gainPerdu > 0 && (
+            <p className="mt-2 text-[13px] text-gold">
+              Ton solde est plafonné à {flakes(soldeMax)} ❄ : {flakes(gainPerdu)} ❄ du gain seraient perdus.
+            </p>
+          )}
+
+          {/* ---- Les deux façons d'engager ---- */}
+          <div className="ring-actions">
+            <div>
+              <button type="button" className="btn btn-ice btn-lg w-full" disabled={!peutJouer} onClick={affronteBot}>
+                <span aria-hidden="true">🤖</span> Affronter le bot
+              </button>
+              <p>Tout de suite. Le bot mise autant que toi et lance exactement comme toi.</p>
+            </div>
+            <div>
+              <button type="button" className="btn btn-lg w-full" disabled={!peutJouer} onClick={ouvreAuxJoueurs}>
+                <IconSwords className="h-5 w-5" /> Défier les joueurs
+              </button>
+              <p>Ta mise attend un adversaire. Annulable tant que personne ne l’a relevée.</p>
+            </div>
           </div>
         </section>
+
+        {/* =============================== Le fil =============================== */}
+        <div className="grid gap-5">
+          {/* ---- Les duels ouverts ---- */}
+          <section className="glass relative overflow-hidden p-5 sm:p-6" aria-labelledby="ouverts-titre">
+            <SnowCap radius="var(--r-lg)" seed="duels-ouverts" epaisseur={14} />
+            <header className="relative flex items-end justify-between gap-3">
+              <div>
+                <p className="eyebrow">En attente d’adversaire</p>
+                <h2
+                  id="ouverts-titre"
+                  className="mt-1 font-display text-2xl leading-none font-black tracking-wide text-ink uppercase"
+                >
+                  Duels ouverts
+                </h2>
+              </div>
+              {ouverts.length > 0 && (
+                <span className="font-display text-3xl leading-none font-black text-ice tabular-nums">
+                  {ouverts.length}
+                </span>
+              )}
+            </header>
+
+            {ouverts.length === 0 ? (
+              <div className="fil-vide mt-4">
+                <span className="orbe orbe-sm" data-inconnu="" aria-hidden="true">
+                  ?
+                </span>
+                <div>
+                  <p className="font-display text-[17px] font-black tracking-wide text-ink uppercase">
+                    Personne n’attend
+                  </p>
+                  <p className="mt-0.5 text-[14px] leading-snug text-muted">
+                    Défie les joueurs : ta mise attendra ici qu’on la relève. Ou affronte le bot, tout de suite.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <ul className="fil-liste fil-ouverts mt-4">
+                {ouverts.map((b) => {
+                  const hote = b.camps[0];
+                  const mien = b.hoteId === etat.moiId;
+                  return (
+                    <li key={b.id} className="fil-ligne fil-ouvert" data-mien={mien ? '' : undefined}>
+                      <span className="orbe orbe-sm" aria-hidden="true">
+                        {hote ? initiale(hote) : '?'}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="truncate font-display text-[17px] font-black tracking-wide text-ink uppercase">
+                          {mien ? 'Ton duel' : (hote?.pseudo ?? '?')}
+                        </p>
+                        <p className="text-[12.5px] text-muted">
+                          Au meilleur des {b.manches} · ouvert le {shortDateTime(b.creeeA)}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-display text-2xl leading-none font-black whitespace-nowrap text-ink tabular-nums">
+                          {flakes(b.mise)} <span className="text-ice">❄</span>
+                        </p>
+                        <p className="mt-0.5 text-[11px] font-bold tracking-[0.14em] text-faint uppercase">mise</p>
+                      </div>
+                      <div className="fil-actions">
+                        {mien ? (
+                          <>
+                            <button
+                              type="button"
+                              className="btn btn-ice btn-sm"
+                              disabled={occupe}
+                              onClick={() => botSurLeMien(b)}
+                            >
+                              Contre le bot
+                            </button>
+                            <button
+                              type="button"
+                              className="btn btn-ghost btn-sm"
+                              disabled={occupe}
+                              onClick={() => annule(b)}
+                            >
+                              Annuler
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            type="button"
+                            className="btn btn-ice btn-sm"
+                            disabled={occupe || !joueur || solde === null || solde < b.mise}
+                            title={solde !== null && solde < b.mise ? `Il te manque ${flakes(b.mise - solde)} ❄` : undefined}
+                            onClick={() => releve(b)}
+                          >
+                            Relever le défi
+                          </button>
+                        )}
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </section>
+
+          {/* ---- Les résultats ---- */}
+          <section className="glass relative overflow-hidden p-5 sm:p-6" aria-labelledby="resultats-titre">
+            <SnowCap radius="var(--r-lg)" seed="duels-resultats" epaisseur={14} />
+            <header className="relative flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <p className="eyebrow">Rejouables lancer par lancer</p>
+                <h2
+                  id="resultats-titre"
+                  className="mt-1 font-display text-2xl leading-none font-black tracking-wide text-ink uppercase"
+                >
+                  Résultats
+                </h2>
+              </div>
+              <div className="segment w-full sm:w-auto" role="group" aria-label="Quels résultats afficher">
+                {(['recents', 'miens', 'top'] as const)
+                  .filter((cle) => cle !== 'miens' || joueur)
+                  .map((cle) => (
+                    <button key={cle} type="button" aria-pressed={onglet === cle} onClick={() => setOnglet(cle)}>
+                      {listes[cle].titre}
+                      {listes[cle].lignes.length > 0 && (
+                        <span className="compte hidden sm:inline">{listes[cle].lignes.length}</span>
+                      )}
+                    </button>
+                  ))}
+              </div>
+            </header>
+            {onglet === 'top' && (
+              <p className="mt-3 text-[13px] text-muted">Les plus grosses mises des sept derniers jours.</p>
+            )}
+
+            {liste.lignes.length === 0 ? (
+              <p className="fil-vide mt-4 text-[14px] text-muted">{liste.vide}</p>
+            ) : (
+              <ul className="fil-liste mt-4">
+                {liste.lignes.map((b, i) => {
+                  const hote = b.camps[0];
+                  const adverse = b.camps[1];
+                  const hoteGagne = b.vainqueurId !== null && b.vainqueurId === hote?.id;
+                  const adverseGagne = b.vainqueurId !== null && b.vainqueurId === adverse?.id;
+                  return (
+                    <li key={b.id}>
+                      <button type="button" className="fil-ligne" onClick={() => revoit(b)} title="Revoir le duel">
+                        {onglet === 'top' && (
+                          <span className="medaille" data-rang={i + 1}>
+                            {i + 1}
+                          </span>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <div className="resultat">
+                            <b data-gagne={hoteGagne ? '' : undefined}>{hote?.pseudo ?? '?'}</b>
+                            {/* Un duel d'avant la réforme n'a que des scores de cartes :
+                                les montrer comme des manches ferait lire « 0 – 0 ». */}
+                            <em>
+                              {b.ancien
+                                ? 'cartes'
+                                : b.echanges.length === 0
+                                  ? '—'
+                                  : `${hote?.manches ?? 0} – ${adverse?.manches ?? 0}`}
+                            </em>
+                            <b data-gagne={adverseGagne ? '' : undefined}>{adverse?.pseudo ?? '?'}</b>
+                          </div>
+                          <p className="mt-1 text-[12px] text-faint">
+                            {shortDateTime(b.resolueA ?? b.creeeA)} · au meilleur des {b.manches}
+                          </p>
+                        </div>
+                        <div className="shrink-0 text-right">
+                          <p className="font-display text-xl leading-none font-black text-ink tabular-nums">
+                            {flakes(pot(b))} <span className="text-ice">❄</span>
+                          </p>
+                          <p className="mt-0.5 text-[11px] font-bold tracking-[0.14em] text-faint uppercase">pot</p>
+                        </div>
+                        <span className="hidden text-[18px] text-ice sm:inline" aria-hidden="true">
+                          ▶
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </section>
+        </div>
+      </div>
+
+      {fenetre && (
+        <FenetreDuel titre="L’arène du duel" ferme={ferme} pied={piedFenetre}>
+          {contenuFenetre}
+        </FenetreDuel>
       )}
-
-      {/* ------------------------------ La liste ---------------------------- */}
-      <section className="space-y-2">
-        {onglet === 'top' && (
-          <p className="px-1 text-[13px] text-faint">
-            Les sept derniers jours, classés sur le pot mis en jeu.
-          </p>
-        )}
-
-        {liste.lignes.length === 0 ? (
-          <EmptyState
-            title={
-              onglet === 'attente'
-                ? 'Aucun duel ouvert'
-                : onglet === 'top'
-                  ? 'Rien cette semaine'
-                  : onglet === 'miens'
-                    ? 'Tu n’en as encore joué aucun'
-                    : 'Aucun duel terminé'
-            }
-            hint={
-              onglet === 'attente'
-                ? 'Lance le tien : si personne ne se présente, le bot répondra.'
-                : 'Les duels joués apparaissent ici, rejouables lancer par lancer.'
-            }
-          />
-        ) : (
-          <ul className="space-y-2">
-            {liste.lignes.map((b, i) => (
-              <Ligne
-                key={b.id}
-                affrontement={b}
-                moiId={etat.moiId}
-                rang={liste.rangs ? i : undefined}
-                action={actionsDe(b)}
-                onRelire={b.statut === 'TERMINEE' ? relire(b) : undefined}
-              />
-            ))}
-          </ul>
-        )}
-      </section>
     </div>
   );
 }

@@ -3,7 +3,8 @@ import { redirect } from 'next/navigation';
 import { LoginForms } from '@/components/LoginForms';
 import { getSession, playerIdOf } from '@/lib/auth/session';
 import { isTwitchEnabled } from '@/lib/auth/twitch';
-import { getStore } from '@/lib/db/store';
+import { Notice } from '@/components/ui';
+import { getStore, sansBaseDurable } from '@/lib/db/store';
 import { TitreGlace } from '@/components/TitreGlace';
 
 export const dynamic = 'force-dynamic';
@@ -20,13 +21,18 @@ function devLoginAllowed(): boolean {
 
 export default async function ConnexionPage() {
   // Déjà connecté avec un compte valide : rien à faire ici. Une session dont
-  // le compte a disparu reste sur cette page, pour se reconnecter.
+  // le compte a disparu reste sur cette page, pour se reconnecter — comme une
+  // session de secours, sans joueur, dès que le site a une base.
   const session = await getSession();
+  let sansCompte = false;
   if (session) {
     const playerId = playerIdOf(session);
     const valide =
-      playerId === null || (await getStore().read((db) => db.players.some((p) => p.id === playerId)));
+      playerId === null
+        ? sansBaseDurable()
+        : await getStore().read((db) => db.players.some((p) => p.id === playerId));
     if (valide) redirect('/');
+    sansCompte = playerId === null;
   }
 
   const devPlayers = devLoginAllowed()
@@ -48,6 +54,13 @@ export default async function ConnexionPage() {
           ← Retour à l’accueil
         </Link>
       </header>
+
+      {sansCompte && (
+        <Notice>
+          Ta session n’est rattachée à aucun joueur : reconnecte-toi pour miser, jouer tes duels et ouvrir
+          tes boosters.
+        </Notice>
+      )}
 
       <LoginForms twitchEnabled={isTwitchEnabled()} devPlayers={devPlayers} />
     </div>

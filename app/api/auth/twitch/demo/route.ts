@@ -4,7 +4,7 @@ import { fail, guard } from '@/lib/api/respond';
 import { createToken, setSessionCookie, SUJET_SECOURS } from '@/lib/auth/session';
 import { isTwitchEnabled } from '@/lib/auth/twitch';
 import type { Player } from '@/lib/db/entities';
-import { getStore } from '@/lib/db/store';
+import { getStore, sansBaseDurable } from '@/lib/db/store';
 import { LIMITS } from '@/lib/security/ratelimit';
 import { rattacheCompteTwitch } from '@/lib/services/comptes';
 
@@ -37,8 +37,7 @@ export async function GET(request: Request): Promise<NextResponse> {
    * d'administration sans compte joueur derrière, qui ne dépend d'aucune
    * donnée stockée.
    */
-  const sansBase = Boolean(process.env.VERCEL) && !process.env.DATABASE_URL?.trim();
-  if (sansBase) {
+  if (sansBaseDurable()) {
     try {
       await setSessionCookie(createToken(SUJET_SECOURS, 'admin'));
     } catch {
