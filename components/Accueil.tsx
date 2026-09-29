@@ -41,7 +41,7 @@ export function Accueil({ twitchEnabled, devLogin }: { twitchEnabled: boolean; d
     {
       icone: IconSwords,
       titre: 'Les duels',
-      texte: 'Tes flocons se misent contre un autre joueur. Les deux camps tirent des cartes, la plus belle main remporte le pot.',
+      texte: 'Tes flocons se misent contre un autre joueur ou contre le bot. Une seule manche, une chance sur deux : le gagnant prend le pot.',
     },
     {
       icone: IconSnowflake,
@@ -77,9 +77,10 @@ export function Accueil({ twitchEnabled, devLogin }: { twitchEnabled: boolean; d
         </p>
         <h1 className="hero-titre mt-3 text-5xl sm:text-6xl lg:text-7xl">Winter Ligue</h1>
         <p className="mx-auto mt-5 max-w-2xl text-[17px] leading-relaxed text-ink-2 sm:text-lg">
-          La ligue hivernale Call of Duty Warzone de la chaîne. Tes kills et tes Top 1 font ton classement
-          et rapportent des flocons ; les subs ouvrent des boosters, les cartes changent tes games, et les
-          duels font tourner les flocons entre joueurs.
+          La ligue hivernale Call of Duty Warzone de la chaîne. Chaque kill et chaque Top 3 te donnent
+          des points au classement et des flocons. Tes flocons se misent en duel : le gagnant prend
+          tout. Les boosters s’ouvrent à l’antenne grâce aux subs, et leur carte joue sur la prochaine
+          game.
         </p>
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
           <a href={entree} className="btn btn-twitch btn-lg no-underline">
