@@ -59,10 +59,9 @@ export function Hero({
             </em>
           </h1>
           <p className="mt-4 max-w-xl text-[17px] leading-relaxed text-ink-2">
-            Tes kills et tes Top 1 font ton classement et rapportent des flocons. Cinq subs
-            offerts, et la streameuse ouvre un booster pour toi à l’antenne : une carte, posée sur
-            ta prochaine game. Les subs de la saison ouvrent des boosters pour toute la ligue. Et
-            tes flocons se misent dans les duels, où le pot revient au vainqueur.
+            Chaque kill et chaque Top 3 te donnent des points au classement et des flocons. Tes
+            flocons se misent en duel : le gagnant prend tout. Les boosters s’ouvrent à l’antenne
+            grâce aux subs, et leur carte joue sur la prochaine game.
           </p>
 
           <div className="mt-7 flex flex-wrap gap-3">
