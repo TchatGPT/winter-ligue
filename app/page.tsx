@@ -3,7 +3,6 @@ import { SubsBanner } from '@/components/SubsBanner';
 import { Hero } from '@/components/Hero';
 import { Accueil } from '@/components/Accueil';
 import { SaisieGames } from '@/components/SaisieGames';
-import { EmptyState } from '@/components/ui';
 import { exigeSession } from '@/lib/auth/acces';
 import { getSession } from '@/lib/auth/session';
 import { chaineDeLaLigue, isTwitchEnabled } from '@/lib/auth/twitch';
@@ -66,12 +65,8 @@ export default async function ClassementPage() {
         <SubsBanner totalSubs={subs.totalSubs} evenements={subs.evenements} />
       </div>
 
-      {ranking.length === 0 ? (
-        <EmptyState
-          title="Aucun joueur inscrit"
-          hint="La modération ajoute les participants depuis l’onglet Modération. La connexion Twitch les inscrira automatiquement une fois activée."
-        />
-      ) : (
+      {/* Toujours le classement, même vide : sa place reste la même, et le
+          bouton de saisie avec. */}
         <Classement
           rows={ranking}
           outils={
@@ -82,7 +77,6 @@ export default async function ClassementPage() {
             ) : undefined
           }
         />
-      )}
     </div>
   );
 }

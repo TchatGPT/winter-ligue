@@ -47,10 +47,6 @@ const ECHANGE = CHARGE + VOL + PAUSE;
 
 type Phase = 'charge' | 'vol' | 'impact';
 
-function mouvementReduit(): boolean {
-  return typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-}
-
 /** Le combattant : son orbe, son nom, et les manches qu'il a gagnées. */
 function Combattant({
   camp,
@@ -112,7 +108,7 @@ export function BatailleArene({
   const total = b.echanges.length;
 
   /** L'échange en cours, et où il en est. `etape === total` : tout est joué. */
-  const [etape, setEtape] = useState(() => (anime && !mouvementReduit() ? 0 : total));
+  const [etape, setEtape] = useState(() => (anime ? 0 : total));
   const [phase, setPhase] = useState<Phase>('charge');
   const fini = etape >= total;
 

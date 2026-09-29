@@ -2170,19 +2170,8 @@
     font-size: 15px;
     font-weight: 800;
   }
-  @media (prefers-reduced-motion: reduce) {
-    .duel-orbe[data-touche],
-    .duel-verdict,
-    .duel-eclat {
-      animation: none;
-    }
-    .duel-boule {
-      display: none;
-    }
-    .duel-jauge > span {
-      transition: none;
-    }
-  }
+  /* Pas d'exception au mouvement réduit : le duel se joue à l'écran, lancer
+     par lancer. Sans l'animation, il n'y a plus de duel à regarder. */
 
   .duel {
     background: linear-gradient(180deg, rgb(20 34 56 / 0.72) 0%, rgb(12 22 38 / 0.78) 100%);
@@ -2773,9 +2762,19 @@
   padding-block: 0.45rem;
 }
 
+/*
+ * La zone qui défile : haute, même vide, et en retrait des bords arrondis de
+ * la carte — les arêtes des lignes et de l'en-tête s'arrêtent avant la
+ * courbe au lieu de la traverser. Ses propres coins sont arrondis et
+ * découpent ce qui dépasse.
+ */
 .tableau-verre-defile {
-  max-height: 68vh;
+  min-height: 60vh;
+  max-height: 72vh;
+  margin: 0 0.9rem 0.9rem;
   overflow-y: auto;
+  border-radius: calc(var(--r-lg) - 0.9rem);
+  background: rgb(0 10 30 / 0.12);
 }
 
 .tableau-verre-table {
@@ -2798,29 +2797,15 @@
     inset 0 -1px 0 rgb(226 242 255 / 0.13);
 }
 
+.tableau-verre-ligne:last-child td {
+  box-shadow: none;
+}
+
 /* Au survol : un éclaircissement léger du dégradé, et l'arête se renforce.
    Jamais une couleur franche. */
 .tableau-verre-ligne:hover td {
   background: linear-gradient(180deg, rgb(226 242 255 / 0.06), rgb(226 242 255 / 0.02));
   box-shadow:
-    inset 0 1px 0 rgb(226 242 255 / 0.12),
-    inset 0 -2px 0 rgb(6 18 38 / 0.7),
-    inset 0 -1px 0 rgb(226 242 255 / 0.22);
-}
-
-/* Les places qualificatives : une arête dorée sur le flanc gauche, en biseau
-   comme les autres — un pixel sombre, puis un pixel doré clair. */
-.tableau-verre-or td:first-child {
-  box-shadow:
-    inset 1px 0 0 rgb(90 60 10 / 0.9),
-    inset 2px 0 0 rgb(255 226 150 / 0.9),
-    inset 0 -2px 0 rgb(6 18 38 / 0.55),
-    inset 0 -1px 0 rgb(226 242 255 / 0.13);
-}
-.tableau-verre-or:hover td:first-child {
-  box-shadow:
-    inset 1px 0 0 rgb(90 60 10 / 0.9),
-    inset 2px 0 0 rgb(255 226 150 / 0.95),
     inset 0 1px 0 rgb(226 242 255 / 0.12),
     inset 0 -2px 0 rgb(6 18 38 / 0.7),
     inset 0 -1px 0 rgb(226 242 255 / 0.22);
@@ -2834,14 +2819,6 @@
 }
 .tableau-verre-carte summary {
   list-style: none;
-}
-.tableau-verre-carte.tableau-verre-or {
-  box-shadow:
-    inset 1px 0 0 rgb(90 60 10 / 0.9),
-    inset 2px 0 0 rgb(255 226 150 / 0.9),
-    inset 0 1px 0 var(--glass-hi-soft),
-    inset 0 10px 20px -22px rgb(232 248 255 / 0.4),
-    var(--lift-1);
 }
 .tableau-verre-detail {
   box-shadow:

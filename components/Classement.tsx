@@ -222,7 +222,7 @@ export function Classement({ rows, outils }: { rows: RankingRow[]; outils?: Reac
           </thead>
           <tbody>
             {visibles.map((row) => (
-              <tr key={row.id} className={`tableau-verre-ligne ${row.finalist ? 'tableau-verre-or' : ''}`}>
+              <tr key={row.id} className="tableau-verre-ligne">
                 <td className="text-center">
                   <Rang rang={row.rank} />
                 </td>
@@ -247,8 +247,10 @@ export function Classement({ rows, outils }: { rows: RankingRow[]; outils?: Reac
             ))}
             {visibles.length === 0 && (
               <tr>
-                <td colSpan={COLONNES.length} className="py-8 text-center text-[14px] text-muted">
-                  Aucun joueur ne s’appelle « {recherche.trim()} ».
+                <td colSpan={COLONNES.length} className="py-16 text-center text-[15px] text-muted">
+                  {rows.length === 0
+                    ? 'Aucun joueur au classement pour l’instant : il se remplit à la première game saisie.'
+                    : `Aucun joueur ne s’appelle « ${recherche.trim()} ».`}
                 </td>
               </tr>
             )}
@@ -259,7 +261,7 @@ export function Classement({ rows, outils }: { rows: RankingRow[]; outils?: Reac
       {/* ---------------- Mobile : une tuile par joueur ---------------- */}
       <ol className="relative space-y-2.5 px-3 pb-5 md:hidden">
         {visibles.map((row) => (
-          <li key={row.id} className={`glass glass-soft tableau-verre-carte ${row.finalist ? 'tableau-verre-or' : ''}`}>
+          <li key={row.id} className="glass glass-soft tableau-verre-carte">
             <details>
               <summary className="flex cursor-pointer items-center gap-3 px-4 py-3 select-none">
                 <span className="flex w-9 shrink-0 justify-center">
@@ -292,8 +294,10 @@ export function Classement({ rows, outils }: { rows: RankingRow[]; outils?: Reac
           </li>
         ))}
         {visibles.length === 0 && (
-          <li className="px-4 py-6 text-center text-[14px] text-muted">
-            Aucun joueur ne s’appelle « {recherche.trim()} ».
+          <li className="px-4 py-10 text-center text-[14px] text-muted">
+            {rows.length === 0
+              ? 'Aucun joueur au classement pour l’instant : il se remplit à la première game saisie.'
+              : `Aucun joueur ne s’appelle « ${recherche.trim()} ».`}
           </li>
         )}
       </ol>
