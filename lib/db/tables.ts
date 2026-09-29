@@ -204,8 +204,14 @@ export const COLLECTIONS: Collection[] = [
 
 /**
  * Les tables, en SQL. Les clés étrangères vers `joueurs` sont différées à la
- * fin de la transaction : l'ordre dans lequel on écrit ne compte pas. Les
- * duels n'en ont pas — l'adversaire peut être le bot, qui n'est pas un joueur.
+ * fin de la transaction : l'ordre dans lequel on écrit ne compte pas.
+ *
+ * Supprimer un joueur — depuis l'éditeur de Supabase, par exemple — emporte
+ * ce qui n'a de sens qu'avec lui : ses games, ses mouvements de flocons, ses
+ * cartes en attente, ses boosters à ouvrir, les duels qu'il a lancés. Ses
+ * ouvertures de boosters restent, sans joueur. L'adversaire et le vainqueur
+ * d'un duel n'ont pas de clé : ce peut être le bot, qui n'est pas un joueur ;
+ * un joueur disparu s'y affiche « Joueur inconnu ».
  */
 export const SCHEMA_SQL = `
 create table if not exists saison (
@@ -235,7 +241,7 @@ create table if not exists joueurs (
 
 create table if not exists games (
   id text primary key,
-  joueur_id text not null references joueurs (id) deferrable initially deferred,
+  joueur_id text not null references joueurs (id) on delete cascade deferrable initially deferred,
   kills integer not null,
   top integer check (top in (1, 2, 3)),
   bonus_cartes double precision not null default 0,
@@ -251,7 +257,7 @@ create index if not exists games_joueur on games (joueur_id);
 create table if not exists boosters_a_ouvrir (
   id text primary key,
   booster_id text not null,
-  joueur_id text references joueurs (id) deferrable initially deferred,
+  joueur_id text references joueurs (id) on delete cascade deferrable initially deferred,
   raison text not null,
   cree_le timestamptz not null,
   ouverture_id text
@@ -262,7 +268,7 @@ create table if not exists ouvertures (
   booster_id text not null,
   carte_id text not null,
   rarete text not null,
-  joueur_id text references joueurs (id) deferrable initially deferred,
+  joueur_id text references joueurs (id) on delete set null deferrable initially deferred,
   beneficiaires jsonb not null default '[]',
   chance double precision not null,
   ouvert_par text not null,
@@ -272,7 +278,7 @@ create table if not exists ouvertures (
 
 create table if not exists cartes_en_attente (
   id text primary key,
-  joueur_id text not null references joueurs (id) deferrable initially deferred,
+  joueur_id text not null references joueurs (id) on delete cascade deferrable initially deferred,
   carte_id text not null,
   ouverture_id text not null,
   recue_le timestamptz not null,
@@ -285,7 +291,7 @@ create index if not exists cartes_en_attente_joueur on cartes_en_attente (joueur
 
 create table if not exists flocons (
   id text primary key,
-  joueur_id text not null references joueurs (id) deferrable initially deferred,
+  joueur_id text not null references joueurs (id) on delete cascade deferrable initially deferred,
   delta integer not null,
   solde_apres integer not null,
   motif text not null,
@@ -325,7 +331,7 @@ create table if not exists duels (
   id text primary key,
   manches integer not null,
   mise integer not null,
-  hote_id text not null,
+  hote_id text not null references joueurs (id) on delete cascade deferrable initially deferred,
   adversaire_id text,
   statut text not null check (statut in ('ATTENTE', 'TERMINEE', 'ANNULEE')),
   tirages jsonb not null default '[]',
@@ -343,6 +349,40 @@ create table if not exists evenements (
   fin timestamptz not null,
   declenche_a integer not null
 );
+
+-- Les tables créées avant la suppression en cascade : leurs clés sont
+-- remplacées, une seule fois, par celles décrites ci-dessus.
+do $$
+declare
+  r record;
+  existante record;
+begin
+  for r in select * from (values
+    ('games', 'joueur_id', 'c'),
+    ('flocons', 'joueur_id', 'c'),
+    ('cartes_en_attente', 'joueur_id', 'c'),
+    ('boosters_a_ouvrir', 'joueur_id', 'c'),
+    ('ouvertures', 'joueur_id', 'n'),
+    ('duels', 'hote_id', 'c')
+  ) as v(tab, col, action) loop
+    select c.conname, c.confdeltype into existante
+      from pg_constraint c
+      join pg_attribute a on a.attrelid = c.conrelid and a.attnum = any (c.conkey)
+     where c.conrelid = ('public.' || r.tab)::regclass and c.contype = 'f' and a.attname = r.col
+     limit 1;
+    if found and existante.confdeltype::text = r.action then
+      continue;
+    end if;
+    if found then
+      execute format('alter table public.%I drop constraint %I', r.tab, existante.conname);
+    end if;
+    execute format(
+      'alter table public.%I add constraint %I foreign key (%I) references public.joueurs (id) on delete %s deferrable initially deferred',
+      r.tab, r.tab || '_' || r.col || '_fkey', r.col,
+      case r.action when 'c' then 'cascade' else 'set null' end
+    );
+  end loop;
+end $$;
 `;
 
 /** Toutes les tables de données, dans l'ordre où les lire. */
