@@ -174,10 +174,14 @@ class PostgresStore implements Store {
 
   constructor(url: string) {
     this.sql = postgres(url, {
-      // Le pooler de Supabase en mode transaction ne garde pas les requêtes
-      // préparées d'une connexion à l'autre.
+      // Le pooler de Supabase, en mode session (port 5432). Le mode
+      // transaction (6543) se bloque dès que deux requêtes partent en même
+      // temps sur une connexion — or une page en lance plusieurs en
+      // parallèle. Les requêtes préparées restent désactivées pour pouvoir
+      // repasser en mode transaction sans rien changer d'autre.
       prepare: false,
-      // Une fonction Vercel ne sert qu'une requête à la fois.
+      // Une fonction Vercel ne sert qu'une requête à la fois : une connexion
+      // suffit, les lectures parallèles s'y enchaînent.
       max: 1,
       idle_timeout: 20,
       connect_timeout: 10,
