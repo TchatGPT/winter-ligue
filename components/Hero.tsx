@@ -65,7 +65,7 @@ export function Hero({
           </p>
 
           <div className="mt-7 flex flex-wrap gap-3">
-            <Link href="/duels" className="btn btn-duel btn-lg no-underline">
+            <Link href="/duels" className="btn btn-ice btn-lg no-underline">
               Lancer un duel
             </Link>
             <Link href="/boosters" className="btn btn-lg no-underline">
