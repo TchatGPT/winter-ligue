@@ -173,26 +173,60 @@ class JsonFileStore implements Store {
  * unique `league_state` existe, son contenu y est versé ; elle est gardée
  * telle quelle, comme sauvegarde.
  */
+/**
+ * Le pooler partagé de Supabase écoute sur deux ports : 5432 en mode session,
+ * 6543 en mode transaction. Une adresse copiée en 5432 est ramenée sur 6543 :
+ * c'est le seul mode qui tienne sur Vercel (voir la classe ci-dessous). Une
+ * autre base, ou une connexion directe, est laissée telle quelle.
+ */
+function versModeTransaction(url: string): string {
+  try {
+    const u = new URL(url);
+    if (u.hostname.endsWith('.pooler.supabase.com') && u.port === '5432') {
+      u.port = '6543';
+      return u.toString();
+    }
+  } catch {
+    // Adresse illisible : le client dira pourquoi.
+  }
+  return url;
+}
+
 class PostgresStore implements Store {
   private readonly sql: postgres.Sql;
   private pret: Promise<void> | null = null;
+  /** La file : une seule opération à la fois sur la connexion. */
+  private file: Promise<unknown> = Promise.resolve();
 
   constructor(url: string) {
-    this.sql = postgres(url, {
-      // Le pooler de Supabase, en mode session (port 5432). Le mode
-      // transaction (6543) se bloque dès que deux requêtes partent en même
-      // temps sur une connexion — or une page en lance plusieurs en
-      // parallèle. Les requêtes préparées restent désactivées pour pouvoir
-      // repasser en mode transaction sans rien changer d'autre.
+    this.sql = postgres(versModeTransaction(url), {
+      // Le pooler de Supabase en mode transaction (port 6543) : il accepte des
+      // centaines de clients, là où le mode session plafonne à 15 — et chaque
+      // serveur Vercel en garde un ouvert, même en veille. Au-delà de 15, les
+      // pages plantaient.
+      //
+      // Ce mode se bloque en revanche si deux requêtes partent en même temps
+      // sur la même connexion. D'où la file ci-dessous : les lectures
+      // parallèles d'une page s'y enchaînent une à une. Mesuré : six clients,
+      // soixante requêtes simultanées dont neuf transactions, toutes passées
+      // en moins d'une seconde.
       prepare: false,
-      // Une fonction Vercel ne sert qu'une requête à la fois : une connexion
-      // suffit, les lectures parallèles s'y enchaînent.
       max: 1,
       idle_timeout: 20,
       connect_timeout: 10,
       // Pas de bavardage « relation already exists » à chaque démarrage.
       onnotice: () => {},
     });
+  }
+
+  /** Exécute `f` quand la connexion est libre ; un échec ne bloque pas la suite. */
+  private enFile<T>(f: () => Promise<T>): Promise<T> {
+    const tour = this.file.then(f, f);
+    this.file = tour.then(
+      () => undefined,
+      () => undefined,
+    );
+    return tour;
   }
 
   /** Crée les tables et verse l'ancienne ligne unique, une fois par instance. */
@@ -253,21 +287,29 @@ class PostgresStore implements Store {
   }
 
   async read<T>(fn: (db: Readonly<Database>) => T): Promise<T> {
-    await this.prepare();
-    return fn(migrate(await chargeBase(this.sql)));
+    const db = await this.enFile(async () => {
+      await this.prepare();
+      return chargeBase(this.sql);
+    });
+    return fn(migrate(db));
   }
 
   async transaction<T>(fn: (db: Database) => T | Promise<T>): Promise<T> {
-    await this.prepare();
-    const resultat = await this.sql.begin(async (tx) => {
-      await tx`select 1 from saison where id = 1 for update`;
-      const db = migrate(await chargeBase(tx));
-      const avant = empreintes(db);
-      const valeur = await fn(db);
-      await enregistreBase(tx, db, avant);
-      return { valeur };
+    // Toute la transaction tient son tour dans la file : `fn` ne relit jamais
+    // la base de l'intérieur (elle reçoit l'objet), donc aucun risque
+    // d'attendre son propre tour.
+    return this.enFile(async () => {
+      await this.prepare();
+      const resultat = await this.sql.begin(async (tx) => {
+        await tx`select 1 from saison where id = 1 for update`;
+        const db = migrate(await chargeBase(tx));
+        const avant = empreintes(db);
+        const valeur = await fn(db);
+        await enregistreBase(tx, db, avant);
+        return { valeur };
+      });
+      return resultat.valeur;
     });
-    return resultat.valeur;
   }
 
   async replace(next: Database): Promise<void> {
