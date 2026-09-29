@@ -181,6 +181,7 @@ export const COLLECTIONS: Collection[] = [
       c('adversaireId', 'adversaire_id', 'text'),
       c('statut', 'statut', 'text'),
       c('tirages', 'tirages', 'json'),
+      c('echanges', 'echanges', 'json'),
       c('vainqueurId', 'vainqueur_id', 'text'),
       c('creeeA', 'cree_le', 'ts'),
       c('resolueA', 'resolu_le', 'ts'),
@@ -335,6 +336,7 @@ create table if not exists duels (
   adversaire_id text,
   statut text not null check (statut in ('ATTENTE', 'TERMINEE', 'ANNULEE')),
   tirages jsonb not null default '[]',
+  echanges jsonb not null default '[]',
   vainqueur_id text,
   cree_le timestamptz not null,
   resolu_le timestamptz
@@ -349,6 +351,9 @@ create table if not exists evenements (
   fin timestamptz not null,
   declenche_a integer not null
 );
+
+-- Le duel de flocons : ses lancers, à côté des cartes des anciens duels.
+alter table duels add column if not exists echanges jsonb not null default '[]';
 
 -- Les tables créées avant la suppression en cascade : leurs clés sont
 -- remplacées, une seule fois, par celles décrites ci-dessus.

@@ -477,19 +477,14 @@ export const CARD_IMPACT_CAP = 25;
 /* ---------------------------- Les affrontements -------------------------- */
 
 /**
- * Les affrontements : deux camps misent la même somme de flocons, tirent le
- * même nombre de cartes, et celui dont les cartes totalisent la plus haute
- * somme de raretés remporte le pot.
+ * Le duel de flocons : deux camps misent la même somme et s'affrontent en une
+ * bataille de boules de neige (`lib/domain/bataille.ts`) ; le gagnant rafle
+ * les deux mises.
  *
- * Les cartes tirées ne sont que des cartes de comparaison : personne ne les
- * garde, elles ne s'appliquent à aucune game. C'est un pile ou face habillé,
- * et l'espérance est nulle — le site ne prend rien au passage.
+ * Une chance sur deux pour chacun, et l'espérance est nulle — le site ne
+ * prend rien au passage.
  */
 export const DUEL = {
   miseMin: 50,
   miseMax: 20_000,
-  /** Cartes tirées par manche et par camp. */
-  cartesParManche: 3,
-  /** La table de tirage, la même pour les deux camps. */
-  weights: RARITY_WEIGHTS_BASE,
 } as const;

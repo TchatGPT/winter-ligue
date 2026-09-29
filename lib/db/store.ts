@@ -373,7 +373,7 @@ function migrate(db: Partial<Database>): Database {
     batailles: (db.batailles ?? []).map((b) => {
       const ancien = b as typeof b & { boosterIds?: string[] };
       const { boosterIds: _ids, ...bataille } = ancien;
-      return { ...bataille, manches: bataille.manches ?? 1 };
+      return { ...bataille, manches: bataille.manches ?? 1, echanges: bataille.echanges ?? [] };
     }),
     evenements: (db.evenements ?? []).filter(
       (e) => e.kind === 'FLOCONS_DOUBLES' || e.kind === 'CARTES_RENFORCEES',

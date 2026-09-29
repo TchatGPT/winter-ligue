@@ -1,311 +1,296 @@
 'use client';
 
 /**
- * Une bataille qui se rejoue à l'écran.
+ * L'arène du duel de flocons.
  *
- * Tout est déjà décidé quand ce composant se monte : les deux tirages, les deux
- * scores, le vainqueur. Le serveur a ouvert les sachets, comparé et attribué
- * dans une seule transaction — fermer l'onglet ici ne change pas une carte, et
- * recharger la page rejoue exactement la même bataille.
+ * Deux joueurs face à face. À chaque échange, leurs jauges de puissance se
+ * remplissent ; la boule de neige part du lancer le plus fort et frappe
+ * l'autre, qui vacille ; la manche se coche. Une égalité se rejoue. Au bout,
+ * le vainqueur rafle le pot.
  *
- * ## Pourquoi manche par manche
- *
- * Un duel de cinq manches, c'est quinze cartes par camp, trente en
- * tout. Trente rouleaux côte à côte donnent des cartes de la largeur d'un
- * ongle, et le suspense tient précisément à ce qu'on voie ce qui tombe. On joue
- * donc une manche à la fois, les deux camps en même temps : trois rouleaux par
- * panneau, et un total qui monte d'une manche à l'autre.
+ * Tout est déjà décidé par le serveur : l'écran ne fait que rejouer les
+ * lancers reçus, dans l'ordre. Rejouer, recharger ou fermer ne change rien.
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { prechargeSons } from '@/components/bruitage';
-import { SpinReel, type CarteRail } from '@/components/SpinReel';
-import { CardTile, Notice, flakes } from '@/components/ui';
-import { valeurCarte } from '@/lib/domain/bataille';
-import { COURBE_MESUREE } from '@/lib/spin/courbe';
-
-export interface CarteBataille {
-  cardId: string;
-  relance: boolean;
-}
+import { useEffect, useMemo, useState } from 'react';
+import { SnowCap } from '@/components/SnowCap';
+import { flakes } from '@/components/ui';
+import { gagnantEchange, manchesAGagner, PUISSANCE_MAX, type Echange } from '@/lib/domain/bataille';
 
 export interface CampVueClient {
   id: string;
   pseudo: string;
   bot: boolean;
-  cartes: CarteBataille[];
-  score: number;
+  manches: number;
 }
 
+/** La vue d'un duel, telle que le serveur l'envoie. */
 export interface BatailleVueClient {
   id: string;
   manches: number;
-  /** Cartes par manche et par camp. */
-  cartesParManche: number;
   mise: number;
   statut: 'ATTENTE' | 'TERMINEE' | 'ANNULEE';
   hoteId: string;
   camps: CampVueClient[];
+  echanges: Echange[];
+  ancien: boolean;
   vainqueurId: string | null;
+  creeeA: string;
+  resolueA: string | null;
 }
 
-/** Ce que le client sait d'une carte, pour l'afficher sans second aller-retour. */
-export interface CatalogueCarte {
-  name: string;
-  subtitle: string;
-  rarity: string;
-  glyph: string;
-  description: string;
-  nature?: 'bonus' | 'malus';
-  power?: number;
+/** Les temps d'un échange, en millisecondes. */
+const CHARGE = 700;
+const VOL = 520;
+const PAUSE = 650;
+const ECHANGE = CHARGE + VOL + PAUSE;
+
+type Phase = 'charge' | 'vol' | 'impact';
+
+function mouvementReduit(): boolean {
+  return typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
-/** Le temps qu'on laisse voir une manche avant de lancer la suivante. */
-const REPOS_MANCHE = 1500;
+/** Le combattant : son orbe, son nom, et les manches qu'il a gagnées. */
+function Combattant({
+  camp,
+  cote,
+  gagnees,
+  cible,
+  touche,
+  vainqueur,
+  perdant,
+  moi,
+}: {
+  camp: CampVueClient;
+  cote: 'gauche' | 'droite';
+  gagnees: number;
+  cible: number;
+  touche: boolean;
+  vainqueur: boolean;
+  perdant: boolean;
+  moi: boolean;
+}) {
+  return (
+    <div className={`duel-combattant ${cote === 'droite' ? 'items-end text-right' : 'items-start text-left'}`}>
+      <span
+        className="duel-orbe"
+        data-touche={touche ? '' : undefined}
+        data-vainqueur={vainqueur ? '' : undefined}
+        data-perdant={perdant ? '' : undefined}
+        aria-hidden="true"
+      >
+        {camp.bot ? '🤖' : (camp.pseudo[0] ?? '?').toUpperCase()}
+      </span>
+      <span className="mt-3 block max-w-full truncate font-display text-xl font-black tracking-wide text-ink uppercase sm:text-2xl">
+        {camp.pseudo}
+        {moi && <span className="ml-1.5 align-middle text-[12px] font-bold text-muted normal-case">(toi)</span>}
+      </span>
+      <span className="mt-2 flex gap-1.5" aria-label={`${gagnees} manche${gagnees > 1 ? 's' : ''} gagnée${gagnees > 1 ? 's' : ''}`}>
+        {Array.from({ length: cible }, (_, i) => (
+          <span key={i} className="duel-pip" data-plein={i < gagnees ? '' : undefined} />
+        ))}
+      </span>
+    </div>
+  );
+}
 
 export function BatailleArene({
   bataille,
-  catalog,
-  poids,
   moiId,
-  anime = true,
-  onFini,
+  anime,
 }: {
   bataille: BatailleVueClient;
-  catalog: Record<string, CatalogueCarte>;
-  /** Les taux d'affichage, sur 100 000 — les mêmes pour les deux camps. */
-  poids: Record<string, number>;
   moiId: string | null;
-  /**
-   * Faux pour relire une bataille passée : les cartes apparaissent sans que les
-   * rouleaux tournent. On ne fait pas patienter quelqu'un devant un résultat
-   * qu'il connaît déjà.
-   */
-  anime?: boolean;
-  onFini?: () => void;
+  /** Rejouer le duel lancer par lancer, ou montrer d'emblée le résultat. */
+  anime: boolean;
 }) {
-  const [gauche, droite] = bataille.camps;
+  const b = bataille;
+  const hote = b.camps[0];
+  const adversaire = b.camps[1];
+  const cible = manchesAGagner(b.manches);
+  const total = b.echanges.length;
 
-  /** Combien de cartes une manche donne, déduit du tirage lui-même. */
-  const parManche = Math.max(1, Math.round(gauche.cartes.length / bataille.manches));
-
-  /** Les cartes d'un camp, découpées en manches. */
-  const decoupe = useCallback(
-    (camp: CampVueClient) => {
-      const lots: CarteBataille[][] = [];
-      for (let i = 0; i < bataille.manches; i += 1) {
-        lots.push(camp.cartes.slice(i * parManche, (i + 1) * parManche));
-      }
-      return lots;
-    },
-    [bataille.manches, parManche],
-  );
-
-  const lots = useMemo(
-    () => [decoupe(gauche), decoupe(droite)],
-    [decoupe, gauche, droite],
-  );
-
-  /** Tout ce que les rouleaux peuvent montrer en leurre. */
-  const pool: CarteRail[] = useMemo(
-    () =>
-      Object.entries(catalog).map(([cardId, c]) => ({
-        cardId,
-        name: c.name,
-        rarity: c.rarity,
-        glyph: c.glyph,
-        description: c.description,
-        power: c.power,
-        nature: c.nature,
-      })),
-    [catalog],
-  );
-
-  const [manche, setManche] = useState(anime ? 0 : bataille.manches);
-  /**
-   * Les panneaux qui se sont arrêtés, repérés par manche **et** par camp.
-   *
-   * Un simple compteur aurait suffi si chaque rouleau ne signalait sa fin
-   * qu'une fois. Il n'en est rien : en développement, React monte deux fois, la
-   * première animation est interrompue, et un `onFini` de trop ferait sauter une
-   * manche entière. Un ensemble de clés est insensible aux doublons.
-   */
-  const vus = useRef<Set<string>>(new Set());
-  const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
+  /** L'échange en cours, et où il en est. `etape === total` : tout est joué. */
+  const [etape, setEtape] = useState(() => (anime && !mouvementReduit() ? 0 : total));
+  const [phase, setPhase] = useState<Phase>('charge');
+  const fini = etape >= total;
 
   useEffect(() => {
-    void prechargeSons();
-  }, []);
+    if (fini) return;
+    const t1 = setTimeout(() => setPhase('vol'), CHARGE);
+    const t2 = setTimeout(() => setPhase('impact'), CHARGE + VOL);
+    const t3 = setTimeout(() => {
+      setPhase('charge');
+      setEtape((e) => e + 1);
+    }, ECHANGE);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+    };
+  }, [etape, fini]);
 
-  useEffect(
-    () => () => {
-      timers.current.forEach(clearTimeout);
-    },
-    [],
-  );
+  /** Les échanges déjà comptés à l'écran. */
+  const joues = useMemo(() => {
+    const n = fini ? total : phase === 'impact' ? etape + 1 : etape;
+    return b.echanges.slice(0, n);
+  }, [b.echanges, etape, phase, fini, total]);
 
-  /**
-   * Une manche est finie quand les **deux** panneaux se sont arrêtés.
-   *
-   * Enchaîner sur le premier arrivé couperait la fin de l'autre : les deux
-   * rouleaux partent ensemble mais leurs bandes sont décalées, et la dernière
-   * colonne d'un camp peut s'arrêter une demi-seconde après celle de l'autre.
-   */
-  const panneauFini = useCallback(
-    (camp: number, tour: number) => {
-      const cle = `${tour}:${camp}`;
-      if (vus.current.has(cle)) return;
-      vus.current.add(cle);
-      if (!vus.current.has(`${tour}:0`) || !vus.current.has(`${tour}:1`)) return;
+  const score = useMemo(() => {
+    const s = { hote: 0, adversaire: 0 };
+    for (const e of joues) {
+      const g = gagnantEchange(e);
+      if (g) s[g] += 1;
+    }
+    return s;
+  }, [joues]);
 
-      timers.current.push(
-        setTimeout(() => {
-          const suivante = tour + 1;
-          setManche(suivante);
-          if (suivante >= bataille.manches) onFini?.();
-        }, REPOS_MANCHE),
-      );
-    },
-    [bataille.manches, onFini],
-  );
+  const courant = fini ? b.echanges[total - 1] : b.echanges[etape];
+  const gagnantCourant = courant ? gagnantEchange(courant) : null;
+  const jauges = !fini && phase === 'charge' ? null : courant;
 
-  const termine = manche >= bataille.manches;
+  const vainqueurHote = b.vainqueurId === hote?.id;
+  const nomVainqueur = vainqueurHote ? hote?.pseudo : adversaire?.pseudo;
+  const botGagne = adversaire?.bot && !vainqueurHote;
 
-  /** Le total d'un camp sur les manches déjà révélées. */
-  const totalRevele = (i: number) =>
-    lots[i]
-      .slice(0, Math.min(manche, bataille.manches))
-      .flat()
-      .reduce((n, c) => n + valeurCarte(catalog[c.cardId]?.rarity ?? 'C'), 0);
+  if (!hote || !adversaire) return null;
 
-  const jeSuisDedans = moiId === gauche.id || moiId === droite.id;
+  /* Un duel d'avant la réforme : joué aux cartes, on n'en a que l'issue. */
+  if (b.ancien) {
+    return (
+      <section className="glass glass-reflet relative overflow-hidden p-6 text-center">
+        <SnowCap radius="var(--r-lg)" seed={`arene-${b.id}`} epaisseur={16} />
+        <p className="eyebrow">Ancien duel</p>
+        <p className="mt-3 font-display text-2xl font-black text-ink uppercase">
+          {hote.pseudo} {hote.manches} – {adversaire.manches} {adversaire.pseudo}
+        </p>
+        <p className="mt-2 text-[15px] text-ink-2">
+          Joué aux cartes, avant le duel de flocons. {nomVainqueur} a raflé {flakes(b.mise * 2)} ❄.
+        </p>
+      </section>
+    );
+  }
 
   return (
-    <div className="space-y-4">
-      {/* ---------------------------- L'entête ---------------------------- */}
-      <div className="glass flex flex-wrap items-center justify-between gap-3 px-4 py-3">
-        <div className="min-w-0">
-          <p className="eyebrow">
-            {bataille.manches} manche{bataille.manches > 1 ? 's' : ''} de {parManche} cartes
-          </p>
-          <p className="text-[15px] text-ink-2">
-            {flakes(bataille.mise)} ❄ misés de chaque côté — le vainqueur emporte{' '}
-            {flakes(bataille.mise * 2)} ❄.
-          </p>
+    <section className="glass glass-reflet relative overflow-hidden px-4 py-7 sm:px-8" aria-live="polite">
+      <SnowCap radius="var(--r-lg)" seed={`arene-${b.id}`} epaisseur={18} />
+
+      {/* ---- L'enjeu ---- */}
+      <header className="relative flex flex-col items-center text-center">
+        <p className="eyebrow">Duel de flocons · au meilleur des {b.manches} manche{b.manches > 1 ? 's' : ''}</p>
+        <p className="mt-2 font-display text-5xl leading-none font-black text-ink tabular-nums sm:text-6xl">
+          {flakes(b.mise * 2)} <span className="text-ice">❄</span>
+        </p>
+        <p className="mt-1 font-display text-[12px] font-bold tracking-[0.2em] text-faint uppercase">
+          En jeu · {flakes(b.mise)} ❄ chacun
+        </p>
+      </header>
+
+      {/* ---- La scène ---- */}
+      <div className="duel-scene relative mt-8">
+        <Combattant
+          camp={hote}
+          cote="gauche"
+          gagnees={score.hote}
+          cible={cible}
+          touche={!fini && phase === 'impact' && gagnantCourant === 'adversaire'}
+          vainqueur={fini && vainqueurHote}
+          perdant={fini && !vainqueurHote}
+          moi={hote.id === moiId}
+        />
+
+        <div className="duel-piste" aria-hidden="true">
+          {/* Les jauges de puissance, l'une vers la droite, l'autre vers la gauche. */}
+          <div className="duel-jauge" data-cote="gauche">
+            <span style={{ width: `${jauges ? (jauges.hote / PUISSANCE_MAX) * 100 : 0}%` }} />
+            <em>{jauges ? jauges.hote : '—'}</em>
+          </div>
+          <div className="duel-vs">VS</div>
+          <div className="duel-jauge" data-cote="droite">
+            <span style={{ width: `${jauges ? (jauges.adversaire / PUISSANCE_MAX) * 100 : 0}%` }} />
+            <em>{jauges ? jauges.adversaire : '—'}</em>
+          </div>
+
+          {/* La boule de neige : du plus fort vers l'autre. Deux boules qui se
+              croisent pour une égalité. */}
+          {!fini && phase === 'vol' && gagnantCourant && (
+            <span key={`b-${etape}`} className="duel-boule" data-vers={gagnantCourant === 'hote' ? 'droite' : 'gauche'} />
+          )}
+          {!fini && phase === 'vol' && !gagnantCourant && (
+            <>
+              <span key={`e1-${etape}`} className="duel-boule" data-vers="milieu-g" />
+              <span key={`e2-${etape}`} className="duel-boule" data-vers="milieu-d" />
+            </>
+          )}
+          {!fini && phase === 'impact' && (
+            <span
+              key={`i-${etape}`}
+              className="duel-eclat"
+              data-cote={gagnantCourant === 'hote' ? 'droite' : gagnantCourant === 'adversaire' ? 'gauche' : 'milieu'}
+            />
+          )}
         </div>
-        {!termine && (
-          <p className="font-display text-xs tracking-wider text-muted uppercase">
-            Manche {Math.min(manche + 1, bataille.manches)} / {bataille.manches}
+
+        <Combattant
+          camp={adversaire}
+          cote="droite"
+          gagnees={score.adversaire}
+          cible={cible}
+          touche={!fini && phase === 'impact' && gagnantCourant === 'hote'}
+          vainqueur={fini && !vainqueurHote}
+          perdant={fini && vainqueurHote}
+          moi={adversaire.id === moiId}
+        />
+      </div>
+
+      {/* ---- Ce qui se passe ---- */}
+      <div className="relative mt-6 min-h-[64px] text-center">
+        {!fini ? (
+          <p className="font-display text-lg font-black tracking-wide text-ink uppercase">
+            {phase === 'charge'
+              ? `Échange ${etape + 1} — ils arment…`
+              : gagnantCourant === null
+                ? 'Égalité ! On relance.'
+                : `${gagnantCourant === 'hote' ? hote.pseudo : adversaire.pseudo} touche !`}
           </p>
+        ) : (
+          <div className="duel-verdict">
+            <p className="font-display text-3xl font-black tracking-wide uppercase sm:text-4xl">
+              {botGagne ? 'Le Bot garde la mise' : `${nomVainqueur} rafle ${flakes(b.mise * 2)} ❄`}
+            </p>
+            <p className="mt-1 text-[15px] text-ink-2">
+              {score.hote} – {score.adversaire} en {total} échange{total > 1 ? 's' : ''}
+              {b.vainqueurId === moiId ? ' · bien joué !' : moiId && b.camps.some((c) => c.id === moiId) ? ' · la revanche t’attend.' : ''}
+            </p>
+          </div>
         )}
       </div>
 
-      {/* ---------------------------- Les camps ---------------------------
-
-          Côte à côte, et c'est tout l'objet d'une bataille : deux rouleaux
-          empilés se regardent l'un après l'autre, deux rouleaux face à face se
-          regardent ensemble. On voit tomber la carte de l'adversaire au même
-          instant que la sienne, ce qui est précisément le moment qu'on est venu
-          chercher.
-
-          Sous 1024 px on repasse en pile : deux panneaux de trois colonnes dans
-          la largeur d'un téléphone donneraient des cartes illisibles, et une
-          carte qu'on ne lit pas ne fait plus de suspense. */}
-      <div className="grid gap-3 lg:grid-cols-2">
-        {[gauche, droite].map((camp, i) => {
-          const gagne = termine && bataille.vainqueurId === camp.id;
-          const perd = termine && bataille.vainqueurId !== camp.id;
-          return (
-            <section
-              key={camp.id + i}
-              className={`glass overflow-hidden px-3 py-3 transition-opacity ${
-                perd ? 'opacity-55' : ''
-              }`}
-              style={
-                gagne
-                  ? { boxShadow: 'inset 0 0 0 1px color-mix(in srgb, var(--aurora) 55%, transparent)' }
-                  : undefined
-              }
-            >
-              <header className="mb-2 flex items-center justify-between gap-3 px-1">
-                <h3 className="flex min-w-0 items-center gap-2 truncate font-display text-base font-bold">
-                  {camp.bot && <span aria-hidden="true">🤖</span>}
-                  <span className="truncate">{camp.pseudo}</span>
-                  {moiId === camp.id && (
-                    <span className="text-xs font-normal text-muted">(toi)</span>
-                  )}
-                </h3>
-                <p className="shrink-0 font-display text-sm tabular-nums">
-                  {totalRevele(i)}
-                  {gagne && <span className="ml-2 text-aurora">gagne</span>}
-                </p>
-              </header>
-
-              {/* La manche en cours tourne ; les précédentes restent affichées. */}
-              {!termine ? (
-                <SpinReel
-                  key={`${camp.id}-${manche}`}
-                  pool={pool}
-                  poids={poids}
-                  gagnantes={lots[i][manche].map((c) => ({
-                    cardId: c.cardId,
-                    name: catalog[c.cardId]?.name ?? c.cardId,
-                    rarity: catalog[c.cardId]?.rarity ?? 'C',
-                    glyph: catalog[c.cardId]?.glyph ?? '❄',
-                    description: catalog[c.cardId]?.description,
-                    power: catalog[c.cardId]?.power,
-                    nature: catalog[c.cardId]?.nature,
-                  }))}
-                  relances={lots[i][manche].map((c) => c.relance)}
-                  duree={anime ? COURBE_MESUREE.duree : 0}
-                  // Un seul des deux panneaux sonne : les mêmes échantillons aux
-                  // mêmes instants, en double, épaississent le son au lieu de
-                  // l'enrichir. Le panneau du haut a la parole.
-                  sourdine={i === 1}
-                  onFini={() => panneauFini(i, manche)}
-                />
-              ) : (
-                <div className="grid grid-cols-3 gap-2 sm:grid-cols-5 lg:grid-cols-3">
-                  {camp.cartes.map((c, k) => {
-                    const meta = catalog[c.cardId];
-                    if (!meta) return null;
-                    return (
-                      <CardTile
-                        key={`${c.cardId}-${k}`}
-                        cardId={c.cardId}
-                        name={meta.name}
-                        subtitle={meta.subtitle}
-                        description={meta.description}
-                        rarity={meta.rarity}
-                        glyph={meta.glyph}
-                        power={meta.power}
-                        nature={meta.nature}
-                      />
-                    );
-                  })}
-                </div>
-              )}
-            </section>
-          );
-        })}
-      </div>
-
-      {/* ---------------------------- Le verdict -------------------------- */}
-      {termine && (
-        <Notice kind={jeSuisDedans && bataille.vainqueurId === moiId ? 'success' : 'info'}>
-          {bataille.vainqueurId === moiId ? (
-            <>
-              Tu remportes le pot : {flakes(bataille.mise * 2)} ❄, déjà sur ton solde.
-            </>
-          ) : (
-            <>
-              <strong>{bataille.camps.find((c) => c.id === bataille.vainqueurId)?.pseudo}</strong>{' '}
-              l’emporte, {Math.max(gauche.score, droite.score)} contre{' '}
-              {Math.min(gauche.score, droite.score)} en somme de raretés.
-            </>
-          )}
-        </Notice>
+      {/* ---- Le relevé, échange par échange ---- */}
+      {joues.length > 0 && (
+        <ol className="relative mx-auto mt-5 grid max-w-md gap-1.5">
+          {joues.map((e, i) => {
+            const g = gagnantEchange(e);
+            return (
+              <li key={i} className="duel-releve" data-gagnant={g ?? 'egalite'}>
+                <span className="text-faint">#{i + 1}</span>
+                <span className={g === 'hote' ? 'text-aurora' : 'text-muted'}>{e.hote}</span>
+                <span className="text-faint">{g === null ? 'égalité' : g === 'hote' ? '◀' : '▶'}</span>
+                <span className={g === 'adversaire' ? 'text-aurora' : 'text-muted'}>{e.adversaire}</span>
+              </li>
+            );
+          })}
+        </ol>
       )}
-    </div>
+
+      {fini && anime && total > 0 && (
+        <div className="relative mt-5 flex justify-center">
+          <button type="button" className="btn btn-sm" onClick={() => setEtape(0)}>
+            Revoir le duel
+          </button>
+        </div>
+      )}
+    </section>
   );
 }

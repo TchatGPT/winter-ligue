@@ -3,9 +3,10 @@ import 'server-only';
 /**
  * Les affrontements.
  *
- * Deux camps misent la même somme de flocons, tirent le même nombre de cartes
- * manche par manche, et celui dont les cartes totalisent la plus haute somme
- * de raretés **remporte le pot** — les deux mises réunies.
+ * Deux camps misent la même somme de flocons et s'affrontent en une bataille
+ * de boules de neige (`lib/domain/bataille.ts`) : manche par manche, le lancer
+ * le plus fort l'emporte, et le premier à la majorité des manches **remporte
+ * le pot** — les deux mises réunies.
  *
  * ## Ce qui n'est jamais laissé au client
  *
@@ -15,8 +16,8 @@ import 'server-only';
  *
  * ## Le bot ne triche pas
  *
- * Il tire aux **mêmes tables**, par la même fonction et la même source
- * d'entropie que le joueur. Il gagne donc à peu près une fois sur deux. Jouer
+ * Il lance ses boules de neige **exactement comme le joueur**, à la même
+ * source d'entropie. Il gagne donc à peu près une fois sur deux. Jouer
  * contre lui est neutre : une fois sur deux on perd sa mise, une fois sur deux
  * on la double. Le mode n'enrichit personne, il ajoute du risque à ceux qui en
  * veulent — et c'est le seul endroit où les flocons se risquent.
@@ -24,9 +25,14 @@ import 'server-only';
 
 import { CAMP_BOT, type Bataille, type Database } from '@/lib/db/entities';
 import { newId } from '@/lib/db/store';
-import { MANCHES_MAX, MANCHES_MIN, scoreCamp, vainqueur } from '@/lib/domain/bataille';
-import { getCard } from '@/lib/domain/catalog';
-import { secureInt, tireDuel } from '@/lib/domain/rng';
+import {
+  type Echange,
+  joueDuel,
+  MANCHES_POSSIBLES,
+  PUISSANCE_MAX,
+  score,
+} from '@/lib/domain/bataille';
+import { secureInt } from '@/lib/domain/rng';
 import { DUEL } from '@/lib/domain/rules';
 import { credit, debit } from '@/lib/services/ledger';
 
@@ -46,28 +52,6 @@ export class BatailleError extends Error {
   }
 }
 
-function raretesDe(cardIds: readonly string[]): string[] {
-  return cardIds.map((id) => getCard(id)?.rarity ?? 'C');
-}
-
-/**
- * Tire les cartes d'un camp, toutes manches confondues.
- *
- * Les manches sont mises bout à bout : l'affrontement compare des lots, pas
- * des manches gagnées. Les rangs de relance sont recalés sur le lot complet,
- * pour que l'écran sache quelle colonne rejouer.
- */
-function tirePour(manches: number): { cardIds: string[]; relances: number[] } {
-  const cardIds: string[] = [];
-  const relances: number[] = [];
-  for (let i = 0; i < manches; i += 1) {
-    const tirage = tireDuel(DUEL.weights, DUEL.cartesParManche);
-    for (const rang of tirage.relances) relances.push(cardIds.length + rang);
-    cardIds.push(...tirage.cards);
-  }
-  return { cardIds, relances };
-}
-
 /**
  * Crée un affrontement et met l'hôte à l'enjeu. À appeler dans une transaction.
  *
@@ -76,11 +60,8 @@ function tirePour(manches: number): { cardIds: string[]; relances: number[] } {
  * dont l'hôte a déjà payé, et personne ne rejoint une mise qui n'existe pas.
  */
 export function creeBataille(db: Database, hoteId: string, mise: number, manches: number): Bataille {
-  if (!Number.isInteger(manches) || manches < MANCHES_MIN || manches > MANCHES_MAX) {
-    throw new BatailleError(
-      `Un duel se joue en ${MANCHES_MIN} à ${MANCHES_MAX} manches.`,
-      'MANCHES_INVALIDES',
-    );
+  if (!(MANCHES_POSSIBLES as readonly number[]).includes(manches)) {
+    throw new BatailleError('Un duel se joue en 1, 3 ou 5 manches.', 'MANCHES_INVALIDES');
   }
   if (!Number.isInteger(mise) || mise < DUEL.miseMin || mise > DUEL.miseMax) {
     throw new BatailleError(
@@ -100,6 +81,7 @@ export function creeBataille(db: Database, hoteId: string, mise: number, manches
     adversaireId: null,
     statut: 'ATTENTE',
     tirages: [],
+    echanges: [],
     vainqueurId: null,
     creeeA: new Date().toISOString(),
     resolueA: null,
@@ -109,28 +91,24 @@ export function creeBataille(db: Database, hoteId: string, mise: number, manches
 }
 
 /**
- * Résout un affrontement : les deux camps tirent, on compare, le vainqueur
- * prend le pot.
+ * Résout un duel : la bataille de boules de neige se joue, le vainqueur prend
+ * le pot.
+ *
+ * Chaque lancer vient du générateur cryptographique du serveur : `Math.random`
+ * n'a rien à faire dans une décision qui verse des flocons.
  *
  * Le bot ne possède rien : s'il gagne, le pot disparaît, et c'est exactement
  * ce que le joueur a accepté en misant.
  */
 function resout(db: Database, bataille: Bataille): Bataille {
-  const camps = [bataille.hoteId, bataille.adversaireId!];
-  const tirages = camps.map((camp) => {
-    const { cardIds, relances } = tirePour(bataille.manches);
-    return { camp, cardIds, relances, score: scoreCamp(raretesDe(cardIds)) };
-  });
-
-  const gagnant = vainqueur(
-    tirages.map((t) => ({ raretes: raretesDe(t.cardIds) })),
-    // Le départage se fait sur la même entropie que le tirage : `Math.random`
-    // n'a rien à faire dans une décision qui verse des flocons.
-    () => secureInt(1_000_000) / 1_000_000,
+  const { echanges, vainqueur } = joueDuel(
+    bataille.manches,
+    () => secureInt(PUISSANCE_MAX) + 1,
+    () => secureInt(2) === 0,
   );
 
-  bataille.tirages = tirages;
-  bataille.vainqueurId = tirages[gagnant].camp;
+  bataille.echanges = echanges;
+  bataille.vainqueurId = vainqueur === 'hote' ? bataille.hoteId : bataille.adversaireId!;
   bataille.statut = 'TERMINEE';
   bataille.resolueA = new Date().toISOString();
 
@@ -211,63 +189,70 @@ export interface CampVue {
   id: string;
   pseudo: string;
   bot: boolean;
-  /** Les cartes tirées, dans l'ordre du lot. Vide tant que rien n'est joué. */
-  cartes: { cardId: string; relance: boolean }[];
-  score: number;
+  /** Les manches gagnées. */
+  manches: number;
 }
 
 export interface BatailleVue {
   id: string;
+  /** Le format : 1, 3 ou 5 manches. */
   manches: number;
-  /** Cartes par manche et par camp. */
-  cartesParManche: number;
   mise: number;
   statut: Bataille['statut'];
   hoteId: string;
+  /** L'hôte d'abord, puis l'adversaire s'il y en a un. */
   camps: CampVue[];
+  /** Les lancers, échange par échange, pour rejouer le duel à l'écran. */
+  echanges: Echange[];
+  /** Vrai pour un duel d'avant le duel de flocons, joué aux cartes. */
+  ancien: boolean;
   vainqueurId: string | null;
   creeeA: string;
   resolueA: string | null;
 }
 
 /**
- * Ce qu'un affrontement montre au navigateur.
+ * Ce qu'un duel montre au navigateur.
  *
- * Tout y est déjà décidé : les cartes des deux camps, les scores, le vainqueur.
- * Renvoyer le tirage complet plutôt que le seul verdict est délibéré — c'est ce
- * qui permet de rejouer les rouleaux, et ce qui rend le résultat vérifiable à
- * l'œil par les deux joueurs.
+ * Tout y est déjà décidé : chaque lancer, le score, le vainqueur. Renvoyer les
+ * lancers plutôt que le seul verdict est délibéré — c'est ce qui permet de
+ * rejouer le duel, et ce qui le rend vérifiable à l'œil par les deux joueurs.
  */
 export function vueBataille(db: Database, bataille: Bataille): BatailleVue {
   const nomDe = (id: string): string => {
     if (id === CAMP_BOT) return 'Le Bot';
     return db.players.find((p) => p.id === id)?.pseudo ?? 'Joueur inconnu';
   };
+  const echanges = bataille.echanges ?? [];
+  const ancien = echanges.length === 0 && bataille.tirages.length > 0;
+  const points = score(echanges);
 
-  const camps: CampVue[] = bataille.tirages.map((tirage) => ({
-    id: tirage.camp,
-    pseudo: nomDe(tirage.camp),
-    bot: tirage.camp === CAMP_BOT,
-    cartes: tirage.cardIds.map((cardId, i) => ({
-      cardId,
-      relance: tirage.relances.includes(i),
-    })),
-    score: tirage.score,
-  }));
-
-  // Tant que rien n'est tiré, il n'y a qu'un camp à montrer : l'hôte qui attend.
-  if (camps.length === 0) {
-    camps.push({ id: bataille.hoteId, pseudo: nomDe(bataille.hoteId), bot: false, cartes: [], score: 0 });
+  const camps: CampVue[] = [
+    { id: bataille.hoteId, pseudo: nomDe(bataille.hoteId), bot: false, manches: points.hote },
+  ];
+  if (bataille.adversaireId) {
+    camps.push({
+      id: bataille.adversaireId,
+      pseudo: nomDe(bataille.adversaireId),
+      bot: bataille.adversaireId === CAMP_BOT,
+      manches: points.adversaire,
+    });
+  }
+  // Un ancien duel n'a que les scores de ses cartes : on les reprend, pour
+  // que la ligne dise encore qui a gagné et de combien.
+  if (ancien) {
+    for (const camp of camps) camp.manches = bataille.tirages.find((t) => t.camp === camp.id)?.score ?? 0;
   }
 
   return {
     id: bataille.id,
     manches: bataille.manches,
-    cartesParManche: DUEL.cartesParManche,
     mise: bataille.mise,
     statut: bataille.statut,
     hoteId: bataille.hoteId,
     camps,
+    echanges,
+    ancien,
     vainqueurId: bataille.vainqueurId,
     creeeA: bataille.creeeA,
     resolueA: bataille.resolueA,

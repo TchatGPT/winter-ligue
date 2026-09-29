@@ -7,7 +7,7 @@
  */
 
 import { z } from 'zod';
-import { MANCHES_MAX, MANCHES_MIN } from '@/lib/domain/bataille';
+import { MANCHES_POSSIBLES } from '@/lib/domain/bataille';
 import { DUEL, GAME_LIMITS } from '@/lib/domain/rules';
 import { PACK_IDS } from '@/lib/domain/types';
 
@@ -114,10 +114,14 @@ export const adminPackSchema = z.object({
 
 export const createBatailleSchema = z.object({
   mise: z.number().int().min(DUEL.miseMin).max(DUEL.miseMax),
-  manches: z.number().int().min(MANCHES_MIN).max(MANCHES_MAX),
+  // 1, 3 ou 5 : un nombre impair, pour qu'il y ait toujours un vainqueur.
+  manches: z.union(MANCHES_POSSIBLES.map((n) => z.literal(n)) as [z.ZodLiteral<1>, z.ZodLiteral<3>, z.ZodLiteral<5>]),
 });
 
 export const batailleSchema = z.object({ batailleId: uuid });
+
+/** Contre le bot : un duel qu'on a monté, ou un duel monté et joué d'un coup. */
+export const duelBotSchema = z.union([batailleSchema, createBatailleSchema]);
 
 /* --------------------------------- Admin --------------------------------- */
 

@@ -6,6 +6,7 @@
  * enregistrements, si bien que le changement de base ne touchera pas au métier.
  */
 
+import type { Echange } from '@/lib/domain/bataille';
 import type { EvenementKind } from '@/lib/domain/rules';
 import type { PackId, Placement, Rarity } from '@/lib/domain/types';
 
@@ -222,7 +223,7 @@ export interface ReglagePack {
  */
 export interface Bataille {
   id: string;
-  /** Nombre de manches. Chaque manche tire `DUEL.cartesParManche` cartes par camp. */
+  /** Le format : au meilleur de 1, 3 ou 5 manches. */
   manches: number;
   /** La mise de chaque camp, en flocons. Le pot vaut le double. */
   mise: number;
@@ -231,7 +232,13 @@ export interface Bataille {
   adversaireId: string | null;
   statut: 'ATTENTE' | 'TERMINEE' | 'ANNULEE';
   /** Les cartes tirées par camp, dans l'ordre des manches. Vide tant qu'on attend. */
+  /**
+   * Les cartes des anciens duels, d'avant le duel de flocons. Vide pour
+   * les nouveaux ; gardé pour relire l'historique.
+   */
   tirages: { camp: string; cardIds: string[]; relances: number[]; score: number }[];
+  /** Les lancers du duel de flocons, échange par échange, égalités comprises. */
+  echanges: Echange[];
   vainqueurId: string | null;
   creeeA: string;
   resolueA: string | null;

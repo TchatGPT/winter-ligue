@@ -1,92 +1,97 @@
 /**
- * Les batailles de boosters : qui gagne, et pourquoi.
+ * Le duel de flocons : une bataille de boules de neige.
  *
- * Module **pur** — aucune entrée-sortie, aucun accès base. Il ne décide pas non
- * plus du contenu des boosters : on lui donne les cartes déjà tirées par le
- * serveur, il dit qui l'emporte. C'est ce découpage qui rend la règle testable
- * sans monter une base, et vérifiable par n'importe qui lisant `tests/`.
+ * Module **pur** — aucune entrée-sortie, aucun accès base, et pas de hasard à
+ * lui : on lui fournit la source de tirage, il dit comment le duel s'est joué.
+ * C'est ce découpage qui rend la règle testable et vérifiable par n'importe
+ * qui lisant `tests/`.
+ *
+ * ## La règle
+ *
+ * À chaque échange, les deux camps lancent une boule de neige, dont la
+ * puissance est tirée entre 1 et 100. La plus forte gagne la manche. Une
+ * égalité ne compte pour personne : on relance. Le premier à remporter la
+ * majorité des manches — 1 sur 1, 2 sur 3, 3 sur 5 — gagne le duel, et le pot.
+ *
+ * ## Pourquoi c'est juste
+ *
+ * Les deux camps tirent de la même façon, dans la même table, à la même
+ * source : la règle est symétrique, chacun gagne une fois sur deux. Ni le
+ * solde, ni le rôle, ni le fait d'avoir créé le duel ne pèsent. Les flocons
+ * se risquent ici, ils ne s'y achètent pas d'avantage.
  */
 
-import { RARITY_ORDER } from './rules';
-import type { Rarity } from './types';
-
-/**
- * Le nombre de boosters qu'une bataille peut mettre en jeu, par camp.
- *
- * Le plancher à un : une bataille d'un seul booster est la plus courte et la
- * plus lisible, c'est celle par laquelle on découvre le mode. Le plafond à cinq
- * n'est pas une contrainte technique mais une contrainte d'écran — au-delà, le
- * rail dépasse la hauteur d'une fenêtre et l'on ne voit plus les deux camps en
- * même temps, ce qui est pourtant tout l'intérêt.
- */
+/** Les formats de duel : toujours un nombre impair, pour qu'il y ait un vainqueur. */
+export const MANCHES_POSSIBLES = [1, 3, 5] as const;
+export type Manches = (typeof MANCHES_POSSIBLES)[number];
 export const MANCHES_MIN = 1;
 export const MANCHES_MAX = 5;
 
-/**
- * Ce que vaut une carte dans une bataille.
- *
- * Le rang de sa rareté, plus un : une commune vaut 1, une légendaire 6.
- *
- * ## Pourquoi la rareté et non la cote de marché
- *
- * La cote serait la « vraie » valeur, et c'est précisément le problème : elle
- * bouge tous les jours, et deux joueurs peuvent la gonfler en se vendant une
- * carte entre eux avant de lancer une bataille. Une règle de jeu qui dépend d'un
- * prix manipulable n'est plus une règle.
- *
- * La rareté, elle, est fixée par le catalogue, identique pour tout le monde, et
- * se lit d'un coup d'œil pendant que les rouleaux tournent — le spectateur sait
- * qui mène sans attendre le décompte.
- */
-export function valeurCarte(rarity: string): number {
-  return (RARITY_ORDER[rarity as Rarity] ?? 0) + 1;
-}
-
-/** Le score d'un camp : la somme de ce que valent ses cartes. */
-export function scoreCamp(raretes: readonly string[]): number {
-  return raretes.reduce((total, r) => total + valeurCarte(r), 0);
-}
-
-/** La meilleure carte d'un camp, en valeur. Zéro si le camp n'a rien. */
-export function meilleureCarte(raretes: readonly string[]): number {
-  return raretes.reduce((max, r) => Math.max(max, valeurCarte(r)), 0);
-}
-
-export interface CampBataille {
-  /** Les raretés de toutes les cartes tirées par ce camp, manches confondues. */
-  raretes: readonly string[];
-}
+/** La puissance maximale d'un lancer ; la minimale est 1. */
+export const PUISSANCE_MAX = 100;
 
 /**
- * Départage deux camps, et rend l'index du vainqueur.
- *
- * Trois critères, dans l'ordre :
- *
- *  1. **La somme des raretés.** C'est la règle annoncée, et elle récompense
- *     l'ensemble du tirage plutôt qu'un coup de chance isolé.
- *  2. **La meilleure carte.** À somme égale, celui qui a sorti la plus haute
- *     l'emporte : entre six peu communes et une légendaire entourée de communes,
- *     c'est la légendaire qu'on a envie de voir gagner.
- *  3. **Le hasard**, fourni par l'appelant. Il faut bien trancher, et une
- *     égalité parfaite sur les deux premiers critères est assez rare pour qu'un
- *     tirage au sort soit la réponse honnête — plutôt que de faire gagner
- *     l'hôte, ce qui donnerait un avantage à celui qui crée la bataille.
+ * Au-delà de ce nombre d'échanges, on tranche au hasard plutôt que de relancer
+ * sans fin. Il faudrait des dizaines d'égalités d'affilée — une chance sur
+ * cent chacune — pour l'atteindre : c'est un garde-fou, pas une règle.
  */
-export function vainqueur(
-  camps: readonly CampBataille[],
-  hasard: () => number = Math.random,
-): number {
-  if (camps.length === 0) return -1;
+const ECHANGES_MAX = 60;
 
-  const scores = camps.map((c) => scoreCamp(c.raretes));
-  const meilleur = Math.max(...scores);
-  let candidats = camps.map((_, i) => i).filter((i) => scores[i] === meilleur);
-  if (candidats.length === 1) return candidats[0];
+export interface Echange {
+  /** La puissance du lancer de l'hôte, de 1 à 100. */
+  hote: number;
+  /** Celle de l'adversaire — le joueur qui a rejoint, ou le bot. */
+  adversaire: number;
+}
 
-  const hautes = camps.map((c) => meilleureCarte(c.raretes));
-  const plusHaute = Math.max(...candidats.map((i) => hautes[i]));
-  candidats = candidats.filter((i) => hautes[i] === plusHaute);
-  if (candidats.length === 1) return candidats[0];
+export type Camp = 'hote' | 'adversaire';
 
-  return candidats[Math.floor(hasard() * candidats.length) % candidats.length];
+/** Qui gagne un échange ; `null` pour une égalité, qui se rejoue. */
+export function gagnantEchange(e: Echange): Camp | null {
+  if (e.hote > e.adversaire) return 'hote';
+  if (e.adversaire > e.hote) return 'adversaire';
+  return null;
+}
+
+/** Les manches qu'il faut gagner pour remporter le duel. */
+export function manchesAGagner(manches: number): number {
+  return Math.floor(manches / 2) + 1;
+}
+
+/** Le score, en manches gagnées, après une suite d'échanges. */
+export function score(echanges: readonly Echange[]): Record<Camp, number> {
+  const total: Record<Camp, number> = { hote: 0, adversaire: 0 };
+  for (const e of echanges) {
+    const g = gagnantEchange(e);
+    if (g) total[g] += 1;
+  }
+  return total;
+}
+
+/**
+ * Joue un duel jusqu'au bout.
+ *
+ * `lance` rend une puissance entière entre 1 et `PUISSANCE_MAX` ; le serveur y
+ * branche son générateur cryptographique, les tests un générateur fixé.
+ * `pile` tranche le cas extrême où les égalités s'enchaîneraient sans fin.
+ */
+export function joueDuel(
+  manches: number,
+  lance: () => number,
+  pile: () => boolean = () => Math.random() < 0.5,
+): { echanges: Echange[]; vainqueur: Camp } {
+  const cible = manchesAGagner(manches);
+  const echanges: Echange[] = [];
+  const total: Record<Camp, number> = { hote: 0, adversaire: 0 };
+
+  while (total.hote < cible && total.adversaire < cible) {
+    if (echanges.length >= ECHANGES_MAX) {
+      return { echanges, vainqueur: pile() ? 'hote' : 'adversaire' };
+    }
+    const e: Echange = { hote: lance(), adversaire: lance() };
+    echanges.push(e);
+    const g = gagnantEchange(e);
+    if (g) total[g] += 1;
+  }
+  return { echanges, vainqueur: total.hote >= cible ? 'hote' : 'adversaire' };
 }

@@ -1,23 +1,21 @@
 import { describe, expect, it } from 'vitest';
 import {
-  MANCHES_MAX,
-  MANCHES_MIN,
-  meilleureCarte,
-  scoreCamp,
-  vainqueur,
-  valeurCarte,
+  gagnantEchange,
+  joueDuel,
+  manchesAGagner,
+  MANCHES_POSSIBLES,
+  PUISSANCE_MAX,
+  score,
 } from '@/lib/domain/bataille';
 
 /**
- * Ce qui verrouille les batailles.
+ * Ce qui verrouille le duel de flocons.
  *
- * Une bataille attribue des cartes à quelqu'un et les retire à un autre. La
- * règle qui décide doit donc être lisible, reproductible, et incapable de
- * favoriser un camp sans qu'on s'en aperçoive — d'où ces tests, qui portent sur
- * la seule fonction qui tranche.
+ * Un duel verse toute une mise à l'un et la retire à l'autre : la règle doit
+ * être lisible, reproductible, et ne favoriser aucun camp.
  */
 
-/** Un générateur déterministe, pour que le départage soit reproductible. */
+/** Un générateur déterministe, pour que les duels soient reproductibles. */
 function mulberry32(graine: number): () => number {
   let a = graine >>> 0;
   return () => {
@@ -28,88 +26,64 @@ function mulberry32(graine: number): () => number {
   };
 }
 
-describe('la valeur d’une carte', () => {
-  it('monte avec la rareté, de un à six', () => {
-    expect(valeurCarte('C')).toBe(1);
-    expect(valeurCarte('PC')).toBe(2);
-    expect(valeurCarte('R')).toBe(3);
-    expect(valeurCarte('SR')).toBe(4);
-    expect(valeurCarte('UR')).toBe(5);
-    expect(valeurCarte('L')).toBe(6);
-  });
+/** Une suite de lancers écrite à l'avance. */
+function suite(...puissances: number[]): () => number {
+  let i = 0;
+  return () => puissances[i++];
+}
 
-  it('ne vaut jamais zéro, même pour une rareté inconnue', () => {
-    // Une carte dont la rareté ne serait pas reconnue compte quand même : la
-    // faire valoir zéro reviendrait à la retirer du décompte en silence.
-    expect(valeurCarte('???')).toBe(1);
-  });
-
-  it('additionne sans surprise', () => {
-    expect(scoreCamp(['C', 'C', 'C'])).toBe(3);
-    expect(scoreCamp(['L', 'C'])).toBe(7);
-    expect(scoreCamp([])).toBe(0);
-  });
-
-  it('retient la plus haute pour le départage', () => {
-    expect(meilleureCarte(['C', 'SR', 'PC'])).toBe(4);
-    expect(meilleureCarte([])).toBe(0);
+describe('gagnantEchange', () => {
+  it('donne la manche au lancer le plus fort, et rien sur une égalité', () => {
+    expect(gagnantEchange({ hote: 80, adversaire: 12 })).toBe('hote');
+    expect(gagnantEchange({ hote: 3, adversaire: 99 })).toBe('adversaire');
+    expect(gagnantEchange({ hote: 50, adversaire: 50 })).toBeNull();
   });
 });
 
-describe('le vainqueur', () => {
-  it('est celui qui totalise le plus', () => {
-    const gagne = vainqueur([{ raretes: ['C', 'C'] }, { raretes: ['R', 'C'] }], mulberry32(1));
-    expect(gagne).toBe(1);
+describe('manchesAGagner', () => {
+  it('demande la majorité', () => {
+    expect(MANCHES_POSSIBLES.map(manchesAGagner)).toEqual([1, 2, 3]);
+  });
+});
+
+describe('joueDuel', () => {
+  it('s’arrête dès qu’un camp a la majorité', () => {
+    // 3 manches : l'hôte gagne les deux premières, la troisième n'a pas lieu.
+    const { echanges, vainqueur } = joueDuel(3, suite(90, 10, 70, 20, 5, 95));
+    expect(echanges).toHaveLength(2);
+    expect(vainqueur).toBe('hote');
+    expect(score(echanges)).toEqual({ hote: 2, adversaire: 0 });
   });
 
-  it('à somme égale, la plus haute carte tranche', () => {
-    /*
-     * Six peu communes contre une légendaire entourée de communes : même somme,
-     * et c'est la légendaire qu'on a envie de voir gagner. Sans ce second
-     * critère, le camp le plus régulier l'emporterait toujours sur le coup
-     * d'éclat, ce qui est le contraire de l'effet recherché.
-     */
-    const regulier = { raretes: ['PC', 'PC', 'PC', 'PC', 'PC', 'PC'] }; // 12
-    const eclat = { raretes: ['L', 'C', 'C', 'C', 'C', 'C', 'C'] }; // 12
-    expect(scoreCamp(regulier.raretes)).toBe(scoreCamp(eclat.raretes));
-    expect(vainqueur([regulier, eclat], mulberry32(1))).toBe(1);
+  it('rejoue les égalités sans les compter', () => {
+    const { echanges, vainqueur } = joueDuel(1, suite(40, 40, 12, 60));
+    expect(echanges).toHaveLength(2);
+    expect(vainqueur).toBe('adversaire');
+    expect(score(echanges)).toEqual({ hote: 0, adversaire: 1 });
   });
 
-  it('à égalité parfaite, tire au sort — et ne favorise pas l’hôte', () => {
-    /*
-     * Faire gagner l'hôte serait plus simple à écrire, et donnerait un avantage
-     * silencieux à celui qui crée la bataille. Sur mille égalités parfaites, les
-     * deux camps doivent l'emporter à peu près autant.
-     */
-    const camps = [{ raretes: ['R', 'R'] }, { raretes: ['R', 'R'] }];
-    const hasard = mulberry32(7);
+  it('va jusqu’à la manche décisive', () => {
+    const { echanges, vainqueur } = joueDuel(5, suite(60, 50, 10, 90, 70, 20, 5, 80, 99, 1));
+    expect(echanges).toHaveLength(5);
+    expect(score(echanges)).toEqual({ hote: 3, adversaire: 2 });
+    expect(vainqueur).toBe('hote');
+  });
+
+  it('ne favorise aucun camp : environ une victoire sur deux', () => {
+    const hasard = mulberry32(2026);
+    const lance = () => Math.floor(hasard() * PUISSANCE_MAX) + 1;
     let hote = 0;
-    for (let i = 0; i < 1000; i += 1) if (vainqueur(camps, hasard) === 0) hote += 1;
-    expect(hote).toBeGreaterThan(400);
-    expect(hote).toBeLessThan(600);
+    const essais = 20_000;
+    for (let i = 0; i < essais; i += 1) {
+      if (joueDuel(3, lance).vainqueur === 'hote') hote += 1;
+    }
+    expect(hote / essais).toBeGreaterThan(0.48);
+    expect(hote / essais).toBeLessThan(0.52);
   });
 
-  it('ne dépend pas de l’ordre des camps', () => {
-    // Le même tirage doit donner le même vainqueur, qu'on présente l'hôte en
-    // premier ou en second. Sans ça, l'ordre d'affichage changerait le résultat.
-    const fort = { raretes: ['UR', 'PC'] };
-    const faible = { raretes: ['C', 'C'] };
-    expect(vainqueur([fort, faible], mulberry32(3))).toBe(0);
-    expect(vainqueur([faible, fort], mulberry32(3))).toBe(1);
-  });
-
-  it('rend −1 quand il n’y a personne', () => {
-    expect(vainqueur([], mulberry32(1))).toBe(-1);
-  });
-});
-
-describe('les bornes d’une bataille', () => {
-  it('vont de un à cinq sachets', () => {
-    // Le plancher rend la bataille la plus courte possible accessible ; le
-    // plafond est un plafond d'écran, pas de calcul — au-delà, les deux camps
-    // ne tiennent plus ensemble dans une fenêtre.
-    expect(MANCHES_MIN).toBe(1);
-    expect(MANCHES_MAX).toBe(5);
-    expect(MANCHES_MIN).toBeLessThan(MANCHES_MAX);
+  it('tranche au lieu de boucler si les égalités ne cessent pas', () => {
+    const { vainqueur, echanges } = joueDuel(1, () => 50, () => true);
+    expect(vainqueur).toBe('hote');
+    expect(echanges.length).toBeLessThanOrEqual(60);
   });
 });

@@ -19,17 +19,11 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import {
-  BatailleArene,
-  type BatailleVueClient,
-  type CatalogueCarte,
-} from '@/components/BatailleArene';
+import { BatailleArene, type BatailleVueClient } from '@/components/BatailleArene';
 import { NAV_ICONS } from '@/components/icons';
 import { reveilleSon } from '@/components/bruitage';
-import { CardFrame } from '@/components/CardFrame';
-import { EmptyState, Notice, flakes, rarityMeta } from '@/components/ui';
-import { RARITY_ORDER } from '@/lib/domain/rules';
-import type { Rarity } from '@/lib/domain/types';
+import { EmptyState, Notice, flakes } from '@/components/ui';
+import { MANCHES_POSSIBLES } from '@/lib/domain/bataille';
 import { SnowCap } from '@/components/SnowCap';
 
 /** Le rythme du sondage, quand personne ne joue. */
@@ -52,40 +46,6 @@ const MISES = [100, 250, 500, 1000, 2500, 5000];
 
 /** Le pot : les deux mises réunies. C'est ce qui change de mains. */
 const pot = (b: BatailleVueClient) => b.mise * 2;
-
-/**
- * Les plus belles cartes tombées dans le duel.
- *
- * C'est ce qu'on vient regarder, et c'était absent : une ligne annonçait
- * « 30 000 ❄ » sans jamais montrer ce que ces trente mille avaient donné. Un
- * classement des plus gros duels de la semaine qui ne montre pas les
- * cartes n'est qu'un tableau de comptabilité.
- *
- * Les plus hautes raretés d'abord, doublons écartés — voir trois fois la même
- * légendaire remplit la ligne sans rien apprendre.
- */
-function meilleuresCartes(
-  b: BatailleVueClient,
-  catalog: Record<string, CatalogueCarte>,
-  combien: number,
-): { cardId: string; carte: CatalogueCarte }[] {
-  const vues = new Set<string>();
-  return b.camps
-    .flatMap((c) => c.cartes)
-    .map((c) => ({ cardId: c.cardId, carte: catalog[c.cardId] }))
-    .filter((c): c is { cardId: string; carte: CatalogueCarte } => Boolean(c.carte))
-    .sort(
-      (x, y) =>
-        (RARITY_ORDER[y.carte.rarity as Rarity] ?? 0) -
-        (RARITY_ORDER[x.carte.rarity as Rarity] ?? 0),
-    )
-    .filter((c) => {
-      if (vues.has(c.cardId)) return false;
-      vues.add(c.cardId);
-      return true;
-    })
-    .slice(0, combien);
-}
 
 /** Une pastille d'état : ce que la ligne raconte avant même qu'on la lise. */
 function Etat({ enAttente }: { enAttente: boolean }) {
@@ -137,14 +97,12 @@ function Etat({ enAttente }: { enAttente: boolean }) {
  */
 function Ligne({
   affrontement,
-  catalog,
   moiId,
   rang,
   action,
   onRelire,
 }: {
   affrontement: BatailleVueClient;
-  catalog: Record<string, CatalogueCarte>;
   moiId: string | null;
   /** Le rang dans le classement de la semaine, s'il y en a un. */
   rang?: number;
@@ -155,12 +113,7 @@ function Ligne({
   const hote = b.camps[0];
   const adverse = b.camps[1];
   const fini = b.statut === 'TERMINEE';
-  const cartes = fini ? meilleuresCartes(b, catalog, 6) : [];
-  const eclat = fini
-    ? cartes[0]
-      ? rarityMeta(cartes[0].carte.rarity).color
-      : 'var(--ice)'
-    : 'var(--gold)';
+  const eclat = fini ? 'var(--aurora)' : 'var(--gold)';
 
   /** Un camp, avec son score du côté du centre. */
   const camp = (c: (typeof b.camps)[number] | undefined, cote: 'gauche' | 'droite') => {
@@ -198,7 +151,7 @@ function Ligne({
           gagne ? 'text-aurora' : 'text-faint'
         }`}
       >
-        {c?.score ?? 0}
+        {c?.manches ?? 0}
       </span>
     ) : null;
 
@@ -242,7 +195,7 @@ function Ligne({
           )}
 
           <span className="font-display text-[12px] font-bold tracking-wider text-faint uppercase">
-            {b.manches} manche{b.manches > 1 ? 's' : ''} · {b.cartesParManche} cartes par camp
+            Duel de flocons · au meilleur des {b.manches} manche{b.manches > 1 ? 's' : ''}
           </span>
 
           {/* Le pot pousse à droite : c'est le bout de la ligne des yeux. */}
@@ -272,27 +225,22 @@ function Ligne({
           {action && <span className="flex shrink-0 gap-2">{action}</span>}
         </div>
 
-        {/* ---- Bande 3 : ce qui en est sorti ------------------------------ */}
-        {cartes.length > 0 && (
-          <div className="flex items-center gap-3">
-            <span className="shrink-0 font-display text-[11px] font-bold tracking-[0.16em] text-faint uppercase">
-              Sorties
+        {/* ---- Bande 3 : les lancers, en bref ------------------------------ */}
+        {fini && b.echanges.length > 0 && (
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="mr-1 shrink-0 font-display text-[11px] font-bold tracking-[0.16em] text-faint uppercase">
+              Lancers
             </span>
-            <span className="flex flex-wrap gap-1.5">
-              {cartes.map(({ cardId, carte }) => (
-                <span key={cardId} className="w-[52px] shrink-0" title={carte.name}>
-                  <CardFrame
-                    cardId={cardId}
-                    name={carte.name}
-                    description={carte.description}
-                    rarity={carte.rarity}
-                    glyph={carte.glyph}
-                    power={carte.power}
-                    nature={carte.nature}
-                  />
-                </span>
-              ))}
-            </span>
+            {b.echanges.map((e, i) => (
+              <span
+                key={i}
+                className="rounded-full bg-black/25 px-2 py-0.5 font-display text-[12px] font-bold tabular-nums"
+              >
+                <span className={e.hote > e.adversaire ? 'text-aurora' : 'text-muted'}>{e.hote}</span>
+                <span className="text-faint"> · </span>
+                <span className={e.adversaire > e.hote ? 'text-aurora' : 'text-muted'}>{e.adversaire}</span>
+              </span>
+            ))}
           </div>
         )}
       </div>
@@ -316,23 +264,14 @@ function Ligne({
 
 /* -------------------------------------------------------------------------- */
 
-export function Affrontements({
-  initial,
-  catalog,
-  poids,
-}: {
-  initial: Charge;
-  catalog: Record<string, CatalogueCarte>;
-  /** Les taux d'affichage des rouleaux, sur 100 000. */
-  poids: Record<string, number>;
-}) {
+export function Affrontements({ initial, soldeMax }: { initial: Charge; soldeMax: number }) {
   const [etat, setEtat] = useState<Charge>(initial);
   const [erreur, setErreur] = useState<string | null>(null);
   const [occupe, setOccupe] = useState(false);
 
   /** La mise et le nombre de manches du duel qu'on monte. */
   const [mise, setMise] = useState(MISES[0]);
-  const [manches, setManches] = useState(1);
+  const [manches, setManches] = useState<number>(3);
 
   /** Quelle liste on regarde. Une à la fois, comme sur la référence. */
   type Onglet = 'attente' | 'top' | 'miens' | 'jouees';
@@ -348,6 +287,13 @@ export function Affrontements({
     () => initial.batailles.find((b) => b.id === demandee && b.statut === 'TERMINEE') ?? null,
   );
   const [anime, setAnime] = useState(parametres.get('anime') === '1');
+  // À l'ouverture de l'arène, on l'amène à l'écran : elle s'ouvre sous les
+  // explications, et un duel qu'on ne voit pas se jouer ne sert à rien.
+  const refArene = useRef<HTMLDivElement>(null);
+  const areneId = arene?.id;
+  useEffect(() => {
+    if (areneId) refArene.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [areneId]);
 
   const solde = etat.balance;
   const abordable = solde !== null && solde >= mise;
@@ -419,14 +365,8 @@ export function Affrontements({
 
   if (arene) {
     return (
-      <div className="space-y-4">
-        <BatailleArene
-          bataille={arene}
-          catalog={catalog}
-          poids={poids}
-          moiId={etat.moiId}
-          anime={anime}
-        />
+      <div ref={refArene} className="scroll-mt-4 space-y-4">
+        <BatailleArene bataille={arene} moiId={etat.moiId} anime={anime} />
         <div className="flex justify-center">
           <button type="button" className="btn btn-ghost" onClick={ferme}>
             Revenir au salon
@@ -566,7 +506,7 @@ export function Affrontements({
               Lancer un duel
             </h3>
             <p className="text-[13px] text-faint">
-              La mise de chaque camp, et le nombre de manches. Le pot vaut le double de la mise.
+              Ta mise, et le format. L’adversaire mise autant : le gagnant rafle les deux.
             </p>
           </div>
 
@@ -599,14 +539,11 @@ export function Affrontements({
             </div>
           </div>
 
-          {/* Les manches : chacune tire trois cartes par camp. */}
+          {/* Le format : au meilleur de 1, 3 ou 5 manches. */}
           <div className="space-y-2">
-            <p className="eyebrow text-center">Les manches</p>
+            <p className="eyebrow text-center">Au meilleur des…</p>
             <div className="flex flex-wrap justify-center gap-2">
-              {Array.from(
-                { length: etat.bornes.manches.max - etat.bornes.manches.min + 1 },
-                (_, i) => etat.bornes.manches.min + i,
-              ).map((n) => (
+              {MANCHES_POSSIBLES.map((n) => (
                 <button
                   key={n}
                   type="button"
@@ -615,7 +552,7 @@ export function Affrontements({
                   onClick={() => setManches(n)}
                   className={`btn btn-sm ${manches === n ? 'btn-ice' : ''}`}
                 >
-                  {n}
+                  {n} manche{n > 1 ? 's' : ''}
                 </button>
               ))}
             </div>
@@ -639,7 +576,7 @@ export function Affrontements({
                   disabled={occupe || empeche}
                   onClick={() => agit('/api/affrontements', { mise, manches }, false)}
                 >
-                  <span>{occupe ? 'Un instant…' : libelle}</span>
+                  <span>{occupe ? 'Un instant…' : libelle === 'Miser' ? 'Ouvrir le duel aux joueurs' : libelle}</span>
                   {!empeche && !occupe && (
                     <span className="btn-ouvrir-prix">
                       <span aria-hidden="true">❄</span>
@@ -649,6 +586,16 @@ export function Affrontements({
                 </button>
               );
             })()}
+
+            {/* Le plus rapide pour essayer : monter et jouer d'un coup, contre le bot. */}
+            <button
+              type="button"
+              className="btn"
+              disabled={occupe || !miseValide || etat.moiId === null || !abordable}
+              onClick={() => agit('/api/affrontements/bot', { mise, manches }, true)}
+            >
+              🤖 Jouer tout de suite contre le bot
+            </button>
 
             {solde !== null && (
               <p className="solde">
@@ -663,10 +610,14 @@ export function Affrontements({
             )}
 
             <p className="max-w-2xl text-center text-[13px] leading-relaxed text-faint">
-              Les deux camps misent <strong>la même somme</strong> et tirent le même nombre de
-              cartes, manche par manche. Celui dont les cartes totalisent la plus haute{' '}
-              <strong>somme de raretés</strong> remporte le pot. À somme égale, la plus haute carte
-              tranche.
+              Les deux camps misent <strong>la même somme</strong>. À chaque manche, chacun lance
+              une boule de neige d’une puissance de 1 à 100, tirée par le serveur : la plus forte
+              gagne la manche, une égalité se rejoue. Le premier à la majorité des manches{' '}
+              <strong>rafle toute la mise</strong>. Une chance sur deux, pour tout le monde — le bot
+              compris.
+              {solde !== null && miseValide && abordable && solde - mise + mise * 2 > soldeMax && (
+                <> Attention : ton solde est plafonné à {flakes(soldeMax)} ❄, le gain au-delà serait perdu.</>
+              )}
               {solde !== null && !abordable && miseValide && (
                 <> Il te manque {flakes(mise - solde)} ❄ pour cette mise.</>
               )}
@@ -697,7 +648,7 @@ export function Affrontements({
             hint={
               onglet === 'attente'
                 ? 'Lance le tien : si personne ne se présente, le bot répondra.'
-                : 'Les duels joués apparaissent ici, rejouables carte par carte.'
+                : 'Les duels joués apparaissent ici, rejouables lancer par lancer.'
             }
           />
         ) : (
@@ -706,7 +657,6 @@ export function Affrontements({
               <Ligne
                 key={b.id}
                 affrontement={b}
-                catalog={catalog}
                 moiId={etat.moiId}
                 rang={liste.rangs ? i : undefined}
                 action={actionsDe(b)}

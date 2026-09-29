@@ -15,7 +15,7 @@ import {
   SEASON,
   SUB_MILESTONES,
 } from '@/lib/domain/rules';
-import { MANCHES_MAX, MANCHES_MIN } from '@/lib/domain/bataille';
+import { MANCHES_MAX } from '@/lib/domain/bataille';
 import type { Rarity } from '@/lib/domain/types';
 import { resolvedPacks } from '@/lib/services/packs';
 import { TitreGlace } from '@/components/TitreGlace';
@@ -225,22 +225,22 @@ export default async function ReglesPage(){
           </p>
         </Rule>
 
-        <Rule title="Les duels" lead="Deux camps, la même mise, le vainqueur prend le pot.">
+        <Rule title="Les duels" lead="Deux camps, la même mise, le gagnant rafle tout.">
           <ul className="list-inside list-disc space-y-1">
             <li>
-              Mise de {DUEL.miseMin} à {DUEL.miseMax.toLocaleString('fr-FR')} ❄, en {MANCHES_MIN} à{' '}
-              {MANCHES_MAX} manches de {DUEL.cartesParManche} cartes.
+              Mise de {DUEL.miseMin} à {DUEL.miseMax.toLocaleString('fr-FR')} ❄, au meilleur de 1, 3 ou{' '}
+              {MANCHES_MAX} manches.
             </li>
             <li>
-              Chaque camp tire ses cartes aux mêmes taux. La plus haute somme de raretés l’emporte ;
-              à égalité, la plus haute carte tranche, puis le sort.
+              À chaque manche, chacun lance une boule de neige d’une puissance de 1 à 100, tirée par le
+              serveur. La plus forte gagne la manche ; une égalité se rejoue.
             </li>
             <li>
-              Les cartes tirées ne s’appliquent à aucune game : elles ne servent qu’à comparer.
+              Le premier à la majorité des manches rafle les deux mises. Aucune carte n’entre en jeu.
             </li>
             <li>
-              Le bot tire aux mêmes taux que toi. Une fois sur deux tu perds ta mise, une fois sur
-              deux tu la doubles.
+              Le bot lance exactement comme toi. Une fois sur deux tu perds ta mise, une fois sur deux
+              tu la doubles.
             </li>
           </ul>
         </Rule>

@@ -1971,6 +1971,219 @@
    * pour que huit lignes empilées se lisent comme huit objets et non comme un
    * dégradé. C'est le même matériau, réglé pour un autre usage.
    */
+  /* --------------------------------------------------------------------------
+     LE DUEL DE FLOCONS — l'arène (components/BatailleArene.tsx)
+     Deux orbes face à face, deux jauges de puissance au milieu, une boule de
+     neige qui traverse la piste du plus fort vers l'autre.
+     -------------------------------------------------------------------------- */
+  .duel-scene {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) minmax(0, 1fr);
+    align-items: center;
+    gap: 1rem;
+  }
+  @media (max-width: 639px) {
+    .duel-scene {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    }
+    .duel-scene > .duel-piste {
+      grid-column: 1 / -1;
+      grid-row: 2;
+    }
+  }
+  .duel-combattant {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+  }
+  .duel-orbe {
+    display: grid;
+    width: 96px;
+    height: 96px;
+    place-items: center;
+    border-radius: 999px;
+    font-family: var(--font-display);
+    font-size: 40px;
+    font-weight: 900;
+    color: #ffffff;
+    text-shadow: 0 2px 6px rgb(0 10 30 / 0.6);
+    background: radial-gradient(circle at 35% 28%, rgb(255 255 255 / 0.55) 0%, rgb(143 220 255 / 0.35) 38%, rgb(20 70 120 / 0.55) 100%);
+    box-shadow:
+      inset 0 2px 0 rgb(255 255 255 / 0.7),
+      inset 0 -10px 18px -8px rgb(0 20 50 / 0.6),
+      0 12px 30px -10px rgb(0 10 30 / 0.7);
+    transition:
+      box-shadow 0.4s ease,
+      transform 0.4s ease,
+      filter 0.4s ease;
+  }
+  .duel-orbe[data-touche] {
+    animation: duel-touche 0.5s ease-out;
+  }
+  .duel-orbe[data-vainqueur] {
+    transform: scale(1.08);
+    box-shadow:
+      inset 0 2px 0 rgb(255 255 255 / 0.8),
+      0 0 0 3px var(--aurora),
+      0 0 40px -4px color-mix(in srgb, var(--aurora) 70%, transparent);
+  }
+  .duel-orbe[data-perdant] {
+    filter: grayscale(0.7) brightness(0.8);
+  }
+  @keyframes duel-touche {
+    0% { transform: translateX(0); }
+    20% { transform: translateX(-9px) rotate(-6deg); }
+    40% { transform: translateX(8px) rotate(5deg); }
+    60% { transform: translateX(-5px) rotate(-3deg); }
+    80% { transform: translateX(3px); }
+    100% { transform: translateX(0); }
+  }
+  .duel-pip {
+    width: 14px;
+    height: 14px;
+    border-radius: 999px;
+    background: rgb(255 255 255 / 0.12);
+    box-shadow: inset 0 0 0 1.5px rgb(255 255 255 / 0.35);
+    transition: background 0.3s ease, box-shadow 0.3s ease;
+  }
+  .duel-pip[data-plein] {
+    background: radial-gradient(circle at 35% 30%, #ffffff, var(--ice));
+    box-shadow: 0 0 12px -2px var(--ice);
+  }
+  .duel-piste {
+    position: relative;
+    display: grid;
+    gap: 0.6rem;
+    padding: 0.5rem 0;
+  }
+  .duel-jauge {
+    position: relative;
+    height: 26px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgb(0 10 30 / 0.35);
+    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.18);
+  }
+  .duel-jauge > span {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--ice-3), var(--ice) 70%, #ffffff);
+    box-shadow: 0 0 16px -2px var(--ice);
+    transition: width 0.65s cubic-bezier(0.2, 0.8, 0.3, 1);
+  }
+  .duel-jauge[data-cote='gauche'] > span {
+    left: 0;
+  }
+  .duel-jauge[data-cote='droite'] > span {
+    right: 0;
+    background: linear-gradient(270deg, var(--ice-3), var(--ice) 70%, #ffffff);
+  }
+  .duel-jauge > em {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    font-family: var(--font-display);
+    font-size: 15px;
+    font-style: normal;
+    font-weight: 900;
+    color: #ffffff;
+    text-shadow: 0 1px 3px rgb(0 10 30 / 0.8);
+  }
+  .duel-vs {
+    text-align: center;
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 900;
+    letter-spacing: 0.3em;
+    color: var(--faint);
+  }
+  .duel-boule {
+    position: absolute;
+    top: 50%;
+    width: 30px;
+    height: 30px;
+    margin-top: -15px;
+    border-radius: 999px;
+    background: radial-gradient(circle at 35% 30%, #ffffff 0%, #eaf7ff 45%, #a9d6f2 100%);
+    box-shadow: 0 0 18px 2px rgb(255 255 255 / 0.55);
+    animation: 0.52s cubic-bezier(0.4, 0, 0.8, 0.6) forwards;
+  }
+  .duel-boule[data-vers='droite'] { animation-name: duel-vers-droite; }
+  .duel-boule[data-vers='gauche'] { animation-name: duel-vers-gauche; }
+  .duel-boule[data-vers='milieu-g'] { animation-name: duel-milieu-g; }
+  .duel-boule[data-vers='milieu-d'] { animation-name: duel-milieu-d; }
+  @keyframes duel-vers-droite {
+    from { left: -8%; transform: scale(0.7) rotate(0deg); }
+    to { left: 104%; transform: scale(1.1) rotate(540deg); }
+  }
+  @keyframes duel-vers-gauche {
+    from { left: 104%; transform: scale(0.7) rotate(0deg); }
+    to { left: -8%; transform: scale(1.1) rotate(-540deg); }
+  }
+  @keyframes duel-milieu-g {
+    from { left: -8%; }
+    to { left: calc(50% - 30px); }
+  }
+  @keyframes duel-milieu-d {
+    from { left: 104%; }
+    to { left: 50%; }
+  }
+  .duel-eclat {
+    position: absolute;
+    top: 50%;
+    width: 90px;
+    height: 90px;
+    margin: -45px 0 0 -45px;
+    border-radius: 999px;
+    background: radial-gradient(circle, rgb(255 255 255 / 0.95) 0%, rgb(234 247 255 / 0.6) 30%, transparent 70%);
+    animation: duel-eclat 0.6s ease-out forwards;
+    pointer-events: none;
+  }
+  .duel-eclat[data-cote='droite'] { left: 104%; }
+  .duel-eclat[data-cote='gauche'] { left: -4%; }
+  .duel-eclat[data-cote='milieu'] { left: 50%; }
+  @keyframes duel-eclat {
+    from { transform: scale(0.2); opacity: 1; }
+    to { transform: scale(1.6); opacity: 0; }
+  }
+  .duel-verdict {
+    animation: duel-verdict 0.6s cubic-bezier(0.2, 0.9, 0.3, 1.3);
+    color: var(--aurora);
+  }
+  @keyframes duel-verdict {
+    from { transform: scale(0.8); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+  .duel-releve {
+    display: grid;
+    grid-template-columns: 2.5rem 1fr 5rem 1fr;
+    align-items: center;
+    gap: 0.5rem;
+    border-radius: 12px;
+    background: rgb(0 10 30 / 0.25);
+    padding: 0.3rem 0.8rem;
+    text-align: center;
+    font-family: var(--font-display);
+    font-size: 15px;
+    font-weight: 800;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .duel-orbe[data-touche],
+    .duel-verdict,
+    .duel-eclat {
+      animation: none;
+    }
+    .duel-boule {
+      display: none;
+    }
+    .duel-jauge > span {
+      transition: none;
+    }
+  }
+
   .duel {
     background: linear-gradient(180deg, rgb(20 34 56 / 0.72) 0%, rgb(12 22 38 / 0.78) 100%);
   }
