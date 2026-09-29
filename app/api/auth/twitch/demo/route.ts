@@ -1,63 +1,63 @@
 import { NextResponse } from 'next/server';
-import { z } from 'zod';
 import { toResponse } from '@/lib/api/errors';
-import { fail, guard, ok } from '@/lib/api/respond';
+import { fail, guard } from '@/lib/api/respond';
 import { createToken, setSessionCookie } from '@/lib/auth/session';
 import { isTwitchEnabled } from '@/lib/auth/twitch';
+import type { Player } from '@/lib/db/entities';
 import { getStore } from '@/lib/db/store';
 import { LIMITS } from '@/lib/security/ratelimit';
 import { rattacheCompteTwitch } from '@/lib/services/comptes';
 
 export const runtime = 'nodejs';
-
-const demoSchema = z.object({
-  login: z
-    .string()
-    .trim()
-    .regex(/^[a-zA-Z0-9_]{3,25}$/, 'Pseudo Twitch invalide : 3 à 25 lettres, chiffres ou « _ ».'),
-  role: z.enum(['joueur', 'moderateur', 'admin']),
-});
+export const dynamic = 'force-dynamic';
 
 /**
- * La connexion Twitch simulée.
+ * La connexion Twitch simulée : un clic, et l'on entre en administratrice.
  *
- * Temporaire : elle tient la place du vrai flux OAuth tant que l'application
- * Twitch n'est pas déclarée. On choisit son pseudo Twitch et son rôle sur la
- * chaîne — ce que le vrai flux lira chez Twitch — et le compte est créé ou
- * retrouvé exactement comme au retour du vrai Twitch.
+ * Temporaire, en attendant le vrai flux OAuth. On se connecte sur le compte
+ * de la streameuse — celui dont le pseudo est `TWITCH_BROADCASTER_LOGIN`,
+ * sinon le premier administrateur actif — ou, si la base n'en a aucun, sur un
+ * compte « Streameuse » créé pour l'occasion.
  *
- * Elle se ferme d'elle-même : dès que `TWITCH_CLIENT_ID` et
- * `TWITCH_CLIENT_SECRET` sont définis, cette route répond 404.
+ * Elle se ferme d'elle-même : dès que les identifiants Twitch sont définis,
+ * on file vers le vrai Twitch.
  */
-export async function POST(request: Request): Promise<NextResponse> {
-  if (isTwitchEnabled()) {
-    return fail('INTROUVABLE', 'La connexion simulée est fermée : la vraie connexion Twitch est active.');
-  }
+export async function GET(request: Request): Promise<NextResponse> {
+  const url = new URL(request.url);
+  const base = (process.env.NEXT_PUBLIC_SITE_URL ?? url.origin).replace(/\/$/, '');
+  if (isTwitchEnabled()) return NextResponse.redirect(`${base}/api/auth/twitch?returnTo=/`);
 
-  const g = await guard(request, { scope: 'twitch-demo', limit: LIMITS.mutation, schema: demoSchema });
+  const g = await guard(request, { scope: 'twitch-demo', limit: LIMITS.mutation });
   if (!g.ok) return g.response;
 
   try {
-    const login = g.body.login;
-    const joueur = await getStore().transaction((db) =>
-      rattacheCompteTwitch(db, {
-        id: `demo:${login.toLowerCase()}`,
-        login: login.toLowerCase(),
-        displayName: login,
+    const chaine = process.env.TWITCH_BROADCASTER_LOGIN?.trim().toLowerCase() || null;
+    const admin = await getStore().transaction((db): Player => {
+      const actifs = db.players.filter((p) => p.active && p.role === 'admin');
+      const trouve =
+        (chaine && actifs.find((p) => p.twitchLogin === chaine || p.slug === chaine)) || actifs[0];
+      if (trouve) return trouve;
+
+      const cree = rattacheCompteTwitch(db, {
+        id: 'demo:streameuse',
+        login: 'streameuse',
+        displayName: 'Streameuse',
         avatarUrl: null,
-        roleChaine: g.body.role,
-      }),
-    );
+        roleChaine: 'admin',
+      });
+      // Pour entrer sans détour : la bienvenue ne demandera rien à ce compte.
+      cree.activisionId ??= cree.pseudo;
+      return cree;
+    });
 
     let jeton: string;
     try {
-      jeton = createToken(joueur.id, joueur.role);
+      jeton = createToken(admin.id, 'admin');
     } catch {
       return fail('ERREUR_SERVEUR', 'Connexion impossible : AUTH_SECRET manque côté serveur (32 caractères minimum).');
     }
     await setSessionCookie(jeton);
-
-    return ok({ destination: joueur.activisionId ? '/' : '/bienvenue' });
+    return NextResponse.redirect(`${base}/`);
   } catch (error) {
     return toResponse(error);
   }

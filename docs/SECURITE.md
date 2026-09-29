@@ -232,11 +232,16 @@ comme accès de secours tant que `ADMIN_PASSWORD_HASH` est défini — retirer l
 variable la ferme.
 
 **Connexion Twitch simulée (temporaire).** Tant que `TWITCH_CLIENT_ID` et
-`TWITCH_CLIENT_SECRET` ne sont pas définis, `/connexion/twitch` et
-`POST /api/auth/twitch/demo` laissent choisir un pseudo et un rôle, y compris
-admin : **n'importe qui peut alors administrer le site**. Elle se ferme
-d'elle-même dès que les variables Twitch sont renseignées. Sur Vercel, en
-attendant la base, les données vont dans `/tmp` et sont éphémères.
+`TWITCH_CLIENT_SECRET` ne sont pas définis, `GET /api/auth/twitch/demo`
+connecte en un clic sur le compte administrateur de la streameuse :
+**n'importe qui peut alors administrer le site**. Elle se ferme
+d'elle-même dès que les variables Twitch sont renseignées. Sans `DATABASE_URL`,
+sur Vercel, les données vont dans `/tmp` et sont éphémères.
+
+**Base Supabase.** Toute la ligue est une ligne JSON de `public.league_state`
+(RLS activée sans politique, droits d'`anon` et `authenticated` retirés). Le
+schéma `winter` en donne des vues à plat et le catalogue, en lecture seule,
+réservés au rôle serveur (`lib/db/lecture.ts`).
 
 **La lecture des captures** (`POST /api/admin/games/analyse`, `moderateur`) envoie
 l'image à l'API Anthropic **depuis le serveur** : la clé `ANTHROPIC_API_KEY` ne

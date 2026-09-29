@@ -14,8 +14,8 @@ import { Notice } from '@/components/ui';
  * connexion : la streameuse est administratrice, les modérateurs de sa chaîne
  * sont modérateurs ici, tous les autres sont joueurs.
  *
- * Tant que l'application Twitch n'est pas déclarée, le bouton mène à l'écran
- * d'autorisation simulé (`/connexion/twitch`). Hors production, la connexion de
+ * Tant que l'application Twitch n'est pas déclarée, le bouton connecte en un
+ * clic sur le compte de la streameuse (`/api/auth/twitch/demo`). Hors production, la connexion de
  * développement permet d'incarner un joueur pour tester.
  */
 export function LoginForms({
@@ -67,7 +67,7 @@ export function LoginForms({
           Se connecter avec Twitch
         </a>
       ) : (
-        <a href="/connexion/twitch" className="btn btn-twitch btn-lg mt-6 w-full no-underline">
+        <a href="/api/auth/twitch/demo" className="btn btn-twitch btn-lg mt-6 w-full no-underline">
           <IconTwitch className="h-5 w-5" />
           Se connecter avec Twitch
         </a>

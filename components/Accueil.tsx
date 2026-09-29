@@ -25,7 +25,7 @@ export function Accueil({ twitchEnabled, devLogin }: { twitchEnabled: boolean; d
 
   // Tant que la vraie connexion n'est pas branchée, l'écran d'autorisation
   // simulé en tient lieu.
-  const entree = twitchEnabled ? '/api/auth/twitch?returnTo=/' : '/connexion/twitch';
+  const entree = twitchEnabled ? '/api/auth/twitch?returnTo=/' : '/api/auth/twitch/demo';
 
   const FONCTIONS = [
     {
@@ -89,7 +89,7 @@ export function Accueil({ twitchEnabled, devLogin }: { twitchEnabled: boolean; d
         </div>
         {!twitchEnabled && (
           <p className="mt-4 text-[13px] text-faint">
-            Connexion Twitch simulée pour l’instant : tu choisis ton pseudo et ton rôle sur la chaîne.
+            Connexion Twitch simulée pour l’instant : un clic, et tu entres en administratrice.
             {devLogin ? ' La connexion de développement reste ouverte en local.' : ''}
           </p>
         )}

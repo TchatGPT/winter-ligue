@@ -18,6 +18,7 @@ import { randomUUID } from 'node:crypto';
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import postgres from 'postgres';
+import { prepareLecture } from './lecture';
 import { dirname, join } from 'node:path';
 import { DEFAULT_MAX_GAMES_PER_PLAYER, ECONOMY, SEASON } from '@/lib/domain/rules';
 import type { Database } from './entities';
@@ -198,10 +199,21 @@ class PostgresStore implements Store {
           updated_at timestamptz not null default now()
         )`;
       await this.sql`alter table league_state enable row level security`;
+      // La sécurité par ligne bloque déjà tout, mais Supabase accorde par
+      // défaut la lecture aux rôles de l'API publique : on la leur retire.
+      await this.sql.unsafe(`
+        do $$ begin
+          if exists (select 1 from pg_roles where rolname = 'anon') then
+            revoke all on table public.league_state from anon, authenticated;
+          end if;
+        end $$`);
       await this.sql`
         insert into league_state (id, data)
         values (1, ${this.sql.json(emptyDatabase() as unknown as postgres.JSONValue)})
         on conflict (id) do nothing`;
+      // Les vues de lecture ne sont qu'un confort : leur échec ne doit
+      // jamais empêcher le site de servir.
+      await prepareLecture(this.sql).catch((error) => console.error('[base] schéma de lecture', error));
     })().catch((error) => {
       // On retentera à l'appel suivant plutôt que de garder l'échec en cache.
       this.pret = null;
