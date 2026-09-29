@@ -238,10 +238,15 @@ connecte en un clic sur le compte administrateur de la streameuse :
 d'elle-même dès que les variables Twitch sont renseignées. Sans `DATABASE_URL`,
 sur Vercel, les données vont dans `/tmp` et sont éphémères.
 
-**Base Supabase.** Toute la ligue est une ligne JSON de `public.league_state`
-(RLS activée sans politique, droits d'`anon` et `authenticated` retirés). Le
-schéma `winter` en donne des vues à plat et le catalogue, en lecture seule,
-réservés au rôle serveur (`lib/db/lecture.ts`).
+**Base Supabase.** Une table par type de donnée (`lib/db/tables.ts`) : `saison`,
+`joueurs`, `games`, `boosters_a_ouvrir`, `ouvertures`, `cartes_en_attente`,
+`flocons`, `subs`, `journal`, `reglages_boosters`, `duels`, `evenements`, plus le
+catalogue `cartes` et `boosters` recopié du code. Chaque transaction verrouille
+la ligne `saison` (`FOR UPDATE`), ce qui sérialise les écritures entre serveurs,
+puis n'écrit que les lignes modifiées. RLS activée partout sans politique, droits
+d'`anon` et `authenticated` retirés : seule la connexion serveur lit la base.
+L'ancienne ligne unique `league_state` est gardée comme sauvegarde ; vider les
+tables la fait reverser au démarrage suivant.
 
 **La lecture des captures** (`POST /api/admin/games/analyse`, `moderateur`) envoie
 l'image à l'API Anthropic **depuis le serveur** : la clé `ANTHROPIC_API_KEY` ne

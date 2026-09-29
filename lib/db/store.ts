@@ -18,7 +18,8 @@ import { randomUUID } from 'node:crypto';
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import postgres from 'postgres';
-import { prepareLecture } from './lecture';
+import { synchroniseCatalogue } from './lecture';
+import { chargeBase, empreintes, enregistreBase, SCHEMA_SQL, TABLES } from './tables';
 import { dirname, join } from 'node:path';
 import { DEFAULT_MAX_GAMES_PER_PLAYER, ECONOMY, SEASON } from '@/lib/domain/rules';
 import type { Database } from './entities';
@@ -153,21 +154,24 @@ class JsonFileStore implements Store {
 }
 
 /**
- * La base Postgres (Supabase).
+ * La base Postgres (Supabase) : une table par type de donnée.
  *
- * Toute la ligue tient dans une ligne : un document JSON, dans la table
- * `league_state`. C'est la traduction directe du fichier : même forme, même
- * migration, même contrat `Store`. Ce qui change, c'est qu'elle survit aux
- * redémarrages et qu'elle est partagée entre toutes les instances Vercel.
+ * Le jeu travaille sur l'objet `Database` en mémoire, exactement comme avec
+ * le fichier ; `lib/db/tables.ts` fait le pont. Une lecture charge toutes les
+ * tables en une requête. Une transaction verrouille la ligne `saison`, charge,
+ * laisse le jeu muter l'objet, puis n'écrit que les lignes qui ont changé.
  *
- * La sérialisation des écritures passe par un verrou de ligne
- * (`SELECT … FOR UPDATE`) : deux transactions simultanées, même sur deux
- * serveurs différents, s'enchaînent au lieu de s'écraser. C'est ce qui garde
- * vraie la règle du projet sur les flocons.
+ * Le verrou (`SELECT … FOR UPDATE` sur `saison`) sérialise les écritures, même
+ * entre deux serveurs Vercel : c'est ce qui garde vraie la règle du projet sur
+ * les flocons. Si le jeu lève, la transaction est annulée et rien n'est écrit.
  *
- * La table a la sécurité par ligne activée, sans aucune politique : elle
- * n'est lisible que par le rôle propriétaire, celui de la chaîne de
- * connexion serveur, jamais par l'API publique de Supabase.
+ * Toutes les tables ont la sécurité par ligne activée, sans politique, et
+ * les rôles de l'API publique de Supabase n'y ont aucun droit : seule la
+ * connexion serveur les lit.
+ *
+ * Au premier démarrage, si les tables sont vides et que l'ancienne ligne
+ * unique `league_state` existe, son contenu y est versé ; elle est gardée
+ * telle quelle, comme sauvegarde.
  */
 class PostgresStore implements Store {
   private readonly sql: postgres.Sql;
@@ -186,34 +190,60 @@ class PostgresStore implements Store {
       max: 1,
       idle_timeout: 20,
       connect_timeout: 10,
+      // Pas de bavardage « relation already exists » à chaque démarrage.
+      onnotice: () => {},
     });
   }
 
-  /** Crée la table et la ligne au premier appel, une fois par instance. */
+  /** Crée les tables et verse l'ancienne ligne unique, une fois par instance. */
   private prepare(): Promise<void> {
     this.pret ??= (async () => {
-      await this.sql`
-        create table if not exists league_state (
-          id integer primary key,
-          data jsonb not null,
-          updated_at timestamptz not null default now()
-        )`;
-      await this.sql`alter table league_state enable row level security`;
-      // La sécurité par ligne bloque déjà tout, mais Supabase accorde par
-      // défaut la lecture aux rôles de l'API publique : on la leur retire.
-      await this.sql.unsafe(`
-        do $$ begin
-          if exists (select 1 from pg_roles where rolname = 'anon') then
-            revoke all on table public.league_state from anon, authenticated;
-          end if;
-        end $$`);
-      await this.sql`
-        insert into league_state (id, data)
-        values (1, ${this.sql.json(emptyDatabase() as unknown as postgres.JSONValue)})
-        on conflict (id) do nothing`;
-      // Les vues de lecture ne sont qu'un confort : leur échec ne doit
-      // jamais empêcher le site de servir.
-      await prepareLecture(this.sql).catch((error) => console.error('[base] schéma de lecture', error));
+      await this.sql.begin(async (tx) => {
+        // Deux instances qui démarrent ensemble ne créent pas les tables en même temps.
+        await tx`select pg_advisory_xact_lock(724241)`;
+        await tx.unsafe(SCHEMA_SQL);
+
+        // La sécurité : RLS partout, et aucun droit pour l'API publique. Avant
+        // tout import : une fois des lignes écrites, les clés étrangères
+        // différées interdisent de modifier les tables dans la transaction.
+        await tx.unsafe(`
+          do $$
+          declare t text;
+          begin
+            foreach t in array array[${TABLES.map((t) => `'${t}'`).join(', ')}, 'league_state'] loop
+              if to_regclass('public.' || t) is not null then
+                execute format('alter table public.%I enable row level security', t);
+                if exists (select 1 from pg_roles where rolname = 'anon') then
+                  execute format('revoke all on table public.%I from anon, authenticated', t);
+                end if;
+              end if;
+            end loop;
+          end $$`);
+
+        const [saison] = await tx`select 1 from saison where id = 1`;
+        if (!saison) {
+          const [ancienne] = await tx<{ data: Partial<Database> }[]>`
+            select data from league_state where id = 1 and to_regclass('public.league_state') is not null
+          `.catch(() => [] as { data: Partial<Database> }[]);
+          const depart = migrate(ancienne?.data ?? emptyDatabase());
+          await enregistreBase(tx, depart, new Map());
+        }
+      });
+
+      // Le catalogue n'est qu'une copie du code : son échec ne doit jamais
+      // empêcher le site de servir.
+      await synchroniseCatalogue(this.sql)
+        .then(() =>
+          this.sql.unsafe(`
+            do $$ begin
+              alter table public.cartes enable row level security;
+              alter table public.boosters enable row level security;
+              if exists (select 1 from pg_roles where rolname = 'anon') then
+                revoke all on table public.cartes, public.boosters from anon, authenticated;
+              end if;
+            end $$`),
+        )
+        .catch((error) => console.error('[base] catalogue', error));
     })().catch((error) => {
       // On retentera à l'appel suivant plutôt que de garder l'échec en cache.
       this.pret = null;
@@ -224,21 +254,17 @@ class PostgresStore implements Store {
 
   async read<T>(fn: (db: Readonly<Database>) => T): Promise<T> {
     await this.prepare();
-    const [ligne] = await this.sql<{ data: Partial<Database> }[]>`select data from league_state where id = 1`;
-    return fn(migrate(ligne?.data ?? emptyDatabase()));
+    return fn(migrate(await chargeBase(this.sql)));
   }
 
   async transaction<T>(fn: (db: Database) => T | Promise<T>): Promise<T> {
     await this.prepare();
-    // `begin` annule tout si `fn` lève : rien n'est écrit.
     const resultat = await this.sql.begin(async (tx) => {
-      const [ligne] = await tx<{ data: Partial<Database> }[]>`select data from league_state where id = 1 for update`;
-      const db = migrate(ligne?.data ?? emptyDatabase());
+      await tx`select 1 from saison where id = 1 for update`;
+      const db = migrate(await chargeBase(tx));
+      const avant = empreintes(db);
       const valeur = await fn(db);
-      await tx`
-        update league_state
-        set data = ${tx.json(db as unknown as postgres.JSONValue)}, updated_at = now()
-        where id = 1`;
+      await enregistreBase(tx, db, avant);
       return { valeur };
     });
     return resultat.valeur;
