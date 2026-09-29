@@ -114,8 +114,9 @@ export const adminPackSchema = z.object({
 
 export const createBatailleSchema = z.object({
   mise: z.number().int().min(DUEL.miseMin).max(DUEL.miseMax),
-  // 1, 3 ou 5 : un nombre impair, pour qu'il y ait toujours un vainqueur.
-  manches: z.union(MANCHES_POSSIBLES.map((n) => z.literal(n)) as [z.ZodLiteral<1>, z.ZodLiteral<3>, z.ZodLiteral<5>]),
+  // Toujours une seule manche. Le champ reste accepté, pour ne pas refuser
+  // un écran resté ouvert, mais il ne peut valoir que 1.
+  manches: z.literal(MANCHES_POSSIBLES[0]).default(MANCHES_POSSIBLES[0]),
 });
 
 export const batailleSchema = z.object({ batailleId: uuid });

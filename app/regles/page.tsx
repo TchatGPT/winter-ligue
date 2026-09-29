@@ -15,7 +15,6 @@ import {
   SEASON,
   SUB_MILESTONES,
 } from '@/lib/domain/rules';
-import { MANCHES_MAX } from '@/lib/domain/bataille';
 import type { Rarity } from '@/lib/domain/types';
 import { resolvedPacks } from '@/lib/services/packs';
 import { TitreGlace } from '@/components/TitreGlace';
@@ -228,18 +227,18 @@ export default async function ReglesPage(){
         <Rule title="Les duels" lead="Deux camps, la même mise, le gagnant rafle tout.">
           <ul className="list-inside list-disc space-y-1">
             <li>
-              Mise de {DUEL.miseMin} à {DUEL.miseMax.toLocaleString('fr-FR')} ❄, au meilleur de 1, 3 ou{' '}
-              {MANCHES_MAX} manches.
+              Mise de {DUEL.miseMin} à {DUEL.miseMax.toLocaleString('fr-FR')} ❄, en une seule manche.
             </li>
             <li>
-              À chaque manche, chacun lance une boule de neige d’une puissance de 1 à 100, tirée par le
-              serveur. La plus forte gagne la manche ; une égalité se rejoue.
+              Chacun pousse sa boule de neige. Le premier qui tombe a perdu : le serveur tire le
+              vainqueur, une chance sur deux pour chacun.
             </li>
             <li>
-              Le premier à la majorité des manches rafle les deux mises. Aucune carte n’entre en jeu.
+              Le gagnant rafle les deux mises. Le perdant perd toute sa mise. Aucune carte n’entre en
+              jeu.
             </li>
             <li>
-              Le bot lance exactement comme toi. Une fois sur deux tu perds ta mise, une fois sur deux
+              Le bot joue exactement comme toi. Une fois sur deux tu perds ta mise, une fois sur deux
               tu la doubles.
             </li>
           </ul>

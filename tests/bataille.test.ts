@@ -42,7 +42,11 @@ describe('gagnantEchange', () => {
 
 describe('manchesAGagner', () => {
   it('demande la majorité', () => {
-    expect(MANCHES_POSSIBLES.map(manchesAGagner)).toEqual([1, 2, 3]);
+    expect([1, 3, 5].map(manchesAGagner)).toEqual([1, 2, 3]);
+  });
+
+  it('ne laisse créer que des duels en une manche', () => {
+    expect([...MANCHES_POSSIBLES]).toEqual([1]);
   });
 });
 

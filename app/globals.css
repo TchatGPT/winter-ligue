@@ -139,6 +139,19 @@
   --neige-3: #cfe7f7;
   --nuit: #06284a;
 
+  /* Le duel : les pères Noël, et ce qui se met en travers de leur boule. */
+  --noel-rouge: #d63a44;
+  --noel-vert: #1f9a6c;
+  --noel-acier: #7f95ad;
+  --noel-acier-clair: #c9d6e4;
+  --noel-peau: #f3c9a5;
+  --noel-nez: #e58a7a;
+  --noel-botte: #17202e;
+  --noel-fourrure: #f6fbff;
+  --roche: #6e7f93;
+  --bois: #7a5536;
+  --bois-clair: #c79a68;
+
   /* Le flou du verre. Réduit sur petits écrans, où il coûte cher. */
   --blur: 44px;
   --blur-fort: 64px;
@@ -2148,6 +2161,147 @@
     background: rgb(6 40 74 / 0.12);
   }
 
+  /*
+   * ---- Les duels à rejoindre ----
+   * Une bande en tête de page, sur toute la largeur. Vide, elle tient sur une
+   * ligne ; dès qu'un défi attend, elle s'ouvre en cartes et son compteur
+   * passe à l'aurore : on le voit en arrivant.
+   */
+  .rejoindre {
+    padding: 1.1rem 1.25rem 1.25rem;
+    border-radius: var(--r-lg);
+    background: linear-gradient(160deg, var(--glass-2) 0%, var(--glass-3) 100%);
+    backdrop-filter: blur(20px) saturate(140%);
+    box-shadow:
+      inset 0 0 0 1px color-mix(in srgb, var(--aurora) 55%, transparent),
+      inset 0 1px 0 rgb(255 255 255 / 0.3),
+      var(--lift-2);
+  }
+  .rejoindre[data-vide] {
+    padding: 0.8rem 1.25rem;
+    box-shadow:
+      inset 0 0 0 1px rgb(255 255 255 / 0.14),
+      var(--lift-1);
+  }
+  .rejoindre-tete {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem 0.8rem;
+  }
+  .rejoindre-tete h2 {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 900;
+    letter-spacing: 0.04em;
+    line-height: 1;
+    text-transform: uppercase;
+    color: var(--ink);
+  }
+  .rejoindre[data-vide] .rejoindre-tete h2 {
+    font-size: 1.1rem;
+  }
+  .rejoindre-compte {
+    display: grid;
+    min-width: 1.9rem;
+    height: 1.9rem;
+    padding: 0 0.5rem;
+    place-items: center;
+    border-radius: var(--r-pilule);
+    background: rgb(0 10 30 / 0.35);
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-weight: 900;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .rejoindre-compte[data-actif] {
+    background: var(--aurora);
+    color: var(--nuit);
+  }
+  .rejoindre-tete p {
+    min-width: 0;
+    flex: 1 1 18rem;
+    font-size: 0.9375rem;
+    color: var(--ink-2);
+  }
+  .rejoindre-grille {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 21rem), 1fr));
+    gap: 0.8rem;
+    margin-top: 1rem;
+  }
+
+  /* Un défi : qui, combien, et le bouton — dans cet ordre, de haut en bas. */
+  .defi {
+    display: grid;
+    gap: 0.9rem;
+    padding: 1rem 1.1rem 1.1rem;
+    border-radius: var(--r-md);
+    background: rgb(0 10 30 / 0.3);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.16),
+      inset 0 0 0 1px rgb(255 255 255 / 0.08);
+  }
+  .defi[data-mien] {
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.16),
+      inset 0 0 0 1px color-mix(in srgb, var(--ice) 45%, transparent);
+  }
+  .defi-qui {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 0.7rem;
+  }
+  .defi-qui b {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    font-weight: 900;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--ink);
+  }
+  .defi-qui small {
+    font-size: 0.8125rem;
+    color: var(--muted);
+  }
+  .defi-mise {
+    display: grid;
+    gap: 0.1rem;
+  }
+  .defi-mise small {
+    font-size: 0.75rem;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+  }
+  .defi-mise small:first-child {
+    font-family: var(--font-display);
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--faint);
+  }
+  .defi-mise strong {
+    font-family: var(--font-display);
+    font-size: 2.4rem;
+    font-weight: 900;
+    line-height: 1;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+  .defi-actions {
+    display: flex;
+    gap: 0.5rem;
+  }
+  .defi-actions > .btn {
+    flex: 1;
+  }
+
   /* ---- Le ring : là où l'on monte son duel ---- */
   .ring {
     container-type: inline-size;
@@ -2404,6 +2558,13 @@
     text-transform: uppercase;
     color: var(--faint);
   }
+  .ring-bilan small {
+    display: block;
+    margin-top: 0.15rem;
+    font-size: 0.8125rem;
+    line-height: 1.3;
+    color: var(--muted);
+  }
   .ring-bilan strong {
     display: block;
     margin-top: 0.1rem;
@@ -2520,40 +2681,31 @@
       inset 0 -1px 0 rgb(255 255 255 / 0.08);
   }
 
-  /* Un résultat : le vainqueur en aurore, le perdant éteint, le score au centre. */
+  /* Un résultat : une phrase, le vainqueur d'abord et en aurore. */
   .resultat {
-    display: grid;
+    display: flex;
     min-width: 0;
-    flex: 1;
-    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-    align-items: center;
-    gap: 0.6rem;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.1rem 0.45rem;
   }
   .resultat > b {
     overflow: hidden;
+    max-width: 100%;
     text-overflow: ellipsis;
     white-space: nowrap;
     font-family: var(--font-display);
-    font-size: 1rem;
+    font-size: 1.05rem;
     font-weight: 800;
     color: var(--muted);
-  }
-  .resultat > b:last-child {
-    text-align: right;
   }
   .resultat > b[data-gagne] {
     color: var(--aurora);
   }
   .resultat > em {
-    padding: 0.1rem 0.6rem;
-    border-radius: var(--r-pilule);
-    background: rgb(0 10 30 / 0.35);
-    font-family: var(--font-display);
-    font-size: 1.05rem;
+    font-size: 0.8125rem;
     font-style: normal;
-    font-weight: 900;
-    color: var(--ink);
-    font-variant-numeric: tabular-nums;
+    color: var(--faint);
   }
 
   /* Les médailles du top de la semaine. */
@@ -2582,6 +2734,68 @@
   .medaille[data-rang='3'] {
     background: linear-gradient(150deg, #f0c9a0, #b0763c);
     color: #1c1006;
+  }
+
+  /*
+   * ---- Les règles, en tête de page ----
+   * Une seule bande : quatre étapes en ligne, puis la chance aux boosters. On
+   * la lit d'un regard avant de miser, et elle ne pousse pas le ring hors de
+   * l'écran.
+   */
+  .regles-duel {
+    container-type: inline-size;
+    padding: 1rem 1.1rem;
+  }
+  .regles-grille {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+  .regles-chance {
+    grid-column: 1 / -1;
+  }
+  /* Étroite, la bande reste sur deux colonnes : le numéro passe au-dessus du
+     titre, et les quatre étapes tiennent dans un demi-écran de téléphone. */
+  @container (max-width: 619px) {
+    .regles-grille .duel-etape {
+      padding: 0.6rem 0.7rem 0.65rem;
+    }
+    .regles-grille .duel-etape > i {
+      position: static;
+      margin-bottom: 0.35rem;
+    }
+    .regles-grille .duel-etape > b {
+      font-size: 0.9rem;
+    }
+    .regles-grille .duel-etape > p {
+      font-size: 0.8125rem;
+      line-height: 1.35;
+    }
+  }
+  @container (min-width: 620px) {
+    .regles-grille {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  @container (min-width: 1180px) {
+    .regles-grille {
+      grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(0, 1.35fr);
+    }
+  }
+  .regles-grille .duel-etape {
+    padding-top: 0.7rem;
+    padding-bottom: 0.75rem;
+  }
+  .regles-chance {
+    padding: 0.7rem 1rem 0.75rem;
+    border-radius: var(--r-md);
+    background: rgb(0 10 30 / 0.2);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ice) 30%, transparent);
+  }
+  @container (min-width: 1180px) {
+    .regles-chance {
+      grid-column: auto;
+    }
   }
 
   /* ---- Le guide : les étapes numérotées (hors de la frise .etape, plus bas) ---- */
@@ -2673,7 +2887,7 @@
     background: linear-gradient(160deg, rgb(44 88 132 / 0.94) 0%, rgb(18 44 76 / 0.97) 100%);
   }
 
-  /* ---- L'arène ---- */
+  /* ---- L'arène : la course des boules de neige ---- */
   .arene {
     container-type: inline-size;
     position: relative;
@@ -2687,198 +2901,365 @@
     color: var(--ink);
     font-variant-numeric: tabular-nums;
   }
-  .duel-scene {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr) minmax(0, 1fr);
-    align-items: center;
-    gap: 0.75rem;
-  }
-  .duel-combattant {
-    display: flex;
-    min-width: 0;
-    flex-direction: column;
-    align-items: center;
+  /* La place du récit est gardée : la fenêtre ne bouge pas quand il change. */
+  .arene-recit {
+    min-height: 112px;
+    margin-top: 1.25rem;
     text-align: center;
-  }
-  .duel-combattant .orbe {
-    --taille: clamp(60px, 15cqi, 124px);
-  }
-  .duel-pip {
-    width: 14px;
-    height: 14px;
-    border-radius: 999px;
-    background: rgb(0 10 30 / 0.35);
-    box-shadow:
-      inset 0 1px 2px rgb(0 8 24 / 0.6),
-      inset 0 0 0 1.5px rgb(255 255 255 / 0.3);
-    transition: background 0.3s ease;
-  }
-  .duel-pip[data-plein] {
-    background: radial-gradient(circle at 35% 30%, var(--neige-1), var(--ice) 80%);
-    box-shadow:
-      inset 0 -2px 3px rgb(20 90 140 / 0.45),
-      0 2px 3px rgb(0 8 24 / 0.55);
-  }
-  .duel-piste {
-    position: relative;
-    display: grid;
-    gap: 0.55rem;
-    padding: 0.5rem 0;
-  }
-  .duel-jauge {
-    position: relative;
-    height: 28px;
-    overflow: hidden;
-    border-radius: var(--r-pilule);
-    background: rgb(0 10 30 / 0.4);
-    box-shadow:
-      inset 0 1px 3px rgb(0 8 24 / 0.6),
-      inset 0 -1px 0 rgb(255 255 255 / 0.14);
-  }
-  .duel-jauge > span {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    border-radius: inherit;
-    background: linear-gradient(90deg, var(--ice-3), var(--ice) 70%, var(--frost));
-    transition: width 0.6s cubic-bezier(0.2, 0.8, 0.3, 1);
-  }
-  .duel-jauge[data-vide] > span {
-    transition: none;
-  }
-  .duel-jauge[data-cote='gauche'] > span {
-    left: 0;
-  }
-  .duel-jauge[data-cote='droite'] > span {
-    right: 0;
-    background: linear-gradient(270deg, var(--ice-3), var(--ice) 70%, var(--frost));
-  }
-  .duel-jauge > em {
-    position: absolute;
-    inset: 0;
-    display: grid;
-    place-items: center;
-    font-family: var(--font-display);
-    font-size: 1rem;
-    font-style: normal;
-    font-weight: 900;
-    color: #ffffff;
-    text-shadow: 0 1px 3px rgb(0 10 30 / 0.85);
-    font-variant-numeric: tabular-nums;
-  }
-  .duel-vs {
-    text-align: center;
-    font-family: var(--font-display);
-    font-size: 0.8125rem;
-    font-weight: 900;
-    letter-spacing: 0.3em;
-    color: var(--faint);
   }
 
   /*
-   * La boule de neige, en deux pièces : l'enveloppe avance à vitesse
-   * constante d'un camp à l'autre, la boule dedans monte puis retombe. Deux
-   * mouvements séparés, et la trajectoire est une vraie parabole.
+   * `--s` est l'unité de la course : la largeur d'un père Noël. Tout le reste
+   * — la boule, les obstacles, la longueur de la piste — s'en déduit, si bien
+   * qu'un téléphone montre la même course, en plus petit.
    */
-  .duel-boule {
-    position: absolute;
-    top: 50%;
-    width: 30px;
-    height: 30px;
-    margin-top: -15px;
-    animation: 0.52s linear forwards;
-    pointer-events: none;
+  .course {
+    --s: 76px;
+    display: grid;
+    gap: 0.75rem;
   }
-  .duel-boule > i {
+  @container (max-width: 620px) {
+    .course {
+      --s: 40px;
+    }
+  }
+
+  .couloir {
+    /* L'avancée (0 à 1), le tressaut sur un obstacle (0 à 1), le tour de la boule. */
+    --p: 0;
+    --saut: 0;
+    --tour: 0deg;
+    /* La boule part grosse comme 0,4 père Noël et finit à 1,5. */
+    --boule: calc(var(--s) * (0.4 + 1.1 * var(--p)));
+    /* La longueur de piste que parcourt l'attelage. */
+    --piste: calc(100% - var(--s) * 2.9);
+    --manteau: var(--noel-rouge);
+    position: relative;
+    height: calc(var(--s) * 1.62 + 46px);
+    overflow: hidden;
+    border-radius: var(--r-md);
+    background: linear-gradient(180deg, rgb(0 10 30 / 0.36) 0%, rgb(0 10 30 / 0.14) 100%);
+    box-shadow:
+      inset 0 2px 4px rgb(0 8 24 / 0.5),
+      inset 0 -1px 0 rgb(255 255 255 / 0.12);
+  }
+  .couloir[data-camp='adversaire'] {
+    --manteau: var(--noel-vert);
+  }
+  .couloir[data-bot] {
+    --manteau: var(--noel-acier);
+    --noel-peau: var(--noel-acier-clair);
+  }
+
+  .couloir-nom {
+    position: absolute;
+    top: 0.5rem;
+    left: 0.9rem;
+    z-index: 3;
+    display: flex;
+    align-items: baseline;
+    gap: 0.45rem;
+    max-width: 70%;
+  }
+  .couloir-nom b {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: var(--font-display);
+    font-size: 1.05rem;
+    font-weight: 900;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--ink);
+  }
+  .couloir-nom span {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--muted);
+  }
+
+  /* Le sol : de la neige tassée, où la boule s'enfonce d'un rien. */
+  .couloir-sol {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 3;
+    height: 14px;
+    background: linear-gradient(180deg, var(--neige-1) 0%, var(--neige-2) 35%, var(--neige-3) 100%);
+    box-shadow: 0 -2px 3px rgb(0 8 24 / 0.35);
+  }
+
+  /* La ligne d'arrivée : un piquet, et son fanion à damier. */
+  .couloir-arrivee {
+    position: absolute;
+    bottom: 12px;
+    left: calc(100% - var(--s) * 0.5);
+    z-index: 1;
+    width: 4px;
+    height: calc(var(--s) * 1.35);
+    border-radius: 2px;
+    background: var(--neige-2);
+    box-shadow: 1px 0 2px rgb(0 8 24 / 0.5);
+  }
+  .couloir-arrivee::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 4px;
+    width: calc(var(--s) * 0.42);
+    height: calc(var(--s) * 0.3);
+    border-radius: 2px 0 0 2px;
+    background: repeating-conic-gradient(var(--nuit) 0% 25%, var(--neige-1) 0% 50%) 0 0 / 50% 50%;
+  }
+
+  .obstacle {
+    position: absolute;
+    bottom: 11px;
+    /* Là où se trouve le front de la boule quand l'avancée vaut `--q`. */
+    left: calc(var(--q) * var(--piste) + var(--s) * (1.26 + 1.1 * var(--q)));
+    z-index: 1;
+    width: calc(var(--s) * 0.62);
+    height: calc(var(--s) * 0.44);
+    transform-origin: 50% 100%;
+    transition:
+      transform 0.22s ease-in,
+      opacity 0.22s ease-in;
+  }
+  .obstacle svg {
     display: block;
     width: 100%;
     height: 100%;
-    border-radius: 999px;
-    background: radial-gradient(circle at 35% 30%, var(--neige-1) 0%, var(--neige-2) 45%, var(--neige-3) 100%);
-    box-shadow:
-      inset 0 -4px 6px rgb(90 140 185 / 0.5),
-      0 6px 6px -3px rgb(0 8 24 / 0.55);
-    animation: duel-arc 0.52s linear forwards;
   }
-  .duel-boule[data-vers='droite'] { animation-name: duel-vers-droite; }
-  .duel-boule[data-vers='gauche'] { animation-name: duel-vers-gauche; }
-  .duel-boule[data-vers='milieu-g'] { animation-name: duel-milieu-g; }
-  .duel-boule[data-vers='milieu-d'] { animation-name: duel-milieu-d; }
-  @keyframes duel-vers-droite {
-    from { left: -12%; }
-    to { left: 104%; }
+  /* Franchi : la boule l'a avalé en roulant dessus. */
+  .obstacle[data-passe] {
+    transform: scale(0.3, 0.1);
+    opacity: 0;
   }
-  @keyframes duel-vers-gauche {
-    from { left: 104%; }
-    to { left: -12%; }
+  .obstacle-roche {
+    fill: var(--roche);
   }
-  @keyframes duel-milieu-g {
-    from { left: -12%; }
-    to { left: calc(50% - 30px); }
+  .obstacle-bois {
+    fill: var(--bois);
   }
-  @keyframes duel-milieu-d {
-    from { left: 104%; }
-    to { left: 50%; }
+  .obstacle-coupe {
+    fill: var(--bois-clair);
   }
-  @keyframes duel-arc {
-    0% {
-      transform: translateY(0) scale(0.75) rotate(0deg);
-      animation-timing-function: cubic-bezier(0.3, 0.6, 0.5, 1);
-    }
-    50% {
-      transform: translateY(-44px) scale(1) rotate(260deg);
-      animation-timing-function: cubic-bezier(0.5, 0, 0.7, 0.4);
-    }
-    100% {
-      transform: translateY(0) scale(1.05) rotate(520deg);
-    }
+  .obstacle-neige {
+    fill: var(--neige-1);
+  }
+  .obstacle-glace {
+    fill: color-mix(in srgb, var(--ice) 60%, transparent);
+  }
+  .obstacle-reflet {
+    fill: none;
+    stroke: var(--neige-1);
+    stroke-width: 1.5;
+    stroke-linecap: round;
   }
 
-  /* L'impact : la boule éclate en poudre, là où elle frappe. */
-  .duel-eclat {
+  /* L'attelage : le père Noël et sa boule, qui avancent ensemble. */
+  .attelage {
     position: absolute;
-    top: 50%;
-    width: 84px;
-    height: 84px;
-    margin: -42px 0 0 -42px;
+    bottom: 11px;
+    left: calc(var(--p) * var(--piste));
+    z-index: 2;
+    width: calc(var(--s) * 2.5);
+    height: calc(var(--s) * 1.55);
+  }
+
+  .noel {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: var(--s);
+    height: calc(var(--s) * 1.25);
+    overflow: visible;
+    transform-origin: 50% 96%;
+    transition: transform 0.45s cubic-bezier(0.3, 1.5, 0.5, 1);
+  }
+  .noel-manteau,
+  .noel-pantalon {
+    fill: var(--manteau);
+  }
+  .noel-pantalon {
+    filter: brightness(0.78);
+  }
+  .noel-bras,
+  .noel-bonnet {
+    fill: none;
+    stroke: var(--manteau);
+    stroke-linecap: round;
+  }
+  .noel-bras {
+    stroke-width: 9;
+  }
+  .noel-bonnet {
+    stroke-width: 7;
+  }
+  .noel-fourrure {
+    fill: var(--noel-fourrure);
+  }
+  .noel-peau {
+    fill: var(--noel-peau);
+  }
+  .noel-nez {
+    fill: var(--noel-nez);
+  }
+  .noel-oeil {
+    fill: var(--nuit);
+  }
+  .couloir[data-bot] .noel-oeil {
+    fill: var(--ice-2);
+  }
+  .noel-botte {
+    fill: var(--noel-botte);
+  }
+  .noel-boucle {
+    fill: var(--gold);
+  }
+  .noel-jambe {
+    transform-box: fill-box;
+    transform-origin: 50% 8%;
+  }
+
+  /* En course : les jambes moulinent, le corps tangue. */
+  .couloir[data-etat='course'] .noel {
+    animation: noel-tangue 0.19s ease-in-out infinite alternate;
+  }
+  .couloir[data-etat='course'] .noel-jambe-avant {
+    animation: noel-pas 0.38s ease-in-out infinite alternate;
+  }
+  .couloir[data-etat='course'] .noel-jambe-arriere {
+    animation: noel-pas 0.38s ease-in-out infinite alternate-reverse;
+  }
+  @keyframes noel-pas {
+    from { transform: rotate(-26deg); }
+    to { transform: rotate(28deg); }
+  }
+  @keyframes noel-tangue {
+    from { transform: translateY(0); }
+    to { transform: translateY(-2.5%); }
+  }
+
+  /* Arrivé : il saute de joie. */
+  .couloir[data-etat='victoire'] .noel {
+    animation: noel-saute 0.42s ease-out infinite alternate;
+  }
+  @keyframes noel-saute {
+    from { transform: translateY(0) rotate(0deg); }
+    to { transform: translateY(-24%) rotate(-7deg); }
+  }
+
+  /* Tombé : à plat ventre sur sa boule, ou sur le dos s'il a glissé. */
+  .couloir[data-etat='chute'] .noel {
+    transform: translate(calc(var(--s) * 0.55), calc(var(--s) * -0.3)) rotate(84deg);
+  }
+  .couloir[data-etat='chute'][data-chute='glisse'] .noel {
+    transform: translate(calc(var(--s) * 0.2), calc(var(--s) * -0.3)) rotate(-86deg);
+  }
+
+  /*
+   * La boule, en deux pièces : l'enveloppe porte la taille, le tressaut et
+   * l'ombre, qui ne tournent pas ; le cœur tourne, avec ses creux, pour qu'on
+   * la voie rouler.
+   */
+  .boule {
+    position: absolute;
+    bottom: 0;
+    left: calc(var(--s) * 0.86);
+    width: var(--boule);
+    height: var(--boule);
     border-radius: 999px;
-    background: radial-gradient(circle, rgb(255 255 255 / 0.9) 0%, rgb(234 247 255 / 0.5) 32%, transparent 68%);
-    animation: duel-eclat 0.6s ease-out forwards;
+    box-shadow: 0 5px 5px -3px rgb(0 8 24 / 0.6);
+    transform: translateY(calc(var(--saut) * var(--s) * -0.24));
+  }
+  .boule > i {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: inherit;
+    background:
+      radial-gradient(circle at 28% 30%, rgb(110 150 190 / 0.4) 0 7%, transparent 8%),
+      radial-gradient(circle at 70% 68%, rgb(110 150 190 / 0.35) 0 9%, transparent 10%),
+      radial-gradient(circle at 62% 24%, rgb(110 150 190 / 0.28) 0 5%, transparent 6%),
+      var(--neige-2);
+    transform: rotate(var(--tour));
+  }
+  /* La lumière ne tourne pas avec la boule. */
+  .boule::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: radial-gradient(circle at 36% 28%, rgb(255 255 255 / 0.85) 0%, transparent 46%);
+    box-shadow: inset 0 calc(var(--boule) * -0.12) calc(var(--boule) * 0.16) rgb(80 130 180 / 0.5);
+  }
+  .couloir[data-etat='chute'] .boule {
+    opacity: 0;
+  }
+
+  /* La boule en morceaux : neuf éclats, chacun sa direction. */
+  .eclats {
+    position: absolute;
+    bottom: 0;
+    left: calc(var(--s) * 0.86);
+    display: none;
+    width: var(--boule);
+    height: var(--boule);
     pointer-events: none;
   }
-  .duel-eclat[data-cote='droite'] { left: 104%; }
-  .duel-eclat[data-cote='gauche'] { left: -4%; }
-  .duel-eclat[data-cote='milieu'] { left: 50%; }
-  @keyframes duel-eclat {
-    from { transform: scale(0.2); opacity: 1; }
-    to { transform: scale(1.5); opacity: 0; }
+  .couloir[data-etat='chute'] .eclats {
+    display: block;
+  }
+  .eclats > i {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 34%;
+    height: 34%;
+    border-radius: 42% 58% 55% 45% / 50% 45% 55% 50%;
+    background: linear-gradient(180deg, var(--neige-1), var(--neige-3));
+    box-shadow: 0 2px 2px rgb(0 8 24 / 0.4);
+    animation: eclat 0.85s cubic-bezier(0.15, 0.7, 0.4, 1) forwards;
+  }
+  .eclats > i:nth-child(1) { --dx: -1.1; --dy: -0.7; --r: -200deg; }
+  .eclats > i:nth-child(2) { --dx: -0.5; --dy: -1.2; --r: 140deg; }
+  .eclats > i:nth-child(3) { --dx: 0.2; --dy: -1.35; --r: -90deg; }
+  .eclats > i:nth-child(4) { --dx: 0.9; --dy: -1.05; --r: 230deg; }
+  .eclats > i:nth-child(5) { --dx: 1.5; --dy: -0.55; --r: -160deg; }
+  .eclats > i:nth-child(6) { --dx: 1.8; --dy: 0.1; --r: 110deg; width: 26%; height: 26%; }
+  .eclats > i:nth-child(7) { --dx: -1.5; --dy: 0.05; --r: -120deg; width: 26%; height: 26%; }
+  .eclats > i:nth-child(8) { --dx: 0.7; --dy: 0.2; --r: 60deg; width: 44%; height: 40%; }
+  .eclats > i:nth-child(9) { --dx: -0.4; --dy: 0.22; --r: -40deg; width: 46%; height: 38%; }
+  @keyframes eclat {
+    0% {
+      transform: translate(-50%, -50%) scale(1);
+      opacity: 1;
+    }
+    55% {
+      transform: translate(calc(-50% + var(--dx) * var(--s) * 0.8), calc(-50% + var(--dy) * var(--s) * 0.8))
+        rotate(var(--r)) scale(0.8);
+      opacity: 1;
+    }
+    100% {
+      transform: translate(calc(-50% + var(--dx) * var(--s)), calc(-50% + var(--boule) * 0.4))
+        rotate(var(--r)) scale(0.55);
+      opacity: 0.85;
+    }
   }
 
   .duel-verdict {
-    animation: duel-verdict 0.6s cubic-bezier(0.2, 0.9, 0.3, 1.3);
+    animation: duel-verdict 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.3);
   }
   @keyframes duel-verdict {
     from { transform: scale(0.85); opacity: 0; }
     to { transform: scale(1); opacity: 1; }
   }
 
-  /* Le relevé, échange par échange : des pastilles, pas un tableau. */
-  .duel-releve {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    padding: 0.25rem 0.7rem;
-    border-radius: var(--r-pilule);
-    background: rgb(0 10 30 / 0.3);
-    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.08);
-    font-family: var(--font-display);
-    font-size: 0.875rem;
-    font-weight: 800;
-    font-variant-numeric: tabular-nums;
-  }
-
-  /* Pas d'exception au mouvement réduit : le duel se joue à l'écran, lancer
-     par lancer. Sans l'animation, il n'y a plus de duel à regarder. */
+  /* Pas d'exception au mouvement réduit : le duel se joue à l'écran. Sans
+     l'animation, il n'y a plus de duel à regarder — et « Passer au résultat »
+     reste là pour qui veut l'issue tout de suite. */
 
   /* --------------------------------------------------------------------------
      Boutons

@@ -61,7 +61,7 @@ export class BatailleError extends Error {
  */
 export function creeBataille(db: Database, hoteId: string, mise: number, manches: number): Bataille {
   if (!(MANCHES_POSSIBLES as readonly number[]).includes(manches)) {
-    throw new BatailleError('Un duel se joue en 1, 3 ou 5 manches.', 'MANCHES_INVALIDES');
+    throw new BatailleError('Un duel se joue en une seule manche.', 'MANCHES_INVALIDES');
   }
   if (!Number.isInteger(mise) || mise < DUEL.miseMin || mise > DUEL.miseMax) {
     throw new BatailleError(

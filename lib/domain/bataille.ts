@@ -10,8 +10,12 @@
  *
  * À chaque échange, les deux camps lancent une boule de neige, dont la
  * puissance est tirée entre 1 et 100. La plus forte gagne la manche. Une
- * égalité ne compte pour personne : on relance. Le premier à remporter la
- * majorité des manches — 1 sur 1, 2 sur 3, 3 sur 5 — gagne le duel, et le pot.
+ * égalité ne compte pour personne : on relance. Un duel se joue **en une
+ * seule manche** : le premier lancer plus fort que l'autre gagne le duel, et
+ * le pot. Le perdant perd toute sa mise.
+ *
+ * Des duels en 3 ou 5 manches ont existé ; `joueDuel` et `score` savent
+ * encore les lire, pour que l'historique reste juste, mais on n'en crée plus.
  *
  * ## Pourquoi c'est juste
  *
@@ -21,11 +25,11 @@
  * se risquent ici, ils ne s'y achètent pas d'avantage.
  */
 
-/** Les formats de duel : toujours un nombre impair, pour qu'il y ait un vainqueur. */
-export const MANCHES_POSSIBLES = [1, 3, 5] as const;
+/** Le seul format qu'on crée : une manche, un vainqueur. */
+export const MANCHES_POSSIBLES = [1] as const;
 export type Manches = (typeof MANCHES_POSSIBLES)[number];
 export const MANCHES_MIN = 1;
-export const MANCHES_MAX = 5;
+export const MANCHES_MAX = 1;
 
 /** La puissance maximale d'un lancer ; la minimale est 1. */
 export const PUISSANCE_MAX = 100;
