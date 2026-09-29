@@ -339,8 +339,8 @@ function FenetreIA({ joueurs, active, ferme }: { joueurs: Joueur[]; active: bool
       {!active && (
         <div className="mb-4">
           <Notice kind="error">
-            La lecture des captures n’est pas activée : ANTHROPIC_API_KEY manque côté serveur. Utilise la
-            saisie à la main.
+            La lecture des captures n’est pas activée : la clé ANTHROPIC_API_KEY manque dans les variables
+            d’environnement du serveur (Vercel). Ajoute-la, puis redéploie.
           </Notice>
         </div>
       )}
