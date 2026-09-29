@@ -1,9 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { CAMP_BOT, type Database, type Player } from '@/lib/db/entities';
 import { emptyDatabase } from '@/lib/db/store';
-import { BOOSTERS } from '@/lib/domain/catalog';
-import { ECONOMY } from '@/lib/domain/rules';
-import { defausseCarte } from '@/lib/services/cards';
+import { gagnantEchange } from '@/lib/domain/bataille';
+import { DUEL, ECONOMY } from '@/lib/domain/rules';
 import {
   annuleBataille,
   batailleContreBot,
@@ -11,23 +10,20 @@ import {
   BatailleError,
   creeBataille,
   rejointBataille,
+  vueBataille,
 } from '@/lib/services/batailles';
 
 /**
- * Ce que le service des batailles doit garantir, et qui touche à l'argent.
+ * Ce que le service des duels doit garantir, et qui touche à l'argent.
  *
  * La règle qui départage est testée à part, dans `bataille.test.ts` — ici on
  * vérifie les mouvements : qui est débité, quand, combien, et qui repart avec
- * les cartes. Ce sont les erreurs de cette catégorie qui coûtent la confiance,
- * pas les erreurs d'affichage.
+ * le pot. Ce sont les erreurs de cette catégorie qui coûtent la confiance, pas
+ * les erreurs d'affichage.
  */
 
-const GIVRE = BOOSTERS[0];
-/** Le sachet le plus cher du catalogue : de quoi vérifier un panier mélangé. */
-const CHER = BOOSTERS.reduce((a, b) => (b.price > a.price ? b : a));
-
-/** Un panier de `n` fois le même sachet — l'ancienne forme, devenue un cas. */
-const paquet = (n: number, id: string = GIVRE.id) => Array.from({ length: n }, () => id);
+const MISE = 200;
+const DEPART = 5_000;
 
 function joueur(id: string, snowflakes: number): Player {
   return {
@@ -37,14 +33,16 @@ function joueur(id: string, snowflakes: number): Player {
     twitchId: null,
     twitchLogin: null,
     avatarUrl: null,
+    activisionId: null,
     snowflakes,
+    subsOfferts: 0,
     joinedAt: '2027-01-01T00:00:00.000Z',
     active: true,
     role: 'joueur',
   };
 }
 
-function base(soldes: Record<string, number> = { hote: 100_000, autre: 100_000 }): Database {
+function base(soldes: Record<string, number> = { hote: DEPART, autre: DEPART }): Database {
   const db = emptyDatabase();
   for (const [id, solde] of Object.entries(soldes)) db.players.push(joueur(id, solde));
   return db;
@@ -52,57 +50,58 @@ function base(soldes: Record<string, number> = { hote: 100_000, autre: 100_000 }
 
 const solde = (db: Database, id: string) => db.players.find((p) => p.id === id)!.snowflakes;
 
-describe('créer une bataille', () => {
+/** Ce que le grand livre dit qu'un joueur a gagné ou perdu. */
+const mouvements = (db: Database, id: string) =>
+  db.ledger.filter((l) => l.playerId === id).reduce((s, l) => s + l.delta, 0);
+
+describe('créer un duel', () => {
   it('débite la mise tout de suite, avant tout adversaire', () => {
     /*
-     * C'est ce qui rend le lobby honnête : une bataille affichée est une
-     * bataille déjà payée. Débiter à l'entrée de l'adversaire laisserait
-     * afficher des mises que l'hôte ne peut plus couvrir.
+     * C'est ce qui rend le lobby honnête : un duel affiché est un duel déjà
+     * payé. Débiter à l'entrée de l'adversaire laisserait afficher des mises
+     * que l'hôte ne peut plus couvrir.
      */
     const db = base();
-    const avant = solde(db, 'hote');
-    const b = creeBataille(db, 'hote', paquet(3));
+    const b = creeBataille(db, 'hote', MISE, 1);
 
-    expect(b.mise).toBe(GIVRE.price * 3);
-    expect(solde(db, 'hote')).toBe(avant - GIVRE.price * 3);
+    expect(b.mise).toBe(MISE);
+    expect(solde(db, 'hote')).toBe(DEPART - MISE);
     expect(b.statut).toBe('ATTENTE');
-    expect(b.tirages).toHaveLength(0);
+    expect(b.adversaireId).toBeNull();
+    expect(b.echanges).toHaveLength(0);
+    expect(b.vainqueurId).toBeNull();
   });
 
-  it('refuse un panier vide ou trop gros', () => {
+  it('refuse une mise hors bornes ou fractionnaire', () => {
     const db = base();
-    expect(() => creeBataille(db, 'hote', [])).toThrow(BatailleError);
-    expect(() => creeBataille(db, 'hote', paquet(6))).toThrow(BatailleError);
+    for (const mise of [0, -50, DUEL.miseMin - 1, DUEL.miseMax + 1, 120.5, Number.NaN]) {
+      expect(() => creeBataille(db, 'hote', mise, 1)).toThrow(BatailleError);
+    }
     expect(db.batailles).toHaveLength(0);
+    expect(solde(db, 'hote')).toBe(DEPART);
+    expect(db.ledger).toHaveLength(0);
   });
 
-  it('accepte un panier mélangé, et en additionne les prix', () => {
-    /*
-     * C'est tout l'intérêt du panier : trois Givre et un Everest ne se jouent
-     * pas comme quatre Givre. La mise doit suivre les sachets réellement
-     * choisis, sachet par sachet, et non un prix unitaire multiplié.
-     */
+  it('ne se joue qu’en une manche', () => {
     const db = base();
-    const melange = [GIVRE.id, CHER.id, GIVRE.id];
-    const avant = solde(db, 'hote');
-    const b = creeBataille(db, 'hote', melange);
-
-    expect(b.boosterIds).toEqual(melange);
-    expect(b.manches).toBe(3);
-    expect(b.mise).toBe(GIVRE.price * 2 + CHER.price);
-    expect(solde(db, 'hote')).toBe(avant - b.mise);
+    for (const manches of [0, 2, 3, 5]) {
+      expect(() => creeBataille(db, 'hote', MISE, manches)).toThrow(BatailleError);
+    }
+    expect(db.batailles).toHaveLength(0);
+    expect(solde(db, 'hote')).toBe(DEPART);
   });
 
   it('refuse un solde insuffisant, et ne laisse aucune trace', () => {
     const db = base({ hote: 10 });
-    expect(() => creeBataille(db, 'hote', paquet(1))).toThrow();
+    expect(() => creeBataille(db, 'hote', MISE, 1)).toThrow();
     expect(db.batailles).toHaveLength(0);
+    expect(db.ledger).toHaveLength(0);
     expect(solde(db, 'hote')).toBe(10);
   });
 
   it('n’expose en attente que ce qui attend vraiment', () => {
     const db = base();
-    const b = creeBataille(db, 'hote', paquet(1));
+    const b = creeBataille(db, 'hote', MISE, 1);
     expect(batailleslibres(db).map((x) => x.id)).toEqual([b.id]);
 
     batailleContreBot(db, 'hote', b.id);
@@ -110,75 +109,125 @@ describe('créer une bataille', () => {
   });
 });
 
-describe('résoudre une bataille', () => {
-  it('donne toutes les cartes des deux camps au vainqueur', () => {
+describe('résoudre un duel', () => {
+  it('verse le pot entier au vainqueur, et rien au perdant', () => {
     const db = base();
-    const b = creeBataille(db, 'hote', paquet(2));
+    const b = creeBataille(db, 'hote', MISE, 1);
     rejointBataille(db, 'autre', b.id);
 
     expect(b.statut).toBe('TERMINEE');
-    expect(b.tirages).toHaveLength(2);
+    expect(b.adversaireId).toBe('autre');
+    expect(['hote', 'autre']).toContain(b.vainqueurId);
 
-    const total = b.tirages.reduce((n, t) => n + t.cardIds.length, 0);
-    const gagnees = db.cards.filter((c) => c.playerId === b.vainqueurId);
-    expect(gagnees).toHaveLength(total);
-
-    // Et le perdant n'a strictement rien : ses cartes n'ont appartenu à personne.
     const perdant = b.vainqueurId === 'hote' ? 'autre' : 'hote';
-    expect(db.cards.filter((c) => c.playerId === perdant)).toHaveLength(0);
+    expect(solde(db, b.vainqueurId!)).toBe(DEPART + MISE);
+    expect(solde(db, perdant)).toBe(DEPART - MISE);
   });
 
-  it('débite les deux camps de la même mise', () => {
+  it('ne crée ni ne détruit de flocons entre deux joueurs', () => {
+    // Le site ne prend rien au passage : ce que l'un perd, l'autre le gagne.
     const db = base();
-    const b = creeBataille(db, 'hote', paquet(2));
+    for (let i = 0; i < 20; i += 1) {
+      const b = creeBataille(db, 'hote', DUEL.miseMin, 1);
+      rejointBataille(db, 'autre', b.id);
+    }
+    expect(solde(db, 'hote') + solde(db, 'autre')).toBe(DEPART * 2);
+  });
+
+  it('donne le duel à celui que les lancers désignent', () => {
+    const db = base();
+    const b = creeBataille(db, 'hote', MISE, 1);
     rejointBataille(db, 'autre', b.id);
-    expect(solde(db, 'hote')).toBe(100_000 - b.mise);
-    expect(solde(db, 'autre')).toBe(100_000 - b.mise);
+
+    // Le dernier échange est le seul décisif ; ceux d'avant sont des égalités.
+    expect(b.echanges.length).toBeGreaterThan(0);
+    const decisif = gagnantEchange(b.echanges[b.echanges.length - 1]);
+    expect(decisif).not.toBeNull();
+    expect(b.vainqueurId).toBe(decisif === 'hote' ? 'hote' : 'autre');
+    for (const e of b.echanges.slice(0, -1)) expect(gagnantEchange(e)).toBeNull();
+
+    const vue = vueBataille(db, b);
+    expect(vue.ancien).toBe(false);
+    expect(vue.camps.map((c) => c.manches).sort()).toEqual([0, 1]);
   });
 
-  it('ouvre autant de sachets par camp qu’annoncé', () => {
+  it('écrit chaque mouvement au grand livre', () => {
     const db = base();
-    const b = creeBataille(db, 'hote', paquet(3));
+    const b = creeBataille(db, 'hote', MISE, 1);
     rejointBataille(db, 'autre', b.id);
-    const parCamp = 3 * (GIVRE.slots.effet + GIVRE.slots.collection);
-    for (const tirage of b.tirages) expect(tirage.cardIds).toHaveLength(parCamp);
+
+    expect(mouvements(db, 'hote')).toBe(solde(db, 'hote') - DEPART);
+    expect(mouvements(db, 'autre')).toBe(solde(db, 'autre') - DEPART);
+    expect(db.ledger.filter((l) => l.reason === 'MISE_BATAILLE')).toHaveLength(2);
+    expect(db.ledger.filter((l) => l.reason === 'GAIN_BATAILLE')).toHaveLength(1);
   });
 
-  it('refuse de rejoindre sa propre bataille', () => {
+  it('refuse l’adversaire qui ne peut pas suivre la mise', () => {
+    const db = base({ hote: DEPART, autre: MISE - 1 });
+    const b = creeBataille(db, 'hote', MISE, 1);
+    expect(() => rejointBataille(db, 'autre', b.id)).toThrow();
+    expect(solde(db, 'autre')).toBe(MISE - 1);
+    expect(b.echanges).toHaveLength(0);
+    expect(b.vainqueurId).toBeNull();
+  });
+
+  it('refuse de rejoindre son propre duel', () => {
     const db = base();
-    const b = creeBataille(db, 'hote', paquet(1));
+    const b = creeBataille(db, 'hote', MISE, 1);
     expect(() => rejointBataille(db, 'hote', b.id)).toThrow(BatailleError);
     expect(b.statut).toBe('ATTENTE');
+    expect(solde(db, 'hote')).toBe(DEPART - MISE);
   });
 
-  it('refuse une bataille déjà jouée', () => {
-    const db = base({ hote: 100_000, autre: 100_000, tiers: 100_000 });
-    const b = creeBataille(db, 'hote', paquet(1));
+  it('refuse un duel déjà joué', () => {
+    const db = base({ hote: DEPART, autre: DEPART, tiers: DEPART });
+    const b = creeBataille(db, 'hote', MISE, 1);
     rejointBataille(db, 'autre', b.id);
     expect(() => rejointBataille(db, 'tiers', b.id)).toThrow(BatailleError);
-    // Le troisième n'a pas été débité pour une bataille qu'il n'a pas jouée.
-    expect(solde(db, 'tiers')).toBe(100_000);
+    // Le troisième n'a pas été débité pour un duel qu'il n'a pas joué.
+    expect(solde(db, 'tiers')).toBe(DEPART);
+  });
+
+  it('refuse un duel qui n’existe pas', () => {
+    const db = base();
+    expect(() => rejointBataille(db, 'autre', 'fantome')).toThrow(BatailleError);
+    expect(() => batailleContreBot(db, 'hote', 'fantome')).toThrow(BatailleError);
+    expect(() => annuleBataille(db, 'hote', 'fantome')).toThrow(BatailleError);
+  });
+
+  it('ne dépasse jamais le plafond de flocons', () => {
+    // Ce qui déborde est perdu, et le grand livre écrit ce qui a été versé.
+    const db = base({ hote: ECONOMY.soldeMax, autre: ECONOMY.soldeMax });
+    const b = creeBataille(db, 'hote', DUEL.miseMax, 1);
+    rejointBataille(db, 'autre', b.id);
+    expect(solde(db, b.vainqueurId!)).toBe(ECONOMY.soldeMax);
+    for (const id of ['hote', 'autre']) {
+      expect(mouvements(db, id)).toBe(solde(db, id) - ECONOMY.soldeMax);
+    }
   });
 });
 
 describe('le bot', () => {
-  it('ne mise rien et ne collectionne rien', () => {
+  it('ne mise rien, ne gagne rien, et ne triche pas', () => {
     /*
-     * Quand le bot gagne, les cartes des deux camps disparaissent — c'est ce que
-     * le joueur a accepté en misant. Aucun exemplaire ne doit se retrouver au
-     * nom du bot, sans quoi une carte fantôme circulerait dans la base.
+     * Quand le bot gagne, le pot disparaît — c'est ce que le joueur a accepté
+     * en misant. Aucun flocon ne doit se retrouver au nom du bot.
      */
-    const db = base({ hote: 1_000_000 });
+    const parties = 60;
+    const db = base({ hote: DEPART });
     let botGagnant = 0;
 
-    for (let i = 0; i < 60; i += 1) {
-      const b = creeBataille(db, 'hote', paquet(1));
+    for (let i = 0; i < parties; i += 1) {
+      const b = creeBataille(db, 'hote', DUEL.miseMin, 1);
       batailleContreBot(db, 'hote', b.id);
+      expect(b.adversaireId).toBe(CAMP_BOT);
       if (b.vainqueurId === CAMP_BOT) botGagnant += 1;
     }
 
-    expect(db.cards.some((c) => c.playerId === CAMP_BOT)).toBe(false);
-    // Il tire aux mêmes taux, donc il gagne à peu près une fois sur deux. Les
+    expect(db.ledger.some((l) => l.playerId === CAMP_BOT)).toBe(false);
+    // Une fois sur deux la mise est perdue, une fois sur deux elle est doublée.
+    expect(solde(db, 'hote')).toBe(DEPART + DUEL.miseMin * (parties - 2 * botGagnant));
+    // Il lance comme le joueur, donc il gagne à peu près une fois sur deux. Les
     // bornes sont larges : c'est un garde-fou contre un bot truqué, pas un test
     // statistique fin.
     expect(botGagnant).toBeGreaterThan(10);
@@ -187,98 +236,37 @@ describe('le bot', () => {
 
   it('n’est lançable que par l’hôte', () => {
     const db = base();
-    const b = creeBataille(db, 'hote', paquet(1));
+    const b = creeBataille(db, 'hote', MISE, 1);
     expect(() => batailleContreBot(db, 'autre', b.id)).toThrow(BatailleError);
+    expect(b.statut).toBe('ATTENTE');
   });
 });
 
 describe('annuler', () => {
-  it('rend la mise et ferme la bataille', () => {
+  it('rend la mise et ferme le duel', () => {
     const db = base();
-    const avant = solde(db, 'hote');
-    const b = creeBataille(db, 'hote', paquet(4));
+    const b = creeBataille(db, 'hote', MISE, 1);
     annuleBataille(db, 'hote', b.id);
 
     expect(b.statut).toBe('ANNULEE');
-    expect(solde(db, 'hote')).toBe(avant);
+    expect(solde(db, 'hote')).toBe(DEPART);
+    expect(batailleslibres(db)).toHaveLength(0);
   });
 
-  it('n’est ouvert qu’à l’hôte, et seulement avant le tirage', () => {
+  it('ne rend la mise qu’une fois', () => {
     const db = base();
-    const b = creeBataille(db, 'hote', paquet(1));
+    const b = creeBataille(db, 'hote', MISE, 1);
+    annuleBataille(db, 'hote', b.id);
+    expect(() => annuleBataille(db, 'hote', b.id)).toThrow(BatailleError);
+    expect(solde(db, 'hote')).toBe(DEPART);
+  });
+
+  it('n’est ouvert qu’à l’hôte, et seulement avant le duel', () => {
+    const db = base();
+    const b = creeBataille(db, 'hote', MISE, 1);
     expect(() => annuleBataille(db, 'autre', b.id)).toThrow(BatailleError);
 
     rejointBataille(db, 'autre', b.id);
     expect(() => annuleBataille(db, 'hote', b.id)).toThrow(BatailleError);
-  });
-});
-
-describe('la défausse', () => {
-  it('détruit l’exemplaire et rend un flocon', () => {
-    const db = base({ hote: 0 });
-    db.cards.push({
-      id: 'ex-1',
-      playerId: 'hote',
-      cardId: GIVRE.id,
-      obtainedAt: '2027-01-01T00:00:00.000Z',
-      source: 'BOOSTER',
-      consumed: false,
-      consumedAt: null,
-      consumedOnGameId: null,
-      consumedOnPlayerId: null,
-      listingId: null,
-      consumeKey: null,
-    });
-
-    const { gain, balance } = defausseCarte(db, 'hote', 'ex-1');
-    expect(gain).toBe(ECONOMY.defausse);
-    expect(balance).toBe(ECONOMY.defausse);
-    expect(db.cards).toHaveLength(0);
-  });
-
-  it('refuse une carte en vente, et ne la détruit pas', () => {
-    /*
-     * Une carte sous séquestre est adossée à une vente active : la détruire
-     * laisserait la vente pointer vers un exemplaire qui n'existe plus, et
-     * l'adjudication tomberait dans le vide.
-     */
-    const db = base({ hote: 0 });
-    db.cards.push({
-      id: 'ex-2',
-      playerId: 'hote',
-      cardId: GIVRE.id,
-      obtainedAt: '2027-01-01T00:00:00.000Z',
-      source: 'BOOSTER',
-      consumed: false,
-      consumedAt: null,
-      consumedOnGameId: null,
-      consumedOnPlayerId: null,
-      listingId: 'vente-1',
-      consumeKey: null,
-    });
-
-    expect(() => defausseCarte(db, 'hote', 'ex-2')).toThrow();
-    expect(db.cards).toHaveLength(1);
-    expect(solde(db, 'hote')).toBe(0);
-  });
-
-  it('refuse la carte d’un autre', () => {
-    const db = base({ hote: 0, autre: 0 });
-    db.cards.push({
-      id: 'ex-3',
-      playerId: 'autre',
-      cardId: GIVRE.id,
-      obtainedAt: '2027-01-01T00:00:00.000Z',
-      source: 'BOOSTER',
-      consumed: false,
-      consumedAt: null,
-      consumedOnGameId: null,
-      consumedOnPlayerId: null,
-      listingId: null,
-      consumeKey: null,
-    });
-
-    expect(() => defausseCarte(db, 'hote', 'ex-3')).toThrow();
-    expect(db.cards).toHaveLength(1);
   });
 });

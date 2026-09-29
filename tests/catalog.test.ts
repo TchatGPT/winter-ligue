@@ -1,30 +1,45 @@
 import { describe, expect, it } from 'vitest';
-import { BOOSTERS, boosterSize, CARDS, cardsOfRarity, RARITY_META } from '@/lib/domain/catalog';
-import { completionRatio } from '@/lib/domain/collection';
+import {
+  CARDS,
+  cardsOfRarity,
+  cartesDuPack,
+  getPack,
+  PACKS,
+  poolDuPack,
+  RARITY_META,
+  TOTAL_CARDS,
+} from '@/lib/domain/catalog';
 import { rewardForGame } from '@/lib/domain/economy';
 import {
+  CHANCE,
+  chanceDe,
   crossedMilestones,
+  DEFAULT_MAX_GAMES_PER_PLAYER,
   ECONOMY,
+  multiplicateurChance,
   nextMilestone,
+  packsPersoAcquis,
+  PACKS_REGLES,
+  poidsAvecChance,
   rarityPercent,
   RARITY_WEIGHTS_BASE,
   SUB_MILESTONES,
   WEIGHT_TOTAL,
   WINTER_SPIN,
 } from '@/lib/domain/rules';
-import type { Rarity } from '@/lib/domain/types';
+import { PACK_IDS, type Rarity } from '@/lib/domain/types';
 
 const LADDER: Rarity[] = ['C', 'PC', 'R', 'SR', 'UR', 'L'];
 
-describe('cohérence du catalogue', () => {
-  it('contient 24 cartes', () => {
-    expect(CARDS).toHaveLength(24);
-  });
+const total = (weights: Record<string, number>) =>
+  Object.values(weights).reduce((a, b) => a + b, 0);
 
-  it('propose exactement 4 cartes par rareté', () => {
+describe('cohérence du catalogue', () => {
+  it('propose au moins quatre cartes par rareté', () => {
     for (const rarity of LADDER) {
-      expect(cardsOfRarity(rarity)).toHaveLength(4);
+      expect(cardsOfRarity(rarity).length).toBeGreaterThanOrEqual(4);
     }
+    expect(TOTAL_CARDS).toBe(CARDS.length);
   });
 
   it('n’a aucun identifiant en double', () => {
@@ -32,19 +47,16 @@ describe('cohérence du catalogue', () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
-  it('donne une cible cohérente à chaque malus', () => {
+  it('range chaque carte dans au moins un booster connu', () => {
     for (const card of CARDS) {
-      if (card.nature === 'malus') {
-        expect(card.target).toBe('opponent');
-        expect(card.offensive).toBe(true);
-      }
+      expect(card.packs.length).toBeGreaterThan(0);
+      for (const pack of card.packs) expect(PACK_IDS).toContain(pack);
     }
   });
 
   it('fait monter la puissance avec la rareté', () => {
     // Rareté par rareté : la carte la plus faible d'un palier doit rester
-    // au-dessus de la plus forte du palier précédent. C'est ce qui fait qu'une
-    // ultra rare vaut son prix, et c'est la seule promesse d'un booster cher.
+    // au-dessus de la plus forte du palier précédent.
     let plafondPrecedent = -1;
     for (const rarity of LADDER) {
       const powers = cardsOfRarity(rarity).map((c) => c.power);
@@ -62,22 +74,62 @@ describe('cohérence du catalogue', () => {
   });
 });
 
-describe('tables de raretés', () => {
-  it('somme exactement à 100 000 pour chaque booster', () => {
-    const total = (weights: Record<Rarity, number>) =>
-      Object.values(weights).reduce((a, b) => a + b, 0);
+describe('les boosters', () => {
+  it('sont quatre, un par identifiant', () => {
+    expect(PACKS.map((p) => p.id).sort()).toEqual([...PACK_IDS].sort());
+    for (const id of PACK_IDS) expect(getPack(id)?.id).toBe(id);
+    expect(getPack('sachet-fantome')).toBeNull();
+  });
 
-    expect(total(RARITY_WEIGHTS_BASE)).toBe(WEIGHT_TOTAL);
-    for (const booster of BOOSTERS) {
-      expect(total(booster.weights)).toBe(WEIGHT_TOTAL);
+  it('ont une carte à tirer pour chaque rareté qu’ils annoncent', () => {
+    // Une rareté affichée à 5 % sans carte derrière serait servie par le
+    // palier du dessous : le taux affiché mentirait.
+    for (const pack of PACKS) {
+      const pool = poolDuPack(pack.id);
+      for (const rarity of LADDER) {
+        if (pack.weights[rarity] > 0) expect(pool[rarity].length).toBeGreaterThan(0);
+      }
     }
   });
 
-  it('n’utilise que des poids entiers positifs', () => {
-    for (const booster of BOOSTERS) {
-      for (const weight of Object.values(booster.weights)) {
+  it('ne contiennent que des bonus quand ils s’ouvrent pour un joueur', () => {
+    for (const pack of PACKS.filter((p) => p.portee === 'JOUEUR')) {
+      for (const card of cartesDuPack(pack.id)) expect(card.nature).toBe('bonus');
+    }
+  });
+
+  it('ne promettent rien en dessous de rare dans le Booster Folie', () => {
+    const folie = getPack('folie')!;
+    expect(folie.weights.C).toBe(0);
+    expect(folie.weights.PC).toBe(0);
+    for (const card of cartesDuPack('folie')) {
+      expect(['R', 'SR', 'UR', 'L']).toContain(card.rarity);
+    }
+  });
+
+  it('doivent un Booster Perso à chaque multiple de subs offerts', () => {
+    const n = PACKS_REGLES.persoTousLes;
+    expect(packsPersoAcquis(0)).toBe(0);
+    expect(packsPersoAcquis(n - 1)).toBe(0);
+    expect(packsPersoAcquis(n)).toBe(1);
+    expect(packsPersoAcquis(n * 3 + 1)).toBe(3);
+    expect(packsPersoAcquis(-4)).toBe(0);
+  });
+});
+
+describe('tables de raretés', () => {
+  it('somme exactement à 100 000 pour chaque booster', () => {
+    expect(total(RARITY_WEIGHTS_BASE)).toBe(WEIGHT_TOTAL);
+    for (const pack of PACKS) {
+      expect(total(pack.weights)).toBe(WEIGHT_TOTAL);
+    }
+  });
+
+  it('n’utilise que des poids entiers, positifs ou nuls', () => {
+    for (const pack of PACKS) {
+      for (const weight of Object.values(pack.weights)) {
         expect(Number.isInteger(weight)).toBe(true);
-        expect(weight).toBeGreaterThan(0);
+        expect(weight).toBeGreaterThanOrEqual(0);
       }
     }
   });
@@ -89,31 +141,64 @@ describe('tables de raretés', () => {
   });
 
   it('garde la légendaire rare mais atteignable', () => {
-    const perCard = rarityPercent(RARITY_WEIGHTS_BASE, 'L');
-    expect(perCard).toBeCloseTo(0.02, 5);
-  });
-
-  it('améliore la courbe à mesure que le booster coûte cher', () => {
-    const sorted = [...BOOSTERS].sort((a, b) => a.price - b.price);
-    for (let i = 1; i < sorted.length; i += 1) {
-      expect(sorted[i].weights.L).toBeGreaterThanOrEqual(sorted[i - 1].weights.L);
-      expect(sorted[i].weights.C).toBeLessThanOrEqual(sorted[i - 1].weights.C);
-    }
-  });
-
-  it('ne promet une garantie que sur des raretés existantes', () => {
-    for (const booster of BOOSTERS) {
-      if (booster.guaranteed) {
-        expect(cardsOfRarity(booster.guaranteed).length).toBeGreaterThan(0);
-      }
-    }
+    // Une sur cinq cents au Booster Perso, sans chance.
+    expect(rarityPercent(RARITY_WEIGHTS_BASE, 'L')).toBeCloseTo(0.2, 5);
   });
 });
 
-describe('collection', () => {
-  it('ignore les identifiants inconnus dans le taux de complétion', () => {
-    expect(completionRatio(['carte-qui-n-existe-pas'])).toBe(0);
-    expect(completionRatio(CARDS.map((c) => c.id))).toBe(1);
+describe('la chance', () => {
+  it('monte avec le solde, de ×1 à ×2, et s’arrête au plafond', () => {
+    expect(chanceDe(0)).toBe(0);
+    expect(chanceDe(-500)).toBe(0);
+    expect(chanceDe(Number.NaN)).toBe(0);
+    expect(chanceDe(ECONOMY.soldeMax / 2)).toBeCloseTo(CHANCE.max / 2, 10);
+    expect(chanceDe(ECONOMY.soldeMax)).toBe(CHANCE.max);
+    expect(chanceDe(ECONOMY.soldeMax * 10)).toBe(CHANCE.max);
+    expect(multiplicateurChance(0)).toBe(1);
+    expect(multiplicateurChance(ECONOMY.soldeMax)).toBe(2);
+  });
+
+  it('garde la somme exacte, quelle que soit la chance', () => {
+    // C'est la plage dans laquelle le tirage se fait : une table poussée qui
+    // ne totaliserait plus 100 000 rendrait les taux affichés mensongers.
+    for (const pack of PACKS) {
+      for (const chance of [0, 0.01, 0.333, 0.5, 0.999, 1]) {
+        const pousse = poidsAvecChance(pack.weights, chance);
+        expect(total(pousse)).toBe(WEIGHT_TOTAL);
+        for (const poids of Object.values(pousse)) {
+          expect(Number.isInteger(poids)).toBe(true);
+          expect(poids).toBeGreaterThanOrEqual(0);
+        }
+      }
+    }
+  });
+
+  it('double les raretés hautes au maximum, pas davantage', () => {
+    const plein = poidsAvecChance(RARITY_WEIGHTS_BASE, CHANCE.max);
+    for (const rarity of ['PC', 'R', 'SR', 'UR', 'L'] as Rarity[]) {
+      expect(plein[rarity]).toBe(RARITY_WEIGHTS_BASE[rarity] * 2);
+    }
+    // La commune absorbe la différence, et il en reste.
+    expect(plein.C).toBe(16_000);
+  });
+
+  it('ne change rien sans flocons', () => {
+    expect(poidsAvecChance(RARITY_WEIGHTS_BASE, 0)).toEqual(RARITY_WEIGHTS_BASE);
+  });
+
+  it('ne fait jamais tomber la commune sous zéro', () => {
+    // Une table réglée à la main avec presque pas de communes.
+    const serree: Record<Rarity, number> = {
+      C: 1_000,
+      PC: 60_000,
+      R: 30_000,
+      SR: 6_000,
+      UR: 2_000,
+      L: 1_000,
+    };
+    const pousse = poidsAvecChance(serree, 1);
+    expect(pousse.C).toBe(0);
+    expect(total(pousse)).toBe(WEIGHT_TOTAL);
   });
 });
 
@@ -124,11 +209,18 @@ describe('économie de jeu', () => {
   });
 
   it('ne récompense que ce qui s’est passé en jeu', () => {
-    // Deux joueurs aux mêmes kills et au même placement touchent la même chose,
-    // quelle que soit leur collection. C'est l'invariant qui a coûté la vie aux
-    // bonus permanents.
+    // La récompense n'a que deux entrées, les kills et le placement : rien de
+    // ce qu'un joueur possède ne peut la faire monter.
+    expect(rewardForGame.length).toBe(2);
     expect(rewardForGame(0, null).total).toBe(ECONOMY.participation);
-    expect(rewardForGame(4, 2).total).toBe(rewardForGame(4, 2).total);
+    expect(rewardForGame(-3, null).total).toBe(ECONOMY.participation);
+  });
+
+  it('paie les trois places, dans l’ordre', () => {
+    const p = ECONOMY.perPlacement;
+    expect(p['1']).toBeGreaterThan(p['2']);
+    expect(p['2']).toBeGreaterThan(p['3']);
+    expect(p['3']).toBeGreaterThan(0);
   });
 });
 
@@ -140,11 +232,11 @@ describe('économie des subs', () => {
   });
 
   it('cumule les paliers quand un gros gift en franchit plusieurs', () => {
-    // 0 → 100 : 20 Bourrasques, 4 Rafales, 1 Chute de Neige.
+    // 0 → 100 : 20 Bourrasques, 4 Rafales, 2 Boosters Commu.
     const labels = crossedMilestones(0, 100).map((m) => m.label);
     expect(labels.filter((l) => l === 'Bourrasque')).toHaveLength(20);
     expect(labels.filter((l) => l === 'Rafale')).toHaveLength(4);
-    expect(labels.filter((l) => l === 'Chute de Neige')).toHaveLength(1);
+    expect(labels.filter((l) => l === 'Booster Commu')).toHaveLength(2);
   });
 
   it('ne déclenche rien quand on reste dans le même intervalle', () => {
@@ -157,22 +249,31 @@ describe('économie des subs', () => {
     expect(next?.remaining).toBe(2);
   });
 
-  it('ne verse jamais de flocons à un joueur nommé', () => {
+  it('ne verse jamais rien à un joueur nommé', () => {
     // Garde-fou de conception : aucun palier ne cible un joueur. Si un jour une
     // récompense individuelle apparaît ici, l'équilibre anti-pay-to-win saute.
     for (const milestone of SUB_MILESTONES) {
-      expect(['FLOCONS', 'BOOSTER']).toContain(milestone.kind);
+      expect(['FLOCONS', 'PACK']).toContain(milestone.kind);
       expect(milestone).not.toHaveProperty('playerId');
+      expect(milestone).not.toHaveProperty('joueurId');
+    }
+  });
+
+  it('ne met en file que des boosters collectifs', () => {
+    // Un Booster Perso tombé d'un palier irait à quelqu'un en particulier.
+    const packs = SUB_MILESTONES.filter((m) => m.kind === 'PACK');
+    expect(packs.length).toBeGreaterThan(0);
+    for (const milestone of packs) {
+      expect(getPack(milestone.packId!)?.portee).toBe('TOUS');
     }
   });
 
   it('garde les deux sources de flocons du même ordre de grandeur', () => {
-    // Sur une saison type : 25 games jouées, environ 900 subs.
+    // Hypothèse de saison : toutes les games jouées, environ 900 subs.
     const parGame = rewardForGame(11, null).total;
-    const duJeu = parGame * 25;
+    const duJeu = parGame * DEFAULT_MAX_GAMES_PER_PLAYER;
 
-    const subs = crossedMilestones(0, 900);
-    const desSubs = subs
+    const desSubs = crossedMilestones(0, 900)
       .filter((m) => m.kind === 'FLOCONS')
       .reduce((sum, m) => sum + (m.amount ?? 0), 0);
 
@@ -182,57 +283,7 @@ describe('économie des subs', () => {
   });
 });
 
-describe('emplacements de booster', () => {
-  it('donne toujours au moins une carte jouable', () => {
-    // Sans emplacement d'effet garanti, un booster pouvait ne rien contenir de
-    // jouable — franchement pénible à trois mille flocons.
-    for (const booster of BOOSTERS) {
-      expect(booster.slots.effet).toBeGreaterThanOrEqual(1);
-    }
-  });
-
-  it('donne toujours au moins une carte de collection', () => {
-    // C'est ce qui alimente le pool échangeable et fait vivre le marché.
-    for (const booster of BOOSTERS) {
-      expect(booster.slots.collection).toBeGreaterThanOrEqual(1);
-    }
-  });
-
-  it('fait monter la part de cartes jouables avec le prix', () => {
-    const sorted = [...BOOSTERS].sort((a, b) => a.price - b.price);
-    const ratio = (b: (typeof BOOSTERS)[number]) => b.slots.effet / boosterSize(b);
-    for (let i = 1; i < sorted.length; i += 1) {
-      expect(ratio(sorted[i])).toBeGreaterThanOrEqual(ratio(sorted[i - 1]));
-    }
-  });
-
-  it('ne promet une garantie que sur les emplacements d’effet', () => {
-    // Promettre « une super rare » et livrer une carte Joueur super rare ne
-    // serait pas ce que le joueur croit acheter.
-    for (const booster of BOOSTERS) {
-      if (booster.guaranteed) expect(booster.slots.effet).toBeGreaterThanOrEqual(1);
-    }
-  });
-
-  it('donne exactement trois cartes, quel que soit le sachet', () => {
-    /*
-     * Le prix n'achète pas de la quantité : il achète une courbe de raretés,
-     * une garantie, et une part de jouable. Tout le monde ouvre trois cartes.
-     *
-     * Ce test n'est pas cosmétique. Trois est aussi ce que le rail montre — une
-     * colonne par carte — et c'est ce qui décide de leur taille à l'écran : à
-     * cinq colonnes, les cartes deviennent illisibles.
-     */
-    for (const booster of BOOSTERS) {
-      expect(boosterSize(booster)).toBe(3);
-    }
-  });
-});
-
 describe('le jeton Winter Spin', () => {
-  const total = (w: Record<string, number>) =>
-    Object.values(w).reduce((a, b) => a + b, 0);
-
   it('a une table de relance qui somme exactement à 100 000', () => {
     // Même règle que toutes les autres tables : c'est la plage dans laquelle
     // `pickWeighted` tire, et une somme fausse rend les taux mensongers sans
@@ -245,9 +296,6 @@ describe('le jeton Winter Spin', () => {
   });
 
   it('relance vers le haut, sans quoi le jeton ne vaudrait rien', () => {
-    // Ce qui est promis au joueur : une chance accrue d'ultra rare ou de
-    // légendaire. Si ce test tombe, le jeton est devenu un simple re-tirage et
-    // il faut soit rétablir les taux, soit cesser de le présenter ainsi.
     const haut = WINTER_SPIN.weights.UR + WINTER_SPIN.weights.L;
     expect(haut / WEIGHT_TOTAL).toBeGreaterThan(0.5);
     expect(WINTER_SPIN.weights.C).toBe(0);
@@ -260,13 +308,5 @@ describe('le jeton Winter Spin', () => {
     // elles ne verrouillent qu'un ordre de grandeur.
     expect(WINTER_SPIN.chance).toBeGreaterThan(0);
     expect(WINTER_SPIN.chance / WEIGHT_TOTAL).toBeLessThan(0.005);
-  });
-
-  it('ne touche pas aux tables des boosters', () => {
-    // Le jeton se tire séparément de la rareté, précisément pour que les taux
-    // affichés sous le sachet restent ceux qui sont appliqués.
-    for (const booster of BOOSTERS) {
-      expect(total(booster.weights)).toBe(WEIGHT_TOTAL);
-    }
   });
 });

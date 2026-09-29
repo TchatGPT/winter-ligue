@@ -1,98 +1,125 @@
 import { describe, expect, it } from 'vitest';
+import type { Database, Player } from '@/lib/db/entities';
 import { emptyDatabase } from '@/lib/db/store';
-import { BOOSTERS } from '@/lib/domain/catalog';
-import { RARITY_WEIGHTS_BASE, WEIGHT_TOTAL } from '@/lib/domain/rules';
-import { RARITIES } from '@/lib/domain/types';
+import { cartesDuPack, getCard, PACKS } from '@/lib/domain/catalog';
+import { ECONOMY, PACKS_REGLES, RARITY_WEIGHTS_BASE, WEIGHT_TOTAL } from '@/lib/domain/rules';
+import { RARITIES, type Rarity } from '@/lib/domain/types';
 import {
-  BoosterError,
-  PRIX_MAX,
-  reglageBooster,
-  resolvedBooster,
-  resolvedBoosters,
+  attribueSubsJoueur,
+  cartesEnAttenteDe,
+  fileDesPacks,
+  ouvrePack,
+  PackError,
+  reglagePack,
+  resolvedPack,
+  resolvedPacks,
+  verifieFinisseur,
   verifieTable,
-} from '@/lib/services/boosters';
+} from '@/lib/services/packs';
 
 const base = () => emptyDatabase();
-const premier = BOOSTERS[0];
+const premier = PACKS[0];
+
+/** Une table qui ne sert qu'une rareté : le tirage devient prévisible. */
+function seulement(rarity: Rarity): Record<Rarity, number> {
+  return { C: 0, PC: 0, R: 0, SR: 0, UR: 0, L: 0, [rarity]: WEIGHT_TOTAL };
+}
+
+function joueur(id: string, snowflakes = 0): Player {
+  return {
+    id,
+    slug: id,
+    pseudo: id,
+    twitchId: null,
+    twitchLogin: null,
+    avatarUrl: null,
+    activisionId: null,
+    snowflakes,
+    subsOfferts: 0,
+    joinedAt: '2027-01-01T00:00:00.000Z',
+    active: true,
+    role: 'joueur',
+  };
+}
+
+function ligue(...ids: string[]): Database {
+  const db = base();
+  for (const id of ids) db.players.push(joueur(id));
+  return db;
+}
 
 describe('réglages de booster', () => {
   it('rend le catalogue tant que rien n’est réglé', () => {
     const db = base();
-    for (const b of resolvedBoosters(db)) {
-      const original = BOOSTERS.find((x) => x.id === b.id)!;
-      expect(b.price).toBe(original.price);
-      expect(b.weights).toEqual(original.weights);
+    for (const p of resolvedPacks(db)) {
+      const original = PACKS.find((x) => x.id === p.id)!;
+      expect(p.weights).toEqual(original.weights);
     }
   });
 
-  it('applique un prix sans toucher aux taux', () => {
+  it('applique une table, et seulement au booster réglé', () => {
     const db = base();
-    reglageBooster(db, premier.id, { price: 999 });
-    const resolu = resolvedBooster(db, premier.id)!;
-    expect(resolu.price).toBe(999);
-    expect(resolu.weights).toEqual(premier.weights);
+    reglagePack(db, premier.id, { ...RARITY_WEIGHTS_BASE, C: 57_000, PC: 28_000 });
+    const resolu = resolvedPack(db, premier.id)!;
+    expect(resolu.weights.C).toBe(57_000);
+    expect(resolu.name).toBe(premier.name);
+    for (const autre of PACKS.slice(1)) {
+      expect(resolvedPack(db, autre.id)!.weights).toEqual(autre.weights);
+    }
   });
 
-  it('applique une table sans toucher au prix', () => {
+  it('garde un seul réglage par booster', () => {
     const db = base();
-    reglageBooster(db, premier.id, { weights: { ...RARITY_WEIGHTS_BASE, C: 72_000, PC: 21_000 } });
-    const resolu = resolvedBooster(db, premier.id)!;
-    expect(resolu.price).toBe(premier.price);
-    expect(resolu.weights.C).toBe(72_000);
+    reglagePack(db, premier.id, seulement('R'));
+    reglagePack(db, premier.id, seulement('SR'));
+    expect(db.reglagesPacks).toHaveLength(1);
+    expect(resolvedPack(db, premier.id)!.weights).toEqual(seulement('SR'));
   });
 
   it('revient au catalogue quand on remet à zéro', () => {
     const db = base();
-    reglageBooster(db, premier.id, { price: 999 });
-    reglageBooster(db, premier.id, { price: null, weights: null });
-    expect(resolvedBooster(db, premier.id)!.price).toBe(premier.price);
+    reglagePack(db, premier.id, seulement('R'));
+    reglagePack(db, premier.id, null);
+    expect(resolvedPack(db, premier.id)!.weights).toEqual(premier.weights);
     // Plus aucune ligne : la présence d'un réglage doit vouloir dire quelque chose.
-    expect(db.boosterSettings).toHaveLength(0);
+    expect(db.reglagesPacks).toHaveLength(0);
   });
 
   it('refuse une table qui ne totalise pas exactement 100 000', () => {
     // C'est l'invariant : `pickWeighted` tire dans cette plage. Une somme
-    // inférieure laisse un intervalle sans carte, une somme supérieure rend les
-    // dernières raretés inatteignables — et dans les deux cas les taux affichés
-    // deviennent faux sans que personne puisse s'en apercevoir.
+    // fausse rend les taux affichés mensongers sans que personne puisse s'en
+    // apercevoir.
     const db = base();
     for (const somme of [WEIGHT_TOTAL - 1, WEIGHT_TOTAL + 1, 0]) {
       const table = { ...RARITY_WEIGHTS_BASE, C: RARITY_WEIGHTS_BASE.C + (somme - WEIGHT_TOTAL) };
-      expect(() => reglageBooster(db, premier.id, { weights: table })).toThrow(BoosterError);
+      expect(() => reglagePack(db, premier.id, table)).toThrow(PackError);
     }
   });
 
   it('refuse un poids négatif ou fractionnaire', () => {
-    expect(() => verifieTable({ ...RARITY_WEIGHTS_BASE, L: -20, C: 73_040 })).toThrow(BoosterError);
-    expect(() => verifieTable({ ...RARITY_WEIGHTS_BASE, L: 20.5 })).toThrow(BoosterError);
+    expect(() => verifieTable({ ...RARITY_WEIGHTS_BASE, L: -200, C: 58_400 })).toThrow(PackError);
+    expect(() => verifieTable({ ...RARITY_WEIGHTS_BASE, L: 200.5 })).toThrow(PackError);
   });
 
   it('refuse une table à laquelle il manque une rareté', () => {
     const partielle: Record<string, number> = { ...RARITY_WEIGHTS_BASE };
     delete partielle.L;
-    expect(() => verifieTable(partielle)).toThrow(BoosterError);
-  });
-
-  it('refuse un prix hors bornes ou fractionnaire', () => {
-    const db = base();
-    expect(() => reglageBooster(db, premier.id, { price: 0 })).toThrow(BoosterError);
-    expect(() => reglageBooster(db, premier.id, { price: PRIX_MAX + 1 })).toThrow(BoosterError);
-    expect(() => reglageBooster(db, premier.id, { price: 12.5 })).toThrow(BoosterError);
+    expect(() => verifieTable(partielle)).toThrow(PackError);
   });
 
   it('refuse un booster inconnu', () => {
-    expect(() => reglageBooster(base(), 'sachet-fantome', { price: 10 })).toThrow(BoosterError);
+    expect(() => reglagePack(base(), 'sachet-fantome', RARITY_WEIGHTS_BASE)).toThrow(PackError);
+    expect(resolvedPack(base(), 'sachet-fantome')).toBeNull();
   });
 
   it('n’écrit rien quand la table est refusée', () => {
     // Une validation qui laisserait une écriture partielle serait pire que pas
     // de validation : le booster sortirait de la transaction à moitié réglé.
     const db = base();
-    expect(() =>
-      reglageBooster(db, premier.id, { price: 500, weights: { ...RARITY_WEIGHTS_BASE, L: 0 } }),
-    ).toThrow(BoosterError);
-    expect(db.boosterSettings).toHaveLength(0);
-    expect(resolvedBooster(db, premier.id)!.price).toBe(premier.price);
+    reglagePack(db, premier.id, seulement('R'));
+    expect(() => reglagePack(db, premier.id, { ...RARITY_WEIGHTS_BASE, L: 0 })).toThrow(PackError);
+    expect(db.reglagesPacks).toHaveLength(1);
+    expect(resolvedPack(db, premier.id)!.weights).toEqual(seulement('R'));
   });
 
   it('garde une table valide utilisable par le tirage', () => {
@@ -101,5 +128,208 @@ describe('réglages de booster', () => {
     const table = verifieTable(RARITY_WEIGHTS_BASE);
     expect(Object.keys(table).sort()).toEqual([...RARITIES].sort());
     expect(RARITIES.reduce((s, r) => s + table[r], 0)).toBe(WEIGHT_TOTAL);
+  });
+});
+
+describe('ouvrir un booster', () => {
+  it('tire avec la table réglée, pas avec celle du catalogue', () => {
+    // Afficher les taux réglés en tirant aux taux du catalogue : l'écran et le
+    // serveur raconteraient deux choses différentes.
+    const db = ligue('a');
+    reglagePack(db, 'perso', seulement('L'));
+    for (let i = 0; i < 25; i += 1) {
+      const o = ouvrePack(db, { packId: 'perso', joueurId: 'a', idempotencyKey: `k${i}` }, 'modo');
+      expect(o.rarity).toBe('L');
+    }
+  });
+
+  it('ne donne à un joueur que des cartes de son booster, toutes des bonus', () => {
+    const db = ligue('a');
+    const permises = cartesDuPack('perso').map((c) => c.id);
+    for (let i = 0; i < 200; i += 1) {
+      const o = ouvrePack(db, { packId: 'perso', joueurId: 'a', idempotencyKey: `k${i}` }, 'modo');
+      expect(permises).toContain(o.cardId);
+      expect(getCard(o.cardId)!.nature).toBe('bonus');
+      expect(o.beneficiaires).toEqual(['a']);
+    }
+  });
+
+  it('rend la même ouverture quand la requête est rejouée', () => {
+    const db = ligue('a');
+    const demande = { packId: 'perso' as const, joueurId: 'a', idempotencyKey: 'meme-cle' };
+    const une = ouvrePack(db, demande, 'modo');
+    const deux = ouvrePack(db, demande, 'modo');
+    expect(deux.id).toBe(une.id);
+    expect(db.ouvertures).toHaveLength(1);
+    expect(db.cartesEnAttente).toHaveLength(1);
+  });
+
+  it('pose la carte sur la prochaine game, sans toucher au solde', () => {
+    const db = ligue('a');
+    reglagePack(db, 'perso', seulement('SR'));
+    ouvrePack(db, { packId: 'perso', joueurId: 'a', idempotencyKey: 'k' }, 'modo');
+    expect(cartesEnAttenteDe(db, 'a')).toHaveLength(1);
+    expect(db.players[0].snowflakes).toBe(0);
+    expect(db.ledger).toHaveLength(0);
+  });
+
+  it('crédite une carte de flocons dans l’instant, par le grand livre', () => {
+    const db = ligue('a');
+    // Au Booster Commu, la seule ultra rare est une carte de flocons.
+    reglagePack(db, 'commu', seulement('UR'));
+    const o = ouvrePack(db, { packId: 'commu', idempotencyKey: 'k' }, 'modo');
+    const effet = getCard(o.cardId)!.effect;
+    if (effet.kind !== 'snowflakes') throw new Error('le pool du Booster Commu a changé');
+
+    expect(db.players[0].snowflakes).toBe(effet.value);
+    expect(db.ledger).toHaveLength(1);
+    expect(db.ledger[0].reason).toBe('CARTE');
+    expect(cartesEnAttenteDe(db, 'a')).toHaveLength(0);
+  });
+
+  it('pousse les raretés avec le solde, sans dépenser un flocon', () => {
+    const db = base();
+    db.players.push(joueur('riche', ECONOMY.soldeMax), joueur('pauvre', 0));
+    const riche = ouvrePack(db, { packId: 'perso', joueurId: 'riche', idempotencyKey: 'r' }, 'modo');
+    const pauvre = ouvrePack(db, { packId: 'perso', joueurId: 'pauvre', idempotencyKey: 'p' }, 'modo');
+    expect(riche.chance).toBe(1);
+    expect(pauvre.chance).toBe(0);
+    expect(db.ledger.every((l) => l.delta >= 0)).toBe(true);
+  });
+
+  it('n’applique aucune chance à un booster collectif', () => {
+    const db = base();
+    db.players.push(joueur('a', ECONOMY.soldeMax), joueur('b', ECONOMY.soldeMax));
+    for (let i = 0; i < 20; i += 1) {
+      const o = ouvrePack(db, { packId: 'folie', idempotencyKey: `k${i}` }, 'modo');
+      expect(o.chance).toBe(0);
+      expect(o.joueurId).toBeNull();
+    }
+  });
+
+  it('exige un joueur actif pour un booster personnel', () => {
+    const db = ligue('a');
+    db.players.push({ ...joueur('parti'), active: false });
+    expect(() => ouvrePack(db, { packId: 'perso', idempotencyKey: 'k1' }, 'modo')).toThrow(PackError);
+    expect(() =>
+      ouvrePack(db, { packId: 'perso', joueurId: 'parti', idempotencyKey: 'k2' }, 'modo'),
+    ).toThrow(PackError);
+    expect(() =>
+      ouvrePack(db, { packId: 'perso', joueurId: 'inconnu', idempotencyKey: 'k3' }, 'modo'),
+    ).toThrow(PackError);
+    expect(db.ouvertures).toHaveLength(0);
+  });
+
+  it('tire deux joueurs distincts pour une carte à deux', () => {
+    const db = ligue('a', 'b', 'c');
+    // Au Booster Commu, les rares comptent le Chassé-Croisé.
+    reglagePack(db, 'commu', seulement('R'));
+    let paires = 0;
+    for (let i = 0; i < 60; i += 1) {
+      const o = ouvrePack(db, { packId: 'commu', idempotencyKey: `k${i}` }, 'modo');
+      if (getCard(o.cardId)!.cible !== 'DEUX') continue;
+      paires += 1;
+      expect(o.beneficiaires).toHaveLength(2);
+      expect(new Set(o.beneficiaires).size).toBe(2);
+      const cartes = db.cartesEnAttente.filter((c) => c.ouvertureId === o.id);
+      expect(cartes).toHaveLength(2);
+      expect(cartes[0].paireId).not.toBeNull();
+      expect(cartes[0].paireId).toBe(cartes[1].paireId);
+    }
+    expect(paires).toBeGreaterThan(0);
+  });
+
+  it('n’envoie un malus de tête que sur le premier du classement', () => {
+    const db = ligue('meneur', 'suiveur');
+    db.games.push({
+      id: 'g1',
+      playerId: 'meneur',
+      kills: 20,
+      placement: 1,
+      bonusPoints: 0,
+      skipped: false,
+      score: 40,
+      note: null,
+      playedAt: '2027-01-15T20:00:00.000Z',
+      createdAt: '2027-01-15T20:00:00.000Z',
+      applied: [],
+    });
+    reglagePack(db, 'folie', seulement('UR'));
+    let vus = 0;
+    for (let i = 0; i < 60; i += 1) {
+      const o = ouvrePack(db, { packId: 'folie', idempotencyKey: `k${i}` }, 'modo');
+      if (getCard(o.cardId)!.cible !== 'TETE') continue;
+      vus += 1;
+      expect(o.beneficiaires).toEqual(['meneur']);
+    }
+    expect(vus).toBeGreaterThan(0);
+  });
+});
+
+describe('la file des boosters', () => {
+  it('doit un Booster Perso à chaque multiple de subs offerts', () => {
+    const db = ligue('a');
+    const n = PACKS_REGLES.persoTousLes;
+
+    expect(attribueSubsJoueur(db, 'a', n - 1, 'modo').packsAjoutes).toBe(0);
+    expect(attribueSubsJoueur(db, 'a', 1, 'modo').packsAjoutes).toBe(1);
+    // Un gros gift en franchit plusieurs d'un coup.
+    expect(attribueSubsJoueur(db, 'a', n * 3, 'modo').packsAjoutes).toBe(3);
+
+    const file = fileDesPacks(db);
+    expect(file).toHaveLength(4);
+    expect(file.every((p) => p.packId === 'perso' && p.joueurId === 'a')).toBe(true);
+    // Mis en file, jamais ouverts automatiquement.
+    expect(db.ouvertures).toHaveLength(0);
+  });
+
+  it('refuse un nombre de subs invalide, et un joueur inconnu', () => {
+    const db = ligue('a');
+    for (const delta of [0, -5, 2.5, 10_001]) {
+      expect(() => attribueSubsJoueur(db, 'a', delta, 'modo')).toThrow(PackError);
+    }
+    expect(() => attribueSubsJoueur(db, 'inconnu', 5, 'modo')).toThrow(PackError);
+    expect(db.players[0].subsOfferts).toBe(0);
+    expect(db.packsDus).toHaveLength(0);
+  });
+
+  it('sort un booster de la file quand il est ouvert, une seule fois', () => {
+    const db = ligue('a');
+    attribueSubsJoueur(db, 'a', PACKS_REGLES.persoTousLes, 'modo');
+    const [du] = fileDesPacks(db);
+
+    const o = ouvrePack(db, { packDuId: du.id, idempotencyKey: 'k1' }, 'modo');
+    expect(o.packId).toBe('perso');
+    expect(o.joueurId).toBe('a');
+    expect(fileDesPacks(db)).toHaveLength(0);
+    expect(() => ouvrePack(db, { packDuId: du.id, idempotencyKey: 'k2' }, 'modo')).toThrow(PackError);
+    expect(db.ouvertures).toHaveLength(1);
+  });
+
+  it('doit le Booster Finisseur à la dernière game, et pas deux fois', () => {
+    const db = ligue('a');
+    db.config.maxGamesPerPlayer = 3;
+    const saisit = (n: number) =>
+      db.games.push({
+        id: `g${n}`,
+        playerId: 'a',
+        kills: 1,
+        placement: null,
+        bonusPoints: 0,
+        skipped: false,
+        score: 1,
+        note: null,
+        playedAt: `2027-01-1${n}T20:00:00.000Z`,
+        createdAt: `2027-01-1${n}T20:00:00.000Z`,
+        applied: [],
+      });
+
+    saisit(1);
+    saisit(2);
+    expect(verifieFinisseur(db, 'a')).toBeNull();
+    saisit(3);
+    expect(verifieFinisseur(db, 'a')?.packId).toBe('finisseur');
+    expect(verifieFinisseur(db, 'a')).toBeNull();
+    expect(db.packsDus).toHaveLength(1);
   });
 });

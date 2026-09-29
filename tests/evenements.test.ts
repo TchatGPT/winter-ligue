@@ -1,20 +1,21 @@
 import { describe, expect, it } from 'vitest';
-import { type Database, type Player } from '@/lib/db/entities';
+import { type Database, type Game, type Player } from '@/lib/db/entities';
 import { emptyDatabase } from '@/lib/db/store';
-import { BOOSTERS } from '@/lib/domain/catalog';
 import {
+  CARD_IMPACT_CAP,
   EVENEMENTS_SUBS,
   FACTEURS_EVENEMENTS,
+  GAME_LIMITS,
   evenementsDeclenches,
   facteurEvenement,
+  prochainEvenement,
 } from '@/lib/domain/rules';
-import { prixSansEvenement, resolvedBooster, resolvedBoosters } from '@/lib/services/boosters';
+import { appliqueCartesEnAttente } from '@/lib/services/effects';
 import {
   declencheEvenements,
   evenementsActifs,
   facteurCartes,
   facteurGain,
-  facteurPrix,
 } from '@/lib/services/evenements';
 import { addSubs } from '@/lib/services/subs';
 
@@ -25,14 +26,14 @@ import { addSubs } from '@/lib/services/subs';
  * testé ici, c'est le déclenchement (à quel palier, combien de fois), la
  * fenêtre (quand elle commence, quand elle finit, comment deux fenêtres du
  * même genre s'enchaînent) et l'absence de cumul — la seule façon pour un
- * évènement de coûter plus qu'annoncé.
+ * évènement de donner plus qu'annoncé.
  */
 
 const T0 = new Date('2027-01-10T20:00:00.000Z');
 const minutes = (n: number) => new Date(T0.getTime() + n * 60_000);
 
-const braderie = EVENEMENTS_SUBS.find((e) => e.kind === 'BOOSTERS_MOITIE')!;
-const avalanche = EVENEMENTS_SUBS.find((e) => e.kind === 'FLOCONS_DOUBLES')!;
+const avalanche = EVENEMENTS_SUBS.find((e) => e.label === 'Avalanche')!;
+const blizzard = EVENEMENTS_SUBS.find((e) => e.label === 'Blizzard')!;
 
 function joueur(id: string): Player {
   return {
@@ -42,7 +43,9 @@ function joueur(id: string): Player {
     twitchId: null,
     twitchLogin: null,
     avatarUrl: null,
+    activisionId: null,
     snowflakes: 0,
+    subsOfferts: 0,
     joinedAt: '2027-01-01T00:00:00.000Z',
     active: true,
     role: 'joueur',
@@ -57,29 +60,38 @@ describe('la table des évènements', () => {
       // Un évènement de plus de quatre heures serait un réglage, pas un évènement.
       expect(e.dureeMinutes).toBeLessThanOrEqual(240);
       expect(e.label.length).toBeGreaterThan(0);
+      expect(e.resume.length).toBeGreaterThan(0);
     }
   });
 
   it('a un facteur qui va dans le sens annoncé pour chaque genre', () => {
-    expect(FACTEURS_EVENEMENTS.BOOSTERS_MOITIE).toBeLessThan(1);
     expect(FACTEURS_EVENEMENTS.FLOCONS_DOUBLES).toBe(2);
     expect(FACTEURS_EVENEMENTS.CARTES_RENFORCEES).toBeGreaterThan(1);
+    for (const e of EVENEMENTS_SUBS) expect(FACTEURS_EVENEMENTS[e.kind]).toBeGreaterThan(1);
+  });
+
+  it('ne change que les règles : aucun évènement ne verse ni ne désigne', () => {
+    for (const e of EVENEMENTS_SUBS) {
+      expect(e).not.toHaveProperty('amount');
+      expect(e).not.toHaveProperty('playerId');
+      expect(e).not.toHaveProperty('joueurId');
+    }
   });
 });
 
 describe('evenementsDeclenches', () => {
   it('ne déclenche rien tant qu’aucun palier n’est franchi', () => {
-    expect(evenementsDeclenches(0, braderie.every - 1)).toEqual([]);
-    expect(evenementsDeclenches(braderie.every, braderie.every + 1)).toEqual([]);
+    expect(evenementsDeclenches(0, avalanche.every - 1)).toEqual([]);
+    expect(evenementsDeclenches(avalanche.every, avalanche.every + 1)).toEqual([]);
   });
 
   it('déclenche exactement au franchissement, et une fois par franchissement', () => {
-    const un = evenementsDeclenches(braderie.every - 1, braderie.every);
-    expect(un.filter((e) => e.kind === 'BOOSTERS_MOITIE')).toHaveLength(1);
+    const un = evenementsDeclenches(avalanche.every - 1, avalanche.every);
+    expect(un.filter((e) => e === avalanche)).toHaveLength(1);
 
-    // +120 subs d'un coup sur un palier de 50 : deux franchissements.
-    const deux = evenementsDeclenches(0, braderie.every * 2 + 20);
-    expect(deux.filter((e) => e.kind === 'BOOSTERS_MOITIE')).toHaveLength(2);
+    // Deux paliers franchis d'un coup : deux déclenchements.
+    const deux = evenementsDeclenches(0, avalanche.every * 2 + 20);
+    expect(deux.filter((e) => e === avalanche)).toHaveLength(2);
   });
 
   it('déclenche tous les genres dont le palier est franchi', () => {
@@ -89,35 +101,42 @@ describe('evenementsDeclenches', () => {
       expect(tous.filter((d) => d === e).length).toBe(Math.floor(grand / e.every));
     }
   });
+
+  it('annonce le palier le plus proche', () => {
+    const prochain = prochainEvenement(avalanche.every - 10)!;
+    expect(prochain.evenement).toBe(avalanche);
+    expect(prochain.remaining).toBe(10);
+  });
 });
 
 describe('facteurEvenement', () => {
   it('vaut 1 sans évènement du genre', () => {
-    expect(facteurEvenement('BOOSTERS_MOITIE', [])).toBe(1);
-    expect(facteurEvenement('BOOSTERS_MOITIE', ['FLOCONS_DOUBLES'])).toBe(1);
+    expect(facteurEvenement('FLOCONS_DOUBLES', [])).toBe(1);
+    expect(facteurEvenement('FLOCONS_DOUBLES', ['CARTES_RENFORCEES'])).toBe(1);
   });
 
   it('ne cumule pas deux évènements du même genre', () => {
     /*
-     * C'est la règle qui protège le prix annoncé : deux braderies ne font pas
-     * des sachets à un quart du prix, ce qu'aucun palier ne promet.
+     * C'est la règle qui protège ce qui est annoncé : deux Avalanches ne font
+     * pas des flocons quadruplés, ce qu'aucun palier ne promet.
      */
-    expect(facteurEvenement('BOOSTERS_MOITIE', ['BOOSTERS_MOITIE', 'BOOSTERS_MOITIE'])).toBe(
-      FACTEURS_EVENEMENTS.BOOSTERS_MOITIE,
-    );
     expect(facteurEvenement('FLOCONS_DOUBLES', ['FLOCONS_DOUBLES', 'FLOCONS_DOUBLES'])).toBe(2);
+    expect(
+      facteurEvenement('CARTES_RENFORCEES', ['CARTES_RENFORCEES', 'CARTES_RENFORCEES']),
+    ).toBe(FACTEURS_EVENEMENTS.CARTES_RENFORCEES);
   });
 });
 
 describe('declencheEvenements', () => {
   it('ouvre une fenêtre maintenant, de la durée annoncée', () => {
     const db = emptyDatabase();
-    const crees = declencheEvenements(db, braderie.every - 1, braderie.every, T0);
+    const crees = declencheEvenements(db, avalanche.every - 1, avalanche.every, T0);
     expect(crees).toHaveLength(1);
-    expect(crees[0].kind).toBe('BOOSTERS_MOITIE');
+    expect(crees[0].kind).toBe('FLOCONS_DOUBLES');
+    expect(crees[0].label).toBe(avalanche.label);
     expect(crees[0].startsAt).toBe(T0.toISOString());
-    expect(crees[0].endsAt).toBe(minutes(braderie.dureeMinutes).toISOString());
-    expect(crees[0].declencheA).toBe(braderie.every);
+    expect(crees[0].endsAt).toBe(minutes(avalanche.dureeMinutes).toISOString());
+    expect(crees[0].declencheA).toBe(avalanche.every);
     expect(db.evenements).toHaveLength(1);
   });
 
@@ -127,22 +146,20 @@ describe('declencheEvenements', () => {
      * et le chat aurait payé le second pour rien.
      */
     const db = emptyDatabase();
-    const crees = declencheEvenements(db, 0, braderie.every * 2, T0);
-    const bras = crees.filter((e) => e.kind === 'BOOSTERS_MOITIE');
-    expect(bras).toHaveLength(2);
-    expect(bras[0].startsAt).toBe(T0.toISOString());
-    expect(bras[1].startsAt).toBe(bras[0].endsAt);
-    expect(bras[1].endsAt).toBe(minutes(braderie.dureeMinutes * 2).toISOString());
+    const crees = declencheEvenements(db, avalanche.every - 1, avalanche.every * 2, T0);
+    const flocons = crees.filter((e) => e.kind === 'FLOCONS_DOUBLES');
+    expect(flocons).toHaveLength(2);
+    expect(flocons[0].startsAt).toBe(T0.toISOString());
+    expect(flocons[1].startsAt).toBe(flocons[0].endsAt);
+    expect(flocons[1].endsAt).toBe(minutes(avalanche.dureeMinutes * 2).toISOString());
 
     // À l'instant du déclenchement, une seule est active ; le facteur est
     // celui du genre, pas son carré.
-    expect(evenementsActifs(db, T0).filter((e) => e.kind === 'BOOSTERS_MOITIE')).toHaveLength(1);
-    expect(facteurPrix(db, T0)).toBe(FACTEURS_EVENEMENTS.BOOSTERS_MOITIE);
+    expect(evenementsActifs(db, T0).filter((e) => e.kind === 'FLOCONS_DOUBLES')).toHaveLength(1);
+    expect(facteurGain(db, T0)).toBe(2);
     // Et la seconde prend le relais quand la première finit.
-    expect(facteurPrix(db, minutes(braderie.dureeMinutes + 1))).toBe(
-      FACTEURS_EVENEMENTS.BOOSTERS_MOITIE,
-    );
-    expect(facteurPrix(db, minutes(braderie.dureeMinutes * 2 + 1))).toBe(1);
+    expect(facteurGain(db, minutes(avalanche.dureeMinutes + 1))).toBe(2);
+    expect(facteurGain(db, minutes(avalanche.dureeMinutes * 2 + 1))).toBe(1);
   });
 
   it('ne fait rien entre deux paliers', () => {
@@ -152,28 +169,27 @@ describe('declencheEvenements', () => {
   });
 });
 
-describe('evenementsActifs et les facteurs', () => {
-  function avec(
-    kind: (typeof EVENEMENTS_SUBS)[number]['kind'],
-    debut: Date,
-    duree: number,
-  ): Database {
-    const db = emptyDatabase();
-    db.evenements.push({
-      id: 'e1',
-      kind,
-      label: 'test',
-      description: 'test',
-      startsAt: debut.toISOString(),
-      endsAt: new Date(debut.getTime() + duree * 60_000).toISOString(),
-      declencheA: 0,
-    });
-    return db;
-  }
+function avec(
+  kind: (typeof EVENEMENTS_SUBS)[number]['kind'],
+  debut: Date,
+  duree: number,
+): Database {
+  const db = emptyDatabase();
+  db.evenements.push({
+    id: 'e1',
+    kind,
+    label: 'test',
+    description: 'test',
+    startsAt: debut.toISOString(),
+    endsAt: new Date(debut.getTime() + duree * 60_000).toISOString(),
+    declencheA: 0,
+  });
+  return db;
+}
 
+describe('evenementsActifs et les facteurs', () => {
   it('vaut 1 partout sans évènement', () => {
     const db = emptyDatabase();
-    expect(facteurPrix(db, T0)).toBe(1);
     expect(facteurGain(db, T0)).toBe(1);
     expect(facteurCartes(db, T0)).toBe(1);
   });
@@ -190,49 +206,63 @@ describe('evenementsActifs et les facteurs', () => {
   it('un genre ne touche pas les autres', () => {
     const db = avec('CARTES_RENFORCEES', T0, 60);
     expect(facteurCartes(db, T0)).toBe(FACTEURS_EVENEMENTS.CARTES_RENFORCEES);
-    expect(facteurPrix(db, T0)).toBe(1);
     expect(facteurGain(db, T0)).toBe(1);
   });
 });
 
-describe('le prix des sachets pendant une braderie', () => {
-  it('resolvedBooster rend le prix du jour, prixSansEvenement l’ancien', () => {
-    /*
-     * C'est le seul point où la braderie s'applique : boutique, affrontements
-     * et affichage lisent tous `resolvedBooster`. Un test ici couvre les trois.
-     */
-    const db = emptyDatabase();
-    declencheEvenements(db, 0, braderie.every, new Date());
-    for (const b of BOOSTERS) {
-      const jour = resolvedBooster(db, b.id)!;
-      const avant = prixSansEvenement(db, b.id)!;
-      expect(avant).toBe(b.price);
-      expect(jour.price).toBe(
-        Math.max(1, Math.round(b.price * FACTEURS_EVENEMENTS.BOOSTERS_MOITIE)),
-      );
-      expect(jour.price).toBeLessThan(avant);
-    }
-    // Et la liste dit la même chose que l'unité.
-    for (const b of resolvedBoosters(db)) {
-      expect(b.price).toBe(resolvedBooster(db, b.id)!.price);
-    }
+describe('les cartes pendant un blizzard', () => {
+  /** Une game saisie maintenant, avec une carte posée dessus. */
+  function partie(db: Database, cardId: string, kills: number): Game {
+    db.players.push(joueur('a'));
+    db.cartesEnAttente.push({
+      id: 'c1',
+      joueurId: 'a',
+      cardId,
+      ouvertureId: 'o1',
+      creeA: '2027-01-10T19:00:00.000Z',
+      consommeeA: null,
+      gameId: null,
+      resultat: null,
+      paireId: null,
+    });
+    const game: Game = {
+      id: 'g1',
+      playerId: 'a',
+      kills,
+      placement: null,
+      bonusPoints: 0,
+      skipped: false,
+      score: kills,
+      note: null,
+      playedAt: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+      applied: [],
+    };
+    db.games.push(game);
+    appliqueCartesEnAttente(db, game);
+    return game;
+  }
+
+  const enCours = () => avec('CARTES_RENFORCEES', new Date(Date.now() - 60_000), 60);
+
+  it('majore un bonus du facteur annoncé', () => {
+    const calme = partie(emptyDatabase(), 'poudreuse', 5);
+    const renforcee = partie(enCours(), 'poudreuse', 5);
+    expect(calme.bonusPoints).toBe(12);
+    expect(renforcee.bonusPoints).toBe(Math.round(12 * FACTEURS_EVENEMENTS.CARTES_RENFORCEES));
   });
 
-  it('respecte un prix réglé par l’administration avant de le réduire', () => {
-    const db = emptyDatabase();
-    const cible = BOOSTERS[0];
-    db.boosterSettings.push({ boosterId: cible.id, price: 300, updatedAt: T0.toISOString() });
-    expect(resolvedBooster(db, cible.id)!.price).toBe(300);
-    declencheEvenements(db, 0, braderie.every, new Date());
-    expect(prixSansEvenement(db, cible.id)).toBe(300);
-    expect(resolvedBooster(db, cible.id)!.price).toBe(150);
+  it('majore un malus dans son sens : il retire davantage', () => {
+    const renforcee = partie(enCours(), 'contre-courant', 20);
+    expect(renforcee.bonusPoints).toBe(-Math.round(10 * FACTEURS_EVENEMENTS.CARTES_RENFORCEES));
   });
 
-  it('ne descend jamais sous un flocon', () => {
-    const db = emptyDatabase();
-    db.boosterSettings.push({ boosterId: BOOSTERS[0].id, price: 1, updatedAt: T0.toISOString() });
-    declencheEvenements(db, 0, braderie.every, new Date());
-    expect(resolvedBooster(db, BOOSTERS[0].id)!.price).toBe(1);
+  it('reste sous les bornes d’une game, même sur la carte la plus forte', () => {
+    const renforcee = partie(enCours(), 'etoile-du-nord', 5);
+    expect(renforcee.bonusPoints).toBe(
+      Math.round(CARD_IMPACT_CAP * FACTEURS_EVENEMENTS.CARTES_RENFORCEES),
+    );
+    expect(renforcee.bonusPoints).toBeLessThanOrEqual(GAME_LIMITS.maxBonusPoints);
   });
 });
 
@@ -253,12 +283,33 @@ describe('addSubs déclenche les évènements', () => {
   it('ne verse rien de plus à personne — les évènements ne sont pas des crédits', () => {
     const db = emptyDatabase();
     db.players.push(joueur('a'), joueur('b'));
-    addSubs(db, braderie.every, 'test');
+    const r = addSubs(db, blizzard.every, 'test');
     const a = db.players.find((p) => p.id === 'a')!.snowflakes;
     const b = db.players.find((p) => p.id === 'b')!.snowflakes;
     expect(a).toBe(b);
+    // Chacun a touché les flocons des paliers, et rien d'autre.
+    expect(a).toBe(r.snowflakesEach);
     // Un évènement n'a pas de bénéficiaire : aucune ligne de grand livre ne
     // le mentionne.
-    expect(db.ledger.every((l) => !/EVENEMENT/i.test(l.reason))).toBe(true);
+    expect(db.ledger.every((l) => l.reason === 'SUBS_TWITCH')).toBe(true);
+  });
+
+  it('laisse de côté les joueurs inactifs', () => {
+    const db = emptyDatabase();
+    db.players.push(joueur('a'), { ...joueur('parti'), active: false });
+    const r = addSubs(db, 5, 'test');
+    expect(r.recipients).toBe(1);
+    expect(db.players.find((p) => p.id === 'parti')!.snowflakes).toBe(0);
+  });
+
+  it('met les boosters collectifs en file, sans les ouvrir', () => {
+    const db = emptyDatabase();
+    db.players.push(joueur('a'));
+    const r = addSubs(db, 50, 'test');
+    expect(r.packs).toEqual(['commu']);
+    expect(db.packsDus).toHaveLength(1);
+    expect(db.packsDus[0].joueurId).toBeNull();
+    expect(db.packsDus[0].ouvertureId).toBeNull();
+    expect(db.ouvertures).toHaveLength(0);
   });
 });
