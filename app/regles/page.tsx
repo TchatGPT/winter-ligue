@@ -1,22 +1,23 @@
-import { PageHead, RarityChip, flakes } from '@/components/ui';
-import { RARITY_META } from '@/lib/domain/catalog';
+import { PageHead, RarityChip } from '@/components/ui';
+import { CARDS, RARITY_META, cartesDuPack } from '@/lib/domain/catalog';
 import { getStore } from '@/lib/db/store';
-import { resolvedBoosters } from '@/lib/services/boosters';
+import { exigeSession } from '@/lib/auth/acces';
 import {
-  atLeastOnePercent,
-  ECONOMY,
   CARD_IMPACT_CAP,
-  libelleDuree,
-  MALUS,
-  MARKET,
+  CHANCE,
+  DEFAULT_MAX_GAMES_PER_PLAYER,
+  DUEL,
+  ECONOMY,
+  EVENEMENTS_SUBS,
+  PACKS_REGLES,
   PLACEMENT_POINTS,
   rarityPercent,
-  RARITY_WEIGHTS_BASE,
   SEASON,
-  EVENEMENTS_SUBS,
   SUB_MILESTONES,
 } from '@/lib/domain/rules';
+import { MANCHES_MAX, MANCHES_MIN } from '@/lib/domain/bataille';
 import type { Rarity } from '@/lib/domain/types';
+import { resolvedPacks } from '@/lib/services/packs';
 import { TitreGlace } from '@/components/TitreGlace';
 
 export const metadata = { title: 'Règles de la saison' };
@@ -44,21 +45,19 @@ function Rule({
 /**
  * Règles publiques.
  *
- * Toutes les valeurs sont lues dans `lib/domain/rules` et `catalog` : cette page
- * ne peut pas mentir sur les taux, puisqu'elle affiche exactement les nombres
- * que le serveur utilise pour tirer.
+ * Toutes les valeurs sont lues dans `lib/domain/rules` et `catalog`, et les
+ * taux dans les packs tels que l'administration les a réglés : cette page ne
+ * peut pas mentir, puisqu'elle affiche exactement les nombres que le serveur
+ * utilise pour tirer.
  */
 export const dynamic = 'force-dynamic';
 
-export default async function ReglesPage() {
-  /*
-   * Les boosters tels qu'ils sont réellement vendus.
-   *
-   * La page des règles lisait le catalogue. Depuis que l'administration peut
-   * régler prix et taux, ce serait publier des règles fausses — et c'est la
-   * seule page du site dont on attend qu'elle dise vrai.
-   */
-  const boosters = await getStore().read((db) => resolvedBoosters(db));
+export default async function ReglesPage(){
+  await exigeSession();
+  const { packs, maxGames } = await getStore().read((db) => ({
+    packs: resolvedPacks(db),
+    maxGames: db.config.maxGamesPerPlayer,
+  }));
 
   return (
     <div className="space-y-4">
@@ -67,295 +66,212 @@ export default async function ReglesPage() {
       {/* Deux colonnes sur grand écran, en flux de colonnes : les blocs n'ont
           pas la même hauteur, une grille laisserait des trous. */}
       <div className="space-y-4 2xl:columns-2 2xl:gap-5 2xl:space-y-0">
-
-      <Rule title="Le score d’une game">
-        <p className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 font-display text-base text-ink">
-          score = (kills × multiplicateur) + points de classement + bonus
-        </p>
-        <ul className="list-inside list-disc space-y-1">
-          <li>1 kill = 1 point de base.</li>
-          <li>
-            Classement : Top 1 <strong className="text-gold">+{PLACEMENT_POINTS['1']}</strong>,
-            Top 2 <strong>+{PLACEMENT_POINTS['2']}</strong>, Top 3{' '}
-            <strong>+{PLACEMENT_POINTS['3']}</strong>. Sans classement, 0.
-          </li>
-          <li>
-            Le multiplicateur ne s’applique <em>qu’aux kills</em>. Les points de classement restent
-            fixes.
-          </li>
-          <li>
-            Chaque carte annonce son plafond : « ×1,5 jusqu’à +18 points » ne donnera jamais
-            plus de 18 points, même sur une game à 40 kills.
-          </li>
-          <li>
-            Aucune carte ne peut faire bouger un total de plus de{' '}
-            <strong className="text-ink">{CARD_IMPACT_CAP} points</strong>, soit une bonne game.
-          </li>
-        </ul>
-        <p className="text-xs text-faint">
-          Les games sont saisies par la modération d’après le stream. Le score est recalculé par le
-          serveur à chaque modification : personne ne peut en imposer un.
-        </p>
-      </Rule>
-
-      <Rule
-        title="Les flocons ❄"
-        lead="Deux sources, et cette séparation est le cœur de l’équilibre."
-      >
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div className="rounded-lg border border-white/10 bg-white/5 p-3">
-            <h3 className="font-display text-sm font-bold tracking-wide text-ink uppercase">
-              1. Le jeu — ce qui crée l’écart
-            </h3>
-            <ul className="mt-1.5 list-inside list-disc space-y-0.5 text-xs">
-              <li>{ECONOMY.perKill} ❄ par kill</li>
-              <li>
-                {ECONOMY.perPlacement['1']} ❄ pour un Top 1, {ECONOMY.perPlacement['2']} ❄ pour un
-                Top 2, {ECONOMY.perPlacement['3']} ❄ pour un Top 3
-              </li>
-              <li>{ECONOMY.participation} ❄ par game enregistrée</li>
-              <li>{ECONOMY.welcomeGrant} ❄ offerts à l’inscription</li>
-            </ul>
-            <p className="mt-2 text-xs text-faint">
-              C’est la <strong className="text-muted">seule</strong> source qui rend un joueur plus
-              riche qu’un autre.
-            </p>
-          </div>
-
-          <div className="rounded-lg border border-white/10 bg-white/5 p-3">
-            <h3 className="font-display text-sm font-bold tracking-wide text-ink uppercase">
-              2. Les subs Twitch — pour tout le monde
-            </h3>
-            <ul className="mt-1.5 space-y-1 text-xs">
-              {SUB_MILESTONES.map((m) => (
-                <li key={m.every} className="flex gap-2">
-                  <span className="num shrink-0 font-display font-black text-violet">
-                    {m.every}
-                  </span>
-                  <span>
-                    <strong className="text-ink">{m.label}</strong> — {m.description}
-                  </span>
-                </li>
-              ))}
-            </ul>
-            <p className="mt-2 text-xs text-faint">
-              Ces récompenses tombent à chaque palier atteint, pour{' '}
-              <strong className="text-muted">tous les joueurs actifs à parts égales</strong>.
-            </p>
-
-            <h4 className="mt-3 text-[11px] tracking-[0.16em] text-faint uppercase">
-              Et des évènements, le temps d’un live
-            </h4>
-            <ul className="mt-1.5 space-y-1 text-xs">
-              {EVENEMENTS_SUBS.map((e) => (
-                <li key={`evt-${e.every}`} className="flex gap-2">
-                  <span className="num shrink-0 font-display font-black text-aurora">
-                    {e.every}
-                  </span>
-                  <span>
-                    <strong className="text-ink">{e.label}</strong> — {e.description}
-                  </span>
-                </li>
-              ))}
-            </ul>
-            <p className="mt-2 text-xs text-faint">
-              Un évènement ne verse rien à personne : il change les règles pour tout le monde
-              pendant sa fenêtre, puis s’arrête. Deux évènements du même genre ne se cumulent pas —
-              ils se suivent.
-            </p>
-          </div>
-        </div>
-
-        <p className="rounded-lg border border-ice/25 bg-ice/5 px-3 py-2 text-xs">
-          <strong className="text-ice">Pourquoi ce n’est pas du pay-to-win.</strong> Un gifteur ne
-          peut créditer aucun joueur en particulier : les flocons de subs se répartissent également.
-          Le chat fait grossir l’économie entière — plus de boosters, un marché plus vivant — mais
-          le classement, lui, ne bouge qu’avec des kills. Un gifteur peut tout de même désigner un
-          joueur à partir de {5} subs : celui-ci reçoit alors une{' '}
-          <strong className="text-muted">carte commune au hasard</strong>, jamais des flocons.
-        </p>
-      </Rule>
-
-      <Rule title="Les raretés" lead="Six paliers, du banal au convoité.">
-        <div className="scroll-x">
-          <table className="grid-table min-w-[560px]">
-            <thead>
-              <tr>
-                <th className="w-12">Sigle</th>
-                <th>Rareté</th>
-                <th className="text-right">Chance par carte</th>
-                <th className="text-right">Au moins une par booster de 5</th>
-              </tr>
-            </thead>
-            <tbody>
-              {LADDER.map((rarity) => {
-                const meta = RARITY_META[rarity];
-                const per = rarityPercent(RARITY_WEIGHTS_BASE, rarity);
-                const atLeast = atLeastOnePercent(RARITY_WEIGHTS_BASE, rarity, 5);
-                return (
-                  <tr key={rarity}>
-                    <td>
-                      <RarityChip rarity={rarity} />
-                    </td>
-                    <td style={{ color: meta.color }}>{meta.label}</td>
-                    <td className="num text-right text-ink">
-                      {per < 0.1 ? per.toFixed(3) : per < 1 ? per.toFixed(2) : per.toFixed(1)} %
-                    </td>
-                    <td className="num text-right text-muted">
-                      {atLeast < 0.1 ? atLeast.toFixed(3) : atLeast.toFixed(1)} %
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-        <p className="text-xs text-faint">
-          Taux du booster Givre. Les boosters plus chers déplacent la courbe vers le haut et
-          garantissent un palier minimum. Le tirage est effectué par le serveur avec une source
-          aléatoire cryptographique — ni observable, ni rejouable.
-        </p>
-      </Rule>
-
-      <Rule title="Les boosters">
-        <div className="scroll-x">
-          <table className="grid-table min-w-[600px]">
-            <thead>
-              <tr>
-                <th>Booster</th>
-                <th className="text-right">Prix</th>
-                <th className="text-right">Effets</th>
-                <th className="text-right">Collection</th>
-                <th>Garantie</th>
-                <th className="text-right">Chance légendaire</th>
-              </tr>
-            </thead>
-            <tbody>
-              {boosters.map((b) => (
-                <tr key={b.id}>
-                  <td className="text-ink">
-                    <span aria-hidden="true">{b.glyph}</span> {b.name}
-                  </td>
-                  <td className="num text-right text-ice">❄ {flakes(b.price)}</td>
-                  <td className="num text-right text-ink">{b.slots.effet}</td>
-                  <td className="num text-right text-muted">{b.slots.collection}</td>
-                  <td>
-                    {b.guaranteed ? (
-                      <span className="flex items-center gap-1.5">
-                        <RarityChip rarity={b.guaranteed} />
-                        <span className="text-xs text-muted">minimum</span>
-                      </span>
-                    ) : (
-                      <span className="text-faint">—</span>
-                    )}
-                  </td>
-                  <td className="num text-right text-gold">
-                    {atLeastOnePercent(b.weights, 'L', b.slots.effet).toFixed(2)} %
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Rule>
-
-      <Rule title="Les cartes : bonus et malus">
-        <p>
-          24 cartes, quatre par rareté. Une carte est soit un{' '}
-          <strong className="text-ink">bonus</strong> à jouer sur soi, soit un{' '}
-          <strong className="text-danger">malus</strong> à poser sur un adversaire.
-        </p>
-        <ul className="list-inside list-disc space-y-1">
-          <li>Une carte jouée est consommée.</li>
-          <li>
-            <strong className="text-ink">Aucune carte ne peut faire bouger un total de plus de{' '}
-            {CARD_IMPACT_CAP} points</strong>, soit une bonne game. Chaque carte annonce son
-            plafond dans son texte.
-          </li>
-          <li>
-            <strong className="text-ink">Un malus retire des points, il n’en donne jamais à
-            l’attaquant.</strong> Aucune carte ne copie ni ne vole la game de quelqu’un.
-          </li>
-          <li>
-            Une game <strong>gelée</strong> ne peut plus être touchée par un malus.
-          </li>
-          <li>
-            Un <strong>bouclier</strong> rend son porteur intouchable pendant sa durée. Deux
-            boucliers se cumulent en durée, pas en épaisseur.
-          </li>
-          <li>
-            <strong>Second Souffle</strong> annule le dernier malus subi dans les{' '}
-            {MALUS.undoWindowHours} h et rend les points : tout malus a une réponse.
-          </li>
-        </ul>
-
-        <div className="rounded-lg border border-white/10 bg-white/5 p-3">
-          <h3 className="font-display text-sm font-bold tracking-wide text-ink uppercase">
-            Protection contre l’acharnement
-          </h3>
-          <ul className="mt-1.5 list-inside list-disc space-y-1 text-xs">
+        <Rule title="Le score d’une game">
+          <p className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 font-display text-base text-ink">
+            score = kills + points de classement + cartes
+          </p>
+          <ul className="list-inside list-disc space-y-1">
+            <li>1 kill = 1 point.</li>
             <li>
-              N’importe qui peut viser n’importe qui — il n’y a pas de restriction de classement.
+              Classement : Top 1 <strong className="text-gold">+{PLACEMENT_POINTS['1']}</strong>,
+              Top 2 <strong>+{PLACEMENT_POINTS['2']}</strong>, Top 3{' '}
+              <strong>+{PLACEMENT_POINTS['3']}</strong>. Sans classement, 0.
             </li>
             <li>
-              Mais on ne peut pas viser deux fois le même joueur en moins de{' '}
-              {MALUS.cooldownHours} heures.
+              Les cartes s’appliquent à la game qui suit leur tirage, puis disparaissent. Aucune ne
+              fait bouger une game de plus de{' '}
+              <strong className="text-ink">{CARD_IMPACT_CAP} points</strong>, dans un sens comme
+              dans l’autre.
             </li>
             <li>
-              Et surtout : un joueur ne peut pas encaisser plus de{' '}
-              <strong className="text-ink">{MALUS.maxReceivedPerDay} malus par 24 h</strong>, toutes
-              sources confondues. Sans ce plafond, sept joueurs pourraient enchaîner sept malus sur
-              le leader le même soir, et mener deviendrait une punition.
+              {maxGames} games comptent par joueur
+              {maxGames !== DEFAULT_MAX_GAMES_PER_PLAYER ? ' (réglé par la modération)' : ''}. La
+              dernière ouvre le Booster Finisseur.
             </li>
           </ul>
-        </div>
-      </Rule>
+          <p className="text-xs text-faint">
+            Les games sont saisies par la modération d’après le stream. Le score est recalculé par
+            le serveur à chaque modification : personne ne peut en imposer un.
+          </p>
+        </Rule>
 
-      <Rule title="L’hôtel des ventes">
-        <ul className="list-inside list-disc space-y-1">
-          <li>
-            Tu choisis un prix de départ, un achat immédiat facultatif et une durée (
-            {MARKET.durationsMinutes.map(libelleDuree).join(', ')}).
-          </li>
-          <li>
-            Enchérir <strong className="text-ink">bloque immédiatement tes flocons</strong>. Ils te
-            sont rendus dès que quelqu’un surenchérit.
-          </li>
-          <li>
-            Chaque mise doit dépasser la précédente d’au moins {MARKET.minIncrementFlat} ❄ ou{' '}
-            {Math.round(MARKET.minIncrementRate * 100)} %, la plus grande des deux valeurs.
-          </li>
-          <li>
-            Une mise dans la dernière minute repousse la clôture d’une minute : le sniping ne sert à
-            rien.
-          </li>
-          <li>
-            Aucune taxe : le vendeur touche le prix de vente en entier.
-          </li>
-          <li>Une vente ne peut être retirée que si personne n’a encore misé.</li>
-          <li>
-            Une carte mise en vente est verrouillée : impossible de la jouer avant la fin de la
-            vente.
-          </li>
-          <li>
-            {MARKET.maxActiveListingsPerPlayer} ventes actives maximum par joueur, en même temps.
-          </li>
-        </ul>
-      </Rule>
+        <Rule title="Les boosters" lead="Quatre boosters, une carte chacun, ouverts à l’antenne.">
+          <ul className="space-y-2">
+            {packs.map((pack) => (
+              <li key={pack.id} className="rounded-lg border border-white/10 bg-white/5 p-3">
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                  <h3 className="font-display text-sm font-bold tracking-wide text-ink uppercase">
+                    {pack.glyph} {pack.name}
+                  </h3>
+                  <span className="text-xs text-faint">{cartesDuPack(pack.id).length} cartes</span>
+                </div>
+                <p className="mt-1 text-xs">{pack.declencheur}</p>
+                <p className="mt-0.5 text-xs text-aurora">
+                  Pour {pack.pourQui}.{pack.portee === 'JOUEUR' ? ' Uniquement des bonus.' : ''}
+                </p>
+                <p className="num mt-1.5 text-xs text-faint">
+                  {LADDER.filter((r) => pack.weights[r] > 0)
+                    .map(
+                      (r) =>
+                        `${RARITY_META[r].short} ${rarityPercent(pack.weights, r).toLocaleString('fr-FR', { maximumFractionDigits: 2 })} %`,
+                    )
+                    .join(' · ')}
+                </p>
+              </li>
+            ))}
+          </ul>
+          <p>
+            Personne n’achète de booster. Un Booster Perso est dû tous les{' '}
+            <strong className="text-ink">{PACKS_REGLES.persoTousLes} subs offerts</strong> par un
+            même joueur. Les boosters de la ligue tombent aux paliers de subs. La streameuse les
+            ouvre depuis la file, un par un.
+          </p>
+          <p className="text-xs text-faint">
+            La chance vient des flocons : le multiplicateur monte de ×1 à ×2 avec le solde, et
+            atteint ×2 au plafond de {CHANCE.floconsPourPlein.toLocaleString('fr-FR')} flocons. À
+            ×2, les raretés hautes sont deux fois plus probables, pas davantage — une rare n’est
+            jamais garantie. Les flocons ne sont pas dépensés, et la chance ne s’applique jamais à un
+            booster collectif.
+          </p>
+        </Rule>
 
-      <Rule title="Classement et finale">
-        <p>
-          Le total de saison est la somme des games comptabilisées. Une game « passée » par la
-          modération reste visible mais ne compte pas.
-        </p>
-        <p>
-          Égalité départagée par le nombre de Top 1, puis les kills cumulés, puis la meilleure game.
-        </p>
-        <p>
-          Les <strong className="text-gold">{SEASON.finalistCount} premiers</strong> sont qualifiés
-          pour la finale.
-        </p>
-      </Rule>
+        <Rule title="Les cartes" lead="Toutes sur la prochaine game, toutes bornées.">
+          <ul className="grid gap-1 sm:grid-cols-2">
+            {CARDS.map((c) => (
+              <li key={c.id} className="flex items-start gap-2 text-xs">
+                <RarityChip rarity={c.rarity} />
+                <span>
+                  <strong className={c.nature === 'malus' ? 'text-danger' : 'text-ink'}>
+                    {c.glyph} {c.name}
+                  </strong>{' '}
+                  — {c.description}
+                </span>
+              </li>
+            ))}
+          </ul>
+          <ul className="list-inside list-disc space-y-1">
+            <li>
+              Un malus ne sort jamais d’un Booster Perso ni d’un Booster Finisseur : ce qu’on ouvre
+              pour soi ne peut pas se retourner contre soi.
+            </li>
+            <li>
+              Un malus tombe sur un joueur tiré au sort ou sur la tête du classement — jamais sur
+              quelqu’un que quelqu’un aurait choisi. Il retire des points, il n’en donne à personne.
+            </li>
+            <li>
+              Les cartes à deux — Chassé-Croisé, Duel de Glace — opposent deux joueurs tirés au
+              sort. Elles attendent la prochaine game de chacun, et se règlent quand la seconde est
+              saisie. Ce que l’un gagne, l’autre le perd, borné de chaque côté.
+            </li>
+            <li>Une carte de flocons est créditée dans l’instant ; les autres attendent la game.</li>
+            <li>
+              <strong className="text-ink">Une seule carte active à la fois.</strong> Si plusieurs
+              attendent, la plus ancienne tombe sur la prochaine game, les autres suivent, une par
+              game. Deux cartes ne s’empilent jamais sur une même game.
+            </li>
+          </ul>
+        </Rule>
+
+        <Rule title="Les flocons ❄" lead="Ils se gagnent en jouant, et se risquent en duel.">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="rounded-lg border border-white/10 bg-white/5 p-3">
+              <h3 className="font-display text-sm font-bold tracking-wide text-ink uppercase">
+                1. Le jeu — ce qui crée l’écart
+              </h3>
+              <ul className="mt-1.5 list-inside list-disc space-y-0.5 text-xs">
+                <li>{ECONOMY.perKill} ❄ par kill</li>
+                <li>
+                  {ECONOMY.perPlacement['1']} ❄ pour un Top 1, {ECONOMY.perPlacement['2']} ❄ pour
+                  un Top 2, {ECONOMY.perPlacement['3']} ❄ pour un Top 3
+                </li>
+                <li>{ECONOMY.participation} ❄ par game enregistrée</li>
+                <li>{ECONOMY.welcomeGrant} ❄ offerts à l’inscription</li>
+              </ul>
+            </div>
+            <div className="rounded-lg border border-white/10 bg-white/5 p-3">
+              <h3 className="font-display text-sm font-bold tracking-wide text-ink uppercase">
+                2. Les subs Twitch — pour tout le monde
+              </h3>
+              <ul className="mt-1.5 space-y-1 text-xs">
+                {SUB_MILESTONES.map((m) => (
+                  <li key={m.every}>
+                    <strong className="text-ink">Tous les {m.every} subs</strong> — {m.label} :{' '}
+                    {m.description}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+          <p>
+            Les flocons servent à deux choses : miser dans les duels, et pousser les raretés
+            quand un booster s’ouvre pour soi. Rien d’autre ne s’achète. Le solde plafonne à{' '}
+            <strong className="text-ink">{ECONOMY.soldeMax.toLocaleString('fr-FR')} ❄</strong> :
+            ce qui dépasse est perdu.
+          </p>
+        </Rule>
+
+        <Rule title="Les évènements" lead="Aux paliers de subs, les règles changent une heure ou deux.">
+          <ul className="space-y-1 text-xs">
+            {EVENEMENTS_SUBS.map((e) => (
+              <li key={`${e.every}-${e.kind}`}>
+                <strong className="text-ink">Tous les {e.every} subs</strong> — {e.label} :{' '}
+                {e.description}
+              </li>
+            ))}
+          </ul>
+          <p className="text-xs text-faint">
+            Tout le monde en profite, et personne plus qu’un autre. Deux évènements du même genre ne
+            se cumulent pas.
+          </p>
+        </Rule>
+
+        <Rule title="Les duels" lead="Deux camps, la même mise, le vainqueur prend le pot.">
+          <ul className="list-inside list-disc space-y-1">
+            <li>
+              Mise de {DUEL.miseMin} à {DUEL.miseMax.toLocaleString('fr-FR')} ❄, en {MANCHES_MIN} à{' '}
+              {MANCHES_MAX} manches de {DUEL.cartesParManche} cartes.
+            </li>
+            <li>
+              Chaque camp tire ses cartes aux mêmes taux. La plus haute somme de raretés l’emporte ;
+              à égalité, la plus haute carte tranche, puis le sort.
+            </li>
+            <li>
+              Les cartes tirées ne s’appliquent à aucune game : elles ne servent qu’à comparer.
+            </li>
+            <li>
+              Le bot tire aux mêmes taux que toi. Une fois sur deux tu perds ta mise, une fois sur
+              deux tu la doubles.
+            </li>
+          </ul>
+        </Rule>
+
+        <Rule title="Les raretés" lead="Six paliers, du banal au convoité.">
+          <ul className="space-y-1">
+            {LADDER.map((r) => (
+              <li key={r} className="flex items-center gap-2 text-xs">
+                <RarityChip rarity={r} />
+                <span className="text-ink">{RARITY_META[r].label}</span>
+                <span className="num ml-auto text-faint">
+                  {CARDS.filter((c) => c.rarity === r).length} cartes
+                </span>
+              </li>
+            ))}
+          </ul>
+        </Rule>
+
+        <Rule title="Classement et finale">
+          <ul className="list-inside list-disc space-y-1">
+            <li>Le classement additionne les games comptées de chaque joueur.</li>
+            <li>
+              À égalité : le plus de Top 1, puis le plus de kills, puis la meilleure game, puis
+              l’ordre alphabétique.
+            </li>
+            <li>
+              Les <strong className="text-ink">{SEASON.finalistCount} premiers</strong> se
+              qualifient pour la finale.
+            </li>
+          </ul>
+        </Rule>
       </div>
     </div>
   );

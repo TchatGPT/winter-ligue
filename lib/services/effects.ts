@@ -1,100 +1,48 @@
 import 'server-only';
 
 /**
- * Résolution des effets de cartes.
+ * Résolution des cartes en attente, au moment où une game est saisie.
  *
- * Séparé de `cards.ts` pour une raison précise : ce fichier ne fait que
- * traduire un effet du catalogue en modifications de la base. Il ne décide ni
- * qui a le droit de jouer, ni ce que ça coûte — ces contrôles restent en
- * amont. Chaque branche est ainsi lisible isolément, et un test peut vérifier
- * qu'aucune ne dépasse le plafond d'impact.
+ * C'est le seul endroit où une carte touche un score. La route qui enregistre
+ * la game appelle `appliqueCartesEnAttente` juste après l'avoir créée ; chaque
+ * carte posée sur ce joueur est traduite en points, journalisée dans
+ * `game.applied` avec son delta exact, puis consommée.
  *
  * Deux invariants tenus ici :
  *
- *   1. Chaque modification de points passe par `applyPoints`, qui journalise
- *      le delta exact dans `game.applied`. C'est ce journal qui rend Second
- *      Souffle et Contre-Courant possibles — on sait précisément quoi rendre.
- *   2. Un malus retire des points à sa cible et n'en donne jamais à
- *      l'attaquant. Aucune branche ne crédite l'attaquant, et un test le
- *      vérifie.
+ *   1. Chaque modification de points passe par `applyPoints`, qui borne le
+ *      cumul et journalise le delta **effectif** — pas le delta demandé.
+ *   2. Un malus retire des points à sa cible et n'en donne jamais à personne
+ *      d'autre — sauf les cartes à deux, qui opposent deux joueurs tirés au
+ *      sort et sont bornées de chaque côté. Ce sont les seules branches qui
+ *      touchent une autre game que celle qu'on saisit.
  */
 
-import { randomInt } from 'node:crypto';
-import type { AppliedEffect, Database, Game, PlayerBoon } from '@/lib/db/entities';
+import type { Database, Game } from '@/lib/db/entities';
 import { newId } from '@/lib/db/store';
 import { getCard } from '@/lib/domain/catalog';
-import { GAME_LIMITS, MALUS } from '@/lib/domain/rules';
-import type { BoonKind, CardDefinition, CardEffect } from '@/lib/domain/types';
+import { GAME_LIMITS, placementPoints } from '@/lib/domain/rules';
+import type { CardDefinition } from '@/lib/domain/types';
 import { credit } from './ledger';
-import { gamesOf, hasShield, recomputeGame } from './league';
+import { recomputeGame } from './league';
 import { facteurCartes } from '@/lib/services/evenements';
-
-export class EffectError extends Error {
-  constructor(
-    message: string,
-    readonly code:
-      | 'CIBLE_REQUISE'
-      | 'CIBLE_INVALIDE'
-      | 'AUCUNE_GAME'
-      | 'GAME_GELEE'
-      | 'CIBLE_PROTEGEE'
-      | 'DELAI_MALUS'
-      | 'QUOTA_MALUS'
-      | 'RIEN_A_ANNULER'
-      | 'SILENCE',
-  ) {
-    super(message);
-    this.name = 'EffectError';
-  }
-}
-
-export interface EffectOutcome {
-  summary: string;
-  affectedGameId: string | null;
-  targetPlayerId: string | null;
-}
-
-export interface EffectInput {
-  gameId?: string;
-  targetPlayerId?: string;
-}
-
-/* ------------------------------ Utilitaires ------------------------------ */
-
-function countedGames(db: Database, playerId: string): Game[] {
-  return gamesOf(db, playerId).filter((g) => !g.skipped);
-}
-
-/** Games d'un joueur, de la meilleure à la moins bonne. */
-function ranked(db: Database, playerId: string): Game[] {
-  return countedGames(db, playerId).sort((a, b) => b.score - a.score);
-}
-
-function ownGame(db: Database, playerId: string, gameId: string | undefined): Game {
-  if (!gameId) throw new EffectError('Cette carte demande de choisir une game.', 'CIBLE_REQUISE');
-  const game = db.games.find((g) => g.id === gameId && g.playerId === playerId);
-  if (!game) throw new EffectError('Game introuvable.', 'CIBLE_INVALIDE');
-  return game;
-}
 
 /**
  * Applique un delta de points à une game et le journalise.
  *
  * Le delta réellement appliqué peut être plus petit que demandé : le cumul de
- * bonus sur une même game est borné. C'est le delta *effectif* qui est
- * journalisé, sans quoi une annulation rendrait plus que ce qui avait été pris.
+ * bonus sur une même game est borné. Un évènement « cartes renforcées » majore
+ * la demande **avant** le plafond — le plafond reste, une carte majorée n'en
+ * sort pas. Le signe est conservé : un malus renforcé retire davantage.
  */
 function applyPoints(
   db: Database,
   game: Game,
   card: CardDefinition,
-  byPlayerId: string,
+  ouvertureId: string,
   requested: number,
 ): number {
   const before = game.bonusPoints;
-  // Un évènement « cartes renforcées » majore la demande **avant** le plafond :
-  // le plafond reste, une carte majorée n'en sort pas. Arrondi à l'entier, et
-  // le signe est conservé — un malus renforcé retire davantage.
   const majore = Math.round(requested * facteurCartes(db));
   const after = Math.max(
     GAME_LIMITS.minBonusPoints,
@@ -102,492 +50,183 @@ function applyPoints(
   );
   const effective = after - before;
 
-  const entry: AppliedEffect = {
+  game.applied.push({
     id: newId(),
     cardId: card.id,
-    byPlayerId,
+    ouvertureId,
     points: effective,
     at: new Date().toISOString(),
-    undone: false,
-  };
-  game.applied.push(entry);
+  });
   game.bonusPoints = after;
   recomputeGame(db, game);
   return effective;
 }
 
-/** Pose ou prolonge un effet temporaire sur un joueur. */
-function grantEffect(
-  db: Database,
-  playerId: string,
-  kind: 'BOUCLIER' | 'SILENCE',
-  sourceCardId: string,
-  hours: number,
-): void {
-  const now = Date.now();
-  // On prolonge à partir de l'échéance la plus lointaine : deux boucliers
-  // simultanés ne protègent pas mieux qu'un seul, mais deux fois plus longtemps.
-  const current = db.effects
-    .filter((e) => e.playerId === playerId && e.kind === kind)
-    .map((e) => new Date(e.expiresAt).getTime())
-    .filter((t) => t > now);
-  const from = current.length > 0 ? Math.max(...current) : now;
+const signe = (n: number) => (n > 0 ? `+${n}` : String(n));
 
-  db.effects.push({
-    id: newId(),
-    playerId,
-    kind,
-    sourceCardId,
-    createdAt: new Date().toISOString(),
-    expiresAt: new Date(from + hours * 60 * 60 * 1000).toISOString(),
-  });
+export interface CarteAppliquee {
+  cardId: string;
+  nom: string;
+  points: number;
+  resultat: string;
 }
 
-function grantBoon(
-  db: Database,
-  playerId: string,
-  kind: BoonKind,
-  uses: number,
-  value: string | null,
-  sourceCardId: string,
-): PlayerBoon {
-  const boon: PlayerBoon = {
-    id: newId(),
-    playerId,
-    kind,
-    remaining: uses,
-    value,
-    sourceCardId,
-    createdAt: new Date().toISOString(),
-  };
-  db.boons.push(boon);
-  return boon;
-}
-
-/** Le joueur est-il réduit au silence ? */
-export function isSilenced(db: Database, playerId: string, now = new Date()): boolean {
-  return db.effects.some(
-    (e) =>
-      e.playerId === playerId &&
-      e.kind === 'SILENCE' &&
-      new Date(e.expiresAt).getTime() > now.getTime(),
-  );
-}
-
-/** Malus encaissés par une cible dans les dernières 24 heures, toutes sources. */
-export function malusReceivedToday(db: Database, targetId: string, now = new Date()): number {
-  const since = now.getTime() - 24 * 60 * 60 * 1000;
-  return db.cards.filter(
-    (c) =>
-      c.consumedOnPlayerId === targetId &&
-      c.consumed &&
-      c.consumedAt !== null &&
-      new Date(c.consumedAt).getTime() > since,
-  ).length;
+export interface ApplicationCartes {
+  cartes: CarteAppliquee[];
+  /** Ce que les cartes font aux flocons de la game : 1, ou 2 avec une Manne. */
+  facteurFlocons: number;
 }
 
 /**
- * Vérifie qu'un malus peut atteindre sa cible.
+ * Consomme la carte **active** de ce joueur sur cette game : une seule.
  *
- * Le ciblage est libre — n'importe qui peut viser n'importe qui — mais deux
- * plafonds évitent l'acharnement : un délai par attaquant, et un quota
- * journalier toutes sources confondues. Sans ce second plafond, sept joueurs
- * pourraient enchaîner sept malus sur le leader le même soir.
+ * Une carte active à la fois. Si plusieurs attendent, c'est la plus ancienne
+ * qui tombe sur cette game ; les suivantes restent en réserve et prendront la
+ * relève, une par game. Deux cartes ne s'empilent jamais sur une même game —
+ * c'est ce qui garde le plafond d'impact vrai game par game.
  */
-function assertCanTarget(db: Database, attackerId: string, targetId: string): void {
-  if (attackerId === targetId) {
-    throw new EffectError('Un malus se pose sur un adversaire, pas sur soi.', 'CIBLE_INVALIDE');
-  }
+export function appliqueCartesEnAttente(db: Database, game: Game): ApplicationCartes {
+  const attente = db.cartesEnAttente
+    .filter((c) => c.joueurId === game.playerId && c.consommeeA === null)
+    .sort((a, b) => a.creeA.localeCompare(b.creeA))
+    .slice(0, 1);
 
-  const target = db.players.find((p) => p.id === targetId);
-  if (!target || !target.active) {
-    throw new EffectError('Adversaire introuvable.', 'CIBLE_INVALIDE');
-  }
-  if (hasShield(db, targetId)) {
-    throw new EffectError('Cet adversaire est protégé par un bouclier.', 'CIBLE_PROTEGEE');
-  }
+  const cartes: CarteAppliquee[] = [];
+  let facteurFlocons = 1;
+  const now = new Date().toISOString();
 
-  const since = Date.now() - MALUS.cooldownHours * 60 * 60 * 1000;
-  const recent = db.cards.some(
-    (c) =>
-      c.playerId === attackerId &&
-      c.consumed &&
-      c.consumedOnPlayerId === targetId &&
-      c.consumedAt !== null &&
-      new Date(c.consumedAt).getTime() > since,
-  );
-  if (recent) {
-    throw new EffectError(
-      `Tu as déjà visé ce joueur il y a moins de ${MALUS.cooldownHours} h.`,
-      'DELAI_MALUS',
-    );
-  }
-
-  if (malusReceivedToday(db, targetId) >= MALUS.maxReceivedPerDay) {
-    throw new EffectError(
-      `Ce joueur a déjà encaissé ${MALUS.maxReceivedPerDay} malus dans les 24 h. Il est hors d’atteinte pour l’instant.`,
-      'QUOTA_MALUS',
-    );
-  }
-}
-
-/* --------------------------- Résolution des effets ------------------------ */
-
-/**
- * Traduit un effet de carte en modifications de la base.
- *
- * À appeler dans une transaction : si une branche lève, la carte n'est pas
- * consommée et rien n'est écrit.
- */
-export function resolve(
-  db: Database,
-  playerId: string,
-  card: CardDefinition,
-  input: EffectInput,
-): EffectOutcome {
-  const effect: CardEffect = card.effect;
-
-  // Un joueur réduit au silence ne joue rien, pas même une carte défensive :
-  // sinon Grand Froid n'aurait aucun effet sur qui a un Bouclier en main.
-  if (isSilenced(db, playerId)) {
-    throw new EffectError(
-      'Tu es sous l’effet d’un Grand Froid : aucune carte jouable pour l’instant.',
-      'SILENCE',
-    );
-  }
-
-  switch (effect.kind) {
-    /* ------------------------- Glace : protéger ------------------------- */
-
-    case 'bonus_points': {
-      const game = ownGame(db, playerId, input.gameId);
-      const gained = applyPoints(db, game, card, playerId, effect.value);
-      return {
-        summary: `${card.name} : +${gained} pts, game portée à ${game.score}.`,
-        affectedGameId: game.id,
-        targetPlayerId: null,
-      };
+  for (const pendante of attente) {
+    const card = getCard(pendante.cardId);
+    pendante.consommeeA = now;
+    pendante.gameId = game.id;
+    if (!card) {
+      pendante.resultat = 'carte inconnue, sans effet';
+      continue;
     }
 
-    case 'shield': {
-      grantEffect(db, playerId, 'BOUCLIER', card.id, effect.hours);
-      return {
-        summary: `${card.name} : protégé des malus pendant ${effect.hours} h.`,
-        affectedGameId: null,
-        targetPlayerId: null,
-      };
-    }
+    let points = 0;
+    let resultat: string;
+    const effect = card.effect;
 
-    case 'freeze_game': {
-      const game = ownGame(db, playerId, input.gameId);
-      game.frozen = true;
-      return {
-        summary: `${card.name} : game à ${game.score} pts gelée, plus aucun malus ne l’atteint.`,
-        affectedGameId: game.id,
-        targetPlayerId: null,
-      };
-    }
+    switch (effect.kind) {
+      case 'bonus_points': {
+        points = applyPoints(db, game, card, pendante.ouvertureId, effect.value);
+        resultat = `${signe(points)} pts`;
+        break;
+      }
+      case 'kill_multiplier': {
+        // Le multiplicateur devient un bonus plafonné : c'est mathématiquement
+        // équivalent, et ça interdit d'empiler deux multiplicateurs.
+        const raw = Math.min(effect.cap, Math.round(game.kills * (effect.value - 1)));
+        points = applyPoints(db, game, card, pendante.ouvertureId, raw);
+        resultat = `×${effect.value} sur ${game.kills} kills → ${signe(points)} pts`;
+        break;
+      }
+      case 'points_per_kill': {
+        const raw = Math.min(effect.cap, game.kills * effect.perKill);
+        points = applyPoints(db, game, card, pendante.ouvertureId, raw);
+        resultat = `${game.kills} kills → ${signe(points)} pts`;
+        break;
+      }
+      case 'double_placement': {
+        const bonus = placementPoints(game.placement);
+        if (bonus === 0) {
+          resultat = 'pas de Top 3, sans effet';
+          break;
+        }
+        points = applyPoints(db, game, card, pendante.ouvertureId, bonus);
+        resultat = `Top ${game.placement} doublé → ${signe(points)} pts`;
+        break;
+      }
+      case 'plancher': {
+        const manque = Math.max(0, effect.value - game.score);
+        if (manque === 0) {
+          resultat = `game déjà à ${game.score}, sans effet`;
+          break;
+        }
+        points = applyPoints(db, game, card, pendante.ouvertureId, manque);
+        resultat = `remontée à ${game.score} pts (${signe(points)})`;
+        break;
+      }
+      case 'snowflakes': {
+        // Normalement créditée à l'ouverture ; si une carte est arrivée ici
+        // quand même, on la paie plutôt que de la perdre.
+        credit(db, game.playerId, effect.value, 'CARTE', pendante.ouvertureId);
+        resultat = `+${effect.value} flocons`;
+        break;
+      }
+      case 'flocons_doubles': {
+        facteurFlocons = 2;
+        resultat = 'flocons de la game doublés';
+        break;
+      }
+      case 'malus_points': {
+        points = applyPoints(db, game, card, pendante.ouvertureId, -effect.value);
+        resultat = `${signe(points)} pts`;
+        break;
+      }
+      case 'echange_kills':
+      case 'duel': {
+        /*
+         * Une carte à deux. La première game saisie attend l'autre ; la seconde
+         * résout la paire, sur les deux games à la fois. La carte de l'autre
+         * joueur garde son `gameId` comme trace de « quelle game » — c'est ce
+         * qui permet de retrouver la première quand la seconde arrive.
+         */
+        const autre = db.cartesEnAttente.find(
+          (c) => c.paireId !== null && c.paireId === pendante.paireId && c.id !== pendante.id,
+        );
+        const autreGame = autre?.gameId ? db.games.find((g) => g.id === autre.gameId) : undefined;
+        const pseudoAutre = autre
+          ? (db.players.find((p) => p.id === autre.joueurId)?.pseudo ?? 'l’autre')
+          : 'l’autre';
 
-    case 'undo_last_malus': {
-      const since = Date.now() - effect.withinHours * 60 * 60 * 1000;
+        if (!autre) {
+          resultat = 'sans adversaire, sans effet';
+          break;
+        }
+        if (!autreGame) {
+          resultat = `en attente de la prochaine game de ${pseudoAutre}`;
+          break;
+        }
 
-      // On cherche le malus le plus récent encore annulable, sur toutes les
-      // games du joueur : un malus est un effet appliqué par quelqu'un d'autre.
-      let bestGame: Game | null = null;
-      let bestEntry: AppliedEffect | null = null;
-
-      for (const game of db.games.filter((g) => g.playerId === playerId)) {
-        for (const entry of game.applied) {
-          if (entry.undone) continue;
-          if (entry.byPlayerId === playerId) continue;
-          if (entry.points >= 0) continue;
-          if (new Date(entry.at).getTime() < since) continue;
-          if (!bestEntry || new Date(entry.at) > new Date(bestEntry.at)) {
-            bestEntry = entry;
-            bestGame = game;
+        if (effect.kind === 'echange_kills') {
+          // Ce que l'un reçoit, l'autre le cède : la somme est nulle, et chaque
+          // côté est borné par le plafond de la carte.
+          const ecart = Math.max(-effect.cap, Math.min(effect.cap, autreGame.kills - game.kills));
+          points = applyPoints(db, game, card, pendante.ouvertureId, ecart);
+          const rendu = applyPoints(db, autreGame, card, autre.ouvertureId, -ecart);
+          resultat = `${game.kills} kills contre ${autreGame.kills} → ${signe(points)} pts`;
+          autre.resultat = `${autreGame.kills} kills contre ${game.kills} → ${signe(rendu)} pts`;
+        } else {
+          // Le duel se juge sur les games telles qu'elles sont à cet instant,
+          // cartes déjà tombées comprises. Égalité : personne ne bouge.
+          const moi = game.score;
+          const lui = autreGame.score;
+          if (moi === lui) {
+            resultat = `égalité ${moi} à ${lui}, sans effet`;
+            autre.resultat = `égalité ${lui} à ${moi}, sans effet`;
+          } else {
+            const jeGagne = moi > lui;
+            points = applyPoints(db, game, card, pendante.ouvertureId, jeGagne ? effect.gain : -effect.perte);
+            const rendu = applyPoints(
+              db,
+              autreGame,
+              card,
+              autre.ouvertureId,
+              jeGagne ? -effect.perte : effect.gain,
+            );
+            resultat = `${moi} contre ${lui} → ${signe(points)} pts`;
+            autre.resultat = `${lui} contre ${moi} → ${signe(rendu)} pts`;
           }
         }
+        break;
       }
-
-      if (!bestEntry || !bestGame) {
-        throw new EffectError(
-          `Aucun malus subi dans les ${effect.withinHours} dernières heures.`,
-          'RIEN_A_ANNULER',
-        );
-      }
-
-      const restored = -bestEntry.points;
-      bestEntry.undone = true;
-      bestGame.bonusPoints += restored;
-      recomputeGame(db, bestGame);
-
-      const origin = getCard(bestEntry.cardId);
-      return {
-        summary: `${card.name} : ${origin ? origin.name : 'malus'} annulé, +${restored} pts rendus.`,
-        affectedGameId: bestGame.id,
-        targetPlayerId: null,
-      };
     }
 
-    case 'shield_and_freeze_best': {
-      grantEffect(db, playerId, 'BOUCLIER', card.id, effect.hours);
-      const [best] = ranked(db, playerId);
-      if (best) best.frozen = true;
-      return {
-        summary: best
-          ? `${card.name} : protégé ${effect.hours} h, meilleure game (${best.score} pts) gelée.`
-          : `${card.name} : protégé ${effect.hours} h. Aucune game à geler pour l’instant.`,
-        affectedGameId: best ? best.id : null,
-        targetPlayerId: null,
-      };
-    }
-
-    case 'freeze_top_games': {
-      const top = ranked(db, playerId).slice(0, effect.count);
-      if (top.length === 0) throw new EffectError('Aucune game à geler.', 'AUCUNE_GAME');
-      for (const game of top) game.frozen = true;
-      return {
-        summary: `${card.name} : tes ${top.length} meilleures games sont gelées.`,
-        affectedGameId: top[0].id,
-        targetPlayerId: null,
-      };
-    }
-
-    /* ----------------------- Tempête : amplifier ------------------------ */
-
-    case 'points_per_kill': {
-      const game = ownGame(db, playerId, input.gameId);
-      if (game.frozen) throw new EffectError('Cette game est gelée.', 'GAME_GELEE');
-      const raw = Math.min(effect.cap, game.kills * effect.perKill);
-      const gained = applyPoints(db, game, card, playerId, raw);
-      return {
-        summary: `${card.name} : ${game.kills} kills → +${gained} pts (game à ${game.score}).`,
-        affectedGameId: game.id,
-        targetPlayerId: null,
-      };
-    }
-
-    case 'kill_multiplier': {
-      const game = ownGame(db, playerId, input.gameId);
-      if (game.frozen) throw new EffectError('Cette game est gelée.', 'GAME_GELEE');
-      // Le multiplicateur devient un bonus plafonné : c'est mathématiquement
-      // équivalent, et ça interdit d'empiler deux multiplicateurs.
-      const raw = Math.min(effect.cap, Math.round(game.kills * (effect.value - 1)));
-      const gained = applyPoints(db, game, card, playerId, raw);
-      return {
-        summary: `${card.name} : ×${effect.value} sur ${game.kills} kills → +${gained} pts (game à ${game.score}).`,
-        affectedGameId: game.id,
-        targetPlayerId: null,
-      };
-    }
-
-    case 'points_per_kill_above': {
-      const game = ownGame(db, playerId, input.gameId);
-      if (game.frozen) throw new EffectError('Cette game est gelée.', 'GAME_GELEE');
-      const over = Math.max(0, game.kills - effect.threshold);
-      if (over === 0) {
-        throw new EffectError(
-          `${card.name} ne récompense que les games au-delà de ${effect.threshold} kills.`,
-          'CIBLE_INVALIDE',
-        );
-      }
-      const raw = Math.min(effect.cap, over * effect.perKill);
-      const gained = applyPoints(db, game, card, playerId, raw);
-      return {
-        summary: `${card.name} : ${over} kills au-delà du ${effect.threshold}ᵉ → +${gained} pts.`,
-        affectedGameId: game.id,
-        targetPlayerId: null,
-      };
-    }
-
-    case 'double_placement': {
-      const game = ownGame(db, playerId, input.gameId);
-      if (game.frozen) throw new EffectError('Cette game est gelée.', 'GAME_GELEE');
-      if (game.placement === null) {
-        throw new EffectError(
-          `${card.name} ne s’applique qu’à une game classée dans le Top 3.`,
-          'CIBLE_INVALIDE',
-        );
-      }
-      // Doubler les points de classement revient à les ajouter une fois de plus.
-      const bonus = { 1: 20, 2: 15, 3: 8 }[game.placement];
-      const gained = applyPoints(db, game, card, playerId, bonus);
-      return {
-        summary: `${card.name} : Top ${game.placement} doublé, +${gained} pts (game à ${game.score}).`,
-        affectedGameId: game.id,
-        targetPlayerId: null,
-      };
-    }
-
-    /* ------------------------ Aurore : économie ------------------------- */
-
-    case 'snowflakes': {
-      credit(db, playerId, effect.value, 'CARTE', card.id);
-      return {
-        summary: `${card.name} : +${effect.value} flocons.`,
-        affectedGameId: null,
-        targetPlayerId: null,
-      };
-    }
-
-    case 'boon': {
-      grantBoon(db, playerId, effect.boon, effect.uses, effect.value ?? null, card.id);
-      return {
-        summary: `${card.name} : faveur active pour ${effect.uses} utilisation(s).`,
-        affectedGameId: null,
-        targetPlayerId: null,
-      };
-    }
-
-    case 'snowflakes_and_boon': {
-      credit(db, playerId, effect.snowflakes, 'CARTE', card.id);
-      grantBoon(db, playerId, effect.boon, effect.uses, effect.value ?? null, card.id);
-      return {
-        summary: `${card.name} : +${effect.snowflakes} flocons, et ta prochaine ouverture est garantie.`,
-        affectedGameId: null,
-        targetPlayerId: null,
-      };
-    }
-
-    /* ---------------------- Solstice : interaction ---------------------- */
-
-    case 'delete_worst_game': {
-      const games = countedGames(db, playerId).filter((g) => !g.frozen);
-      if (games.length === 0) throw new EffectError('Aucune game à supprimer.', 'AUCUNE_GAME');
-      const worst = games.reduce((low, g) => (g.score < low.score ? g : low), games[0]);
-      db.games = db.games.filter((g) => g.id !== worst.id);
-      return {
-        summary: `${card.name} : pire game (${worst.score} pts) supprimée.`,
-        affectedGameId: null,
-        targetPlayerId: null,
-      };
-    }
-
-    case 'strike_best': {
-      const targetId = input.targetPlayerId;
-      if (!targetId) throw new EffectError('Choisis un adversaire.', 'CIBLE_REQUISE');
-      assertCanTarget(db, playerId, targetId);
-
-      const open = ranked(db, targetId).filter((g) => !g.frozen);
-      if (open.length === 0) {
-        throw new EffectError('Toutes ses games sont gelées ou il n’en a aucune.', 'GAME_GELEE');
-      }
-
-      const game = open[0];
-      const lost = applyPoints(db, game, card, playerId, -effect.points);
-      return {
-        summary: `${card.name} : ${lost} pts sur sa meilleure game (désormais ${game.score}).`,
-        affectedGameId: game.id,
-        targetPlayerId: targetId,
-      };
-    }
-
-    case 'strike_top': {
-      const targetId = input.targetPlayerId;
-      if (!targetId) throw new EffectError('Choisis un adversaire.', 'CIBLE_REQUISE');
-      assertCanTarget(db, playerId, targetId);
-
-      const open = ranked(db, targetId)
-        .filter((g) => !g.frozen)
-        .slice(0, effect.count);
-      if (open.length === 0) {
-        throw new EffectError('Toutes ses games sont gelées ou il n’en a aucune.', 'GAME_GELEE');
-      }
-
-      let total = 0;
-      for (const game of open) total += applyPoints(db, game, card, playerId, -effect.points);
-      return {
-        summary: `${card.name} : ${total} pts répartis sur ses ${open.length} meilleures games.`,
-        affectedGameId: open[0].id,
-        targetPlayerId: targetId,
-      };
-    }
-
-    case 'cancel_last_boost': {
-      const targetId = input.targetPlayerId;
-      if (!targetId) throw new EffectError('Choisis un adversaire.', 'CIBLE_REQUISE');
-      assertCanTarget(db, playerId, targetId);
-
-      // Le dernier bonus que la cible s'est appliqué à elle-même. Par
-      // construction, on ne peut jamais retirer plus que ce que cette carte
-      // avait donné.
-      let bestGame: Game | null = null;
-      let bestEntry: AppliedEffect | null = null;
-
-      for (const game of db.games.filter((g) => g.playerId === targetId && !g.frozen)) {
-        for (const entry of game.applied) {
-          if (entry.undone || entry.points <= 0) continue;
-          if (entry.byPlayerId !== targetId) continue;
-          if (!bestEntry || new Date(entry.at) > new Date(bestEntry.at)) {
-            bestEntry = entry;
-            bestGame = game;
-          }
-        }
-      }
-
-      if (!bestEntry || !bestGame) {
-        throw new EffectError(
-          'Cet adversaire n’a aucun bonus de carte annulable pour l’instant.',
-          'RIEN_A_ANNULER',
-        );
-      }
-
-      const removed = bestEntry.points;
-      bestEntry.undone = true;
-      bestGame.bonusPoints -= removed;
-      // On journalise l'annulation elle-même, pour que Second Souffle puisse
-      // la rendre à son tour.
-      bestGame.applied.push({
-        id: newId(),
-        cardId: card.id,
-        byPlayerId: playerId,
-        points: -removed,
-        at: new Date().toISOString(),
-        undone: false,
-      });
-      recomputeGame(db, bestGame);
-
-      const origin = getCard(bestEntry.cardId);
-      return {
-        summary: `${card.name} : ${origin ? origin.name : 'bonus'} annulé, −${removed} pts (game à ${bestGame.score}).`,
-        affectedGameId: bestGame.id,
-        targetPlayerId: targetId,
-      };
-    }
-
-    case 'silence': {
-      const targetId = input.targetPlayerId;
-      if (!targetId) throw new EffectError('Choisis un adversaire.', 'CIBLE_REQUISE');
-      assertCanTarget(db, playerId, targetId);
-      grantEffect(db, targetId, 'SILENCE', card.id, effect.hours);
-      return {
-        summary: `${card.name} : cet adversaire ne peut plus jouer de carte pendant ${effect.hours} h. Aucun point retiré.`,
-        affectedGameId: null,
-        targetPlayerId: targetId,
-      };
-    }
+    pendante.resultat = resultat;
+    cartes.push({ cardId: card.id, nom: card.name, points, resultat });
   }
-}
 
-/** Tirage aléatoire serveur, jamais fourni par le client. */
-export function pickRandom<T>(items: T[]): T | null {
-  if (items.length === 0) return null;
-  return items[randomInt(items.length)];
-}
-
-/* ------------------------- Consommation des faveurs ---------------------- */
-
-/** Consomme une utilisation d'une faveur, et la retire si elle est épuisée. */
-export function consumeBoon(db: Database, playerId: string, kind: BoonKind): PlayerBoon | null {
-  const boon = db.boons.find((b) => b.playerId === playerId && b.kind === kind && b.remaining > 0);
-  if (!boon) return null;
-
-  boon.remaining -= 1;
-  if (boon.remaining <= 0) db.boons = db.boons.filter((b) => b.id !== boon.id);
-  return boon;
-}
-
-/** Faveur active, sans la consommer. */
-export function peekBoon(db: Database, playerId: string, kind: BoonKind): PlayerBoon | null {
-  return db.boons.find((b) => b.playerId === playerId && b.kind === kind && b.remaining > 0) ?? null;
+  return { cartes, facteurFlocons };
 }

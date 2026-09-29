@@ -10,12 +10,11 @@
  *
  * ## Pourquoi manche par manche
  *
- * Une bataille de cinq sachets, c'est quinze cartes par camp, trente en tout.
- * Trente rouleaux côte à côte donnent des cartes de la largeur d'un ongle, et le
- * suspense d'une bataille tient précisément à ce qu'on voie ce qui tombe. On
- * joue donc un sachet à la fois, les deux camps en même temps : trois rouleaux
- * par panneau, la même géométrie qu'une ouverture ordinaire, et un total qui
- * monte d'une manche à l'autre.
+ * Un duel de cinq manches, c'est quinze cartes par camp, trente en
+ * tout. Trente rouleaux côte à côte donnent des cartes de la largeur d'un
+ * ongle, et le suspense tient précisément à ce qu'on voie ce qui tombe. On joue
+ * donc une manche à la fois, les deux camps en même temps : trois rouleaux par
+ * panneau, et un total qui monte d'une manche à l'autre.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -40,9 +39,9 @@ export interface CampVueClient {
 
 export interface BatailleVueClient {
   id: string;
-  /** Les sachets en jeu, dans l'ordre où ils s'ouvrent. */
-  sachets: { id: string; nom: string; prix: number }[];
   manches: number;
+  /** Cartes par manche et par camp. */
+  cartesParManche: number;
   mise: number;
   statut: 'ATTENTE' | 'TERMINEE' | 'ANNULEE';
   hoteId: string;
@@ -61,24 +60,6 @@ export interface CatalogueCarte {
   power?: number;
 }
 
-/**
- * Le panier, en une ligne lisible.
- *
- * « Givre, Givre, Everest » se lit mal dès trois sachets et devient illisible à
- * cinq. On regroupe : « 2× Givre · 1× Everest ». L'ordre d'apparition est
- * conservé — c'est celui dans lequel les manches se joueront, et il change la
- * partie : finir sur l'Everest n'est pas commencer par lui.
- */
-function resume(sachets: { id: string; nom: string }[]): string {
-  const vus: { nom: string; n: number }[] = [];
-  for (const s of sachets) {
-    const dernier = vus[vus.length - 1];
-    if (dernier && dernier.nom === s.nom) dernier.n += 1;
-    else vus.push({ nom: s.nom, n: 1 });
-  }
-  return vus.map((v) => (v.n > 1 ? `${v.n}× ${v.nom}` : v.nom)).join(' · ');
-}
-
 /** Le temps qu'on laisse voir une manche avant de lancer la suivante. */
 const REPOS_MANCHE = 1500;
 
@@ -92,15 +73,8 @@ export function BatailleArene({
 }: {
   bataille: BatailleVueClient;
   catalog: Record<string, CatalogueCarte>;
-  /**
-   * Les taux d'affichage, **par sachet**, sur 100 000.
-   *
-   * Un panier peut mélanger les sachets, et chaque manche doit alors montrer les
-   * leurres du sien : afficher les taux du Givre pendant qu'on ouvre un Everest
-   * remplirait les rouleaux de communes au moment précis où le joueur guette
-   * une légendaire.
-   */
-  poids: Record<string, Record<string, number>>;
+  /** Les taux d'affichage, sur 100 000 — les mêmes pour les deux camps. */
+  poids: Record<string, number>;
   moiId: string | null;
   /**
    * Faux pour relire une bataille passée : les cartes apparaissent sans que les
@@ -112,7 +86,7 @@ export function BatailleArene({
 }) {
   const [gauche, droite] = bataille.camps;
 
-  /** Combien de cartes un sachet donne, déduit du tirage lui-même. */
+  /** Combien de cartes une manche donne, déduit du tirage lui-même. */
   const parManche = Math.max(1, Math.round(gauche.cartes.length / bataille.manches));
 
   /** Les cartes d'un camp, découpées en manches. */
@@ -212,18 +186,16 @@ export function BatailleArene({
       <div className="glass flex flex-wrap items-center justify-between gap-3 px-4 py-3">
         <div className="min-w-0">
           <p className="eyebrow">
-            {resume(bataille.sachets)} · {bataille.manches} sachet
-            {bataille.manches > 1 ? 's' : ''} par camp
+            {bataille.manches} manche{bataille.manches > 1 ? 's' : ''} de {parManche} cartes
           </p>
           <p className="text-[15px] text-ink-2">
-            {flakes(bataille.mise)} ❄ misés de chaque côté — le vainqueur emporte les{' '}
-            {gauche.cartes.length + droite.cartes.length} cartes.
+            {flakes(bataille.mise)} ❄ misés de chaque côté — le vainqueur emporte{' '}
+            {flakes(bataille.mise * 2)} ❄.
           </p>
         </div>
         {!termine && (
           <p className="font-display text-xs tracking-wider text-muted uppercase">
-            {bataille.sachets[Math.min(manche, bataille.manches - 1)]?.nom} · manche{' '}
-            {Math.min(manche + 1, bataille.manches)} / {bataille.manches}
+            Manche {Math.min(manche + 1, bataille.manches)} / {bataille.manches}
           </p>
         )}
       </div>
@@ -274,7 +246,7 @@ export function BatailleArene({
                 <SpinReel
                   key={`${camp.id}-${manche}`}
                   pool={pool}
-                  poids={poids[bataille.sachets[manche]?.id ?? ''] ?? {}}
+                  poids={poids}
                   gagnantes={lots[i][manche].map((c) => ({
                     cardId: c.cardId,
                     name: catalog[c.cardId]?.name ?? c.cardId,
@@ -323,8 +295,7 @@ export function BatailleArene({
         <Notice kind={jeSuisDedans && bataille.vainqueurId === moiId ? 'success' : 'info'}>
           {bataille.vainqueurId === moiId ? (
             <>
-              Tu remportes les {gauche.cartes.length + droite.cartes.length} cartes des deux camps.
-              Elles sont déjà dans ta collection.
+              Tu remportes le pot : {flakes(bataille.mise * 2)} ❄, déjà sur ton solde.
             </>
           ) : (
             <>

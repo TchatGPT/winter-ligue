@@ -6,7 +6,7 @@
  * modifie que son propre affichage.
  */
 
-import type { Placement, Rarity } from './types';
+import type { PackId, Placement, Rarity } from './types';
 
 export const SEASON = {
   name: 'Winter Ligue',
@@ -50,8 +50,9 @@ export const GAME_LIMITS = {
  * Aligné sur la Summer Ligue. À ce volume, un joueur assidu termine autour de
  * 1 000 points : une carte plafonnée à 25 points pèse alors 2 % de sa saison,
  * mais 17 % de celle d'un joueur occasionnel. Les cartes sont donc surtout un
- * outil de rattrapage — et c'est aussi pour ça que le quota de malus par jour
- * compte autant : le même malus fait bien plus mal en bas du classement.
+ * outil de rattrapage.
+ *
+ * C'est aussi le seuil du pack Finisseur : la dernière game saisie l'ouvre.
  */
 export const DEFAULT_MAX_GAMES_PER_PLAYER = 60;
 
@@ -66,10 +67,9 @@ export const DEFAULT_MAX_GAMES_PER_PLAYER = 60;
  *      (voir SUBS plus bas). Le chat fait grossir l'économie entière, sans
  *      jamais faire monter quelqu'un en particulier.
  *
- * C'est cette séparation qui empêche le pay-to-win. Si les subs créditaient le
- * compte d'un joueur nommé, celui qui a la communauté la plus généreuse
- * achèterait ses cartes — et le classement suivrait le portefeuille du chat
- * plutôt que le niveau de jeu.
+ * Ils servent à deux choses : se miser dans les affrontements, et améliorer
+ * les taux de rareté quand un pack s'ouvre pour soi — voir `CHANCE`. Ils ne
+ * s'échangent contre rien d'autre.
  */
 export const ECONOMY = {
   /** Flocons gagnés par kill. La récompense de base du skill. */
@@ -78,45 +78,42 @@ export const ECONOMY = {
   perPlacement: { '1': 400, '2': 250, '3': 120 } as Record<'1' | '2' | '3', number>,
   /** Flocons gagnés simplement en enregistrant une game. */
   participation: 150,
-  /** Dotation de départ à l'inscription : de quoi ouvrir deux Givre. */
+  /** Dotation de départ à l'inscription : de quoi miser un premier affrontement. */
   welcomeGrant: 400,
   /**
-   * Ce que rapporte une carte défaussée. **Un flocon**, et c'est voulu.
+   * Le solde maximum. Ce qui dépasse est perdu.
    *
-   * La défausse n'est pas une source de revenu : c'est une sortie pour les
-   * doublons dont personne ne veut, y compris au marché. Un gain réel en ferait
-   * un rendement — on ouvrirait des sachets pour défausser — et rendrait le prix
-   * plancher du marché inutile. Un flocon dit « ça vaut quelque chose, mais pas
-   * grand-chose », ce qui est exactement le message.
+   * Vingt mille : une game rapporte cinq cents flocons en moyenne, un joueur
+   * assidu en joue une quinzaine par semaine, et les paliers de subs ajoutent
+   * deux mille par semaine dans une bonne semaine. On approche donc du plafond
+   * en un mois et demi de jeu sans rien miser — pas en une semaine — sur une
+   * saison de deux à trois mois et de soixante games. C'est aussi ce qui borne
+   * la chance : elle est pleine au plafond, jamais avant.
    */
-  defausse: 1,
+  soldeMax: 20_000,
 } as const;
 
 /* --------------------------- Subs Twitch --------------------------------- */
 
-export type SubRewardKind = 'FLOCONS' | 'BOOSTER';
+export type SubRewardKind = 'FLOCONS' | 'PACK';
 
 export interface SubMilestone {
   /** Tous les N subs cumulés de la saison. */
   every: number;
   kind: SubRewardKind;
-  /** Flocons versés à chaque joueur actif, ou identifiant du booster offert. */
+  /** Flocons versés à chaque joueur actif, ou identifiant du pack mis en file. */
   amount?: number;
-  boosterId?: string;
+  packId?: PackId;
   label: string;
   description: string;
 }
 
 /**
- * Paliers de subs. Chaque palier se déclenche à *chaque* multiple atteint, et
- * la récompense va à **tous les joueurs actifs**, pas au gifteur ni à un joueur
- * désigné.
+ * Paliers de subs. Chaque palier se déclenche à *chaque* multiple atteint.
  *
- * Ordre de grandeur visé sur une saison d'environ 900 subs :
- *   — le jeu rapporte ~12 000 ❄ à un joueur régulier (25 games) ;
- *   — les subs en versent ~11 000 ❄ à chacun, plus une dizaine de boosters.
- * Les deux sources pèsent donc à peu près pareil en volume, mais une seule
- * décide du classement.
+ * Les flocons vont à **tous les joueurs actifs**. Les packs sont mis en file :
+ * la streameuse les ouvre à l'antenne, et la carte tombe sur tout le monde ou
+ * sur un joueur tiré au sort — jamais sur quelqu'un que le chat aurait choisi.
  */
 export const SUB_MILESTONES: readonly SubMilestone[] = [
   {
@@ -134,46 +131,54 @@ export const SUB_MILESTONES: readonly SubMilestone[] = [
     description: '200 flocons de plus pour tout le monde.',
   },
   {
-    every: 100,
-    kind: 'BOOSTER',
-    boosterId: 'givre',
-    label: 'Chute de Neige',
-    description: 'Un booster Givre offert à chaque joueur actif.',
+    every: 50,
+    kind: 'PACK',
+    packId: 'commu',
+    label: 'Booster Commu',
+    description: 'Un Booster Commu à ouvrir à l’antenne : sa carte tombe sur un ou deux joueurs au hasard.',
   },
   {
     every: 500,
-    kind: 'BOOSTER',
-    boosterId: 'aurore',
-    label: 'Grand Nord',
-    description: 'Un booster Hors-Piste offert à chaque joueur actif.',
+    kind: 'PACK',
+    packId: 'folie',
+    label: 'Booster Folie',
+    description: 'Un Booster Folie à ouvrir à l’antenne : la carte la plus forte de la saison.',
   },
 ];
 
 export const SUBS = {
   milestones: SUB_MILESTONES,
-  /**
-   * Un gifteur peut nommer un joueur à partir de ce nombre de subs. Le joueur
-   * désigné reçoit une **carte commune au hasard**, jamais des flocons : le
-   * geste est visible à l'antenne, mais sa valeur compétitive est proche de
-   * zéro. C'est le compromis entre l'engagement du chat et l'équité.
-   */
-  giftThreshold: 5,
-  /** Cartes offertes maximum par joueur et par jour, pour qu'aucun whale ne cumule. */
-  maxGiftedCardsPerDay: 6,
   /** Incréments proposés dans le panneau de modération. */
   adminSteps: [1, 5, 10, 25, 50, 100] as const,
 } as const;
+
+/* ------------------------------- Les packs ------------------------------- */
+
+export const PACKS_REGLES = {
+  /**
+   * Un pack Perso tous les N subs offerts par un même joueur.
+   *
+   * C'est la seule chose qu'un sub achète à quelqu'un en particulier, et elle
+   * est bornée deux fois : le pack ne contient que des bonus, et chacun est
+   * plafonné à `CARD_IMPACT_CAP` sur une seule game.
+   */
+  persoTousLes: 5,
+} as const;
+
+/** Un joueur qui a offert `subsOfferts` subs a droit à autant de packs Perso. */
+export function packsPersoAcquis(subsOfferts: number): number {
+  return Math.floor(Math.max(0, subsOfferts) / PACKS_REGLES.persoTousLes);
+}
 
 /* ----------------------- Évènements de subs ------------------------------ */
 
 /**
  * Ce qu'un évènement change, le temps qu'il dure.
  *
- *  - `BOOSTERS_MOITIE`   — les boosters à moitié prix ;
  *  - `FLOCONS_DOUBLES`   — les gains de game doublés ;
- *  - `CARTES_RENFORCEES` — les points des cartes jouées majorés de moitié.
+ *  - `CARTES_RENFORCEES` — les points des cartes majorés de moitié.
  */
-export type EvenementKind = 'BOOSTERS_MOITIE' | 'FLOCONS_DOUBLES' | 'CARTES_RENFORCEES';
+export type EvenementKind = 'FLOCONS_DOUBLES' | 'CARTES_RENFORCEES';
 
 export interface EvenementSubs {
   /** Tous les N subs cumulés. */
@@ -183,32 +188,22 @@ export interface EvenementSubs {
   label: string;
   /** La phrase entière, pour le bandeau et les règles. */
   description: string;
-  /** Le même effet en trois mots, pour une carte : « Boosters −50 % ». */
+  /** Le même effet en trois mots, pour une carte : « Flocons ×2 ». */
   resume: string;
 }
 
 /**
  * Les paliers qui déclenchent un évènement, et ce qu'ils déclenchent.
  *
- * Ils s'ajoutent aux paliers de flocons, ils ne les remplacent pas : un palier
- * de flocons donne quelque chose à garder, un évènement donne quelque chose à
- * **faire maintenant**. C'est pour ça que les fenêtres sont courtes — une ou
- * deux heures, le temps d'un live. Un évènement de vingt-quatre heures serait
- * un réglage, pas un évènement.
+ * Ils s'ajoutent aux paliers de flocons et de packs, ils ne les remplacent
+ * pas : un palier de flocons donne quelque chose à garder, un évènement donne
+ * quelque chose à **faire maintenant**. C'est pour ça que les fenêtres sont
+ * courtes — une ou deux heures, le temps d'un live.
  *
  * Tous s'appliquent à tout le monde. Ils ne versent rien à personne, ils
- * changent les règles pendant leur fenêtre — c'est ce qui les garde du bon côté
- * de l'invariant anti-pay-to-win.
+ * changent les règles pendant leur fenêtre.
  */
 export const EVENEMENTS_SUBS: readonly EvenementSubs[] = [
-  {
-    every: 50,
-    kind: 'BOOSTERS_MOITIE',
-    dureeMinutes: 120,
-    label: 'Braderie',
-    description: 'Tous les boosters à moitié prix pendant deux heures.',
-    resume: 'Boosters −50 %',
-  },
   {
     every: 100,
     kind: 'FLOCONS_DOUBLES',
@@ -222,7 +217,7 @@ export const EVENEMENTS_SUBS: readonly EvenementSubs[] = [
     kind: 'CARTES_RENFORCEES',
     dureeMinutes: 60,
     label: 'Blizzard',
-    description: 'Les cartes jouées valent une fois et demie leurs points pendant une heure.',
+    description: 'Les cartes de booster valent une fois et demie leurs points pendant une heure.',
     resume: 'Cartes ×1,5',
   },
   {
@@ -237,7 +232,6 @@ export const EVENEMENTS_SUBS: readonly EvenementSubs[] = [
 
 /** Les facteurs qu'un évènement applique. Un seul par genre, jamais cumulés. */
 export const FACTEURS_EVENEMENTS: Record<EvenementKind, number> = {
-  BOOSTERS_MOITIE: 0.5,
   FLOCONS_DOUBLES: 2,
   CARTES_RENFORCEES: 1.5,
 };
@@ -257,7 +251,7 @@ export function evenementsDeclenches(from: number, to: number): EvenementSubs[] 
  * Le facteur en vigueur pour un genre, à partir des genres actifs.
  *
  * Pas de cumul : plusieurs évènements du même genre donnent le facteur du
- * genre, une fois. Deux braderies ne font pas des boosters à un quart du prix.
+ * genre, une fois.
  */
 export function facteurEvenement(kind: EvenementKind, actifs: readonly EvenementKind[]): number {
   return actifs.includes(kind) ? FACTEURS_EVENEMENTS[kind] : 1;
@@ -329,74 +323,123 @@ export const RARITY_ORDER: Record<Rarity, number> = {
 };
 
 /**
- * LA table des taux. C'est ici, et nulle part ailleurs, qu'on règle la rareté.
+ * LA table des taux de base. C'est ici, et nulle part ailleurs, qu'on règle la
+ * rareté.
  *
  * Les poids sont exprimés **sur 100 000** plutôt qu'en pourcentages : on peut
  * ainsi descendre au millième de pour cent sans jamais manipuler de flottant,
  * et la somme se vérifie exactement (un test échoue si elle ne fait pas
  * 100 000).
  *
- * Le raisonnement derrière ces valeurs, pour un booster de 5 cartes :
- *
- *   Rareté        par carte    au moins une par booster
- *   Commune         73 %       —
- *   Peu commune     20 %       —
- *   Rare            5,7 %      1 booster sur 4
- *   Super rare      1 %        1 booster sur 20
- *   Ultra rare      0,28 %     1 booster sur 72
- *   Légendaire      0,02 %     1 booster sur 1 000
- *
- * La légendaire reste un événement de saison, mais un événement qui arrive
- * réellement. Descendre à 0,01 % la rendrait invisible : à 5 cartes par
- * booster, il faudrait 2 000 ouvertures pour en voir une, et plus personne
- * n'y croirait. Et comme elle est revendable, celui qui ne la tire pas peut
- * toujours l'acheter — c'est ce qui fait vivre l'hôtel des ventes.
+ * Un pack ne donne qu'**une** carte. Les taux sont donc plus généreux qu'à
+ * l'époque des sachets de trois : une légendaire sur cinq cents packs Perso,
+ * et bien plus dans les packs Folie.
  */
 export const RARITY_WEIGHTS_BASE: Record<Rarity, number> = {
-  C: 73_000, // 73 %
-  PC: 20_000, // 20 %
-  R: 5_700, // 5,7 %
-  SR: 1_000, // 1 %
-  UR: 280, // 0,28 %
-  L: 20, // 0,02 %
+  C: 58_000, // 58 %
+  PC: 27_000, // 27 %
+  R: 11_000, // 11 %
+  SR: 3_000, // 3 %
+  UR: 800, // 0,8 %
+  L: 200, // 0,2 %
 };
 
 /** Total attendu de n'importe quelle table de poids. */
 export const WEIGHT_TOTAL = 100_000;
 
 /**
+ * La chance : ce que les flocons font aux taux.
+ *
+ * Quand un booster s'ouvre **pour un joueur**, son solde de flocons pousse les
+ * raretés vers le haut. Le poids de chaque rareté au-dessus de la commune est
+ * multiplié par `1 + chance` — le **multiplicateur**, de ×1 à ×2 —, la commune
+ * absorbe la différence, et la somme reste exactement `WEIGHT_TOTAL`.
+ *
+ * Le multiplicateur monte linéairement avec le solde, et plafonne à ×2 au
+ * solde maximum. Pas plus, et ×2 ne veut pas dire « une rare à coup sûr » :
+ * au Booster Perso, ×2 fait passer la commune de 58 % à 16 %, et la
+ * légendaire de 0,2 % à 0,4 %. Un joueur riche tire mieux, il ne tire pas à
+ * coup sûr — et les flocons ne s'achètent pas, ils se gagnent en jouant.
+ *
+ * Les flocons ne sont **pas dépensés** : les mêmes servent à miser dans les
+ * affrontements. Tenir son solde pour tirer mieux, ou le risquer pour le
+ * doubler, c'est le seul arbitrage que la monnaie propose.
+ *
+ * Les Boosters Commu et Folie ne s'ouvrent pour personne : aucune chance ne
+ * s'y applique.
+ */
+export const CHANCE = {
+  /** Le solde auquel le multiplicateur est plein : le plafond de flocons. */
+  floconsPourPlein: ECONOMY.soldeMax,
+  /** La chance maximale : ×2. */
+  max: 1,
+} as const;
+
+/** La chance d'un joueur, entre 0 et `CHANCE.max`, d'après son solde. */
+export function chanceDe(solde: number): number {
+  if (!Number.isFinite(solde) || solde <= 0) return 0;
+  return Math.min(CHANCE.max, (solde / CHANCE.floconsPourPlein) * CHANCE.max);
+}
+
+/** Le multiplicateur de chance, de 1 à 2, tel qu'on l'affiche : « ×1,45 ». */
+export function multiplicateurChance(solde: number): number {
+  return 1 + chanceDe(solde);
+}
+
+/** « ×1,45 », arrondi au centième. */
+export function libelleMultiplicateur(chance: number): string {
+  return `×${(1 + chance).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+/**
+ * Une table de raretés poussée par la chance. Somme exacte, poids entiers.
+ *
+ * Si la poussée dépasse ce que la commune peut céder — une table réglée à la
+ * main avec très peu de communes — les raretés hautes sont ramenées à
+ * proportion pour que la commune ne tombe jamais sous zéro.
+ */
+export function poidsAvecChance(
+  weights: Record<Rarity, number>,
+  chance: number,
+): Record<Rarity, number> {
+  const c = Math.max(0, Math.min(CHANCE.max, chance));
+  if (c === 0) return { ...weights };
+
+  const hautes: Rarity[] = ['PC', 'R', 'SR', 'UR', 'L'];
+  const pousses = {} as Record<Rarity, number>;
+  let total = 0;
+  for (const r of hautes) {
+    pousses[r] = Math.round(weights[r] * (1 + c));
+    total += pousses[r];
+  }
+  if (total > WEIGHT_TOTAL) {
+    // On ne peut pas donner plus que tout : on ramène à l'échelle, et la
+    // commune tombe à zéro.
+    let reparti = 0;
+    for (const r of hautes) {
+      pousses[r] = Math.floor((pousses[r] * WEIGHT_TOTAL) / total);
+      reparti += pousses[r];
+    }
+    pousses.L += WEIGHT_TOTAL - reparti;
+    pousses.C = 0;
+    return pousses;
+  }
+  pousses.C = WEIGHT_TOTAL - total;
+  return pousses;
+}
+
+/**
  * Le jeton **Winter Spin** : l'emplacement se rejoue, avec de meilleurs taux.
  *
- * ## Ce que c'est, et ce que ce n'est pas
+ * Il n'existe que dans les affrontements. Ce n'est pas une carte : le joueur
+ * ne le garde pas, il n'a pas d'effet en jeu. C'est un résultat d'emplacement,
+ * consommé dans l'instant par un second tirage.
  *
- * Ce n'est **pas une carte**. Le joueur ne le garde pas, il n'entre pas dans la
- * collection, il ne se revend pas, il n'a pas d'effet en jeu. C'est un résultat
- * d'emplacement, consommé dans l'instant par un second tirage — d'où son absence
- * du catalogue et de `applyEffect`.
- *
- * C'est donc compatible avec l'invariant anti-pay-to-win : rien de permanent ne
- * s'acquiert ici, et la carte finalement obtenue reste soumise à
- * `CARD_IMPACT_CAP` comme toutes les autres.
- *
- * ## Les deux nombres
- *
- * `chance` est tirée **avant** la rareté, et séparément d'elle. C'est ce qui
- * permet de la régler sans toucher aux tables de raretés, qui doivent sommer
- * exactement à `WEIGHT_TOTAL` — y glisser le jeton aurait obligé à retirer son
- * poids à une rareté, et le taux affiché sous le sachet serait devenu faux.
- *
- * Quatre-vingts sur cent mille, soit 0,08 % par emplacement d'effet : un booster
- * Givre sur 1 250, un Everest sur 420. Assez rare pour qu'on s'en souvienne,
- * assez fréquent pour que la communauté l'ait déjà vu.
- *
- * `weights` sert au second tirage, et **ne remplace jamais** la table du booster
- * ailleurs. Soixante pour cent d'ultra rare ou de légendaire, contre moins d'un
- * pour cent d'ordinaire : c'est ce qui fait du jeton un évènement. L'effet sur le
- * taux global de légendaires reste négligeable — 0,08 % × 20 % — précisément
- * parce que le jeton est rare.
+ * `chance` est tirée **avant** la rareté, et séparément d'elle, pour que les
+ * tables de raretés gardent leur somme exacte. `weights` sert au second tirage.
  */
 export const WINTER_SPIN = {
-  /** Chance par emplacement d'effet, sur `WEIGHT_TOTAL`. */
+  /** Chance par emplacement, sur `WEIGHT_TOTAL`. */
   chance: 80,
   /** La table du second tirage. Somme exacte de `WEIGHT_TOTAL`. */
   weights: {
@@ -414,82 +457,34 @@ export function rarityPercent(weights: Record<Rarity, number>, rarity: Rarity): 
   return (weights[rarity] / WEIGHT_TOTAL) * 100;
 }
 
-/** Probabilité d'obtenir au moins une carte de cette rareté dans un booster. */
-export function atLeastOnePercent(
-  weights: Record<Rarity, number>,
-  rarity: Rarity,
-  cardCount: number,
-): number {
-  const p = weights[rarity] / WEIGHT_TOTAL;
-  return (1 - Math.pow(1 - p, cardCount)) * 100;
-}
-
-/* --------------------------- Cartes et collection ------------------------ */
-
-/**
- * Encadrement des malus.
- *
- * Le ciblage reste libre — n'importe qui peut viser n'importe qui — mais deux
- * garde-fous évitent l'acharnement :
- *
- *   — `cooldownHours` empêche un même joueur de frapper deux fois la même
- *     cible dans la journée ;
- *   — `maxReceivedPerDay` plafonne ce qu'une cible encaisse **toutes sources
- *     confondues**. Sans ce second plafond, sept joueurs pourraient enchaîner
- *     sept malus sur le leader le même soir, et mener deviendrait une punition.
- */
-export const MALUS = {
-  cooldownHours: 6,
-  maxReceivedPerDay: 2,
-  /** Fenêtre d'annulation par Second Souffle. */
-  undoWindowHours: 24,
-} as const;
-
-/** Conservé pour la lisibilité des messages. */
-export const MALUS_COOLDOWN_HOURS = MALUS.cooldownHours;
+/* ------------------------------- Les cartes ------------------------------ */
 
 /**
  * Plafond d'impact d'une carte, en points.
  *
- * Une game moyenne vaut environ 25 points et une saison en totalise ~400. Une
- * carte au-delà de ce plafond volerait une part visible du classement en un
- * clic — c'est exactement ce qui rendait certaines roues de la Summer Ligue
- * insupportables. Un test vérifie qu'aucune carte ne le dépasse.
+ * Une game moyenne vaut environ 25 points. Une carte au-delà de ce plafond
+ * volerait une part visible du classement en un tirage — c'est exactement ce
+ * qui rendait certaines roues de la Summer Ligue insupportables. Un test
+ * vérifie qu'aucune carte ne le dépasse.
  */
 export const CARD_IMPACT_CAP = 25;
 
-/* --------------------------- Hôtel des ventes ---------------------------- */
+/* ---------------------------- Les affrontements -------------------------- */
 
-export const MARKET = {
-  /** Prix plancher et plafond d'une mise en vente, en flocons. */
-  minPrice: 10,
-  maxPrice: 500_000,
-  /** Une enchère doit dépasser la précédente d'au moins ce montant… */
-  minIncrementFlat: 10,
-  /** …ou de ce pourcentage, la plus grande des deux valeurs l'emportant. */
-  minIncrementRate: 0.05,
-  /** Une enchère dans cette fenêtre finale repousse la clôture d'autant. */
-  antiSnipeWindowMs: 60_000,
-  /**
-   * Durées de vente proposées au vendeur, **en minutes**.
-   *
-   * En heures jusqu'ici, ce qui interdisait tout ce qui dure moins d'une heure.
-   * Or c'est précisément ce qu'on veut pendant un live : une vente de dix
-   * minutes se conclut à l'antenne, sous les yeux du chat, quand une vente de
-   * vingt-quatre heures se conclut pendant que tout le monde dort.
-   */
-  durationsMinutes: [10, 30, 60, 240, 360, 720, 1440] as const,
-  /** Ventes actives simultanées par joueur. */
-  maxActiveListingsPerPlayer: 10,
-  /** Profondeur de la courbe de prix affichée. */
-  historyDays: 120,
-  /** Vignettes par page à l'hôtel des ventes. */
-  pageSize: 48,
+/**
+ * Les affrontements : deux camps misent la même somme de flocons, tirent le
+ * même nombre de cartes, et celui dont les cartes totalisent la plus haute
+ * somme de raretés remporte le pot.
+ *
+ * Les cartes tirées ne sont que des cartes de comparaison : personne ne les
+ * garde, elles ne s'appliquent à aucune game. C'est un pile ou face habillé,
+ * et l'espérance est nulle — le site ne prend rien au passage.
+ */
+export const DUEL = {
+  miseMin: 50,
+  miseMax: 20_000,
+  /** Cartes tirées par manche et par camp. */
+  cartesParManche: 3,
+  /** La table de tirage, la même pour les deux camps. */
+  weights: RARITY_WEIGHTS_BASE,
 } as const;
-
-export type MarketDuration = (typeof MARKET.durationsMinutes)[number];
-
-/** Une durée de vente, telle qu'on l'écrit : « 10 min », « 4 h », « 24 h ». */
-export function libelleDuree(minutes: number): string {
-  return minutes < 60 ? `${minutes} min` : `${minutes / 60} h`;
-}

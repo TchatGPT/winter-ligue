@@ -6,9 +6,10 @@ import type { Game } from '@/lib/db/entities';
 import { getStore, newId } from '@/lib/db/store';
 import { rewardForGame } from '@/lib/domain/economy';
 import { LIMITS } from '@/lib/security/ratelimit';
-import { consumeBoon } from '@/lib/services/effects';
+import { appliqueCartesEnAttente } from '@/lib/services/effects';
 import { recomputeGame } from '@/lib/services/league';
 import { audit, credit } from '@/lib/services/ledger';
+import { verifieFinisseur } from '@/lib/services/packs';
 import { facteurGain } from '@/lib/services/evenements';
 
 export const runtime = 'nodejs';
@@ -19,13 +20,14 @@ export const dynamic = 'force-dynamic';
  *
  * Réservé à la modération, comme sur la Summer Ligue : c'est le stream qui fait
  * foi, pas la déclaration du joueur. Le corps ne contient ni multiplicateur ni
- * bonus — ceux-ci ne peuvent naître que d'une carte jouée. Le score et les
- * flocons gagnés sont calculés ici.
+ * bonus — ceux-ci ne peuvent naître que d'une carte de pack posée sur ce
+ * joueur, et c'est **ici** qu'elle s'applique, puis se consomme. Le score et
+ * les flocons gagnés sont calculés ici.
  */
 export async function POST(request: Request): Promise<NextResponse> {
   const g = await guard(request, {
     scope: 'game-create',
-    role: 'admin',
+    role: 'moderateur',
     limit: LIMITS.mutation,
     schema: gameSchema,
   });
@@ -47,7 +49,6 @@ export async function POST(request: Request): Promise<NextResponse> {
         placement: g.body.placement,
         bonusPoints: 0,
         skipped: false,
-        frozen: false,
         score: 0,
         note: g.body.note ?? null,
         playedAt: now,
@@ -57,18 +58,30 @@ export async function POST(request: Request): Promise<NextResponse> {
       db.games.push(game);
       recomputeGame(db, game);
 
+      // Les cartes posées sur ce joueur tombent maintenant, et disparaissent.
+      const cartes = appliqueCartesEnAttente(db, game);
+
       const reward = rewardForGame(game.kills, game.placement);
-
-      // La faveur « Manne » double les flocons de la game, et se consomme.
-      const manne = consumeBoon(db, player.id, 'FLOCONS_DOUBLES');
-      // Un évènement « flocons doublés » en cours s'applique à tout le monde,
-      // et se cumule avec la faveur : elle est personnelle et consommée, lui est
-      // collectif et gratuit — ce sont deux choses différentes.
-      const payout = Math.round(reward.total * (manne ? 2 : 1) * facteurGain(db));
+      // Une Manne double les flocons de cette game ; un évènement « flocons
+      // doublés » en cours s'applique à tout le monde, et se cumule avec elle :
+      // elle est personnelle et consommée, lui est collectif et gratuit.
+      const payout = Math.round(reward.total * cartes.facteurFlocons * facteurGain(db));
       credit(db, player.id, payout, 'GAME', game.id);
-      audit(db, 'admin', 'GAME_ENREGISTREE', player.id, `${game.kills} kills — ${game.score} pts`);
 
-      return { game, reward, payout, doubled: Boolean(manne) };
+      // La dernière game de la saison vaut un pack Finisseur, mis en file.
+      const finisseur = verifieFinisseur(db, player.id);
+
+      audit(
+        db,
+        g.session?.sub ?? 'admin',
+        'GAME_ENREGISTREE',
+        player.id,
+        `${game.kills} kills — ${game.score} pts${
+          cartes.cartes.length ? ` — cartes : ${cartes.cartes.map((c) => c.nom).join(', ')}` : ''
+        }`,
+      );
+
+      return { game, reward, payout, cartes: cartes.cartes, finisseur: finisseur !== null };
     });
 
     if ('error' in result) {
@@ -86,7 +99,7 @@ export async function POST(request: Request): Promise<NextResponse> {
 export async function PATCH(request: Request): Promise<NextResponse> {
   const g = await guard(request, {
     scope: 'game-update',
-    role: 'admin',
+    role: 'moderateur',
     limit: LIMITS.mutation,
     schema: updateGameSchema,
   });
@@ -98,7 +111,7 @@ export async function PATCH(request: Request): Promise<NextResponse> {
     if (g.body.skipped !== undefined) game.skipped = g.body.skipped;
     if (g.body.note !== undefined) game.note = g.body.note ?? null;
     recomputeGame(db, game);
-    audit(db, 'admin', 'GAME_MODIFIEE', game.playerId, game.id);
+    audit(db, g.session?.sub ?? 'admin', 'GAME_MODIFIEE', game.playerId, game.id);
     return game;
   });
 
@@ -120,7 +133,7 @@ export async function DELETE(request: Request): Promise<NextResponse> {
     const game = db.games.find((x) => x.id === g.body.gameId);
     if (!game) return false;
     db.games = db.games.filter((x) => x.id !== g.body.gameId);
-    audit(db, 'admin', 'GAME_SUPPRIMEE', game.playerId, game.id);
+    audit(db, g.session?.sub ?? 'admin', 'GAME_SUPPRIMEE', game.playerId, game.id);
     return true;
   });
 

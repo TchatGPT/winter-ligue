@@ -5,7 +5,6 @@ import { fail } from '@/lib/api/respond';
 import { newId, getStore } from '@/lib/db/store';
 import { ECONOMY } from '@/lib/domain/rules';
 import { credit } from '@/lib/services/ledger';
-import { ensurePlayerCard } from '@/lib/services/collection';
 import { makeSlug } from '@/lib/services/league';
 
 export const runtime = 'nodejs';
@@ -40,7 +39,6 @@ export async function GET(request: Request): Promise<NextResponse> {
       existing.twitchLogin = profile.login;
       existing.avatarUrl = profile.avatarUrl;
       existing.active = true;
-      ensurePlayerCard(db, existing);
       return existing;
     }
 
@@ -51,19 +49,24 @@ export async function GET(request: Request): Promise<NextResponse> {
       twitchId: profile.id,
       twitchLogin: profile.login,
       avatarUrl: profile.avatarUrl,
+      activisionId: null,
       snowflakes: 0,
+      subsOfferts: 0,
       joinedAt: new Date().toISOString(),
       active: true,
       role: 'joueur' as const,
     };
     db.players.push(created);
     credit(db, created.id, ECONOMY.welcomeGrant, 'INSCRIPTION', null);
-    ensurePlayerCard(db, created);
     return created;
   });
 
   await setSessionCookie(createToken(player.id, player.role));
 
   const base = (process.env.NEXT_PUBLIC_SITE_URL ?? url.origin).replace(/\/$/, '');
-  return NextResponse.redirect(`${base}${returnTo}`);
+  // Première connexion, ou pseudo Activision jamais renseigné : on passe par
+  // la bienvenue avant tout le reste. Sans ce pseudo, ses games ne peuvent
+  // pas être reconnues sur les captures.
+  const destination = player.activisionId ? returnTo : '/bienvenue';
+  return NextResponse.redirect(`${base}${destination}`);
 }

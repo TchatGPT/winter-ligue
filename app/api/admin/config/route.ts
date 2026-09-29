@@ -8,7 +8,7 @@ import { audit } from '@/lib/services/ledger';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-/** Réglages de saison : limite de games, ouverture de la boutique et du marché. */
+/** Réglages de saison : la limite de games par joueur. */
 export async function PATCH(request: Request): Promise<NextResponse> {
   const g = await guard(request, {
     scope: 'admin-config',
@@ -22,9 +22,7 @@ export async function PATCH(request: Request): Promise<NextResponse> {
     if (g.body.maxGamesPerPlayer !== undefined) {
       db.config.maxGamesPerPlayer = g.body.maxGamesPerPlayer;
     }
-    if (g.body.shopOpen !== undefined) db.config.shopOpen = g.body.shopOpen;
-    if (g.body.marketOpen !== undefined) db.config.marketOpen = g.body.marketOpen;
-    audit(db, 'admin', 'CONFIG_MODIFIEE', null, JSON.stringify(g.body));
+    audit(db, g.session?.sub ?? 'admin', 'CONFIG_MODIFIEE', null, JSON.stringify(g.body));
     return db.config;
   });
 

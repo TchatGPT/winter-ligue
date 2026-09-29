@@ -456,20 +456,35 @@ export function franchissements(
  * de **0,21 px** — un cinquième de pixel sur toute la course. `tests/spin.test.ts`
  * la mesure, pour que personne n'aille alléger l'échantillonnage sans le voir.
  */
+/**
+ * L'axe du rouleau.
+ *
+ * Vertical pour les affrontements, où plusieurs colonnes tournent côte à côte
+ * comme sur la vidéo de référence. Horizontal pour l'ouverture d'un pack, qui
+ * ne tire qu'une carte : une seule bande, qui défile de droite à gauche devant
+ * le repère.
+ */
+export type Axe = 'x' | 'y';
+
+/** Une translation sur l'axe demandé, en px. */
+export function translation(axe: Axe, valeur: number): string {
+  const v = valeur.toFixed(2);
+  return axe === 'x' ? `translate3d(${v}px, 0, 0)` : `translate3d(0, ${v}px, 0)`;
+}
+
 export function imagesCles(
   depart: number,
   trajet: number,
   courbe: Courbe = COURBE_MESUREE,
   echantillons = 200,
+  axe: Axe = 'y',
 ): Keyframe[] {
   const cles: Keyframe[] = [];
   for (let k = 0; k <= echantillons; k += 1) {
     const offset = (k / echantillons) ** 2;
-    // La translation est sur **Y** : le rouleau descend. C'est ce que montre la
-    // vidéo, et c'est le seul endroit du module qui connaisse l'axe.
     cles.push({
       offset,
-      transform: `translate3d(0, ${(depart - courbe.avance(offset * courbe.duree) * trajet).toFixed(2)}px, 0)`,
+      transform: translation(axe, depart - courbe.avance(offset * courbe.duree) * trajet),
     });
   }
   return cles;
@@ -494,6 +509,7 @@ export function imagesClesRelance(
   courbe: Courbe = COURBE_MESUREE,
   pause = PAUSE_RELANCE,
   echantillons = 200,
+  axe: Axe = 'y',
 ): Keyframe[] {
   const total = dureeRelance(duree, pause);
   const acte = duree / total;
@@ -501,7 +517,7 @@ export function imagesClesRelance(
   const cles: Keyframe[] = [];
 
   const pose = (offset: number, x: number) =>
-    cles.push({ offset, transform: `translate3d(0, ${x.toFixed(2)}px, 0)` });
+    cles.push({ offset, transform: translation(axe, x) });
 
   for (let k = 0; k <= echantillons; k += 1) {
     const u = (k / echantillons) ** 2;

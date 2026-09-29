@@ -1,7 +1,9 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { CardTile, EmptyState, StatTile, flakes } from '@/components/ui';
+import { exigeSession } from '@/lib/auth/acces';
+import { CardTile, EmptyState, StatTile, flakes, rarityMeta } from '@/components/ui';
 import { getCard } from '@/lib/domain/catalog';
+import { ECONOMY, libelleMultiplicateur, PACKS_REGLES } from '@/lib/domain/rules';
 import { getPublicProfile } from '@/lib/services/profile';
 import { shortDateTime } from '@/lib/format';
 import { TitreGlace } from '@/components/TitreGlace';
@@ -17,16 +19,15 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 /**
  * Profil public.
  *
- * Ne montre ni la main, ni le grand livre, ni les enchères en cours : ces
- * informations donneraient un avantage tactique. `getPublicProfile` les retire
- * côté serveur, elles ne transitent donc jamais.
+ * Ce qui attend sa prochaine game, ce qui lui est dû, ce qu'il a reçu, et ses
+ * games. Le grand livre n'est pas montré : `getPublicProfile` le retire côté
+ * serveur.
  */
-export default async function ProfilJoueurPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function ProfilJoueurPage({ params }: { params: Promise<{ slug: string }> }){
+  await exigeSession();
   const { slug } = await params;
   const profile = await getPublicProfile(slug);
   if (!profile) notFound();
-
-  const discovered = profile.collection.filter((c) => c.discovered);
 
   return (
     <div className="space-y-6">
@@ -45,9 +46,13 @@ export default async function ProfilJoueurPage({ params }: { params: Promise<{ s
           <TitreGlace taille="bloc" niveau={1}>
             {profile.pseudo}
           </TitreGlace>
-          <div className="mt-1 flex flex-wrap gap-1.5">
-            {profile.shielded && <span className="badge border-ice/50 text-ice">🛡 Protégé</span>}
-          </div>
+          <p className="mt-1 text-[13px] text-muted">
+            <span className="num">❄ {flakes(profile.snowflakes)}</span>
+            <span className="text-faint"> / {flakes(ECONOMY.soldeMax)}</span> · chance{' '}
+            <span className="num text-aurora">{libelleMultiplicateur(profile.chance)}</span> ·{' '}
+            {profile.subsOfferts} sub{profile.subsOfferts > 1 ? 's' : ''} offert
+            {profile.subsOfferts > 1 ? 's' : ''}, prochain Booster Perso dans {profile.subsAvantPack}
+          </p>
         </div>
         {profile.twitchLogin && (
           <a
@@ -84,105 +89,159 @@ export default async function ProfilJoueurPage({ params }: { params: Promise<{ s
         />
       </section>
 
-      <div className="grid gap-6 xl:grid-cols-2 xl:items-start">
-      <section>
-        <TitreGlace taille="bloc" className="mb-3">
-          Historique des games
-        </TitreGlace>
-        {profile.games.length === 0 ? (
-          <EmptyState title="Aucune game enregistrée" />
-        ) : (
-          <div className="glass scroll-x">
-            <table className="grid-table min-w-[640px]">
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th className="text-right">Kills</th>
-                  <th className="text-center">Top</th>
-                  <th className="text-right">Bonus</th>
-                  <th className="text-right">Score</th>
-                  <th>Cartes</th>
-                </tr>
-              </thead>
-              <tbody>
-                {profile.games.map((game) => (
-                  <tr key={game.id} className={game.skipped ? 'opacity-45' : undefined}>
-                    <td className="text-xs text-faint">
-                      {shortDateTime(game.playedAt)}
-                      {game.frozen && <span title="Game gelée"> ❄</span>}
-                      {game.skipped && <span className="ml-1 text-[13px] uppercase">passée</span>}
-                    </td>
-                    <td className="num text-right text-ink">{game.kills}</td>
-                    <td className="num text-center text-gold">{game.placement ?? '—'}</td>
-                    <td
-                      className={`num text-right ${game.bonusPoints < 0 ? 'text-danger' : 'text-muted'}`}
-                    >
-                      {game.bonusPoints !== 0
-                        ? `${game.bonusPoints > 0 ? '+' : ''}${game.bonusPoints}`
-                        : '—'}
-                    </td>
-                    <td className="num text-right font-display text-base font-black text-ice">
-                      {game.score}
-                    </td>
-                    <td className="text-xs">
-                      {game.applied.length === 0 ? (
-                        <span className="text-faint">—</span>
-                      ) : (
-                        // Chaque carte affiche son apport exact : on voit d'un
-                        // coup d'œil comment le score a été construit, et par qui.
-                        <span className="flex flex-wrap gap-1.5">
-                          {game.applied.map((effect, i) => {
-                            const card = getCard(effect.cardId);
-                            if (!card) return null;
-                            const hostile = effect.byPlayerId !== profile.id;
-                            return (
-                              <span
-                                key={`${effect.cardId}-${i}`}
-                                title={`${card.name} : ${effect.points > 0 ? '+' : ''}${effect.points} pts${
-                                  hostile ? ' (malus adverse)' : ''
-                                }`}
-                                className={hostile ? 'text-danger' : 'text-muted'}
-                              >
-                                {card.glyph}
-                                <span className="num ml-0.5 text-[11px]">
-                                  {effect.points > 0 ? '+' : ''}
-                                  {effect.points}
-                                </span>
-                              </span>
-                            );
-                          })}
-                        </span>
-                      )}
-                    </td>
+      <div className="grid gap-6 xl:grid-cols-[1.2fr_1fr] xl:items-start">
+        <section>
+          <TitreGlace taille="bloc" className="mb-3">
+            Historique des games
+          </TitreGlace>
+          {profile.games.length === 0 ? (
+            <EmptyState title="Aucune game enregistrée" />
+          ) : (
+            <div className="glass scroll-x">
+              <table className="grid-table min-w-[640px]">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th className="text-right">Kills</th>
+                    <th className="text-center">Top</th>
+                    <th className="text-right">Cartes</th>
+                    <th className="text-right">Score</th>
+                    <th>Détail</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
+                </thead>
+                <tbody>
+                  {profile.games.map((game) => (
+                    <tr key={game.id} className={game.skipped ? 'opacity-45' : undefined}>
+                      <td className="text-xs text-faint">
+                        {shortDateTime(game.playedAt)}
+                        {game.skipped && <span className="ml-1 text-[13px] uppercase">passée</span>}
+                      </td>
+                      <td className="num text-right text-ink">{game.kills}</td>
+                      <td className="num text-center text-gold">{game.placement ?? '—'}</td>
+                      <td
+                        className={`num text-right ${game.bonusPoints < 0 ? 'text-danger' : 'text-muted'}`}
+                      >
+                        {game.bonusPoints !== 0
+                          ? `${game.bonusPoints > 0 ? '+' : ''}${game.bonusPoints}`
+                          : '—'}
+                      </td>
+                      <td className="num text-right font-display text-base font-black text-ice">
+                        {game.score}
+                      </td>
+                      <td className="text-xs">
+                        {game.applied.length === 0 ? (
+                          <span className="text-faint">—</span>
+                        ) : (
+                          <span className="flex flex-wrap gap-1.5">
+                            {game.applied.map((effect, i) => {
+                              const card = getCard(effect.cardId);
+                              if (!card) return null;
+                              return (
+                                <span
+                                  key={`${effect.cardId}-${i}`}
+                                  title={`${card.name} : ${effect.points > 0 ? '+' : ''}${effect.points} pts`}
+                                  className={effect.points < 0 ? 'text-danger' : 'text-muted'}
+                                >
+                                  {card.glyph}
+                                  <span className="num ml-0.5 text-[11px]">
+                                    {effect.points > 0 ? '+' : ''}
+                                    {effect.points}
+                                  </span>
+                                </span>
+                              );
+                            })}
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
 
-      <section>
-        <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
-          <TitreGlace taille="bloc">Collection</TitreGlace>
-          <span className="text-xs text-muted">
-            {discovered.length} / {profile.collection.length} cartes découvertes ·{' '}
-            <span className="num">❄ {flakes(profile.snowflakes)}</span>
-          </span>
+        <div className="space-y-6">
+          <section>
+            <TitreGlace taille="bloc" className="mb-3">
+              Carte active
+            </TitreGlace>
+            <p className="-mt-2 mb-3 text-[13px] text-faint">
+              Une seule carte tombe par game. Les suivantes attendent leur tour, une par game.
+            </p>
+            {profile.cartesEnAttente.length === 0 ? (
+              <EmptyState
+                title="Aucune carte en attente"
+                hint={`Un Booster Perso tous les ${PACKS_REGLES.persoTousLes} subs offerts, et les boosters de la ligue.`}
+              />
+            ) : (
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                {profile.cartesEnAttente.map((c, i) => (
+                  <CardTile
+                    key={c.id}
+                    cardId={c.cardId}
+                    name={c.nom}
+                    description={c.description}
+                    rarity={c.rarity}
+                    glyph={c.glyph}
+                    power={c.power}
+                    nature={c.nature}
+                    dimmed={i > 0}
+                    footer={
+                      <span className="text-[11px] text-faint">
+                        {i === 0 ? (
+                          <strong className="text-aurora">Active</strong>
+                        ) : (
+                          `En réserve, game +${i + 1}`
+                        )}{' '}
+                        · {c.pack}
+                      </span>
+                    }
+                  />
+                ))}
+              </div>
+            )}
+          </section>
+
+          {profile.packsDus.length > 0 && (
+            <section>
+              <TitreGlace taille="bloc" className="mb-3">
+                Boosters à ouvrir
+              </TitreGlace>
+              <ul className="glass divide-y divide-white/8">
+                {profile.packsDus.map((p) => (
+                  <li key={p.id} className="flex items-center gap-3 px-4 py-2.5 text-[14px]">
+                    <span className="font-display font-bold text-ink capitalize">Booster {p.pack}</span>
+                    <span className="text-xs text-faint">{p.raison}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          <section>
+            <TitreGlace taille="bloc" className="mb-3">
+              Dernières cartes reçues
+            </TitreGlace>
+            {profile.ouvertures.length === 0 ? (
+              <EmptyState title="Rien encore" />
+            ) : (
+              <ul className="glass divide-y divide-white/8">
+                {profile.ouvertures.map((o) => (
+                  <li key={o.id} className="flex flex-wrap items-center gap-3 px-4 py-2.5 text-[14px]">
+                    <span className="text-xs whitespace-nowrap text-faint">
+                      {shortDateTime(o.openedAt)}
+                    </span>
+                    <span className="text-muted">{o.pack}</span>
+                    <span className="font-display font-bold" style={{ color: rarityMeta(o.rarity).color }}>
+                      {o.glyph} {o.nom}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
         </div>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8 2xl:grid-cols-10">
-          {profile.collection.map((entry) => (
-            <CardTile
-              key={entry.cardId}
-              cardId={entry.cardId}
-              name={entry.discovered ? entry.name : '???'}
-              rarity={entry.rarity}
-              glyph={entry.discovered ? entry.glyph : '❔'}
-              dimmed={!entry.discovered}
-            />
-          ))}
-        </div>
-      </section>
       </div>
     </div>
   );

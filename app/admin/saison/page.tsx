@@ -8,15 +8,14 @@ export default async function AdminSaisonPage() {
   const data = await getStore().read((db) => ({
     config: {
       maxGamesPerPlayer: db.config.maxGamesPerPlayer,
-      shopOpen: db.config.shopOpen,
-      marketOpen: db.config.marketOpen,
       totalSubs: db.config.totalSubs,
     },
     joueurs: db.players
       .filter((p) => p.active)
-      .map((p) => ({ id: p.id, pseudo: p.pseudo }))
+      .map((p) => ({ id: p.id, pseudo: p.pseudo, subsOfferts: p.subsOfferts }))
       .sort((a, b) => a.pseudo.localeCompare(b.pseudo, 'fr')),
+    packsEnFile: db.packsDus.filter((p) => p.ouvertureId === null).length,
   }));
 
-  return <EcranSaison config={data.config} joueurs={data.joueurs} />;
+  return <EcranSaison config={data.config} joueurs={data.joueurs} packsEnFile={data.packsEnFile} />;
 }

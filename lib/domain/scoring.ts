@@ -78,7 +78,6 @@ export interface ScoredGame {
   placement: Placement;
   score: number;
   skipped: boolean;
-  frozen: boolean;
   playedAt: string;
 }
 

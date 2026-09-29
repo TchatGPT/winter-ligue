@@ -171,9 +171,22 @@ export function IconShield(props: IconProps) {
   );
 }
 
+/** Boosters — une fusée, dans la colonne. */
+export function IconRocket(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M14.5 3.5c2.6-.6 5 .2 6 1.2-.2 3-1.6 6.2-4.2 8.8l-3.6 3.6-4.8-4.8 3.6-3.6c.9-.9 1.9-1.6 3-2.1Z" />
+      <path d="M8.6 12.3 5.4 12l-2 2 3.6 1.2M11.7 15.4l.3 3.2-2 2-1.2-3.6" />
+      <circle cx="15.6" cy="8.4" r="1.4" />
+      <path d="M6.2 17.8c-1 1-1.5 3-1.5 3s2-.5 3-1.5" />
+    </Svg>
+  );
+}
+
 export const NAV_ICONS = {
   trophy: IconTrophy,
   pack: IconPack,
+  rocket: IconRocket,
   gavel: IconGavel,
   swords: IconSwords,
   plus: IconPlus,

@@ -12,6 +12,7 @@ import 'server-only';
 import type { Database, Player } from '@/lib/db/entities';
 import { newId } from '@/lib/db/store';
 import type { LedgerReason } from '@/lib/domain/economy';
+import { ECONOMY } from '@/lib/domain/rules';
 
 export class LedgerError extends Error {
   constructor(
@@ -47,7 +48,14 @@ function record(
   });
 }
 
-/** Crédite un joueur. Le montant doit être un entier positif. */
+/**
+ * Crédite un joueur. Le montant doit être un entier positif.
+ *
+ * Le solde ne dépasse jamais `ECONOMY.soldeMax` : ce qui déborde est perdu, et
+ * c'est le delta réellement appliqué qui est écrit au grand livre — pas le
+ * montant demandé —, sans quoi le solde ne se reconstruirait plus depuis
+ * l'historique.
+ */
 export function credit(
   db: Database,
   playerId: string,
@@ -59,8 +67,9 @@ export function credit(
     throw new LedgerError('Montant de crédit invalide.', 'MONTANT_INVALIDE');
   }
   const player = requirePlayer(db, playerId);
-  player.snowflakes += amount;
-  record(db, player, amount, reason, refId);
+  const applied = Math.max(0, Math.min(amount, ECONOMY.soldeMax - player.snowflakes));
+  player.snowflakes += applied;
+  record(db, player, applied, reason, refId);
   return player.snowflakes;
 }
 
@@ -96,7 +105,7 @@ export function adjust(
   refId: string | null = null,
 ): number {
   const player = requirePlayer(db, playerId);
-  const applied = Math.max(delta, -player.snowflakes);
+  const applied = Math.min(Math.max(delta, -player.snowflakes), ECONOMY.soldeMax - player.snowflakes);
   player.snowflakes += applied;
   record(db, player, applied, 'AJUSTEMENT_ADMIN', refId);
   return player.snowflakes;

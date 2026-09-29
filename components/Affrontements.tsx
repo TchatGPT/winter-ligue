@@ -1,20 +1,20 @@
 'use client';
 
 /**
- * Le salon des affrontements.
+ * Le salon des duels.
  *
  * Quatre choses sur un même écran : de quoi en monter un, ceux qui cherchent un
  * adversaire, les plus gros de la semaine, et les derniers joués. La cinquième —
- * l'arène — recouvre tout dès qu'un affrontement se joue, parce qu'à ce
+ * l'arène — recouvre tout dès qu'un duel se joue, parce qu'à ce
  * moment-là il n'y a plus rien d'autre à regarder.
  *
  * ## Le sondage plutôt que le temps réel
  *
  * Le projet n'a pas de canal permanent, et n'en a pas besoin ici. Un
- * affrontement se rejoint en un clic ; deux secondes de retard sur l'affichage
+ * duel se rejoint en un clic ; deux secondes de retard sur l'affichage
  * n'ont jamais fait rater personne, et un WebSocket ouvert en permanence pour
  * une poignée de joueurs coûterait plus qu'il ne rapporte. Le sondage s'arrête
- * d'ailleurs pendant qu'un affrontement se joue, où il ne servirait à rien.
+ * d'ailleurs pendant qu'un duel se joue, où il ne servirait à rien.
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -24,14 +24,12 @@ import {
   type BatailleVueClient,
   type CatalogueCarte,
 } from '@/components/BatailleArene';
-import { RangeeBoosters } from '@/components/RangeeBoosters';
 import { NAV_ICONS } from '@/components/icons';
-import { boosterArt } from '@/lib/domain/catalog';
 import { reveilleSon } from '@/components/bruitage';
 import { CardFrame } from '@/components/CardFrame';
-import { EmptyState, Notice, RarityChip, flakes, rarityMeta } from '@/components/ui';
+import { EmptyState, Notice, flakes, rarityMeta } from '@/components/ui';
 import { RARITY_ORDER } from '@/lib/domain/rules';
-import type { BoosterDefinition, Rarity } from '@/lib/domain/types';
+import type { Rarity } from '@/lib/domain/types';
 import { SnowCap } from '@/components/SnowCap';
 
 /** Le rythme du sondage, quand personne ne joue. */
@@ -40,68 +38,27 @@ const SONDAGE = 2000;
 interface Charge {
   batailles: BatailleVueClient[];
   top: BatailleVueClient[];
-  boosters: BoosterDefinition[];
-  shopOpen: boolean;
   balance: number | null;
-  bornes: { min: number; max: number };
+  bornes: { manches: { min: number; max: number }; mise: { min: number; max: number } };
   moiId: string | null;
 }
+
+/** Les mises proposées d'un clic. Le champ accepte n'importe quoi entre les bornes. */
+const MISES = [100, 250, 500, 1000, 2500, 5000];
 
 /* -------------------------------------------------------------------------- */
 
 /* ============================ Les briques ================================= */
 
-/**
- * La vignette d'un sachet.
- *
- * Le sachet en trois dimensions est superbe et coûte cher : cinq par ligne sur
- * vingt lignes feraient cent scènes à composer pour un salon qu'on parcourt du
- * pouce. Un carré à son dégradé et son glyphe suffit à le reconnaître — c'est le
- * même code couleur que la rangée de création.
- */
-function Vignette({
-  sachet,
-  boosters,
-  taille = 60,
-}: {
-  sachet: { id: string; nom: string };
-  boosters: BoosterDefinition[];
-  taille?: number;
-}) {
-  const def = boosters.find((b) => b.id === sachet.id);
-  const art = boosterArt(sachet.id);
-  return (
-    <span
-      className="duel-sachet"
-      style={{
-        width: taille,
-        height: taille,
-        ['--haut' as string]: def?.gradient[0] ?? '#22314a',
-        ['--bas' as string]: def?.gradient[1] ?? '#101a2c',
-      }}
-      title={sachet.nom}
-    >
-      {art ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={art} alt="" aria-hidden="true" />
-      ) : (
-        <span aria-hidden="true" style={{ fontSize: taille * 0.4 }}>
-          {def?.glyph ?? '❄'}
-        </span>
-      )}
-    </span>
-  );
-}
-
 /** Le pot : les deux mises réunies. C'est ce qui change de mains. */
 const pot = (b: BatailleVueClient) => b.mise * 2;
 
 /**
- * Les plus belles cartes tombées dans l'affrontement.
+ * Les plus belles cartes tombées dans le duel.
  *
  * C'est ce qu'on vient regarder, et c'était absent : une ligne annonçait
  * « 30 000 ❄ » sans jamais montrer ce que ces trente mille avaient donné. Un
- * classement des plus gros affrontements de la semaine qui ne montre pas les
+ * classement des plus gros duels de la semaine qui ne montre pas les
  * cartes n'est qu'un tableau de comptabilité.
  *
  * Les plus hautes raretés d'abord, doublons écartés — voir trois fois la même
@@ -155,7 +112,7 @@ function Etat({ enAttente }: { enAttente: boolean }) {
 }
 
 /**
- * Une ligne d'affrontement, en trois bandes.
+ * Une ligne de duel, en trois bandes.
  *
  * ## Pourquoi elle a été refaite, deux fois
  *
@@ -172,7 +129,7 @@ function Etat({ enAttente }: { enAttente: boolean }) {
  *
  *  1. les sachets en jeu, et le pot à l'autre bout — ce qu'on met, ce qu'on
  *     gagne, sur la même ligne des yeux ;
- *  2. l'affrontement lui-même : les deux camps face à face, leurs scores de
+ *  2. le duel lui-même : les deux camps face à face, leurs scores de
  *     part et d'autre du VS, et le bouton qui engage ;
  *  3. les cartes sorties, une fois la partie jouée.
  *
@@ -180,7 +137,6 @@ function Etat({ enAttente }: { enAttente: boolean }) {
  */
 function Ligne({
   affrontement,
-  boosters,
   catalog,
   moiId,
   rang,
@@ -188,7 +144,6 @@ function Ligne({
   onRelire,
 }: {
   affrontement: BatailleVueClient;
-  boosters: BoosterDefinition[];
   catalog: Record<string, CatalogueCarte>;
   moiId: string | null;
   /** Le rang dans le classement de la semaine, s'il y en a un. */
@@ -286,14 +241,8 @@ function Ligne({
             </span>
           )}
 
-          <span className="flex flex-wrap items-center gap-2">
-            {b.sachets.map((s, i) => (
-              <Vignette key={`${s.id}-${i}`} sachet={s} boosters={boosters} />
-            ))}
-          </span>
-
-          <span className="hidden font-display text-[12px] font-bold tracking-wider text-faint uppercase sm:inline">
-            {b.manches} sachet{b.manches > 1 ? 's' : ''} par camp
+          <span className="font-display text-[12px] font-bold tracking-wider text-faint uppercase">
+            {b.manches} manche{b.manches > 1 ? 's' : ''} · {b.cartesParManche} cartes par camp
           </span>
 
           {/* Le pot pousse à droite : c'est le bout de la ligne des yeux. */}
@@ -310,7 +259,7 @@ function Ligne({
           </span>
         </div>
 
-        {/* ---- Bande 2 : l'affrontement ----------------------------------- */}
+        {/* ---- Bande 2 : le duel ----------------------------------- */}
         <div className="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-2xl bg-black/22 px-3 py-2.5">
           {camp(hote, 'gauche')}
           <span
@@ -370,23 +319,20 @@ function Ligne({
 export function Affrontements({
   initial,
   catalog,
+  poids,
 }: {
   initial: Charge;
   catalog: Record<string, CatalogueCarte>;
+  /** Les taux d'affichage des rouleaux, sur 100 000. */
+  poids: Record<string, number>;
 }) {
   const [etat, setEtat] = useState<Charge>(initial);
   const [erreur, setErreur] = useState<string | null>(null);
   const [occupe, setOccupe] = useState(false);
 
-  /** Le sachet mis en avant dans la rangée — celui qu'un clic ajoutera. */
-  const [vise, setVise] = useState(initial.boosters[0]?.id ?? '');
-  /**
-   * Le panier, dans l'ordre où les sachets s'ouvriront.
-   *
-   * Une liste, et non un compteur : c'est ce qui permet de finir sur un Everest
-   * après trois Givre. L'ordre est celui des manches, et il change la partie.
-   */
-  const [panier, setPanier] = useState<string[]>([]);
+  /** La mise et le nombre de manches du duel qu'on monte. */
+  const [mise, setMise] = useState(MISES[0]);
+  const [manches, setManches] = useState(1);
 
   /** Quelle liste on regarde. Une à la fois, comme sur la référence. */
   type Onglet = 'attente' | 'top' | 'miens' | 'jouees';
@@ -396,21 +342,17 @@ export function Affrontements({
 
   const parametres = useSearchParams();
   const routeur = useRouter();
-  const demandee = parametres.get('affrontement');
+  const demandee = parametres.get('duel');
 
   const [arene, setArene] = useState<BatailleVueClient | null>(
     () => initial.batailles.find((b) => b.id === demandee && b.statut === 'TERMINEE') ?? null,
   );
   const [anime, setAnime] = useState(parametres.get('anime') === '1');
 
-  const prixDe = useCallback(
-    (id: string) => etat.boosters.find((b) => b.id === id)?.price ?? 0,
-    [etat.boosters],
-  );
-  const mise = panier.reduce((n, id) => n + prixDe(id), 0);
   const solde = etat.balance;
   const abordable = solde !== null && solde >= mise;
-  const plein = panier.length >= etat.bornes.max;
+  const miseValide =
+    Number.isInteger(mise) && mise >= etat.bornes.mise.min && mise <= etat.bornes.mise.max;
 
   const recharge = useCallback(async () => {
     try {
@@ -457,10 +399,6 @@ export function Affrontements({
       if (vue.statut === 'TERMINEE') {
         setAnime(animer);
         setArene(vue);
-      } else {
-        // Un affrontement créé attend : le panier est parti à l'enjeu, on le vide
-        // pour que le suivant reparte d'une page blanche.
-        setPanier([]);
       }
       await recharge();
     } catch {
@@ -473,18 +411,13 @@ export function Affrontements({
 
   function ferme() {
     setArene(null);
-    if (demandee) routeur.replace('/affrontements', { scroll: false });
+    if (demandee) routeur.replace('/duels', { scroll: false });
     void recharge();
   }
 
   /* --------------------------------- Arène -------------------------------- */
 
   if (arene) {
-    // Les taux de **tous** les sachets : un panier mélangé change de table à
-    // chaque manche, et l'arène choisit la bonne au moment de la jouer.
-    const poids = Object.fromEntries(
-      etat.boosters.map((b) => [b.id, b.weights as Record<string, number>]),
-    );
     return (
       <div className="space-y-4">
         <BatailleArene
@@ -510,8 +443,6 @@ export function Affrontements({
   const miens = etat.batailles.filter(
     (b) => etat.moiId !== null && b.camps.some((c) => c.id === etat.moiId),
   );
-  const booster = etat.boosters.find((b) => b.id === vise) ?? etat.boosters[0];
-
   const relire = (b: BatailleVueClient) => () => {
     setAnime(false);
     setArene(b);
@@ -562,9 +493,8 @@ export function Affrontements({
 
   return (
     <div className="space-y-5">
-      {!etat.shopOpen && <Notice kind="error">La boutique est fermée par la modération.</Notice>}
       {etat.moiId === null && (
-        <Notice>Connecte-toi pour monter un affrontement ou en rejoindre un.</Notice>
+        <Notice>Connecte-toi pour lancer un duel ou en rejoindre un.</Notice>
       )}
       {erreur && <Notice kind="error">{erreur}</Notice>}
 
@@ -617,11 +547,11 @@ export function Affrontements({
           aria-expanded={creation}
           onClick={() => setCreation((v) => !v)}
         >
-          {creation ? 'Fermer' : '+ Monter un affrontement'}
+          {creation ? 'Fermer' : '+ Lancer un duel'}
         </button>
       </div>
 
-      {/* ---------------------- Monter un affrontement ---------------------
+      {/* ---------------------- Lancer un duel ------------------------------
 
           Repliée par défaut, et c'est un changement de fond : le panneau de
           création occupait le haut de la page en permanence, si bien qu'il
@@ -630,114 +560,84 @@ export function Affrontements({
           quand rien ne convient. */}
       {creation && (
         <section className="glass relative space-y-5 px-4 py-5">
-          <SnowCap radius="var(--r-lg)" seed="affrontements" />
-          {booster && (
-            <div className="flex flex-col items-center gap-1 text-center">
-              <h3 className="font-display text-2xl leading-none font-black tracking-wide text-ink uppercase">
-                {booster.name}
-              </h3>
-              <p className="text-[13px] text-faint">
-                {booster.slots.effet} effet{booster.slots.effet > 1 ? 's' : ''} +{' '}
-                {booster.slots.collection} collection · {flakes(booster.price)} ❄
-              </p>
-              {booster.guaranteed && (
-                <span className="flex items-center gap-1.5 text-[13px] text-faint">
-                  garanti <RarityChip rarity={booster.guaranteed} />
-                </span>
-              )}
-            </div>
-          )}
-
-          <RangeeBoosters
-            boosters={etat.boosters}
-            selection={booster?.id ?? ''}
-            onSelection={setVise}
-            fige={occupe}
-          />
-
-          <div className="flex justify-center">
-            <button
-              type="button"
-              className="btn btn-ice"
-              disabled={occupe || !booster || plein}
-              onClick={() => booster && setPanier((p) => [...p, booster.id])}
-            >
-              {plein ? `${etat.bornes.max} sachets au maximum` : `Ajouter ${booster?.name ?? ''}`}
-            </button>
+          <SnowCap radius="var(--r-lg)" seed="duels" />
+          <div className="flex flex-col items-center gap-1 text-center">
+            <h3 className="font-display text-2xl leading-none font-black tracking-wide text-ink uppercase">
+              Lancer un duel
+            </h3>
+            <p className="text-[13px] text-faint">
+              La mise de chaque camp, et le nombre de manches. Le pot vaut le double de la mise.
+            </p>
           </div>
 
-          {/*
-            Le panier.
-
-            Il se lit de gauche à droite comme les manches se joueront, et chaque
-            sachet s'enlève d'un clic. Les emplacements vides sont dessinés : sans
-            eux, on ne voit pas combien il en reste, et le plafond de cinq
-            n'apparaît qu'au moment où l'on bute dessus.
-          */}
+          {/* La mise : six montants d'un clic, et un champ pour le reste. */}
           <div className="space-y-2">
-            <p className="eyebrow text-center">
-              Le panier — {panier.length} / {etat.bornes.max}
-            </p>
+            <p className="eyebrow text-center">La mise</p>
             <div className="flex flex-wrap justify-center gap-2">
-              {panier.map((id, i) => {
-                const def = etat.boosters.find((b) => b.id === id);
-                return (
-                  <button
-                    key={`${id}-${i}`}
-                    type="button"
-                    disabled={occupe}
-                    onClick={() => setPanier((p) => p.filter((_, k) => k !== i))}
-                    aria-label={`Retirer ${def?.name ?? id} de la manche ${i + 1}`}
-                    className="flex items-center gap-2 rounded-full border py-1.5 pr-3 pl-1.5 transition-colors"
-                    style={{ borderColor: 'var(--glass-edge)' }}
-                  >
-                    <Vignette
-                      sachet={{ id, nom: def?.name ?? id }}
-                      boosters={etat.boosters}
-                      taille={36}
-                    />
-                    <span className="font-display text-[13px] font-bold">{def?.name}</span>
-                    <span className="text-faint" aria-hidden="true">
-                      ×
-                    </span>
-                  </button>
-                );
-              })}
+              {MISES.map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  aria-pressed={mise === m}
+                  disabled={occupe}
+                  onClick={() => setMise(m)}
+                  className={`btn btn-sm ${mise === m ? 'btn-ice' : ''}`}
+                >
+                  {flakes(m)} ❄
+                </button>
+              ))}
+              <input
+                type="number"
+                className="field num max-w-[140px]"
+                min={etat.bornes.mise.min}
+                max={etat.bornes.mise.max}
+                value={mise}
+                disabled={occupe}
+                onChange={(e) => setMise(Number(e.target.value))}
+                aria-label="Mise en flocons"
+              />
+            </div>
+          </div>
 
-              {Array.from({ length: etat.bornes.max - panier.length }, (_, i) => (
-                <span
-                  key={`vide-${i}`}
-                  className="h-[46px] w-[46px] rounded-full border border-dashed"
-                  style={{ borderColor: 'rgb(255 255 255 / 0.12)' }}
-                  aria-hidden="true"
-                />
+          {/* Les manches : chacune tire trois cartes par camp. */}
+          <div className="space-y-2">
+            <p className="eyebrow text-center">Les manches</p>
+            <div className="flex flex-wrap justify-center gap-2">
+              {Array.from(
+                { length: etat.bornes.manches.max - etat.bornes.manches.min + 1 },
+                (_, i) => etat.bornes.manches.min + i,
+              ).map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  aria-pressed={manches === n}
+                  disabled={occupe}
+                  onClick={() => setManches(n)}
+                  className={`btn btn-sm ${manches === n ? 'btn-ice' : ''}`}
+                >
+                  {n}
+                </button>
               ))}
             </div>
           </div>
 
           <div className="flex flex-col items-center gap-3">
             {(() => {
-              const empeche =
-                panier.length < etat.bornes.min ||
-                !etat.shopOpen ||
-                etat.moiId === null ||
-                !abordable;
+              const empeche = !miseValide || etat.moiId === null || !abordable;
               const libelle =
                 etat.moiId === null
                   ? 'Connexion requise'
-                  : !etat.shopOpen
-                    ? 'Boutique fermée'
-                    : panier.length < etat.bornes.min
-                      ? 'Ajoute un sachet'
-                      : !abordable
-                        ? 'Flocons insuffisants'
-                        : 'Miser';
+                  : !miseValide
+                    ? `Mise entre ${flakes(etat.bornes.mise.min)} et ${flakes(etat.bornes.mise.max)} ❄`
+                    : !abordable
+                      ? 'Flocons insuffisants'
+                      : 'Miser';
               return (
                 <button
                   type="button"
                   className={`btn btn-ice ${empeche || occupe ? 'btn-lg' : 'btn-ouvrir'}`}
                   disabled={occupe || empeche}
-                  onClick={() => agit('/api/affrontements', { boosterIds: panier }, false)}
+                  onClick={() => agit('/api/affrontements', { mise, manches }, false)}
                 >
                   <span>{occupe ? 'Un instant…' : libelle}</span>
                   {!empeche && !occupe && (
@@ -763,11 +663,11 @@ export function Affrontements({
             )}
 
             <p className="max-w-2xl text-center text-[13px] leading-relaxed text-faint">
-              Les deux camps ouvrent <strong>la même liste de sachets</strong>, manche par manche.
-              Celui dont les cartes totalisent la plus haute <strong>somme de raretés</strong>{' '}
-              remporte tout — les siennes et celles de l’autre. À somme égale, la plus haute carte
+              Les deux camps misent <strong>la même somme</strong> et tirent le même nombre de
+              cartes, manche par manche. Celui dont les cartes totalisent la plus haute{' '}
+              <strong>somme de raretés</strong> remporte le pot. À somme égale, la plus haute carte
               tranche.
-              {solde !== null && !abordable && panier.length > 0 && (
+              {solde !== null && !abordable && miseValide && (
                 <> Il te manque {flakes(mise - solde)} ❄ pour cette mise.</>
               )}
             </p>
@@ -787,17 +687,17 @@ export function Affrontements({
           <EmptyState
             title={
               onglet === 'attente'
-                ? 'Aucun affrontement ouvert'
+                ? 'Aucun duel ouvert'
                 : onglet === 'top'
                   ? 'Rien cette semaine'
                   : onglet === 'miens'
                     ? 'Tu n’en as encore joué aucun'
-                    : 'Aucun affrontement terminé'
+                    : 'Aucun duel terminé'
             }
             hint={
               onglet === 'attente'
-                ? 'Monte le tien : si personne ne se présente, le bot répondra.'
-                : 'Les affrontements joués apparaissent ici, rejouables carte par carte.'
+                ? 'Lance le tien : si personne ne se présente, le bot répondra.'
+                : 'Les duels joués apparaissent ici, rejouables carte par carte.'
             }
           />
         ) : (
@@ -806,7 +706,6 @@ export function Affrontements({
               <Ligne
                 key={b.id}
                 affrontement={b}
-                boosters={etat.boosters}
                 catalog={catalog}
                 moiId={etat.moiId}
                 rang={liste.rangs ? i : undefined}

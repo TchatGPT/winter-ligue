@@ -1,18 +1,18 @@
 import 'server-only';
 
 /**
- * Tirage aléatoire des boosters — strictement serveur.
+ * Tirage aléatoire des packs et des affrontements — strictement serveur.
  *
  * L'import `server-only` en tête fait échouer la compilation si ce module est
- * jamais tiré dans un bundle client : le joueur ne doit pouvoir ni observer ni
+ * jamais tiré dans un bundle client : personne ne doit pouvoir ni observer ni
  * rejouer le tirage. La source d'entropie est `crypto.randomInt`, uniforme et
  * non prédictible, contrairement à `Math.random()`.
  */
 
 import { randomInt } from 'node:crypto';
-import { CARDS } from './catalog';
-import { RARITY_ORDER, WEIGHT_TOTAL, WINTER_SPIN } from './rules';
-import type { BoosterDefinition, Rarity } from './types';
+import { CARDS, poolDuPack } from './catalog';
+import { WEIGHT_TOTAL, WINTER_SPIN } from './rules';
+import type { PackDefinition, Rarity } from './types';
 
 /** Entier uniforme dans [0, maxExclusive). */
 export function secureInt(maxExclusive: number): number {
@@ -48,8 +48,8 @@ export function pickWeighted<K extends string>(weights: Record<K, number>): K {
   return entries[entries.length - 1][0];
 }
 
-/** Cartes à effet, indexées par rareté. */
-export const EFFECT_BY_RARITY = CARDS.reduce(
+/** Toutes les cartes, indexées par rareté. Le pool des affrontements. */
+export const CARDS_BY_RARITY = CARDS.reduce(
   (acc, card) => {
     (acc[card.rarity] ??= []).push(card.id);
     return acc;
@@ -60,12 +60,11 @@ export const EFFECT_BY_RARITY = CARDS.reduce(
 /**
  * Tire une carte d'un pool, en redescendant de rareté si le palier est vide.
  *
- * Le cas se produit vraiment : au lancement de la saison, aucune carte Joueur
- * n'est encore Légendaire. Sans ce repli, un emplacement de collection tombant
- * sur une rareté inhabitée ferait échouer toute l'ouverture — et le joueur
- * aurait payé pour rien.
+ * Le cas existe : le pack Commu n'a pas de carte à chaque rareté. Sans ce
+ * repli, un tirage tombant sur un palier inhabité ferait échouer l'ouverture,
+ * à l'antenne, devant tout le monde.
  */
-function pickFromPool(pool: Record<Rarity, string[]>, wanted: Rarity): string | null {
+export function pickFromPool(pool: Record<Rarity, string[]>, wanted: Rarity): string | null {
   const ladder: Rarity[] = ['L', 'UR', 'SR', 'R', 'PC', 'C'];
   const from = ladder.indexOf(wanted);
   for (let i = from; i < ladder.length; i += 1) {
@@ -75,80 +74,55 @@ function pickFromPool(pool: Record<Rarity, string[]>, wanted: Rarity): string | 
   return null;
 }
 
-/** Ce qu'une ouverture produit : des cartes, et les emplacements rejoués. */
-export interface TirageBooster {
+/**
+ * Ouvre un pack : une rareté, puis une carte de ce pack à cette rareté.
+ *
+ * `weights` est la table **déjà poussée par la chance** du joueur, ou celle du
+ * pack telle quelle pour un pack collectif. Ce module ne connaît ni le joueur
+ * ni son solde : il tire dans ce qu'on lui donne.
+ */
+export function tirePack(pack: PackDefinition, weights: Record<Rarity, number>): string {
+  const rarity = pickWeighted(weights);
+  const card = pickFromPool(poolDuPack(pack.id), rarity);
+  if (!card) throw new RangeError(`Le pack ${pack.id} n'a aucune carte.`);
+  return card;
+}
+
+/** Ce qu'une manche d'affrontement produit : des cartes, et les emplacements rejoués. */
+export interface TirageDuel {
   /** Les identifiants de cartes, dans l'ordre des emplacements. */
   cards: string[];
   /**
-   * Les emplacements d'effet où le jeton Winter Spin est tombé.
+   * Les emplacements où le jeton Winter Spin est tombé.
    *
    * Le client s'en sert pour montrer la relance : la colonne s'arrête sur le
-   * jeton, puis repart. Il ne la **décide** pas — elle est déjà faite ici, dans
-   * la même transaction que le débit.
+   * jeton, puis repart. Il ne la **décide** pas — elle est déjà faite ici.
    */
   relances: number[];
 }
 
 /**
- * Ouvre un booster et retourne les identifiants de cartes obtenus.
+ * Tire les cartes d'une manche d'affrontement, dans tout le catalogue.
  *
- * Chaque emplacement tire sa rareté dans la table du booster, puis une carte
- * dans le pool correspondant à sa nature. La garantie ne porte que sur les
- * emplacements d'effet : promettre « une super rare » et livrer une carte
- * Joueur super rare ne serait pas ce que le joueur croit acheter.
- *
- * La garantie est appliquée après coup, sur un emplacement au hasard. On ne
- * « re-roll » jamais l'ensemble, ce qui introduirait un biais difficile à
- * auditer.
+ * Le jeton se tire **avant** la rareté et séparément d'elle : la table garde sa
+ * somme exacte. Quand il tombe, l'emplacement est rejoué avec la table du
+ * jeton. **Une seule relance** — une chaîne sans borne serait invérifiable.
  */
-export function rollBooster(
-  booster: BoosterDefinition,
-  collectionPool: Record<Rarity, string[]> = {} as Record<Rarity, string[]>,
-): TirageBooster {
-  const effetRarities: Rarity[] = [];
-
-  /*
-   * Les emplacements où le jeton Winter Spin est tombé.
-   *
-   * Le jeton se tire **avant** la rareté et séparément d'elle : la table du
-   * booster garde sa somme exacte de cent mille, et le taux affiché sous le
-   * sachet reste vrai. Quand il tombe, l'emplacement est rejoué immédiatement
-   * avec la table du jeton — le joueur ne détient jamais le jeton, il n'en voit
-   * que la conséquence.
-   *
-   * **Une seule relance.** Le second tirage ne peut pas retomber sur le jeton :
-   * une chaîne sans borne serait invérifiable, et l'attente à l'écran aussi.
-   */
+export function tireDuel(weights: Record<Rarity, number>, cartes: number): TirageDuel {
+  const cards: string[] = [];
   const relances: number[] = [];
-  for (let i = 0; i < booster.slots.effet; i += 1) {
+  for (let i = 0; i < cartes; i += 1) {
+    let rarity: Rarity;
     if (secureInt(WEIGHT_TOTAL) < WINTER_SPIN.chance) {
       relances.push(i);
-      effetRarities.push(pickWeighted(WINTER_SPIN.weights));
+      rarity = pickWeighted(WINTER_SPIN.weights);
     } else {
-      effetRarities.push(pickWeighted(booster.weights));
+      rarity = pickWeighted(weights);
     }
+    const card = pickFromPool(CARDS_BY_RARITY, rarity);
+    if (card) cards.push(card);
   }
-
-  if (booster.guaranteed && effetRarities.length > 0) {
-    const floor = RARITY_ORDER[booster.guaranteed];
-    const satisfied = effetRarities.some((r) => RARITY_ORDER[r] >= floor);
-    if (!satisfied) effetRarities[secureInt(effetRarities.length)] = booster.guaranteed;
-  }
-
-  const drawn: string[] = [];
-  for (const rarity of effetRarities) {
-    const card = pickFromPool(EFFECT_BY_RARITY, rarity);
-    if (card) drawn.push(card);
-  }
-
-  for (let i = 0; i < booster.slots.collection; i += 1) {
-    const card = pickFromPool(collectionPool, pickWeighted(booster.weights));
-    // Pool de collection vide au tout début de la saison : l'emplacement se
-    // reporte sur une carte à effet plutôt que de rendre un booster amputé.
-    drawn.push(card ?? pickFromPool(EFFECT_BY_RARITY, 'C')!);
-  }
-
-  return { cards: drawn, relances };
+  return { cards, relances };
 }
 
 /** Vérifie qu'une table de poids est exploitable. Utilisée par les tests. */

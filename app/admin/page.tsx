@@ -18,19 +18,17 @@ export const metadata = { title: 'Tableau de bord — Administration' };
 export default async function AdminAccueilPage() {
   const data = await getStore().read((db) => {
     const actifs = db.players.filter((p) => p.active);
-    const enVente = db.listings.filter((l) => l.status === 'ACTIVE').length;
     const pseudo = (id: string) => db.players.find((p) => p.id === id)?.pseudo ?? 'Inconnu';
 
     return {
       joueurs: actifs.length,
       moderateurs: actifs.filter((p) => p.role === 'moderateur' || p.role === 'admin').length,
       games: db.games.length,
-      cartes: db.cards.length,
-      enVente,
+      packsEnFile: db.packsDus.filter((p) => p.ouvertureId === null).length,
+      packsOuverts: db.ouvertures.length,
+      cartesEnAttente: db.cartesEnAttente.filter((c) => c.consommeeA === null).length,
       subs: db.config.totalSubs,
-      shopOpen: db.config.shopOpen,
-      marketOpen: db.config.marketOpen,
-      reglages: db.boosterSettings.length,
+      reglages: db.reglagesPacks.length,
       dernieres: db.audit
         .slice(-8)
         .reverse()
@@ -49,7 +47,12 @@ export default async function AdminAccueilPage() {
       <section className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
         <StatTile label="Joueurs actifs" value={data.joueurs} hint={`dont ${data.moderateurs} avec des droits`} />
         <StatTile label="Games saisies" value={data.games} accent="ink" />
-        <StatTile label="Cartes en circulation" value={data.cartes} accent="violet" />
+        <StatTile
+          label="Boosters à ouvrir"
+          value={data.packsEnFile}
+          hint={`${data.packsOuverts} déjà ouverts`}
+          accent="violet"
+        />
         <StatTile
           label="Subs de la saison"
           value={flakes(data.subs)}
@@ -65,21 +68,13 @@ export default async function AdminAccueilPage() {
           </h2>
           <dl className="mt-3 space-y-2 text-[14px]">
             <div className="flex items-baseline justify-between gap-3 border-b border-white/8 pb-2">
-              <dt className="text-faint">Boutique</dt>
-              <dd className={data.shopOpen ? 'text-aurora' : 'text-danger'}>
-                {data.shopOpen ? 'ouverte' : 'fermée'}
-              </dd>
-            </div>
-            <div className="flex items-baseline justify-between gap-3 border-b border-white/8 pb-2">
-              <dt className="text-faint">Hôtel des ventes</dt>
-              <dd className={data.marketOpen ? 'text-aurora' : 'text-danger'}>
-                {data.marketOpen ? 'ouvert' : 'fermé'} · {data.enVente} en cours
-              </dd>
+              <dt className="text-faint">Cartes en attente d’une game</dt>
+              <dd className="text-aurora">{data.cartesEnAttente}</dd>
             </div>
             <div className="flex items-baseline justify-between gap-3 border-b border-white/8 pb-2">
               <dt className="text-faint">Boosters réglés</dt>
               <dd className={data.reglages > 0 ? 'text-gold' : 'text-muted'}>
-                {data.reglages === 0 ? 'aucun — valeurs du catalogue' : `${data.reglages} modifié(s)`}
+                {data.reglages === 0 ? 'aucun — taux du catalogue' : `${data.reglages} modifié(s)`}
               </dd>
             </div>
             <div className="flex items-baseline justify-between gap-3">
@@ -93,7 +88,10 @@ export default async function AdminAccueilPage() {
           </dl>
 
           <div className="mt-4 flex flex-wrap gap-2">
-            <Link href="/admin/games" className="btn btn-sm btn-ice no-underline">
+            <Link href="/admin/packs" className="btn btn-sm btn-ice no-underline">
+              Ouvrir les boosters
+            </Link>
+            <Link href="/" className="btn btn-sm no-underline">
               Saisir une game
             </Link>
             <Link href="/admin/saison" className="btn btn-sm no-underline">

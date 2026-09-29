@@ -20,6 +20,7 @@ export default async function AdminJoueursPage() {
           pseudo: p.pseudo,
           slug: p.slug,
           role: p.role,
+          activisionId: p.activisionId,
           snowflakes: p.snowflakes,
           games: totals.countedGames,
           score: totals.totalScore,

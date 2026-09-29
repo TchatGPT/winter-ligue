@@ -20,7 +20,7 @@ export function SessionBadge({
   role: 'admin' | 'moderateur' | 'joueur' | null;
   pseudo: string | null;
   balance: number | null;
-  /** Disposition verticale, pour le pied de la colonne latérale. */
+  /** Disposition verticale, dans le bloc compte de la colonne. */
   stacked?: boolean;
 }) {
   const router = useRouter();
@@ -34,41 +34,55 @@ export function SessionBadge({
     startTransition(() => router.refresh());
   }
 
+  /** L'avatar : une silhouette dans un cercle de verre. */
+  const avatar = (
+    <span className="menu-avatar" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+        <circle cx="12" cy="8" r="3.5" />
+        <path d="M5 20a7 7 0 0 1 14 0" />
+      </svg>
+    </span>
+  );
+
   if (!role) {
-    return (
-      <a href="/connexion" className={`btn btn-sm no-underline ${stacked ? 'w-full' : ''}`}>
+    return stacked ? (
+      <a href="/connexion" className="btn menu-bouton no-underline">
+        {avatar}
+        <span>Connexion</span>
+      </a>
+    ) : (
+      <a href="/connexion" className="btn btn-sm no-underline">
         Connexion
       </a>
     );
   }
 
-  const flakesPill = balance !== null && (
-    <span
-      className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 font-display text-sm font-bold ${
-        stacked ? 'justify-center' : ''
-      }`}
-      style={{
-        background: 'linear-gradient(155deg, rgba(143,220,255,0.22), rgba(28,138,194,0.08))',
-        border: '1px solid rgba(190,230,255,0.3)',
-        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.3)',
-        color: 'var(--frost)',
-      }}
-      title="Tes flocons — la monnaie de la saison"
-    >
-      <span aria-hidden="true">❄</span>
-      <span className="num">{num(balance)}</span>
-    </span>
-  );
-
   if (stacked) {
     return (
-      <div className="space-y-2">
-        {flakesPill}
-        <div className="truncate text-center font-display text-sm font-bold tracking-wide text-muted uppercase">
+      <div className="space-y-3">
+        {/* La capsule du solde, la même que les pastilles de stats du hero. */}
+        {balance !== null && (
+          <div
+            className="glass glass-soft flex flex-col items-center px-2 py-3 text-center"
+            title="Tes flocons — la monnaie de la saison"
+          >
+            <span className="num block font-display text-[20px] leading-none font-black text-ink">
+              <span className="mr-1 text-[15px] text-ice" aria-hidden="true">
+                ❄
+              </span>
+              {num(balance)}
+            </span>
+            <span className="mt-1.5 block text-[11px] tracking-[0.2em] text-faint uppercase">
+              Flocons
+            </span>
+          </div>
+        )}
+        <div className="truncate text-center text-[11px] tracking-[0.18em] text-white/80 uppercase">
           {role === 'admin' ? 'Administration' : role === 'moderateur' ? 'Modération' : pseudo}
         </div>
-        <button className="btn btn-sm w-full" onClick={logout} disabled={busy || pending}>
-          Se déconnecter
+        <button className="btn menu-bouton" onClick={logout} disabled={busy || pending}>
+          {avatar}
+          <span>Se déconnecter</span>
         </button>
       </div>
     );
@@ -76,7 +90,15 @@ export function SessionBadge({
 
   return (
     <div className="flex items-center gap-2">
-      {flakesPill}
+      {balance !== null && (
+        <span
+          className="flex items-center gap-1.5 rounded-full border border-white/15 bg-white/8 px-3 py-1.5 font-display text-sm font-bold text-ice"
+          title="Tes flocons — la monnaie de la saison"
+        >
+          <span aria-hidden="true">❄</span>
+          <span className="num">{num(balance)}</span>
+        </span>
+      )}
       <button
         className="btn btn-sm btn-ghost"
         onClick={logout}

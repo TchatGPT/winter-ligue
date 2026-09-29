@@ -5,7 +5,10 @@ import { useMemo, useState } from 'react';
 import { CouronneGlace } from '@/components/CouronneGlace';
 import { MedailleGlace } from '@/components/MedailleGlace';
 import { SnowCap } from '@/components/SnowCap';
+import { CardFrame } from '@/components/CardFrame';
+import { FicheCarte } from '@/components/FicheCarte';
 import { flakesShort } from '@/components/ui';
+import { RARITY_ORDER } from '@/lib/domain/rules';
 import type { RankingRow } from '@/lib/services/league';
 
 /**
@@ -33,11 +36,22 @@ import type { RankingRow } from '@/lib/services/league';
  * stats du hero : rang, pseudo et points visibles, le reste derrière un dépli.
  */
 
-type Cle = 'rang' | 'pseudo' | 'points' | 'games' | 'moyenne' | 'kills' | 'top1' | 'meilleure' | 'flocons';
+type Cle =
+  | 'rang'
+  | 'pseudo'
+  | 'carte'
+  | 'points'
+  | 'games'
+  | 'moyenne'
+  | 'kills'
+  | 'top1'
+  | 'meilleure'
+  | 'flocons';
 
 const COLONNES: { cle: Cle; libelle: string; align: 'left' | 'right' | 'center'; large?: string }[] = [
   { cle: 'rang', libelle: 'Rang', align: 'center', large: 'w-16' },
   { cle: 'pseudo', libelle: 'Joueur', align: 'left' },
+  { cle: 'carte', libelle: 'Carte active', align: 'left' },
   { cle: 'points', libelle: 'Points', align: 'right' },
   { cle: 'games', libelle: 'Games', align: 'right' },
   { cle: 'moyenne', libelle: 'Moy.', align: 'right' },
@@ -54,6 +68,9 @@ function valeur(row: RankingRow, cle: Cle): number | string {
       return row.rank;
     case 'pseudo':
       return row.pseudo.toLowerCase();
+    case 'carte':
+      // les cartes se classent par rareté ; sans carte, tout en bas
+      return row.carte ? RARITY_ORDER[row.carte.rarity] + 1 : 0;
     case 'points':
       return row.totals.totalScore;
     case 'games':
@@ -79,9 +96,15 @@ const plat = (s: string) =>
     .replace(/[̀-ͯ]/g, '')
     .toLowerCase();
 
-export function Classement({ rows }: { rows: RankingRow[] }) {
+/**
+ * `outils` : ce que la modération pose dans l'entête, à côté de la recherche
+ * — la saisie par capture. Pour tout le monde d'autre, rien.
+ */
+export function Classement({ rows, outils }: { rows: RankingRow[]; outils?: React.ReactNode }) {
   const [tri, setTri] = useState<{ cle: Cle; desc: boolean }>({ cle: 'rang', desc: false });
   const [recherche, setRecherche] = useState('');
+  /** La ligne dont on regarde la carte en grand, s'il y en a une. */
+  const [fiche, setFiche] = useState<RankingRow | null>(null);
 
   const visibles = useMemo(() => {
     const q = plat(recherche.trim());
@@ -106,12 +129,32 @@ export function Classement({ rows }: { rows: RankingRow[] }) {
     <section className="glass tableau-verre relative" aria-label="Classement général">
       <SnowCap radius="var(--r-lg)" seed="classement" />
 
+      {fiche?.carte && (
+        <FicheCarte
+          carte={fiche.carte}
+          legende={
+            <>
+              Carte active de <strong className="text-ink">{fiche.pseudo}</strong> : elle tombera
+              sur sa prochaine game.
+              {fiche.enReserve > 0 && (
+                <>
+                  {' '}
+                  {fiche.enReserve} autre{fiche.enReserve > 1 ? 's' : ''} en réserve derrière.
+                </>
+              )}
+            </>
+          }
+          onClose={() => setFiche(null)}
+        />
+      )}
+
       <header className="relative flex flex-wrap items-end justify-between gap-x-6 gap-y-3 px-5 pt-7 pb-4 sm:px-7">
         <h2 className="font-display text-[30px] leading-none font-black tracking-wide text-ink uppercase sm:text-[34px]">
           Classement
         </h2>
 
         <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+          {outils}
           <label className="relative block w-full sm:w-64">
             <span className="sr-only">Chercher un joueur</span>
             <input
@@ -163,7 +206,7 @@ export function Classement({ rows }: { rows: RankingRow[] }) {
                   >
                     <button
                       type="button"
-                      className={`tableau-verre-tri ${actif ? 'est-actif' : ''}`}
+                      className={`tableau-verre-tri whitespace-nowrap ${actif ? 'est-actif' : ''}`}
                       onClick={() => trier(c.cle)}
                       title={`Trier par ${c.libelle.toLowerCase()}`}
                     >
@@ -185,6 +228,9 @@ export function Classement({ rows }: { rows: RankingRow[] }) {
                 </td>
                 <td>
                   <Pseudo row={row} />
+                </td>
+                <td>
+                  <CarteActive row={row} onOuvrir={() => setFiche(row)} />
                 </td>
                 <td className="num text-right font-display text-[26px] leading-none font-black text-ink">
                   {row.totals.totalScore}
@@ -221,6 +267,11 @@ export function Classement({ rows }: { rows: RankingRow[] }) {
                 </span>
                 <span className="min-w-0 flex-1">
                   <Pseudo row={row} />
+                  {row.carte && (
+                    <span className="mt-1.5 block">
+                      <CarteActive row={row} onOuvrir={() => setFiche(row)} />
+                    </span>
+                  )}
                 </span>
                 <span className="text-right">
                   <span className="num block font-display text-[26px] leading-none font-black text-ink">
@@ -272,12 +323,50 @@ function Pseudo({ row }: { row: RankingRow }) {
       >
         {row.pseudo}
       </Link>
-      {row.shielded && (
-        <span title="Protégé par un bouclier" aria-label="Protégé" className="shrink-0 text-[11px] tracking-wider text-faint uppercase">
-          bouclier
-        </span>
-      )}
     </span>
+  );
+}
+
+/**
+ * La carte active : celle qui tombera sur la prochaine game du joueur.
+ *
+ * La carte elle-même, en vignette, dans son cadre peint — on la reconnaît à
+ * sa silhouette et à sa couleur avant de lire quoi que ce soit. À côté, le nom
+ * et l'effet en clair. Un clic l'ouvre en grand. Une seule carte : les
+ * suivantes attendent leur tour, et on le dit d'un chiffre.
+ */
+function CarteActive({ row, onOuvrir }: { row: RankingRow; onOuvrir: () => void }) {
+  if (!row.carte) return <span className="text-[13px] text-faint">—</span>;
+  const c = row.carte;
+  return (
+    <button
+      type="button"
+      onClick={onOuvrir}
+      className="tableau-verre-carte-active flex min-w-0 items-center gap-3 text-left"
+      title={`${c.nom} — ${c.description}`}
+      aria-label={`Voir la carte ${c.nom}`}
+    >
+      <span className="w-[46px] shrink-0">
+        <CardFrame
+          cardId={c.cardId}
+          name={c.nom}
+          description={c.description}
+          rarity={c.rarity}
+          glyph={c.glyph}
+          power={c.power}
+          nature={c.nature}
+        />
+      </span>
+      <span className="min-w-0 leading-tight">
+        <span className="block truncate text-[14px] font-bold text-ink">{c.nom}</span>
+        <span className="block text-[13px] text-ink-2">{c.resume}</span>
+        {row.enReserve > 0 && (
+          <span className="block text-[11px] tracking-wider text-faint uppercase">
+            +{row.enReserve} en réserve
+          </span>
+        )}
+      </span>
+    </button>
   );
 }
 

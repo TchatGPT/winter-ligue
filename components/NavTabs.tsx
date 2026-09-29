@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { NAV_ICONS, type NavIconName } from './icons';
 
 interface Tab {
@@ -17,16 +17,8 @@ interface Tab {
 
 const TABS: Tab[] = [
   { href: '/', label: 'Classement', short: 'Classement', icon: 'trophy' },
-  { href: '/boosters', label: 'Boosters', short: 'Boosters', icon: 'pack' },
-  { href: '/affrontements', label: 'Affrontements', short: 'Duels', icon: 'swords' },
-  { href: '/marche', label: 'Hôtel des ventes', short: 'Marché', icon: 'gavel' },
-  {
-    href: '/ma-collection',
-    label: 'Ma collection',
-    short: 'Collection',
-    icon: 'layers',
-    player: true,
-  },
+  { href: '/boosters', label: 'Boosters', short: 'Boosters', icon: 'rocket' },
+  { href: '/duels', label: 'Duels', short: 'Duels', icon: 'swords' },
   { href: '/regles', label: 'Règles', short: 'Règles', icon: 'book' },
   { href: '/admin', label: 'Administration', short: 'Admin', icon: 'shield', admin: true },
 ];
@@ -54,96 +46,25 @@ export function SidebarNav({ isAdmin, isPlayer }: { isAdmin: boolean; isPlayer: 
   const pathname = usePathname();
   const visible = visibleTabs(isAdmin, isPlayer);
 
-  /*
-   * Le dégivrage : au survol d'un item, la couche de givre de la colonne
-   * (`.givre-surface::before`) s'efface dans un cercle centré sur lui, via un
-   * masque radial piloté par trois variables CSS posées sur la colonne. Le
-   * cercle se referme en 600 ms à la sortie. Sous `prefers-reduced-motion`,
-   * la transition est coupée côté CSS.
-   */
-  const degivre = (e: React.PointerEvent<HTMLElement>) => {
-    const colonne = e.currentTarget.closest<HTMLElement>('.givre-surface');
-    if (!colonne) return;
-    const c = colonne.getBoundingClientRect();
-    const r = e.currentTarget.getBoundingClientRect();
-    colonne.style.setProperty('--gx', `${(r.left + r.width / 2 - c.left).toFixed(0)}px`);
-    colonne.style.setProperty('--gy', `${(r.top + r.height / 2 - c.top + colonne.scrollTop).toFixed(0)}px`);
-    colonne.style.setProperty('--givre-r', '130px');
-  };
-  const regivre = (e: React.PointerEvent<HTMLElement>) => {
-    e.currentTarget.closest<HTMLElement>('.givre-surface')?.style.setProperty('--givre-r', '0px');
-  };
-
-  /*
-   * L'item actif est une zone dégagée : la texture d'usure est masquée sous
-   * lui. On pose sa position et sa taille sur la colonne (`--ax`, `--ay`,
-   * `--aw`, `--ah`), et le masque des couches de texture y perce une
-   * ellipse. Recalculé à chaque changement de page et de taille.
-   */
-  useEffect(() => {
-    const mesure = () => {
-      const actif = document.querySelector<HTMLElement>('.menu-colle nav a[aria-current="page"]');
-      const colonne = document.querySelector<HTMLElement>('.menu-colle');
-      if (!colonne) return;
-      if (!actif) {
-        colonne.style.setProperty('--aw', '0px');
-        colonne.style.setProperty('--ah', '0px');
-        return;
-      }
-      const c = colonne.getBoundingClientRect();
-      const r = actif.getBoundingClientRect();
-      colonne.style.setProperty('--ax', `${(r.left + r.width / 2 - c.left).toFixed(0)}px`);
-      colonne.style.setProperty('--ay', `${(r.top + r.height / 2 - c.top + colonne.scrollTop).toFixed(0)}px`);
-      colonne.style.setProperty('--aw', `${(r.width / 2 + 10).toFixed(0)}px`);
-      colonne.style.setProperty('--ah', `${(r.height / 2 + 8).toFixed(0)}px`);
-    };
-    mesure();
-    window.addEventListener('resize', mesure);
-    return () => window.removeEventListener('resize', mesure);
-  }, [pathname]);
-
   return (
-    <nav aria-label="Navigation principale">
-      <ul className="space-y-1">
+    <nav aria-label="Navigation principale" className="menu-nav">
+      <ul className="menu-liens">
         {visible.map((tab) => {
           const active = isActive(pathname, tab.href);
           const Icon = NAV_ICONS[tab.icon];
-          /*
-           * L'entrée d'administration se détache du reste.
-           *
-           * Elle avait exactement l'apparence des autres, alors qu'elle ne mène
-           * pas au même endroit : les cinq premières sont le site, celle-ci est
-           * la salle des machines. Un trait au-dessus, le rouge et le mot
-           * « réservé » suffisent — sans quoi on clique dessus par erreur, et
-           * surtout on ne la trouve pas quand on la cherche.
-           *
-           * Le rouge au repos est à 80 % d'opacité et pas moins : mesuré sur le
-           * fond de la colonne, il donne 5,3:1, quand 70 % tombait à 4,3 —
-           * au-dessous du seuil pour un libellé de quinze pixels.
-           */
+          /* L'administration se détache : un trait au-dessus, un cyan plus
+             doux. Les états (survol, actif) vivent dans `.menu-lien`. */
           const reserve = tab.admin === true;
           return (
-            <li key={tab.href} className={reserve ? 'mt-3' : undefined}>
+            <li key={tab.href} className={reserve ? 'menu-reserve' : undefined}>
               <Link
                 href={tab.href}
                 aria-current={active ? 'page' : undefined}
                 data-reserve={reserve ? '' : undefined}
-                onPointerEnter={degivre}
-                onPointerLeave={regivre}
-                className={`group flex min-h-[46px] items-center gap-3 rounded-full px-3.5 py-2.5 no-underline transition-colors ${
-                  active
-                    ? reserve
-                      ? 'nav-pilule nav-pilule-admin nav-plaque text-aurora'
-                      : 'nav-pilule nav-plaque text-ice'
-                    : reserve
-                      ? 'text-aurora/85 hover:text-aurora'
-                      : 'text-muted hover:bg-white/6 hover:text-ink'
-                }`}
+                className="menu-lien"
               >
-                <Icon className="h-[22px] w-[22px] shrink-0" />
-                <span className="min-w-0 flex-1 truncate font-display text-[15px] font-bold tracking-wide">
-                  {tab.label}
-                </span>
+                <Icon className="h-[18px] w-[18px]" />
+                <span className="truncate">{tab.label}</span>
               </Link>
             </li>
           );
@@ -152,7 +73,6 @@ export function SidebarNav({ isAdmin, isPlayer }: { isAdmin: boolean; isPlayer: 
     </nav>
   );
 }
-
 
 /**
  * Ce qui reste au pouce, et ce qui passe derrière.
@@ -163,11 +83,10 @@ export function SidebarNav({ isAdmin, isPlayer }: { isAdmin: boolean; isPlayer: 
  * occupait exactement la même place que « Boosters », qu'on ouvre dix fois par
  * soir.
  *
- * Quatre destinations restent en bas — ce sont les quatre boucles du jeu :
- * regarder le classement, ouvrir, se battre, échanger. Le reste tient dans un
- * tiroir. Rien n'est retiré, tout est rangé.
+ * Quatre destinations restent en bas : le classement, les boosters, les
+ * duels et les règles. L'administration tient dans un tiroir.
  */
-const PRINCIPAUX = ['/', '/boosters', '/affrontements', '/marche'];
+const PRINCIPAUX = ['/', '/boosters', '/duels', '/regles'];
 
 export function BottomNav({ isAdmin, isPlayer }: { isAdmin: boolean; isPlayer: boolean }) {
   const pathname = usePathname();
@@ -213,10 +132,9 @@ export function BottomNav({ isAdmin, isPlayer }: { isAdmin: boolean; isPlayer: b
       {tiroir && reste.length > 0 && (
         <nav
           id="tiroir-navigation"
-          className="glass glass-strong givre-surface relative z-10 mb-2 !rounded-[22px] p-1.5"
+          className="glass glass-strong relative z-10 mb-2 !rounded-[22px] p-1.5"
           aria-label="Autres pages"
         >
-          <span className="givre-surface-couches" aria-hidden="true" />
           <ul className="space-y-1">
             {reste.map((tab) => {
               const actif = isActive(pathname, tab.href);

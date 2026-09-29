@@ -4,7 +4,7 @@ import 'server-only';
  * Traduction des erreurs métier en réponses HTTP.
  *
  * Les routes ne composent jamais un message d'erreur elles-mêmes : elles
- * laissent remonter une `CardError` / `MarketError` / `LedgerError` et la
+ * laissent remonter une `PackError` / `BatailleError` / `LedgerError` et la
  * passent ici. Cela garantit qu'une exception inattendue ne fuit jamais de
  * détail d'implémentation au client — elle devient une 500 générique, la trace
  * restant dans les logs serveur.
@@ -12,30 +12,20 @@ import 'server-only';
 
 import { NextResponse } from 'next/server';
 import { BatailleError } from '@/lib/services/batailles';
-import { CardError } from '@/lib/services/cards';
-import { EffectError } from '@/lib/services/effects';
 import { LedgerError } from '@/lib/services/ledger';
-import { MarketError } from '@/lib/services/market';
+import { PackError } from '@/lib/services/packs';
 import { SubError } from '@/lib/services/subs';
 import { fail } from './respond';
 
 export function toResponse(error: unknown): NextResponse {
-  if (error instanceof CardError) {
+  // Un refus de règle — pack déjà ouvert, joueur manquant, mise hors bornes —
+  // est une réponse normale du jeu, pas une panne. Sans ces branches il
+  // remonterait en 500 générique et l'écran ne saurait pas pourquoi.
+  if (error instanceof PackError) {
     return fail('CONFLIT', error.message, { code: error.code });
   }
-  // Un refus de bataille — sachets hors bornes, bataille déjà jouée, hôte qui
-  // tente de rejoindre la sienne — est une réponse normale du jeu.
   if (error instanceof BatailleError) {
     return fail('CONFLIT', error.message, { code: error.code });
-  }
-  // Un refus de règle — cible protégée, quota atteint, game gelée — est une
-  // réponse normale du jeu, pas une panne. Sans cette branche il remontait en
-  // 500 générique et le joueur ne savait pas pourquoi sa carte échouait.
-  if (error instanceof EffectError) {
-    return fail('CONFLIT', error.message, { code: error.code });
-  }
-  if (error instanceof MarketError) {
-    return fail('CONFLIT', error.message, { code: error.code, ...(error.detail ?? {}) });
   }
   if (error instanceof LedgerError) {
     return fail('CONFLIT', error.message, { code: error.code });

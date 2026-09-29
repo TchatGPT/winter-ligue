@@ -6,15 +6,16 @@
  * enregistrements, si bien que le changement de base ne touchera pas au métier.
  */
 
-import type { Bid, BoonKind, Listing, Placement, Rarity, Sale } from '@/lib/domain/types';
+import type { EvenementKind } from '@/lib/domain/rules';
+import type { PackId, Placement, Rarity } from '@/lib/domain/types';
 
 /**
  * Ce qu'un compte a le droit de faire.
  *
  * Trois échelons, et la frontière n'est pas arbitraire : un **modérateur** agit
- * sur le déroulement de la saison — enregistrer une game, créditer, ouvrir ou
- * fermer la boutique. Un **admin** agit sur ses règles : les prix, les taux de
- * rareté, et l'attribution des rôles eux-mêmes.
+ * sur le déroulement de la saison — enregistrer une game, créditer, ouvrir un
+ * pack. Un **admin** agit sur ses règles : les taux de rareté, et l'attribution
+ * des rôles eux-mêmes.
  *
  * Autrement dit, un modérateur ne peut pas se promouvoir, ni rendre les
  * légendaires dix fois plus fréquentes. C'est ce qui rend le rôle distribuable
@@ -27,11 +28,26 @@ export interface Player {
   /** Identifiant lisible utilisé dans les URLs. */
   slug: string;
   pseudo: string;
-  /** Renseigné le jour où l'authentification Twitch sera branchée. */
+  /** Renseigné à la connexion Twitch. */
   twitchId: string | null;
   twitchLogin: string | null;
   avatarUrl: string | null;
+  /**
+   * Le pseudo Activision (Call of Duty), tel qu'il apparaît sur le tableau
+   * de fin de game. Demandé à la première connexion : c'est lui que la
+   * reconnaissance des captures compare aux noms lus, et un pseudo Twitch
+   * ne ressemble pas toujours au pseudo en jeu.
+   */
+  activisionId: string | null;
   snowflakes: number;
+  /**
+   * Les subs que ce joueur a offerts à la chaîne, sur la saison.
+   *
+   * C'est ce qui lui vaut ses packs Perso : un tous les cinq. Saisi par la
+   * modération, ou plus tard par les notifications Twitch — dans les deux cas
+   * le pack est mis en file, jamais ouvert automatiquement.
+   */
+  subsOfferts: number;
   joinedAt: string;
   active: boolean;
   role: PlayerRole;
@@ -39,16 +55,13 @@ export interface Player {
 
 /** Trace d'un effet de carte appliqué à une game, avec son delta exact. */
 export interface AppliedEffect {
-  /** Identifiant unique, pour pouvoir annuler précisément cet effet. */
   id: string;
   cardId: string;
-  /** Qui a joué la carte — le propriétaire de la game, ou un adversaire. */
-  byPlayerId: string;
+  /** L'ouverture de pack d'où vient la carte. */
+  ouvertureId: string;
   /** Points ajoutés (positif) ou retirés (négatif). */
   points: number;
   at: string;
-  /** true si un Second Souffle ou un Contre-Courant l'a déjà annulé. */
-  undone: boolean;
 }
 
 export interface Game {
@@ -63,91 +76,78 @@ export interface Game {
   bonusPoints: number;
   /** Une game passée reste visible mais ne compte pas. */
   skipped: boolean;
-  /** Une game gelée est insensible aux malus adverses. */
-  frozen: boolean;
   /** Score recalculé côté serveur à chaque écriture. Jamais accepté du client. */
   score: number;
   note: string | null;
   playedAt: string;
   createdAt: string;
-  /**
-   * Effets de cartes appliqués, dans l'ordre. C'est ce journal qui rend
-   * Second Souffle et Contre-Courant possibles : on sait exactement combien
-   * chaque carte a donné ou retiré, donc on sait quoi rendre.
-   */
+  /** Effets de cartes appliqués, dans l'ordre. */
   applied: AppliedEffect[];
 }
 
-/** Une copie de carte possédée par un joueur. */
-export interface CardInstance {
+/**
+ * Un pack qui attend d'être ouvert.
+ *
+ * C'est la file de l'écran d'administration : ce que les subs, les paliers et
+ * les fins de saison ont mis en attente, et que la streameuse ouvre à
+ * l'antenne, un par un. Un pack dû n'a pas encore de carte — le tirage n'a
+ * lieu qu'à l'ouverture.
+ */
+export interface PackDu {
   id: string;
-  playerId: string;
-  cardId: string;
-  obtainedAt: string;
-  source: 'BOOSTER' | 'MARCHE' | 'ADMIN';
-  /** Consommée en étant jouée : conservée pour l'historique. */
-  consumed: boolean;
-  consumedAt: string | null;
-  /** Renseignés à la consommation, pour l'historique et le délai anti-harcèlement. */
-  consumedOnGameId: string | null;
-  consumedOnPlayerId: string | null;
-  /** Verrouillée tant qu'elle est en vente : injouable et non revendable. */
-  listingId: string | null;
-  /** Clé d'idempotence de l'action qui a consommé la carte. */
-  consumeKey: string | null;
+  packId: PackId;
+  /** Le joueur pour qui le pack s'ouvre. Nul pour un pack collectif. */
+  joueurId: string | null;
+  /** Pourquoi il est dû : « 5 subs offerts », « palier 50 », « 60 games ». */
+  raison: string;
+  creeA: string;
+  /** Renseigné à l'ouverture. Un pack ouvert reste dans la file, comme trace. */
+  ouvertureId: string | null;
 }
 
-/** Première obtention d'une carte : définitive, même si la carte est ensuite jouée ou vendue. */
-export interface Discovery {
-  playerId: string;
-  cardId: string;
-  firstObtainedAt: string;
-}
-
-export interface BoosterOpening {
+/** Une ouverture de pack : le tirage, et sur qui il est tombé. */
+export interface OuverturePack {
   id: string;
-  playerId: string;
-  boosterId: string;
-  pricePaid: number;
-  cardIds: string[];
-  /**
-   * Emplacements où le jeton Winter Spin est tombé, et qui ont donc été rejoués.
-   *
-   * Consigné pour que rejouer la requête rende la même ouverture, mise en scène
-   * comprise. Absent des ouvertures antérieures au jeton, d'où le point
-   * d'interrogation.
-   */
-  relances?: number[];
+  packId: PackId;
+  cardId: string;
+  rarity: Rarity;
+  /** Le joueur pour qui le pack a été ouvert, ou nul pour un pack collectif. */
+  joueurId: string | null;
+  /** Les joueurs sur qui la carte est tombée. */
+  beneficiaires: string[];
+  /** La chance appliquée au tirage, entre 0 et 1. Zéro pour un pack collectif. */
+  chance: number;
+  /** Qui a ouvert : le sujet de session de la modération. */
+  ouvertPar: string;
   openedAt: string;
   /** Rejoue la même réponse si la requête est renvoyée (double clic, reprise réseau). */
   idempotencyKey: string;
 }
 
-/** Effet temporaire posé sur un joueur. */
-export interface PlayerEffect {
-  id: string;
-  playerId: string;
-  /** BOUCLIER : immunise contre les malus. SILENCE : interdit de jouer une carte. */
-  kind: 'BOUCLIER' | 'SILENCE';
-  sourceCardId: string;
-  createdAt: string;
-  expiresAt: string;
-}
-
 /**
- * Faveur durable : un effet qui se consomme sur plusieurs actions plutôt que
- * dans l'instant. Trois usages restants de « flocons doublés », par exemple.
+ * Une carte posée sur la prochaine game d'un joueur.
+ *
+ * Elle naît à l'ouverture d'un pack et meurt à la saisie de la game suivante,
+ * où son effet est calculé, journalisé dans `game.applied`, et le résultat
+ * écrit ici. Une carte de flocons est consommée dans l'instant.
  */
-export interface PlayerBoon {
+export interface CarteEnAttente {
   id: string;
-  playerId: string;
-  kind: BoonKind;
-  /** Utilisations restantes. La faveur disparaît à zéro. */
-  remaining: number;
-  /** Paramètre libre : taux de remise, rareté garantie… */
-  value: string | null;
-  sourceCardId: string;
-  createdAt: string;
+  joueurId: string;
+  cardId: string;
+  ouvertureId: string;
+  creeA: string;
+  consommeeA: string | null;
+  /** La game sur laquelle la carte s'est appliquée. */
+  gameId: string | null;
+  /** Ce que la carte a fait, en une phrase. */
+  resultat: string | null;
+  /**
+   * Pour une carte à deux : l'identifiant partagé par les deux cartes de la
+   * paire. La première game saisie attend la seconde ; la seconde résout les
+   * deux. Nul pour une carte ordinaire.
+   */
+  paireId: string | null;
 }
 
 export interface LedgerEntry {
@@ -161,15 +161,6 @@ export interface LedgerEntry {
   createdAt: string;
 }
 
-export interface LeagueEvent {
-  id: string;
-  title: string;
-  description: string;
-  startsAt: string;
-  endsAt: string | null;
-  published: boolean;
-}
-
 /** Trace inaltérable des actions sensibles, pour pouvoir remonter un abus. */
 export interface AuditEntry {
   id: string;
@@ -180,38 +171,10 @@ export interface AuditEntry {
   at: string;
 }
 
-/**
- * Carte de collection : Joueur ou Moment.
- *
- * Contrairement aux cartes à effet, figées dans le catalogue, celles-ci sont
- * des données : un participant s'inscrit, sa carte existe. Elles n'ont aucun
- * effet en jeu, donc aucun risque d'équilibrage — c'est ce qui permet d'avoir
- * un pool profond sans multiplier les combos à surveiller.
- *
- * La rareté est fixée à la création et ne bouge plus. Une carte échangeable
- * dont la rareté changerait en cours de saison ferait bouger son foil, son
- * taux de tirage et son prix sous les pieds de ceux qui l'ont achetée.
- */
-export interface Collectible {
-  id: string;
-  kind: 'JOUEUR' | 'MOMENT';
-  name: string;
-  subtitle: string;
-  description: string;
-  rarity: Rarity;
-  glyph: string;
-  art: string | null;
-  /** Pour une carte Joueur : le participant représenté. */
-  playerId: string | null;
-  createdAt: string;
-}
-
 export interface LeagueConfig {
   maxGamesPerPlayer: number;
   /** Subs cumulés de la saison. Seule la modération l'incrémente. */
   totalSubs: number;
-  shopOpen: boolean;
-  marketOpen: boolean;
   seasonStartsAt: string;
   seasonEndsAt: string;
 }
@@ -227,70 +190,47 @@ export interface SubEvent {
   milestones: string[];
   /** Flocons versés à chaque joueur actif. */
   snowflakesEach: number;
-  /** Boosters offerts à chaque joueur actif. */
-  boostersEach: string[];
+  /** Packs mis en file par cette saisie. */
+  packs: PackId[];
   recipients: number;
 }
 
 /**
- * Réglages d'un booster décidés par l'administration.
+ * Réglage d'un pack décidé par l'administration.
  *
  * Le catalogue reste la source de vérité par défaut ; ceci ne fait que le
- * recouvrir, champ par champ. Un booster sans réglage garde exactement les
- * valeurs de `lib/domain/catalog.ts`, et remettre à zéro un réglage suffit à
- * revenir au catalogue — on ne perd jamais l'original.
+ * recouvrir. Un pack sans réglage garde exactement la table de
+ * `lib/domain/catalog.ts`, et retirer le réglage suffit à y revenir.
  */
-export interface BoosterSetting {
-  boosterId: string;
-  /** Prix en flocons. Absent : celui du catalogue. */
-  price?: number;
-  /** Table de raretés. Absente : celle du catalogue. Somme exacte : 100 000. */
-  weights?: Record<Rarity, number>;
+export interface ReglagePack {
+  packId: PackId;
+  /** Table de raretés. Somme exacte : 100 000. */
+  weights: Record<Rarity, number>;
   updatedAt: string;
 }
 
 /**
- * Un affrontement de boosters.
+ * Un affrontement.
  *
- * Deux camps ouvrent **la même liste de sachets**, manche par manche ; celui
- * dont les cartes totalisent la plus haute somme de raretés remporte **tout**,
- * les siennes et celles de l'autre.
+ * Deux camps misent **la même somme**, tirent le même nombre de cartes manche
+ * par manche, et celui dont les cartes totalisent la plus haute somme de
+ * raretés remporte le pot — les deux mises réunies.
  *
- * Les cartes tirées ne deviennent des exemplaires détenus qu'à la résolution, et
- * seulement pour le vainqueur. Les créer pour chaque camp puis les transférer
- * aurait laissé, le temps d'une transaction, des cartes appartenant à quelqu'un
- * qui ne les gagnera pas — et une reprise après incident aurait pu les figer là.
+ * Les cartes tirées ne sont que des cartes de comparaison : personne ne les
+ * garde. Elles sont consignées pour que la partie soit rejouable à l'écran et
+ * vérifiable dans le journal.
  */
 export interface Bataille {
   id: string;
-  /**
-   * La liste des sachets mis en jeu, dans l'ordre où ils s'ouvriront.
-   *
-   * Une **liste**, et non un sachet répété. Un affrontement n'a pas de raison
-   * d'être monotone : trois Givre et un Everest se jouent très différemment de
-   * quatre Givre — la mise monte d'un coup à la dernière manche, et c'est elle
-   * qui décide. La contrainte est que les deux camps ouvrent exactement la même
-   * liste ; c'est ce qui rend la comparaison honnête.
-   *
-   * Les doublons sont permis : cinq fois le même sachet reste une liste valide,
-   * et c'est ce que faisait l'ancienne forme.
-   */
-  boosterIds: string[];
-  /** Nombre de sachets par camp. Toujours `boosterIds.length` — cache d'affichage. */
+  /** Nombre de manches. Chaque manche tire `DUEL.cartesParManche` cartes par camp. */
   manches: number;
-  /** Prix payé par chaque camp humain, au moment de la mise. */
+  /** La mise de chaque camp, en flocons. Le pot vaut le double. */
   mise: number;
   hoteId: string;
   /** Nul tant que personne n'a rejoint. `BOT` désigne l'adversaire virtuel. */
   adversaireId: string | null;
   statut: 'ATTENTE' | 'TERMINEE' | 'ANNULEE';
-  /**
-   * Les cartes tirées par camp, dans l'ordre des manches. Vide tant qu'on attend.
-   *
-   * `relances` liste les emplacements où le jeton Winter Spin est tombé, comme
-   * pour une ouverture ordinaire : c'est ce qui permet de rejouer la bataille à
-   * l'écran, mise en scène comprise, sans que le client puisse rien décider.
-   */
+  /** Les cartes tirées par camp, dans l'ordre des manches. Vide tant qu'on attend. */
   tirages: { camp: string; cardIds: string[]; relances: number[]; score: number }[];
   vainqueurId: string | null;
   creeeA: string;
@@ -304,12 +244,11 @@ export const CAMP_BOT = 'BOT';
  * Un évènement déclenché par un palier de subs, avec sa fenêtre.
  *
  * Il est conservé après sa fin : c'est l'historique de ce que le chat a
- * déclenché, et la modération doit pouvoir le relire. Ce qui compte pour le
- * jeu, c'est `startsAt` et `endsAt` — voir `evenementsActifs`.
+ * déclenché, et la modération doit pouvoir le relire.
  */
 export interface EvenementActif {
   id: string;
-  kind: 'BOOSTERS_MOITIE' | 'FLOCONS_DOUBLES' | 'CARTES_RENFORCEES';
+  kind: EvenementKind;
   label: string;
   description: string;
   startsAt: string;
@@ -324,20 +263,13 @@ export interface Database {
   config: LeagueConfig;
   players: Player[];
   games: Game[];
-  cards: CardInstance[];
-  collectibles: Collectible[];
-  discoveries: Discovery[];
-  openings: BoosterOpening[];
-  effects: PlayerEffect[];
-  boons: PlayerBoon[];
+  packsDus: PackDu[];
+  ouvertures: OuverturePack[];
+  cartesEnAttente: CarteEnAttente[];
   ledger: LedgerEntry[];
-  listings: Listing[];
-  bids: Bid[];
-  sales: Sale[];
-  events: LeagueEvent[];
   subEvents: SubEvent[];
   audit: AuditEntry[];
-  boosterSettings: BoosterSetting[];
+  reglagesPacks: ReglagePack[];
   batailles: Bataille[];
   evenements: EvenementActif[];
 }

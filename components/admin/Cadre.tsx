@@ -16,18 +16,17 @@ export interface Section {
 /**
  * Les sections de l'espace, dans l'ordre où on s'en sert.
  *
- * Le quotidien d'abord — saisir une game est le geste de chaque soir de live —
- * puis ce qui se règle une fois par saison, puis le journal. Les deux entrées
- * réservées sont marquées : ce qui touche à l'économie et aux droits ne se
- * confond pas avec ce qui fait tourner la ligue.
+ * Le quotidien d'abord — ouvrir un pack à l'antenne et saisir une game sont
+ * les gestes de chaque soir de live — puis ce qui se règle une fois par
+ * saison, puis le journal. Les taux des packs se règlent sur l'écran des packs,
+ * et seuls les administrateurs y ont les champs.
  */
 export const SECTIONS: Section[] = [
   { href: '/admin', label: 'Tableau de bord' },
+  { href: '/admin/packs', label: 'Boosters' },
   { href: '/admin/games', label: 'Games' },
   { href: '/admin/joueurs', label: 'Joueurs' },
-  { href: '/admin/cartes', label: 'Cartes' },
   { href: '/admin/saison', label: 'Saison' },
-  { href: '/admin/boosters', label: 'Boosters', admin: true },
   { href: '/admin/journal', label: 'Journal' },
 ];
 
@@ -37,7 +36,7 @@ export function AdminNav({ estAdmin }: { estAdmin: boolean }) {
   const visibles = SECTIONS.filter((s) => !s.admin || estAdmin);
 
   return (
-    <nav className="scroll-x-clean border-b border-white/10">
+    <nav className="scroll-x-clean">
       <div className="flex min-w-max gap-5">
         {visibles.map((s) => (
           <Link

@@ -4,7 +4,6 @@ import { useMemo, useState } from 'react';
 import { useAction } from '@/components/admin/action';
 import { Bloc, Ecran } from '@/components/admin/Cadre';
 import { flakes } from '@/components/ui';
-import { CARDS } from '@/lib/domain/catalog';
 
 export type RoleJoueur = 'joueur' | 'moderateur' | 'admin';
 
@@ -13,6 +12,8 @@ export interface LigneJoueur {
   pseudo: string;
   slug: string;
   role: RoleJoueur;
+  /** Le pseudo en jeu, que la reconnaissance des captures compare aux noms lus. */
+  activisionId: string | null;
   snowflakes: number;
   games: number;
   score: number;
@@ -23,9 +24,9 @@ const ROLES: { id: RoleJoueur; label: string; aide: string }[] = [
   {
     id: 'moderateur',
     label: 'Modérateur',
-    aide: 'Saisit les games, crédite, ouvre et ferme la boutique.',
+    aide: 'Saisit les games, crédite, ouvre les packs.',
   },
-  { id: 'admin', label: 'Admin', aide: 'Tout cela, plus les prix, les taux et les rôles.' },
+  { id: 'admin', label: 'Admin', aide: 'Tout cela, plus les taux et les rôles.' },
 ];
 
 /** Retire accents et casse, pour que « boreal » trouve « Boréal ». */
@@ -42,7 +43,8 @@ function plie(valeur: string): string {
  * Tout ce qui concerne une personne est sur le même écran. C'est le seul
  * découpage qui tienne à l'usage : on cherche un joueur parce qu'il s'est passé
  * quelque chose avec lui, et ce qu'on veut faire ensuite — le créditer, lui
- * donner une carte, le promouvoir — n'est pas connu d'avance.
+ * le promouvoir — n'est pas connu d'avance. Aucune carte ne se donne ici : une
+ * carte sort d'un pack, ouvert à l'antenne, ou ne sort pas.
  */
 export function EcranJoueurs({
   joueurs,
@@ -56,9 +58,9 @@ export function EcranJoueurs({
   const [recherche, setRecherche] = useState('');
   const [pseudo, setPseudo] = useState('');
   const [twitch, setTwitch] = useState('');
+  const [activision, setActivision] = useState('');
   const [cible, setCible] = useState('');
   const [flocons, setFlocons] = useState(0);
-  const [carte, setCarte] = useState('');
   const [motif, setMotif] = useState('');
 
   const visibles = useMemo(() => {
@@ -82,10 +84,15 @@ export function EcranJoueurs({
             className="space-y-3"
             onSubmit={async (e) => {
               e.preventDefault();
-              const fait = await envoie('/api/players', { pseudo, twitchLogin: twitch || null });
+              const fait = await envoie('/api/players', {
+                pseudo,
+                twitchLogin: twitch || null,
+                activisionId: activision || null,
+              });
               if (fait) {
                 setPseudo('');
                 setTwitch('');
+                setActivision('');
               }
             }}
           >
@@ -116,6 +123,19 @@ export function EcranJoueurs({
                 placeholder="pseudo_twitch"
               />
             </div>
+            <div>
+              <label className="label" htmlFor="new-activision">
+                Pseudo Activision (facultatif)
+              </label>
+              <input
+                id="new-activision"
+                className="field"
+                value={activision}
+                onChange={(e) => setActivision(e.target.value)}
+                maxLength={40}
+                placeholder="Pseudo#1234567"
+              />
+            </div>
             <button className="btn btn-ice w-full" disabled={busy !== null || pseudo.length < 2}>
               Inscrire
             </button>
@@ -123,7 +143,7 @@ export function EcranJoueurs({
         </Bloc>
 
         <Bloc
-          titre="Attribuer flocons ou carte"
+          titre="Attribuer des flocons"
           aide="Un motif est obligatoire : c'est lui qu'on relira dans le journal le jour où quelqu'un demandera pourquoi."
         >
           <form
@@ -132,13 +152,11 @@ export function EcranJoueurs({
               e.preventDefault();
               const fait = await envoie('/api/admin/grant', {
                 playerId: cible,
-                ...(flocons !== 0 ? { snowflakes: flocons } : {}),
-                ...(carte ? { cardId: carte } : {}),
+                snowflakes: flocons,
                 reason: motif,
               });
               if (fait) {
                 setFlocons(0);
-                setCarte('');
                 setMotif('');
               }
             }}
@@ -162,37 +180,17 @@ export function EcranJoueurs({
                 ))}
               </select>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="label" htmlFor="grant-flocons">
-                  Flocons (±)
-                </label>
-                <input
-                  id="grant-flocons"
-                  type="number"
-                  className="field num"
-                  value={flocons}
-                  onChange={(e) => setFlocons(Number(e.target.value))}
-                />
-              </div>
-              <div>
-                <label className="label" htmlFor="grant-carte">
-                  Carte
-                </label>
-                <select
-                  id="grant-carte"
-                  className="field"
-                  value={carte}
-                  onChange={(e) => setCarte(e.target.value)}
-                >
-                  <option value="">Aucune</option>
-                  {CARDS.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+            <div>
+              <label className="label" htmlFor="grant-flocons">
+                Flocons (±)
+              </label>
+              <input
+                id="grant-flocons"
+                type="number"
+                className="field num"
+                value={flocons}
+                onChange={(e) => setFlocons(Number(e.target.value))}
+              />
             </div>
             <div>
               <label className="label" htmlFor="grant-motif">
@@ -210,7 +208,7 @@ export function EcranJoueurs({
             </div>
             <button
               className="btn btn-ice w-full"
-              disabled={busy !== null || !cible || !motif || (flocons === 0 && carte === '')}
+              disabled={busy !== null || !cible || !motif || flocons === 0}
             >
               Attribuer
             </button>
@@ -237,6 +235,7 @@ export function EcranJoueurs({
             <thead>
               <tr>
                 <th>Joueur</th>
+                <th>Activision</th>
                 <th>Rôle</th>
                 <th className="text-right">Games</th>
                 <th className="text-right">Points</th>
@@ -251,6 +250,19 @@ export function EcranJoueurs({
                     <a href={`/joueurs/${p.slug}`} className="text-ink no-underline hover:text-ice">
                       {p.pseudo}
                     </a>
+                  </td>
+                  <td>
+                    <ActivisionCellule
+                      joueur={p}
+                      busy={busy === `activision:${p.id}`}
+                      enregistre={(valeur) =>
+                        envoie(
+                          '/api/players',
+                          { playerId: p.id, activisionId: valeur || null },
+                          { methode: 'PATCH', cle: `activision:${p.id}`, succes: `${p.pseudo} : pseudo Activision enregistré.` },
+                        )
+                      }
+                    />
                   </td>
                   <td>
                     <span
@@ -299,5 +311,48 @@ export function EcranJoueurs({
         </div>
       </section>
     </Ecran>
+  );
+}
+
+/**
+ * Le pseudo Activision d'un joueur, à corriger sur place.
+ *
+ * C'est le nom que la lecture des captures compare aux lignes du tableau de
+ * fin de game : quand un joueur n'est jamais reconnu, c'est ici qu'on regarde.
+ */
+function ActivisionCellule({
+  joueur,
+  busy,
+  enregistre,
+}: {
+  joueur: LigneJoueur;
+  busy: boolean;
+  enregistre: (valeur: string) => Promise<unknown>;
+}) {
+  const [valeur, setValeur] = useState(joueur.activisionId ?? '');
+  const modifie = valeur.trim() !== (joueur.activisionId ?? '');
+  return (
+    <form
+      className="flex items-center gap-1.5"
+      onSubmit={(e) => {
+        e.preventDefault();
+        void enregistre(valeur.trim());
+      }}
+    >
+      <input
+        className="field !py-1 text-sm"
+        style={{ minWidth: 150 }}
+        value={valeur}
+        onChange={(e) => setValeur(e.target.value)}
+        maxLength={40}
+        placeholder="non renseigné"
+        aria-label={`Pseudo Activision de ${joueur.pseudo}`}
+      />
+      {modifie && (
+        <button className="btn btn-sm" disabled={busy}>
+          {busy ? '…' : 'OK'}
+        </button>
+      )}
+    </form>
   );
 }

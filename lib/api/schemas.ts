@@ -3,16 +3,15 @@
  *
  * Rien n'entre dans le domaine sans être passé par ici. Les bornes reprennent
  * celles de `lib/domain/rules` : une valeur acceptée par Zod est donc toujours
- * une valeur que le moteur de score sait traiter.
+ * une valeur que le moteur sait traiter.
  */
 
 import { z } from 'zod';
-import { BOOSTERS, CARDS } from '@/lib/domain/catalog';
 import { MANCHES_MAX, MANCHES_MIN } from '@/lib/domain/bataille';
-import { GAME_LIMITS, MARKET } from '@/lib/domain/rules';
+import { DUEL, GAME_LIMITS } from '@/lib/domain/rules';
+import { PACK_IDS } from '@/lib/domain/types';
 
-const cardIds = CARDS.map((c) => c.id) as [string, ...string[]];
-const boosterIds = BOOSTERS.map((b) => b.id) as [string, ...string[]];
+const packIds = PACK_IDS as unknown as [string, ...string[]];
 
 export const uuid = z.string().uuid('Identifiant invalide.');
 
@@ -24,6 +23,23 @@ export const pseudo = z
   .max(24, 'Vingt-quatre caractères maximum.')
   .regex(/^[\p{L}\p{N}_\-. ]+$/u, 'Caractères non autorisés dans le pseudo.');
 
+/**
+ * Pseudo Activision : le nom en jeu, avec ou sans son suffixe numérique
+ * (« Pseudo#1234567 »). Le dièse est permis ici, et nulle part ailleurs.
+ */
+export const activisionId = z
+  .string()
+  .trim()
+  .min(2, 'Deux caractères minimum.')
+  .max(40, 'Quarante caractères maximum.')
+  .regex(/^[\p{L}\p{N}_\-. ]+(#\d{2,10})?$/u, 'Caractères non autorisés dans le pseudo Activision.');
+
+/** Le joueur renseigne son propre pseudo Activision. */
+export const monActivisionSchema = z.object({ activisionId });
+
+/** La modération corrige celui d'un joueur. */
+export const activisionJoueurSchema = z.object({ playerId: uuid, activisionId: activisionId.nullable() });
+
 export const loginSchema = z.object({
   password: z.string().min(1).max(256),
 });
@@ -32,19 +48,13 @@ export const rarity = z.enum(['C', 'PC', 'R', 'SR', 'UR', 'L']);
 
 export const createPlayerSchema = z.object({
   pseudo,
-  /**
-   * Rareté de la carte Joueur, figée à l'inscription et jamais modifiée
-   * ensuite : une carte échangeable dont la rareté bougerait en cours de
-   * saison ferait varier son foil, son taux de tirage et son prix sous les
-   * pieds de ceux qui l'ont achetée.
-   */
-  cardRarity: rarity.optional(),
   twitchLogin: z
     .string()
     .trim()
     .regex(/^[a-zA-Z0-9_]{3,25}$/, 'Pseudo Twitch invalide.')
     .optional()
     .nullable(),
+  activisionId: activisionId.optional().nullable(),
 });
 
 export const gameSchema = z.object({
@@ -55,7 +65,7 @@ export const gameSchema = z.object({
   note: z.string().trim().max(140).optional().nullable(),
   /**
    * Ni multiplicateur ni bonus ne sont acceptés du client : ils ne peuvent
-   * venir que d'une carte jouée, résolue côté serveur.
+   * venir que d'une carte de pack, résolue côté serveur à la saisie.
    */
 });
 
@@ -67,76 +77,44 @@ export const updateGameSchema = z.object({
 
 export const deleteGameSchema = z.object({ gameId: uuid });
 
-export const purchaseSchema = z.object({
-  boosterId: z.enum(boosterIds),
-  /**
-   * Clé d'idempotence fournie par le client : deux envois du même achat (double
-   * clic, reprise réseau) ne débitent qu'une fois.
-   */
-  idempotencyKey: z.string().uuid(),
-});
+/* -------------------------------- Packs ---------------------------------- */
 
-export const playCardSchema = z
+/**
+ * Ouvrir un pack : soit un pack de la file, soit un pack à la main.
+ *
+ * La clé d'idempotence est fournie par le client : deux envois de la même
+ * ouverture (double clic, reprise réseau) ne tirent qu'une fois, et le rail
+ * rejoue exactement la même carte.
+ */
+export const ouvrirPackSchema = z
   .object({
-    cardInstanceId: uuid,
-    /** Requis pour les cartes ciblant une de tes games. */
-    gameId: uuid.optional(),
-    /** Requis pour les malus. */
-    targetPlayerId: uuid.optional(),
+    packDuId: uuid.optional(),
+    packId: z.enum(packIds).optional(),
+    joueurId: uuid.optional(),
     idempotencyKey: z.string().uuid(),
   })
-  .strict();
-
-/* ----------------------------- Hôtel des ventes -------------------------- */
-
-export const createListingSchema = z
-  .object({
-    cardInstanceId: uuid,
-    startPrice: z.number().int().min(MARKET.minPrice).max(MARKET.maxPrice),
-    buyoutPrice: z.number().int().min(MARKET.minPrice).max(MARKET.maxPrice).nullable().optional(),
-    durationMinutes: z.union(
-      MARKET.durationsMinutes.map((m) => z.literal(m)) as unknown as [
-        z.ZodLiteral<number>,
-        z.ZodLiteral<number>,
-        ...z.ZodLiteral<number>[],
-      ],
-    ),
-  })
-  .refine((v) => v.buyoutPrice == null || v.buyoutPrice > v.startPrice, {
-    message: 'L’achat immédiat doit être supérieur au prix de départ.',
-    path: ['buyoutPrice'],
+  .refine((v) => v.packDuId !== undefined || v.packId !== undefined, {
+    message: 'Précise un pack de la file, ou un pack à ouvrir.',
+    path: ['packId'],
   });
 
-export const bidSchema = z.object({
-  listingId: uuid,
-  amount: z.number().int().min(MARKET.minPrice).max(MARKET.maxPrice),
-});
-
-export const buyoutSchema = z.object({ listingId: uuid });
-
-/** Défausse : un seul exemplaire, désigné par son identifiant. */
-export const defausseSchema = z.object({ cardInstanceId: uuid });
-
-export const cancelListingSchema = z.object({ listingId: uuid });
-
-export const marketQuerySchema = z.object({
-  cardId: z.enum(cardIds).optional(),
-  rarity: z.enum(['C', 'PC', 'R', 'SR', 'UR', 'L']).optional(),
-  sort: z.enum(['fin', 'prix_asc', 'prix_desc', 'recent']).default('fin'),
-  page: z.coerce.number().int().min(1).max(200).default(1),
+/**
+ * Réglage de la table d'un pack.
+ *
+ * `null` veut dire « remets la table du catalogue ». Les poids ne sont pas
+ * validés ici : leur somme doit valoir exactement 100 000, et un message
+ * indiquant de combien on s'écarte vaut mieux qu'un refus de schéma.
+ */
+export const adminPackSchema = z.object({
+  packId: z.enum(packIds),
+  weights: z.record(z.string(), z.number()).nullable(),
 });
 
 /* ------------------------------- Batailles ------------------------------- */
 
 export const createBatailleSchema = z.object({
-  /**
-   * Le panier de sachets, dans l'ordre où ils s'ouvriront.
-   *
-   * Les doublons sont permis — cinq fois le même sachet reste un affrontement
-   * valide. Les bornes viennent de `lib/domain/bataille` ; le service les
-   * revérifie, Zod ne fait que refuser tôt ce qu'il refuserait de toute façon.
-   */
-  boosterIds: z.array(z.enum(boosterIds)).min(MANCHES_MIN).max(MANCHES_MAX),
+  mise: z.number().int().min(DUEL.miseMin).max(DUEL.miseMax),
+  manches: z.number().int().min(MANCHES_MIN).max(MANCHES_MAX),
 });
 
 export const batailleSchema = z.object({ batailleId: uuid });
@@ -145,38 +123,23 @@ export const batailleSchema = z.object({ batailleId: uuid });
 
 export const adminConfigSchema = z.object({
   maxGamesPerPlayer: z.number().int().min(1).max(100).optional(),
-  shopOpen: z.boolean().optional(),
-  marketOpen: z.boolean().optional(),
 });
 
 export const adminGrantSchema = z.object({
   playerId: uuid,
-  snowflakes: z.number().int().min(-1_000_000).max(1_000_000).optional(),
-  cardId: z.enum(cardIds).optional(),
+  snowflakes: z.number().int().min(-1_000_000).max(1_000_000),
   reason: z.string().trim().min(1).max(140),
 });
 
-export const eventSchema = z.object({
-  title: z.string().trim().min(2).max(80),
-  description: z.string().trim().max(600),
-  startsAt: z.string().datetime(),
-  endsAt: z.string().datetime().nullable().optional(),
-  published: z.boolean().default(true),
-});
-
-export type GameInput = z.infer<typeof gameSchema>;
-export type CreateListingInput = z.infer<typeof createListingSchema>;
-export type BidInput = z.infer<typeof bidSchema>;
-export type PlayCardInput = z.infer<typeof playCardSchema>;
-
-/** Création d'une carte Moment par la modération. */
-export const momentSchema = z.object({
-  name: z.string().trim().min(2).max(48),
-  subtitle: z.string().trim().max(64).default(''),
-  description: z.string().trim().max(240).default(''),
-  rarity,
-  glyph: z.string().trim().min(1).max(8).default('🏅'),
-});
+/** Saisie des subs : au compteur de la saison, ou au compte d'un joueur. */
+export const adminSubsSchema = z.union([
+  z.object({ action: z.literal('subs'), delta: z.number().int().min(1).max(10_000) }),
+  z.object({
+    action: z.literal('subs-joueur'),
+    playerId: uuid,
+    delta: z.number().int().min(1).max(10_000),
+  }),
+]);
 
 /**
  * Changement de rôle.
@@ -190,16 +153,4 @@ export const adminRoleSchema = z.object({
   role: z.enum(['joueur', 'moderateur', 'admin']),
 });
 
-/**
- * Réglage d'un booster.
- *
- * `null` veut dire « remets la valeur du catalogue », et se distingue donc de
- * l'absence du champ, qui veut dire « n'y touche pas ». Les poids ne sont pas
- * validés ici : leur somme doit valoir exactement 100 000, et un message
- * indiquant de combien on s'écarte vaut mieux qu'un refus de schéma.
- */
-export const adminBoosterSchema = z.object({
-  boosterId: z.string().trim().min(1).max(40),
-  price: z.number().int().nullable().optional(),
-  weights: z.record(z.string(), z.number()).nullable().optional(),
-});
+export type GameInput = z.infer<typeof gameSchema>;

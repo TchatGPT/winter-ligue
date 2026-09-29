@@ -4,8 +4,8 @@ import 'server-only';
  * Les évènements déclenchés par les subs.
  *
  * À certains paliers de subs, quelque chose se met à tourner pour **tout le
- * monde**, pendant une heure ou deux : les sachets à moitié prix, les flocons
- * doublés, les cartes plus fortes. Puis ça s'arrête.
+ * monde**, pendant une heure ou deux : les flocons doublés, les cartes plus
+ * fortes. Puis ça s'arrête.
  *
  * ## Pourquoi c'est compatible avec l'invariant anti-pay-to-win
  *
@@ -20,16 +20,13 @@ import 'server-only';
  *
  * En un seul endroit chacun, et c'est le point qui compte :
  *
- *  - le **prix** dans `resolvedBooster` — boutique, affrontements et affichage
- *    lisent tous la même valeur, ce qui est la règle du projet ;
  *  - le **gain** d'une game dans la route qui l'enregistre ;
  *  - la **force** des cartes dans `applyPoints`, avant le plafond — le plafond
  *    reste, un évènement ne le fait pas sauter.
  *
  * Les facteurs ne se **cumulent pas** : deux évènements du même genre actifs en
  * même temps donnent le plus fort des deux, pas leur produit. Sans cette règle,
- * une Tempête tombée sur une Braderie ferait des sachets à un quart du prix,
- * ce qu'aucun palier n'annonce.
+ * deux Avalanches feraient des flocons quadruplés, ce qu'aucun palier n'annonce.
  */
 
 import type { Database, EvenementActif } from '@/lib/db/entities';
@@ -100,9 +97,6 @@ function facteur(db: Database, kind: EvenementKind, now: Date): number {
     evenementsActifs(db, now).map((e) => e.kind),
   );
 }
-
-/** Prix des sachets : 0,5 pendant une braderie, 1 sinon. */
-export const facteurPrix = (db: Database, now = new Date()) => facteur(db, 'BOOSTERS_MOITIE', now);
 
 /** Flocons d'une game : 2 pendant une avalanche, 1 sinon. */
 export const facteurGain = (db: Database, now = new Date()) => facteur(db, 'FLOCONS_DOUBLES', now);

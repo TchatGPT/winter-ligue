@@ -1,19 +1,14 @@
 import { NextResponse } from 'next/server';
-import { z } from 'zod';
 import { toResponse } from '@/lib/api/errors';
 import { guard, ok } from '@/lib/api/respond';
-import { uuid } from '@/lib/api/schemas';
+import { adminSubsSchema } from '@/lib/api/schemas';
 import { getStore } from '@/lib/db/store';
 import { LIMITS } from '@/lib/security/ratelimit';
-import { addSubs, giftCard, subsOverview } from '@/lib/services/subs';
+import { attribueSubsJoueur } from '@/lib/services/packs';
+import { addSubs, subsOverview } from '@/lib/services/subs';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-
-const schema = z.union([
-  z.object({ action: z.literal('subs'), delta: z.number().int().min(1).max(10_000) }),
-  z.object({ action: z.literal('gift'), playerId: uuid }),
-]);
 
 /** État public du compteur de subs, pour la bannière du classement. */
 export async function GET(request: Request): Promise<NextResponse> {
@@ -23,32 +18,38 @@ export async function GET(request: Request): Promise<NextResponse> {
 }
 
 /**
- * Saisie des subs par la modération, et carte offerte à un joueur nommé.
+ * Saisie des subs par la modération.
  *
- * Les versements de paliers vont à tous les joueurs actifs à parts égales : il
- * n'existe volontairement aucun moyen d'attribuer des flocons de subs à un
- * joueur en particulier.
+ * Deux gestes distincts, et volontairement séparés :
+ *  - `subs` alimente le compteur de la saison : flocons pour tous, packs
+ *    collectifs en file, évènements ;
+ *  - `subs-joueur` inscrit des subs offerts au compte d'un joueur nommé : ils
+ *    lui valent des packs Perso, mis en file. Ils ne touchent pas au compteur
+ *    de saison — la modération saisit les deux, l'un après l'autre.
  */
 export async function POST(request: Request): Promise<NextResponse> {
   const g = await guard(request, {
     scope: 'admin-subs',
     role: 'moderateur',
     limit: LIMITS.mutation,
-    schema,
+    schema: adminSubsSchema,
   });
   if (!g.ok) return g.response;
 
   // Extrait dans une constante locale : TypeScript ne sait pas restreindre
   // une union discriminée à travers l'accès répété `g.body`.
   const body = g.body;
+  const actor = g.session?.sub ?? 'admin';
 
   try {
-    if (body.action === 'gift') {
-      const cardId = await getStore().transaction((db) => giftCard(db, body.playerId, 'admin'));
-      return ok({ cardId });
+    if (body.action === 'subs-joueur') {
+      const result = await getStore().transaction((db) =>
+        attribueSubsJoueur(db, body.playerId, body.delta, actor),
+      );
+      return ok(result);
     }
 
-    const result = await getStore().transaction((db) => addSubs(db, body.delta, 'admin'));
+    const result = await getStore().transaction((db) => addSubs(db, body.delta, actor));
     return ok(result);
   } catch (error) {
     return toResponse(error);

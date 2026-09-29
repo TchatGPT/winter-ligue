@@ -1,5 +1,5 @@
 /**
- * Catalogue figé de la saison : raretés, 24 cartes, 4 boosters.
+ * Catalogue figé de la saison : raretés, 24 cartes, 4 packs.
  *
  * C'est la source de vérité. Le client reçoit ce catalogue pour l'affichage,
  * mais toute résolution d'effet relit ces définitions côté serveur : une carte
@@ -8,12 +8,12 @@
 
 import { BOOSTER_ART, CARD_ART } from './card-art.generated';
 import { RARITY_ORDER, RARITY_WEIGHTS_BASE } from './rules';
-import type { BoosterDefinition, CardDefinition, Rarity } from './types';
+import type { CardDefinition, CardEffect, PackDefinition, PackId, Rarity } from './types';
 
 /**
  * Palette de raretés : froide pour le banal, chaude pour le convoité. Sur un
  * fond de nuit polaire, les cartes rares « chauffent » — on repère une
- * légendaire dans une grille de cent vignettes sans lire une seule étiquette.
+ * légendaire dans un rail sans lire une seule étiquette.
  */
 export const RARITY_META: Record<
   Rarity,
@@ -94,198 +94,92 @@ export const RARITY_META: Record<
 };
 
 /**
- * 24 cartes, quatre par rareté.
+ * 24 cartes, quatre par rareté. Toutes s'appliquent à la **prochaine game** de
+ * qui les reçoit, puis disparaissent.
  *
- * Le plafond d'impact est fixé à ~25 points, soit une bonne game. Sur une
- * saison qui en totalise environ 400, une carte à +100 volerait un quart du
- * classement en un clic — c'est ce qui rendait certaines roues de la Summer
- * Ligue insupportables.
+ * Le plafond d'impact est fixé à 25 points, soit une bonne game. Un test le
+ * vérifie carte par carte, au pire cas.
  *
- * Trois interdits structurent les malus :
- *   — aucune suppression définitive de la game d'autrui ;
- *   — aucun transfert : un malus retire des points, il n'en donne jamais à
- *     l'attaquant ;
- *   — tout malus est annulable par Second Souffle dans les 24 h.
+ * Trois règles structurent les malus :
+ *   — aucun dans le pack Perso ni le pack Finisseur : ce qu'on ouvre pour soi
+ *     ne peut pas se retourner contre soi ;
+ *   — un malus tombe sur un joueur tiré au sort ou sur la tête du classement,
+ *     jamais sur quelqu'un que quelqu'un aurait choisi ;
+ *   — un malus retire des points, il n'en donne jamais à personne.
+ *
+ * Les cartes **à deux** sont la seule exception assumée : un échange de kills
+ * ou un duel met face à face deux joueurs tirés au sort, et ce que l'un gagne,
+ * l'autre le perd. C'est borné à `CARD_IMPACT_CAP` de chaque côté, et ça ne
+ * sort que du pack Commu — celui que le chat déclenche pour animer la ligue.
  */
-export const EFFECT_CARDS: readonly CardDefinition[] = [
-  /* ================ GLACE — protéger ce qui est acquis =================== */
+export const CARDS: readonly CardDefinition[] = [
+  /* ================================ Communes ============================== */
   {
     id: 'congere',
     name: 'Congère',
     subtitle: 'Ce qui s’accumule reste',
     rarity: 'C',
     glyph: '🌨',
-    description: 'Ajoute +4 points à une de tes games.',
-    target: 'own_game',
+    description: '+4 points sur ta prochaine game.',
     effect: { kind: 'bonus_points', value: 4 },
     nature: 'bonus',
-    offensive: false,
     power: 10,
+    packs: ['perso', 'commu', 'finisseur'],
+    cible: 'HASARD',
   },
-  {
-    id: 'bouclier-givre',
-    name: 'Bouclier de Givre',
-    subtitle: 'Intouchable une nuit',
-    rarity: 'PC',
-    glyph: '🛡',
-    description: 'Immunise ton profil contre tous les malus pendant 12 heures.',
-    target: 'none',
-    effect: { kind: 'shield', hours: 12 },
-    nature: 'bonus',
-    offensive: false,
-    power: 32,
-  },
-  {
-    id: 'gel-eternel',
-    name: 'Gel Éternel',
-    subtitle: 'Ce qui est pris est pris',
-    rarity: 'R',
-    glyph: '❅',
-    description:
-      'Gèle une de tes games : plus aucun malus ne peut l’atteindre, jusqu’à la fin de la saison.',
-    target: 'own_game',
-    effect: { kind: 'freeze_game' },
-    nature: 'bonus',
-    offensive: false,
-    power: 48,
-  },
-  {
-    id: 'second-souffle',
-    name: 'Second Souffle',
-    subtitle: 'Rien n’est jamais perdu',
-    rarity: 'SR',
-    glyph: '🌬',
-    description:
-      'Annule le dernier malus subi dans les 24 heures et te rend les points retirés.',
-    target: 'none',
-    effect: { kind: 'undo_last_malus', withinHours: 24 },
-    nature: 'bonus',
-    offensive: false,
-    power: 68,
-  },
-  {
-    id: 'rempart-polaire',
-    name: 'Rempart Polaire',
-    subtitle: 'Deux jours de silence',
-    rarity: 'UR',
-    glyph: '🏰',
-    description: 'Immunise ton profil pendant 48 heures et gèle ta meilleure game.',
-    target: 'none',
-    effect: { kind: 'shield_and_freeze_best', hours: 48 },
-    nature: 'bonus',
-    offensive: false,
-    power: 84,
-  },
-  {
-    id: 'sanctuaire',
-    name: 'Sanctuaire',
-    subtitle: 'Le socle ne bouge plus',
-    rarity: 'L',
-    glyph: '🏔',
-    description:
-      'Gèle tes 3 meilleures games. Les suivantes restent exposées — un socle, pas une forteresse.',
-    target: 'none',
-    effect: { kind: 'freeze_top_games', count: 3 },
-    nature: 'bonus',
-    offensive: false,
-    power: 95,
-  },
-
-  /* ============ TEMPÊTE — amplifier une performance réelle =============== */
   {
     id: 'rafale',
     name: 'Rafale',
     subtitle: 'Chaque coup compte',
     rarity: 'C',
     glyph: '🍃',
-    description: 'Ajoute +1 point par kill sur une de tes games, jusqu’à +8.',
-    target: 'own_game',
+    description: '+1 point par kill sur ta prochaine game, jusqu’à +8.',
     effect: { kind: 'points_per_kill', perKill: 1, cap: 8 },
     nature: 'bonus',
-    offensive: false,
     power: 16,
+    packs: ['perso', 'finisseur'],
+    cible: 'TOUS',
   },
-  {
-    id: 'vent-du-nord',
-    name: 'Vent du Nord',
-    subtitle: 'Le vent tourne',
-    rarity: 'PC',
-    glyph: '💨',
-    description: 'Multiplie par 1,25 les kills d’une de tes games, jusqu’à +10 points.',
-    target: 'own_game',
-    effect: { kind: 'kill_multiplier', value: 1.25, cap: 10 },
-    nature: 'bonus',
-    offensive: false,
-    power: 34,
-  },
-  {
-    id: 'percee',
-    name: 'Percée',
-    subtitle: 'Récompense les gros scores',
-    rarity: 'R',
-    glyph: '⚔',
-    description:
-      'Ajoute +2 points par kill au-delà du dixième sur une de tes games, jusqu’à +14.',
-    target: 'own_game',
-    effect: { kind: 'points_per_kill_above', perKill: 2, threshold: 10, cap: 14 },
-    nature: 'bonus',
-    offensive: false,
-    power: 54,
-  },
-  {
-    id: 'blizzard',
-    name: 'Blizzard',
-    subtitle: 'On n’y voit plus rien',
-    rarity: 'SR',
-    glyph: '🌪',
-    description: 'Multiplie par 1,5 les kills d’une de tes games, jusqu’à +18 points.',
-    target: 'own_game',
-    effect: { kind: 'kill_multiplier', value: 1.5, cap: 18 },
-    nature: 'bonus',
-    offensive: false,
-    power: 72,
-  },
-  {
-    id: 'sang-froid',
-    name: 'Sang-Froid',
-    subtitle: 'La place avant les frags',
-    rarity: 'UR',
-    glyph: '🧊',
-    description:
-      'Double les points de classement d’une de tes games. Un Top 1 passe de 20 à 40 points.',
-    target: 'own_game',
-    effect: { kind: 'double_placement' },
-    nature: 'bonus',
-    offensive: false,
-    power: 86,
-  },
-  {
-    id: 'nuit-polaire',
-    name: 'Nuit Polaire',
-    subtitle: 'Le plus fort multiplicateur',
-    rarity: 'L',
-    glyph: '🌑',
-    description: 'Multiplie par 1,8 les kills d’une de tes games, jusqu’à +25 points.',
-    target: 'own_game',
-    effect: { kind: 'kill_multiplier', value: 1.8, cap: 25 },
-    nature: 'bonus',
-    offensive: false,
-    power: 100,
-  },
-
-  /* ========= AURORE — économie pure, aucune incidence au classement ====== */
   {
     id: 'etincelle',
     name: 'Étincelle',
     subtitle: 'Une lueur',
     rarity: 'C',
     glyph: '✦',
-    description: 'Crédite immédiatement 80 flocons.',
-    target: 'none',
+    description: '80 flocons, tout de suite.',
     effect: { kind: 'snowflakes', value: 80 },
     nature: 'bonus',
-    offensive: false,
     power: 12,
+    packs: ['perso', 'commu'],
+    cible: 'HASARD',
+  },
+  {
+    id: 'filet',
+    name: 'Filet de Neige',
+    subtitle: 'Une chute amortie',
+    rarity: 'C',
+    glyph: '🕸',
+    description: 'Ta prochaine game vaut au moins 10 points.',
+    effect: { kind: 'plancher', value: 10 },
+    nature: 'bonus',
+    power: 20,
+    packs: ['perso', 'commu', 'finisseur'],
+    cible: 'HASARD',
+  },
+
+  /* ============================== Peu communes ============================ */
+  {
+    id: 'vent-du-nord',
+    name: 'Vent du Nord',
+    subtitle: 'Le vent tourne',
+    rarity: 'PC',
+    glyph: '💨',
+    description: 'Multiplie par 1,25 les kills de ta prochaine game, jusqu’à +10 points.',
+    effect: { kind: 'kill_multiplier', value: 1.25, cap: 10 },
+    nature: 'bonus',
+    power: 34,
+    packs: ['perso', 'finisseur'],
+    cible: 'TOUS',
   },
   {
     id: 'etoile-polaire',
@@ -293,90 +187,25 @@ export const EFFECT_CARDS: readonly CardDefinition[] = [
     subtitle: 'Le cap au nord',
     rarity: 'PC',
     glyph: '⭐',
-    description: 'Crédite immédiatement 250 flocons.',
-    target: 'none',
+    description: '250 flocons, tout de suite.',
     effect: { kind: 'snowflakes', value: 250 },
     nature: 'bonus',
-    offensive: false,
-    power: 30,
-  },
-  {
-    id: 'pluie-de-flocons',
-    name: 'Pluie de Flocons',
-    subtitle: 'La caisse se remplit',
-    rarity: 'R',
-    glyph: '🌧',
-    description: 'Crédite immédiatement 600 flocons.',
-    target: 'none',
-    effect: { kind: 'snowflakes', value: 600 },
-    nature: 'bonus',
-    offensive: false,
-    power: 50,
+    power: 28,
+    packs: ['perso', 'commu'],
+    cible: 'HASARD',
   },
   {
     id: 'manne',
     name: 'Manne',
     subtitle: 'Jouer rapporte double',
-    rarity: 'SR',
+    rarity: 'PC',
     glyph: '💠',
-    description: 'Double les flocons gagnés sur tes 3 prochaines games enregistrées.',
-    target: 'none',
-    effect: { kind: 'boon', boon: 'FLOCONS_DOUBLES', uses: 3 },
+    description: 'Les flocons de ta prochaine game sont doublés.',
+    effect: { kind: 'flocons_doubles' },
     nature: 'bonus',
-    offensive: false,
-    power: 70,
-  },
-  {
-    id: 'mecene',
-    name: 'Mécène',
-    subtitle: 'Six games financées',
-    rarity: 'UR',
-    glyph: '👑',
-    // Son effet était une remise sur la taxe de vente, supprimée avec elle.
-    // C'est donc la Manne poussée plus loin — six games au lieu de trois — et
-    // non un effet neuf : l'écart entre une super rare et une ultra rare se
-    // paie en durée, pas en mécanique de plus à équilibrer.
-    description: 'Double les flocons gagnés sur tes 6 prochaines games enregistrées.',
-    target: 'none',
-    effect: { kind: 'boon', boon: 'FLOCONS_DOUBLES', uses: 6 },
-    nature: 'bonus',
-    offensive: false,
-    power: 82,
-  },
-  {
-    id: 'aurore-boreale',
-    name: 'Aurore Boréale',
-    subtitle: 'Le ciel s’embrase',
-    rarity: 'L',
-    glyph: '🌌',
-    description:
-      'Crédite 2 500 flocons, et garantit au moins une super rare à ta prochaine ouverture de booster.',
-    target: 'none',
-    effect: {
-      kind: 'snowflakes_and_boon',
-      snowflakes: 2500,
-      boon: 'GARANTIE_BOOSTER',
-      uses: 1,
-      value: 'SR',
-    },
-    nature: 'bonus',
-    offensive: false,
-    power: 96,
-  },
-
-  /* ==================== SOLSTICE — l'interaction ========================= */
-  {
-    id: 'boule-de-neige',
-    name: 'Boule de Neige',
-    subtitle: 'On efface la pire',
-    rarity: 'C',
-    glyph: '⛄',
-    description: 'Supprime définitivement ta pire game comptabilisée.',
-    target: 'own_worst_game',
-    effect: { kind: 'delete_worst_game' },
-    nature: 'bonus',
-    offensive: false,
-    power: 22,
+    power: 30,
+    packs: ['perso', 'commu', 'finisseur'],
+    cible: 'HASARD',
   },
   {
     id: 'givre-mordant',
@@ -384,12 +213,67 @@ export const EFFECT_CARDS: readonly CardDefinition[] = [
     subtitle: 'Une morsure légère',
     rarity: 'PC',
     glyph: '🥶',
-    description: 'MALUS : retire 6 points à la meilleure game d’un adversaire.',
-    target: 'opponent',
-    effect: { kind: 'strike_best', points: 6 },
+    description: 'MALUS : un joueur tiré au sort perd 6 points sur sa prochaine game.',
+    effect: { kind: 'malus_points', value: 6 },
     nature: 'malus',
-    offensive: true,
     power: 36,
+    packs: ['commu'],
+    cible: 'HASARD',
+  },
+
+  /* ================================= Rares ================================ */
+  {
+    id: 'percee',
+    name: 'Percée',
+    subtitle: 'Récompense les gros scores',
+    rarity: 'R',
+    glyph: '⚔',
+    description: '+2 points par kill sur ta prochaine game, jusqu’à +14.',
+    effect: { kind: 'points_per_kill', perKill: 2, cap: 14 },
+    nature: 'bonus',
+    power: 52,
+    packs: ['perso', 'finisseur'],
+    cible: 'TOUS',
+  },
+  {
+    id: 'poudreuse',
+    name: 'Poudreuse',
+    subtitle: 'Un tapis frais',
+    rarity: 'R',
+    glyph: '❄',
+    description: '+12 points sur ta prochaine game.',
+    effect: { kind: 'bonus_points', value: 12 },
+    nature: 'bonus',
+    power: 48,
+    packs: ['perso', 'commu', 'finisseur'],
+    cible: 'HASARD',
+  },
+  {
+    id: 'pluie-de-flocons',
+    name: 'Pluie de Flocons',
+    subtitle: 'La caisse se remplit',
+    rarity: 'R',
+    glyph: '🌧',
+    description: '600 flocons, tout de suite.',
+    effect: { kind: 'snowflakes', value: 600 },
+    nature: 'bonus',
+    power: 44,
+    packs: ['perso', 'commu', 'folie'],
+    cible: 'HASARD',
+  },
+  {
+    id: 'chasse-croise',
+    name: 'Chassé-Croisé',
+    subtitle: 'Deux games qui se croisent',
+    rarity: 'R',
+    glyph: '🔁',
+    description:
+      'Deux joueurs tirés au sort échangent les kills de leur prochaine game, jusqu’à 25 points de part et d’autre.',
+    effect: { kind: 'echange_kills', cap: 25 },
+    nature: 'malus',
+    power: 58,
+    packs: ['commu'],
+    cible: 'DEUX',
   },
   {
     id: 'contre-courant',
@@ -397,13 +281,68 @@ export const EFFECT_CARDS: readonly CardDefinition[] = [
     subtitle: 'Le contre-jeu',
     rarity: 'R',
     glyph: '🌀',
-    description:
-      'MALUS : annule le dernier bonus de carte appliqué à une game d’un adversaire. Ne peut jamais retirer plus que ce que cette carte avait donné.',
-    target: 'opponent',
-    effect: { kind: 'cancel_last_boost' },
+    description: 'MALUS : un joueur tiré au sort perd 10 points sur sa prochaine game.',
+    effect: { kind: 'malus_points', value: 10 },
     nature: 'malus',
-    offensive: true,
     power: 56,
+    packs: ['commu', 'folie'],
+    cible: 'HASARD',
+  },
+
+  /* =============================== Super rares ============================ */
+  {
+    id: 'blizzard',
+    name: 'Blizzard',
+    subtitle: 'On n’y voit plus rien',
+    rarity: 'SR',
+    glyph: '🌪',
+    description: 'Multiplie par 1,5 les kills de ta prochaine game, jusqu’à +18 points.',
+    effect: { kind: 'kill_multiplier', value: 1.5, cap: 18 },
+    nature: 'bonus',
+    power: 70,
+    packs: ['perso', 'finisseur', 'folie'],
+    cible: 'TOUS',
+  },
+  {
+    id: 'sang-froid',
+    name: 'Sang-Froid',
+    subtitle: 'La place avant les frags',
+    rarity: 'SR',
+    glyph: '🧊',
+    description:
+      'Les points de classement de ta prochaine game comptent double. Un Top 1 passe de 20 à 40.',
+    effect: { kind: 'double_placement' },
+    nature: 'bonus',
+    power: 68,
+    packs: ['perso', 'finisseur', 'folie'],
+    cible: 'TOUS',
+  },
+  {
+    id: 'socle',
+    name: 'Socle de Glace',
+    subtitle: 'Rien ne descend plus bas',
+    rarity: 'SR',
+    glyph: '🧱',
+    description: 'Ta prochaine game vaut au moins 20 points.',
+    effect: { kind: 'plancher', value: 20 },
+    nature: 'bonus',
+    power: 64,
+    packs: ['perso', 'commu', 'finisseur'],
+    cible: 'HASARD',
+  },
+  {
+    id: 'duel-de-glace',
+    name: 'Duel de Glace',
+    subtitle: 'Face à face',
+    rarity: 'SR',
+    glyph: '⚔',
+    description:
+      'Deux joueurs tirés au sort : celui dont la prochaine game vaut le plus gagne 15 points, l’autre en perd 10.',
+    effect: { kind: 'duel', gain: 15, perte: 10 },
+    nature: 'malus',
+    power: 72,
+    packs: ['commu', 'folie'],
+    cible: 'DEUX',
   },
   {
     id: 'traineau-perce',
@@ -411,12 +350,53 @@ export const EFFECT_CARDS: readonly CardDefinition[] = [
     subtitle: 'Ça fuit de partout',
     rarity: 'SR',
     glyph: '🛷',
-    description: 'MALUS : retire 12 points à la meilleure game d’un adversaire.',
-    target: 'opponent',
-    effect: { kind: 'strike_best', points: 12 },
+    description: 'MALUS : le premier du classement perd 12 points sur sa prochaine game.',
+    effect: { kind: 'malus_points', value: 12 },
     nature: 'malus',
-    offensive: true,
     power: 74,
+    packs: ['commu', 'folie'],
+    cible: 'TETE',
+  },
+
+  /* =============================== Ultra rares ============================ */
+  {
+    id: 'rempart-polaire',
+    name: 'Rempart Polaire',
+    subtitle: 'Un mur de glace',
+    rarity: 'UR',
+    glyph: '🏰',
+    description: '+22 points sur ta prochaine game.',
+    effect: { kind: 'bonus_points', value: 22 },
+    nature: 'bonus',
+    power: 84,
+    packs: ['perso', 'finisseur', 'folie'],
+    cible: 'TOUS',
+  },
+  {
+    id: 'nuit-polaire',
+    name: 'Nuit Polaire',
+    subtitle: 'Le grand multiplicateur',
+    rarity: 'UR',
+    glyph: '🌑',
+    description: 'Multiplie par 1,8 les kills de ta prochaine game, jusqu’à +25 points.',
+    effect: { kind: 'kill_multiplier', value: 1.8, cap: 25 },
+    nature: 'bonus',
+    power: 86,
+    packs: ['perso', 'finisseur', 'folie'],
+    cible: 'TOUS',
+  },
+  {
+    id: 'aurore-boreale',
+    name: 'Aurore Boréale',
+    subtitle: 'Le ciel s’embrase',
+    rarity: 'UR',
+    glyph: '🌌',
+    description: '2 500 flocons, tout de suite.',
+    effect: { kind: 'snowflakes', value: 2500 },
+    nature: 'bonus',
+    power: 80,
+    packs: ['perso', 'commu', 'folie'],
+    cible: 'HASARD',
   },
   {
     id: 'tempete-de-verglas',
@@ -424,12 +404,53 @@ export const EFFECT_CARDS: readonly CardDefinition[] = [
     subtitle: 'Tout se fissure',
     rarity: 'UR',
     glyph: '🌩',
-    description: 'MALUS : retire 8 points à chacune des 3 meilleures games d’un adversaire.',
-    target: 'opponent',
-    effect: { kind: 'strike_top', points: 8, count: 3 },
+    description: 'MALUS : le premier du classement perd 18 points sur sa prochaine game.',
+    effect: { kind: 'malus_points', value: 18 },
     nature: 'malus',
-    offensive: true,
     power: 88,
+    packs: ['folie'],
+    cible: 'TETE',
+  },
+
+  /* ============================== Légendaires ============================= */
+  {
+    id: 'sanctuaire',
+    name: 'Sanctuaire',
+    subtitle: 'Le socle ne bouge plus',
+    rarity: 'L',
+    glyph: '🏔',
+    description: 'Ta prochaine game vaut au moins 25 points.',
+    effect: { kind: 'plancher', value: 25 },
+    nature: 'bonus',
+    power: 92,
+    packs: ['perso', 'finisseur', 'folie'],
+    cible: 'TOUS',
+  },
+  {
+    id: 'etoile-du-nord',
+    name: 'Étoile du Nord',
+    subtitle: 'Celle qui guide',
+    rarity: 'L',
+    glyph: '🌟',
+    description: '+25 points sur ta prochaine game.',
+    effect: { kind: 'bonus_points', value: 25 },
+    nature: 'bonus',
+    power: 96,
+    packs: ['perso', 'commu', 'finisseur', 'folie'],
+    cible: 'HASARD',
+  },
+  {
+    id: 'grand-nord',
+    name: 'Grand Nord',
+    subtitle: 'Le double',
+    rarity: 'L',
+    glyph: '🧭',
+    description: 'Multiplie par 2 les kills de ta prochaine game, jusqu’à +25 points.',
+    effect: { kind: 'kill_multiplier', value: 2, cap: 25 },
+    nature: 'bonus',
+    power: 100,
+    packs: ['perso', 'finisseur', 'folie'],
+    cible: 'TOUS',
   },
   {
     id: 'grand-froid',
@@ -437,24 +458,47 @@ export const EFFECT_CARDS: readonly CardDefinition[] = [
     subtitle: 'Plus un geste',
     rarity: 'L',
     glyph: '☠',
-    description:
-      'MALUS : l’adversaire visé ne peut plus jouer la moindre carte pendant 24 heures. Aucun point retiré.',
-    target: 'opponent',
-    effect: { kind: 'silence', hours: 24 },
+    description: 'MALUS : le premier du classement perd 25 points sur sa prochaine game.',
+    effect: { kind: 'malus_points', value: 25 },
     nature: 'malus',
-    offensive: true,
     power: 98,
+    packs: ['folie'],
+    cible: 'TETE',
   },
 ];
 
-/**
- * Alias de lecture. Le catalogue figé ne contient que des cartes à effet ; les
- * cartes Joueur et Moment vivent en base et se résolvent via
- * `lib/services/collection.ts`.
- */
-export const CARDS = EFFECT_CARDS;
-
 const CARD_INDEX = new Map(CARDS.map((c) => [c.id, c]));
+
+/**
+ * L'effet d'une carte en trois mots, pour une pastille : « +4 pts »,
+ * « kills ×1,25, max +10 ». La description complète reste sur la carte ; ceci
+ * est ce qu'on lit dans un classement, à côté d'un pseudo.
+ */
+export function resumeEffet(effect: CardEffect): string {
+  const fr = (n: number) => n.toLocaleString('fr-FR');
+  switch (effect.kind) {
+    case 'bonus_points':
+      return `+${effect.value} pts`;
+    case 'kill_multiplier':
+      return `kills ×${fr(effect.value)}, max +${effect.cap}`;
+    case 'points_per_kill':
+      return `+${effect.perKill} par kill, max +${effect.cap}`;
+    case 'double_placement':
+      return 'Top 1/2/3 compté double';
+    case 'plancher':
+      return `au moins ${effect.value} pts`;
+    case 'snowflakes':
+      return `+${fr(effect.value)} ❄`;
+    case 'flocons_doubles':
+      return 'flocons ×2';
+    case 'malus_points':
+      return `−${effect.value} pts`;
+    case 'echange_kills':
+      return `échange de kills, max ${effect.cap}`;
+    case 'duel':
+      return `duel : +${effect.gain} ou −${effect.perte}`;
+  }
+}
 
 /** Numéro de collection, à la façon du « 12/24 » au dos des cartes. */
 const CARD_NUMBERS = new Map(CARDS.map((c, i) => [c.id, i + 1]));
@@ -470,14 +514,9 @@ export function cardNumber(id: string): string {
  * Chemin de l'illustration d'une carte, ou null si elle n'existe pas encore.
  *
  * Les visuels vivent dans `public/cartes/<id>.webp` et sont facultatifs : tant
- * qu'un fichier manque, la carte retombe sur son glyphe. On peut donc livrer
- * les 24 illustrations au fur et à mesure, sans jamais casser l'affichage.
- *
- * Le chemin n'est pas déduit de l'identifiant mais lu dans un index généré par
- * `npm run cartes` : sans lui, chaque carte sans visuel déclencherait une
- * requête vouée à un 404 à chaque affichage.
- *
- * Voir `docs/DIRECTION-ARTISTIQUE.md` pour le gabarit et les prompts.
+ * qu'un fichier manque, la carte retombe sur son glyphe. Le chemin est lu dans
+ * un index généré par `npm run cartes` : sans lui, chaque carte sans visuel
+ * déclencherait une requête vouée à un 404 à chaque affichage.
  */
 export function cardArt(id: string): string | null {
   return CARD_ART[id] ?? null;
@@ -508,109 +547,106 @@ export function cardsByRarity(): CardDefinition[] {
   return [...CARDS].sort((a, b) => RARITY_ORDER[a.rarity] - RARITY_ORDER[b.rarity]);
 }
 
+/** Les cartes qu'un pack peut donner, dans l'ordre du catalogue. */
+export function cartesDuPack(packId: PackId): CardDefinition[] {
+  return CARDS.filter((c) => c.packs.includes(packId));
+}
+
+/** Les cartes d'un pack, indexées par rareté. C'est le pool du tirage. */
+export function poolDuPack(packId: PackId): Record<Rarity, string[]> {
+  const pool = { C: [], PC: [], R: [], SR: [], UR: [], L: [] } as Record<Rarity, string[]>;
+  for (const card of cartesDuPack(packId)) pool[card.rarity].push(card.id);
+  return pool;
+}
+
 /**
- * Quatre boosters, **trois cartes chacun**.
+ * Quatre packs, **une carte chacun**.
  *
- * Le prix n'achète donc pas de la quantité : il achète une courbe de raretés
- * plus favorable, une garantie plus haute, et une part plus grande de cartes
- * jouables. Un joueur qui économise pour un Everest sait exactement ce qu'il
- * paie, et il ouvre le même nombre de cartes que le voisin qui prend un Givre.
- *
- * Les sachets faisaient trois, cinq, cinq et cinq. Une taille unique a deux
- * conséquences qui valent d'être dites : le rail montre toujours trois colonnes,
- * donc des cartes bien plus grandes qu'à cinq ; et les trois sachets chers ont
- * perdu deux cartes sans changer de prix — voir la note de `slots` sur Everest.
- *
- * La contrainte est verrouillée par un test : chaque sachet garde au moins un
- * emplacement d'effet et au moins un de collection, ce qui ne laisse que deux
- * répartitions possibles, et la part de jouable ne décroît jamais avec le prix.
+ * Aucun ne s'achète. Chacun a son déclencheur, et c'est la streameuse qui
+ * l'ouvre, à l'antenne. Le Perso et le Finisseur sont pour un joueur désigné ;
+ * le Commu tombe sur un joueur au hasard, ou deux quand la carte les oppose ;
+ * le Folie tombe sur toute la ligue. La table de raretés est ce qui distingue
+ * un pack d'un autre : le Perso tire aux taux de base, le Finisseur
+ * récompense ceux qui ont joué toute leur saison, le Folie ne contient rien en
+ * dessous de rare.
  */
-export const BOOSTERS: readonly BoosterDefinition[] = [
+export const PACKS: readonly PackDefinition[] = [
   {
-    id: 'givre',
-    name: 'Givre',
-    tagline: 'L’entrée en matière',
-    glyph: '❄',
+    id: 'perso',
+    name: 'Booster Perso',
+    tagline: 'Cinq subs, une carte pour toi',
+    declencheur: 'Chaque fois qu’un joueur offre cinq subs.',
+    glyph: '🎁',
     gradient: ['#2b4a63', '#0e1c2a'],
-    price: 150,
-    slots: { collection: 2, effet: 1 },
-    guaranteed: null,
+    portee: 'JOUEUR',
+    pourQui: 'un joueur',
     weights: RARITY_WEIGHTS_BASE,
   },
   {
-    id: 'blizzard',
-    name: 'Blizzard',
-    tagline: 'Une rare garantie',
-    glyph: '🌨',
+    id: 'commu',
+    name: 'Booster Commu',
+    tagline: 'Le sort désigne qui',
+    declencheur: 'Tous les cinquante subs de la saison.',
+    glyph: '📣',
     gradient: ['#2f6f8f', '#10283a'],
-    price: 450,
-    slots: { collection: 2, effet: 1 },
-    guaranteed: 'R',
-    weights: { C: 62_000, PC: 26_000, R: 10_000, SR: 1_700, UR: 260, L: 40 },
+    portee: 'TOUS',
+    pourQui: 'un ou deux joueurs au hasard',
+    weights: { C: 40_000, PC: 30_000, R: 20_000, SR: 7_000, UR: 2_400, L: 600 },
   },
   {
-    id: 'aurore',
-    // L'identifiant ne suit pas le nom : il est écrit dans l'historique
-    // d'ouverture, dans le grand livre et dans le nom du fichier de planche.
-    name: 'Hors-Piste',
-    tagline: 'Une super rare garantie',
-    glyph: '🎿',
+    id: 'folie',
+    name: 'Booster Folie',
+    tagline: 'Rien en dessous de rare',
+    declencheur: 'Tous les cinq cents subs de la saison.',
+    glyph: '🌪',
     gradient: ['#6b4bab', '#241540'],
-    price: 1_200,
-    slots: { collection: 1, effet: 2 },
-    guaranteed: 'SR',
-    weights: { C: 45_000, PC: 33_000, R: 17_000, SR: 4_200, UR: 720, L: 80 },
+    portee: 'TOUS',
+    pourQui: 'toute la ligue',
+    weights: { C: 0, PC: 0, R: 40_000, SR: 35_000, UR: 20_000, L: 5_000 },
   },
   {
-    id: 'solstice',
-    name: 'Everest',
-    tagline: 'Une ultra rare garantie',
-    glyph: '🏔',
+    id: 'finisseur',
+    name: 'Booster Finisseur',
+    tagline: 'Pour qui va au bout',
+    declencheur: 'Quand un joueur a joué toutes ses games de la saison.',
+    glyph: '🏁',
     gradient: ['#b07a2a', '#3d2708'],
-    price: 3_000,
-    /*
-     * Deux jouables sur trois, comme Hors-Piste.
-     *
-     * Il en donnait trois sur cinq, et le commentaire d'alors disait que le
-     * sachet le plus cher donnait plus de cartes jouables. Ce n'est plus vrai :
-     * à trois cartes et au moins une de collection, deux est le maximum, et
-     * Hors-Piste l'atteint déjà. Ce qu'Everest achète encore, et lui seul :
-     * l'ultra rare garantie, et la table de raretés la plus haute du catalogue.
-     */
-    slots: { collection: 1, effet: 2 },
-    guaranteed: 'UR',
-    weights: { C: 26_000, PC: 36_000, R: 27_000, SR: 9_000, UR: 1_800, L: 200 },
+    portee: 'JOUEUR',
+    pourQui: 'un joueur',
+    weights: { C: 20_000, PC: 30_000, R: 28_000, SR: 15_000, UR: 5_500, L: 1_500 },
   },
 ];
 
-/** Nombre total de cartes d'un booster, toutes natures confondues. */
+const PACK_INDEX = new Map(PACKS.map((p) => [p.id, p]));
+
 /**
- * Illustration imprimée d'un sachet, ou null si elle n'existe pas encore.
+ * La planche peinte de chaque pack.
  *
- * Le décor vectoriel de `PackArtwork` sert de repli. Il tient la route, mais
- * un SVG écrit à la main n'atteindra jamais une illustration peinte : dès
- * qu'un visuel est déposé dans `public/boosters/`, il prend le dessus.
- * Voir `docs/DIRECTION-ARTISTIQUE.md` pour le gabarit et le prompt.
+ * Les quatre planches ont été peintes pour les anciens sachets, et elles
+ * restent justes : une par teinte. Le Perso reprend le bleu du Givre, le Commu
+ * le bleu clair du Blizzard, le Folie le violet du Hors-Piste, le Finisseur
+ * l'ambre de l'Everest. Un pack sans planche retombe sur le sachet dessiné.
  */
-export function boosterArt(id: string): string | null {
-  return BOOSTER_ART[id] ?? null;
+const PLANCHE_DU_PACK: Record<PackId, string> = {
+  perso: 'givre',
+  commu: 'blizzard',
+  folie: 'aurore',
+  finisseur: 'solstice',
+};
+
+export function packArt(id: string): string | null {
+  const planche = PLANCHE_DU_PACK[id as PackId];
+  return planche ? (BOOSTER_ART[planche] ?? null) : null;
 }
 
-export function boosterSize(booster: BoosterDefinition): number {
-  return booster.slots.collection + booster.slots.effet;
-}
+/** La rareté qui donne sa couleur au halo du sachet : la plus haute qu'il promet vraiment. */
+export const GEMME_DU_PACK: Record<PackId, Rarity> = {
+  perso: 'PC',
+  commu: 'R',
+  folie: 'L',
+  finisseur: 'UR',
+};
 
-const BOOSTER_INDEX = new Map(BOOSTERS.map((b) => [b.id, b]));
-
-export function getBooster(id: string): BoosterDefinition | null {
-  return BOOSTER_INDEX.get(id) ?? null;
-}
-
-/**
- * Cote de référence d'une carte, en flocons. Sert de prix suggéré quand aucune
- * vente n'a encore eu lieu — sans repère, les premières mises en vente partent
- * au hasard et faussent durablement la courbe.
- */
-export function referencePrice(rarity: Rarity): number {
-  return { C: 40, PC: 120, R: 500, SR: 2_000, UR: 8_000, L: 40_000 }[rarity];
+export function getPack(id: string): PackDefinition | null {
+  return PACK_INDEX.get(id as PackId) ?? null;
 }

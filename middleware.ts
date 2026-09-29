@@ -29,8 +29,9 @@ export function middleware(request: NextRequest): NextResponse {
     // retombait silencieusement sur les polices système — invisible à l'œil,
     // visible en console.
     "font-src 'self'",
-    // Les avatars Twitch, le jour où l'authentification sera branchée.
-    "img-src 'self' data: blob: https://static-cdn.jtvnw.net",
+    // Les avatars Twitch, le jour où l'authentification sera branchée, et
+    // la photo de montagne du fond, servie par le CDN de Midjourney.
+    "img-src 'self' data: blob: https://static-cdn.jtvnw.net https://cdn.midjourney.com",
     "connect-src 'self'",
     "form-action 'self'",
     "frame-ancestors 'none'",

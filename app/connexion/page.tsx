@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { LoginForms } from '@/components/LoginForms';
 import { isTwitchEnabled } from '@/lib/auth/twitch';
 import { getStore } from '@/lib/db/store';
@@ -26,11 +27,14 @@ export default async function ConnexionPage() {
     : null;
 
   return (
-    <div className="space-y-6">
-      <header>
+    <div className="mx-auto max-w-4xl space-y-6">
+      <header className="flex flex-wrap items-end justify-between gap-3">
         <TitreGlace taille="page" eyebrow="Accès">
           Se connecter
         </TitreGlace>
+        <Link href="/" className="btn btn-sm no-underline">
+          ← Retour à l’accueil
+        </Link>
       </header>
 
       <LoginForms twitchEnabled={isTwitchEnabled()} devPlayers={devPlayers} />

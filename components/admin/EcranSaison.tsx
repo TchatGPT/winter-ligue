@@ -4,36 +4,46 @@ import { useState } from 'react';
 import { useAction } from '@/components/admin/action';
 import { Bloc, Ecran } from '@/components/admin/Cadre';
 import { flakes } from '@/components/ui';
-import { SUBS, nextMilestone } from '@/lib/domain/rules';
+import { PACKS_REGLES, SUBS, nextMilestone } from '@/lib/domain/rules';
 
 export interface ConfigSaison {
   maxGamesPerPlayer: number;
-  shopOpen: boolean;
-  marketOpen: boolean;
   totalSubs: number;
 }
 
+export interface JoueurSubs {
+  id: string;
+  pseudo: string;
+  subsOfferts: number;
+}
+
 /**
- * Ce qui se règle une fois, ou une fois par soir : les subs, les vannes, la
- * sauvegarde.
+ * Ce qui se règle une fois, ou une fois par soir : les subs, la limite de
+ * games, la sauvegarde.
  *
- * Rassemblé sur un écran parce que ces trois choses ont le même rythme — on n'y
- * touche pas en saisissant des games — et parce qu'elles portent le même risque :
- * elles s'appliquent à toute la ligue d'un coup.
+ * Deux compteurs de subs, et la distinction compte. Le compteur de saison
+ * verse à tout le monde et met les packs collectifs en file. Les subs offerts
+ * par un joueur nommé lui valent ses packs Perso — c'est la seule chose qu'un
+ * sub achète à quelqu'un en particulier, et elle passe par la file, jamais par
+ * un versement direct.
  */
 export function EcranSaison({
   config,
   joueurs,
+  packsEnFile,
 }: {
   config: ConfigSaison;
-  joueurs: { id: string; pseudo: string }[];
+  joueurs: JoueurSubs[];
+  packsEnFile: number;
 }) {
   const { busy, message, envoie, setMessage } = useAction();
   const [maxGames, setMaxGames] = useState(config.maxGamesPerPlayer);
-  const [gifte, setGifte] = useState('');
+  const [gifteur, setGifteur] = useState('');
+  const [subsGifteur, setSubsGifteur] = useState<number>(PACKS_REGLES.persoTousLes);
   const [dernierVersement, setDernierVersement] = useState<string | null>(null);
 
   const prochain = nextMilestone(config.totalSubs);
+  const joueurChoisi = joueurs.find((j) => j.id === gifteur);
 
   async function ajouteSubs(delta: number) {
     const data = await envoie(
@@ -45,7 +55,7 @@ export function EcranSaison({
     const d = data as {
       milestones: string[];
       snowflakesEach: number;
-      boostersEach: string[];
+      packs: string[];
       recipients: number;
       evenements?: { label: string; endsAt: string }[];
     };
@@ -53,152 +63,160 @@ export function EcranSaison({
     setDernierVersement(
       (d.milestones.length === 0
         ? `+${delta} subs — aucun palier franchi`
-        : `${d.milestones.join(', ')} — ${d.snowflakesEach} ❄${
-            d.boostersEach.length ? ` + ${d.boostersEach.length} booster(s)` : ''
-          } pour ${d.recipients} joueur(s)`) +
-        (evenements.length ? ` · évènements ouverts : ${evenements.join(', ')}` : ''),
+        : `${d.milestones.join(', ')} — ${d.snowflakesEach} ❄ pour ${d.recipients} joueur(s)${
+            d.packs.length ? ` + ${d.packs.length} pack(s) en file` : ''
+          }`) + (evenements.length ? ` · évènements ouverts : ${evenements.join(', ')}` : ''),
     );
   }
 
   return (
     <Ecran
       titre="Saison"
-      lead="Le compteur de subs, les vannes de la boutique et du marché, et la sauvegarde."
+      lead="Le compteur de subs, les subs offerts par les joueurs, la limite de games et la sauvegarde."
       message={message}
     >
-      <Bloc
-        titre="Compteur de subs"
-        aide={
-          <>
-            Chaque palier verse à <strong className="text-muted">tous les joueurs actifs</strong>, à
-            parts égales. Aucun versement ne peut viser un joueur en particulier — c’est l’invariant
-            qui empêche d’acheter le classement d’un joueur.
-          </>
-        }
-      >
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div className="flex flex-wrap gap-1.5">
-            {SUBS.adminSteps.map((pas) => (
-              <button
-                key={pas}
-                className="btn btn-sm"
-                disabled={busy !== null}
-                onClick={() => ajouteSubs(pas)}
-              >
-                +{pas}
-              </button>
-            ))}
-          </div>
-          <div className="text-right">
-            <div className="num font-display text-3xl leading-none font-black text-violet">
-              {flakes(config.totalSubs)}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Bloc
+          titre="Compteur de subs"
+          aide={
+            <>
+              Chaque palier verse à <strong className="text-muted">tous les joueurs actifs</strong>,
+              à parts égales, et met les Boosters Commu et Folie en file. Aucun versement ne vise un
+              joueur en particulier.
+            </>
+          }
+        >
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div className="flex flex-wrap gap-1.5">
+              {SUBS.adminSteps.map((pas) => (
+                <button
+                  key={pas}
+                  className="btn btn-sm"
+                  disabled={busy !== null}
+                  onClick={() => ajouteSubs(pas)}
+                >
+                  +{pas}
+                </button>
+              ))}
             </div>
-            {prochain && (
-              <div className="text-[13px] text-faint">
-                {prochain.milestone.label} dans {prochain.remaining} sub
-                {prochain.remaining > 1 ? 's' : ''}
+            <div className="text-right">
+              <div className="num font-display text-3xl leading-none font-black text-aurora">
+                {flakes(config.totalSubs)}
               </div>
-            )}
+              {prochain && (
+                <div className="text-[13px] text-faint">
+                  {prochain.milestone.label} dans {prochain.remaining} sub
+                  {prochain.remaining > 1 ? 's' : ''}
+                </div>
+              )}
+            </div>
           </div>
-        </div>
 
-        {dernierVersement && (
-          <p className="mt-3 rounded-lg border border-aurora/40 bg-aurora/5 px-3 py-2 text-xs text-aurora">
-            {dernierVersement}
+          {dernierVersement && (
+            <p className="mt-3 rounded-lg border border-aurora/40 bg-aurora/5 px-3 py-2 text-xs text-aurora">
+              {dernierVersement}
+            </p>
+          )}
+
+          <p className="mt-3 text-[13px] text-faint">
+            {packsEnFile === 0
+              ? 'Aucun booster en file.'
+              : `${packsEnFile} booster${packsEnFile > 1 ? 's' : ''} en file, à ouvrir depuis l’écran des boosters.`}
           </p>
-        )}
+        </Bloc>
 
-        <div className="mt-4 border-t border-white/10 pt-3">
-          <p className="label">Carte offerte par un gifteur ({SUBS.giftThreshold} subs)</p>
-          <div className="flex flex-wrap gap-2">
+        <Bloc
+          titre="Subs offerts par un joueur"
+          aide={
+            <>
+              Un Booster Perso tous les {PACKS_REGLES.persoTousLes} subs offerts, mis en file pour ce
+              joueur. À saisir <strong className="text-muted">en plus</strong> du compteur de
+              saison : ces subs comptent aussi pour tout le monde.
+            </>
+          }
+        >
+          <div className="space-y-3">
             <select
-              className="field flex-1"
-              value={gifte}
-              onChange={(e) => setGifte(e.target.value)}
-              aria-label="Joueur désigné"
+              className="field w-full"
+              value={gifteur}
+              onChange={(e) => setGifteur(e.target.value)}
+              aria-label="Joueur qui a offert des subs"
             >
-              <option value="">— Joueur désigné —</option>
+              <option value="">— Joueur —</option>
               {joueurs.map((p) => (
                 <option key={p.id} value={p.id}>
-                  {p.pseudo}
+                  {p.pseudo} — {p.subsOfferts} offert{p.subsOfferts > 1 ? 's' : ''}
                 </option>
               ))}
             </select>
-            <button
-              className="btn shrink-0"
-              disabled={busy !== null || !gifte}
-              onClick={async () => {
-                const fait = await envoie('/api/admin/subs', { action: 'gift', playerId: gifte });
-                if (fait) setGifte('');
-              }}
-            >
-              Offrir une commune
-            </button>
+            <div className="flex flex-wrap gap-2">
+              <input
+                type="number"
+                className="field num max-w-[120px]"
+                min={1}
+                max={10_000}
+                value={subsGifteur}
+                onChange={(e) => setSubsGifteur(Number(e.target.value))}
+                aria-label="Nombre de subs offerts"
+              />
+              <button
+                className="btn btn-ice flex-1"
+                disabled={busy !== null || !gifteur || subsGifteur < 1}
+                onClick={async () => {
+                  const data = await envoie(
+                    '/api/admin/subs',
+                    { action: 'subs-joueur', playerId: gifteur, delta: subsGifteur },
+                    { cle: 'subs-joueur', succes: 'Subs attribués.' },
+                  );
+                  if (!data) return;
+                  const d = data as { subsOfferts: number; packsAjoutes: number };
+                  setMessage({
+                    kind: 'success',
+                    text: `${joueurChoisi?.pseudo ?? 'Joueur'} : ${d.subsOfferts} subs offerts${
+                      d.packsAjoutes ? ` — ${d.packsAjoutes} Booster(s) Perso en file` : ''
+                    }.`,
+                  });
+                }}
+              >
+                Attribuer
+              </button>
+            </div>
+            {joueurChoisi && (
+              <p className="text-[13px] text-faint">
+                Prochain Booster Perso dans{' '}
+                {PACKS_REGLES.persoTousLes - (joueurChoisi.subsOfferts % PACKS_REGLES.persoTousLes)}{' '}
+                sub(s).
+              </p>
+            )}
           </div>
-          <p className="mt-1.5 text-[13px] text-faint">
-            Toujours une commune, jamais des flocons : le geste passe à l’antenne sans peser sur le
-            classement. Maximum {SUBS.maxGiftedCardsPerDay} par joueur et par jour.
-          </p>
-        </div>
-      </Bloc>
+        </Bloc>
+      </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <Bloc titre="Vannes">
-          <div className="space-y-3">
-            <div>
-              <label className="label" htmlFor="max-games">
-                Limite de games par joueur
-              </label>
-              <div className="flex gap-2">
-                <input
-                  id="max-games"
-                  type="number"
-                  className="field num"
-                  min={1}
-                  max={100}
-                  value={maxGames}
-                  onChange={(e) => setMaxGames(Number(e.target.value))}
-                />
-                <button
-                  className="btn shrink-0"
-                  disabled={busy !== null}
-                  onClick={() =>
-                    envoie(
-                      '/api/admin/config',
-                      { maxGamesPerPlayer: maxGames },
-                      { methode: 'PATCH' },
-                    )
-                  }
-                >
-                  Appliquer
-                </button>
-              </div>
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-              <button
-                className={`btn flex-1 ${config.shopOpen ? '' : 'btn-danger'}`}
-                disabled={busy !== null}
-                onClick={() =>
-                  envoie('/api/admin/config', { shopOpen: !config.shopOpen }, { methode: 'PATCH' })
-                }
-              >
-                Boutique&nbsp;: {config.shopOpen ? 'ouverte' : 'fermée'}
-              </button>
-              <button
-                className={`btn flex-1 ${config.marketOpen ? '' : 'btn-danger'}`}
-                disabled={busy !== null}
-                onClick={() =>
-                  envoie(
-                    '/api/admin/config',
-                    { marketOpen: !config.marketOpen },
-                    { methode: 'PATCH' },
-                  )
-                }
-              >
-                Ventes&nbsp;: {config.marketOpen ? 'ouvertes' : 'fermées'}
-              </button>
-            </div>
+        <Bloc
+          titre="Limite de games"
+          aide="Le nombre de games comptées par joueur. La dernière ouvre le Booster Finisseur."
+        >
+          <div className="flex gap-2">
+            <input
+              id="max-games"
+              type="number"
+              className="field num"
+              min={1}
+              max={100}
+              value={maxGames}
+              onChange={(e) => setMaxGames(Number(e.target.value))}
+              aria-label="Limite de games par joueur"
+            />
+            <button
+              className="btn shrink-0"
+              disabled={busy !== null}
+              onClick={() =>
+                envoie('/api/admin/config', { maxGamesPerPlayer: maxGames }, { methode: 'PATCH' })
+              }
+            >
+              Appliquer
+            </button>
           </div>
         </Bloc>
 

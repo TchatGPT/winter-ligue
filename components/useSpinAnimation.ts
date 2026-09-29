@@ -11,6 +11,7 @@ import {
   sonDeFete,
 } from '@/components/bruitage';
 import {
+  type Axe,
   COURBE_MESUREE,
   type Courbe,
   demiFenetre,
@@ -153,13 +154,22 @@ export interface Geometrie {
  * l'écart réel entre deux tuiles, la fenêtre est la hauteur réelle du bandeau.
  * Il ne peut plus se tromper sur ce qu'il anime, puisqu'il le mesure.
  */
-export function geometrie(boite: HTMLElement, pistes: HTMLElement[]): Geometrie | null {
+export function geometrie(
+  boite: HTMLElement,
+  pistes: HTMLElement[],
+  axe: Axe = 'y',
+): Geometrie | null {
   const tuiles = pistes[0]?.children;
   if (!tuiles || tuiles.length < 2) return null;
 
+  // Sur l'axe horizontal, le pas est l'écart entre deux tuiles en largeur, et
+  // la « hauteur » de la fenêtre est sa largeur : c'est la longueur sur
+  // laquelle le rouleau se déplace, quel que soit son nom.
   const pas =
-    (tuiles[1] as HTMLElement).offsetTop - (tuiles[0] as HTMLElement).offsetTop;
-  const hauteur = boite.clientHeight;
+    axe === 'x'
+      ? (tuiles[1] as HTMLElement).offsetLeft - (tuiles[0] as HTMLElement).offsetLeft
+      : (tuiles[1] as HTMLElement).offsetTop - (tuiles[0] as HTMLElement).offsetTop;
+  const hauteur = axe === 'x' ? boite.clientWidth : boite.clientHeight;
   if (!(pas > 0) || !(hauteur > 0)) return null;
 
   return { pas, hauteur };
@@ -217,6 +227,8 @@ export interface ReglagesRail {
   duree: number;
   /** La loi de mouvement. Deux sont en concurrence — voir `Courbe`. */
   courbe?: Courbe;
+  /** L'axe du défilement. Vertical par défaut, horizontal pour un pack. */
+  axe?: Axe;
   /** Le rang de rareté le plus haut du lot : c'est lui qui décide de la fanfare. */
   rang: number;
   /** Quelle bande porte cette meilleure carte : la fanfare tombe à son arrêt. */
@@ -243,6 +255,7 @@ export function useSpinAnimation({
   relances = [],
   duree,
   courbe = COURBE_MESUREE,
+  axe = 'y',
   rang,
   bandeMeilleure,
   sourdine = false,
@@ -291,7 +304,7 @@ export function useSpinAnimation({
 
     /* ---------------------- La géométrie, une fois ---------------------- */
 
-    const geo = geometrie(boite, pistes);
+    const geo = geometrie(boite, pistes, axe);
     // Le bandeau n'est pas encore mis en page : il n'y a rien à animer, et le
     // filet de sécurité rendra la main de toute façon.
     if (!geo) return;
@@ -366,11 +379,13 @@ export function useSpinAnimation({
      *   qui permet de n'écrire aucun style depuis le JavaScript : le rail est
      *   décrit une fois, et le compositeur s'en occupe.
      */
-    const cles = imagesCles(depart, trajet, courbe);
+    const cles = imagesCles(depart, trajet, courbe, 200, axe);
 
     const courses = pistes.map((piste, i) =>
       piste.animate(
-        relance(i) ? imagesClesRelance(depart, trajet, durees[i], courbe) : cles,
+        relance(i)
+          ? imagesClesRelance(depart, trajet, durees[i], courbe, PAUSE_RELANCE, 200, axe)
+          : cles,
         {
           duration: dureesVues[i],
           delay: amorce,
@@ -644,7 +659,7 @@ export function useSpinAnimation({
       // le son de celui qui tourne à côté de lui.
       if (!sourdine) arreteTout();
     };
-  }, [cadre, bandes, tuiles, relances, duree, courbe, rang, bandeMeilleure, sourdine]);
+  }, [cadre, bandes, tuiles, relances, duree, courbe, axe, rang, bandeMeilleure, sourdine]);
 
   // Le contexte audio se réveille au clic, et l'ouverture en est un. Les
   // écouteurs globaux couvrent le reste, mais un appel explicite ici garantit

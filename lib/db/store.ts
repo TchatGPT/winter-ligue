@@ -9,22 +9,27 @@ import 'server-only';
  *
  * Le point important pour la sécurité est `transaction()` : toutes les
  * écritures passent par une file d'attente sérialisée. Deux requêtes qui
- * tentent d'acheter le même booster avec le même solde, ou d'enchérir en même
- * temps sur la même vente, sont donc traitées l'une après l'autre — pas de
- * lecture-modification-écriture entrelacée, donc pas de duplication de flocons.
+ * tentent d'ouvrir le même pack, ou de rejoindre le même affrontement en même
+ * temps, sont donc traitées l'une après l'autre — pas de
+ * lecture-modification-écriture entrelacée, donc pas de duplication.
  */
 
 import { randomUUID } from 'node:crypto';
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
-import { DEFAULT_MAX_GAMES_PER_PLAYER, SEASON } from '@/lib/domain/rules';
+import { DEFAULT_MAX_GAMES_PER_PLAYER, ECONOMY, SEASON } from '@/lib/domain/rules';
 import type { Database } from './entities';
 
 const DATA_FILE = process.env.LEAGUE_DATA_FILE
   ? process.env.LEAGUE_DATA_FILE
   : join(process.cwd(), '.data', 'league.json');
 
-export const SCHEMA_VERSION = 1;
+/**
+ * Deux : la version un portait la collection, le marché et les boosters
+ * achetés. Une base de version un est relue sans ces tables, et ses games et
+ * ses joueurs restent.
+ */
+export const SCHEMA_VERSION = 2;
 
 export function emptyDatabase(): Database {
   return {
@@ -32,29 +37,20 @@ export function emptyDatabase(): Database {
     config: {
       maxGamesPerPlayer: DEFAULT_MAX_GAMES_PER_PLAYER,
       totalSubs: 0,
-      shopOpen: true,
-      marketOpen: true,
       seasonStartsAt: SEASON.startsAt,
       seasonEndsAt: SEASON.endsAt,
     },
     players: [],
     games: [],
-    cards: [],
-    collectibles: [],
-    discoveries: [],
-    openings: [],
-    batailles: [],
-    evenements: [],
-    effects: [],
-    boons: [],
+    packsDus: [],
+    ouvertures: [],
+    cartesEnAttente: [],
     ledger: [],
-    listings: [],
-    bids: [],
-    sales: [],
-    events: [],
     subEvents: [],
     audit: [],
-    boosterSettings: [],
+    reglagesPacks: [],
+    batailles: [],
+    evenements: [],
   };
 }
 
@@ -145,48 +141,62 @@ class JsonFileStore implements Store {
   }
 }
 
-/** Complète une base chargée dont la forme est plus ancienne que le code. */
+/**
+ * Complète une base chargée dont la forme est plus ancienne que le code.
+ *
+ * Seules les tables connues sont reprises : une base de version un traînait
+ * une collection, un marché et des sachets qui n'existent plus, et les relire
+ * tels quels laisserait des clés mortes dans le fichier pour toute la saison.
+ */
 function migrate(db: Partial<Database>): Database {
   const base = emptyDatabase();
+  const config = { ...base.config, ...(db.config ?? {}) } as Record<string, unknown>;
+  delete config.shopOpen;
+  delete config.marketOpen;
+
   return {
-    ...base,
-    ...db,
     version: SCHEMA_VERSION,
-    config: { ...base.config, ...(db.config ?? {}) },
-    // Les comptes existants n'avaient pas de rôle : ils deviennent joueurs.
-    // Sans ce rattrapage, `player.role` serait `undefined` et toute
-    // comparaison de rôle échouerait en silence.
-    players: (db.players ?? []).map((p) => ({ ...p, role: p.role ?? 'joueur' })),
-    games: db.games ?? [],
-    cards: db.cards ?? [],
-    collectibles: db.collectibles ?? [],
-    discoveries: db.discoveries ?? [],
-    openings: db.openings ?? [],
-    /*
-     * Les affrontements d'avant le panier ne portaient qu'un `boosterId` et un
-     * nombre de manches. On les relit comme la liste équivalente — le même
-     * sachet répété — plutôt que de les jeter : leurs tirages et leur vainqueur
-     * restent lisibles, et le tableau des dernières parties ne se vide pas.
-     */
-    batailles: (db.batailles ?? []).map((b) => {
-      const ancien = b as typeof b & { boosterId?: string };
-      if (b.boosterIds?.length) return b;
+    config: config as unknown as Database['config'],
+    // Les comptes existants n'avaient ni rôle ni compteur de subs offerts.
+    // Le plafond de flocons est arrivé après les premiers soldes : ce qui le
+    // dépasse est ramené au plafond, comme un crédit l'aurait été.
+    players: (db.players ?? []).map((p) => ({
+      ...p,
+      role: p.role ?? 'joueur',
+      subsOfferts: p.subsOfferts ?? 0,
+      activisionId: p.activisionId ?? null,
+      snowflakes: Math.min(p.snowflakes ?? 0, ECONOMY.soldeMax),
+    })),
+    games: (db.games ?? []).map((g) => {
+      const ancienne = g as typeof g & { frozen?: boolean };
+      const { frozen: _frozen, ...game } = ancienne;
       return {
-        ...b,
-        boosterIds: Array.from({ length: b.manches ?? 1 }, () => ancien.boosterId ?? 'givre'),
+        ...game,
+        applied: (game.applied ?? []).map((a) => {
+          const ancien = a as typeof a & { byPlayerId?: string; undone?: boolean };
+          const { byPlayerId: _by, undone: _undone, ...effet } = ancien;
+          return { ...effet, ouvertureId: effet.ouvertureId ?? '' };
+        }),
       };
     }),
-    evenements: db.evenements ?? [],
-    effects: db.effects ?? [],
-    boons: db.boons ?? [],
+    packsDus: db.packsDus ?? [],
+    ouvertures: db.ouvertures ?? [],
+    cartesEnAttente: (db.cartesEnAttente ?? []).map((c) => ({ ...c, paireId: c.paireId ?? null })),
     ledger: db.ledger ?? [],
-    listings: db.listings ?? [],
-    bids: db.bids ?? [],
-    sales: db.sales ?? [],
-    events: db.events ?? [],
-    subEvents: db.subEvents ?? [],
+    subEvents: (db.subEvents ?? []).map((e) => ({ ...e, packs: e.packs ?? [] })),
     audit: db.audit ?? [],
-    boosterSettings: db.boosterSettings ?? [],
+    reglagesPacks: db.reglagesPacks ?? [],
+    // Les affrontements d'avant les packs portaient une liste de sachets. Ils
+    // gardent leurs manches, leur mise et leurs tirages, qui suffisent à les
+    // relire ; la liste, elle, ne désigne plus rien.
+    batailles: (db.batailles ?? []).map((b) => {
+      const ancien = b as typeof b & { boosterIds?: string[] };
+      const { boosterIds: _ids, ...bataille } = ancien;
+      return { ...bataille, manches: bataille.manches ?? 1 };
+    }),
+    evenements: (db.evenements ?? []).filter(
+      (e) => e.kind === 'FLOCONS_DOUBLES' || e.kind === 'CARTES_RENFORCEES',
+    ),
   };
 }
 

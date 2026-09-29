@@ -59,17 +59,18 @@ export function Hero({
             </em>
           </h1>
           <p className="mt-4 max-w-xl text-[17px] leading-relaxed text-ink-2">
-            Tes Top 1 rapportent des flocons. Ouvre des boosters, joue des bonus sur tes games ou
-            des malus sur celles de tes adversaires, lance des duels pour remporter plus de cartes,
-            et enchéris à l’hôtel des ventes pour décrocher celles qui t’intéressent.
+            Tes kills et tes Top 1 font ton classement et rapportent des flocons. Cinq subs
+            offerts, et la streameuse ouvre un booster pour toi à l’antenne : une carte, posée sur
+            ta prochaine game. Les subs de la saison ouvrent des boosters pour toute la ligue. Et
+            tes flocons se misent dans les duels, où le pot revient au vainqueur.
           </p>
 
           <div className="mt-7 flex flex-wrap gap-3">
-            <Link href="/boosters" className="btn btn-ice btn-lg no-underline">
-              Ouvrir un booster
+            <Link href="/duels" className="btn btn-ice btn-lg no-underline">
+              Lancer un duel
             </Link>
-            <Link href="/affrontements" className="btn btn-lg no-underline">
-              Lancer un affrontement
+            <Link href="/boosters" className="btn btn-lg no-underline">
+              Voir les boosters
             </Link>
           </div>
         </div>

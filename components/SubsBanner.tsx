@@ -13,7 +13,7 @@ import { EVENEMENTS_SUBS, nextMilestone, prochainEvenement } from '@/lib/domain/
  *  2. la jauge jusqu'aux prochains flocons, avec ce qu'ils rapportent ;
  *  3. ce qui tourne maintenant, s'il y a quelque chose, avec son compte à
  *     rebours ;
- *  4. les quatre évènements que les subs déclenchent, en quatre cartes
+ *  4. les évènements que les subs déclenchent, en cartes
  *     identiques : le palier, le nom, l'effet en trois mots, la durée. Celle du
  *     prochain à tomber est marquée.
  *
@@ -104,7 +104,7 @@ export function SubsBanner({
         <p className="mt-7 text-[11px] tracking-[0.22em] text-faint uppercase">
           Les évènements déclenchés par les subs
         </p>
-        <ul className="mt-3 grid w-full grid-cols-2 gap-2.5 @2xl:grid-cols-4">
+        <ul className="mt-3 grid w-full grid-cols-1 gap-2.5 @2xl:grid-cols-3">
           {EVENEMENTS_SUBS.map((e) => {
             const estProchain = e === prochain.evenement;
             const heures = e.dureeMinutes / 60;

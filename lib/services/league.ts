@@ -12,12 +12,9 @@ import 'server-only';
 import type { Database, Game, Player } from '@/lib/db/entities';
 import { getStore } from '@/lib/db/store';
 import { rank, scoreGame, totalsFor, type PlayerTotals, type ScoredGame } from '@/lib/domain/scoring';
+import { getCard, resumeEffet } from '@/lib/domain/catalog';
 import { SEASON } from '@/lib/domain/rules';
-
-/** Identifiants de cartes déjà découvertes par un joueur (collection permanente). */
-export function discoveredCardIds(db: Database, playerId: string): string[] {
-  return db.discoveries.filter((d) => d.playerId === playerId).map((d) => d.cardId);
-}
+import type { Rarity } from '@/lib/domain/types';
 
 /** Réécrit le score d'une game à partir de ses composantes. À appeler après toute modification. */
 export function recomputeGame(db: Database, game: Game): Game {
@@ -49,23 +46,12 @@ function toScored(game: Game): ScoredGame {
     placement: game.placement,
     score: game.score,
     skipped: game.skipped,
-    frozen: game.frozen,
     playedAt: game.playedAt,
   };
 }
 
 export function totalsOf(db: Database, playerId: string): PlayerTotals {
   return totalsFor(gamesOf(db, playerId).map(toScored));
-}
-
-/** Le joueur est-il actuellement protégé par un bouclier ? */
-export function hasShield(db: Database, playerId: string, now = new Date()): boolean {
-  return db.effects.some(
-    (e) =>
-      e.playerId === playerId &&
-      e.kind === 'BOUCLIER' &&
-      new Date(e.expiresAt).getTime() > now.getTime(),
-  );
 }
 
 export interface RankingRow {
@@ -77,7 +63,19 @@ export interface RankingRow {
   twitchLogin: string | null;
   snowflakes: number;
   totals: PlayerTotals;
-  shielded: boolean;
+  /** La carte active : celle qui tombera sur sa prochaine game. */
+  carte: {
+    cardId: string;
+    nom: string;
+    glyph: string;
+    rarity: Rarity;
+    description: string;
+    resume: string;
+    nature: 'bonus' | 'malus';
+    power: number;
+  } | null;
+  /** Les cartes qui attendent derrière elle, une par game suivante. */
+  enReserve: number;
   /** Vrai pour les places qualificatives pour la finale. */
   finalist: boolean;
 }
@@ -103,10 +101,35 @@ export async function getRanking(): Promise<RankingRow[]> {
       twitchLogin: player.twitchLogin,
       snowflakes: player.snowflakes,
       totals,
-      shielded: hasShield(db as Database, player.id),
+      ...carteActive(db, player.id),
       finalist: position <= SEASON.finalistCount,
     }));
   });
+}
+
+/** La carte active d'un joueur et ce qui attend derrière. */
+function carteActive(db: Database, playerId: string): Pick<RankingRow, 'carte' | 'enReserve'> {
+  const attente = db.cartesEnAttente
+    .filter((c) => c.joueurId === playerId && c.consommeeA === null)
+    .sort((a, b) => a.creeA.localeCompare(b.creeA));
+  const premiere = attente[0];
+  const card = premiere ? getCard(premiere.cardId) : null;
+  return {
+    carte:
+      premiere && card
+        ? {
+            cardId: card.id,
+            nom: card.name,
+            glyph: card.glyph,
+            rarity: card.rarity,
+            description: card.description,
+            resume: resumeEffet(card.effect),
+            nature: card.nature,
+            power: card.power,
+          }
+        : null,
+    enReserve: Math.max(0, attente.length - 1),
+  };
 }
 
 export interface LeagueOverview {
@@ -115,8 +138,8 @@ export interface LeagueOverview {
   totalKills: number;
   bestScore: number;
   bestScorePlayer: string | null;
-  cardsInCirculation: number;
-  activeListings: number;
+  packsOuverts: number;
+  packsEnFile: number;
 }
 
 export async function getOverview(): Promise<LeagueOverview> {
@@ -133,8 +156,8 @@ export async function getOverview(): Promise<LeagueOverview> {
       totalKills: counted.reduce((sum, g) => sum + g.kills, 0),
       bestScore: best ? best.score : 0,
       bestScorePlayer: bestPlayer ? bestPlayer.pseudo : null,
-      cardsInCirculation: db.cards.filter((c) => !c.consumed).length,
-      activeListings: db.listings.filter((l) => l.status === 'ACTIVE').length,
+      packsOuverts: db.ouvertures.length,
+      packsEnFile: db.packsDus.filter((p) => p.ouvertureId === null).length,
     };
   });
 }
@@ -144,7 +167,7 @@ export function makeSlug(db: Database, pseudo: string): string {
   const base =
     pseudo
       .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[̀-ͯ]/g, '')
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '')

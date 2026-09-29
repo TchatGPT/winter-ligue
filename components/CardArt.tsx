@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { EFFECT_CARDS, RARITY_META } from '@/lib/domain/catalog';
+import { CARDS, RARITY_META } from '@/lib/domain/catalog';
 import type { Rarity } from '@/lib/domain/types';
 
 /**
@@ -1069,7 +1069,7 @@ const SCENES: Record<string, (u: string, c: string) => ReactNode> = {
 
 /** La rareté de chaque carte, pour choisir le ciel et la couleur d'accent. */
 const RARETE_DE: Record<string, Rarity> = Object.fromEntries(
-  EFFECT_CARDS.map((carte) => [carte.id, carte.rarity]),
+  CARDS.map((carte) => [carte.id, carte.rarity]),
 );
 
 /**

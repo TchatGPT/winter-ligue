@@ -1,10 +1,11 @@
 /**
  * Les flocons : la monnaie de la saison.
  *
- * Ils ne sont gagnés qu'en jouant, et dépensés en boosters ou à l'hôtel des
- * ventes. Chaque mouvement passe par le grand livre (`LedgerEntry`) : le solde
- * d'un joueur doit toujours être reconstructible à partir de son historique,
- * ce qui rend une manipulation détectable.
+ * Ils se gagnent en jouant et par les paliers de subs, se misent dans les
+ * affrontements, et poussent les taux quand un pack s'ouvre pour soi. Chaque
+ * mouvement passe par le grand livre (`LedgerEntry`) : le solde d'un joueur
+ * doit toujours être reconstructible à partir de son historique, ce qui rend
+ * une manipulation détectable.
  */
 
 import { ECONOMY } from './rules';
@@ -21,9 +22,7 @@ export interface SnowflakeReward {
  * Flocons gagnés pour une game.
  *
  * Les mêmes règles pour tout le monde : la récompense ne dépend que de ce qui
- * s'est passé en jeu. Elle a porté un temps un bonus tiré de la collection —
- * retiré avec le reste des avantages permanents, qui faisaient rapporter
- * davantage à qui avait ouvert davantage.
+ * s'est passé en jeu.
  */
 export function rewardForGame(kills: number, placement: Placement): SnowflakeReward {
   const safeKills = Math.max(0, Math.trunc(kills));
@@ -43,18 +42,14 @@ export type LedgerReason =
   | 'INSCRIPTION'
   | 'GAME'
   | 'SUBS_TWITCH'
+  /** Des flocons donnés par une carte de pack. */
   | 'CARTE'
-  | 'ACHAT_BOOSTER'
-  | 'VENTE_MARCHE'
-  | 'ACHAT_MARCHE'
-  | 'ENCHERE_BLOQUEE'
-  | 'ENCHERE_REMBOURSEE'
-  /** Mise engagée dans une bataille de boosters, débitée à la création ou à l'entrée. */
+  /** Mise engagée dans un affrontement, débitée à la création ou à l'entrée. */
   | 'MISE_BATAILLE'
-  /** Mise rendue quand une bataille est annulée faute d'adversaire. */
+  /** Le pot d'un affrontement, versé au vainqueur. */
+  | 'GAIN_BATAILLE'
+  /** Mise rendue quand un affrontement est annulé faute d'adversaire. */
   | 'REMBOURSEMENT_BATAILLE'
-  /** Le flocon rendu par une carte défaussée. */
-  | 'DEFAUSSE_CARTE'
   | 'AJUSTEMENT_ADMIN';
 
 /**

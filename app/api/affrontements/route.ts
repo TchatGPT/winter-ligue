@@ -5,41 +5,30 @@ import { createBatailleSchema } from '@/lib/api/schemas';
 import { playerIdOf } from '@/lib/auth/session';
 import { getStore } from '@/lib/db/store';
 import { MANCHES_MAX, MANCHES_MIN } from '@/lib/domain/bataille';
+import { DUEL } from '@/lib/domain/rules';
 import { LIMITS } from '@/lib/security/ratelimit';
-import {
-  BatailleError,
-  creeBataille,
-  tableauBatailles,
-  topSemaine,
-  vueBataille,
-} from '@/lib/services/batailles';
-import { resolvedBoosters } from '@/lib/services/boosters';
+import { creeBataille, tableauBatailles, topSemaine, vueBataille } from '@/lib/services/batailles';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 /**
- * Le tableau des batailles : celles qui attendent un adversaire, et les
- * dernières jouées.
+ * Le tableau des affrontements : ceux qui attendent un adversaire, et les
+ * derniers joués.
  *
  * La page l'interroge toutes les deux secondes. Il n'y a pas de temps réel dans
- * le projet, et à cette échelle il n'en faut pas : une bataille se rejoint en
- * un clic, deux secondes de latence n'ont jamais fait rater personne.
+ * le projet, et à cette échelle il n'en faut pas : un affrontement se rejoint
+ * en un clic, deux secondes de latence n'ont jamais fait rater personne.
  */
 export async function GET(request: Request): Promise<NextResponse> {
   const g = await guard(request, { scope: 'batailles-read' });
   if (!g.ok) return g.response;
 
-  const store = getStore();
-  const { batailles, top, boosters, shopOpen, balance } = await store.read((db) => {
+  const { batailles, top, balance } = await getStore().read((db) => {
     const joueurId = playerIdOf(g.session);
     return {
       batailles: tableauBatailles(db),
       top: topSemaine(db),
-      // Les prix réglés par l'administration, pas ceux du catalogue : la mise
-      // affichée doit être celle que le serveur débitera.
-      boosters: resolvedBoosters(db),
-      shopOpen: db.config.shopOpen,
       balance: joueurId ? (db.players.find((p) => p.id === joueurId)?.snowflakes ?? null) : null,
     };
   });
@@ -47,20 +36,20 @@ export async function GET(request: Request): Promise<NextResponse> {
   return ok({
     batailles,
     top,
-    boosters,
-    shopOpen,
     balance,
-    bornes: { min: MANCHES_MIN, max: MANCHES_MAX },
+    bornes: {
+      manches: { min: MANCHES_MIN, max: MANCHES_MAX },
+      mise: { min: DUEL.miseMin, max: DUEL.miseMax },
+    },
     moiId: playerIdOf(g.session),
   });
 }
 
 /**
- * Crée une bataille et met l'hôte à l'enjeu.
+ * Crée un affrontement et met l'hôte à l'enjeu.
  *
- * La mise part tout de suite, dans la même transaction que la création : une
- * bataille visible dans le tableau est une bataille déjà payée, et personne ne
- * rejoint une mise qui n'existe pas.
+ * La mise part tout de suite, dans la même transaction que la création : un
+ * affrontement visible dans le tableau est un affrontement déjà payé.
  */
 export async function POST(request: Request): Promise<NextResponse> {
   const g = await guard(request, {
@@ -75,19 +64,13 @@ export async function POST(request: Request): Promise<NextResponse> {
   // Seule la session de secours, qui n'a aucun compte derrière, est écartée.
   const joueurId = playerIdOf(g.session);
   if (!joueurId) {
-    return fail('NON_AUTORISE', 'Seul un joueur peut lancer une bataille.');
+    return fail('NON_AUTORISE', 'Seul un joueur peut lancer un duel.');
   }
 
   try {
-    const vue = await getStore().transaction((db) => {
-      // Une bataille est une ouverture de boosters ; elle suit la boutique.
-      // Laisser miser pendant qu'elle est fermée ouvrirait une porte dérobée.
-      if (!db.config.shopOpen) {
-        throw new BatailleError('La boutique est fermée par la modération.', 'BOUTIQUE_FERMEE');
-      }
-      const bataille = creeBataille(db, joueurId, g.body.boosterIds);
-      return vueBataille(db, bataille);
-    });
+    const vue = await getStore().transaction((db) =>
+      vueBataille(db, creeBataille(db, joueurId, g.body.mise, g.body.manches)),
+    );
     return ok(vue);
   } catch (error) {
     return toResponse(error);

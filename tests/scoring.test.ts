@@ -45,7 +45,7 @@ describe('totaux et classement', () => {
     placement: null,
     score,
     skipped: false,
-    frozen: false,
+
     playedAt: '2026-12-01T12:00:00.000Z',
     ...extra,
   });

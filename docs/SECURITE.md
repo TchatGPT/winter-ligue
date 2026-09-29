@@ -203,6 +203,34 @@ jamais discrètement.
 
 ---
 
+### 14. Accès, pseudo Activision et lecture des captures
+
+**Déconnecté, on ne voit que l'accueil.** `lib/auth/acces.ts` expose `exigeSession()`,
+appelé en tête de chaque page de membre (`/`, `/boosters`, `/duels`, `/regles`,
+`/joueurs/[slug]`) : sans session, redirection vers `/` ; avec une session de
+joueur sans pseudo Activision, redirection vers `/bienvenue`. L'espace
+`/admin` garde son propre garde. Ce n'est qu'un aiguillage d'affichage : les
+routes d'API restent seules responsables de leurs contrôles.
+
+**Le pseudo Activision** (`Player.activisionId`) est la seule donnée qu'un joueur
+écrit sur son propre compte : `PATCH /api/me`, `guard({ role: 'joueur' })`, schéma
+`monActivisionSchema` (lettres, chiffres, `_ - .`, espace, suffixe `#chiffres`
+facultatif ; jamais de `<`). La modération corrige celui d'un joueur par
+`PATCH /api/players` (`moderateur`). Les deux passent par `transaction()` et
+laissent une trace au journal. Le retour Twitch envoie vers `/bienvenue` tant
+qu'il manque.
+
+**La lecture des captures** (`POST /api/admin/games/analyse`, `moderateur`) envoie
+l'image à l'API Anthropic **depuis le serveur** : la clé `ANTHROPIC_API_KEY` ne
+quitte jamais le serveur, et la CSP (`connect-src 'self'`) interdirait de toute
+façon l'appel depuis le navigateur. Garde-fous : image en base64 validée par
+schéma (8 Mo maximum, alphabet base64 strict, types MIME image seulement), débit
+propre de 20 appels par minute et par IP, sortie du modèle validée par Zod
+(`lib/services/reconnaissance.ts`). La route **n'écrit rien** : elle renvoie une
+proposition, et chaque game est ensuite enregistrée par `POST /api/games`, qui
+recalcule le score. Sans clé, la route répond `INTROUVABLE` et l'écran ne propose
+que la saisie à la main.
+
 ## Ce qui reste à faire avant la production
 
 ### ⚠️ 1. Remplacer le stockage fichier
@@ -276,3 +304,4 @@ curl -sI localhost:3000/ | grep -i 'content-security\|x-frame\|nosniff'
 
 Ouvrir une *issue* **sans détail exploitable**, ou contacter directement la modération de
 la ligue. Merci de laisser le temps de corriger avant toute publication.
+

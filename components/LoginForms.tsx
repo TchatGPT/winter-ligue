@@ -63,7 +63,7 @@ export function LoginForms({
       setError(payload.error?.message ?? 'Connexion refusée.');
       return;
     }
-    router.push('/ma-collection');
+    router.push('/');
     router.refresh();
   }
 
@@ -74,10 +74,10 @@ export function LoginForms({
         {twitchEnabled ? (
           <>
             <p className="mt-1 text-sm text-muted">
-              Connecte-toi avec ton compte Twitch pour retrouver ta collection et enchérir.
+              Connecte-toi avec ton compte Twitch pour retrouver tes cartes et miser dans les duels.
             </p>
             <a
-              href="/api/auth/twitch?returnTo=/ma-collection"
+              href="/api/auth/twitch?returnTo=/"
               className="btn mt-4 w-full no-underline"
               style={{ borderColor: '#9146FF', color: '#b98cff' }}
             >
