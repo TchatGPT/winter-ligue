@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { toResponse } from '@/lib/api/errors';
 import { fail, guard } from '@/lib/api/respond';
-import { createToken, setSessionCookie } from '@/lib/auth/session';
+import { createToken, setSessionCookie, SUJET_SECOURS } from '@/lib/auth/session';
 import { isTwitchEnabled } from '@/lib/auth/twitch';
 import type { Player } from '@/lib/db/entities';
 import { getStore } from '@/lib/db/store';
@@ -29,6 +29,23 @@ export async function GET(request: Request): Promise<NextResponse> {
 
   const g = await guard(request, { scope: 'twitch-demo', limit: LIMITS.mutation });
   if (!g.ok) return g.response;
+
+  /*
+   * Sur Vercel sans base, chaque serveur a sa propre copie éphémère des
+   * données : un compte créé sur l'un n'existe pas sur l'autre, et la page
+   * suivante renverrait à la connexion, en boucle. On ouvre alors une session
+   * d'administration sans compte joueur derrière, qui ne dépend d'aucune
+   * donnée stockée.
+   */
+  const sansBase = Boolean(process.env.VERCEL) && !process.env.DATABASE_URL?.trim();
+  if (sansBase) {
+    try {
+      await setSessionCookie(createToken(SUJET_SECOURS, 'admin'));
+    } catch {
+      return fail('ERREUR_SERVEUR', 'Connexion impossible : AUTH_SECRET manque côté serveur (32 caractères minimum).');
+    }
+    return NextResponse.redirect(`${base}/`);
+  }
 
   try {
     const chaine = process.env.TWITCH_BROADCASTER_LOGIN?.trim().toLowerCase() || null;

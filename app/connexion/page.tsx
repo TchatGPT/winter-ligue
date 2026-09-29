@@ -1,5 +1,7 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { LoginForms } from '@/components/LoginForms';
+import { getSession, playerIdOf } from '@/lib/auth/session';
 import { isTwitchEnabled } from '@/lib/auth/twitch';
 import { getStore } from '@/lib/db/store';
 import { TitreGlace } from '@/components/TitreGlace';
@@ -17,6 +19,16 @@ function devLoginAllowed(): boolean {
 }
 
 export default async function ConnexionPage() {
+  // Déjà connecté avec un compte valide : rien à faire ici. Une session dont
+  // le compte a disparu reste sur cette page, pour se reconnecter.
+  const session = await getSession();
+  if (session) {
+    const playerId = playerIdOf(session);
+    const valide =
+      playerId === null || (await getStore().read((db) => db.players.some((p) => p.id === playerId)));
+    if (valide) redirect('/');
+  }
+
   const devPlayers = devLoginAllowed()
     ? await getStore().read((db) =>
         db.players
