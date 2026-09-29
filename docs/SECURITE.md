@@ -220,6 +220,17 @@ facultatif ; jamais de `<`). La modération corrige celui d'un joueur par
 laissent une trace au journal. Le retour Twitch envoie vers `/bienvenue` tant
 qu'il manque.
 
+**Les rôles viennent de Twitch.** Il n'y a plus de connexion « modération » à
+l'écran. À chaque connexion, le retour OAuth lit, avec le jeton de la personne
+(portée `user:read:moderated_channels`), si elle modère la chaîne
+`TWITCH_BROADCASTER_LOGIN` : la streameuse est `admin`, ses modérateurs sont
+`moderateur`, les autres `joueur`. Un modérateur retiré sur Twitch perd son
+accès à sa connexion suivante. En cas d'échec de l'appel, le rôle accordé est
+`joueur` : rien ne s'accorde par défaut. Un `admin` nommé à la main le reste.
+La route `POST /api/admin/login` (mot de passe) n'a plus d'écran ; elle reste
+comme accès de secours tant que `ADMIN_PASSWORD_HASH` est défini — retirer la
+variable la ferme.
+
 **La lecture des captures** (`POST /api/admin/games/analyse`, `moderateur`) envoie
 l'image à l'API Anthropic **depuis le serveur** : la clé `ANTHROPIC_API_KEY` ne
 quitte jamais le serveur, et la CSP (`connect-src 'self'`) interdirait de toute

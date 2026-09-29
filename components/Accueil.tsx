@@ -1,7 +1,14 @@
-import Link from 'next/link';
 import { SnowCap } from '@/components/SnowCap';
 import { TitreGlace } from '@/components/TitreGlace';
-import { IconBook, IconRocket, IconShield, IconSnowflake, IconSwords, IconTrophy } from '@/components/icons';
+import {
+  IconBook,
+  IconRocket,
+  IconShield,
+  IconSnowflake,
+  IconSwords,
+  IconTrophy,
+  IconTwitch,
+} from '@/components/icons';
 import { CARD_IMPACT_CAP, PLACEMENT_POINTS, SEASON } from '@/lib/domain/rules';
 
 /**
@@ -52,7 +59,7 @@ export function Accueil({ twitchEnabled, devLogin }: { twitchEnabled: boolean; d
   ];
 
   const ETAPES = [
-    { n: '1', titre: 'Connecte-toi avec Twitch', texte: 'Ton pseudo Twitch devient ton nom dans la ligue.' },
+    { n: '1', titre: 'Connecte-toi avec Twitch', texte: 'Ton pseudo Twitch devient ton nom dans la ligue. Les modérateurs de la chaîne sont reconnus tout seuls.' },
     { n: '2', titre: 'Donne ton pseudo Activision', texte: 'Celui qui apparaît en jeu. C’est lui qu’on reconnaît sur les captures de fin de game.' },
     { n: '3', titre: 'Joue', texte: 'La modération saisit tes games depuis les captures. Tes points et tes flocons tombent tout seuls.' },
     { n: '4', titre: 'Ouvre, mise, grimpe', texte: 'Boosters à l’antenne, duels entre joueurs, et la finale pour les mieux classés.' },
@@ -73,20 +80,14 @@ export function Accueil({ twitchEnabled, devLogin }: { twitchEnabled: boolean; d
           duels font tourner les flocons entre joueurs.
         </p>
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-          <a
-            href={entree}
-            className="btn btn-ice btn-lg no-underline"
-            style={twitchEnabled ? { borderColor: '#9146FF' } : undefined}
-          >
-            {twitchEnabled ? 'Se connecter avec Twitch' : 'Se connecter'}
+          <a href={entree} className="btn btn-twitch btn-lg no-underline">
+            <IconTwitch className="h-5 w-5" />
+            Se connecter avec Twitch
           </a>
-          <Link href="/connexion" className="btn no-underline">
-            Modération
-          </Link>
         </div>
         {!twitchEnabled && (
           <p className="mt-4 text-[13px] text-faint">
-            La connexion Twitch arrive dès que l’application est déclarée.
+            La connexion Twitch s’active dès que l’application est déclarée.
             {devLogin ? ' En attendant, la connexion de développement est ouverte.' : ''}
           </p>
         )}
@@ -130,8 +131,9 @@ export function Accueil({ twitchEnabled, devLogin }: { twitchEnabled: boolean; d
           ))}
         </ol>
         <div className="mt-7 flex justify-center">
-          <a href={entree} className="btn btn-ice btn-lg no-underline">
-            {twitchEnabled ? 'Rejoindre avec Twitch' : 'Rejoindre la ligue'}
+          <a href={entree} className="btn btn-twitch btn-lg no-underline">
+            <IconTwitch className="h-5 w-5" />
+            Rejoindre avec Twitch
           </a>
         </div>
       </section>

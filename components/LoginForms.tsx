@@ -2,15 +2,21 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { Notice } from '@/components/ui';
+import { SnowCap } from '@/components/SnowCap';
 import { TitreGlace } from '@/components/TitreGlace';
+import { IconTwitch } from '@/components/icons';
+import { Notice } from '@/components/ui';
 
 /**
- * Connexion.
+ * Connexion : Twitch, et rien d'autre.
  *
- * Trois entrées possibles selon la configuration : Twitch (à venir), le mot de
- * passe de modération, et — uniquement hors production — une bascule de
- * développement pour incarner un joueur et tester cartes et enchères.
+ * Il n'y a plus de connexion « modération ». Le rôle vient de Twitch à chaque
+ * connexion : la streameuse est administratrice, les modérateurs de sa chaîne
+ * sont modérateurs ici, tous les autres sont joueurs.
+ *
+ * Tant que l'application Twitch n'est pas déclarée, le bouton est là mais ne
+ * mène nulle part : il le dit. Hors production, la connexion de
+ * développement permet d'incarner un joueur pour tester.
  */
 export function LoginForms({
   twitchEnabled,
@@ -20,130 +26,81 @@ export function LoginForms({
   devPlayers: { id: string; pseudo: string }[] | null;
 }) {
   const router = useRouter();
-  const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function submitAdmin(event: React.FormEvent) {
-    event.preventDefault();
-    setBusy(true);
-    setError(null);
-    try {
-      const response = await fetch('/api/admin/login', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ password }),
-      });
-      const payload = await response.json();
-      if (!payload.ok) {
-        setError(payload.error?.message ?? 'Connexion refusée.');
-        return;
-      }
-      router.push('/admin');
-      router.refresh();
-    } catch {
-      setError('Le serveur n’a pas répondu.');
-    } finally {
-      setBusy(false);
-      setPassword('');
-    }
-  }
+  const [message, setMessage] = useState<{ kind: 'error' | 'info'; text: string } | null>(null);
 
   async function devLogin(playerId: string) {
     setBusy(true);
-    setError(null);
-    const response = await fetch('/api/auth/dev-login', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ playerId }),
-    });
-    const payload = await response.json();
-    setBusy(false);
-    if (!payload.ok) {
-      setError(payload.error?.message ?? 'Connexion refusée.');
-      return;
+    setMessage(null);
+    try {
+      const response = await fetch('/api/auth/dev-login', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ playerId }),
+      });
+      const payload = await response.json();
+      if (!payload.ok) {
+        setMessage({ kind: 'error', text: payload.error?.message ?? 'Connexion refusée.' });
+        return;
+      }
+      router.push('/');
+      router.refresh();
+    } catch {
+      setMessage({ kind: 'error', text: 'Le serveur n’a pas répondu.' });
+    } finally {
+      setBusy(false);
     }
-    router.push('/');
-    router.refresh();
   }
 
   return (
-    <div className="grid gap-4 lg:grid-cols-2">
-      <section className="glass p-5">
-        <TitreGlace taille="petit">Joueurs</TitreGlace>
-        {twitchEnabled ? (
-          <>
-            <p className="mt-1 text-sm text-muted">
-              Connecte-toi avec ton compte Twitch pour retrouver tes cartes et miser dans les duels.
-            </p>
-            <a
-              href="/api/auth/twitch?returnTo=/"
-              className="btn mt-4 w-full no-underline"
-              style={{ borderColor: '#9146FF', color: '#b98cff' }}
-            >
-              Se connecter avec Twitch
-            </a>
-          </>
-        ) : (
-          <>
-            <p className="mt-1 text-sm text-muted">
-              La connexion Twitch n’est pas encore activée. Elle le sera dès que les identifiants
-              d’application seront renseignés — sans rien changer aux comptes déjà créés.
-            </p>
-            {devPlayers && devPlayers.length > 0 && (
-              <div className="mt-4">
-                <p className="label">Connexion de développement</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {devPlayers.map((player) => (
-                    <button
-                      key={player.id}
-                      className="btn btn-sm"
-                      disabled={busy}
-                      onClick={() => devLogin(player.id)}
-                    >
-                      {player.pseudo}
-                    </button>
-                  ))}
-                </div>
-                <p className="mt-2 text-xs text-faint">
-                  Disponible uniquement hors production, avec ALLOW_DEV_LOGIN=true.
-                </p>
-              </div>
-            )}
-          </>
-        )}
-      </section>
+    <section className="glass glass-reflet relative mx-auto max-w-xl overflow-hidden p-6 sm:p-8">
+      <SnowCap radius="var(--r-lg)" seed="connexion" epaisseur={16} />
+      <TitreGlace taille="petit">Entrer dans la ligue</TitreGlace>
+      <p className="mt-2 text-[15px] leading-relaxed text-ink-2">
+        Connecte-toi avec ton compte Twitch. Ton pseudo devient ton nom dans la ligue, et si tu modères la
+        chaîne, tes accès de modération sont reconnus automatiquement.
+      </p>
 
-      <section className="glass p-5">
-        <TitreGlace taille="petit">Modération</TitreGlace>
-        <p className="mt-1 text-sm text-muted">
-          Saisie des games, réglages de saison, sauvegarde.
-        </p>
-        <form className="mt-4 space-y-3" onSubmit={submitAdmin}>
-          <div>
-            <label className="label" htmlFor="mot-de-passe">
-              Mot de passe
-            </label>
-            <input
-              id="mot-de-passe"
-              type="password"
-              className="field"
-              autoComplete="current-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
+      {twitchEnabled ? (
+        <a href="/api/auth/twitch?returnTo=/" className="btn btn-twitch btn-lg mt-6 w-full no-underline">
+          <IconTwitch className="h-5 w-5" />
+          Se connecter avec Twitch
+        </a>
+      ) : (
+        <button
+          type="button"
+          className="btn btn-twitch btn-lg mt-6 w-full"
+          onClick={() =>
+            setMessage({
+              kind: 'info',
+              text: 'La connexion Twitch n’est pas encore branchée : elle s’activera dès que l’application sera déclarée chez Twitch.',
+            })
+          }
+        >
+          <IconTwitch className="h-5 w-5" />
+          Se connecter avec Twitch
+        </button>
+      )}
+
+      {message && (
+        <div className="mt-4">
+          <Notice kind={message.kind}>{message.text}</Notice>
+        </div>
+      )}
+
+      {devPlayers && devPlayers.length > 0 && (
+        <div className="mt-7 border-t border-white/15 pt-5">
+          <p className="label">Connexion de développement</p>
+          <div className="flex flex-wrap gap-1.5">
+            {devPlayers.map((player) => (
+              <button key={player.id} className="btn btn-sm" disabled={busy} onClick={() => devLogin(player.id)}>
+                {player.pseudo}
+              </button>
+            ))}
           </div>
-          <button className="btn btn-ice w-full" disabled={busy || password.length === 0}>
-            {busy ? 'Vérification…' : 'Se connecter'}
-          </button>
-        </form>
-        {error && (
-          <div className="mt-3">
-            <Notice kind="error">{error}</Notice>
-          </div>
-        )}
-      </section>
-    </div>
+          <p className="mt-2 text-xs text-faint">Uniquement hors production, avec ALLOW_DEV_LOGIN=true.</p>
+        </div>
+      )}
+    </section>
   );
 }

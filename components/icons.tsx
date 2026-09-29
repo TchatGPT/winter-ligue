@@ -183,6 +183,15 @@ export function IconRocket(props: IconProps) {
   );
 }
 
+/** Le glyphe de Twitch, en aplat : c'est un logo, pas un pictogramme au trait. */
+export function IconTwitch(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" {...props}>
+      <path d="M4.3 2 3 5.4v13.5h4.6V22h2.6l3.1-3.1h3.7L21 14.9V2H4.3Zm14.9 12-2.9 2.9h-4.6l-2.6 2.6v-2.6H5.4V3.7h13.8V14Zm-2.9-6.9v5.1h-1.7V7.1h1.7Zm-4.6 0v5.1H10V7.1h1.7Z" />
+    </svg>
+  );
+}
+
 export const NAV_ICONS = {
   trophy: IconTrophy,
   pack: IconPack,
