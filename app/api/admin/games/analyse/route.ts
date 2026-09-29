@@ -2,7 +2,9 @@ import Anthropic from '@anthropic-ai/sdk';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { fail, guard, ok } from '@/lib/api/respond';
+import { chaineDeLaLigue } from '@/lib/auth/twitch';
 import { getStore } from '@/lib/db/store';
+import { estLaStreameuse } from '@/lib/domain/streameuse';
 import {
   analyseCapture,
   isReconnaissanceEnabled,
@@ -49,19 +51,24 @@ export async function POST(request: Request): Promise<NextResponse> {
     );
   }
 
-  const joueurs = await getStore().read((db) =>
-    db.players
-      .filter((p) => p.active)
-      .map((p) => ({
-        id: p.id,
-        pseudo: p.pseudo,
-        activisionId: p.activisionId,
-        twitchLogin: p.twitchLogin,
-      })),
-  );
+  const chaine = chaineDeLaLigue();
+  const { joueurs, streameuse } = await getStore().read((db) => {
+    const connu = (p: (typeof db.players)[number]) => ({
+      id: p.id,
+      pseudo: p.pseudo,
+      activisionId: p.activisionId,
+      twitchLogin: p.twitchLogin,
+    });
+    const elle = db.players.find((p) => estLaStreameuse(p, chaine));
+    return {
+      // La streameuse n'est jamais proposée : ses lignes sont reconnues à part.
+      joueurs: db.players.filter((p) => p.active && !estLaStreameuse(p, chaine)).map(connu),
+      streameuse: elle ? connu(elle) : { id: '', pseudo: chaine, activisionId: null, twitchLogin: chaine },
+    };
+  });
 
   try {
-    const analyse = await analyseCapture(g.body.image, g.body.mediaType, joueurs);
+    const analyse = await analyseCapture(g.body.image, g.body.mediaType, joueurs, streameuse);
     return ok(analyse);
   } catch (error) {
     if (error instanceof Anthropic.AuthenticationError) {

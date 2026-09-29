@@ -15,6 +15,7 @@ import 'server-only';
  */
 
 import { createHmac, randomUUID, timingSafeEqual } from 'node:crypto';
+import { SEASON } from '@/lib/domain/rules';
 
 const AUTHORIZE_URL = 'https://id.twitch.tv/oauth2/authorize';
 const TOKEN_URL = 'https://id.twitch.tv/oauth2/token';
@@ -89,9 +90,10 @@ export interface TwitchProfile {
 }
 
 /** La chaîne de la ligue, en minuscules, ou null si elle n'est pas renseignée. */
-function chaineDeLaLigue(): string | null {
+/** La chaîne de la ligue : `TWITCH_BROADCASTER_LOGIN`, sinon celle de la saison. */
+export function chaineDeLaLigue(): string {
   const login = process.env.TWITCH_BROADCASTER_LOGIN?.trim().toLowerCase();
-  return login ? login : null;
+  return login || SEASON.chaine;
 }
 
 /**

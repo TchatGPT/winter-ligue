@@ -9,6 +9,8 @@ import 'server-only';
  * serait effacée au prochain recalcul.
  */
 
+import { chaineDeLaLigue } from '@/lib/auth/twitch';
+import { estLaStreameuse } from '@/lib/domain/streameuse';
 import type { Database, Game, Player } from '@/lib/db/entities';
 import { getStore } from '@/lib/db/store';
 import { rank, scoreGame, totalsFor, type PlayerTotals, type ScoredGame } from '@/lib/domain/scoring';
@@ -83,8 +85,10 @@ export interface RankingRow {
 /** Classement complet, prêt à l'affichage. */
 export async function getRanking(): Promise<RankingRow[]> {
   const store = getStore();
+  const chaine = chaineDeLaLigue();
   return store.read((db) => {
-    const active = db.players.filter((p) => p.active);
+    // La streameuse n'est pas une concurrente : elle n'apparaît pas.
+    const active = db.players.filter((p) => p.active && !estLaStreameuse(p, chaine));
     const entries = active.map((player) => ({
       player,
       totals: totalsFor(

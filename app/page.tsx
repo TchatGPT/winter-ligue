@@ -6,7 +6,8 @@ import { SaisieGames } from '@/components/SaisieGames';
 import { EmptyState } from '@/components/ui';
 import { exigeSession } from '@/lib/auth/acces';
 import { getSession } from '@/lib/auth/session';
-import { isTwitchEnabled } from '@/lib/auth/twitch';
+import { chaineDeLaLigue, isTwitchEnabled } from '@/lib/auth/twitch';
+import { estLaStreameuse } from '@/lib/domain/streameuse';
 import { getStore } from '@/lib/db/store';
 import { evenementsActifs } from '@/lib/services/evenements';
 import { getOverview, getRanking } from '@/lib/services/league';
@@ -38,7 +39,7 @@ export default async function ClassementPage() {
       evenements: evenementsActifs(db),
       joueurs: moderateur
         ? db.players
-            .filter((p) => p.active)
+            .filter((p) => p.active && !estLaStreameuse(p, chaineDeLaLigue()))
             .map((p) => ({ id: p.id, pseudo: p.pseudo }))
             .sort((a, b) => a.pseudo.localeCompare(b.pseudo, 'fr'))
         : [],

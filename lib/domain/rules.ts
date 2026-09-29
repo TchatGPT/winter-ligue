@@ -16,6 +16,11 @@ export const SEASON = {
   endsAt: '2027-03-01T00:00:00.000Z',
   /** Nombre de joueurs qualifiés pour la finale. */
   finalistCount: 6,
+  /**
+   * La chaîne Twitch de la ligue, en minuscules : sa streameuse administre,
+   * ne joue pas, et n'a jamais de game. `TWITCH_BROADCASTER_LOGIN` la remplace.
+   */
+  chaine: 'lriaa',
 } as const;
 
 /* ------------------------------- Scoring -------------------------------- */

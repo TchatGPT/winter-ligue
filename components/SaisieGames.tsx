@@ -13,6 +13,8 @@ interface Joueur {
 }
 
 interface Ligne {
+  /** La ligne de la streameuse : affichée, jamais saisie. */
+  streameuse: boolean;
   lu: string;
   kills: number;
   assists: number | null;
@@ -29,8 +31,12 @@ interface Apercu {
 }
 type Message = { kind: 'error' | 'success' | 'info'; text: string } | null;
 
-/** La capture est réduite avant l'envoi : le tableau reste lisible, l'image pèse dix fois moins. */
-const LARGEUR_MAX = 1920;
+/**
+ * La capture est réduite avant l'envoi : 1568 px, la taille au-delà de
+ * laquelle le modèle la réduirait de toute façon. Le tableau reste lisible,
+ * l'envoi est plus court.
+ */
+const LARGEUR_MAX = 1568;
 
 const TOPS: { valeur: Placement; libelle: string }[] = [
   { valeur: 1, libelle: 'Top 1' },
@@ -426,6 +432,19 @@ function FenetreIA({ joueurs, active, ferme }: { joueurs: Joueur[]; active: bool
                   const apercu = l.joueurId ? apercus[l.joueurId] : undefined;
                   const score = l.joueurId ? (apercu?.score ?? l.kills + placementPoints(placement)) : null;
                   const couleur = l.confiance >= 0.9 ? 'text-aurora' : l.confiance >= 0.6 ? 'text-gold' : 'text-danger';
+                  // La ligne de la streameuse : montrée pour qu'on voie qu'elle a
+                  // été lue, mais sans choix de joueur, ni kills, ni score.
+                  if (l.streameuse) {
+                    return (
+                      <tr key={`${l.lu}-${i}`} style={{ opacity: 0.6 }}>
+                        <td className="hidden text-sm text-muted sm:table-cell">{l.lu}</td>
+                        <td colSpan={3} className="text-sm text-muted">
+                          <span className="mb-1 block text-[11px] text-faint sm:hidden">{l.lu}</span>
+                          Streameuse — hors ligue, aucune game
+                        </td>
+                      </tr>
+                    );
+                  }
                   return (
                     <tr key={`${l.lu}-${i}`} style={l.joueurId ? undefined : { opacity: 0.5 }}>
                       <td className="hidden text-sm text-muted sm:table-cell">{l.lu}</td>

@@ -44,6 +44,8 @@ const Lecture = z.object({
 });
 
 export interface Proposition {
+  /** Vrai pour la ligne de la streameuse : jamais de game. */
+  streameuse: boolean;
   lu: string;
   kills: number;
   assists: number | null;
@@ -62,11 +64,17 @@ export function isReconnaissanceEnabled(): boolean {
   return Boolean(process.env.ANTHROPIC_API_KEY);
 }
 
+/**
+ * Claude Haiku 4.5 par défaut, comme la Summer Ligue : lire un tableau de
+ * quatre lignes n'a pas besoin de réflexion, et la réponse arrive en quelques
+ * secondes au lieu de plusieurs dizaines. `ANTHROPIC_MODEL` permet d'en
+ * essayer un autre.
+ */
 function modele(): string {
-  return process.env.ANTHROPIC_MODEL?.trim() || 'claude-opus-5';
+  return process.env.ANTHROPIC_MODEL?.trim() || 'claude-haiku-4-5';
 }
 
-function consigne(joueurs: readonly JoueurConnu[]): string {
+function consigne(joueurs: readonly JoueurConnu[], streameuse: JoueurConnu): string {
   const liste = joueurs
     .map((j) => {
       const noms = [j.activisionId && `pseudo en jeu : ${j.activisionId}`, j.twitchLogin && `Twitch : ${j.twitchLogin}`]
@@ -80,6 +88,8 @@ function consigne(joueurs: readonly JoueurConnu[]): string {
 
 Joueurs de la ligue :
 ${liste}
+
+La streameuse, ${streameuse.pseudo}${streameuse.activisionId ? ` (pseudo en jeu : ${streameuse.activisionId})` : ''}, joue dans l'escouade mais n'est PAS dans la ligue : mets toujours joueurId à null pour sa ligne.
 
 Lis le tableau des joueurs de l'escouade. Les colonnes, de gauche à droite, sont en général : NOM | SCORE | ÉLIM./ASSIST. | ÉLIM. | ASSIST. Certaines captures n'ont qu'une colonne ÉLIM.
 - Ignore SCORE et ÉLIM./ASSIST.
@@ -101,20 +111,24 @@ export async function analyseCapture(
   image: string,
   mediaType: MediaType,
   joueurs: readonly JoueurConnu[],
+  streameuse: JoueurConnu,
 ): Promise<Analyse> {
   const client = new Anthropic();
   const nomModele = modele();
+  // Haiku 4.5 n'accepte pas le réglage d'effort ; les autres modèles le
+  // prennent au plus bas, la lecture n'en demande pas plus.
+  const effort = nomModele.startsWith('claude-haiku') ? {} : { effort: 'low' as const };
 
   const reponse = await client.messages.parse({
     model: nomModele,
-    max_tokens: 4000,
-    output_config: { effort: 'medium', format: zodOutputFormat(Lecture) },
+    max_tokens: 1500,
+    output_config: { ...effort, format: zodOutputFormat(Lecture) },
     messages: [
       {
         role: 'user',
         content: [
           { type: 'image', source: { type: 'base64', media_type: mediaType, data: image } },
-          { type: 'text', text: consigne(joueurs) },
+          { type: 'text', text: consigne(joueurs, streameuse) },
         ],
       },
     ],
@@ -128,6 +142,11 @@ export async function analyseCapture(
   const connus = new Set(joueurs.map((j) => j.id));
   const propositions: Proposition[] = lecture.joueurs.map((ligne) => {
     const kills = Math.min(GAME_LIMITS.maxKills, Math.max(GAME_LIMITS.minKills, ligne.kills));
+    // La streameuse d'abord : sa ligne est reconnue par son nom, et n'est
+    // jamais attribuée — quoi qu'en dise le modèle.
+    if (correspond(ligne.lu, [streameuse]).joueurId !== null) {
+      return { streameuse: true, lu: ligne.lu, kills, assists: ligne.assists, joueurId: null, confiance: 0 };
+    }
     // Le modèle propose un id ; la comparaison de noms le confirme ou le
     // remplace. Un id qui n'est pas dans la liste est ignoré : il n'a pas
     // pu venir de nous.
@@ -145,7 +164,7 @@ export async function analyseCapture(
       joueurId = parNom.joueurId;
       confiance = parNom.confiance;
     }
-    return { lu: ligne.lu, kills, assists: ligne.assists, joueurId, confiance };
+    return { streameuse: false, lu: ligne.lu, kills, assists: ligne.assists, joueurId, confiance };
   });
 
   return { placement: lecture.placement, propositions, modele: nomModele };

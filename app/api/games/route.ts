@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { chaineDeLaLigue } from '@/lib/auth/twitch';
+import { estLaStreameuse } from '@/lib/domain/streameuse';
 import { toResponse } from '@/lib/api/errors';
 import { fail, guard, ok } from '@/lib/api/respond';
 import { deleteGameSchema, gameSchema, updateGameSchema } from '@/lib/api/schemas';
@@ -37,6 +39,8 @@ export async function POST(request: Request): Promise<NextResponse> {
     const result = await getStore().transaction((db) => {
       const player = db.players.find((p) => p.id === g.body.playerId);
       if (!player) return { error: 'JOUEUR' as const };
+      // La streameuse ne joue pas : quoi que propose l'écran, aucune game.
+      if (estLaStreameuse(player, chaineDeLaLigue())) return { error: 'STREAMEUSE' as const };
 
       const played = db.games.filter((x) => x.playerId === player.id && !x.skipped).length;
       if (played >= db.config.maxGamesPerPlayer) return { error: 'LIMITE' as const };
@@ -85,6 +89,9 @@ export async function POST(request: Request): Promise<NextResponse> {
     });
 
     if ('error' in result) {
+      if (result.error === 'STREAMEUSE') {
+        return fail('CONFLIT', 'La streameuse ne joue pas dans la ligue : aucune game ne lui est attribuée.');
+      }
       return result.error === 'JOUEUR'
         ? fail('INTROUVABLE', 'Joueur introuvable.')
         : fail('CONFLIT', 'Ce joueur a atteint sa limite de games pour la saison.');
