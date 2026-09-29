@@ -21,10 +21,14 @@ export async function exigeSession(): Promise<SessionPayload> {
 
   const playerId = playerIdOf(session);
   if (playerId) {
-    const renseigne = await getStore().read(
-      (db) => db.players.find((p) => p.id === playerId)?.activisionId ?? null,
-    );
-    if (!renseigne) redirect('/bienvenue');
+    const joueur = await getStore().read((db) => {
+      const p = db.players.find((x) => x.id === playerId);
+      return p ? { activisionId: p.activisionId } : null;
+    });
+    // Le compte n'existe plus (base vidée) : on renvoie se reconnecter,
+    // plutôt que de faire tourner l'accueil et la bienvenue l'un sur l'autre.
+    if (!joueur) redirect('/connexion');
+    if (!joueur.activisionId) redirect('/bienvenue');
   }
   return session;
 }

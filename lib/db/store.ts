@@ -16,13 +16,22 @@ import 'server-only';
 
 import { randomUUID } from 'node:crypto';
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { DEFAULT_MAX_GAMES_PER_PLAYER, ECONOMY, SEASON } from '@/lib/domain/rules';
 import type { Database } from './entities';
 
+/*
+ * Sur Vercel, le dossier du projet est en lecture seule : seul /tmp s'écrit.
+ * C'est un pis-aller, en attendant la base de données — /tmp est propre à
+ * chaque instance et vidé à chaque démarrage à froid, donc les données y sont
+ * éphémères.
+ */
 const DATA_FILE = process.env.LEAGUE_DATA_FILE
   ? process.env.LEAGUE_DATA_FILE
-  : join(process.cwd(), '.data', 'league.json');
+  : process.env.VERCEL
+    ? join(tmpdir(), 'winter-ligue', 'league.json')
+    : join(process.cwd(), '.data', 'league.json');
 
 /**
  * Deux : la version un portait la collection, le marché et les boosters

@@ -231,6 +231,13 @@ La route `POST /api/admin/login` (mot de passe) n'a plus d'écran ; elle reste
 comme accès de secours tant que `ADMIN_PASSWORD_HASH` est défini — retirer la
 variable la ferme.
 
+**Connexion Twitch simulée (temporaire).** Tant que `TWITCH_CLIENT_ID` et
+`TWITCH_CLIENT_SECRET` ne sont pas définis, `/connexion/twitch` et
+`POST /api/auth/twitch/demo` laissent choisir un pseudo et un rôle, y compris
+admin : **n'importe qui peut alors administrer le site**. Elle se ferme
+d'elle-même dès que les variables Twitch sont renseignées. Sur Vercel, en
+attendant la base, les données vont dans `/tmp` et sont éphémères.
+
 **La lecture des captures** (`POST /api/admin/games/analyse`, `moderateur`) envoie
 l'image à l'API Anthropic **depuis le serveur** : la clé `ANTHROPIC_API_KEY` ne
 quitte jamais le serveur, et la CSP (`connect-src 'self'`) interdirait de toute

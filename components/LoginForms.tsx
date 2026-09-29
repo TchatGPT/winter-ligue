@@ -14,8 +14,8 @@ import { Notice } from '@/components/ui';
  * connexion : la streameuse est administratrice, les modérateurs de sa chaîne
  * sont modérateurs ici, tous les autres sont joueurs.
  *
- * Tant que l'application Twitch n'est pas déclarée, le bouton est là mais ne
- * mène nulle part : il le dit. Hors production, la connexion de
+ * Tant que l'application Twitch n'est pas déclarée, le bouton mène à l'écran
+ * d'autorisation simulé (`/connexion/twitch`). Hors production, la connexion de
  * développement permet d'incarner un joueur pour tester.
  */
 export function LoginForms({
@@ -67,19 +67,10 @@ export function LoginForms({
           Se connecter avec Twitch
         </a>
       ) : (
-        <button
-          type="button"
-          className="btn btn-twitch btn-lg mt-6 w-full"
-          onClick={() =>
-            setMessage({
-              kind: 'info',
-              text: 'La connexion Twitch n’est pas encore branchée : elle s’activera dès que l’application sera déclarée chez Twitch.',
-            })
-          }
-        >
+        <a href="/connexion/twitch" className="btn btn-twitch btn-lg mt-6 w-full no-underline">
           <IconTwitch className="h-5 w-5" />
           Se connecter avec Twitch
-        </button>
+        </a>
       )}
 
       {message && (

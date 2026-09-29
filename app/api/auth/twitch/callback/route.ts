@@ -2,10 +2,8 @@ import { NextResponse } from 'next/server';
 import { createToken, setSessionCookie } from '@/lib/auth/session';
 import { exchangeCode, isTwitchEnabled, verifyState } from '@/lib/auth/twitch';
 import { fail } from '@/lib/api/respond';
-import { newId, getStore } from '@/lib/db/store';
-import { ECONOMY } from '@/lib/domain/rules';
-import { audit, credit } from '@/lib/services/ledger';
-import { makeSlug } from '@/lib/services/league';
+import { getStore } from '@/lib/db/store';
+import { rattacheCompteTwitch } from '@/lib/services/comptes';
 
 export const runtime = 'nodejs';
 
@@ -31,45 +29,7 @@ export async function GET(request: Request): Promise<NextResponse> {
   const profile = await exchangeCode(code);
   if (!profile) return fail('NON_AUTHENTIFIE', 'Authentification Twitch refusée.');
 
-  const player = await getStore().transaction((db) => {
-    const existing = db.players.find((p) => p.twitchId === profile.id);
-    if (existing) {
-      // On rafraîchit l'affichage sans toucher au slug déjà partagé en lien.
-      existing.pseudo = profile.displayName;
-      existing.twitchLogin = profile.login;
-      existing.avatarUrl = profile.avatarUrl;
-      existing.active = true;
-      // Le rôle suit la chaîne, à chaque connexion : un modérateur retiré sur
-      // Twitch perd son accès ici. Seul un admin nommé à la main le reste —
-      // c'est le filet si la streameuse délègue l'administration.
-      if (profile.roleChaine && existing.role !== 'admin' && existing.role !== profile.roleChaine) {
-        audit(db, 'twitch', 'ROLE_CHAINE', existing.id, `${existing.pseudo} : ${existing.role} → ${profile.roleChaine}`);
-        existing.role = profile.roleChaine;
-      }
-      return existing;
-    }
-
-    const created = {
-      id: newId(),
-      slug: makeSlug(db, profile.displayName),
-      pseudo: profile.displayName,
-      twitchId: profile.id,
-      twitchLogin: profile.login,
-      avatarUrl: profile.avatarUrl,
-      activisionId: null,
-      snowflakes: 0,
-      subsOfferts: 0,
-      joinedAt: new Date().toISOString(),
-      active: true,
-      role: profile.roleChaine ?? ('joueur' as const),
-    };
-    db.players.push(created);
-    credit(db, created.id, ECONOMY.welcomeGrant, 'INSCRIPTION', null);
-    if (created.role !== 'joueur') {
-      audit(db, 'twitch', 'ROLE_CHAINE', created.id, `${created.pseudo} : ${created.role}`);
-    }
-    return created;
-  });
+  const player = await getStore().transaction((db) => rattacheCompteTwitch(db, profile));
 
   await setSessionCookie(createToken(player.id, player.role));
 

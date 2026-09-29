@@ -23,7 +23,9 @@ export function Accueil({ twitchEnabled, devLogin }: { twitchEnabled: boolean; d
   const debut = new Date(SEASON.startsAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
   const fin = new Date(SEASON.endsAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
 
-  const entree = twitchEnabled ? '/api/auth/twitch?returnTo=/' : '/connexion';
+  // Tant que la vraie connexion n'est pas branchée, l'écran d'autorisation
+  // simulé en tient lieu.
+  const entree = twitchEnabled ? '/api/auth/twitch?returnTo=/' : '/connexion/twitch';
 
   const FONCTIONS = [
     {
@@ -87,8 +89,8 @@ export function Accueil({ twitchEnabled, devLogin }: { twitchEnabled: boolean; d
         </div>
         {!twitchEnabled && (
           <p className="mt-4 text-[13px] text-faint">
-            La connexion Twitch s’active dès que l’application est déclarée.
-            {devLogin ? ' En attendant, la connexion de développement est ouverte.' : ''}
+            Connexion Twitch simulée pour l’instant : tu choisis ton pseudo et ton rôle sur la chaîne.
+            {devLogin ? ' La connexion de développement reste ouverte en local.' : ''}
           </p>
         )}
       </section>
