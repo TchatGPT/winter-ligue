@@ -17,6 +17,7 @@ import 'server-only';
 import { randomUUID } from 'node:crypto';
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
+import postgres from 'postgres';
 import { dirname, join } from 'node:path';
 import { DEFAULT_MAX_GAMES_PER_PLAYER, ECONOMY, SEASON } from '@/lib/domain/rules';
 import type { Database } from './entities';
@@ -151,6 +152,93 @@ class JsonFileStore implements Store {
 }
 
 /**
+ * La base Postgres (Supabase).
+ *
+ * Toute la ligue tient dans une ligne : un document JSON, dans la table
+ * `league_state`. C'est la traduction directe du fichier : même forme, même
+ * migration, même contrat `Store`. Ce qui change, c'est qu'elle survit aux
+ * redémarrages et qu'elle est partagée entre toutes les instances Vercel.
+ *
+ * La sérialisation des écritures passe par un verrou de ligne
+ * (`SELECT … FOR UPDATE`) : deux transactions simultanées, même sur deux
+ * serveurs différents, s'enchaînent au lieu de s'écraser. C'est ce qui garde
+ * vraie la règle du projet sur les flocons.
+ *
+ * La table a la sécurité par ligne activée, sans aucune politique : elle
+ * n'est lisible que par le rôle propriétaire, celui de la chaîne de
+ * connexion serveur, jamais par l'API publique de Supabase.
+ */
+class PostgresStore implements Store {
+  private readonly sql: postgres.Sql;
+  private pret: Promise<void> | null = null;
+
+  constructor(url: string) {
+    this.sql = postgres(url, {
+      // Le pooler de Supabase en mode transaction ne garde pas les requêtes
+      // préparées d'une connexion à l'autre.
+      prepare: false,
+      // Une fonction Vercel ne sert qu'une requête à la fois.
+      max: 1,
+      idle_timeout: 20,
+      connect_timeout: 10,
+    });
+  }
+
+  /** Crée la table et la ligne au premier appel, une fois par instance. */
+  private prepare(): Promise<void> {
+    this.pret ??= (async () => {
+      await this.sql`
+        create table if not exists league_state (
+          id integer primary key,
+          data jsonb not null,
+          updated_at timestamptz not null default now()
+        )`;
+      await this.sql`alter table league_state enable row level security`;
+      await this.sql`
+        insert into league_state (id, data)
+        values (1, ${this.sql.json(emptyDatabase() as unknown as postgres.JSONValue)})
+        on conflict (id) do nothing`;
+    })().catch((error) => {
+      // On retentera à l'appel suivant plutôt que de garder l'échec en cache.
+      this.pret = null;
+      throw error;
+    });
+    return this.pret;
+  }
+
+  async read<T>(fn: (db: Readonly<Database>) => T): Promise<T> {
+    await this.prepare();
+    const [ligne] = await this.sql<{ data: Partial<Database> }[]>`select data from league_state where id = 1`;
+    return fn(migrate(ligne?.data ?? emptyDatabase()));
+  }
+
+  async transaction<T>(fn: (db: Database) => T | Promise<T>): Promise<T> {
+    await this.prepare();
+    // `begin` annule tout si `fn` lève : rien n'est écrit.
+    const resultat = await this.sql.begin(async (tx) => {
+      const [ligne] = await tx<{ data: Partial<Database> }[]>`select data from league_state where id = 1 for update`;
+      const db = migrate(ligne?.data ?? emptyDatabase());
+      const valeur = await fn(db);
+      await tx`
+        update league_state
+        set data = ${tx.json(db as unknown as postgres.JSONValue)}, updated_at = now()
+        where id = 1`;
+      return { valeur };
+    });
+    return resultat.valeur;
+  }
+
+  async replace(next: Database): Promise<void> {
+    await this.transaction((db) => {
+      const migrated = migrate(next);
+      const mutable = db as unknown as Record<string, unknown>;
+      for (const key of Object.keys(mutable)) delete mutable[key];
+      Object.assign(db, migrated);
+    });
+  }
+}
+
+/**
  * Complète une base chargée dont la forme est plus ancienne que le code.
  *
  * Seules les tables connues sont reprises : une base de version un traînait
@@ -213,8 +301,13 @@ function migrate(db: Partial<Database>): Database {
 // global on repartirait d'une base vide à chaque sauvegarde de fichier.
 const globalForStore = globalThis as unknown as { __winterStore?: Store };
 
+/**
+ * Le stockage : Postgres dès que `DATABASE_URL` est défini, le fichier sinon.
+ * En local sans base, rien ne change ; en production, c'est la base.
+ */
 export function getStore(): Store {
-  globalForStore.__winterStore ??= new JsonFileStore();
+  const url = process.env.DATABASE_URL?.trim();
+  globalForStore.__winterStore ??= url ? new PostgresStore(url) : new JsonFileStore();
   return globalForStore.__winterStore;
 }
 

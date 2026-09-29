@@ -12,13 +12,15 @@
     "typecheck": "tsc --noEmit",
     "hash-password": "node scripts/hash-password.mjs",
     "seed": "node scripts/seed.mjs",
-    "cartes": "node scripts/index-art.mjs"
+    "cartes": "node scripts/index-art.mjs",
+    "importe-base": "node scripts/importe-base.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.126.0",
     "framer-motion": "^13.1.1",
     "howler": "^2.2.4",
     "next": "16.3.3",
+    "postgres": "^3.4.9",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "server-only": "^0.0.1",
