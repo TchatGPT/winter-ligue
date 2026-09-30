@@ -2,7 +2,8 @@ import { PackOpening, type JoueurOuverture, type PackVitrine } from '@/component
 import { getSession } from '@/lib/auth/session';
 import { exigeSession } from '@/lib/auth/acces';
 import { getStore } from '@/lib/db/store';
-import { cartesDuPack, impactMax, momentDe } from '@/lib/domain/catalog';
+import { CARDS, cartesDuPack, impactMax, momentDe } from '@/lib/domain/catalog';
+import type { CarteSaison } from '@/components/CartesParRarete';
 import { chanceDe } from '@/lib/domain/rules';
 import { fileDesPacks, resolvedPacks } from '@/lib/services/packs';
 import { EnTetePage } from '@/components/EnTetePage';
@@ -35,19 +36,6 @@ export default async function PacksPage(){
           power: c.power,
           nature: c.nature,
         })),
-        catalogue: cartesDuPack(p.id).map((c) => ({
-          cardId: c.id,
-          name: c.name,
-          action: c.subtitle,
-          rarity: c.rarity,
-          glyph: c.glyph,
-          description: c.description,
-          power: c.power,
-          nature: c.nature,
-          moment: momentDe(c.effect),
-          cible: c.cible,
-          impact: impactMax(c.effect),
-        })),
       }),
     ),
     file: fileDesPacks(db),
@@ -67,6 +55,22 @@ export default async function PacksPage(){
       : [],
   }));
 
+  // Toutes les cartes de la saison, pour la planche par rareté sous les boosters.
+  const saison = CARDS.map(
+    (c): CarteSaison => ({
+      cardId: c.id,
+      name: c.name,
+      action: c.subtitle,
+      rarity: c.rarity,
+      glyph: c.glyph,
+      description: c.description,
+      power: c.power,
+      nature: c.nature,
+      moment: momentDe(c.effect),
+      impact: impactMax(c.effect),
+    }),
+  );
+
   return (
     <div className="space-y-6">
       <EnTetePage
@@ -76,7 +80,7 @@ export default async function PacksPage(){
         lead="Une carte par booster, ouverte à l’antenne. Les actions des roues de la Summer, à la mesure de l’hiver."
       />
 
-      <PackOpening packs={packs} file={file} joueurs={joueurs} moderateur={moderateur} />
+      <PackOpening packs={packs} saison={saison} file={file} joueurs={joueurs} moderateur={moderateur} />
     </div>
   );
 }

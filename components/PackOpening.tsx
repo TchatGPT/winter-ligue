@@ -5,7 +5,7 @@ import { RangeePacks } from '@/components/RangeePacks';
 import { SnowCap } from '@/components/SnowCap';
 import { prechargeSons, reveilleSon } from '@/components/bruitage';
 import { RailPack, type CarteRailPack } from '@/components/RailPack';
-import { CartesDuBooster, type CarteDuBooster } from '@/components/CartesDuBooster';
+import { CartesParRarete, type CarteSaison } from '@/components/CartesParRarete';
 import { DestinCarte } from '@/components/DestinCarte';
 import { CardTile, Notice, RarityChip, flakes, rarityMeta } from '@/components/ui';
 import { packArt } from '@/lib/domain/catalog';
@@ -35,8 +35,6 @@ const COULEURS_TAUX: Record<Rarity, string> = {
 export interface PackVitrine extends PackDefinition {
   /** Les cartes que ce pack peut donner : le pool des leurres du rail. */
   cartes: CarteRailPack[];
-  /** Les mêmes, avec ce qu'il faut pour les présenter action par action. */
-  catalogue: CarteDuBooster[];
 }
 
 export interface JoueurOuverture {
@@ -65,11 +63,14 @@ type Phase = 'repos' | 'demande' | 'tirage' | 'reveal';
  */
 export function PackOpening({
   packs,
+  saison,
   file,
   joueurs,
   moderateur,
 }: {
   packs: PackVitrine[];
+  /** Toutes les cartes de la saison, montrées par rareté sous les boosters. */
+  saison: CarteSaison[];
   /** Ce qui est dû, pour que la modération l'ouvre d'un clic. */
   file: PackDuVue[];
   /** Les joueurs, pour choisir à qui le pack s'ouvre. Vide hors modération. */
@@ -503,15 +504,17 @@ export function PackOpening({
         </section>
       </aside>
 
-      {/* ------------------------- Les cartes du booster --------------------
-          La planche des roues de la Summer, pour le booster choisi : ce qu'il
-          peut donner, action par action. Elle suit la sélection de la rangée. */}
+      {/* ------------------------- Les cartes de la saison ------------------
+          Toutes les cartes du jeu, rangées par rareté : ce qu'on peut tirer,
+          quel que soit le booster. Elle ne suit plus la sélection de la
+          rangée — on cherche ce que fait une légendaire, pas ce que contient
+          un booster. */}
       <section className="glass relative overflow-hidden px-5 py-6 sm:px-6 xl:col-span-2">
-        <SnowCap radius="var(--r-lg)" seed={`cartes-${pack.id}`} epaisseur={14} />
-        <TitreGlace taille="bloc" eyebrow="Ce qu’il peut donner" className="mb-3">
-          {`Les cartes du ${pack.name}`}
+        <SnowCap radius="var(--r-lg)" seed="cartes-saison" epaisseur={14} />
+        <TitreGlace taille="bloc" eyebrow="Par rareté" className="mb-3">
+          Les cartes de la saison
         </TitreGlace>
-        <CartesDuBooster nom={pack.name} cartes={pack.catalogue} pourUnJoueur={pourUnJoueur} />
+        <CartesParRarete cartes={saison} />
       </section>
     </div>
   );
