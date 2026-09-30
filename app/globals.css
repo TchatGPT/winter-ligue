@@ -2278,12 +2278,14 @@
     }
   }
 
+  /* Trois lignes : le numéro et la médaille, le score, les kills. */
   .case {
     position: relative;
-    display: grid;
-    aspect-ratio: 4 / 5;
-    place-items: center;
+    display: flex;
+    aspect-ratio: 3 / 4;
+    flex-direction: column;
     overflow: hidden;
+    padding: 0.3rem 0.35rem 0.35rem;
     border-radius: var(--r-sm);
     background: linear-gradient(165deg, rgb(255 255 255 / 0.12) 0%, rgb(255 255 255 / 0.04) 100%);
     box-shadow:
@@ -2325,11 +2327,17 @@
       inset 0 10px 12px -10px rgb(255 255 255 / 0.55);
     transition: height 0.6s cubic-bezier(0.2, 0.8, 0.3, 1);
   }
-  .case-numero {
-    position: absolute;
-    top: 0.4rem;
-    left: 0.5rem;
+  .case-tete {
+    position: relative;
     z-index: 1;
+    display: flex;
+    min-height: 18px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.2rem;
+  }
+  .case-numero {
+    padding-left: 0.15rem;
     font-family: var(--font-display);
     font-size: 0.6875rem;
     font-weight: 800;
@@ -2337,17 +2345,16 @@
     text-shadow: 0 1px 2px rgb(0 8 24 / 0.7);
   }
   .case-medaille {
-    position: absolute;
-    top: 0.3rem;
-    right: 0.3rem;
-    z-index: 1;
-    width: 20px;
-    height: 20px;
-    font-size: 0.6875rem;
+    width: 18px;
+    height: 18px;
+    font-size: 0.625rem;
   }
   .case-score {
     position: relative;
     z-index: 1;
+    display: grid;
+    flex: 1;
+    place-items: center;
     font-family: var(--font-display);
     font-size: clamp(1.25rem, 2.2vw, 1.7rem);
     font-weight: 900;
@@ -2356,10 +2363,7 @@
     text-shadow: 0 1px 3px rgb(0 8 24 / 0.75);
   }
   .case-pied {
-    position: absolute;
-    right: 0;
-    bottom: 0.35rem;
-    left: 0;
+    position: relative;
     z-index: 1;
     font-size: 0.6875rem;
     font-weight: 600;
@@ -2370,6 +2374,8 @@
 
   /* Une game à jouer : une case vide, en pointillés, son numéro en filigrane. */
   .case-libre {
+    align-items: center;
+    justify-content: center;
     background: rgb(255 255 255 / 0.03);
     box-shadow: none;
     outline: 1.5px dashed rgb(255 255 255 / 0.2);

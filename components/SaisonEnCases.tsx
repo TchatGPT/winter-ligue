@@ -77,12 +77,14 @@ export function SaisonEnCases({ games, creneaux }: { games: CaseGame[]; creneaux
               onBlur={() => setSurvol((s) => (s === i ? null : s))}
             >
               <span className="case-glace" style={{ height: `${niveau}%` }} aria-hidden="true" />
-              <span className="case-numero">#{g.numero}</span>
-              {podium && (
-                <span className="medaille case-medaille" data-rang={podium}>
-                  {podium}
-                </span>
-              )}
+              <span className="case-tete">
+                <span className="case-numero">#{g.numero}</span>
+                {podium && (
+                  <span className="medaille case-medaille" data-rang={podium}>
+                    {podium}
+                  </span>
+                )}
+              </span>
               <strong className="case-score">{g.score}</strong>
               <span className="case-pied">{survol === i ? g.date.split(' ')[0] : `${g.kills} kills`}</span>
             </li>
