@@ -8,7 +8,9 @@
  * boutons engagent — le bot, tout de suite, ou les joueurs ; à droite les
  * résultats, aussi hauts que le ring.
  *
- * Un duel joué ne se rejoue pas : la course se voit une fois, en direct.
+ * Un duel joué ne se rejoue pas : la course se voit une fois, en direct. Une
+ * fois finie, le verdict reste le temps d'être lu, puis la fenêtre se ferme
+ * d'elle-même et le résultat passe en tête du salon.
  *
  * L'arène s'ouvre par-dessus, au centre de l'écran, dès le clic : les deux
  * pères Noël se mettent en place pendant que le serveur tire le duel, puis la
@@ -39,6 +41,9 @@ import { shortDateTime } from '@/lib/format';
 /** Le rythme du sondage, quand personne ne joue. */
 const SONDAGE = 2000;
 
+/** Le temps de lire le verdict, avant que la fenêtre ne se ferme d'elle-même. */
+const DELAI_VERDICT = 2500;
+
 interface Charge {
   batailles: BatailleVueClient[];
   top: BatailleVueClient[];
@@ -57,6 +62,16 @@ const BOT: CampApercu = { pseudo: 'Le Bot', bot: true };
 
 /** Le pot : les deux mises réunies. C'est ce qui change de mains. */
 const pot = (b: BatailleVueClient) => b.mise * 2;
+
+/** Ce qu'on dit d'un duel joué, une fois sa fenêtre refermée. */
+function bilanDe(b: BatailleVueClient, moiId: string | null): { gagne: boolean; texte: string } {
+  const gagne = moiId !== null && b.vainqueurId === moiId;
+  const adverse = b.camps.find((c) => c.id !== moiId);
+  const contre = adverse ? (adverse.bot ? 'le Bot' : adverse.pseudo) : 'ton adversaire';
+  return gagne
+    ? { gagne, texte: `Duel gagné contre ${contre} : tu rafles ${flakes(pot(b))} ❄.` }
+    : { gagne, texte: `Duel perdu contre ${contre} : ta mise de ${flakes(b.mise)} ❄ est partie.` };
+}
 
 /* ------------------------------------------------------------------------ */
 /* Le curseur de mise                                                        */
@@ -218,6 +233,8 @@ export function Affrontements({
   const [etat, setEtat] = useState<Charge>(initial);
   const [erreur, setErreur] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
+  /** L'issue du dernier duel joué, affichée quand sa fenêtre se referme. */
+  const [bilan, setBilan] = useState<{ gagne: boolean; texte: string } | null>(null);
   const [occupe, setOccupe] = useState(false);
 
   /** La mise du duel qu'on monte. */
@@ -272,6 +289,7 @@ export function Affrontements({
     setOccupe(true);
     setErreur(null);
     setInfo(null);
+    setBilan(null);
     // Le contexte audio se réveille ici, pendant le geste : ouvert plus tard,
     // il naîtrait suspendu et la course serait muette.
     reveilleSonsDuel();
@@ -290,11 +308,7 @@ export function Affrontements({
         setFenetre({ etat: 'duel', bataille: b, anime: true, tour: nouveauNumero(), fini: false });
       } else {
         // Fenêtre fermée pendant le tirage : le duel est joué quand même, on le dit.
-        setInfo(
-          b.vainqueurId === etat.moiId
-            ? `Duel joué : tu as raflé ${flakes(pot(b))} ❄. Il est dans les résultats.`
-            : `Duel joué : perdu, ta mise de ${flakes(b.mise)} ❄ est partie. Il est dans les résultats.`,
-        );
+        setBilan(bilanDe(b, etat.moiId));
       }
     } else if (toujoursLa) {
       setFenetre({ etat: 'erreur', message: resultat.message });
@@ -314,6 +328,7 @@ export function Affrontements({
     setOccupe(true);
     setErreur(null);
     setInfo(null);
+    setBilan(null);
     const resultat = await poste(url, corps);
     if (resultat.ok) setInfo(succes(resultat.data));
     else setErreur(resultat.message);
@@ -348,6 +363,8 @@ export function Affrontements({
 
   function ferme() {
     attenteOuverte.current = null;
+    // Fermée avant la fin de la course, la fenêtre ne cache pas l'issue.
+    if (fenetre?.etat === 'duel') setBilan(bilanDe(fenetre.bataille, etat.moiId));
     setFenetre(null);
     void recharge();
   }
@@ -355,6 +372,20 @@ export function Affrontements({
   const marqueFini = useCallback(() => {
     setFenetre((f) => (f && f.etat === 'duel' ? { ...f, fini: true } : f));
   }, []);
+
+  // La course finie, le verdict reste le temps d'être lu, puis la fenêtre se
+  // ferme d'elle-même et l'issue passe en tête du salon.
+  const duelTermine = fenetre?.etat === 'duel' && fenetre.fini ? fenetre.bataille : null;
+  const moiId = etat.moiId;
+  useEffect(() => {
+    if (!duelTermine) return;
+    const t = setTimeout(() => {
+      setFenetre(null);
+      setBilan(bilanDe(duelTermine, moiId));
+      void recharge();
+    }, DELAI_VERDICT);
+    return () => clearTimeout(t);
+  }, [duelTermine, moiId, recharge]);
 
   /* ------------------------------ Les listes ----------------------------- */
 
@@ -408,22 +439,15 @@ export function Affrontements({
     );
   } else if (fenetre?.etat === 'duel') {
     const b = fenetre.bataille;
-    const monDuelBot = b.camps[1]?.bot === true && b.hoteId === etat.moiId;
-    const revanchePossible = monDuelBot && solde !== null && solde >= b.mise && !occupe;
     contenuFenetre = (
       <BatailleArene key={fenetre.tour} bataille={b} moiId={etat.moiId} anime={fenetre.anime} onFini={marqueFini} />
     );
+    // Une fois la course finie, la fenêtre se ferme d'elle-même : on peut
+    // seulement la fermer un peu plus tôt.
     piedFenetre = fenetre.fini ? (
-      <>
-        {monDuelBot && (
-          <button type="button" className="btn btn-ice" disabled={!revanchePossible} onClick={() => contreLeBot(b.mise)}>
-            Revanche · {flakes(b.mise)} ❄
-          </button>
-        )}
-        <button type="button" className="btn btn-ghost" onClick={ferme}>
-          Fermer
-        </button>
-      </>
+      <button type="button" className="btn btn-ghost" onClick={ferme}>
+        Fermer
+      </button>
     ) : (
       <button
         type="button"
@@ -441,6 +465,7 @@ export function Affrontements({
     <div className="space-y-5">
       {erreur && <Notice kind="error">{erreur}</Notice>}
       {info && <Notice kind="success">{info}</Notice>}
+      {bilan && <Notice kind={bilan.gagne ? 'success' : 'info'}>{bilan.texte}</Notice>}
 
       {/* ========================= Les duels à rejoindre =======================
           En tête, sur toute la largeur : c'est ce qu'on vient voir d'abord. Un
