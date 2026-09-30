@@ -27,6 +27,10 @@ export interface ProfilTwitch {
  * perd son accès ici. Seul un admin nommé à la main le reste — c'est le filet
  * si la streameuse délègue l'administration.
  *
+ * Un compte désactivé le reste : se reconnecter ne le rouvre pas, c'est à la
+ * route de refuser la session. Il a longtemps été réactivé ici, en silence —
+ * une exclusion se défaisait d'un simple clic sur « Se connecter ».
+ *
  * À appeler dans une transaction.
  */
 export function rattacheCompteTwitch(db: Database, profil: ProfilTwitch): Player {
@@ -36,7 +40,6 @@ export function rattacheCompteTwitch(db: Database, profil: ProfilTwitch): Player
     existant.pseudo = profil.displayName;
     existant.twitchLogin = profil.login;
     existant.avatarUrl = profil.avatarUrl;
-    existant.active = true;
     if (profil.roleChaine && existant.role !== 'admin' && existant.role !== profil.roleChaine) {
       audit(db, 'twitch', 'ROLE_CHAINE', existant.id, `${existant.pseudo} : ${existant.role} → ${profil.roleChaine}`);
       existant.role = profil.roleChaine;

@@ -1,20 +1,22 @@
 import 'server-only';
 
 /**
- * Authentification Twitch — câblage prêt, activation différée.
+ * Authentification Twitch.
  *
- * Le flux implémenté est OAuth 2.0 « authorization code », avec un paramètre
- * `state` signé qui sert à la fois de protection CSRF et de porteur de la page
- * de retour. Tant que `TWITCH_CLIENT_ID` et `TWITCH_CLIENT_SECRET` ne sont pas
- * définis, `isTwitchEnabled()` renvoie false et l'interface propose la connexion
- * de développement à la place.
+ * Le flux est OAuth 2.0 « authorization code ». Le paramètre `state` est signé,
+ * il expire au bout de dix minutes, et il est lié au navigateur qui a commencé
+ * la connexion par un nonce posé en cookie : un `state` volé, ou fabriqué pour
+ * faire entrer quelqu'un sur le compte d'un autre, ne sert à rien.
  *
- * Rien à réécrire le jour où on branche Twitch : il suffira de renseigner les
- * variables d'environnement et de déclarer l'URL de redirection dans la console
- * développeur Twitch.
+ * Tant que `TWITCH_CLIENT_ID` et `TWITCH_CLIENT_SECRET` ne sont pas définis,
+ * `isTwitchEnabled()` renvoie false et la connexion Twitch est **fermée**. Elle
+ * a été simulée un temps — un clic, et l'on entrait en administrateur — : cette
+ * porte laissait n'importe qui prendre la main sur la ligue, elle n'existe plus.
  */
 
-import { createHmac, randomUUID, timingSafeEqual } from 'node:crypto';
+import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
+import { cookies } from 'next/headers';
+import { cleDerivee } from '@/lib/auth/session';
 import { SEASON } from '@/lib/domain/rules';
 
 const AUTHORIZE_URL = 'https://id.twitch.tv/oauth2/authorize';
@@ -22,44 +24,93 @@ const TOKEN_URL = 'https://id.twitch.tv/oauth2/token';
 const USERS_URL = 'https://api.twitch.tv/helix/users';
 const MODERATED_URL = 'https://api.twitch.tv/helix/moderation/channels';
 
+/** Le cookie qui lie un `state` au navigateur qui l'a demandé. */
+const COOKIE_OAUTH = 'wl_oauth';
+/** Le temps laissé pour passer chez Twitch et revenir. */
+const DUREE_STATE_S = 10 * 60;
+
 export function isTwitchEnabled(): boolean {
   return Boolean(process.env.TWITCH_CLIENT_ID && process.env.TWITCH_CLIENT_SECRET);
 }
 
 /**
- * Le code que la route de départ remet à l'adresse de retour tant que Twitch
- * n'est pas branché. Voir `lib/auth/simulation.ts`.
+ * Un chemin du site, et rien d'autre : pas d'adresse d'un autre domaine
+ * (`//ailleurs.fr`, `/\ailleurs.fr`, que les navigateurs lisent comme telle),
+ * pas de retour à la ligne. Tout le reste ramène à l'accueil.
  */
-export const CODE_SIMULATION = 'simulation';
-
-function stateSecret(): string {
-  return process.env.AUTH_SECRET ?? 'dev-secret-non-securise-uniquement-pour-le-developpement-local';
+export function cheminInterne(brut: string | null | undefined): string {
+  if (!brut || !brut.startsWith('/') || brut.startsWith('//') || brut.startsWith('/\\')) return '/';
+  if (brut.length > 200) return '/';
+  for (let i = 0; i < brut.length; i += 1) {
+    const code = brut.charCodeAt(i);
+    if (code < 0x20 || code === 0x7f) return '/';
+  }
+  return brut;
 }
 
-/** `state` = nonce.signature. Signé pour qu'un tiers ne puisse pas en forger un. */
-export function createState(returnTo = '/'): string {
-  const nonce = `${randomUUID()}|${encodeURIComponent(returnTo)}`;
-  const signature = createHmac('sha256', stateSecret()).update(nonce).digest('base64url');
-  return `${Buffer.from(nonce).toString('base64url')}.${signature}`;
+function signe(charge: string): string {
+  return createHmac('sha256', cleDerivee('oauth-state')).update(charge).digest('base64url');
 }
 
-export function verifyState(state: string | null): { valid: boolean; returnTo: string } {
-  if (!state) return { valid: false, returnTo: '/' };
-  const dot = state.lastIndexOf('.');
-  if (dot <= 0) return { valid: false, returnTo: '/' };
+/** Comparaison à temps constant de deux chaînes. */
+function egales(a: string, b: string): boolean {
+  const x = Buffer.from(a);
+  const y = Buffer.from(b);
+  return x.length === y.length && timingSafeEqual(x, y);
+}
 
-  const nonce = Buffer.from(state.slice(0, dot), 'base64url').toString('utf8');
-  const expected = createHmac('sha256', stateSecret()).update(nonce).digest('base64url');
-  const provided = state.slice(dot + 1);
+/**
+ * Le départ d'une connexion : le `state` qui part chez Twitch, et le nonce qui
+ * reste dans le navigateur. Au retour, les deux doivent se répondre.
+ */
+export function createState(returnTo: string): { state: string; nonce: string } {
+  const nonce = randomBytes(32).toString('base64url');
+  const charge = Buffer.from(
+    JSON.stringify({ n: nonce, r: cheminInterne(returnTo), e: Math.floor(Date.now() / 1000) + DUREE_STATE_S }),
+  ).toString('base64url');
+  return { state: `${charge}.${signe(charge)}`, nonce };
+}
 
-  const a = Buffer.from(provided);
-  const b = Buffer.from(expected);
-  if (a.length !== b.length || !timingSafeEqual(a, b)) return { valid: false, returnTo: '/' };
+export function verifyState(
+  state: string | null,
+  nonce: string | undefined,
+): { valid: boolean; returnTo: string } {
+  const refus = { valid: false, returnTo: '/' };
+  if (!state || !nonce) return refus;
+  const point = state.lastIndexOf('.');
+  if (point <= 0) return refus;
 
-  const [, encodedReturn] = nonce.split('|');
-  const returnTo = decodeURIComponent(encodedReturn ?? '/');
-  // On n'accepte qu'un chemin interne : pas de redirection ouverte.
-  return { valid: true, returnTo: returnTo.startsWith('/') ? returnTo : '/' };
+  const charge = state.slice(0, point);
+  if (!egales(state.slice(point + 1), signe(charge))) return refus;
+
+  try {
+    const lu = JSON.parse(Buffer.from(charge, 'base64url').toString('utf8')) as { n?: unknown; r?: unknown; e?: unknown };
+    if (typeof lu.e !== 'number' || lu.e * 1000 <= Date.now()) return refus;
+    if (typeof lu.n !== 'string' || !egales(lu.n, nonce)) return refus;
+    return { valid: true, returnTo: cheminInterne(typeof lu.r === 'string' ? lu.r : '/') };
+  } catch {
+    return refus;
+  }
+}
+
+/** Pose le nonce du départ, pour dix minutes, sur les seules routes Twitch. */
+export async function poseNonce(nonce: string): Promise<void> {
+  const jar = await cookies();
+  jar.set(COOKIE_OAUTH, nonce, {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    path: '/api/auth/twitch',
+    maxAge: DUREE_STATE_S,
+  });
+}
+
+/** Lit le nonce du départ, et l'efface : un `state` ne sert qu'une fois. */
+export async function reprendsNonce(): Promise<string | undefined> {
+  const jar = await cookies();
+  const nonce = jar.get(COOKIE_OAUTH)?.value;
+  jar.set(COOKIE_OAUTH, '', { httpOnly: true, sameSite: 'lax', path: '/api/auth/twitch', maxAge: 0 });
+  return nonce;
 }
 
 /**
@@ -67,9 +118,8 @@ export function verifyState(state: string | null): { valid: boolean; returnTo: s
  * « OAuth Redirect URLs » : `https://www.winter-ligue.com/api/auth/twitch/callback`.
  *
  * Elle suit le domaine par lequel on est arrivé, sauf si
- * `NEXT_PUBLIC_SITE_URL` l'impose. Elle ne dépendait que de cette variable,
- * absente sur Vercel : le jour du branchement, Twitch aurait renvoyé vers
- * localhost.
+ * `NEXT_PUBLIC_SITE_URL` l'impose. Twitch refuse de toute façon toute adresse
+ * qui n'est pas déclarée chez lui.
  */
 export function redirectUri(origine: string): string {
   const base = (process.env.NEXT_PUBLIC_SITE_URL?.trim() || origine).replace(/\/$/, '');
@@ -81,9 +131,10 @@ export function authorizeUrl(state: string, origine: string): string {
     client_id: process.env.TWITCH_CLIENT_ID ?? '',
     redirect_uri: redirectUri(origine),
     response_type: 'code',
-    // L'identité publique, et la liste des chaînes que la personne modère :
-    // c'est elle qui dit si elle est modératrice de la chaîne de la ligue.
-    scope: 'user:read:email user:read:moderated_channels',
+    // Le strict nécessaire : la liste des chaînes que la personne modère,
+    // qui dit si elle est modératrice de la chaîne de la ligue. L'identité
+    // publique vient sans portée ; l'adresse e-mail n'est jamais demandée.
+    scope: 'user:read:moderated_channels',
     state,
     force_verify: 'true',
   });
@@ -104,7 +155,6 @@ export interface TwitchProfile {
   roleChaine: 'admin' | 'moderateur' | 'joueur' | null;
 }
 
-/** La chaîne de la ligue, en minuscules, ou null si elle n'est pas renseignée. */
 /** La chaîne de la ligue : `TWITCH_BROADCASTER_LOGIN`, sinon celle de la saison. */
 export function chaineDeLaLigue(): string {
   const login = process.env.TWITCH_BROADCASTER_LOGIN?.trim().toLowerCase();

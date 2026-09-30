@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { LoginForms } from '@/components/LoginForms';
 import { getSession, playerIdOf } from '@/lib/auth/session';
+import { motDePasseConfigure } from '@/lib/auth/secours';
 import { isTwitchEnabled } from '@/lib/auth/twitch';
 import { Notice } from '@/components/ui';
 import { getStore, sansBaseDurable } from '@/lib/db/store';
@@ -19,10 +20,24 @@ function devLoginAllowed(): boolean {
   return process.env.NODE_ENV !== 'production' && process.env.ALLOW_DEV_LOGIN === 'true';
 }
 
-export default async function ConnexionPage() {
-  // Déjà connecté avec un compte valide : rien à faire ici. Une session dont
-  // le compte a disparu reste sur cette page, pour se reconnecter — comme une
-  // session de secours, sans joueur, dès que le site a une base.
+/**
+ * Ce que la connexion Twitch peut renvoyer ici. Le texte vient de cette table,
+ * jamais de l'adresse : un lien piégé ne fait pas écrire ce qu'il veut à la page.
+ */
+const ERREURS: Record<string, string> = {
+  twitch: 'Twitch n’a pas confirmé la connexion. Réessaie dans un instant.',
+  expire: 'La connexion a expiré ou n’a pas été commencée ici. Recommence depuis le bouton.',
+  desactive: 'Ce compte a été désactivé par la modération.',
+};
+
+export default async function ConnexionPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  // Déjà connecté avec un compte valide : rien à faire ici. Une session de
+  // secours, sans joueur, reste sur cette page dès que le site a une base :
+  // elle administre, elle ne joue pas.
   const session = await getSession();
   let sansCompte = false;
   if (session) {
@@ -34,6 +49,9 @@ export default async function ConnexionPage() {
     if (valide) redirect('/');
     sansCompte = playerId === null;
   }
+
+  const brut = (await searchParams).erreur;
+  const erreur = typeof brut === 'string' ? (ERREURS[brut] ?? null) : null;
 
   const devPlayers = devLoginAllowed()
     ? await getStore().read((db) =>
@@ -57,14 +75,16 @@ export default async function ConnexionPage() {
         }
       />
 
+      {erreur && <Notice kind="error">{erreur}</Notice>}
+
       {sansCompte && (
         <Notice>
-          Ta session n’est rattachée à aucun joueur : reconnecte-toi pour miser, jouer tes duels et ouvrir
-          tes boosters.
+          Tu es dans la session de secours : elle administre la ligue, sans compte joueur derrière elle.{' '}
+          <Link href="/admin">Aller à l’administration</Link>
         </Notice>
       )}
 
-      <LoginForms twitchEnabled={isTwitchEnabled()} devPlayers={devPlayers} />
+      <LoginForms twitchEnabled={isTwitchEnabled()} motDePasse={motDePasseConfigure()} devPlayers={devPlayers} />
     </div>
   );
 }

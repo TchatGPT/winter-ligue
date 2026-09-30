@@ -6,16 +6,14 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 /**
- * L'ancienne entrée de la connexion simulée.
- *
- * La simulation passe maintenant par le circuit Twitch lui-même — départ,
- * puis adresse de retour —, voir `lib/auth/simulation.ts`. Cette adresse
- * reste pour les liens déjà posés, et renvoie au départ du circuit.
+ * L'ancienne entrée de la connexion simulée, qui faisait entrer n'importe qui
+ * en administrateur. Elle est fermée ; l'adresse reste pour les liens déjà
+ * posés, et renvoie à la page de connexion.
  */
 export async function GET(request: Request): Promise<NextResponse> {
   const g = await guard(request, { scope: 'twitch-demo', limit: LIMITS.mutation });
   if (!g.ok) return g.response;
 
   const url = new URL(request.url);
-  return NextResponse.redirect(`${url.origin}/api/auth/twitch?returnTo=/`);
+  return NextResponse.redirect(`${url.origin}/connexion`);
 }

@@ -230,9 +230,8 @@ routes d'API restent seules responsables de leurs contrôles.
 **Une session sans joueur ne reste pas sur une page de jeu.** La session de
 secours (`sub = 'admin'`) administre mais ne joue pas : sur `/duels`, elle voyait
 la page sans pouvoir miser ni affronter le bot. Dès que le site a une base
-durable, `exigeSession()` la renvoie donc se connecter sur un vrai compte — par
-`GET /api/auth/twitch/demo` tant que la connexion est simulée, par `/connexion`
-une fois Twitch branché. `/admin` lui reste ouvert. La décision est une fonction
+durable, `exigeSession()` la renvoie donc à `/connexion`, qui lui ouvre
+l'administration. `/admin` lui reste ouvert. La décision est une fonction
 pure, `lib/domain/aiguillage.ts`, verrouillée par `tests/aiguillage.test.ts`.
 
 **Le pseudo Activision** (`Player.activisionId`) est la seule donnée qu'un joueur
@@ -250,23 +249,36 @@ l'écran. À chaque connexion, le retour OAuth lit, avec le jeton de la personne
 `moderateur`, les autres `joueur`. Un modérateur retiré sur Twitch perd son
 accès à sa connexion suivante. En cas d'échec de l'appel, le rôle accordé est
 `joueur` : rien ne s'accorde par défaut. Un `admin` nommé à la main le reste.
-La route `POST /api/admin/login` (mot de passe) n'a plus d'écran ; elle reste
-comme accès de secours tant que `ADMIN_PASSWORD_HASH` est défini — retirer la
-variable la ferme.
 
-**Connexion Twitch simulée (temporaire).** Le bouton suit déjà le circuit
-réel : `GET /api/auth/twitch` puis l'adresse de retour
-`GET /api/auth/twitch/callback`, avec le même `state` signé. Tant que
-`TWITCH_CLIENT_ID` et `TWITCH_CLIENT_SECRET` ne sont pas définis, le départ
-renvoie aussitôt au retour avec le code `simulation`, qui connecte sur le
-compte administrateur de la streameuse (`lib/auth/simulation.ts`) :
-**n'importe qui peut alors administrer le site**. Une fois les identifiants
-posés, ce code part chez Twitch comme n'importe quel autre et y est refusé :
-la simulation se ferme d'elle-même. L'adresse de retour suit le domaine
-d'arrivée (`NEXT_PUBLIC_SITE_URL` peut l'imposer) ; celle à déclarer chez
-Twitch est `https://www.winter-ligue.com/api/auth/twitch/callback`.
-`/api/auth/twitch/demo` ne fait plus que renvoyer au départ du circuit. Sans `DATABASE_URL`,
-sur Vercel, les données vont dans `/tmp` et sont éphémères.
+**Le circuit OAuth.** `GET /api/auth/twitch` signe un `state` (clé dérivée de
+`AUTH_SECRET`, distincte de celle des sessions) qui expire au bout de dix minutes
+et porte un nonce ; le même nonce est posé dans un cookie `HttpOnly`, limité aux
+routes `/api/auth/twitch`. `GET /api/auth/twitch/callback` exige un `state` signé,
+non expiré, **et** le nonce de ce navigateur, puis efface le cookie : un `state`
+intercepté ou fabriqué ailleurs ne connecte personne (pas de « login CSRF »).
+Seule la portée `user:read:moderated_channels` est demandée, jamais l'e-mail. Un
+compte désactivé par la modération reste désactivé : se reconnecter ne le rouvre
+plus, et la session est refusée. Chaque refus ramène à `/connexion?erreur=…`, dont
+le texte vient d'une table fixe. L'adresse de retour à déclarer chez Twitch est
+`https://www.winter-ligue.com/api/auth/twitch/callback`.
+
+**Tant que Twitch n'est pas branché, la connexion Twitch est fermée.** Une
+connexion *simulée* a existé : un clic sur le bouton faisait entrer n'importe quel
+visiteur sur le compte administrateur. Elle est supprimée ; `/api/auth/twitch` et
+l'ancienne `/api/auth/twitch/demo` renvoient simplement à `/connexion`.
+
+**L'entrée par mot de passe** (`POST /api/admin/login`, `lib/auth/secours.ts`) est
+la porte de l'administration en attendant Twitch, et son filet ensuite. Elle
+n'existe que si `ADMIN_PASSWORD_HASH` est posé (empreinte scrypt, générée par
+`npm run hash-password`, qui demande le mot de passe sans l'afficher et en exige 16
+caractères) : sans empreinte, le formulaire n'est pas montré et la route répond
+comme à un mauvais mot de passe, **dans le même temps** (une empreinte leurre est
+vérifiée). Cinq tentatives par quart d'heure et par adresse. Elle ouvre une
+session sur le compte de l'administratrice (celui de la chaîne, sinon le premier
+admin actif) ; s'il n'y en a aucun, la session de secours sans joueur, limitée à
+une heure. Chaque entrée est inscrite au journal (`CONNEXION_MOT_DE_PASSE`).
+
+Sans `DATABASE_URL`, sur Vercel, les données vont dans `/tmp` et sont éphémères.
 
 **Base Supabase.** Une table par type de donnée (`lib/db/tables.ts`) : `saison`,
 `joueurs`, `games`, `boosters_a_ouvrir`, `ouvertures`, `cartes_en_attente`,

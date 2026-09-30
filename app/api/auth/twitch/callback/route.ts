@@ -1,9 +1,7 @@
 import { NextResponse } from 'next/server';
-import { toResponse } from '@/lib/api/errors';
-import { fail, guard } from '@/lib/api/respond';
+import { guard } from '@/lib/api/respond';
 import { createToken, setSessionCookie } from '@/lib/auth/session';
-import { compteSimule } from '@/lib/auth/simulation';
-import { CODE_SIMULATION, exchangeCode, isTwitchEnabled, verifyState } from '@/lib/auth/twitch';
+import { exchangeCode, isTwitchEnabled, reprendsNonce, verifyState } from '@/lib/auth/twitch';
 import { getStore } from '@/lib/db/store';
 import { LIMITS } from '@/lib/security/ratelimit';
 import { rattacheCompteTwitch } from '@/lib/services/comptes';
@@ -15,43 +13,40 @@ export const dynamic = 'force-dynamic';
  * L'adresse de retour de la connexion Twitch — celle à déclarer dans la
  * console développeur Twitch : `https://www.winter-ligue.com/api/auth/twitch/callback`.
  *
+ * Trois vérifications avant d'ouvrir une session : le `state` porte notre
+ * signature, il a moins de dix minutes, et il répond au nonce que ce
+ * navigateur a reçu au départ. Puis Twitch doit accepter le code.
+ *
  * Le compte est rattaché par `twitchId`, pas par le pseudo : un joueur qui
  * renomme sa chaîne garde son classement, et personne ne récupère le compte
- * d'un autre en prenant son ancien pseudo.
+ * d'un autre en prenant son ancien pseudo. Un compte désactivé par la
+ * modération le reste : se reconnecter ne le rouvre pas.
  *
- * Tant que Twitch n'est pas branché, elle accepte le code de simulation que
- * lui envoie `/api/auth/twitch`, et seulement lui. Une fois les identifiants
- * posés, ce code part chez Twitch comme n'importe quel autre, et Twitch le
- * refuse : la simulation se ferme d'elle-même.
+ * Chaque refus ramène à la page de connexion, qui dit pourquoi — jamais une
+ * page d'erreur brute, et jamais un texte venu de la requête.
  */
 export async function GET(request: Request): Promise<NextResponse> {
   const g = await guard(request, { scope: 'twitch-retour', limit: LIMITS.mutation });
   if (!g.ok) return g.response;
 
   const url = new URL(request.url);
-  const code = url.searchParams.get('code');
-  const { valid, returnTo } = verifyState(url.searchParams.get('state'));
-
-  if (!valid) return fail('ORIGINE_REFUSEE', 'État OAuth invalide.');
-  if (!code) return fail('REQUETE_INVALIDE', 'Code d’autorisation manquant.');
-
   const base = (process.env.NEXT_PUBLIC_SITE_URL?.trim() || url.origin).replace(/\/$/, '');
+  const refus = (motif: 'twitch' | 'expire' | 'desactive') => NextResponse.redirect(`${base}/connexion?erreur=${motif}`);
 
-  if (!isTwitchEnabled()) {
-    if (code !== CODE_SIMULATION) return fail('NON_AUTHENTIFIE', 'Authentification Twitch refusée.');
-    try {
-      const compte = await compteSimule();
-      await setSessionCookie(createToken(compte.sujet, compte.role));
-      return NextResponse.redirect(`${base}${compte.bienvenue ? '/bienvenue' : returnTo}`);
-    } catch (error) {
-      return toResponse(error);
-    }
-  }
+  const nonce = await reprendsNonce();
+  if (!isTwitchEnabled()) return refus('twitch');
+
+  const { valid, returnTo } = verifyState(url.searchParams.get('state'), nonce);
+  if (!valid) return refus('expire');
+
+  const code = url.searchParams.get('code');
+  if (!code || code.length > 512) return refus('twitch');
 
   const profile = await exchangeCode(code, url.origin);
-  if (!profile) return fail('NON_AUTHENTIFIE', 'Authentification Twitch refusée.');
+  if (!profile) return refus('twitch');
 
   const player = await getStore().transaction((db) => rattacheCompteTwitch(db, profile));
+  if (!player.active) return refus('desactive');
 
   await setSessionCookie(createToken(player.id, player.role));
 

@@ -2,7 +2,6 @@ import 'server-only';
 
 import { redirect } from 'next/navigation';
 import { getSession, playerIdOf, type SessionPayload } from '@/lib/auth/session';
-import { isTwitchEnabled } from '@/lib/auth/twitch';
 import { getStore, sansBaseDurable } from '@/lib/db/store';
 import { destination } from '@/lib/domain/aiguillage';
 
@@ -36,7 +35,6 @@ export async function exigeSession(): Promise<SessionPayload> {
     compteTrouve: joueur !== null,
     activision: Boolean(joueur?.activisionId),
     baseDurable: !sansBaseDurable(),
-    twitch: isTwitchEnabled(),
   });
   if (ou || !session) redirect(ou ?? '/');
 

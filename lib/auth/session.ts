@@ -58,6 +58,17 @@ function secret(): string {
   return value;
 }
 
+/**
+ * Une clé propre à un usage, tirée de `AUTH_SECRET`.
+ *
+ * Le `state` de la connexion Twitch ne se signe pas avec la clé des sessions :
+ * une signature valable pour l'un ne doit jamais l'être pour l'autre. Et en
+ * production, pas de secret faible de repli — `secret()` refuse net.
+ */
+export function cleDerivee(usage: string): Buffer {
+  return createHmac('sha256', secret()).update(`winter-ligue:${usage}`).digest();
+}
+
 function b64url(input: Buffer | string): string {
   return Buffer.from(input)
     .toString('base64')
@@ -154,9 +165,9 @@ const COOKIE_OPTIONS = {
   path: '/',
 };
 
-export async function setSessionCookie(token: string): Promise<void> {
+export async function setSessionCookie(token: string, maxAge = SESSION_TTL_SECONDS): Promise<void> {
   const jar = await cookies();
-  jar.set(SESSION_COOKIE, token, { ...COOKIE_OPTIONS, maxAge: SESSION_TTL_SECONDS });
+  jar.set(SESSION_COOKIE, token, { ...COOKIE_OPTIONS, maxAge });
 }
 
 export async function clearSessionCookie(): Promise<void> {

@@ -13,13 +13,12 @@
  * C'est arrivé : ouverte quand le site n'avait pas encore de base, elle a
  * survécu au branchement de la base et bloquait les duels.
  *
- * Dès que le site a une base qui dure, elle est donc renvoyée se connecter
- * sur un vrai compte : toute seule tant que la connexion est simulée, par la
- * page de connexion une fois Twitch branché. Sans base durable, elle reste la
+ * Dès que le site a une base qui dure, elle est donc renvoyée à la page de
+ * connexion, qui lui ouvre l'administration. Sans base durable, elle reste la
  * seule session qui tienne, et passe.
  */
 
-export type Destination = '/' | '/connexion' | '/bienvenue' | '/api/auth/twitch/demo';
+export type Destination = '/' | '/connexion' | '/bienvenue';
 
 export interface FaitsSession {
   /** Une session valide existe. */
@@ -32,18 +31,13 @@ export interface FaitsSession {
   activision: boolean;
   /** Le site a une base qui dure (faux sur Vercel sans base). */
   baseDurable: boolean;
-  /** La vraie connexion Twitch est branchée. */
-  twitch: boolean;
 }
 
 /** Où envoyer cette session, ou `null` si elle peut entrer. */
 export function destination(faits: FaitsSession): Destination | null {
   if (!faits.connecte) return '/';
 
-  if (!faits.designeUnJoueur) {
-    if (!faits.baseDurable) return null;
-    return faits.twitch ? '/connexion' : '/api/auth/twitch/demo';
-  }
+  if (!faits.designeUnJoueur) return faits.baseDurable ? '/connexion' : null;
 
   // Le compte n'existe plus (joueur supprimé, base vidée) : on renvoie se
   // reconnecter, plutôt que de faire tourner l'accueil et la bienvenue l'un

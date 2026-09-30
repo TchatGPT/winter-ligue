@@ -23,8 +23,9 @@ export function Accueil({ twitchEnabled, devLogin }: { twitchEnabled: boolean; d
   const debut = new Date(SEASON.startsAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
   const fin = new Date(SEASON.endsAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
 
-  // Le circuit Twitch, simulé ou non : la route de départ décide.
-  const entree = '/api/auth/twitch?returnTo=/';
+  // Twitch branché, on part chez lui ; sinon la page de connexion dit que la
+  // connexion ouvre bientôt, et garde l'entrée de l'administration.
+  const entree = twitchEnabled ? '/api/auth/twitch?returnTo=/' : '/connexion';
 
   const FONCTIONS = [
     {
@@ -89,7 +90,7 @@ export function Accueil({ twitchEnabled, devLogin }: { twitchEnabled: boolean; d
         </div>
         {!twitchEnabled && (
           <p className="mt-4 text-[13px] text-faint">
-            Connexion Twitch simulée pour l’instant : un clic, et tu entres en administratrice.
+            La connexion Twitch ouvre bientôt.
             {devLogin ? ' La connexion de développement reste ouverte en local.' : ''}
           </p>
         )}

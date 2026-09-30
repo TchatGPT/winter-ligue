@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createToken, setSessionCookie, verifyPassword } from '@/lib/auth/session';
+import { entreeParMotDePasse } from '@/lib/auth/secours';
 import { fail, guard, ok } from '@/lib/api/respond';
 import { loginSchema } from '@/lib/api/schemas';
 import { LIMITS, reset } from '@/lib/security/ratelimit';
@@ -7,13 +8,22 @@ import { LIMITS, reset } from '@/lib/security/ratelimit';
 export const runtime = 'nodejs';
 
 /**
- * Connexion de la modération.
+ * Une empreinte au bon format qui ne correspond à aucun mot de passe : sans
+ * `ADMIN_PASSWORD_HASH`, on la vérifie quand même, pour que la réponse prenne
+ * le même temps que la porte soit posée ou non.
+ */
+const LEURRE = `scrypt:${'0'.repeat(32)}:${'0'.repeat(128)}`;
+
+/** La session de secours, sans joueur derrière, ne dure qu'une heure. */
+const DUREE_SECOURS_S = 60 * 60;
+
+/**
+ * Connexion par mot de passe — voir `lib/auth/secours.ts`.
  *
- * Le mot de passe n'est jamais stocké : seul son empreinte scrypt vit dans
- * `ADMIN_PASSWORD_HASH`. La limitation à 5 tentatives par quart d'heure et par
- * IP rend le forçage impraticable, et la réponse est volontairement identique
- * que le hash soit absent ou le mot de passe faux — on ne renseigne pas un
- * attaquant sur l'état de la configuration.
+ * La limitation à 5 tentatives par quart d'heure et par adresse, et le coût de
+ * scrypt, rendent le forçage impraticable. La réponse est identique, dans son
+ * texte comme dans sa durée, que l'empreinte soit absente ou le mot de passe
+ * faux : on ne renseigne pas un attaquant sur l'état de la configuration.
  */
 export async function POST(request: Request): Promise<NextResponse> {
   const g = await guard(request, {
@@ -23,15 +33,19 @@ export async function POST(request: Request): Promise<NextResponse> {
   });
   if (!g.ok) return g.response;
 
-  const hash = process.env.ADMIN_PASSWORD_HASH;
-  const valid = hash ? await verifyPassword(g.body.password, hash) : false;
+  const empreinte = process.env.ADMIN_PASSWORD_HASH?.trim();
+  const valide = await verifyPassword(g.body.password, empreinte || LEURRE);
 
-  if (!valid) {
+  if (!empreinte || !valide) {
     return fail('NON_AUTHENTIFIE', 'Mot de passe incorrect.');
   }
 
   // Connexion réussie : on relâche le compteur pour ne pas pénaliser l'admin.
   reset(`admin-login:${g.ip}`);
-  await setSessionCookie(createToken('admin', 'admin'));
-  return ok({ role: 'admin' });
+  const entree = await entreeParMotDePasse();
+  await setSessionCookie(
+    createToken(entree.sujet, 'admin', entree.secours ? DUREE_SECOURS_S : undefined),
+    entree.secours ? DUREE_SECOURS_S : undefined,
+  );
+  return ok({ role: 'admin', secours: entree.secours });
 }
