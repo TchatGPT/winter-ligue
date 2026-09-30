@@ -4,6 +4,9 @@ import { useMemo, useState } from 'react';
 import { useAction } from '@/components/admin/action';
 import { Bloc, Ecran } from '@/components/admin/Cadre';
 import { flakes } from '@/components/ui';
+import { CODE_MAX, UTILISATIONS_MAX } from '@/lib/domain/codes';
+import { ECONOMY } from '@/lib/domain/rules';
+import { shortDateTime } from '@/lib/format';
 
 export type RoleJoueur = 'joueur' | 'admin';
 
@@ -19,14 +22,23 @@ export interface LigneJoueur {
   score: number;
 }
 
-const ROLES: { id: RoleJoueur; label: string; aide: string }[] = [
-  { id: 'joueur', label: 'Joueur', aide: 'Participe, rien de plus.' },
-  {
-    id: 'admin',
-    label: 'Modération',
-    aide: 'Saisit les games, crédite, ouvre les boosters, règle la saison — jamais pour son propre compte.',
-  },
-];
+const LIBELLE_ROLE: Record<RoleJoueur, string> = { joueur: 'Joueur', admin: 'Modération' };
+
+export interface LigneCode {
+  id: string;
+  code: string;
+  montant: number;
+  utilisations: number;
+  utilisationsMax: number;
+  etat: 'actif' | 'epuise' | 'desactive';
+  creeLe: string;
+}
+
+const LIBELLE_ETAT: Record<LigneCode['etat'], string> = {
+  actif: 'Actif',
+  epuise: 'Épuisé',
+  desactive: 'Désactivé',
+};
 
 /** Retire accents et casse, pour que « boreal » trouve « Boréal ». */
 function plie(valeur: string): string {
@@ -37,30 +49,31 @@ function plie(valeur: string): string {
 }
 
 /**
- * Les joueurs : la table, l'inscription, les attributions et les rôles.
+ * Les joueurs et les codes cadeaux.
  *
- * Tout ce qui concerne une personne est sur le même écran. C'est le seul
- * découpage qui tienne à l'usage : on cherche un joueur parce qu'il s'est passé
- * quelque chose avec lui, et ce qu'on veut faire ensuite — le créditer, lui
- * le promouvoir — n'est pas connu d'avance. Aucune carte ne se donne ici : une
- * carte sort d'un pack, ouvert à l'antenne, ou ne sort pas.
+ * Les joueurs arrivent par Twitch, et leur rôle suit la chaîne : il n'y a plus
+ * ni inscription, ni rôle, ni flocons donnés à la main. Les flocons se donnent
+ * par des codes : un montant, un nombre d'utilisations, et chaque joueur le tape
+ * une fois derrière l'icône cadeau. Aucune carte ne se donne ici : une carte
+ * sort d'un pack, ouvert à l'antenne, ou ne sort pas.
  */
-export function EcranJoueurs({
-  joueurs,
-  estAdmin,
-}: {
-  joueurs: LigneJoueur[];
-  estAdmin: boolean;
-}) {
-  const { busy, message, envoie } = useAction();
+export function EcranJoueurs({ joueurs, codes }: { joueurs: LigneJoueur[]; codes: LigneCode[] }) {
+  const { busy, message, envoie, setMessage } = useAction();
 
   const [recherche, setRecherche] = useState('');
-  const [pseudo, setPseudo] = useState('');
-  const [twitch, setTwitch] = useState('');
-  const [activision, setActivision] = useState('');
-  const [cible, setCible] = useState('');
-  const [flocons, setFlocons] = useState(0);
-  const [motif, setMotif] = useState('');
+  const [montant, setMontant] = useState(100);
+  const [utilisationsMax, setUtilisationsMax] = useState(10);
+  const [texteCode, setTexteCode] = useState('');
+  const [dernierCode, setDernierCode] = useState<string | null>(null);
+
+  async function copie(code: string) {
+    try {
+      await navigator.clipboard.writeText(code);
+      setMessage({ kind: 'success', text: `${code} copié.` });
+    } catch {
+      setMessage({ kind: 'error', text: 'Copie impossible : sélectionne le code à la main.' });
+    }
+  }
 
   const visibles = useMemo(() => {
     const q = plie(recherche.trim());
@@ -71,157 +84,167 @@ export function EcranJoueurs({
   return (
     <Ecran
       titre="Joueurs"
-      lead="Créditer, corriger un pseudo Activision, promouvoir. Chaque attribution exige un motif et laisse une trace au journal."
+      lead="Les joueurs arrivent par Twitch. Ici : leur pseudo Activision, et les codes cadeaux qui distribuent les flocons — chaque code et chaque utilisation sont au journal."
       message={message}
     >
-      <div className="grid gap-5 xl:grid-cols-2">
-        {estAdmin && (
-          <Bloc
-            titre="Inscrire un joueur"
-            icone="plus"
-            neige="admin-inscrire"
-            aide="En attendant la connexion Twitch. Le joueur reçoit sa dotation de départ."
-          >
-            <form
-              className="space-y-3"
-              onSubmit={async (e) => {
-                e.preventDefault();
-                const fait = await envoie('/api/players', {
-                  pseudo,
-                  twitchLogin: twitch || null,
-                  activisionId: activision || null,
-                });
-                if (fait) {
-                  setPseudo('');
-                  setTwitch('');
-                  setActivision('');
-                }
-              }}
-            >
-              <div>
-                <label className="label" htmlFor="new-pseudo">
-                  Pseudo
-                </label>
-                <input
-                  id="new-pseudo"
-                  className="field"
-                  value={pseudo}
-                  onChange={(e) => setPseudo(e.target.value)}
-                  minLength={2}
-                  maxLength={24}
-                  required
-                />
-              </div>
-              <div>
-                <label className="label" htmlFor="new-twitch">
-                  Chaîne Twitch (facultatif)
-                </label>
-                <input
-                  id="new-twitch"
-                  className="field"
-                  value={twitch}
-                  onChange={(e) => setTwitch(e.target.value)}
-                  pattern="[a-zA-Z0-9_]{3,25}"
-                  placeholder="pseudo_twitch"
-                />
-              </div>
-              <div>
-                <label className="label" htmlFor="new-activision">
-                  Pseudo Activision (facultatif)
-                </label>
-                <input
-                  id="new-activision"
-                  className="field"
-                  value={activision}
-                  onChange={(e) => setActivision(e.target.value)}
-                  maxLength={40}
-                  placeholder="Pseudo#1234567"
-                />
-              </div>
-              <button className="btn btn-ice w-full" disabled={busy !== null || pseudo.length < 2}>
-                Inscrire
-              </button>
-            </form>
-          </Bloc>
-        )}
-
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
         <Bloc
-          titre="Attribuer des flocons"
-          icone="snowflake"
-          neige={estAdmin ? undefined : 'admin-flocons'}
-          aide={
-            estAdmin
-              ? 'Un motif est obligatoire : c’est lui qu’on relira dans le journal le jour où quelqu’un demandera pourquoi.'
-              : 'Un motif est obligatoire, mille flocons au plus par attribution, et jamais sur ton propre compte.'
-          }
+          titre="Créer un code cadeau"
+          icone="cadeau"
+          neige="admin-codes"
+          aide="C’est ainsi que les flocons se donnent : un montant, un nombre de joueurs. Chacun le tape une fois, derrière l’icône cadeau près de son solde. Celui qui crée un code ne peut pas s’en servir."
         >
           <form
             className="space-y-3"
             onSubmit={async (e) => {
               e.preventDefault();
-              const fait = await envoie('/api/admin/grant', {
-                playerId: cible,
-                snowflakes: flocons,
-                reason: motif,
-              });
-              if (fait) {
-                setFlocons(0);
-                setMotif('');
+              const data = await envoie(
+                '/api/admin/codes',
+                { code: texteCode.trim() || null, montant, utilisationsMax },
+                { cle: 'code-cree', succes: 'Code créé.' },
+              );
+              if (data) {
+                setDernierCode(String(data.code));
+                setTexteCode('');
               }
             }}
           >
-            <div>
-              <label className="label" htmlFor="grant-joueur">
-                Joueur
-              </label>
-              <select
-                id="grant-joueur"
-                className="field"
-                value={cible}
-                onChange={(e) => setCible(e.target.value)}
-                required
-              >
-                <option value="">— Choisir —</option>
-                {joueurs.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.pseudo} — ❄ {flakes(p.snowflakes)}
-                  </option>
-                ))}
-              </select>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="label" htmlFor="code-montant">
+                  Flocons par joueur
+                </label>
+                <input
+                  id="code-montant"
+                  type="number"
+                  className="field num"
+                  min={1}
+                  max={ECONOMY.soldeMax}
+                  value={Number.isFinite(montant) ? montant : ''}
+                  onChange={(e) => setMontant(Math.floor(Number(e.target.value)))}
+                  required
+                />
+              </div>
+              <div>
+                <label className="label" htmlFor="code-utilisations">
+                  Utilisations max
+                </label>
+                <input
+                  id="code-utilisations"
+                  type="number"
+                  className="field num"
+                  min={1}
+                  max={UTILISATIONS_MAX}
+                  value={Number.isFinite(utilisationsMax) ? utilisationsMax : ''}
+                  onChange={(e) => setUtilisationsMax(Math.floor(Number(e.target.value)))}
+                  required
+                />
+              </div>
             </div>
             <div>
-              <label className="label" htmlFor="grant-flocons">
-                Flocons (±)
+              <label className="label" htmlFor="code-texte">
+                Code (facultatif)
               </label>
               <input
-                id="grant-flocons"
-                type="number"
-                className="field num"
-                value={flocons}
-                onChange={(e) => setFlocons(Number(e.target.value))}
-              />
-            </div>
-            <div>
-              <label className="label" htmlFor="grant-motif">
-                Motif
-              </label>
-              <input
-                id="grant-motif"
-                className="field"
-                maxLength={140}
-                value={motif}
-                onChange={(e) => setMotif(e.target.value)}
-                required
-                placeholder="Ex. : lot du défi du samedi"
+                id="code-texte"
+                className="field tracking-[0.12em] uppercase"
+                value={texteCode}
+                onChange={(e) => setTexteCode(e.target.value)}
+                maxLength={CODE_MAX}
+                autoComplete="off"
+                spellCheck={false}
+                placeholder="Tiré au sort si vide — ex. NOEL26"
               />
             </div>
             <button
               className="btn btn-ice w-full"
-              disabled={busy !== null || !cible || !motif || flocons === 0}
+              disabled={busy !== null || !(montant >= 1) || !(utilisationsMax >= 1)}
             >
-              Attribuer
+              Créer le code
             </button>
           </form>
+
+          {dernierCode && (
+            <div className="mt-4 flex items-center justify-between gap-3 rounded-lg border border-aurora/40 px-3 py-2.5">
+              <div className="min-w-0">
+                <p className="text-[12px] text-faint">Code créé — à annoncer sur le stream</p>
+                <p className="truncate font-display text-2xl font-black tracking-[0.14em] text-ink">{dernierCode}</p>
+              </div>
+              <button type="button" className="btn btn-sm shrink-0" onClick={() => copie(dernierCode)}>
+                Copier
+              </button>
+            </div>
+          )}
+        </Bloc>
+
+        <Bloc
+          titre="Codes cadeaux"
+          icone="snowflake"
+          aide="Un code épuisé ou désactivé ne sert plus ; ce qu’il a versé reste versé."
+        >
+          {codes.length === 0 ? (
+            <p className="text-[13px] text-faint">Aucun code pour l’instant.</p>
+          ) : (
+            <div className="scroll-x admin-table">
+              <table className="grid-table min-w-[560px]">
+                <thead>
+                  <tr>
+                    <th>Code</th>
+                    <th className="text-right">Flocons</th>
+                    <th className="text-right">Utilisations</th>
+                    <th>État</th>
+                    <th className="text-right" aria-label="Actions" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {codes.map((c) => (
+                    <tr key={c.id}>
+                      <td>
+                        <button
+                          type="button"
+                          className="font-display font-black tracking-[0.12em] text-ink hover:text-ice"
+                          title="Copier le code"
+                          onClick={() => copie(c.code)}
+                        >
+                          {c.code}
+                        </button>
+                        <div className="text-[11px] text-faint">{shortDateTime(c.creeLe)}</div>
+                      </td>
+                      <td className="num text-right text-ice">❄ {flakes(c.montant)}</td>
+                      <td className="num text-right text-muted">
+                        {c.utilisations} / {c.utilisationsMax}
+                      </td>
+                      <td>
+                        <span
+                          className="badge"
+                          style={c.etat === 'actif' ? { borderColor: 'var(--aurora)', color: 'var(--aurora)' } : undefined}
+                        >
+                          {LIBELLE_ETAT[c.etat]}
+                        </span>
+                      </td>
+                      <td className="text-right">
+                        {c.etat === 'actif' && (
+                          <button
+                            className="btn btn-sm btn-ghost"
+                            disabled={busy !== null}
+                            onClick={() =>
+                              envoie(
+                                '/api/admin/codes',
+                                { id: c.id },
+                                { methode: 'PATCH', cle: `code:${c.id}`, succes: `${c.code} désactivé.` },
+                              )
+                            }
+                          >
+                            Désactiver
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </Bloc>
       </div>
 
@@ -249,7 +272,6 @@ export function EcranJoueurs({
                 <th className="text-right">Games</th>
                 <th className="text-right">Points</th>
                 <th className="text-right">Flocons</th>
-                <th className="text-right">{estAdmin ? 'Changer le rôle' : ''}</th>
               </tr>
             </thead>
             <tbody>
@@ -280,35 +302,12 @@ export function EcranJoueurs({
                         p.role === 'admin' ? { borderColor: 'var(--ice)', color: 'var(--ice)' } : undefined
                       }
                     >
-                      {ROLES.find((r) => r.id === p.role)?.label ?? p.role}
+                      {LIBELLE_ROLE[p.role]}
                     </span>
                   </td>
                   <td className="num text-right text-muted">{p.games}</td>
                   <td className="num text-right text-ice">{p.score}</td>
                   <td className="num text-right text-faint">❄ {flakes(p.snowflakes)}</td>
-                  <td className="text-right">
-                    {estAdmin && (
-                      <div className="inline-flex gap-1.5">
-                        {ROLES.filter((r) => r.id !== p.role).map((r) => (
-                          <button
-                            key={r.id}
-                            className="btn btn-sm"
-                            title={r.aide}
-                            disabled={busy !== null}
-                            onClick={() =>
-                              envoie(
-                                '/api/admin/roles',
-                                { playerId: p.id, role: r.id },
-                                { cle: p.id, succes: `${p.pseudo} : ${r.label.toLowerCase()}.` },
-                              )
-                            }
-                          >
-                            {r.label}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </td>
                 </tr>
               ))}
             </tbody>

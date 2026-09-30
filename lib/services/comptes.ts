@@ -25,10 +25,8 @@ export interface ProfilTwitch {
  *
  * Le rôle suit la chaîne à chaque connexion : la streameuse et ses modérateurs
  * administrent, les autres jouent, et un modérateur retiré sur Twitch perd son
- * accès ici à sa connexion suivante. Seul un rôle choisi à la main dans
- * l'administration (`roleManuel`) n'est plus touché : c'est ainsi qu'on donne
- * la main à quelqu'un qui ne modère pas la chaîne, ou qu'on la retire à un
- * modérateur.
+ * accès ici à sa connexion suivante. Un rôle marqué `roleManuel` n'est pas
+ * touché ; plus aucun écran ne le pose.
  *
  * Un compte désactivé le reste : se reconnecter ne le rouvre pas, c'est à la
  * route de refuser la session. Il a longtemps été réactivé ici, en silence —

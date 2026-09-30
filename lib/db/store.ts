@@ -65,6 +65,7 @@ export function emptyDatabase(): Database {
     reglagesPacks: [],
     batailles: [],
     evenements: [],
+    codesCadeaux: [],
   };
 }
 
@@ -592,6 +593,7 @@ function migrate(db: Partial<Database>): Database {
     evenements: (db.evenements ?? []).filter(
       (e) => e.kind === 'FLOCONS_DOUBLES' || e.kind === 'CARTES_RENFORCEES',
     ),
+    codesCadeaux: db.codesCadeaux ?? [],
   };
 }
 

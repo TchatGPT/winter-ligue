@@ -12,6 +12,7 @@ import 'server-only';
 
 import { NextResponse } from 'next/server';
 import { BatailleError } from '@/lib/services/batailles';
+import { CodeError } from '@/lib/services/codes';
 import { LedgerError } from '@/lib/services/ledger';
 import { PackError } from '@/lib/services/packs';
 import { SubError } from '@/lib/services/subs';
@@ -31,6 +32,9 @@ export function toResponse(error: unknown): NextResponse {
     return fail('CONFLIT', error.message, { code: error.code });
   }
   if (error instanceof SubError) {
+    return fail('CONFLIT', error.message, { code: error.code });
+  }
+  if (error instanceof CodeError) {
     return fail('CONFLIT', error.message, { code: error.code });
   }
 

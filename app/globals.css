@@ -3802,6 +3802,53 @@
     max-width: 44rem;
   }
 
+  /* ---- Le code cadeau : une icône discrète près du solde, et sa petite fenêtre ---- */
+  .code-cadeau {
+    display: inline-grid;
+    flex: none;
+    place-items: center;
+    width: 1.9rem;
+    height: 1.9rem;
+    border: 1px solid color-mix(in srgb, var(--ice) 20%, transparent);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--ice) 7%, transparent);
+    color: var(--faint);
+    transition:
+      color 0.2s ease,
+      border-color 0.2s ease,
+      background-color 0.2s ease;
+  }
+  .code-cadeau:hover,
+  .code-cadeau:focus-visible {
+    border-color: color-mix(in srgb, var(--ice) 50%, transparent);
+    background: color-mix(in srgb, var(--ice) 14%, transparent);
+    color: var(--ice);
+  }
+  .cadeau-carte {
+    max-width: 26rem;
+  }
+  .cadeau-medaillon {
+    display: grid;
+    place-items: center;
+    width: 3rem;
+    height: 3rem;
+    border: 1px solid color-mix(in srgb, var(--ice) 35%, transparent);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--ice) 10%, transparent);
+    color: var(--ice);
+  }
+  .cadeau-message {
+    margin-top: 0.75rem;
+    font-size: 0.875rem;
+    color: var(--ink-2);
+  }
+  .cadeau-message[data-kind='ok'] {
+    color: var(--aurora);
+  }
+  .cadeau-message[data-kind='erreur'] {
+    color: var(--danger);
+  }
+
   /* ---- L'arène : la course des boules de neige ---- */
   .arene {
     container-type: inline-size;

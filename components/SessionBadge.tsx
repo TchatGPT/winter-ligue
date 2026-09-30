@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
+import { CodeCadeau } from '@/components/CodeCadeau';
 import { num } from '@/lib/format';
 
 /**
@@ -63,9 +64,10 @@ export function SessionBadge({
         {/* La capsule du solde, la même que les pastilles de stats du hero. */}
         {balance !== null && (
           <div
-            className="glass glass-soft flex flex-col items-center px-2 py-3 text-center"
+            className="glass glass-soft relative flex flex-col items-center px-2 py-3 text-center"
             title="Tes flocons — la monnaie de la saison"
           >
+            <CodeCadeau className="absolute top-1.5 right-1.5" />
             <span className="num block font-display text-[20px] leading-none font-black text-ink">
               <span className="mr-1 text-[15px] text-ice" aria-hidden="true">
                 ❄
@@ -99,6 +101,7 @@ export function SessionBadge({
           <span className="num">{num(balance)}</span>
         </span>
       )}
+      {balance !== null && <CodeCadeau />}
       <button
         className="btn btn-sm btn-ghost"
         onClick={logout}

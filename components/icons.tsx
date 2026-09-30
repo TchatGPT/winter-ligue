@@ -207,6 +207,17 @@ export function IconAntenne(props: IconProps) {
   );
 }
 
+/** Code cadeau — un paquet noué d'un ruban. */
+export function IconCadeau(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <rect x="3.5" y="8.5" width="17" height="4" rx="1" />
+      <path d="M5 12.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-7.5M12 8.5V21" />
+      <path d="M12 8.5c-1.4-2.9-4.9-4-5.9-2.4-.9 1.5.9 2.4 5.9 2.4Zm0 0c1.4-2.9 4.9-4 5.9-2.4.9 1.5-.9 2.4-5.9 2.4Z" />
+    </Svg>
+  );
+}
+
 /** Le glyphe de Twitch, en aplat : c'est un logo, pas un pictogramme au trait. */
 export function IconTwitch(props: IconProps) {
   return (
@@ -231,6 +242,7 @@ export const NAV_ICONS = {
   snowflake: IconSnowflake,
   jauge: IconJauge,
   antenne: IconAntenne,
+  cadeau: IconCadeau,
 } as const;
 
 export type NavIconName = keyof typeof NAV_ICONS;

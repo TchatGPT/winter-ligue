@@ -68,8 +68,9 @@ export interface Player {
    */
   sessionsDepuis: string | null;
   /**
-   * Le rôle a été choisi à la main dans l'administration : la connexion Twitch
-   * n'y touche plus. Sinon, il suit la chaîne à chaque connexion.
+   * Le rôle a été choisi à la main : la connexion Twitch n'y touche plus.
+   * Plus aucun écran ne le pose — les rôles suivent la chaîne à chaque
+   * connexion ; le champ reste pour les comptes qui le portent.
    */
   roleManuel: boolean;
 }
@@ -300,6 +301,27 @@ export interface EvenementActif {
   declencheA: number;
 }
 
+/**
+ * Un code cadeau : des flocons que la modération met en jeu, et que les
+ * joueurs récupèrent en tapant le code (l'icône cadeau, près de leur solde).
+ *
+ * Chaque utilisation est un crédit au grand livre, avec le code en référence :
+ * c'est lui qui compte les utilisations. Le code ne garde que ses réglages.
+ */
+export interface CodeCadeau {
+  id: string;
+  /** Ce que les joueurs tapent : lettres et chiffres, en majuscules. Unique. */
+  code: string;
+  /** Les flocons versés à chaque utilisation. */
+  montant: number;
+  /** Le nombre de joueurs qui peuvent s'en servir, chacun une fois. */
+  utilisationsMax: number;
+  actif: boolean;
+  creeLe: string;
+  /** Qui l'a créé : il ne peut pas s'en servir lui-même. */
+  creePar: string;
+}
+
 export interface Database {
   /** Incrémentée à chaque migration de forme. */
   version: number;
@@ -315,4 +337,5 @@ export interface Database {
   reglagesPacks: ReglagePack[];
   batailles: Bataille[];
   evenements: EvenementActif[];
+  codesCadeaux: CodeCadeau[];
 }

@@ -50,7 +50,9 @@ export type LedgerReason =
   | 'GAIN_BATAILLE'
   /** Mise rendue quand un affrontement est annulé faute d'adversaire. */
   | 'REMBOURSEMENT_BATAILLE'
-  | 'AJUSTEMENT_ADMIN';
+  | 'AJUSTEMENT_ADMIN'
+  /** Des flocons récupérés avec un code cadeau ; la référence est le code. */
+  | 'CODE_CADEAU';
 
 /**
  * Vérifie qu'un débit est possible. On refuse tout solde négatif : c'est la

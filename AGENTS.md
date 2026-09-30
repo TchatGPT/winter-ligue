@@ -81,9 +81,13 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   son propre compte de joueur** (flocons, subs offerts, games, boosters) : les
   modérateurs jouent peut-être, et c'est vérifié route par route.
 - **Twitch est la seule porte d'entrée**, et le rôle suit la chaîne à chaque connexion :
-  la streameuse et ses modérateurs sont admin, les autres joueurs. Un rôle choisi à la
-  main (`roleManuel`) n'est plus touché par Twitch ; celui de la streameuse ne se change
-  pas. Il n'y a ni mot de passe ni session sans joueur : ne pas en rouvrir.
+  la streameuse et ses modérateurs sont admin, les autres joueurs. Les rôles ne se
+  choisissent pas à la main, et un joueur ne s'inscrit que par Twitch. Il n'y a ni mot
+  de passe ni session sans joueur : ne pas en rouvrir.
+- **Les flocons se donnent par codes cadeaux** (`lib/services/codes.ts`) : la modération
+  fixe le montant et le nombre d'utilisations, chaque joueur tape le code une fois, et
+  chaque utilisation est un `credit()` avec le code en référence — c'est le grand livre
+  qui compte les utilisations. Plus d'attribution de flocons à la main.
 - Les taux de rareté ne se règlent plus depuis le site : ce sont ceux du catalogue, et
   les réglages déjà en base restent lus par `resolvedBooster()`.
 - **Les subs de Twitch** arrivent par EventSub (`/api/twitch/eventsub`) et passent par

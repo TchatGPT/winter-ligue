@@ -8,7 +8,8 @@
 
 import { z } from 'zod';
 import { MANCHES_POSSIBLES } from '@/lib/domain/bataille';
-import { DUEL, GAME_LIMITS } from '@/lib/domain/rules';
+import { UTILISATIONS_MAX } from '@/lib/domain/codes';
+import { DUEL, ECONOMY, GAME_LIMITS } from '@/lib/domain/rules';
 import { PACK_IDS } from '@/lib/domain/types';
 
 const packIds = PACK_IDS as unknown as [string, ...string[]];
@@ -16,13 +17,13 @@ const packIds = PACK_IDS as unknown as [string, ...string[]];
 export const uuid = z.string().uuid('Identifiant invalide.');
 
 /**
- * Un texte libre — une note de game, un motif d'attribution. React l'échappe
+ * Un texte libre — une note de game. React l'échappe
  * à l'affichage ; on en retire en plus les caractères de contrôle et ceux qui
  * retournent le sens de lecture : ils servent à faire lire au journal autre
  * chose que ce qui y est écrit.
  */
 const INVISIBLES = /[\p{Cc}\u200B-\u200F\u202A-\u202E\u2060-\u2069\uFEFF]/gu;
-const texteLibre = (max: number) =>
+export const texteLibre = (max: number) =>
   z
     .string()
     .max(max * 2)
@@ -54,22 +55,7 @@ export const monActivisionSchema = z.object({ activisionId });
 /** La modération corrige celui d'un joueur. */
 export const activisionJoueurSchema = z.object({ playerId: uuid, activisionId: activisionId.nullable() });
 
-export const loginSchema = z.object({
-  password: z.string().min(1).max(256),
-});
-
 export const rarity = z.enum(['C', 'PC', 'R', 'SR', 'UR', 'L']);
-
-export const createPlayerSchema = z.object({
-  pseudo,
-  twitchLogin: z
-    .string()
-    .trim()
-    .regex(/^[a-zA-Z0-9_]{3,25}$/, 'Pseudo Twitch invalide.')
-    .optional()
-    .nullable(),
-  activisionId: activisionId.optional().nullable(),
-});
 
 export const gameSchema = z.object({
   playerId: uuid,
@@ -169,11 +155,19 @@ export const adminConfigSchema = z.object({
   maxGamesPerPlayer: z.number().int().min(1).max(100).optional(),
 });
 
-export const adminGrantSchema = z.object({
-  playerId: uuid,
-  snowflakes: z.number().int().min(-1_000_000).max(1_000_000),
-  reason: texteLibre(140).pipe(z.string().min(1, 'Un motif est obligatoire.')),
+/* ------------------------------ Codes cadeaux ----------------------------- */
+
+/** Le code tapé par un joueur : le serveur le normalise, et décide de tout le reste. */
+export const utiliseCodeSchema = z.object({ code: z.string().trim().min(1).max(40) });
+
+/** Un code créé par la modération : sans texte, il est tiré au sort. */
+export const creeCodeSchema = z.object({
+  code: z.string().trim().max(40).nullable().optional(),
+  montant: z.number().int().min(1).max(ECONOMY.soldeMax),
+  utilisationsMax: z.number().int().min(1).max(UTILISATIONS_MAX),
 });
+
+export const desactiveCodeSchema = z.object({ id: uuid });
 
 /** Saisie des subs : au compteur de la saison, au compte d'un joueur, ou remise à zéro. */
 export const adminSubsSchema = z.union([
@@ -185,17 +179,5 @@ export const adminSubsSchema = z.union([
     delta: z.number().int().min(1).max(10_000),
   }),
 ]);
-
-/**
- * Changement de rôle.
- *
- * La validation s'arrête ici à la forme : c'est la route qui refuse à un
- * administrateur de se retirer son propre rôle, parce que cette règle a besoin
- * de savoir qui parle.
- */
-export const adminRoleSchema = z.object({
-  playerId: uuid,
-  role: z.enum(['joueur', 'admin']),
-});
 
 export type GameInput = z.infer<typeof gameSchema>;

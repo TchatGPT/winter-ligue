@@ -184,6 +184,7 @@ juste après la remise à zéro d'une fenêtre :
 | Enchères | 60 / min / IP |
 | Lectures d'API | 240 / min / IP |
 | Messages de Twitch (EventSub) | 1 200 / min / IP |
+| Codes cadeaux | 10 / 10 min / IP |
 
 ### 11. Équilibre de l'économie
 
@@ -226,12 +227,9 @@ autre membre de la modération le fait, et le journal le trace.
 Les taux de rareté ne se règlent plus depuis le site : ce sont ceux du catalogue. Un
 compte administrateur compromis ne peut pas rendre les légendaires certaines.
 
-Deux garde-fous sur les rôles, qui ne se recouvrent pas : un administrateur ne peut pas se
-rétrograder lui-même — c'est la faute de manipulation la plus banale, et elle est
-irréversible depuis l'interface — et le dernier administrateur ne peut pas être retiré,
-sans quoi deux admins peuvent se rétrograder l'un l'autre et laisser la ligue sans
-personne — il n'y a pas de mot de passe de secours pour se rattraper. Le rôle de la
-streameuse ne se change pas à la main : elle reste admin.
+Les rôles ne se changent pas à la main : ils suivent la chaîne Twitch à chaque
+connexion. Pour retirer la modération à quelqu'un, on lui retire son rôle de modérateur
+sur Twitch ; il la perd à sa connexion suivante, douze heures au plus tard.
 
 Les réglages de taux enregistrés avant ce retrait restent lus par `resolvedBooster()` et
 vérifiés par `verifieTable()` : somme exacte de 100 000, faute de quoi `pickWeighted`
@@ -244,8 +242,8 @@ joueur doit toujours être reconstructible à partir de son historique, ce qui r
 manipulation détectable.
 
 Le **journal d'audit** enregistre chaque action de modération, chaque carte jouée, chaque
-rôle donné par Twitch ou à la main. Toute attribution manuelle exige un motif : la modération peut
-donner, mais jamais discrètement.
+rôle donné par Twitch, chaque code cadeau créé, désactivé et utilisé. Les flocons ne se
+donnent plus à la main : ils passent par des codes, et le journal dit qui a pris quoi.
 
 Le journal est **en ajout seul**. Il n'est plus rogné (il l'était aux cinq mille dernières
 lignes : enchaîner les actions effaçait les traces des précédentes), il n'est plus chargé
@@ -303,10 +301,19 @@ l'écran. À chaque connexion, le retour OAuth lit, avec le jeton de la personne
 modérateurs sont `admin`, les autres `joueur`. Un modérateur retiré sur Twitch
 perd son accès à sa connexion suivante — une session dure douze heures au plus.
 En cas d'échec de l'appel, le rôle accordé est `joueur` : rien ne s'accorde par
-défaut. Un rôle choisi à la main dans la modération (`joueurs.role_manuel`)
-n'est plus touché par Twitch : c'est ainsi qu'on ouvre la modération à
-quelqu'un qui ne modère pas la chaîne, ou qu'on la ferme à un modérateur. Le
-rôle de la streameuse ne se change pas à la main.
+défaut. Les rôles ne se choisissent plus à la main, et plus personne ne
+s'inscrit autrement que par Twitch.
+
+**Les codes cadeaux** distribuent les flocons. La modération crée un code
+(`/api/admin/codes`, admin) : un montant, un nombre d'utilisations, un texte
+choisi ou tiré au sort (huit signes sans caractères ambigus, près de mille
+milliards de possibilités). Un joueur le tape derrière l'icône cadeau
+(`POST /api/codes`) : le navigateur n'envoie que le code, tout le reste se décide
+dans `utiliseCode`, dans une transaction — un joueur ne s'en sert qu'une fois, le
+code ne sert pas plus que prévu, celui qui l'a créé ne s'en sert pas, la
+streameuse non plus. Chaque utilisation est un `credit()` au grand livre avec le
+code en référence : les utilisations se comptent là, sans double écriture. Dix
+essais par dix minutes et par adresse.
 
 **Le circuit OAuth.** `GET /api/auth/twitch` signe un `state` (clé dérivée de
 `AUTH_SECRET`, distincte de celle des sessions) qui expire au bout de dix minutes
@@ -441,7 +448,7 @@ Contrôles en ligne :
 curl -sI 'https://www.winter-ligue.com/api/auth/twitch' | grep -i location
 
 # Une écriture d'administration sans session est refusée
-curl -s -X POST https://www.winter-ligue.com/api/admin/grant -H 'content-type: application/json' -d '{}'
+curl -s -X POST https://www.winter-ligue.com/api/admin/codes -H 'content-type: application/json' -d '{}'
 
 # Une écriture depuis une origine étrangère est refusée
 curl -s -X POST https://www.winter-ligue.com/api/auth/logout -H 'origin: https://evil.example' -H 'content-type: application/json' -d '{}'

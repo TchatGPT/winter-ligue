@@ -205,6 +205,20 @@ export const COLLECTIONS: Collection[] = [
       c('declencheA', 'declenche_a', 'int'),
     ],
   },
+  {
+    cle: 'codesCadeaux',
+    table: 'codes_cadeaux',
+    idChamp: 'id',
+    colonnes: [
+      c('id', 'id', 'text'),
+      c('code', 'code', 'text'),
+      c('montant', 'montant', 'int'),
+      c('utilisationsMax', 'utilisations_max', 'int'),
+      c('actif', 'actif', 'bool'),
+      c('creeLe', 'cree_le', 'ts'),
+      c('creePar', 'cree_par', 'text'),
+    ],
+  },
 ];
 
 /**
@@ -360,6 +374,18 @@ create table if not exists evenements (
   debut timestamptz not null,
   fin timestamptz not null,
   declenche_a integer not null
+);
+
+-- Les codes cadeaux : leurs utilisations sont au grand livre (flocons, motif
+-- CODE_CADEAU, référence = le code).
+create table if not exists codes_cadeaux (
+  id text primary key,
+  code text not null unique,
+  montant integer not null check (montant > 0),
+  utilisations_max integer not null check (utilisations_max > 0),
+  actif boolean not null default true,
+  cree_le timestamptz not null,
+  cree_par text not null
 );
 
 -- Le duel de flocons : ses lancers, à côté des cartes des anciens duels.
