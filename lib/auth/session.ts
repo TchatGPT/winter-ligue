@@ -10,7 +10,7 @@ import 'server-only';
  *
  * Le jeton ne contient qu'un identifiant et un rôle, et le rôle du jeton ne
  * sert à rien : à chaque requête, `getSession()` relit en base le rôle, l'état
- * et la date de révocation du joueur. Un modérateur rétrogradé perd ses droits
+ * et la date de révocation du joueur. Un admin rétrogradé perd ses droits
  * à la requête suivante, un compte désactivé est dehors, et « Se déconnecter »
  * révoque tous les jetons déjà émis — pas seulement le cookie de ce navigateur.
  */
@@ -28,7 +28,7 @@ const SESSION_TTL_SECONDS = 60 * 60 * 12; // 12 h
  * Le rôle porté par une session : celui du joueur en base (`PlayerRole`), relu
  * à chaque requête. Le jeton en garde une copie, qui ne décide de rien.
  */
-export type Role = 'joueur' | 'moderateur' | 'admin';
+export type Role = 'joueur' | 'admin';
 
 export interface SessionPayload {
   /** Identifiant du joueur. */
@@ -111,7 +111,7 @@ export function verifyToken(token: string | undefined | null): SessionPayload | 
   try {
     const payload = JSON.parse(fromB64url(encoded).toString('utf8')) as SessionPayload;
     if (typeof payload.exp !== 'number' || payload.exp * 1000 <= Date.now()) return null;
-    if (!['admin', 'moderateur', 'joueur'].includes(payload.role)) return null;
+    if (!['admin', 'joueur'].includes(payload.role)) return null;
     if (typeof payload.sub !== 'string' || payload.sub.length === 0) return null;
     return payload;
   } catch {
@@ -146,12 +146,12 @@ async function confirme(jeton: SessionPayload): Promise<SessionPayload | null> {
   return role ? { ...jeton, role } : null;
 }
 
-/** Hiérarchie des rôles : chacun peut ce que peut le précédent, et davantage. */
-const RANG: Record<Role, number> = { joueur: 0, moderateur: 1, admin: 2 };
+/** Hiérarchie des rôles : un admin peut tout ce que peut un joueur, et davantage. */
+const RANG: Record<Role, number> = { joueur: 0, admin: 1 };
 
 /**
  * Ce rôle suffit-il ? Les rôles sont hiérarchiques, et une seule ligne le dit :
- * ce qui demande `moderateur` accepte un admin.
+ * ce qui demande `joueur` accepte un admin.
  */
 export function aLeRang(role: Role, minimum: Role): boolean {
   return RANG[role] >= RANG[minimum];
@@ -163,7 +163,7 @@ export function aLeRang(role: Role, minimum: Role): boolean {
  * À utiliser partout où l'on veut savoir « qui joue », par opposition à « qui a
  * le droit de faire quoi ». Les deux questions ont été confondues tant qu'il n'y
  * avait que deux rôles : tester `role === 'joueur'` répondait aux deux à la
- * fois. Depuis qu'un joueur peut être modérateur ou administrateur, ce test
+ * fois. Depuis qu'un joueur peut être admin, ce test
  * exclut du jeu ceux à qui on vient de donner des droits — ils se voyaient
  * refuser l'ouverture d'un booster avec un « connexion requise » alors qu'ils
  * étaient connectés.

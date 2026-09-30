@@ -11,18 +11,17 @@ import type { EvenementKind } from '@/lib/domain/rules';
 import type { PackId, Placement, Rarity } from '@/lib/domain/types';
 
 /**
- * Ce qu'un compte a le droit de faire.
+ * Ce qu'un compte a le droit de faire : jouer, ou modérer la ligue.
  *
- * Trois échelons, et la frontière n'est pas arbitraire : un **modérateur** agit
- * sur le déroulement de la saison — enregistrer une game, créditer, ouvrir un
- * pack. Un **admin** agit sur ses règles : les taux de rareté, et l'attribution
- * des rôles eux-mêmes.
+ * Deux rôles. La streameuse et les modérateurs de sa chaîne sont **admin** —
+ * l'espace s'appelle « Modération » à l'écran. Il y a eu un rôle modérateur à
+ * part, aux droits réduits ; il a été fondu dans admin.
  *
- * Autrement dit, un modérateur ne peut pas se promouvoir, ni rendre les
- * légendaires dix fois plus fréquentes. C'est ce qui rend le rôle distribuable
- * sans arrière-pensée.
+ * Un modérateur peut jouer dans la ligue : aucun admin n'agit donc sur son
+ * propre compte de joueur (flocons, subs offerts, games, boosters), et c'est
+ * vérifié route par route.
  */
-export type PlayerRole = 'joueur' | 'moderateur' | 'admin';
+export type PlayerRole = 'joueur' | 'admin';
 
 export interface Player {
   id: string;

@@ -49,7 +49,7 @@ export interface ApercuLigne {
  * c'est le même code que la vraie saisie, donc le même résultat.
  */
 export async function POST(request: Request): Promise<NextResponse> {
-  const g = await guard(request, { scope: 'game-apercu', role: 'moderateur', schema: apercuSchema });
+  const g = await guard(request, { scope: 'game-apercu', role: 'admin', schema: apercuSchema });
   if (!g.ok) return g.response;
 
   const apercus = await getStore().read((lecture) => {

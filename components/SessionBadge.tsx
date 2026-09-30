@@ -17,7 +17,7 @@ export function SessionBadge({
   balance,
   stacked = false,
 }: {
-  role: 'admin' | 'moderateur' | 'joueur' | null;
+  role: 'admin' | 'joueur' | null;
   pseudo: string | null;
   balance: number | null;
   /** Disposition verticale, dans le bloc compte de la colonne. */
@@ -78,7 +78,7 @@ export function SessionBadge({
           </div>
         )}
         <div className="truncate text-center text-[11px] tracking-[0.18em] text-white/80 uppercase">
-          {role === 'admin' ? 'Administration' : role === 'moderateur' ? 'Modération' : pseudo}
+          {role === 'admin' ? 'Modération' : pseudo}
         </div>
         <button className="btn menu-bouton" onClick={logout} disabled={busy || pending}>
           {avatar}

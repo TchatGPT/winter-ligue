@@ -104,7 +104,7 @@ export default async function FicheJoueurPage({ params }: { params: Promise<{ sl
             </h1>
             <div className="fiche-badges">
               {fiche.role !== 'joueur' && !fiche.streameuse && (
-                <span className="fiche-badge">{fiche.role === 'admin' ? 'Administration' : 'Modération'}</span>
+                <span className="fiche-badge">Modération</span>
               )}
               {p.twitchLogin && (
                 <a

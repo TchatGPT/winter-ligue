@@ -235,7 +235,7 @@ create table if not exists joueurs (
   id text primary key,
   slug text not null unique,
   pseudo text not null,
-  role text not null check (role in ('joueur', 'moderateur', 'admin')),
+  role text not null check (role in ('joueur', 'admin')),
   twitch_id text unique,
   twitch_login text,
   avatar_url text,
@@ -375,6 +375,9 @@ alter table joueurs add column if not exists sessions_depuis timestamptz;
 
 -- Un rôle choisi à la main : la connexion Twitch n'y touche plus.
 alter table joueurs add column if not exists role_manuel boolean not null default false;
+
+-- Il n'y a plus de rôle modérateur à part : les modérateurs sont admins.
+update joueurs set role = 'admin' where role = 'moderateur';
 
 -- Les liens d'overlay OBS : en changer la génération les révoque tous.
 alter table saison add column if not exists overlay_generation integer not null default 1;

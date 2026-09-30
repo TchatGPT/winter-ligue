@@ -5,7 +5,7 @@ import { useAction } from '@/components/admin/action';
 import { Bloc, Ecran } from '@/components/admin/Cadre';
 import { flakes } from '@/components/ui';
 
-export type RoleJoueur = 'joueur' | 'moderateur' | 'admin';
+export type RoleJoueur = 'joueur' | 'admin';
 
 export interface LigneJoueur {
   id: string;
@@ -22,11 +22,10 @@ export interface LigneJoueur {
 const ROLES: { id: RoleJoueur; label: string; aide: string }[] = [
   { id: 'joueur', label: 'Joueur', aide: 'Participe, rien de plus.' },
   {
-    id: 'moderateur',
-    label: 'Modérateur',
-    aide: 'Saisit les games, crédite, ouvre les boosters de la file — jamais pour lui-même.',
+    id: 'admin',
+    label: 'Modération',
+    aide: 'Saisit les games, crédite, ouvre les boosters, règle la saison — jamais pour son propre compte.',
   },
-  { id: 'admin', label: 'Admin', aide: 'Tout cela, plus les rôles, la limite de games et la sauvegarde.' },
 ];
 
 /** Retire accents et casse, pour que « boreal » trouve « Boréal ». */
@@ -278,11 +277,7 @@ export function EcranJoueurs({
                     <span
                       className="badge"
                       style={
-                        p.role === 'admin'
-                          ? { borderColor: 'var(--danger)', color: 'var(--danger)' }
-                          : p.role === 'moderateur'
-                            ? { borderColor: 'var(--ice)', color: 'var(--ice)' }
-                            : undefined
+                        p.role === 'admin' ? { borderColor: 'var(--ice)', color: 'var(--ice)' } : undefined
                       }
                     >
                       {ROLES.find((r) => r.id === p.role)?.label ?? p.role}

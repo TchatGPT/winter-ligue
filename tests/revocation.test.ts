@@ -7,7 +7,7 @@ const joueur: EtatCompte = { role: 'joueur', actif: true, sessionsDepuis: null }
 describe('une session face à la base', () => {
   it('prend le rôle de la base, pas celui du jeton', () => {
     expect(roleConfirme({ iat: MAINTENANT }, joueur)).toBe('joueur');
-    expect(roleConfirme({ iat: MAINTENANT }, { ...joueur, role: 'moderateur' })).toBe('moderateur');
+    expect(roleConfirme({ iat: MAINTENANT }, { ...joueur, role: 'admin' })).toBe('admin');
   });
 
   it('ne survit pas à un compte disparu ou désactivé', () => {

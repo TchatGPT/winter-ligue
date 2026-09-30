@@ -8,7 +8,7 @@ import { shortDateTime } from '@/lib/format';
 import { dernieresOuvertures, fileDesPacks } from '@/lib/services/packs';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Vue d’ensemble — Administration' };
+export const metadata = { title: 'Vue d’ensemble — Modération' };
 
 /**
  * La vue d'ensemble : ce qu'on regarde en arrivant.
@@ -19,7 +19,7 @@ export const metadata = { title: 'Vue d’ensemble — Administration' };
  * des saisies faites sans le vouloir.
  */
 export default async function AdminAccueilPage() {
-  await exigeRole('moderateur');
+  await exigeRole('admin');
   const store = getStore();
 
   const [data, journal] = await Promise.all([
@@ -28,7 +28,7 @@ export default async function AdminAccueilPage() {
       const pseudo = (id: string) => db.players.find((p) => p.id === id)?.pseudo ?? 'Joueur inconnu';
       return {
         joueurs: actifs.length,
-        avecDroits: actifs.filter((p) => p.role === 'moderateur' || p.role === 'admin').length,
+        avecDroits: actifs.filter((p) => p.role === 'admin').length,
         games: db.games.filter((g) => !g.skipped).length,
         cartesEnAttente: db.cartesEnAttente.filter((c) => c.consommeeA === null).length,
         subs: db.config.totalSubs,

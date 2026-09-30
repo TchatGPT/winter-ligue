@@ -25,7 +25,7 @@ export const SIDEBAR_MARGE = 16;
  */
 export async function Sidebar() {
   const session = await getSession();
-  const isAdmin = session?.role === 'admin' || session?.role === 'moderateur';
+  const isAdmin = session?.role === 'admin';
   const isPlayer = playerIdOf(session) !== null;
 
   const { player } = await getStore().read((db) => {

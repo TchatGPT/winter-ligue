@@ -3,7 +3,7 @@ import { exigeRole } from '@/lib/auth/acces';
 import { getStore } from '@/lib/db/store';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Journal — Administration' };
+export const metadata = { title: 'Journal — Modération' };
 
 /** Qui a agi, en clair : un pseudo plutôt qu'un identifiant. */
 const ACTEURS_SYSTEME: Record<string, string> = {
@@ -14,7 +14,7 @@ const ACTEURS_SYSTEME: Record<string, string> = {
 };
 
 export default async function AdminJournalPage() {
-  await exigeRole('moderateur');
+  await exigeRole('admin');
   const store = getStore();
   // Trois cents lignes : de quoi remonter une soirée entière sans transformer la
   // page en export. Le filtre travaille sur ce lot, donc en mémoire du client.

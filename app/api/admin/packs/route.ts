@@ -18,31 +18,25 @@ export const dynamic = 'force-dynamic';
  * lieu ici, dans la transaction ; le rail ne fait que révéler la carte qu'on
  * lui renvoie. Relancer la même requête — même clé — rend la même ouverture.
  *
- * Deux bornes pour un modérateur : il n'ouvre que ce qui est **dans la file**
- * (un booster « à la main » en crée un de rien : c'est l'affaire d'un
- * administrateur), et jamais un booster qui lui revient — un autre l'ouvre
- * pour lui.
+ * Personne n'ouvre un booster qui lui revient : un autre membre de la
+ * modération l'ouvre pour lui.
  *
  * Les taux ne se règlent plus d'ici : ce sont ceux du catalogue.
  */
 export async function POST(request: Request): Promise<NextResponse> {
   const g = await guard(request, {
     scope: 'admin-packs-ouvrir',
-    role: 'moderateur',
+    role: 'admin',
     limit: LIMITS.mutation,
     schema: ouvrirPackSchema,
   });
   if (!g.ok) return g.response;
 
-  const estAdmin = g.session?.role === 'admin';
-  if (!estAdmin && !g.body.packDuId) {
-    return fail('NON_AUTORISE', 'Seul un administrateur ouvre un booster hors de la file.');
-  }
   const moi = playerIdOf(g.session);
 
   try {
     const vue = await getStore().transaction((db) => {
-      if (!estAdmin && moi) {
+      if (moi) {
         const du = g.body.packDuId ? db.packsDus.find((p) => p.id === g.body.packDuId) : null;
         if ((du?.joueurId ?? g.body.joueurId) === moi) return null;
       }

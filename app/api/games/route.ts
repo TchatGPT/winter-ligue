@@ -30,20 +30,20 @@ export const dynamic = 'force-dynamic';
  * La limite de games est celle de la saison, plus les créneaux qu'une carte
  * « Game supplémentaire » a donnés à ce joueur.
  *
- * Un modérateur qui joue ne saisit jamais ses propres games : un autre le
- * fait, sur la capture.
+ * Un membre de la modération qui joue ne saisit jamais ses propres games : un
+ * autre le fait, sur la capture.
  */
 export async function POST(request: Request): Promise<NextResponse> {
   const g = await guard(request, {
     scope: 'game-create',
-    role: 'moderateur',
+    role: 'admin',
     limit: LIMITS.mutation,
     schema: gameSchema,
   });
   if (!g.ok) return g.response;
 
-  if (g.session?.role !== 'admin' && g.body.playerId === playerIdOf(g.session)) {
-    return fail('NON_AUTORISE', 'Un modérateur ne saisit pas ses propres games.');
+  if (g.body.playerId === playerIdOf(g.session)) {
+    return fail('NON_AUTORISE', 'On ne saisit pas ses propres games : un autre membre de la modération le fait.');
   }
 
   try {
@@ -128,19 +128,18 @@ export async function POST(request: Request): Promise<NextResponse> {
 export async function PATCH(request: Request): Promise<NextResponse> {
   const g = await guard(request, {
     scope: 'game-update',
-    role: 'moderateur',
+    role: 'admin',
     limit: LIMITS.mutation,
     schema: updateGameSchema,
   });
   if (!g.ok) return g.response;
 
   const moi = playerIdOf(g.session);
-  const moderateur = g.session?.role !== 'admin';
 
   const updated = await getStore().transaction((db) => {
     const game = db.games.find((x) => x.id === g.body.gameId);
     if (!game) return null;
-    if (moderateur && game.playerId === moi) return 'SIENNE' as const;
+    if (game.playerId === moi) return 'SIENNE' as const;
     if (g.body.skipped === false && game.skipped) {
       const joueur = db.players.find((p) => p.id === game.playerId);
       if (joueur && gamesComptees(db, joueur.id) >= limiteDe(db, joueur)) return 'LIMITE' as const;
@@ -153,7 +152,7 @@ export async function PATCH(request: Request): Promise<NextResponse> {
   });
 
   if (!updated) return fail('INTROUVABLE', 'Game introuvable.');
-  if (updated === 'SIENNE') return fail('NON_AUTORISE', 'Un modérateur ne modifie pas ses propres games.');
+  if (updated === 'SIENNE') return fail('NON_AUTORISE', 'On ne modifie pas ses propres games.');
   if (updated === 'LIMITE') return fail('CONFLIT', 'Ce joueur a déjà toutes ses games : celle-ci ne peut pas compter.');
   return ok(updated);
 }

@@ -59,7 +59,7 @@ export function LoginForms({
         <>
           <p className="mt-2 text-[15px] leading-relaxed text-ink-2">
             Connecte-toi avec ton compte Twitch. Ton pseudo devient ton nom dans la ligue, et si tu modères la
-            chaîne, l’administration t’est ouverte automatiquement.
+            chaîne, la modération t’est ouverte automatiquement.
           </p>
           <a href="/api/auth/twitch?returnTo=/" className="btn btn-twitch btn-lg mt-6 w-full no-underline">
             <IconTwitch className="h-5 w-5" />

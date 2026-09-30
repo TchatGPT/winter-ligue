@@ -5,7 +5,7 @@ import { getStore } from '@/lib/db/store';
 import { etatSubsTwitch } from '@/lib/services/twitchSubs';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Saison — Administration' };
+export const metadata = { title: 'Saison — Modération' };
 
 /** Ce que le retour du branchement des subs peut dire. Le texte vient d'ici, jamais de l'adresse. */
 const RETOURS: Record<string, RetourSubs> = {
@@ -28,7 +28,7 @@ export default async function AdminSaisonPage({
 }: {
   searchParams: Promise<{ [cle: string]: string | string[] | undefined }>;
 }) {
-  const session = await exigeRole('moderateur');
+  const session = await exigeRole('admin');
   const twitchConfigure = isTwitchEnabled();
   const [data, etatTwitch] = await Promise.all([
     getStore().read((db) => ({

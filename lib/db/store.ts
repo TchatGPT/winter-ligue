@@ -552,7 +552,8 @@ function migrate(db: Partial<Database>): Database {
     // dépasse est ramené au plafond, comme un crédit l'aurait été.
     players: (db.players ?? []).map((p) => ({
       ...p,
-      role: p.role ?? 'joueur',
+      // Le rôle modérateur a été fondu dans admin.
+      role: (p.role as string) === 'moderateur' ? 'admin' : (p.role ?? 'joueur'),
       subsOfferts: p.subsOfferts ?? 0,
       creneauxBonus: p.creneauxBonus ?? 0,
       immuniseJusqua: p.immuniseJusqua ?? null,

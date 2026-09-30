@@ -25,7 +25,7 @@ export default async function ClassementPage() {
   const session = await exigeSession();
   // La saisie par capture vit ici, au-dessus du classement : c'est là que la
   // modération regarde le résultat. La route revérifie le rôle.
-  const moderateur = session.role === 'admin' || session.role === 'moderateur';
+  const moderateur = session.role === 'admin';
 
   const [ranking, overview, subs] = await Promise.all([
     getRanking(),

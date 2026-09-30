@@ -35,7 +35,7 @@ export function AdminNav() {
   const chemin = usePathname();
 
   return (
-    <nav className="admin-nav scroll-x-clean" aria-label="Sections de l’administration">
+    <nav className="admin-nav scroll-x-clean" aria-label="Sections de la modération">
       {SECTIONS.map((s) => {
         const Icone = NAV_ICONS[s.icone];
         // Comparaison exacte pour la racine, sinon `/admin` resterait actif

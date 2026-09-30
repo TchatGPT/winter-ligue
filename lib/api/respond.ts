@@ -152,7 +152,7 @@ export async function guard<T = undefined>(
     /*
      * Les rôles sont hiérarchiques, et une seule ligne le dit.
      *
-     * Une route qui demande `moderateur` accepte donc un admin, ce qui évite
+     * Une route qui demande `joueur` accepte donc un admin, ce qui évite
      * l'erreur classique — lister les rôles autorisés route par route, puis en
      * oublier un le jour où on en ajoute un. Une route qui demande `admin`
      * n'accepte que lui.

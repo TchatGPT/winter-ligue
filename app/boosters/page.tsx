@@ -19,7 +19,7 @@ export const metadata = { title: 'Boosters' };
 export default async function PacksPage(){
   await exigeSession();
   const session = await getSession();
-  const moderateur = session?.role === 'admin' || session?.role === 'moderateur';
+  const moderateur = session?.role === 'admin';
   // Ouvrir hors de la file crée un booster de rien : c'est l'affaire d'un
   // administrateur. La route le revérifie.
   const aLaMain = session?.role === 'admin';

@@ -73,7 +73,7 @@ export async function POST(request: Request): Promise<NextResponse> {
 export async function PATCH(request: Request): Promise<NextResponse> {
   const g = await guard(request, {
     scope: 'player-activision',
-    role: 'moderateur',
+    role: 'admin',
     limit: LIMITS.mutation,
     schema: activisionJoueurSchema,
   });

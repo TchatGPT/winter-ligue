@@ -140,7 +140,7 @@ export interface DuelFiche {
  */
 export interface FicheJoueur {
   profil: Omit<ProfileView, 'ledger'>;
-  role: 'joueur' | 'moderateur' | 'admin';
+  role: 'joueur' | 'admin';
   /** La streameuse : hors classement, elle ne joue pas de game. */
   streameuse: boolean;
   /**

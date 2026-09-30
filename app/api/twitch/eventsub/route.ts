@@ -82,7 +82,7 @@ export async function POST(request: Request): Promise<NextResponse> {
         'twitch',
         'SUBS_TWITCH_COUPES',
         null,
-        `Twitch a coupé l’abonnement ${subscription.type} (${subscription.status ?? 'sans motif'}) : à rebrancher depuis Admin → Saison.`,
+        `Twitch a coupé l’abonnement ${subscription.type} (${subscription.status ?? 'sans motif'}) : à rebrancher depuis Modération → Saison.`,
       );
     });
     return reponse(204);

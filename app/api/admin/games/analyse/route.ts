@@ -37,7 +37,7 @@ const analyseSchema = z.object({
 export async function POST(request: Request): Promise<NextResponse> {
   const g = await guard(request, {
     scope: 'game-analyse',
-    role: 'moderateur',
+    role: 'admin',
     // Chaque appel coûte : un barème serré, bien en dessous des écritures.
     limit: { limit: 20, windowMs: 60_000 },
     schema: analyseSchema,

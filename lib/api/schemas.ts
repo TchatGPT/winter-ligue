@@ -195,7 +195,7 @@ export const adminSubsSchema = z.union([
  */
 export const adminRoleSchema = z.object({
   playerId: uuid,
-  role: z.enum(['joueur', 'moderateur', 'admin']),
+  role: z.enum(['joueur', 'admin']),
 });
 
 export type GameInput = z.infer<typeof gameSchema>;

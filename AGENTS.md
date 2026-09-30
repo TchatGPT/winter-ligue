@@ -75,11 +75,11 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - **Toute table de raretés passe par `verifieTable()`.** Somme exacte de 100 000 : c'est
   la plage dans laquelle `pickWeighted` tire. Une somme fausse rend les taux affichés
   mensongers sans que personne puisse s'en apercevoir.
-- Trois rôles, hiérarchiques : un **modérateur** fait vivre la saison (games, crédits,
-  boosters de la file), un **admin** en change les règles (limite de games, rôles,
-  sauvegarde). Le garde compare les rangs, donc une route `moderateur` accepte un admin.
-  Ne jamais donner à un modérateur de quoi se promouvoir, ni d'agir sur son propre
-  compte (flocons, subs offerts, games, boosters) : c'est vérifié route par route.
+- Deux rôles : **joueur** et **admin**. La streameuse et les modérateurs de sa chaîne sont
+  admin ; l'espace s'appelle « Modération » à l'écran, `/admin` dans le code. Le garde
+  compare les rangs, donc une route `joueur` accepte un admin. **Aucun admin n'agit sur
+  son propre compte de joueur** (flocons, subs offerts, games, boosters) : les
+  modérateurs jouent peut-être, et c'est vérifié route par route.
 - **Twitch est la seule porte d'entrée**, et le rôle suit la chaîne à chaque connexion :
   la streameuse et ses modérateurs sont admin, les autres joueurs. Un rôle choisi à la
   main (`roleManuel`) n'est plus touché par Twitch ; celui de la streameuse ne se change

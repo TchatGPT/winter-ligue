@@ -46,7 +46,7 @@ export async function exigeSession(): Promise<SessionPayload> {
  * en page — et une requête fabriquée peut demander la seule page. Le contrôle
  * est donc au plus près des données.
  */
-export async function exigeRole(minimum: Extract<Role, 'moderateur' | 'admin'>): Promise<SessionPayload> {
+export async function exigeRole(minimum: Extract<Role, 'admin'>): Promise<SessionPayload> {
   const session = await getSession();
   if (!session || !aLeRang(session.role, minimum)) redirect('/connexion');
   return session;

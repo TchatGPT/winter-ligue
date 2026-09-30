@@ -99,7 +99,7 @@ de débiter ou de consommer une seconde fois.
 - Le jeton ne porte qu'un identifiant et un rôle, et **le rôle du jeton ne sert à rien** :
   à chaque requête, `getSession()` relit en base le rôle, l'état actif et la date de
   révocation du joueur (`Store.etatSession`, une ligne lue par sa clé, mise en cache le
-  temps d'une requête). Un modérateur rétrogradé perd ses droits à la requête suivante,
+  temps d'une requête). Un admin rétrogradé perd ses droits à la requête suivante,
   un compte désactivé est dehors. Décision pure : `lib/domain/revocation.ts`, testée.
 - **Se déconnecter révoque** : la déconnexion pose `joueurs.sessions_depuis`, et tout
   jeton émis avant est refusé, sur tous les appareils — un cookie copié ne survit pas.
@@ -212,17 +212,16 @@ méritent la même vigilance :
 
 ### 12. Rôles et réglages
 
-Trois rôles hiérarchiques — joueur, modérateur, admin — et le garde compare des rangs
-plutôt que des listes : une route qui demande `moderateur` accepte un admin, et ajouter
-un échelon ne demande pas de relire chaque route.
+Deux rôles — joueur et admin — et le garde compare des rangs plutôt que des listes : une
+route qui demande `joueur` accepte un admin. La streameuse et les modérateurs de sa chaîne
+sont admin ; l'espace s'appelle « Modération » à l'écran. Il a existé un rôle modérateur à
+part, aux droits réduits : il a été fondu dans admin, et ce qui en restait en base est
+passé admin au démarrage (`SCHEMA_SQL`).
 
-La frontière n'est pas décorative. Un modérateur agit sur le **déroulement** de la saison,
-un admin sur ses **règles** : limite de games, rôles, sauvegarde. Un modérateur ne peut
-donc pas se promouvoir. Et un modérateur qui joue **n'agit jamais sur son propre compte** :
-il ne se crédite pas de flocons, ne s'inscrit pas de subs offerts, ne saisit ni ne modifie
-ses games, n'ouvre pas un booster qui lui revient. Ses attributions sont bornées à mille
-flocons et cent subs à la fois, et il n'ouvre que les boosters **de la file** : ouvrir « à
-la main » crée un booster de rien, c'est l'affaire d'un administrateur.
+Parce que les modérateurs jouent peut-être dans la ligue, **aucun admin n'agit sur son
+propre compte de joueur** : il ne se crédite pas de flocons, ne s'inscrit pas de subs
+offerts, ne saisit ni ne modifie ses games, n'ouvre pas un booster qui lui revient. Un
+autre membre de la modération le fait, et le journal le trace.
 
 Les taux de rareté ne se règlent plus depuis le site : ce sont ceux du catalogue. Un
 compte administrateur compromis ne peut pas rendre les légendaires certaines.
@@ -279,7 +278,7 @@ L'aiguillage est une fonction pure, `lib/domain/aiguillage.ts`, verrouillée par
 écrit sur son propre compte : `PATCH /api/me`, `guard({ role: 'joueur' })`, schéma
 `monActivisionSchema` (lettres, chiffres, `_ - .`, espace, suffixe `#chiffres`
 facultatif ; jamais de `<`). La modération corrige celui d'un joueur par
-`PATCH /api/players` (`moderateur`). Les deux passent par `transaction()` et
+`PATCH /api/players` (`admin`). Les deux passent par `transaction()` et
 laissent une trace au journal — seulement sur un vrai changement. Un nom déjà pris
 par un autre joueur est refusé (comparé sans suffixe, casse ni accents,
 `lib/domain/activision.ts`) : sinon l'un se ferait attribuer les games de
@@ -304,8 +303,8 @@ l'écran. À chaque connexion, le retour OAuth lit, avec le jeton de la personne
 modérateurs sont `admin`, les autres `joueur`. Un modérateur retiré sur Twitch
 perd son accès à sa connexion suivante — une session dure douze heures au plus.
 En cas d'échec de l'appel, le rôle accordé est `joueur` : rien ne s'accorde par
-défaut. Un rôle choisi à la main dans l'administration (`joueurs.role_manuel`)
-n'est plus touché par Twitch : c'est ainsi qu'on ouvre l'administration à
+défaut. Un rôle choisi à la main dans la modération (`joueurs.role_manuel`)
+n'est plus touché par Twitch : c'est ainsi qu'on ouvre la modération à
 quelqu'un qui ne modère pas la chaîne, ou qu'on la ferme à un modérateur. Le
 rôle de la streameuse ne se change pas à la main.
 
@@ -370,7 +369,7 @@ active — c'est l'étape suivante.
 L'ancienne ligne unique `league_state` est gardée comme sauvegarde ; vider les
 tables la fait reverser au démarrage suivant.
 
-**La lecture des captures** (`POST /api/admin/games/analyse`, `moderateur`) envoie
+**La lecture des captures** (`POST /api/admin/games/analyse`, `admin`) envoie
 l'image à l'API Anthropic **depuis le serveur** : la clé `ANTHROPIC_API_KEY` ne
 quitte jamais le serveur, et la CSP (`connect-src 'self'`) interdirait de toute
 façon l'appel depuis le navigateur. Garde-fous : image en base64 validée par

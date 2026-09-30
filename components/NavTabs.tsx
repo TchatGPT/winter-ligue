@@ -20,7 +20,7 @@ const TABS: Tab[] = [
   { href: '/boosters', label: 'Boosters', short: 'Boosters', icon: 'rocket' },
   { href: '/duels', label: 'Duels', short: 'Duels', icon: 'swords' },
   { href: '/regles', label: 'Règles', short: 'Règles', icon: 'book' },
-  { href: '/admin', label: 'Administration', short: 'Admin', icon: 'shield', admin: true },
+  { href: '/admin', label: 'Modération', short: 'Modo', icon: 'shield', admin: true },
 ];
 
 function visibleTabs(isAdmin: boolean, isPlayer: boolean) {

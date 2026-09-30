@@ -11,7 +11,7 @@
  * verrouille la décision.
  */
 
-export type RoleCompte = 'joueur' | 'moderateur' | 'admin';
+export type RoleCompte = 'joueur' | 'admin';
 
 export interface EtatCompte {
   role: RoleCompte;

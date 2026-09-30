@@ -4,10 +4,10 @@ import { getStore } from '@/lib/db/store';
 import { totalsOf } from '@/lib/services/league';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Joueurs — Administration' };
+export const metadata = { title: 'Joueurs — Modération' };
 
 export default async function AdminJoueursPage() {
-  const session = await exigeRole('moderateur');
+  const session = await exigeRole('admin');
   const estAdmin = session.role === 'admin';
 
   const joueurs = await getStore().read((db) =>

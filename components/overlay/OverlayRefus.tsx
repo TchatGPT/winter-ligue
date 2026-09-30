@@ -6,7 +6,7 @@ export function OverlayRefus({ motif }: { motif: 'invalide' | 'revoque' }) {
   return (
     <div className="ov-refus glass">
       <strong>{motif === 'revoque' ? 'Ce lien d’overlay a été régénéré.' : 'Lien d’overlay invalide.'}</strong>
-      <span>Copie le lien à jour dans l’administration, onglet Overlays.</span>
+      <span>Copie le lien à jour dans la modération, onglet Overlays.</span>
     </div>
   );
 }

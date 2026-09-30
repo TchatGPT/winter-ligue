@@ -13,9 +13,8 @@ export const dynamic = 'force-dynamic';
 /**
  * Attribution d'un rôle à un joueur.
  *
- * Réservé aux administrateurs, et pas aux modérateurs : un modérateur qui peut
- * distribuer les rôles peut se promouvoir, et la distinction entre les deux
- * échelons ne veut alors plus rien dire.
+ * Réservé aux admins. Deux rôles seulement : joueur, et admin — l'espace de
+ * modération.
  *
  * ## Un rôle choisi à la main le reste
  *
@@ -61,11 +60,11 @@ export async function POST(request: Request): Promise<NextResponse> {
 
       if (g.body.role !== 'admin') {
         if (joueur.id === acteur) {
-          return { erreur: 'Tu ne peux pas retirer ton propre rôle d’administrateur.', joueur: null, inchange: false };
+          return { erreur: 'Tu ne peux pas te retirer toi-même de la modération.', joueur: null, inchange: false };
         }
         const admins = db.players.filter((p) => p.role === 'admin');
         if (admins.length <= 1 && joueur.role === 'admin') {
-          return { erreur: 'Il doit rester au moins un administrateur.', joueur: null, inchange: false };
+          return { erreur: 'Il doit rester au moins une personne à la modération.', joueur: null, inchange: false };
         }
       }
 

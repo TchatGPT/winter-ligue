@@ -11,9 +11,6 @@ import { addSubs, remetSubsAZero, subsOverview } from '@/lib/services/subs';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-/** Le plus qu'un modérateur saisit d'un coup. */
-const MAX_MODERATEUR = 100;
-
 /** État du compteur de subs, pour la bannière du classement. Connecté seulement. */
 export async function GET(request: Request): Promise<NextResponse> {
   const g = await guard(request, { scope: 'subs-read', role: 'joueur' });
@@ -31,13 +28,13 @@ export async function GET(request: Request): Promise<NextResponse> {
  *    lui valent des packs Perso, mis en file. Ils ne touchent pas au compteur
  *    de saison — la modération saisit les deux, l'un après l'autre.
  *
- * Et `remise-a-zero`, réservée aux admins : le compteur repart de zéro au
- * début de la saison, sans rien reprendre de ce qu'il a versé.
+ * Et `remise-a-zero` : le compteur repart de zéro au début de la saison, sans
+ * rien reprendre de ce qu'il a versé.
  */
 export async function POST(request: Request): Promise<NextResponse> {
   const g = await guard(request, {
     scope: 'admin-subs',
-    role: 'moderateur',
+    role: 'admin',
     limit: LIMITS.mutation,
     schema: adminSubsSchema,
   });
@@ -49,9 +46,6 @@ export async function POST(request: Request): Promise<NextResponse> {
   const actor = g.session?.sub ?? 'admin';
 
   if (body.action === 'remise-a-zero') {
-    if (g.session?.role !== 'admin') {
-      return fail('NON_AUTORISE', 'Seul un admin remet le compteur de subs à zéro.');
-    }
     try {
       return ok(await getStore().transaction((db) => remetSubsAZero(db, actor)));
     } catch (error) {
@@ -59,16 +53,9 @@ export async function POST(request: Request): Promise<NextResponse> {
     }
   }
 
-  // Un modérateur saisit ce qui tombe pendant un live : cent subs au plus à la
-  // fois, et jamais à son propre compte — ses subs offerts lui valent des
-  // boosters.
-  if (g.session?.role !== 'admin') {
-    if (body.delta > MAX_MODERATEUR) {
-      return fail('REQUETE_INVALIDE', `Un modérateur saisit ${MAX_MODERATEUR} subs au plus à la fois.`);
-    }
-    if (body.action === 'subs-joueur' && body.playerId === playerIdOf(g.session)) {
-      return fail('NON_AUTORISE', 'Un modérateur ne s’inscrit pas de subs offerts.');
-    }
+  // Jamais à son propre compte : des subs offerts valent des boosters.
+  if (body.action === 'subs-joueur' && body.playerId === playerIdOf(g.session)) {
+    return fail('NON_AUTORISE', 'On ne s’inscrit pas de subs offerts : un autre membre de la modération le fait.');
   }
 
   try {

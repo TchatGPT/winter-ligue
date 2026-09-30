@@ -17,28 +17,20 @@ export const dynamic = 'force-dynamic';
  * modération peut donner, mais jamais discrètement. Aucune carte ne se donne
  * ici — une carte sort d'un pack, ouvert à l'antenne, ou ne sort pas.
  *
- * Un modérateur ne se crédite jamais lui-même, et chacune de ses attributions
- * est bornée à mille flocons : de quoi un lot ou une correction, pas de quoi
- * vider la saison. Un administrateur n'a que la borne du schéma.
+ * Personne ne se crédite soi-même : les modérateurs de la chaîne, tous admins,
+ * jouent peut-être dans la ligue. Un autre le fait pour eux.
  */
-const MAX_MODERATEUR = 1000;
-
 export async function POST(request: Request): Promise<NextResponse> {
   const g = await guard(request, {
     scope: 'admin-grant',
-    role: 'moderateur',
+    role: 'admin',
     limit: LIMITS.mutation,
     schema: adminGrantSchema,
   });
   if (!g.ok) return g.response;
 
-  if (g.session?.role !== 'admin') {
-    if (g.body.playerId === playerIdOf(g.session)) {
-      return fail('NON_AUTORISE', 'Un modérateur ne s’attribue pas de flocons.');
-    }
-    if (Math.abs(g.body.snowflakes) > MAX_MODERATEUR) {
-      return fail('REQUETE_INVALIDE', `Un modérateur attribue ${MAX_MODERATEUR} flocons au plus à la fois.`);
-    }
+  if (g.body.playerId === playerIdOf(g.session)) {
+    return fail('NON_AUTORISE', 'On ne s’attribue pas de flocons : un autre membre de la modération le fait.');
   }
 
   try {
