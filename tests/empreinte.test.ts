@@ -2,12 +2,13 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { empreinteAdmin, etatMotDePasse, motDePasseEnClair } from '@/lib/auth/empreinte';
 
 /**
- * L'empreinte collée dans Vercel : la ligne entière que sort le script, des
- * guillemets, des espaces. Toutes ces formes doivent redonner l'empreinte seule.
+ * Le mot de passe d'administration tel qu'on le colle dans Vercel : la ligne
+ * entière que sort le script, des guillemets, toute la sortie, ou le mot de
+ * passe lui-même. Chacune de ces formes doit ouvrir la porte.
  */
 const EMPREINTE = `scrypt:0123456789abcdef0123456789abcdef:${'ab'.repeat(64)}`;
 
-describe('empreinte du mot de passe d’administration', () => {
+describe('mot de passe d’administration', () => {
   const avant = process.env.ADMIN_PASSWORD_HASH;
   const avantClair = process.env.ADMIN_PASSWORD;
   afterEach(() => {
@@ -17,26 +18,35 @@ describe('empreinte du mot de passe d’administration', () => {
     else process.env.ADMIN_PASSWORD = avantClair;
   });
 
-  it('reprend l’empreinte seule, quelle que soit la façon de la coller', () => {
+  it('retrouve l’empreinte, quelle que soit la façon de la coller', () => {
+    delete process.env.ADMIN_PASSWORD;
     for (const collee of [
       EMPREINTE,
-      `  ${EMPREINTE}\n`,
+      `  ${EMPREINTE}  `,
       `ADMIN_PASSWORD_HASH=${EMPREINTE}`,
       `ADMIN_PASSWORD_HASH = "${EMPREINTE}"`,
       `'${EMPREINTE}'`,
+      `Mot de passe reçu : 9 caractère(s).  Key : ADMIN_PASSWORD_HASH  Value : ${EMPREINTE}  Puis Redeploy.`,
     ]) {
       process.env.ADMIN_PASSWORD_HASH = collee;
       expect(empreinteAdmin()).toBe(EMPREINTE);
+      expect(motDePasseEnClair()).toBeNull();
       expect(etatMotDePasse()).toBe('pret');
     }
   });
 
-  it('s’ouvre aussi par le mot de passe posé en clair, empreinte ou pas', () => {
+  it('prend pour le mot de passe une valeur qui n’est pas une empreinte', () => {
+    delete process.env.ADMIN_PASSWORD;
+    process.env.ADMIN_PASSWORD_HASH = '  monmotdepasse  ';
+    expect(empreinteAdmin()).toBeNull();
+    expect(motDePasseEnClair()).toBe('monmotdepasse');
+    expect(etatMotDePasse()).toBe('pret');
+  });
+
+  it('s’ouvre par ADMIN_PASSWORD, empreinte ou pas', () => {
     delete process.env.ADMIN_PASSWORD_HASH;
     process.env.ADMIN_PASSWORD = '  motdepasse   ';
     expect(motDePasseEnClair()).toBe('motdepasse');
-    expect(etatMotDePasse()).toBe('pret');
-    process.env.ADMIN_PASSWORD_HASH = 'collée de travers';
     expect(etatMotDePasse()).toBe('pret');
   });
 
@@ -48,11 +58,10 @@ describe('empreinte du mot de passe d’administration', () => {
     expect(etatMotDePasse()).toBe('absent');
   });
 
-  it('dit quand elle est posée de travers', () => {
+  it('dit quand une empreinte est tronquée : on ne devine pas ce qui manque', () => {
     delete process.env.ADMIN_PASSWORD;
-    process.env.ADMIN_PASSWORD_HASH = 'mon-mot-de-passe-en-clair';
+    process.env.ADMIN_PASSWORD_HASH = 'scrypt:500c07ab:12ef';
     expect(etatMotDePasse()).toBe('mal-forme');
-    process.env.ADMIN_PASSWORD_HASH = 'scrypt$abc$def';
-    expect(etatMotDePasse()).toBe('mal-forme');
+    expect(motDePasseEnClair()).toBeNull();
   });
 });
