@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { CardFrame } from '@/components/CardFrame';
-import { GraphiqueScores, type PointScore } from '@/components/GraphiqueScores';
+import { SaisonEnCases, type CaseGame } from '@/components/SaisonEnCases';
 import { SnowCap } from '@/components/SnowCap';
 import { IconTwitch } from '@/components/icons';
 import { flakes } from '@/components/ui';
@@ -56,10 +56,10 @@ export default async function FicheJoueurPage({ params }: { params: Promise<{ sl
           }`
         : `${ordinal(rang.position)} au classement · à ${rang.ecart ?? 0} pts de la finale`;
 
-  // Les games dans l'ordre où elles ont été jouées, numérotées pour le graphique.
+  // Les games dans l'ordre où elles ont été jouées, numérotées pour les cases.
   const chronologie = [...p.games].sort((a, b) => a.playedAt.localeCompare(b.playedAt));
   const numeroDe = new Map(chronologie.map((g, i) => [g.id, i + 1]));
-  const points: PointScore[] = chronologie.map((g, i) => ({
+  const points: CaseGame[] = chronologie.map((g, i) => ({
     numero: i + 1,
     date: shortDateTime(g.playedAt),
     kills: g.kills,
@@ -204,7 +204,7 @@ export default async function FicheJoueurPage({ params }: { params: Promise<{ sl
               <p className="fil-vide mt-4 text-[14px] text-muted">Aucune game saisie pour l’instant.</p>
             ) : (
               <>
-                <GraphiqueScores points={points} moyenne={t.averageScore} creneaux={fiche.creneaux} />
+                <SaisonEnCases games={points} creneaux={fiche.creneaux} />
 
                 <ol className="fiche-games">
                   {recentes.map((g) => (
