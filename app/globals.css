@@ -2015,6 +2015,666 @@
   }
 
   /* --------------------------------------------------------------------------
+     LA FICHE D'UN JOUEUR (app/joueurs/[slug]/page.tsx)
+     L'en-tête — qui, où il en est —, une bande de chiffres, puis sa saison à
+     gauche et ce qu'il a en main à droite. Chaque titre est dans sa plaque.
+     -------------------------------------------------------------------------- */
+  .fiche-hero {
+    container-type: inline-size;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.4rem 2rem;
+    padding: 1.9rem 1.25rem 1.5rem;
+  }
+  @media (min-width: 640px) {
+    .fiche-hero {
+      padding: 2.1rem 2rem 1.8rem;
+    }
+  }
+  .fiche-identite {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 1.25rem;
+  }
+
+  /* L'avatar : la photo Twitch, ou les initiales dans une bille de glace. La
+     médaille du rang s'y accroche en bas à droite. */
+  .fiche-avatar {
+    position: relative;
+    display: grid;
+    width: 92px;
+    height: 92px;
+    flex-shrink: 0;
+    place-items: center;
+    border-radius: 999px;
+    background: radial-gradient(
+      circle at 34% 28%,
+      rgb(255 255 255 / 0.55) 0%,
+      rgb(143 220 255 / 0.3) 38%,
+      rgb(20 70 120 / 0.66) 100%
+    );
+    box-shadow:
+      inset 0 2px 0 rgb(255 255 255 / 0.7),
+      inset 0 -10px 18px -8px rgb(0 20 50 / 0.6),
+      0 12px 18px -10px rgb(0 8 24 / 0.8);
+  }
+  @container (min-width: 640px) {
+    .fiche-avatar {
+      width: 112px;
+      height: 112px;
+    }
+  }
+  .fiche-avatar img {
+    width: 100%;
+    height: 100%;
+    border-radius: inherit;
+    object-fit: cover;
+    box-shadow: inset 0 0 0 2px rgb(255 255 255 / 0.4);
+  }
+  .fiche-avatar > span:not(.fiche-medaille) {
+    font-family: var(--font-display);
+    font-size: 2.1rem;
+    font-weight: 900;
+    color: var(--frost);
+    text-shadow: 0 2px 4px rgb(0 10 30 / 0.55);
+  }
+  .fiche-medaille {
+    position: absolute;
+    right: -4px;
+    bottom: -4px;
+    width: 36px;
+    height: 36px;
+    font-size: 1rem;
+    /* Un anneau couleur de plaque : la médaille se détache de l'avatar. */
+    box-shadow:
+      0 0 0 3px rgb(10 26 46 / 0.9),
+      inset 0 1px 0 rgb(255 255 255 / 0.4);
+  }
+  .fiche-medaille:not([data-rang]) {
+    background: var(--ice-3);
+    color: var(--frost);
+  }
+
+  .fiche-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 0.8rem;
+  }
+  .fiche-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.28rem 0.75rem;
+    border-radius: var(--r-pilule);
+    background: rgb(255 255 255 / 0.1);
+    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.14);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--ink-2);
+    transition: background 0.18s ease;
+  }
+  a.fiche-badge:hover {
+    background: rgb(255 255 255 / 0.18);
+    color: var(--ink);
+  }
+  .fiche-twitch {
+    color: var(--twitch-clair);
+  }
+
+  /* Les trois chiffres de l'en-tête, chacun dans son creux. */
+  .fiche-chiffres {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.6rem;
+    width: 100%;
+  }
+  @container (min-width: 900px) {
+    .fiche-chiffres {
+      width: auto;
+      grid-template-columns: repeat(3, minmax(8.5rem, auto));
+    }
+  }
+  .fiche-chiffres > div {
+    padding: 0.75rem 1rem 0.8rem;
+    border-radius: var(--r-md);
+    background: rgb(0 10 30 / 0.24);
+    box-shadow:
+      inset 0 1px 3px rgb(0 8 24 / 0.45),
+      inset 0 -1px 0 rgb(255 255 255 / 0.1);
+    text-align: center;
+  }
+  .fiche-chiffres dt {
+    font-family: var(--font-display);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--faint);
+  }
+  .fiche-chiffres dd {
+    margin-top: 0.15rem;
+    font-family: var(--font-display);
+    font-size: clamp(1.9rem, 5cqi, 2.8rem);
+    font-weight: 900;
+    line-height: 1;
+    color: var(--ink);
+  }
+  .fiche-chiffres dd small {
+    font-size: 0.45em;
+    color: var(--muted);
+  }
+
+  /* La bande de chiffres. */
+  .fiche-stats {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+  @media (min-width: 1024px) {
+    .fiche-stats {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+  .fiche-stat {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 0.2rem;
+    padding: 1rem 1.2rem 1.05rem;
+  }
+  .fiche-stat > span {
+    font-family: var(--font-display);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--faint);
+  }
+  .fiche-stat > strong {
+    font-family: var(--font-display);
+    font-size: 2.2rem;
+    font-weight: 900;
+    line-height: 1.05;
+    color: var(--ink);
+  }
+  .fiche-stat > strong small {
+    font-size: 0.5em;
+    color: var(--muted);
+  }
+  .fiche-stat > em {
+    font-size: 0.8125rem;
+    font-style: normal;
+    color: var(--muted);
+  }
+  .fiche-barre {
+    display: block;
+    height: 6px;
+    margin: 0.2rem 0 0.1rem;
+    overflow: hidden;
+    border-radius: var(--r-pilule);
+    background: rgb(0 10 30 / 0.4);
+    box-shadow: inset 0 1px 2px rgb(0 8 24 / 0.5);
+  }
+  .fiche-barre > b {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--ice-3), var(--ice));
+  }
+  .fiche-podiums {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem 0.9rem;
+    margin: 0.35rem 0 0.1rem;
+  }
+  .fiche-podiums > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-family: var(--font-display);
+    font-size: 1.45rem;
+    font-weight: 900;
+    color: var(--ink);
+  }
+  .fiche-podiums .medaille {
+    width: 26px;
+    height: 26px;
+    font-size: 0.8rem;
+  }
+
+  .fiche-titre {
+    margin-top: 0.25rem;
+    font-family: var(--font-display);
+    font-size: 1.6rem;
+    font-weight: 900;
+    letter-spacing: 0.04em;
+    line-height: 1;
+    text-transform: uppercase;
+    color: var(--ink);
+  }
+
+  /* ---- Le graphique des scores (components/GraphiqueScores.tsx) ----
+     Une série, une couleur : le bleu glacier profond, qui passe les contrôles
+     de couleur sur la plaque sombre. Des colonnes de 24 px au plus, arrondies
+     au sommet, carrées sur la ligne de base ; des filets d'un pixel. */
+  .graphe {
+    margin-top: 1.6rem;
+  }
+  .graphe-cadre {
+    display: grid;
+    grid-template-columns: 2rem minmax(0, 1fr);
+    gap: 0.4rem;
+  }
+  .graphe-axe-y {
+    position: relative;
+    height: 180px;
+  }
+  .graphe-axe-y > span {
+    position: absolute;
+    right: 0;
+    transform: translateY(50%);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .graphe-zone {
+    position: relative;
+    height: 180px;
+    border-radius: var(--r-sm) var(--r-sm) 0 0;
+    background: rgb(0 10 30 / 0.3);
+    box-shadow: inset 0 1px 3px rgb(0 8 24 / 0.45);
+  }
+  .graphe-filet {
+    position: absolute;
+    right: 0;
+    left: 0;
+    height: 1px;
+    background: rgb(255 255 255 / 0.1);
+  }
+  .graphe-filet:first-child {
+    background: rgb(255 255 255 / 0.3);
+  }
+  .graphe-moyenne {
+    position: absolute;
+    right: 0;
+    left: 0;
+    border-top: 1px solid rgb(207 220 235 / 0.55);
+  }
+  .graphe-moyenne > em {
+    position: absolute;
+    right: 0.5rem;
+    bottom: 3px;
+    font-size: 0.6875rem;
+    font-style: normal;
+    font-weight: 600;
+    color: var(--muted);
+  }
+  .graphe-colonnes {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    padding: 0 0.5rem;
+  }
+  .graphe-colonne {
+    display: flex;
+    min-width: 0;
+    flex: 1 1 0;
+    align-items: flex-end;
+    justify-content: center;
+    border-radius: 6px;
+    outline: none;
+  }
+  .graphe-colonne:focus-visible {
+    box-shadow: inset 0 0 0 2px var(--ice);
+  }
+  .graphe-barre {
+    position: relative;
+    width: min(24px, 64%);
+    border-radius: 4px 4px 0 0;
+    background: var(--ice-3);
+    transition: background 0.15s ease;
+  }
+  .graphe-colonne[data-actif] .graphe-barre {
+    background: var(--ice-2);
+  }
+  .graphe-colonne[data-passee] .graphe-barre {
+    opacity: 0.35;
+  }
+  .graphe-valeur {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    margin-bottom: 4px;
+    transform: translateX(-50%);
+    font-family: var(--font-display);
+    font-size: 0.9375rem;
+    font-weight: 900;
+    color: var(--ink);
+    white-space: nowrap;
+  }
+  .graphe-bulle {
+    position: absolute;
+    z-index: 5;
+    display: grid;
+    min-width: 9.5rem;
+    gap: 0.1rem;
+    padding: 0.5rem 0.75rem 0.55rem;
+    border-radius: var(--r-sm);
+    background: rgb(8 20 38 / 0.94);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.16),
+      0 10px 20px -8px rgb(0 8 24 / 0.85);
+    transform: translateX(-50%);
+    font-size: 0.75rem;
+    color: var(--muted);
+    white-space: nowrap;
+    pointer-events: none;
+  }
+  .graphe-bulle strong {
+    font-family: var(--font-display);
+    font-size: 1.35rem;
+    font-weight: 900;
+    line-height: 1.05;
+    color: var(--ink);
+  }
+  .graphe-bulle strong small {
+    font-size: 0.6em;
+    color: var(--muted);
+  }
+  .graphe-axe-x {
+    display: flex;
+    margin-left: 2.4rem;
+    padding: 0 0.5rem;
+  }
+  .graphe-axe-x > li {
+    display: flex;
+    min-width: 0;
+    height: 28px;
+    flex: 1 1 0;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .graphe-medaille {
+    width: 20px;
+    height: 20px;
+    font-size: 0.6875rem;
+  }
+
+  /* ---- La liste des games : le tableau du graphique ---- */
+  .fiche-games {
+    display: grid;
+    gap: 0.5rem;
+    max-height: 34rem;
+    margin-top: 1.1rem;
+    overflow-y: auto;
+    padding-right: 0.15rem;
+  }
+  .fiche-game {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    padding: 0.75rem 0.95rem;
+    border-radius: var(--r-md);
+    background: rgb(0 10 30 / 0.22);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.1),
+      inset 0 0 0 1px rgb(255 255 255 / 0.05);
+  }
+  .fiche-game[data-passee] {
+    opacity: 0.55;
+  }
+  .fiche-game-numero {
+    width: 2.2rem;
+    flex-shrink: 0;
+    font-family: var(--font-display);
+    font-size: 0.9375rem;
+    font-weight: 800;
+    color: var(--faint);
+  }
+  .fiche-game-ligne {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem 1rem;
+    font-size: 0.875rem;
+    color: var(--ink-2);
+  }
+  .fiche-game-ligne strong {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: 900;
+    color: var(--ink);
+  }
+  .fiche-top {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-family: var(--font-display);
+    font-size: 0.875rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink);
+  }
+  .fiche-top .medaille {
+    width: 22px;
+    height: 22px;
+    font-size: 0.7rem;
+  }
+  .fiche-top-aucun {
+    color: var(--faint);
+  }
+  .fiche-passee {
+    padding: 0.05rem 0.5rem;
+    border-radius: var(--r-pilule);
+    background: rgb(255 255 255 / 0.1);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .fiche-game-date {
+    margin-top: 0.15rem;
+    font-size: 0.75rem;
+    color: var(--faint);
+  }
+  .fiche-game-cartes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin-top: 0.45rem;
+  }
+  .fiche-game-cartes > span {
+    padding: 0.12rem 0.55rem;
+    border-radius: var(--r-pilule);
+    background: rgb(255 255 255 / 0.08);
+    font-size: 0.75rem;
+    color: var(--ink-2);
+  }
+  .fiche-game-cartes b {
+    margin-left: 0.35rem;
+    color: var(--aurora);
+  }
+  .fiche-game-cartes > span[data-malus] b {
+    color: var(--danger);
+  }
+  .fiche-game-score {
+    flex-shrink: 0;
+    text-align: right;
+  }
+  .fiche-game-score strong {
+    display: block;
+    font-family: var(--font-display);
+    font-size: 1.9rem;
+    font-weight: 900;
+    line-height: 1;
+    color: var(--ink);
+  }
+  .fiche-game-score small {
+    font-family: var(--font-display);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--faint);
+  }
+
+  /* ---- La colonne de droite : flocons, cartes, duels ---- */
+  .fiche-solde {
+    font-family: var(--font-display);
+    font-size: 2rem;
+    font-weight: 900;
+    line-height: 1;
+    color: var(--ink);
+  }
+  .fiche-solde small {
+    font-size: 0.5em;
+    color: var(--muted);
+  }
+  .fiche-bloc {
+    padding: 0.85rem 1rem 0.9rem;
+    border-radius: var(--r-md);
+    background: rgb(0 10 30 / 0.2);
+    box-shadow:
+      inset 0 1px 3px rgb(0 8 24 / 0.4),
+      inset 0 -1px 0 rgb(255 255 255 / 0.08);
+  }
+  .fiche-bloc-titre {
+    font-family: var(--font-display);
+    font-size: 0.9375rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--ink);
+  }
+  .fiche-subs {
+    display: flex;
+    gap: 0.35rem;
+    margin-top: 0.6rem;
+  }
+  .fiche-subs > i {
+    height: 8px;
+    flex: 1;
+    border-radius: var(--r-pilule);
+    background: rgb(255 255 255 / 0.12);
+    box-shadow: inset 0 1px 2px rgb(0 8 24 / 0.5);
+  }
+  .fiche-subs > i[data-plein] {
+    background: var(--aurora);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.4);
+  }
+
+  .fiche-cartes {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+    gap: 0.9rem 0.7rem;
+    margin-top: 0.7rem;
+  }
+  .fiche-cartes > li {
+    display: grid;
+    min-width: 0;
+    justify-items: center;
+    gap: 0.2rem;
+    text-align: center;
+  }
+  .fiche-carte {
+    display: block;
+    width: 84px;
+    margin-bottom: 0.25rem;
+  }
+  .fiche-carte .cadre {
+    filter: drop-shadow(0 4px 6px rgb(0 0 0 / 0.5));
+  }
+  .fiche-cartes b {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--ink);
+  }
+  .fiche-cartes small {
+    font-size: 0.71875rem;
+    line-height: 1.3;
+    color: var(--muted);
+  }
+
+  .fiche-duels-chiffres {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.5rem;
+    margin-top: 0.9rem;
+  }
+  .fiche-duels-chiffres > div {
+    padding: 0.6rem 0.8rem;
+    border-radius: var(--r-sm);
+    background: rgb(0 10 30 / 0.22);
+    box-shadow: inset 0 1px 3px rgb(0 8 24 / 0.4);
+    text-align: center;
+  }
+  .fiche-duels-chiffres dt {
+    font-family: var(--font-display);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--faint);
+  }
+  .fiche-duels-chiffres dd {
+    font-family: var(--font-display);
+    font-size: 1.6rem;
+    font-weight: 900;
+    line-height: 1.1;
+    color: var(--ink);
+  }
+  .fiche-duels {
+    display: grid;
+    gap: 0.4rem;
+    margin-top: 0.75rem;
+  }
+  .fiche-duels > li {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.05rem 0.75rem;
+    padding: 0.55rem 0.85rem;
+    border-radius: var(--r-sm);
+    background: rgb(0 10 30 / 0.2);
+    font-size: 0.875rem;
+    color: var(--ink-2);
+  }
+  .fiche-duels > li b {
+    font-family: var(--font-display);
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--ink);
+  }
+  .fiche-duels > li[data-gagne] b {
+    color: var(--aurora);
+  }
+  .fiche-duels > li > span:nth-child(2) {
+    font-family: var(--font-display);
+    font-weight: 800;
+    color: var(--ink);
+  }
+  .fiche-duels > li small {
+    grid-column: 1 / -1;
+    font-size: 0.75rem;
+    color: var(--faint);
+  }
+
+  /* --------------------------------------------------------------------------
      LES CARTES DE LA SAISON (components/CartesParRarete.tsx)
      Un groupe par rareté, et dans chacun la planche des actions : une tuile par
      carte, l'action en titre, la carte en vignette à gauche, la rareté en

@@ -109,34 +109,34 @@ export interface RankingRow {
   finalist: boolean;
 }
 
+/** Classement complet, calculé sur une base déjà lue. */
+export function classementDe(db: Database): RankingRow[] {
+  const chaine = chaineDeLaLigue();
+  // La streameuse n'est pas une concurrente : elle n'apparaît pas.
+  const active = db.players.filter((p) => p.active && !estLaStreameuse(p, chaine));
+  const entries = active.map((player) => ({
+    player,
+    totals: totalsFor(db.games.filter((g) => g.playerId === player.id).map(toScored)),
+  }));
+
+  return rank(entries).map(({ rank: position, player, totals }) => ({
+    rank: position,
+    id: player.id,
+    slug: player.slug,
+    pseudo: player.pseudo,
+    avatarUrl: player.avatarUrl,
+    twitchLogin: player.twitchLogin,
+    snowflakes: player.snowflakes,
+    totals,
+    immunise: estImmunise(player),
+    ...carteActive(db, player.id),
+    finalist: position <= SEASON.finalistCount,
+  }));
+}
+
 /** Classement complet, prêt à l'affichage. */
 export async function getRanking(): Promise<RankingRow[]> {
-  const store = getStore();
-  const chaine = chaineDeLaLigue();
-  return store.read((db) => {
-    // La streameuse n'est pas une concurrente : elle n'apparaît pas.
-    const active = db.players.filter((p) => p.active && !estLaStreameuse(p, chaine));
-    const entries = active.map((player) => ({
-      player,
-      totals: totalsFor(
-        db.games.filter((g) => g.playerId === player.id).map(toScored),
-      ),
-    }));
-
-    return rank(entries).map(({ rank: position, player, totals }) => ({
-      rank: position,
-      id: player.id,
-      slug: player.slug,
-      pseudo: player.pseudo,
-      avatarUrl: player.avatarUrl,
-      twitchLogin: player.twitchLogin,
-      snowflakes: player.snowflakes,
-      totals,
-      immunise: estImmunise(player),
-      ...carteActive(db, player.id),
-      finalist: position <= SEASON.finalistCount,
-    }));
-  });
+  return getStore().read((db) => classementDe(db));
 }
 
 /**

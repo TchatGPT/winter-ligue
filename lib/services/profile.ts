@@ -7,10 +7,12 @@ import 'server-only';
  * n'est envoyé qu'au joueur lui-même.
  */
 
-import type { Database } from '@/lib/db/entities';
+import { chaineDeLaLigue } from '@/lib/auth/twitch';
+import { CAMP_BOT, type Database } from '@/lib/db/entities';
 import { getStore } from '@/lib/db/store';
-import { chanceDe, packsPersoAcquis, PACKS_REGLES } from '@/lib/domain/rules';
-import { gamesOf, totalsOf } from './league';
+import { chanceDe, packsPersoAcquis, PACKS_REGLES, SEASON } from '@/lib/domain/rules';
+import { estLaStreameuse } from '@/lib/domain/streameuse';
+import { classementDe, gamesOf, totalsOf } from './league';
 import {
   cartesEnAttenteDe,
   type CarteEnAttenteVue,
@@ -115,5 +117,106 @@ export async function getPublicProfile(slug: string): Promise<Omit<ProfileView, 
     if (!full) return null;
     const { ledger: _ledger, ...visible } = full;
     return visible;
+  });
+}
+
+/* -------------------------------------------------------------------------- */
+/* La fiche d'un joueur                                                        */
+/* -------------------------------------------------------------------------- */
+
+export interface DuelFiche {
+  id: string;
+  adversaire: string;
+  bot: boolean;
+  gagne: boolean;
+  mise: number;
+  resolueA: string;
+}
+
+/**
+ * Tout ce que montre la page d'un joueur, en une seule lecture de la base :
+ * son profil public, sa place au classement, ses créneaux de games et ses
+ * duels.
+ */
+export interface FicheJoueur {
+  profil: Omit<ProfileView, 'ledger'>;
+  role: 'joueur' | 'moderateur' | 'admin';
+  /** La streameuse : hors classement, elle ne joue pas de game. */
+  streameuse: boolean;
+  /**
+   * Sa place, ou null hors classement. `ecart` : l'avance sur le premier
+   * non qualifié s'il est qualifié, sinon ce qui lui manque pour la finale.
+   */
+  rang: { position: number; sur: number; finaliste: boolean; ecart: number | null } | null;
+  /** Les games qui comptent pour lui : le plafond de la saison, plus ses créneaux gagnés. */
+  creneaux: number;
+  duels: { joues: number; gagnes: number; perdus: number; net: number; derniers: DuelFiche[] };
+}
+
+export async function getFicheJoueur(slug: string): Promise<FicheJoueur | null> {
+  return getStore().read((lue) => {
+    const db = lue as Database;
+    const player = db.players.find((p) => p.slug === slug);
+    if (!player) return null;
+    const complet = buildProfile(db, player.id);
+    if (!complet) return null;
+    const { ledger: _ledger, ...profil } = complet;
+
+    // Le classement, calculé comme sur la page d'accueil.
+    const classement = classementDe(db);
+    const i = classement.findIndex((r) => r.id === player.id);
+    let rang: FicheJoueur['rang'] = null;
+    if (i >= 0) {
+      const ligne = classement[i];
+      const qualifies = SEASON.finalistCount;
+      let ecart: number | null = null;
+      if (ligne.finalist) {
+        const premierHors = classement[qualifies];
+        if (premierHors) ecart = ligne.totals.totalScore - premierHors.totals.totalScore;
+      } else {
+        const dernierQualifie = classement[qualifies - 1];
+        if (dernierQualifie) ecart = dernierQualifie.totals.totalScore - ligne.totals.totalScore;
+      }
+      rang = { position: ligne.rank, sur: classement.length, finaliste: ligne.finalist, ecart };
+    }
+
+    // Ses duels joués, du plus récent au plus ancien.
+    const nomDe = (id: string | null) =>
+      id === CAMP_BOT ? 'le Bot' : (db.players.find((p) => p.id === id)?.pseudo ?? 'un joueur');
+    const joues = db.batailles
+      .filter(
+        (b) =>
+          b.statut === 'TERMINEE' &&
+          b.resolueA !== null &&
+          (b.hoteId === player.id || b.adversaireId === player.id),
+      )
+      .sort((a, b) => (b.resolueA ?? '').localeCompare(a.resolueA ?? ''));
+    const gagnes = joues.filter((b) => b.vainqueurId === player.id).length;
+
+    return {
+      profil,
+      role: player.role,
+      streameuse: estLaStreameuse(player, chaineDeLaLigue()),
+      rang,
+      creneaux: db.config.maxGamesPerPlayer + (player.creneauxBonus ?? 0),
+      duels: {
+        joues: joues.length,
+        gagnes,
+        perdus: joues.length - gagnes,
+        // Le gagnant récupère sa mise et prend celle de l'autre : +mise, ou −mise.
+        net: joues.reduce((total, b) => total + (b.vainqueurId === player.id ? b.mise : -b.mise), 0),
+        derniers: joues.slice(0, 4).map((b) => {
+          const adversaireId = b.hoteId === player.id ? b.adversaireId : b.hoteId;
+          return {
+            id: b.id,
+            adversaire: nomDe(adversaireId),
+            bot: adversaireId === CAMP_BOT,
+            gagne: b.vainqueurId === player.id,
+            mise: b.mise,
+            resolueA: b.resolueA ?? b.creeeA,
+          };
+        }),
+      },
+    };
   });
 }
