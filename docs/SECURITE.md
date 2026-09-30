@@ -333,7 +333,13 @@ chaîne de la ligue seulement, corps de 64 Kio au plus. Chaque message ne compte
 qu'une fois : sa trace (`saison.twitch_vus`, une heure) s'écrit dans la **même
 transaction** que le compteur, et un échec répond 500 pour que Twitch réessaie. Le
 compteur avance par `addSubs()`, comme la saisie de la modération. Un sub offert
-compte par le message du cadeau, jamais par ceux de ses destinataires.
+compte par le message du cadeau, jamais par ceux de ses destinataires. Deux gestes
+valent en plus un Booster Perso à un joueur qui a un compte : un cadeau groupé d'au
+moins cinq subs, fait à visage découvert (ses subs offerts montent d'autant), et un
+sub de niveau 3 pris pour soi. Rien pour un sub simple, un réabonnement, un petit
+cadeau ou un cadeau anonyme, ni pour la streameuse. Un admin peut remettre le
+compteur à zéro avant le départ de la saison : rien de ce qui a été versé n'est
+repris, et le journal le note.
 
 **Tant que Twitch n'est pas branché, la connexion Twitch est fermée.** Une
 connexion *simulée* a existé : un clic sur le bouton faisait entrer n'importe quel

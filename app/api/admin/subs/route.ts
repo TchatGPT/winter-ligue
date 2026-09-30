@@ -6,7 +6,7 @@ import { playerIdOf } from '@/lib/auth/session';
 import { getStore } from '@/lib/db/store';
 import { LIMITS } from '@/lib/security/ratelimit';
 import { attribueSubsJoueur } from '@/lib/services/packs';
-import { addSubs, subsOverview } from '@/lib/services/subs';
+import { addSubs, remetSubsAZero, subsOverview } from '@/lib/services/subs';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -30,6 +30,9 @@ export async function GET(request: Request): Promise<NextResponse> {
  *  - `subs-joueur` inscrit des subs offerts au compte d'un joueur nommé : ils
  *    lui valent des packs Perso, mis en file. Ils ne touchent pas au compteur
  *    de saison — la modération saisit les deux, l'un après l'autre.
+ *
+ * Et `remise-a-zero`, réservée aux admins : le compteur repart de zéro au
+ * début de la saison, sans rien reprendre de ce qu'il a versé.
  */
 export async function POST(request: Request): Promise<NextResponse> {
   const g = await guard(request, {
@@ -44,6 +47,17 @@ export async function POST(request: Request): Promise<NextResponse> {
   // une union discriminée à travers l'accès répété `g.body`.
   const body = g.body;
   const actor = g.session?.sub ?? 'admin';
+
+  if (body.action === 'remise-a-zero') {
+    if (g.session?.role !== 'admin') {
+      return fail('NON_AUTORISE', 'Seul un admin remet le compteur de subs à zéro.');
+    }
+    try {
+      return ok(await getStore().transaction((db) => remetSubsAZero(db, actor)));
+    } catch (error) {
+      return toResponse(error);
+    }
+  }
 
   // Un modérateur saisit ce qui tombe pendant un live : cent subs au plus à la
   // fois, et jamais à son propre compte — ses subs offerts lui valent des

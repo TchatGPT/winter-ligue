@@ -88,7 +88,9 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   les réglages déjà en base restent lus par `resolvedBooster()`.
 - **Les subs de Twitch** arrivent par EventSub (`/api/twitch/eventsub`) et passent par
   `addSubs()`, comme la saisie de la modération. Un message ne compte qu'une fois : sa
-  trace (`config.twitchVus`) s'écrit dans la même transaction que le compteur.
+  trace (`config.twitchVus`) s'écrit dans la même transaction que le compteur. Seuls
+  deux gestes valent un Booster Perso à quelqu'un : un cadeau groupé d'au moins
+  `PACKS_REGLES.cadeauMinTwitch` subs, et un sub de niveau 3 pris pour soi.
 - Les duels se jouent entre joueurs : il n'y a plus de bot. `CAMP_BOT` ne sert plus
   qu'à afficher les anciens duels.
 - Les overlays OBS (`/overlay/…`) lisent par `Store.fluxOverlay`, jamais par `read()` :

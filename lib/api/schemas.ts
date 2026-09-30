@@ -175,8 +175,9 @@ export const adminGrantSchema = z.object({
   reason: texteLibre(140).pipe(z.string().min(1, 'Un motif est obligatoire.')),
 });
 
-/** Saisie des subs : au compteur de la saison, ou au compte d'un joueur. */
+/** Saisie des subs : au compteur de la saison, au compte d'un joueur, ou remise à zéro. */
 export const adminSubsSchema = z.union([
+  z.object({ action: z.literal('remise-a-zero') }),
   z.object({ action: z.literal('subs'), delta: z.number().int().min(1).max(10_000) }),
   z.object({
     action: z.literal('subs-joueur'),

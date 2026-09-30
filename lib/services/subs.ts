@@ -19,9 +19,16 @@ import { newId } from '@/lib/db/store';
 import { crossedMilestones, nextMilestone, SUBS } from '@/lib/domain/rules';
 import type { PackId } from '@/lib/domain/types';
 import { audit, credit } from './ledger';
-import { ajoutePackDu } from './packs';
+import { ajoutePackDu, attribueSubsJoueur } from './packs';
 import { declencheEvenements } from '@/lib/services/evenements';
-import { dejaVu, recitDuMessage, retiens, subsDuMessage } from '@/lib/domain/twitchSubs';
+import {
+  dejaVu,
+  recitDuMessage,
+  recompenseDuMessage,
+  retiens,
+  subsDuMessage,
+  type RecompenseTwitch,
+} from '@/lib/domain/twitchSubs';
 
 export class SubError extends Error {
   constructor(
@@ -132,6 +139,10 @@ export function addSubs(db: Database, delta: number, actor: string, precision?: 
  * les deux réussissent ou échouent ensemble. Un message qui n'ajoute rien (le
  * destinataire d'un sub offert, déjà compté par le cadeau) n'est pas retenu.
  *
+ * Un cadeau groupé d'au moins cinq subs, ou un sub de niveau 3 pris pour soi,
+ * vaut en plus un Booster Perso à son auteur s'il a un compte dans la ligue
+ * (`recompenseDuMessage`).
+ *
  * À appeler dans une transaction. Renvoie null si le message ne change rien.
  */
 export function ajouteSubsTwitch(
@@ -142,7 +153,43 @@ export function ajouteSubsTwitch(
   const subs = subsDuMessage(message.type, message.evenement);
   if (subs === 0) return null;
   db.config.twitchVus = retiens(db.config.twitchVus, message.id, message.maintenant);
-  return addSubs(db, subs, 'twitch', recitDuMessage(message.type, message.evenement, subs));
+  const resultat = addSubs(db, subs, 'twitch', recitDuMessage(message.type, message.evenement, subs));
+  recompense(db, recompenseDuMessage(message.type, message.evenement));
+  return resultat;
+}
+
+/**
+ * Ce qu'un message vaut à un joueur de la ligue : ses subs offerts, ou un
+ * Booster Perso pour un sub de niveau 3. Quelqu'un qui n'a pas encore de
+ * compte sur le site n'y gagne rien — le compteur de la saison, lui, a compté.
+ */
+function recompense(db: Database, r: RecompenseTwitch | null): void {
+  if (!r) return;
+  const joueur = db.players.find((p) => p.twitchId === r.twitchId && p.active);
+  if (!joueur) return;
+  if (r.genre === 'subs-offerts') {
+    attribueSubsJoueur(db, joueur.id, r.subs, 'twitch');
+    return;
+  }
+  ajoutePackDu(db, 'perso', joueur.id, 'sub de niveau 3');
+  audit(db, 'twitch', 'SUB_NIVEAU_3', joueur.id, `Sub de niveau 3 de ${joueur.pseudo} : un Booster Perso en file`);
+}
+
+/**
+ * Remet le compteur de la saison à zéro, avant son vrai départ : les subs de
+ * l'avant-saison ne comptent plus, et les évènements qu'ils ont ouverts
+ * s'arrêtent. Ce qu'ils ont versé reste versé — flocons, boosters en file,
+ * subs offerts — et le journal garde la trace de tout.
+ *
+ * À appeler dans une transaction. Réservé à l'administration.
+ */
+export function remetSubsAZero(db: Database, actor: string): { avant: number } {
+  const avant = db.config.totalSubs;
+  db.config.totalSubs = 0;
+  db.subEvents = [];
+  db.evenements = [];
+  audit(db, actor, 'SUBS_REMIS_A_ZERO', null, `Compteur de subs remis à zéro (il était à ${avant}).`);
+  return { avant };
 }
 
 /** État du compteur, pour la bannière publique. */

@@ -129,10 +129,12 @@ export default async function ReglesPage(){
             ))}
           </ul>
           <p>
-            Personne n’achète de booster. Un Booster Perso est dû tous les{' '}
+            Un Booster Perso est dû tous les{' '}
             <strong className="text-ink">{PACKS_REGLES.persoTousLes} subs offerts</strong> par un
-            même joueur. Les boosters de la ligue tombent aux paliers de subs. La streameuse les
-            ouvre depuis la file, un par un.
+            même joueur — en cadeaux groupés d’au moins {PACKS_REGLES.cadeauMinTwitch} subs d’un
+            coup —, et pour chaque <strong className="text-ink">sub de niveau 3</strong> qu’il prend
+            lui-même. Les boosters de la ligue tombent aux paliers de subs. La streameuse les ouvre
+            depuis la file, un par un.
           </p>
           <p className="text-xs text-faint">
             La chance vient des flocons : le multiplicateur monte de ×1 à ×2 avec le solde, et

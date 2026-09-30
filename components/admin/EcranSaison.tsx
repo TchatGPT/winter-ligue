@@ -72,10 +72,22 @@ export function EcranSaison({
   const [gifteur, setGifteur] = useState('');
   const [subsGifteur, setSubsGifteur] = useState<number>(PACKS_REGLES.persoTousLes);
   const [dernierVersement, setDernierVersement] = useState<string | null>(null);
+  /** La remise à zéro se confirme : un premier clic la propose, le second la fait. */
+  const [confirmeZero, setConfirmeZero] = useState(false);
 
   const prochain = nextMilestone(config.totalSubs);
   const branche = twitch.etat?.branche === true;
   const joueurChoisi = joueurs.find((j) => j.id === gifteur);
+
+  async function remetAZero() {
+    const data = await envoie(
+      '/api/admin/subs',
+      { action: 'remise-a-zero' },
+      { cle: 'subs-zero', succes: 'Compteur de subs remis à zéro.' },
+    );
+    setConfirmeZero(false);
+    if (data) setDernierVersement(null);
+  }
 
   async function ajouteSubs(delta: number) {
     const data = await envoie(
@@ -162,6 +174,17 @@ export function EcranSaison({
           titre="Compteur de subs"
           icone="snowflake"
           neige="admin-subs"
+          actions={
+            estAdmin && !confirmeZero ? (
+              <button
+                className="btn btn-sm btn-ghost"
+                disabled={busy !== null || config.totalSubs === 0}
+                onClick={() => setConfirmeZero(true)}
+              >
+                Remettre à zéro
+              </button>
+            ) : undefined
+          }
           aide={
             <>
               Chaque palier verse à <strong className="text-muted">tous les joueurs actifs</strong>,
@@ -176,6 +199,23 @@ export function EcranSaison({
             </>
           }
         >
+          {confirmeZero && (
+            <div className="mb-4 rounded-lg border border-danger/40 px-3 py-3">
+              <p className="text-[13px] text-ink-2">
+                Le compteur repart de <strong className="text-ink">0</strong>, son historique s’efface et les
+                évènements en cours s’arrêtent. Les flocons déjà versés, les boosters en file et les subs offerts
+                restent. Le journal garde la trace.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button className="btn btn-sm btn-danger" disabled={busy !== null} onClick={remetAZero}>
+                  Remettre à zéro ({flakes(config.totalSubs)} subs)
+                </button>
+                <button className="btn btn-sm btn-ghost" disabled={busy !== null} onClick={() => setConfirmeZero(false)}>
+                  Annuler
+                </button>
+              </div>
+            </div>
+          )}
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div className="flex flex-wrap gap-1.5">
               {SUBS.adminSteps.map((pas) => (
@@ -221,8 +261,10 @@ export function EcranSaison({
           aide={
             <>
               Un Booster Perso tous les {PACKS_REGLES.persoTousLes} subs offerts, mis en file pour ce
-              joueur. À saisir <strong className="text-muted">en plus</strong> du compteur de
-              saison : ces subs comptent aussi pour tout le monde.
+              joueur. Depuis Twitch, un cadeau groupé d’au moins {PACKS_REGLES.cadeauMinTwitch} subs
+              s’ajoute tout seul à celui qui l’offre, et un sub de niveau 3 lui vaut un Booster Perso.
+              Ici, on saisit à la main ce que Twitch n’a pas pu rattacher — un cadeau fait avant
+              d’avoir un compte, par exemple. Cette saisie ne touche pas au compteur de la saison.
             </>
           }
         >

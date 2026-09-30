@@ -168,6 +168,13 @@ export const PACKS_REGLES = {
    * plafonné à `CARD_IMPACT_CAP` sur une seule game.
    */
   persoTousLes: 5,
+  /**
+   * Depuis Twitch, seuls comptent pour les subs offerts d'un joueur les cadeaux
+   * groupés d'au moins N subs d'un coup (5, 10, 20…), faits à visage découvert.
+   * Un sub simple, un réabonnement ou un petit cadeau ne comptent que pour la
+   * saison.
+   */
+  cadeauMinTwitch: 5,
 } as const;
 
 /** Un joueur qui a offert `subsOfferts` subs a droit à autant de packs Perso. */

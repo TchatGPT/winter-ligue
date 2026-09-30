@@ -350,7 +350,8 @@ export default async function FicheJoueurPage({ params }: { params: Promise<{ sl
                 ))}
               </div>
               <p className="mt-1.5 text-[12.5px] text-muted">
-                Prochain Booster Perso dans {p.subsAvantPack} sub{p.subsAvantPack > 1 ? 's' : ''}.
+                Prochain Booster Perso dans {p.subsAvantPack} sub{p.subsAvantPack > 1 ? 's' : ''}. Seuls
+                comptent les cadeaux groupés d’au moins {PACKS_REGLES.cadeauMinTwitch} subs.
               </p>
             </div>
 
@@ -381,8 +382,8 @@ export default async function FicheJoueurPage({ params }: { params: Promise<{ sl
             <h3 className="fiche-bloc-titre mt-4">En attente</h3>
             {p.cartesEnAttente.length === 0 ? (
               <p className="mt-1.5 text-[13.5px] text-muted">
-                Aucune. Un Booster Perso tous les {PACKS_REGLES.persoTousLes} subs offerts, et les boosters de la
-                ligue.
+                Aucune. Un Booster Perso tous les {PACKS_REGLES.persoTousLes} subs offerts ou pour un sub de
+                niveau 3, et les boosters de la ligue.
               </p>
             ) : (
               <ul className="fiche-cartes">

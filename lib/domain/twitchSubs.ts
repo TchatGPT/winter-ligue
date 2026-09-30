@@ -12,7 +12,17 @@
  * avec le nombre, puis un message par destinataire : il n'est compté qu'une
  * fois, par le premier. Le palier du sub (1, 2 ou 3) ne change rien : un sub
  * est un sub.
+ *
+ * ## Ce qu'un sub vaut à un joueur
+ *
+ * En plus du compteur de la saison, deux gestes valent un Booster Perso à un
+ * joueur de la ligue : offrir des subs en cadeaux groupés d'au moins
+ * `PACKS_REGLES.cadeauMinTwitch` (ses subs offerts montent d'autant), et
+ * prendre soi-même un sub de niveau 3. Rien d'autre : ni sub simple, ni
+ * réabonnement, ni petit cadeau, ni cadeau anonyme.
  */
+
+import { PACKS_REGLES } from './rules';
 
 /** Les abonnements EventSub que le site demande à Twitch. */
 export const TYPES_SUBS = [
@@ -59,6 +69,33 @@ export function subsDuMessage(type: string, evenement: Evenement): number {
     default:
       return 0;
   }
+}
+
+/** Ce qu'un message vaut à un joueur en particulier, en plus du compteur de la saison. */
+export type RecompenseTwitch =
+  | { genre: 'subs-offerts'; twitchId: string; subs: number }
+  | { genre: 'sub-niveau-3'; twitchId: string };
+
+/**
+ * Ce que ce message vaut à celui qui l'a fait : des subs offerts pour un
+ * cadeau groupé assez gros, un Booster Perso pour un sub de niveau 3 pris pour
+ * soi. Rien pour la streameuse sur sa propre chaîne.
+ */
+export function recompenseDuMessage(type: string, evenement: Evenement): RecompenseTwitch | null {
+  const e = evenement ?? {};
+  const twitchId = typeof e.user_id === 'string' && e.user_id ? e.user_id : null;
+  if (!twitchId || twitchId === e.broadcaster_user_id) return null;
+
+  if (type === 'channel.subscription.gift') {
+    if (e.is_anonymous === true) return null;
+    const subs = subsDuMessage(type, e);
+    return subs >= PACKS_REGLES.cadeauMinTwitch ? { genre: 'subs-offerts', twitchId, subs } : null;
+  }
+  if (type === 'channel.subscribe') {
+    // Pris pour soi : un sub de niveau 3 reçu en cadeau ne vaut rien à celui qui le reçoit.
+    return e.is_gift !== true && e.tier === '3000' ? { genre: 'sub-niveau-3', twitchId } : null;
+  }
+  return null;
 }
 
 /** Le nom affiché d'un abonné, borné : il finit dans le journal. */
