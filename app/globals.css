@@ -2344,7 +2344,8 @@
     color: var(--ink-2);
     text-shadow: 0 1px 2px rgb(0 8 24 / 0.7);
   }
-  .case-medaille {
+  /* Plus précis que .medaille, déclarée plus loin : sinon elle reprend ses 30 px. */
+  .case-tete .case-medaille {
     width: 18px;
     height: 18px;
     font-size: 0.625rem;
