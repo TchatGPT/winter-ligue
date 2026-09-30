@@ -154,6 +154,19 @@
   --noel-nez: #e58a7a;
   --noel-botte: #17202e;
   --noel-fourrure: #f6fbff;
+
+  /* Le décor 3D des duels (components/duel3d) : la neige, le ciel, les bois. */
+  --decor-neige: #f3f8fd;
+  --decor-piste: #d2e1ef;
+  --decor-ciel-haut: #17365c;
+  --decor-ciel-bas: #b9d6ea;
+  --decor-soleil: #ffd9ae;
+  --decor-ecorce: #5e3f2b;
+  --decor-bois: #d8b388;
+  --decor-roche: #7a8ba0;
+  --decor-sapin: #1d5646;
+  --decor-glace: #a8dcf4;
+  --decor-montagne: #5b7a99;
   --roche: #6e7f93;
   --bois: #7a5536;
   --bois-clair: #c79a68;
@@ -8171,5 +8184,79 @@
   .admin-lien-demo {
     margin-left: auto;
     color: var(--ice);
+  }
+}
+
+/* ==========================================================================
+   LA COURSE DES DUELS EN 3D (components/duel3d)
+   ========================================================================== */
+
+@layer components {
+  .course3d {
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+    aspect-ratio: 16 / 7;
+    min-height: 260px;
+    border-radius: var(--r-md);
+    font-family: var(--font-display);
+    background: var(--decor-ciel-bas);
+    box-shadow:
+      inset 0 0 0 1px rgb(255 255 255 / 0.14),
+      0 18px 30px -18px rgb(0 8 24 / 0.85);
+  }
+  @media (max-width: 639px) {
+    .course3d {
+      aspect-ratio: 4 / 3;
+      min-height: 0;
+    }
+  }
+  .course3d canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+  /* Un vignettage léger : l'œil reste au centre, sur la course. */
+  .course3d::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background: radial-gradient(ellipse 75% 70% at 50% 55%, transparent 55%, rgb(0 14 34 / 0.3) 100%);
+  }
+  .course3d-nom {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.2rem 0.7rem 0.22rem;
+    border-radius: var(--r-pilule);
+    font-size: 0.8125rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    color: var(--ink);
+    background: rgb(7 24 48 / 0.84);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.25),
+      0 6px 12px -8px rgb(0 8 24 / 0.85);
+    opacity: 0;
+    pointer-events: none;
+    will-change: transform;
+    transition: opacity 0.2s ease;
+  }
+  .course3d-nom[data-moi] {
+    box-shadow:
+      inset 0 0 0 1.5px var(--aurora),
+      0 6px 12px -8px rgb(0 8 24 / 0.85);
+  }
+  .course3d-nom > span {
+    font-size: 0.6875rem;
+    color: var(--aurora);
   }
 }

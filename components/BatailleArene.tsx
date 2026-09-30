@@ -12,12 +12,15 @@
  * ressemblent, la tête change de camp, et c'est une fois sur deux celui qui
  * menait qui tombe. Recharger ou fermer ne change rien.
  *
- * L'animation tourne hors de React : une boucle d'images écrit l'avancée dans
- * des variables CSS du couloir. Soixante rendus par seconde pour déplacer deux
- * boules, ce serait cher payé.
+ * L'animation tourne hors de React : une boucle d'images donne l'avancée de
+ * chaque camp à la scène 3D (`components/duel3d`) — personnages modelés,
+ * décor, caméra qui suit la course. Sans WebGL, les couloirs dessinés prennent
+ * le relais, et la même boucle écrit leurs variables CSS.
  */
 
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { Course3D, type ControleCourse3D } from '@/components/duel3d/Course3D';
+import type { Donnees3D } from '@/components/duel3d/moteur';
 import {
   demarreRoulement,
   sonBosse,
@@ -331,20 +334,47 @@ export function ArenePreparation({
   /** De quel côté se tient le joueur : l'hôte s'il lance le duel, l'autre s'il en relève un. */
   moi: 'gauche' | 'droite';
 }) {
+  const [en3d, setEn3d] = useState(true);
+  const controle = useRef<ControleCourse3D | null>(null);
+  const donnees = useMemo<Donnees3D>(
+    () => ({
+      bots: { hote: gauche.bot, adversaire: droite.bot },
+      obstacles: { hote: [], adversaire: [] },
+      chute: null,
+    }),
+    [gauche.bot, droite.bot],
+  );
+
   return (
     <div className="arene" aria-live="polite" aria-busy="true">
       <Enjeu mise={mise} />
-      <div className="course mt-6">
-        <Couloir camp="hote" apercu={gauche} moi={moi === 'gauche'} course={null} etat="depart" attache={() => {}} />
-        <Couloir
-          camp="adversaire"
-          apercu={droite}
-          moi={moi === 'droite'}
-          course={null}
-          etat="depart"
-          attache={() => {}}
-        />
-      </div>
+      {en3d ? (
+        <div className="mt-6">
+          <Course3D
+            donnees={donnees}
+            noms={{
+              hote: { pseudo: gauche.pseudo, moi: moi === 'gauche' },
+              adversaire: { pseudo: droite.pseudo, moi: moi === 'droite' },
+            }}
+            surControle={(c) => {
+              controle.current = c;
+            }}
+            onIndisponible={() => setEn3d(false)}
+          />
+        </div>
+      ) : (
+        <div className="course mt-6">
+          <Couloir camp="hote" apercu={gauche} moi={moi === 'gauche'} course={null} etat="depart" attache={() => {}} />
+          <Couloir
+            camp="adversaire"
+            apercu={droite}
+            moi={moi === 'droite'}
+            course={null}
+            etat="depart"
+            attache={() => {}}
+          />
+        </div>
+      )}
       <div className="arene-recit">
         <p className="font-display text-lg font-black tracking-wide text-ink uppercase sm:text-xl">
           {droite.bot ? 'Le Bot tasse sa boule de neige…' : 'Les deux joueurs tassent leur boule…'}
@@ -394,6 +424,20 @@ export function BatailleArene({
   const [tete, setTete] = useState<Camp | null>(null);
 
   const couloirs = useRef<Record<Camp, HTMLDivElement | null>>({ hote: null, adversaire: null });
+  /** La scène 3D ; sans WebGL, les couloirs dessinés la remplacent. */
+  const [en3d, setEn3d] = useState(true);
+  const controle = useRef<ControleCourse3D | null>(null);
+  const donnees3d = useMemo<Donnees3D | null>(
+    () =>
+      course
+        ? {
+            bots: { hote: hote?.bot ?? false, adversaire: adversaire?.bot ?? false },
+            obstacles: { hote: course.couloirs.hote.obstacles, adversaire: course.couloirs.adversaire.obstacles },
+            chute: { camp: course.perdant, type: course.chute.type, position: course.chute.position },
+          }
+        : null,
+    [course, hote?.bot, adversaire?.bot],
+  );
 
   // Le rappel de fin change à chaque rendu du parent : on garde le dernier,
   // sans relancer la course pour autant.
@@ -408,19 +452,26 @@ export function BatailleArene({
   useEffect(() => {
     if (!course) return;
 
-    /** Écrit l'avancée d'un camp dans son couloir. */
+    /**
+     * Donne l'avancée d'un camp à la scène 3D — et, sans elle, l'écrit dans
+     * les variables CSS de son couloir. Le tressaut se lit sur les obstacles
+     * de la course, pas sur le DOM : la scène 3D n'en a pas.
+     */
     const pose = (camp: Camp, p: number, tombe: boolean) => {
+      let saut = 0;
+      for (const o of course.couloirs[camp].obstacles) {
+        const fatal = course.perdant === camp && o.position === course.chute.position;
+        if (fatal) continue;
+        const x = (p - (o.position - AVANT_BOSSE)) / (AVANT_BOSSE + APRES_BOSSE);
+        if (x > 0 && x < 1) saut = Math.max(saut, Math.sin(Math.PI * x));
+      }
+      controle.current?.pose(camp, p, tombe ? 0 : saut, tombe);
+
       const el = couloirs.current[camp];
       if (!el) return;
-      let saut = 0;
       for (const o of el.querySelectorAll<HTMLElement>('[data-obstacle]')) {
-        const q = Number(o.dataset.obstacle);
-        const fatal = course.perdant === camp && q === course.chute.position;
-        if (fatal) continue;
-        if (p > q + AVANT_BOSSE) o.dataset.passe = '';
+        if (p > Number(o.dataset.obstacle) + AVANT_BOSSE) o.dataset.passe = '';
         else delete o.dataset.passe;
-        const x = (p - (q - AVANT_BOSSE)) / (AVANT_BOSSE + APRES_BOSSE);
-        if (x > 0 && x < 1) saut = Math.max(saut, Math.sin(Math.PI * x));
       }
       el.style.setProperty('--p', p.toFixed(4));
       el.style.setProperty('--saut', tombe ? '0' : saut.toFixed(3));
@@ -500,7 +551,23 @@ export function BatailleArene({
     };
   }, [course, anime, jeGagne, jeJoue]);
 
-  if (!hote || !adversaire || !course) return null;
+  // La scène 3D suit l'état de chaque camp : départ, course, chute, victoire.
+  useEffect(() => {
+    if (!course) return;
+    for (const camp of CAMPS) {
+      const etat =
+        course.perdant === camp
+          ? phase === 'course'
+            ? 'course'
+            : 'chute'
+          : phase === 'fini'
+            ? 'victoire'
+            : 'course';
+      controle.current?.etat(camp, etat);
+    }
+  }, [course, phase, en3d]);
+
+  if (!hote || !adversaire || !course || !donnees3d) return null;
 
   const noms: Record<Camp, string> = { hote: hote.pseudo, adversaire: adversaire.pseudo };
   const botGagne = adversaire.bot && course.vainqueur === 'adversaire';
@@ -515,28 +582,44 @@ export function BatailleArene({
     <div className="arene" aria-live="polite">
       <Enjeu mise={b.mise} />
 
-      <div className="course mt-6">
-        <Couloir
-          camp="hote"
-          apercu={hote}
-          moi={hote.id === moiId}
-          course={course}
-          etat={etatDe('hote')}
-          attache={(el) => {
-            couloirs.current.hote = el;
-          }}
-        />
-        <Couloir
-          camp="adversaire"
-          apercu={adversaire}
-          moi={adversaire.id === moiId}
-          course={course}
-          etat={etatDe('adversaire')}
-          attache={(el) => {
-            couloirs.current.adversaire = el;
-          }}
-        />
-      </div>
+      {en3d ? (
+        <div className="mt-6">
+          <Course3D
+            donnees={donnees3d}
+            noms={{
+              hote: { pseudo: hote.pseudo, moi: hote.id === moiId },
+              adversaire: { pseudo: adversaire.pseudo, moi: adversaire.id === moiId },
+            }}
+            surControle={(c) => {
+              controle.current = c;
+            }}
+            onIndisponible={() => setEn3d(false)}
+          />
+        </div>
+      ) : (
+        <div className="course mt-6">
+          <Couloir
+            camp="hote"
+            apercu={hote}
+            moi={hote.id === moiId}
+            course={course}
+            etat={etatDe('hote')}
+            attache={(el) => {
+              couloirs.current.hote = el;
+            }}
+          />
+          <Couloir
+            camp="adversaire"
+            apercu={adversaire}
+            moi={adversaire.id === moiId}
+            course={course}
+            etat={etatDe('adversaire')}
+            attache={(el) => {
+              couloirs.current.adversaire = el;
+            }}
+          />
+        </div>
+      )}
 
       {/* ---- Ce qui se passe ---- */}
       <div className="arene-recit">
