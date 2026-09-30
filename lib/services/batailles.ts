@@ -45,7 +45,8 @@ export class BatailleError extends Error {
       | 'BATAILLE_INCONNUE'
       | 'DEJA_RESOLUE'
       | 'PAS_TA_BATAILLE'
-      | 'TA_PROPRE_BATAILLE',
+      | 'TA_PROPRE_BATAILLE'
+      | 'TROP_EN_ATTENTE',
   ) {
     super(message);
     this.name = 'BatailleError';
@@ -59,6 +60,25 @@ export class BatailleError extends Error {
  * ce qui rend le lobby honnête : un affrontement affiché est un affrontement
  * dont l'hôte a déjà payé, et personne ne rejoint une mise qui n'existe pas.
  */
+/** Les duels que ce joueur a lancés et qui attendent encore un adversaire. */
+export function duelsEnAttente(db: Database, hoteId: string): number {
+  return db.batailles.filter((b) => b.hoteId === hoteId && b.statut === 'ATTENTE').length;
+}
+
+/**
+ * Lève si ce joueur a déjà `DUEL.enAttenteMax` duels en attente. Seuls les
+ * duels ouverts à tous y sont soumis : un duel contre le bot se joue aussitôt,
+ * il n'attend personne et n'est pas annoncé.
+ */
+export function verifieAttente(db: Database, hoteId: string): void {
+  if (duelsEnAttente(db, hoteId) >= DUEL.enAttenteMax) {
+    throw new BatailleError(
+      `Tu as déjà ${DUEL.enAttenteMax} duels en attente : attends qu’on les relève, ou annules-en un.`,
+      'TROP_EN_ATTENTE',
+    );
+  }
+}
+
 export function creeBataille(db: Database, hoteId: string, mise: number, manches: number): Bataille {
   if (!(MANCHES_POSSIBLES as readonly number[]).includes(manches)) {
     throw new BatailleError('Un duel se joue en une seule manche.', 'MANCHES_INVALIDES');

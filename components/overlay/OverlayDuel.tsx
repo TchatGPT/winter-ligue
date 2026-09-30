@@ -25,8 +25,15 @@ const DUREE_SORTIE = 800;
 export function OverlayDuel({ cle, depart, demo = false }: { cle: string; depart: string; demo?: boolean }) {
   const [file, setFile] = useState<DuelOverlay[]>(() => (demo ? [duelDemo(0)] : []));
 
+  // Un joueur n'a qu'une alerte en file, et la file garde les trois dernières :
+  // une rafale de duels ne tient pas l'écran des minutes durant.
   const surFlux = useCallback((_: unknown, nouveaux: { duels: DuelOverlay[] }) => {
-    if (nouveaux.duels.length) setFile((f) => [...f, ...nouveaux.duels]);
+    if (!nouveaux.duels.length) return;
+    setFile((f) => {
+      const suite = [...f];
+      for (const d of nouveaux.duels) if (!suite.some((x) => x.hote === d.hote)) suite.push(d);
+      return suite.length > 3 ? [suite[0], ...suite.slice(-2)] : suite;
+    });
   }, []);
   useFluxOverlay({ cle, depart, intervalle: 2000, actif: !demo, surFlux });
 

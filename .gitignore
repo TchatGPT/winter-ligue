@@ -50,3 +50,12 @@ next-env.d.ts
 # que le build fonctionne sur une machine neuve sans étape préalable.
 2026-08-31 13-08-56.mp4
 *.mp4
+
+# Exports et sauvegardes de la base : des données personnelles, jamais dans le
+# dépôt — il est public.
+winter-ligue-*.json
+/league.json
+*.sql
+*.dump
+*.backup
+*.key

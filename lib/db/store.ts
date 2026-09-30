@@ -301,6 +301,26 @@ interface DocOverlay {
   evenements: { label: string; fin: string }[];
 }
 
+/** La base est-elle sur cette machine ? Seule une base locale se passe de TLS. */
+function estLocale(url: string): boolean {
+  try {
+    return ['localhost', '127.0.0.1', '::1', '[::1]'].includes(new URL(url).hostname);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Vrai quand `DATABASE_URL` désigne une base distante — celle de production,
+ * en pratique. La connexion de développement s'y refuse : un serveur local
+ * lancé par erreur avec la vraie adresse ne doit pas ouvrir la ligue à qui
+ * joint ce poste.
+ */
+export function baseDistante(): boolean {
+  const url = process.env.DATABASE_URL?.trim();
+  return Boolean(url) && !estLocale(url!);
+}
+
 class PostgresStore implements Store {
   private readonly sql: postgres.Sql;
   private pret: Promise<void> | null = null;
@@ -323,6 +343,11 @@ class PostgresStore implements Store {
       max: 1,
       idle_timeout: 20,
       connect_timeout: 10,
+      // Chiffré. Sans cette ligne, requêtes et réponses passaient en clair
+      // entre Vercel et Supabase : l'adresse n'impose pas `sslmode`. Le
+      // certificat du pooler est signé par l'autorité de Supabase, que Node
+      // ne connaît pas : l'épingler est l'étape suivante (docs/SECURITE.md).
+      ssl: estLocale(url) ? false : 'require',
       // Pas de bavardage « relation already exists » à chaque démarrage.
       onnotice: () => {},
     });

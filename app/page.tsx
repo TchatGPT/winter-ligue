@@ -1,4 +1,5 @@
 import { Classement } from '@/components/Classement';
+import { connexionDeDeveloppement } from '@/lib/auth/dev';
 import { SubsBanner } from '@/components/SubsBanner';
 import { Hero } from '@/components/Hero';
 import { Accueil } from '@/components/Accueil';
@@ -15,15 +16,11 @@ import { isReconnaissanceEnabled } from '@/lib/services/reconnaissance';
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Classement général' };
 
-function devLoginAllowed(): boolean {
-  return process.env.NODE_ENV !== 'production' && process.env.ALLOW_DEV_LOGIN === 'true';
-}
-
 export default async function ClassementPage() {
   // Déconnecté, on ne voit rien de la ligue : seulement ce qu'elle est, et
   // comment y entrer.
   if ((await getSession()) === null) {
-    return <Accueil twitchEnabled={isTwitchEnabled()} devLogin={devLoginAllowed()} />;
+    return <Accueil twitchEnabled={isTwitchEnabled()} devLogin={connexionDeDeveloppement()} />;
   }
   const session = await exigeSession();
   // La saisie par capture vit ici, au-dessus du classement : c'est là que la

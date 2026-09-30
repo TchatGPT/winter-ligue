@@ -10,6 +10,7 @@ import {
   BatailleError,
   creeBataille,
   rejointBataille,
+  verifieAttente,
   vueBataille,
 } from '@/lib/services/batailles';
 
@@ -271,5 +272,25 @@ describe('annuler', () => {
 
     rejointBataille(db, 'autre', b.id);
     expect(() => annuleBataille(db, 'hote', b.id)).toThrow(BatailleError);
+  });
+});
+
+describe('les duels en attente', () => {
+  it('sont bornés par joueur : chacun est annoncé sur le stream', () => {
+    const db = base();
+    for (let i = 0; i < DUEL.enAttenteMax; i += 1) {
+      verifieAttente(db, 'hote');
+      creeBataille(db, 'hote', MISE, 1);
+    }
+    expect(() => verifieAttente(db, 'hote')).toThrow(BatailleError);
+    // Un autre joueur n'en pâtit pas.
+    expect(() => verifieAttente(db, 'autre')).not.toThrow();
+  });
+
+  it('libèrent une place quand l’un d’eux est annulé', () => {
+    const db = base();
+    const premiers = Array.from({ length: DUEL.enAttenteMax }, () => creeBataille(db, 'hote', MISE, 1));
+    annuleBataille(db, 'hote', premiers[0].id);
+    expect(() => verifieAttente(db, 'hote')).not.toThrow();
   });
 });

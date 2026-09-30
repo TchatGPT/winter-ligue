@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { createToken, setSessionCookie } from '@/lib/auth/session';
 import { fail, guard, ok } from '@/lib/api/respond';
 import { uuid } from '@/lib/api/schemas';
+import { connexionDeDeveloppement } from '@/lib/auth/dev';
 import { getStore } from '@/lib/db/store';
 import { LIMITS } from '@/lib/security/ratelimit';
 
@@ -11,19 +12,11 @@ export const runtime = 'nodejs';
 const schema = z.object({ playerId: uuid });
 
 /**
- * Connexion joueur de développement, en attendant Twitch.
- *
- * Double verrou volontaire : la route rend 404 si `NODE_ENV === 'production'`
- * OU si `ALLOW_DEV_LOGIN` n'est pas explicitement à `true`. Oublier de retirer
- * la variable ne suffit donc pas à ouvrir une porte en production, et un
- * déploiement de préproduction doit l'activer sciemment.
+ * Connexion joueur de développement — voir `lib/auth/dev.ts`. Fermée, la
+ * route répond 404, comme si elle n'existait pas.
  */
-function devLoginAllowed(): boolean {
-  return process.env.NODE_ENV !== 'production' && process.env.ALLOW_DEV_LOGIN === 'true';
-}
-
 export async function POST(request: Request): Promise<NextResponse> {
-  if (!devLoginAllowed()) {
+  if (!connexionDeDeveloppement()) {
     return fail('INTROUVABLE', 'Route indisponible.');
   }
 

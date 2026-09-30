@@ -7,7 +7,7 @@ import { getStore } from '@/lib/db/store';
 import { MANCHES_MAX, MANCHES_MIN } from '@/lib/domain/bataille';
 import { DUEL } from '@/lib/domain/rules';
 import { LIMITS } from '@/lib/security/ratelimit';
-import { creeBataille, tableauBatailles, topSemaine, vueBataille } from '@/lib/services/batailles';
+import { creeBataille, tableauBatailles, topSemaine, verifieAttente, vueBataille } from '@/lib/services/batailles';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -69,9 +69,10 @@ export async function POST(request: Request): Promise<NextResponse> {
   }
 
   try {
-    const vue = await getStore().transaction((db) =>
-      vueBataille(db, creeBataille(db, joueurId, g.body.mise, g.body.manches)),
-    );
+    const vue = await getStore().transaction((db) => {
+      verifieAttente(db, joueurId);
+      return vueBataille(db, creeBataille(db, joueurId, g.body.mise, g.body.manches));
+    });
     return ok(vue);
   } catch (error) {
     return toResponse(error);

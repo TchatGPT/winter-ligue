@@ -537,4 +537,10 @@ export const CRENEAUX_BONUS = {
 export const DUEL = {
   miseMin: 50,
   miseMax: 20_000,
+  /**
+   * Les duels qu'un joueur peut laisser en attente à la fois. Chacun est
+   * annoncé sur le stream : sans borne, un joueur pouvait en lancer cinquante
+   * d'affilée et occuper l'écran des minutes durant.
+   */
+  enAttenteMax: 3,
 } as const;

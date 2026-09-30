@@ -6999,10 +6999,10 @@
   /* Le sachet : il surgit en tournant, se charge, puis éclate. */
   .ov-sachet {
     position: absolute;
-    top: 250px;
+    top: 236px;
     left: 50%;
-    width: 360px;
-    margin-left: -180px;
+    width: 400px;
+    margin-left: -200px;
     perspective: 1400px;
   }
   .ov-sachet-corps {
@@ -7651,14 +7651,12 @@
     color: var(--ink);
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    .ov-booster *,
-    .ov-duel *,
-    .ov-subs * {
-      animation-duration: 0.01ms !important;
-      animation-iteration-count: 1 !important;
-    }
-  }
+  /*
+   * Pas de réglage « mouvement réduit » ici, et c'est voulu : OBS hérite de
+   * celui de Windows sur le PC de la streameuse, mais l'overlay s'adresse aux
+   * spectateurs. Coupées, les animations sautaient à leur dernière image — et
+   * la bannière d'un palier, qui finit transparente, ne s'affichait jamais.
+   */
 }
 
 /* ==========================================================================

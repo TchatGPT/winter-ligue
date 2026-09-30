@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { connexionDeDeveloppement } from '@/lib/auth/dev';
 import { redirect } from 'next/navigation';
 import { LoginForms } from '@/components/LoginForms';
 import { getSession, playerIdOf } from '@/lib/auth/session';
@@ -10,15 +11,6 @@ import { EnTetePage } from '@/components/EnTetePage';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Connexion' };
-
-/**
- * La liste des joueurs pour la connexion de développement n'est envoyée au
- * client que si cette connexion est réellement ouverte — sinon, elle reste
- * `null` et ne fuite aucun identifiant.
- */
-function devLoginAllowed(): boolean {
-  return process.env.NODE_ENV !== 'production' && process.env.ALLOW_DEV_LOGIN === 'true';
-}
 
 /**
  * Ce que la connexion Twitch peut renvoyer ici. Le texte vient de cette table,
@@ -49,7 +41,10 @@ export default async function ConnexionPage({
   const brut = (await searchParams).erreur;
   const erreur = typeof brut === 'string' ? (ERREURS[brut] ?? null) : null;
 
-  const devPlayers = devLoginAllowed()
+  // La liste des joueurs pour la connexion de développement n'est envoyée au
+  // client que si cette connexion est réellement ouverte — sinon, elle reste
+  // `null` et ne fuite aucun identifiant.
+  const devPlayers = connexionDeDeveloppement()
     ? await getStore().read((db) =>
         db.players
           .filter((p) => p.active)
