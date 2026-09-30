@@ -93,7 +93,7 @@ export default async function ReglesPage(){
             <li>
               {maxGames} games comptent par joueur
               {maxGames !== DEFAULT_MAX_GAMES_PER_PLAYER ? ' (réglé par la modération)' : ''}. La
-              dernière ouvre le Booster Finisseur. Une carte « Game supplémentaire » en ajoute une,
+              dernière ouvre le Booster Finisseur. Une carte « Game supplémentaire » en ajoute une,{' '}
               {CRENEAUX_BONUS.max} au plus par saison.
             </li>
           </ul>
