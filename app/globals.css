@@ -1651,6 +1651,12 @@
     letter-spacing: -0.005em;
     text-transform: uppercase;
     color: var(--frost);
+    /* Posé à même le décor, hors d'une plaque, un titre peut tomber sur la
+       neige des sommets : il porte le halo sombre du texte du verre, un peu
+       plus large. La matière glace (.glace) l'annule pour elle-même. */
+    text-shadow:
+      0 1px 2px rgb(0 8 24 / 0.8),
+      0 0 14px rgb(0 8 24 / 0.55);
   }
 
   .titre-glace-page {
@@ -2036,10 +2042,12 @@
        sur le verre. */
     color: var(--aurora);
     /* Clair et fin : une ombre plus serrée que celle du verre le détache
-       d'une plaque claire. */
+       d'une plaque claire, et un halo plus large, de la neige des sommets
+       quand il est posé à même le décor. */
     text-shadow:
       0 1px 1px rgb(0 8 24 / 0.9),
-      0 0 8px rgb(0 8 24 / 0.55);
+      0 0 8px rgb(0 8 24 / 0.55),
+      0 0 18px rgb(0 8 24 / 0.5);
   }
 
   .num {
