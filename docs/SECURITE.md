@@ -317,7 +317,7 @@ code se désactive, ou se supprime pour de bon : les flocons versés restent, le
 grand livre garde ses crédits et le journal sa trace. Dix essais par dix minutes
 et par adresse. À sa création, le code est annoncé dans le
 tchat de la chaîne (`POST /helix/chat/messages`, jeton de l'application ; la
-streameuse accorde `user:bot` et `channel:bot` au branchement) : le message est
+streameuse accorde `user:write:chat`, `user:bot` et `channel:bot` au branchement) : le message est
 composé par le serveur (`annonceDuCode`), sans aucun texte venu de l'écran.
 
 **Le circuit OAuth.** `GET /api/auth/twitch` signe un `state` (clé dérivée de
@@ -335,7 +335,7 @@ le texte vient d'une table fixe. L'adresse de retour à déclarer chez Twitch es
 **Les subs viennent de Twitch** (EventSub, en webhook : `POST /api/twitch/eventsub`).
 La streameuse branche une fois, depuis Admin → Saison : la connexion Twitch repart
 avec `subs=1`, signé dans le `state`, et demande en plus `channel:read:subscriptions`,
-ainsi que `user:bot` et `channel:bot` pour annoncer les codes cadeaux dans le tchat.
+ainsi que `user:write:chat`, `user:bot` et `channel:bot` pour annoncer les codes cadeaux dans le tchat.
 Au retour, le site vérifie que c'est bien la chaîne de la ligue et que la portée est
 accordée, puis crée, avec le jeton de l'application, trois abonnements : nouveaux subs,
 subs offerts, réabonnements annoncés. Tout autre compte est connecté, sans rien

@@ -37,7 +37,7 @@ export const PORTEE_SUBS = 'channel:read:subscriptions';
  * Écrire dans son tchat, au nom de sa chaîne, avec le jeton de l'application :
  * demandé au même branchement, pour annoncer les codes cadeaux.
  */
-export const PORTEES_TCHAT = ['user:bot', 'channel:bot'] as const;
+export const PORTEES_TCHAT = ['user:write:chat', 'user:bot', 'channel:bot'] as const;
 
 export function isTwitchEnabled(): boolean {
   return Boolean(process.env.TWITCH_CLIENT_ID && process.env.TWITCH_CLIENT_SECRET);

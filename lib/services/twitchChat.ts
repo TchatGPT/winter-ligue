@@ -5,7 +5,7 @@ import 'server-only';
  *
  * Le message part au nom de la chaîne, avec le jeton de l'application : le
  * site ne garde aucun jeton de personne. Twitch l'accepte si la streameuse a
- * autorisé l'application à écrire pour elle (`user:bot`) et dans son tchat
+ * autorisé l'application à écrire pour elle (`user:write:chat`, `user:bot`) et dans son tchat
  * (`channel:bot`) — c'est le branchement, depuis Modération → Saison.
  *
  * Le texte est composé par le serveur (`annonceDuCode`), jamais repris d'une
