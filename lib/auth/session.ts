@@ -15,34 +15,23 @@ import 'server-only';
  * révoque tous les jetons déjà émis — pas seulement le cookie de ce navigateur.
  */
 
-import { createHmac, randomUUID, scrypt as scryptCb, timingSafeEqual } from 'node:crypto';
-import { promisify } from 'node:util';
+import { createHmac, randomUUID, timingSafeEqual } from 'node:crypto';
 import { cookies } from 'next/headers';
 import { cache } from 'react';
 import { getStore } from '@/lib/db/store';
 import { roleConfirme } from '@/lib/domain/revocation';
-import { etatMotDePasse } from '@/lib/auth/empreinte';
-
-const scrypt = promisify(scryptCb) as (
-  password: string,
-  salt: string,
-  keylen: number,
-) => Promise<Buffer>;
 
 export const SESSION_COOKIE = 'wl_session';
 const SESSION_TTL_SECONDS = 60 * 60 * 12; // 12 h
 
 /**
- * Le rôle porté par une session.
- *
- * Identique à `PlayerRole` côté base, à ceci près qu'il vit aussi dans le jeton
- * : la session de secours ouverte par `ADMIN_PASSWORD_HASH` n'a pas de joueur
- * derrière elle, et vaut `admin` sans qu'aucune ligne ne le dise.
+ * Le rôle porté par une session : celui du joueur en base (`PlayerRole`), relu
+ * à chaque requête. Le jeton en garde une copie, qui ne décide de rien.
  */
 export type Role = 'joueur' | 'moderateur' | 'admin';
 
 export interface SessionPayload {
-  /** Identifiant du joueur, ou 'admin' pour la session de modération. */
+  /** Identifiant du joueur. */
   sub: string;
   role: Role;
   /** Identifiant unique de session, utile pour tracer une révocation. */
@@ -146,15 +135,13 @@ export const getSession = cache(async (): Promise<SessionPayload | null> => {
 /**
  * Ce que dit la base d'un jeton dont la signature est bonne.
  *
- * La session de secours n'a pas de ligne : elle ne vaut que tant que la porte
- * qui l'ouvre existe — retirer `ADMIN_PASSWORD_HASH` la ferme. Toute autre
- * session doit désigner un joueur actif, émise après sa dernière déconnexion ;
- * son rôle est celui de la base, jamais celui du jeton.
+ * Toute session doit désigner un joueur actif, émise après sa dernière
+ * déconnexion ; son rôle est celui de la base, jamais celui du jeton. Il n'y a
+ * plus de session sans joueur : celle « de secours », qu'ouvrait un mot de
+ * passe, a disparu avec lui — un ancien jeton de ce genre ne désigne aucun
+ * compte, et il est refusé ici.
  */
 async function confirme(jeton: SessionPayload): Promise<SessionPayload | null> {
-  if (jeton.sub === SUJET_SECOURS) {
-    return etatMotDePasse() === 'pret' ? { ...jeton, role: 'admin' } : null;
-  }
   const role = roleConfirme(jeton, await getStore().etatSession(jeton.sub));
   return role ? { ...jeton, role } : null;
 }
@@ -171,14 +158,6 @@ export function aLeRang(role: Role, minimum: Role): boolean {
 }
 
 /**
- * Le sujet de la session de secours, ouverte par `ADMIN_PASSWORD_HASH`.
- *
- * Ce n'est l'identifiant d'aucun joueur : c'est une session sans compte
- * derrière, gardée pour reprendre la main si plus personne n'a le rôle.
- */
-export const SUJET_SECOURS = 'admin';
-
-/**
  * L'identifiant du joueur derrière une session, ou null.
  *
  * À utiliser partout où l'on veut savoir « qui joue », par opposition à « qui a
@@ -190,8 +169,7 @@ export const SUJET_SECOURS = 'admin';
  * étaient connectés.
  */
 export function playerIdOf(session: SessionPayload | null): string | null {
-  if (!session) return null;
-  return session.sub === SUJET_SECOURS ? null : session.sub;
+  return session?.sub ?? null;
 }
 
 export async function isAdmin(): Promise<boolean> {
@@ -213,34 +191,4 @@ export async function setSessionCookie(token: string, maxAge = SESSION_TTL_SECON
 export async function clearSessionCookie(): Promise<void> {
   const jar = await cookies();
   jar.set(SESSION_COOKIE, '', { ...COOKIE_OPTIONS, maxAge: 0 });
-}
-
-/* ------------------------- Mot de passe administrateur -------------------- */
-
-/**
- * Format stocké dans `ADMIN_PASSWORD_HASH` : `scrypt:<sel hex>:<clé hex>`.
- * Générer avec `npm run hash-password`.
- *
- * Le séparateur est un deux-points, et non un dollar : les fichiers `.env` de
- * Next développent les `$VAR`, ce qui mutilerait silencieusement une empreinte
- * contenant des dollars — et la connexion admin échouerait sans explication.
- */
-export async function hashPassword(password: string, salt?: string): Promise<string> {
-  const useSalt = salt ?? randomUUID().replace(/-/g, '');
-  const derived = await scrypt(password, useSalt, 64);
-  return `scrypt:${useSalt}:${derived.toString('hex')}`;
-}
-
-export async function verifyPassword(password: string, stored: string): Promise<boolean> {
-  const parts = stored.trim().split(':');
-  if (parts.length !== 3 || parts[0] !== 'scrypt') return false;
-  const [, salt, expectedHex] = parts;
-  try {
-    const derived = await scrypt(password, salt, 64);
-    const expected = Buffer.from(expectedHex, 'hex');
-    if (expected.length !== derived.length) return false;
-    return timingSafeEqual(derived, expected);
-  } catch {
-    return false;
-  }
 }

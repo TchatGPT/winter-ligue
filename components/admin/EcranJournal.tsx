@@ -41,7 +41,7 @@ export function EcranJournal({ entrees }: { entrees: LigneJournal[] }) {
   return (
     <Ecran
       titre="Journal"
-      lead="Chaque action de modération, chaque carte jouée, chaque entrée par mot de passe. C’est ici qu’on répond à « pourquoi ce joueur a-t-il reçu ça ? »."
+      lead="Chaque action de modération, chaque carte jouée, chaque rôle donné par Twitch ou à la main. C’est ici qu’on répond à « pourquoi ce joueur a-t-il reçu ça ? »."
     >
       <Bloc
         titre={`${visibles.length} ligne${visibles.length > 1 ? 's' : ''} sur ${entrees.length}`}

@@ -2,7 +2,7 @@ import 'server-only';
 
 import { redirect } from 'next/navigation';
 import { aLeRang, getSession, playerIdOf, type Role, type SessionPayload } from '@/lib/auth/session';
-import { getStore, sansBaseDurable } from '@/lib/db/store';
+import { getStore } from '@/lib/db/store';
 import { destination } from '@/lib/domain/aiguillage';
 
 /**
@@ -10,8 +10,7 @@ import { destination } from '@/lib/domain/aiguillage';
  *
  * Déconnecté, on ne voit que l'accueil, qui présente la ligue et invite à se
  * connecter. Connecté sans pseudo Activision, on passe d'abord par la page de
- * bienvenue. Une session sans joueur derrière elle ne reste pas sur une page
- * de jeu : elle ne pourrait ni miser ni ouvrir de booster.
+ * bienvenue.
  *
  * La décision elle-même vit dans `lib/domain/aiguillage.ts`, où elle est
  * testée ; ici on rassemble les faits — le cookie, la base — et on suit.
@@ -31,10 +30,8 @@ export async function exigeSession(): Promise<SessionPayload> {
 
   const ou = destination({
     connecte: session !== null,
-    designeUnJoueur: playerId !== null,
     compteTrouve: joueur !== null,
     activision: Boolean(joueur?.activisionId),
-    baseDurable: !sansBaseDurable(),
   });
   if (ou || !session) redirect(ou ?? '/');
 

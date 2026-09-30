@@ -142,7 +142,7 @@ for (const pseudo of PSEUDOS) {
     active: true,
     // Le premier inscrit est administrateur, le deuxième modérateur : sans eux,
     // la base de démonstration s'ouvre sur un panneau que personne ne peut
-    // atteindre autrement que par le mot de passe de secours.
+    // atteindre.
     role: db.players.length === 0 ? 'admin' : db.players.length === 1 ? 'moderateur' : 'joueur',
   });
   move(db.players.at(-1).id, 400, 'INSCRIPTION', 60 * DAY);

@@ -2,11 +2,10 @@ import Link from 'next/link';
 import { connexionDeDeveloppement } from '@/lib/auth/dev';
 import { redirect } from 'next/navigation';
 import { LoginForms } from '@/components/LoginForms';
-import { getSession, playerIdOf } from '@/lib/auth/session';
-import { etatMotDePasse } from '@/lib/auth/secours';
+import { getSession } from '@/lib/auth/session';
 import { isTwitchEnabled } from '@/lib/auth/twitch';
 import { Notice } from '@/components/ui';
-import { getStore, sansBaseDurable } from '@/lib/db/store';
+import { getStore } from '@/lib/db/store';
 import { EnTetePage } from '@/components/EnTetePage';
 
 export const dynamic = 'force-dynamic';
@@ -28,17 +27,9 @@ export default async function ConnexionPage({
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   // Déjà connecté : rien à faire ici — `getSession()` n'a rendu la session
-  // qu'après avoir vérifié le compte en base. Une session de secours, sans
-  // joueur, reste sur cette page dès que le site a une base : elle administre,
-  // elle ne joue pas.
-  const session = await getSession();
-  let sansCompte = false;
-  if (session) {
-    if (playerIdOf(session) !== null || sansBaseDurable()) redirect('/');
-    sansCompte = true;
-  }
+  // qu'après avoir vérifié le compte en base.
+  if (await getSession()) redirect('/');
 
-  const porte = etatMotDePasse();
   const brut = (await searchParams).erreur;
   const erreur = typeof brut === 'string' ? (ERREURS[brut] ?? null) : null;
 
@@ -69,22 +60,7 @@ export default async function ConnexionPage({
 
       {erreur && <Notice kind="error">{erreur}</Notice>}
 
-      {sansCompte && (
-        <Notice>
-          Tu es dans la session de secours : elle administre la ligue, sans compte joueur derrière elle.{' '}
-          <Link href="/admin">Aller à l’administration</Link>
-        </Notice>
-      )}
-
-      {porte === 'mal-forme' && (
-        <Notice kind="error">
-          Le mot de passe d’administration est mal configuré : l’empreinte collée dans ADMIN_PASSWORD_HASH est
-          incomplète. Colle-la en entier — ou pose plutôt ADMIN_PASSWORD, le mot de passe lui-même en type
-          Secret —, puis redéploie.
-        </Notice>
-      )}
-
-      <LoginForms twitchEnabled={isTwitchEnabled()} motDePasse={porte === 'pret'} devPlayers={devPlayers} />
+      <LoginForms twitchEnabled={isTwitchEnabled()} devPlayers={devPlayers} />
     </div>
   );
 }

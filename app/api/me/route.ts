@@ -28,8 +28,8 @@ export async function GET(request: Request): Promise<NextResponse> {
   if (!session) {
     return ok({ role: null, profile: null, twitchEnabled: isTwitchEnabled() });
   }
-  // Le rôle et le profil sont deux choses distinctes : la session de secours a
-  // un rôle sans profil, un administrateur qui joue a les deux.
+  // Le rôle et le profil sont deux choses distinctes : un administrateur qui
+  // joue a les deux.
   const playerId = playerIdOf(session);
   return ok({
     role: session.role,

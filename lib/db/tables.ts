@@ -58,6 +58,7 @@ export const COLLECTIONS: Collection[] = [
       c('active', 'actif', 'bool'),
       c('joinedAt', 'inscrit_le', 'ts'),
       c('sessionsDepuis', 'sessions_depuis', 'ts'),
+      c('roleManuel', 'role_manuel', 'bool'),
     ],
   },
   {
@@ -244,7 +245,8 @@ create table if not exists joueurs (
   immunise_jusqua timestamptz,
   actif boolean not null default true,
   inscrit_le timestamptz not null,
-  sessions_depuis timestamptz
+  sessions_depuis timestamptz,
+  role_manuel boolean not null default false
 );
 
 create table if not exists games (
@@ -369,6 +371,9 @@ alter table joueurs add column if not exists immunise_jusqua timestamptz;
 
 -- La révocation des sessions : celles ouvertes avant cette date sont refusées.
 alter table joueurs add column if not exists sessions_depuis timestamptz;
+
+-- Un rôle choisi à la main : la connexion Twitch n'y touche plus.
+alter table joueurs add column if not exists role_manuel boolean not null default false;
 
 -- Les liens d'overlay OBS : en changer la génération les révoque tous.
 alter table saison add column if not exists overlay_generation integer not null default 1;

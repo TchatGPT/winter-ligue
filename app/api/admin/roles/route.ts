@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
 import { fail, guard, ok } from '@/lib/api/respond';
 import { adminRoleSchema } from '@/lib/api/schemas';
+import { chaineDeLaLigue } from '@/lib/auth/twitch';
 import { getStore } from '@/lib/db/store';
+import { estLaStreameuse } from '@/lib/domain/streameuse';
 import { LIMITS } from '@/lib/security/ratelimit';
 import { audit } from '@/lib/services/ledger';
 
@@ -15,6 +17,14 @@ export const dynamic = 'force-dynamic';
  * distribuer les rôles peut se promouvoir, et la distinction entre les deux
  * échelons ne veut alors plus rien dire.
  *
+ * ## Un rôle choisi à la main le reste
+ *
+ * Sans lui, le rôle suit la chaîne Twitch à chaque connexion : la streameuse et
+ * ses modérateurs administrent, les autres jouent. Un rôle donné ici est marqué
+ * `roleManuel`, et Twitch n'y touche plus — on peut ainsi ouvrir
+ * l'administration à quelqu'un qui ne modère pas la chaîne, ou la fermer à un
+ * modérateur. Celui de la streameuse ne se change pas : elle reste admin.
+ *
  * ## Le dernier administrateur ne peut pas se retirer
  *
  * Deux garde-fous, et ils ne se recouvrent pas. On refuse d'abord qu'un
@@ -22,10 +32,8 @@ export const dynamic = 'force-dynamic';
  * plus banale, et elle est irréversible depuis l'interface. On refuse ensuite de
  * retirer le dernier administrateur, quel qu'il soit — sans quoi deux admins
  * peuvent se rétrograder l'un l'autre et laisser la ligue sans personne pour
- * toucher aux règles.
- *
- * Il resterait le mot de passe de secours pour se rattraper, mais compter
- * là-dessus revient à transformer une faute de clic en incident.
+ * toucher aux règles. Il n'y a pas de mot de passe de secours pour se
+ * rattraper.
  */
 export async function POST(request: Request): Promise<NextResponse> {
   const g = await guard(request, {
@@ -47,6 +55,10 @@ export async function POST(request: Request): Promise<NextResponse> {
         return { erreur: null, joueur, inchange: true };
       }
 
+      if (estLaStreameuse(joueur, chaineDeLaLigue())) {
+        return { erreur: 'La streameuse reste administratrice : son rôle ne se change pas.', joueur: null, inchange: false };
+      }
+
       if (g.body.role !== 'admin') {
         if (joueur.id === acteur) {
           return { erreur: 'Tu ne peux pas retirer ton propre rôle d’administrateur.', joueur: null, inchange: false };
@@ -59,6 +71,7 @@ export async function POST(request: Request): Promise<NextResponse> {
 
       const avant = joueur.role;
       joueur.role = g.body.role;
+      joueur.roleManuel = true;
       audit(db, acteur, 'ROLE_MODIFIE', joueur.id, `${avant} → ${joueur.role}`);
       return { erreur: null, joueur, inchange: false };
     });

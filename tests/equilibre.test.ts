@@ -211,6 +211,7 @@ function joueur(id: string): Player {
     creneauxBonus: 0,
     immuniseJusqua: null,
     sessionsDepuis: null,
+    roleManuel: false,
     joinedAt: '2027-01-01T00:00:00.000Z',
     active: true,
     role: 'joueur',

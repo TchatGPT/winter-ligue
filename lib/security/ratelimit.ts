@@ -3,7 +3,7 @@ import 'server-only';
 /**
  * Limitation de débit par seau à jetons, en mémoire.
  *
- * Elle protège contre le forçage du mot de passe admin, le spam d'enchères et
+ * Elle protège contre les connexions en rafale, le spam d'enchères et
  * l'ouverture en boucle de boosters. Sur un déploiement multi-instances il
  * faudra la déporter (Redis/Upstash) : le contrat de `consume()` est fait pour
  * que ce remplacement soit local. Voir `docs/SECURITE.md`.
@@ -28,7 +28,7 @@ const SEAUX_MAX = 50_000;
  * Chaque seau se purge selon **sa** fenêtre. La purge utilisait celle de la
  * requête qui la déclenchait : une lecture, fenêtre d'une minute, effaçait
  * les compteurs de connexion au bout de quatre minutes au lieu d'une heure —
- * et remettait à zéro les tentatives d'un forçage du mot de passe.
+ * et remettait à zéro les tentatives d'un forçage.
  */
 function sweep(now: number) {
   if (now - lastSweep < 60_000 && buckets.size < SEAUX_MAX) return;

@@ -148,11 +148,11 @@ export interface TwitchProfile {
   avatarUrl: string | null;
   /**
    * Le rôle que Twitch donne à cette personne sur la chaîne de la ligue :
-   * `admin` pour la streameuse, `moderateur` pour ses modérateurs, `joueur`
-   * pour tous les autres. `null` quand la chaîne n'est pas configurée
-   * (`TWITCH_BROADCASTER_LOGIN`) : on ne touche alors à aucun rôle.
+   * `admin` pour la streameuse **et pour ses modérateurs**, `joueur` pour tous
+   * les autres. `null` quand la chaîne n'est pas configurée : on ne touche
+   * alors à aucun rôle.
    */
-  roleChaine: 'admin' | 'moderateur' | 'joueur' | null;
+  roleChaine: 'admin' | 'joueur' | null;
 }
 
 /** La chaîne de la ligue : `TWITCH_BROADCASTER_LOGIN`, sinon celle de la saison. */
@@ -232,8 +232,9 @@ export async function exchangeCode(code: string, origine: string): Promise<Twitc
   const chaine = chaineDeLaLigue();
   let roleChaine: TwitchProfile['roleChaine'] = null;
   if (chaine) {
+    // La streameuse et ses modérateurs administrent la ligue ; les autres jouent.
     if (user.login.toLowerCase() === chaine) roleChaine = 'admin';
-    else roleChaine = (await modereLaChaine(token.access_token, user.id, chaine)) ? 'moderateur' : 'joueur';
+    else roleChaine = (await modereLaChaine(token.access_token, user.id, chaine)) ? 'admin' : 'joueur';
   }
 
   return {

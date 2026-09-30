@@ -134,7 +134,6 @@ acheteur, moyenne, extrêmes, volume, tendance 7 jours et courbe des ventes.
 
 ```bash
 npm install
-npm run hash-password -- "un mot de passe long"   # copier la sortie dans .env.local
 cp .env.example .env.local                        # puis compléter
 npm run seed                                      # saison de démonstration (facultatif)
 npm run dev
@@ -150,7 +149,6 @@ d’incarner un joueur pour tester cartes et enchères sans Twitch.
 | `npm test` | Tests du domaine (score, économie, collection, marché) |
 | `npm run typecheck` | Vérification TypeScript |
 | `npm run seed` | Écrit une saison de démonstration dans `.data/` |
-| `npm run hash-password -- "…"` | Génère `ADMIN_PASSWORD_HASH` et `AUTH_SECRET` |
 
 ---
 

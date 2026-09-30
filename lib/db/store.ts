@@ -557,6 +557,7 @@ function migrate(db: Partial<Database>): Database {
       immuniseJusqua: p.immuniseJusqua ?? null,
       activisionId: p.activisionId ?? null,
       sessionsDepuis: p.sessionsDepuis ?? null,
+      roleManuel: p.roleManuel ?? false,
       snowflakes: Math.min(p.snowflakes ?? 0, ECONOMY.soldeMax),
     })),
     games: (db.games ?? []).map((g) => {
@@ -604,16 +605,6 @@ export function getStore(): Store {
   const url = process.env.DATABASE_URL?.trim();
   globalForStore.__winterStore ??= url ? new PostgresStore(url) : new JsonFileStore();
   return globalForStore.__winterStore;
-}
-
-/**
- * Vrai quand le site tourne sur Vercel sans base : chaque serveur y a sa
- * propre copie éphémère des données, et aucun compte n'y survit d'une requête
- * à l'autre. C'est le seul cas où une session sans joueur derrière — celle de
- * secours — a le droit de naviguer dans le site.
- */
-export function sansBaseDurable(): boolean {
-  return Boolean(process.env.VERCEL) && !process.env.DATABASE_URL?.trim();
 }
 
 export function newId(): string {

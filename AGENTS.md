@@ -80,6 +80,10 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   sauvegarde). Le garde compare les rangs, donc une route `moderateur` accepte un admin.
   Ne jamais donner à un modérateur de quoi se promouvoir, ni d'agir sur son propre
   compte (flocons, subs offerts, games, boosters) : c'est vérifié route par route.
+- **Twitch est la seule porte d'entrée**, et le rôle suit la chaîne à chaque connexion :
+  la streameuse et ses modérateurs sont admin, les autres joueurs. Un rôle choisi à la
+  main (`roleManuel`) n'est plus touché par Twitch ; celui de la streameuse ne se change
+  pas. Il n'y a ni mot de passe ni session sans joueur : ne pas en rouvrir.
 - Les taux de rareté ne se règlent plus depuis le site : ce sont ceux du catalogue, et
   les réglages déjà en base restent lus par `resolvedBooster()`.
 - Les overlays OBS (`/overlay/…`) lisent par `Store.fluxOverlay`, jamais par `read()` :

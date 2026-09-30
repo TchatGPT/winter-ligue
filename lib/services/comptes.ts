@@ -6,7 +6,7 @@ import { ECONOMY } from '@/lib/domain/rules';
 import { makeSlug } from '@/lib/services/league';
 import { audit, credit } from '@/lib/services/ledger';
 
-/** Ce que la connexion Twitch — vraie ou simulée — sait de la personne. */
+/** Ce que la connexion Twitch sait de la personne. */
 export interface ProfilTwitch {
   id: string;
   login: string;
@@ -23,9 +23,12 @@ export interface ProfilTwitch {
  * renomme sa chaîne garde son classement, et personne ne récupère le compte
  * d'un autre en prenant son ancien pseudo.
  *
- * Le rôle suit la chaîne à chaque connexion : un modérateur retiré sur Twitch
- * perd son accès ici. Seul un admin nommé à la main le reste — c'est le filet
- * si la streameuse délègue l'administration.
+ * Le rôle suit la chaîne à chaque connexion : la streameuse et ses modérateurs
+ * administrent, les autres jouent, et un modérateur retiré sur Twitch perd son
+ * accès ici à sa connexion suivante. Seul un rôle choisi à la main dans
+ * l'administration (`roleManuel`) n'est plus touché : c'est ainsi qu'on donne
+ * la main à quelqu'un qui ne modère pas la chaîne, ou qu'on la retire à un
+ * modérateur.
  *
  * Un compte désactivé le reste : se reconnecter ne le rouvre pas, c'est à la
  * route de refuser la session. Il a longtemps été réactivé ici, en silence —
@@ -40,7 +43,7 @@ export function rattacheCompteTwitch(db: Database, profil: ProfilTwitch): Player
     existant.pseudo = profil.displayName;
     existant.twitchLogin = profil.login;
     existant.avatarUrl = profil.avatarUrl;
-    if (profil.roleChaine && existant.role !== 'admin' && existant.role !== profil.roleChaine) {
+    if (profil.roleChaine && !existant.roleManuel && existant.role !== profil.roleChaine) {
       audit(db, 'twitch', 'ROLE_CHAINE', existant.id, `${existant.pseudo} : ${existant.role} → ${profil.roleChaine}`);
       existant.role = profil.roleChaine;
     }
@@ -63,6 +66,7 @@ export function rattacheCompteTwitch(db: Database, profil: ProfilTwitch): Player
     joinedAt: new Date().toISOString(),
     active: true,
     role: profil.roleChaine ?? 'joueur',
+    roleManuel: false,
   };
   db.players.push(cree);
   credit(db, cree.id, ECONOMY.welcomeGrant, 'INSCRIPTION', null);

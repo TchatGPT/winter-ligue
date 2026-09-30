@@ -62,7 +62,6 @@ export async function POST(request: Request): Promise<NextResponse> {
   if (!g.ok) return g.response;
 
   // L'identité, pas le rôle : un administrateur qui joue reste un joueur.
-  // Seule la session de secours, qui n'a aucun compte derrière, est écartée.
   const joueurId = playerIdOf(g.session);
   if (!joueurId) {
     return fail('NON_AUTORISE', 'Seul un joueur peut lancer un duel.');

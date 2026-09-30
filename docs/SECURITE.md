@@ -14,8 +14,8 @@ Trois attaquants à considérer, par ordre de probabilité :
    les outils de développement ouverts. C'est la menace principale.
 2. **Un joueur qui veut fabriquer des flocons.** Achats concurrents, double clic,
    requêtes rejouées, enchères simultanées.
-3. **Un tiers qui veut casser ou défigurer le site.** XSS via un pseudo, CSRF, forçage du
-   mot de passe admin, déni de service applicatif.
+3. **Un tiers qui veut casser ou défigurer le site.** XSS via un pseudo, CSRF, vol de
+   session, déni de service applicatif.
 
 ---
 
@@ -103,10 +103,9 @@ de débiter ou de consommer une seconde fois.
   un compte désactivé est dehors. Décision pure : `lib/domain/revocation.ts`, testée.
 - **Se déconnecter révoque** : la déconnexion pose `joueurs.sessions_depuis`, et tout
   jeton émis avant est refusé, sur tous les appareils — un cookie copié ne survit pas.
-- La session de secours (sans joueur) ne vaut que tant que `ADMIN_PASSWORD_HASH` existe,
-  et dure une heure.
-- Mot de passe admin stocké en **scrypt** salé, jamais en clair. La réponse est identique,
-  dans son texte comme dans sa durée, que le hash soit absent ou le mot de passe faux.
+- **Il n'y a pas de mot de passe.** Twitch est la seule porte : l'entrée par mot de passe
+  et sa session « de secours », sans joueur, ont été retirées une fois Twitch branché. Un
+  ancien jeton de secours ne désigne aucun compte : `getSession()` le refuse.
 - `AUTH_SECRET` manquant ou trop court fait **échouer le démarrage en production**. Les
   autres secrets du site (state OAuth, clés d'overlay) en sont dérivés par HMAC, avec un
   usage distinct : une signature valable pour l'un ne l'est jamais pour l'autre.
@@ -180,7 +179,7 @@ juste après la remise à zéro d'une fenêtre :
 
 | Action | Limite |
 |---|---|
-| Connexion par mot de passe | 5 / 15 min / IP |
+| Export de sauvegarde, connexion de développement | 5 / 15 min / IP |
 | Écritures de jeu | 30 / min / IP |
 | Enchères | 60 / min / IP |
 | Lectures d'API | 240 / min / IP |
@@ -231,8 +230,8 @@ Deux garde-fous sur les rôles, qui ne se recouvrent pas : un administrateur ne 
 rétrograder lui-même — c'est la faute de manipulation la plus banale, et elle est
 irréversible depuis l'interface — et le dernier administrateur ne peut pas être retiré,
 sans quoi deux admins peuvent se rétrograder l'un l'autre et laisser la ligue sans
-personne. Le mot de passe de secours permettrait de se rattraper, mais compter dessus
-revient à transformer une faute de clic en incident.
+personne — il n'y a pas de mot de passe de secours pour se rattraper. Le rôle de la
+streameuse ne se change pas à la main : elle reste admin.
 
 Les réglages de taux enregistrés avant ce retrait restent lus par `resolvedBooster()` et
 vérifiés par `verifieTable()` : somme exacte de 100 000, faute de quoi `pickWeighted`
@@ -245,7 +244,7 @@ joueur doit toujours être reconstructible à partir de son historique, ce qui r
 manipulation détectable.
 
 Le **journal d'audit** enregistre chaque action de modération, chaque carte jouée, chaque
-entrée par mot de passe. Toute attribution manuelle exige un motif : la modération peut
+rôle donné par Twitch ou à la main. Toute attribution manuelle exige un motif : la modération peut
 donner, mais jamais discrètement.
 
 Le journal est **en ajout seul**. Il n'est plus rogné (il l'était aux cinq mille dernières
@@ -269,12 +268,11 @@ joueur sans pseudo Activision, redirection vers `/bienvenue`. L'espace
 `/admin` garde son propre garde. Ce n'est qu'un aiguillage d'affichage : les
 routes d'API restent seules responsables de leurs contrôles.
 
-**Une session sans joueur ne reste pas sur une page de jeu.** La session de
-secours (`sub = 'admin'`) administre mais ne joue pas : sur `/duels`, elle voyait
-la page sans pouvoir miser ni affronter le bot. Dès que le site a une base
-durable, `exigeSession()` la renvoie donc à `/connexion`, qui lui ouvre
-l'administration. `/admin` lui reste ouvert. La décision est une fonction
-pure, `lib/domain/aiguillage.ts`, verrouillée par `tests/aiguillage.test.ts`.
+**Une session désigne toujours un joueur.** La session de secours, sans compte
+derrière, a disparu avec l'entrée par mot de passe : `getSession()` ne rend qu'une
+session dont le joueur existe, est actif, et ne s'est pas déconnecté depuis.
+L'aiguillage est une fonction pure, `lib/domain/aiguillage.ts`, verrouillée par
+`tests/aiguillage.test.ts`.
 
 **Le pseudo Activision** (`Player.activisionId`) est la seule donnée qu'un joueur
 écrit sur son propre compte : `PATCH /api/me`, `guard({ role: 'joueur' })`, schéma
@@ -301,10 +299,14 @@ attente : chacun est annoncé sur le stream.
 **Les rôles viennent de Twitch.** Il n'y a plus de connexion « modération » à
 l'écran. À chaque connexion, le retour OAuth lit, avec le jeton de la personne
 (portée `user:read:moderated_channels`), si elle modère la chaîne
-`TWITCH_BROADCASTER_LOGIN` : la streameuse est `admin`, ses modérateurs sont
-`moderateur`, les autres `joueur`. Un modérateur retiré sur Twitch perd son
-accès à sa connexion suivante. En cas d'échec de l'appel, le rôle accordé est
-`joueur` : rien ne s'accorde par défaut. Un `admin` nommé à la main le reste.
+`TWITCH_BROADCASTER_LOGIN` (par défaut `lriaa`) : la streameuse et ses
+modérateurs sont `admin`, les autres `joueur`. Un modérateur retiré sur Twitch
+perd son accès à sa connexion suivante — une session dure douze heures au plus.
+En cas d'échec de l'appel, le rôle accordé est `joueur` : rien ne s'accorde par
+défaut. Un rôle choisi à la main dans l'administration (`joueurs.role_manuel`)
+n'est plus touché par Twitch : c'est ainsi qu'on ouvre l'administration à
+quelqu'un qui ne modère pas la chaîne, ou qu'on la ferme à un modérateur. Le
+rôle de la streameuse ne se change pas à la main.
 
 **Le circuit OAuth.** `GET /api/auth/twitch` signe un `state` (clé dérivée de
 `AUTH_SECRET`, distincte de celle des sessions) qui expire au bout de dix minutes
@@ -323,19 +325,12 @@ connexion *simulée* a existé : un clic sur le bouton faisait entrer n'importe 
 visiteur sur le compte administrateur. Elle est supprimée ; `/api/auth/twitch` et
 l'ancienne `/api/auth/twitch/demo` renvoient simplement à `/connexion`.
 
-**L'entrée par mot de passe** (`POST /api/admin/login`, `lib/auth/secours.ts`) est
-la porte de l'administration en attendant Twitch, et son filet ensuite. Elle
-s'ouvre par `ADMIN_PASSWORD` — le mot de passe lui-même, en variable Vercel de type
-*Secret*, comparé par HMAC à temps constant ; pas moins sûr que `AUTH_SECRET` ou le mot
-de passe de la base, rangés au même endroit — ou par `ADMIN_PASSWORD_HASH` (empreinte
-scrypt, générée par
-`npm run hash-password`, qui demande le mot de passe sans l'afficher, sans longueur
-imposée) : sans empreinte, le formulaire n'est pas montré et la route répond
-comme à un mauvais mot de passe, **dans le même temps** (une empreinte leurre est
-vérifiée). Cinq tentatives par quart d'heure et par adresse. Elle ouvre une
-session sur le compte de l'administratrice (celui de la chaîne, sinon le premier
-admin actif) ; s'il n'y en a aucun, la session de secours sans joueur, limitée à
-une heure. Chaque entrée est inscrite au journal (`CONNEXION_MOT_DE_PASSE`).
+**Il n'y a plus d'entrée par mot de passe.** Elle a servi de porte à
+l'administration en attendant Twitch (`ADMIN_PASSWORD` ou `ADMIN_PASSWORD_HASH`,
+avec une session de secours sans joueur quand aucun admin n'existait) ; elle a
+été retirée dès Twitch branché — route, formulaire, session de secours et script
+d'empreinte. Ces deux variables ne servent plus à rien : elles se suppriment de
+Vercel.
 
 Sans `DATABASE_URL`, sur Vercel, les données vont dans `/tmp` et sont éphémères.
 
@@ -370,10 +365,9 @@ que la saisie à la main.
 ### 1. Déporter la limitation de débit
 
 Elle est en mémoire, donc par instance Vercel : sur plusieurs instances, la limite
-effective est multipliée par leur nombre. Le mot de passe d'administration n'a pas de
-longueur imposée : sa solidité dépend de qui le choisit, et une règle de limitation du
-**pare-feu Vercel** sur `/api/admin/login` et `/api/overlay`, ou un compteur partagé
-(Upstash), fermerait le dernier écart.
+effective est multipliée par leur nombre. Une règle de limitation du **pare-feu
+Vercel** sur `/api/auth/twitch` et `/api/overlay`, ou un compteur partagé (Upstash),
+fermerait le dernier écart.
 
 ### 2. Épingler le certificat de la base
 
@@ -406,10 +400,8 @@ son adresse. L'héberger dans `public/` retirerait ce domaine de la CSP.
   des données personnelles : hors du dépôt (`.gitignore` l'écarte), et supprimé une fois
   inutile. Il n'y a plus de restauration par le site.
 - **Variables Vercel** : `AUTH_SECRET`, `DATABASE_URL`, `ANTHROPIC_API_KEY`,
-  `ADMIN_PASSWORD_HASH`, `TWITCH_CLIENT_SECRET` en **Production seulement**, marquées
-  sensibles. Changer `AUTH_SECRET` déconnecte tout le monde et change les liens d'overlay.
-- **`.env.local` n'est jamais commité.** Le séparateur de `ADMIN_PASSWORD_HASH` est un
-  deux-points et non un dollar : les fichiers `.env` développent les `$VAR`.
+  `TWITCH_CLIENT_SECRET` en **Production seulement**, marquées sensibles. Changer `AUTH_SECRET` déconnecte tout le monde et change les liens d'overlay.
+- **`.env.local` n'est jamais commité.**
 
 ---
 
@@ -424,14 +416,14 @@ npm run build     # échoue si un module server-only fuit côté client
 Contrôles en ligne :
 
 ```bash
-# La connexion simulée n'existe plus : départ et retour renvoient à /connexion
+# Le départ de la connexion part chez Twitch, avec l'adresse de retour déclarée
 curl -sI 'https://www.winter-ligue.com/api/auth/twitch' | grep -i location
 
 # Une écriture d'administration sans session est refusée
 curl -s -X POST https://www.winter-ligue.com/api/admin/grant -H 'content-type: application/json' -d '{}'
 
 # Une écriture depuis une origine étrangère est refusée
-curl -s -X POST https://www.winter-ligue.com/api/admin/login -H 'origin: https://evil.example' -H 'content-type: application/json' -d '{"password":"x"}'
+curl -s -X POST https://www.winter-ligue.com/api/auth/logout -H 'origin: https://evil.example' -H 'content-type: application/json' -d '{}'
 
 # Un overlay sans clé valide ne lit rien
 curl -s 'https://www.winter-ligue.com/api/overlay?cle=1-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'

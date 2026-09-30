@@ -1,6 +1,5 @@
 import { EcranJournal, type LigneJournal } from '@/components/admin/EcranJournal';
 import { exigeRole } from '@/lib/auth/acces';
-import { SUJET_SECOURS } from '@/lib/auth/session';
 import { getStore } from '@/lib/db/store';
 
 export const dynamic = 'force-dynamic';
@@ -8,7 +7,8 @@ export const metadata = { title: 'Journal — Administration' };
 
 /** Qui a agi, en clair : un pseudo plutôt qu'un identifiant. */
 const ACTEURS_SYSTEME: Record<string, string> = {
-  [SUJET_SECOURS]: 'Session de secours',
+  // Les entrées d'avant le retrait de la connexion par mot de passe.
+  admin: 'Session de secours',
   twitch: 'Twitch',
   systeme: 'Système',
 };

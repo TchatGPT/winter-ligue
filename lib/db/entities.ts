@@ -68,6 +68,11 @@ export interface Player {
    * ses appareils — un cookie volé ne survit pas à un « Se déconnecter ».
    */
   sessionsDepuis: string | null;
+  /**
+   * Le rôle a été choisi à la main dans l'administration : la connexion Twitch
+   * n'y touche plus. Sinon, il suit la chaîne à chaque connexion.
+   */
+  roleManuel: boolean;
 }
 
 /** Trace d'un effet de carte appliqué à une game, avec son delta exact. */

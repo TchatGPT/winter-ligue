@@ -48,6 +48,7 @@ export async function POST(request: Request): Promise<NextResponse> {
         creneauxBonus: 0,
         immuniseJusqua: null,
         sessionsDepuis: null,
+        roleManuel: false,
         joinedAt: new Date().toISOString(),
         active: true,
         role: 'joueur' as const,
