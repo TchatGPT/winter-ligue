@@ -22,9 +22,13 @@ const DUREE_SECOURS_S = 60 * 60;
  * Connexion par mot de passe — voir `lib/auth/secours.ts`.
  *
  * La limitation à 5 tentatives par quart d'heure et par adresse, et le coût de
- * scrypt, rendent le forçage impraticable. La réponse est identique, dans son
- * texte comme dans sa durée, que l'empreinte soit absente ou le mot de passe
- * faux : on ne renseigne pas un attaquant sur l'état de la configuration.
+ * scrypt, rendent le forçage difficile. La réponse prend le même temps que
+ * l'empreinte soit posée ou non.
+ *
+ * Un refus rappelle le début de l'empreinte en service — `scrypt:` et six
+ * caractères de son sel —, pour qu'on puisse vérifier que Vercel sert bien
+ * celle qu'on a générée. Le sel n'a rien de secret, et ce début ne permet pas
+ * de retrouver le mot de passe.
  */
 export async function POST(request: Request): Promise<NextResponse> {
   const g = await guard(request, {
@@ -43,7 +47,8 @@ export async function POST(request: Request): Promise<NextResponse> {
   const valide = await verifyPassword(g.body.password, utilisable ? empreinte : LEURRE);
 
   if (!utilisable || !valide) {
-    return fail('NON_AUTHENTIFIE', 'Mot de passe incorrect.');
+    const indice = utilisable ? ` (empreinte en service : ${empreinte.slice(0, 13)}…)` : '';
+    return fail('NON_AUTHENTIFIE', `Mot de passe incorrect.${indice}`);
   }
 
   // Connexion réussie : on relâche le compteur pour ne pas pénaliser l'admin.
