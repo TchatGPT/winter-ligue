@@ -8,8 +8,9 @@
  * boutons engagent — le bot, tout de suite, ou les joueurs ; à droite les
  * résultats, aussi hauts que le ring.
  *
- * Un duel joué ne se rejoue pas : la course se voit une fois, en direct. Une
- * fois finie, le verdict reste le temps d'être lu, puis la fenêtre se ferme
+ * Un duel joué ne se rejoue pas, et ne se saute pas : la course se voit une
+ * fois, en direct, jusqu'au bout — la fenêtre ne se ferme pas avant. Une fois
+ * finie, le verdict reste le temps d'être lu, puis la fenêtre se ferme
  * d'elle-même et le résultat passe en tête du salon.
  *
  * L'arène s'ouvre par-dessus, au centre de l'écran, dès le clic : les deux
@@ -120,32 +121,39 @@ function useNavigateur(): boolean {
 function FenetreDuel({
   titre,
   ferme,
+  fermable,
   pied,
   children,
 }: {
   titre: string;
   ferme: () => void;
+  /**
+   * Faux pendant le tirage et la course : ni croix, ni clic à côté, ni Échap.
+   * Un duel ne se saute pas — il se regarde jusqu'au bout.
+   */
+  fermable: boolean;
   pied?: React.ReactNode;
   children: React.ReactNode;
 }) {
   const navigateur = useNavigateur();
-  const boutonFermer = useRef<HTMLButtonElement>(null);
+  const carte = useRef<HTMLDivElement>(null);
 
   // Le rappel change à chaque rendu du salon ; l'écoute du clavier, elle, ne
-  // doit s'installer qu'une fois — sinon le focus reviendrait sur la croix à
-  // chaque lancer.
+  // doit s'installer qu'une fois — sinon le focus sauterait à chaque lancer.
   const rappel = useRef(ferme);
+  const peutFermer = useRef(fermable);
   useEffect(() => {
     rappel.current = ferme;
-  }, [ferme]);
+    peutFermer.current = fermable;
+  }, [ferme, fermable]);
 
   useEffect(() => {
     if (!navigateur) return;
     const surTouche = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') rappel.current();
+      if (e.key === 'Escape' && peutFermer.current) rappel.current();
     };
     window.addEventListener('keydown', surTouche);
-    boutonFermer.current?.focus();
+    carte.current?.focus();
     // La page ne défile plus sous la fenêtre.
     const avant = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
@@ -160,17 +168,29 @@ function FenetreDuel({
   // cale sur l'écran, pas sur la plaque.
   if (!navigateur) return null;
   return createPortal(
-    <div className="fenetre-voile" role="dialog" aria-modal="true" aria-label={titre} onClick={ferme}>
-      <div className="fenetre-carte glass glass-reflet relative" onClick={(e) => e.stopPropagation()}>
-        <button
-          ref={boutonFermer}
-          type="button"
-          className="btn btn-sm absolute top-5 right-5 z-10"
-          onClick={ferme}
-          aria-label="Fermer"
-        >
-          ✕
-        </button>
+    <div
+      className="fenetre-voile"
+      role="dialog"
+      aria-modal="true"
+      aria-label={titre}
+      onClick={fermable ? ferme : undefined}
+    >
+      <div
+        ref={carte}
+        tabIndex={-1}
+        className="fenetre-carte glass glass-reflet relative outline-none"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {fermable && (
+          <button
+            type="button"
+            className="btn btn-sm absolute top-5 right-5 z-10"
+            onClick={ferme}
+            aria-label="Fermer"
+          >
+            ✕
+          </button>
+        )}
         <div className="min-h-0 flex-1 overflow-y-auto px-4 pt-10 pb-6 sm:px-8">{children}</div>
         {pied && (
           <footer className="relative flex flex-wrap justify-center gap-2 border-t border-white/15 px-4 py-4">
@@ -213,6 +233,9 @@ async function poste(url: string, corps: unknown): Promise<Resultat> {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(corps),
+      // La fenêtre ne se ferme pas pendant le tirage : un serveur muet ne doit
+      // pas y laisser le joueur coincé.
+      signal: AbortSignal.timeout(15_000),
     });
     const charge = await reponse.json();
     if (!charge.ok) return { ok: false, message: charge.error?.message ?? 'Action impossible.' };
@@ -364,7 +387,7 @@ export function Affrontements({
 
   function ferme() {
     attenteOuverte.current = null;
-    // Fermée avant la fin de la course, la fenêtre ne cache pas l'issue.
+    // Fermée à la main sur le verdict, la fenêtre laisse l'issue dans le salon.
     if (fenetre?.etat === 'duel') setBilan(bilanDe(fenetre.bataille, etat.moiId));
     setFenetre(null);
     void recharge();
@@ -443,19 +466,16 @@ export function Affrontements({
     contenuFenetre = (
       <BatailleArene key={fenetre.tour} bataille={b} moiId={etat.moiId} anime={fenetre.anime} onFini={marqueFini} />
     );
-    // Une fois la course finie, la fenêtre se ferme d'elle-même : on peut
-    // seulement la fermer un peu plus tôt.
+    // Pas de raccourci vers le résultat : la course se regarde jusqu'au bout.
+    // Finie, la fenêtre se ferme d'elle-même ; on peut seulement la fermer un
+    // peu plus tôt.
     piedFenetre = fenetre.fini ? (
       <button type="button" className="btn btn-ghost" onClick={ferme}>
         Fermer
       </button>
     ) : (
-      <button
-        type="button"
-        className="btn btn-ghost"
-        onClick={() => setFenetre({ ...fenetre, anime: false, tour: nouveauNumero(), fini: true })}
-      >
-        Passer au résultat
+      <button type="button" className="btn btn-ghost" disabled>
+        Course en cours…
       </button>
     );
   }
@@ -789,7 +809,12 @@ export function Affrontements({
       </div>
 
       {fenetre && (
-        <FenetreDuel titre="L’arène du duel" ferme={ferme} pied={piedFenetre}>
+        <FenetreDuel
+          titre="L’arène du duel"
+          ferme={ferme}
+          fermable={fenetre.etat === 'erreur' || (fenetre.etat === 'duel' && fenetre.fini)}
+          pied={piedFenetre}
+        >
           {contenuFenetre}
         </FenetreDuel>
       )}
