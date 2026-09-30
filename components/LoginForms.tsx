@@ -14,9 +14,11 @@ import { Notice } from '@/components/ui';
  * connexion : la streameuse est administratrice, les modérateurs de sa chaîne
  * sont modérateurs ici, tous les autres sont joueurs.
  *
- * Tant que l'application Twitch n'est pas déclarée, le bouton connecte en un
- * clic sur le compte de la streameuse (`/api/auth/twitch/demo`). Hors production, la connexion de
- * développement permet d'incarner un joueur pour tester.
+ * Le bouton suit déjà le circuit Twitch : départ, puis adresse de retour.
+ * Tant que l'application Twitch n'est pas déclarée, le passage chez Twitch
+ * est simulé et l'on entre sur le compte de la streameuse — voir
+ * `lib/auth/simulation.ts`. Hors production, la connexion de développement
+ * permet d'incarner un joueur pour tester.
  */
 export function LoginForms({
   twitchEnabled,
@@ -61,16 +63,14 @@ export function LoginForms({
         chaîne, tes accès de modération sont reconnus automatiquement.
       </p>
 
-      {twitchEnabled ? (
-        <a href="/api/auth/twitch?returnTo=/" className="btn btn-twitch btn-lg mt-6 w-full no-underline">
-          <IconTwitch className="h-5 w-5" />
-          Se connecter avec Twitch
-        </a>
-      ) : (
-        <a href="/api/auth/twitch/demo" className="btn btn-twitch btn-lg mt-6 w-full no-underline">
-          <IconTwitch className="h-5 w-5" />
-          Se connecter avec Twitch
-        </a>
+      <a href="/api/auth/twitch?returnTo=/" className="btn btn-twitch btn-lg mt-6 w-full no-underline">
+        <IconTwitch className="h-5 w-5" />
+        Se connecter avec Twitch
+      </a>
+      {!twitchEnabled && (
+        <p className="mt-3 text-center text-[13px] text-faint">
+          Connexion Twitch simulée pour l’instant : un clic, et tu entres en administratrice.
+        </p>
       )}
 
       {message && (

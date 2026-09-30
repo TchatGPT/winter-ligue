@@ -26,6 +26,12 @@ export function isTwitchEnabled(): boolean {
   return Boolean(process.env.TWITCH_CLIENT_ID && process.env.TWITCH_CLIENT_SECRET);
 }
 
+/**
+ * Le code que la route de départ remet à l'adresse de retour tant que Twitch
+ * n'est pas branché. Voir `lib/auth/simulation.ts`.
+ */
+export const CODE_SIMULATION = 'simulation';
+
 function stateSecret(): string {
   return process.env.AUTH_SECRET ?? 'dev-secret-non-securise-uniquement-pour-le-developpement-local';
 }
@@ -56,15 +62,24 @@ export function verifyState(state: string | null): { valid: boolean; returnTo: s
   return { valid: true, returnTo: returnTo.startsWith('/') ? returnTo : '/' };
 }
 
-export function redirectUri(): string {
-  const base = (process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000').replace(/\/$/, '');
+/**
+ * L'adresse de retour — celle à déclarer dans la console développeur Twitch,
+ * « OAuth Redirect URLs » : `https://www.winter-ligue.com/api/auth/twitch/callback`.
+ *
+ * Elle suit le domaine par lequel on est arrivé, sauf si
+ * `NEXT_PUBLIC_SITE_URL` l'impose. Elle ne dépendait que de cette variable,
+ * absente sur Vercel : le jour du branchement, Twitch aurait renvoyé vers
+ * localhost.
+ */
+export function redirectUri(origine: string): string {
+  const base = (process.env.NEXT_PUBLIC_SITE_URL?.trim() || origine).replace(/\/$/, '');
   return `${base}/api/auth/twitch/callback`;
 }
 
-export function authorizeUrl(state: string): string {
+export function authorizeUrl(state: string, origine: string): string {
   const params = new URLSearchParams({
     client_id: process.env.TWITCH_CLIENT_ID ?? '',
-    redirect_uri: redirectUri(),
+    redirect_uri: redirectUri(origine),
     response_type: 'code',
     // L'identité publique, et la liste des chaînes que la personne modère :
     // c'est elle qui dit si elle est modératrice de la chaîne de la ligue.
@@ -125,8 +140,11 @@ async function modereLaChaine(jeton: string, userId: string, chaine: string): Pr
   return false;
 }
 
-/** Échange le code contre un jeton, puis lit le profil. */
-export async function exchangeCode(code: string): Promise<TwitchProfile | null> {
+/**
+ * Échange le code contre un jeton, puis lit le profil. L'adresse de retour
+ * doit être exactement celle envoyée au départ : Twitch la compare.
+ */
+export async function exchangeCode(code: string, origine: string): Promise<TwitchProfile | null> {
   if (!isTwitchEnabled()) return null;
 
   const tokenResponse = await fetch(TOKEN_URL, {
@@ -137,7 +155,7 @@ export async function exchangeCode(code: string): Promise<TwitchProfile | null> 
       client_secret: process.env.TWITCH_CLIENT_SECRET!,
       code,
       grant_type: 'authorization_code',
-      redirect_uri: redirectUri(),
+      redirect_uri: redirectUri(origine),
     }),
     cache: 'no-store',
   });

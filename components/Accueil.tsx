@@ -23,9 +23,8 @@ export function Accueil({ twitchEnabled, devLogin }: { twitchEnabled: boolean; d
   const debut = new Date(SEASON.startsAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
   const fin = new Date(SEASON.endsAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
 
-  // Tant que la vraie connexion n'est pas branchée, l'écran d'autorisation
-  // simulé en tient lieu.
-  const entree = twitchEnabled ? '/api/auth/twitch?returnTo=/' : '/api/auth/twitch/demo';
+  // Le circuit Twitch, simulé ou non : la route de départ décide.
+  const entree = '/api/auth/twitch?returnTo=/';
 
   const FONCTIONS = [
     {

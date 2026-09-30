@@ -254,11 +254,18 @@ La route `POST /api/admin/login` (mot de passe) n'a plus d'écran ; elle reste
 comme accès de secours tant que `ADMIN_PASSWORD_HASH` est défini — retirer la
 variable la ferme.
 
-**Connexion Twitch simulée (temporaire).** Tant que `TWITCH_CLIENT_ID` et
-`TWITCH_CLIENT_SECRET` ne sont pas définis, `GET /api/auth/twitch/demo`
-connecte en un clic sur le compte administrateur de la streameuse :
-**n'importe qui peut alors administrer le site**. Elle se ferme
-d'elle-même dès que les variables Twitch sont renseignées. Sans `DATABASE_URL`,
+**Connexion Twitch simulée (temporaire).** Le bouton suit déjà le circuit
+réel : `GET /api/auth/twitch` puis l'adresse de retour
+`GET /api/auth/twitch/callback`, avec le même `state` signé. Tant que
+`TWITCH_CLIENT_ID` et `TWITCH_CLIENT_SECRET` ne sont pas définis, le départ
+renvoie aussitôt au retour avec le code `simulation`, qui connecte sur le
+compte administrateur de la streameuse (`lib/auth/simulation.ts`) :
+**n'importe qui peut alors administrer le site**. Une fois les identifiants
+posés, ce code part chez Twitch comme n'importe quel autre et y est refusé :
+la simulation se ferme d'elle-même. L'adresse de retour suit le domaine
+d'arrivée (`NEXT_PUBLIC_SITE_URL` peut l'imposer) ; celle à déclarer chez
+Twitch est `https://www.winter-ligue.com/api/auth/twitch/callback`.
+`/api/auth/twitch/demo` ne fait plus que renvoyer au départ du circuit. Sans `DATABASE_URL`,
 sur Vercel, les données vont dans `/tmp` et sont éphémères.
 
 **Base Supabase.** Une table par type de donnée (`lib/db/tables.ts`) : `saison`,
