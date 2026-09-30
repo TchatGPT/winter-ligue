@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { exigeRole } from '@/lib/auth/acces';
 import { StatTile, flakes } from '@/components/ui';
 import { getStore } from '@/lib/db/store';
 import { nextMilestone } from '@/lib/domain/rules';
@@ -16,6 +17,7 @@ export const metadata = { title: 'Tableau de bord — Administration' };
  * fréquent : celui-là a son onglet.
  */
 export default async function AdminAccueilPage() {
+  await exigeRole('moderateur');
   const data = await getStore().read((db) => {
     const actifs = db.players.filter((p) => p.active);
     const pseudo = (id: string) => db.players.find((p) => p.id === id)?.pseudo ?? 'Inconnu';

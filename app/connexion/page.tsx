@@ -35,19 +35,15 @@ export default async function ConnexionPage({
 }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
-  // Déjà connecté avec un compte valide : rien à faire ici. Une session de
-  // secours, sans joueur, reste sur cette page dès que le site a une base :
-  // elle administre, elle ne joue pas.
+  // Déjà connecté : rien à faire ici — `getSession()` n'a rendu la session
+  // qu'après avoir vérifié le compte en base. Une session de secours, sans
+  // joueur, reste sur cette page dès que le site a une base : elle administre,
+  // elle ne joue pas.
   const session = await getSession();
   let sansCompte = false;
   if (session) {
-    const playerId = playerIdOf(session);
-    const valide =
-      playerId === null
-        ? sansBaseDurable()
-        : await getStore().read((db) => db.players.some((p) => p.id === playerId));
-    if (valide) redirect('/');
-    sansCompte = playerId === null;
+    if (playerIdOf(session) !== null || sansBaseDurable()) redirect('/');
+    sansCompte = true;
   }
 
   const brut = (await searchParams).erreur;

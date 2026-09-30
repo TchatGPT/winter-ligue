@@ -62,6 +62,12 @@ export interface Player {
   joinedAt: string;
   active: boolean;
   role: PlayerRole;
+  /**
+   * Les sessions ouvertes avant cette date ne valent plus rien : la
+   * déconnexion la pose, et révoque ainsi tous les jetons du joueur, sur tous
+   * ses appareils — un cookie volé ne survit pas à un « Se déconnecter ».
+   */
+  sessionsDepuis: string | null;
 }
 
 /** Trace d'un effet de carte appliqué à une game, avec son delta exact. */

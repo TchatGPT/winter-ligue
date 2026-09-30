@@ -45,6 +45,7 @@ export async function POST(request: Request): Promise<NextResponse> {
         subsOfferts: 0,
         creneauxBonus: 0,
         immuniseJusqua: null,
+        sessionsDepuis: null,
         joinedAt: new Date().toISOString(),
         active: true,
         role: 'joueur' as const,

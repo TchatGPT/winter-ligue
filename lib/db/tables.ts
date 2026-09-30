@@ -57,6 +57,7 @@ export const COLLECTIONS: Collection[] = [
       c('immuniseJusqua', 'immunise_jusqua', 'ts'),
       c('active', 'actif', 'bool'),
       c('joinedAt', 'inscrit_le', 'ts'),
+      c('sessionsDepuis', 'sessions_depuis', 'ts'),
     ],
   },
   {
@@ -241,7 +242,8 @@ create table if not exists joueurs (
   creneaux_bonus integer not null default 0,
   immunise_jusqua timestamptz,
   actif boolean not null default true,
-  inscrit_le timestamptz not null
+  inscrit_le timestamptz not null,
+  sessions_depuis timestamptz
 );
 
 create table if not exists games (
@@ -363,6 +365,9 @@ alter table duels add column if not exists echanges jsonb not null default '[]';
 -- au joueur.
 alter table joueurs add column if not exists creneaux_bonus integer not null default 0;
 alter table joueurs add column if not exists immunise_jusqua timestamptz;
+
+-- La révocation des sessions : celles ouvertes avant cette date sont refusées.
+alter table joueurs add column if not exists sessions_depuis timestamptz;
 
 -- Les tables créées avant la suppression en cascade : leurs clés sont
 -- remplacées, une seule fois, par celles décrites ci-dessus.

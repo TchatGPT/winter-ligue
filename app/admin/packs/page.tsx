@@ -1,5 +1,5 @@
 import { EcranPacks, type JoueurPack, type PackAdmin } from '@/components/admin/EcranPacks';
-import { getSession } from '@/lib/auth/session';
+import { exigeRole } from '@/lib/auth/acces';
 import { getStore } from '@/lib/db/store';
 import { cartesDuPack } from '@/lib/domain/catalog';
 import { chanceDe } from '@/lib/domain/rules';
@@ -9,8 +9,8 @@ export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Packs — Administration' };
 
 export default async function AdminPacksPage() {
-  const session = await getSession();
-  const estAdmin = session?.role === 'admin';
+  const session = await exigeRole('moderateur');
+  const estAdmin = session.role === 'admin';
 
   const data = await getStore().read((db) => ({
     file: fileDesPacks(db),

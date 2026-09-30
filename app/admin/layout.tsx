@@ -1,6 +1,5 @@
-import { redirect } from 'next/navigation';
 import { AdminNav } from '@/components/admin/Cadre';
-import { getSession } from '@/lib/auth/session';
+import { exigeRole } from '@/lib/auth/acces';
 import { SnowCap } from '@/components/SnowCap';
 import { TitreGlace } from '@/components/TitreGlace';
 
@@ -19,10 +18,7 @@ export const metadata = { title: 'Administration' };
  * une route.
  */
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const session = await getSession();
-  if (!session || (session.role !== 'admin' && session.role !== 'moderateur')) {
-    redirect('/connexion');
-  }
+  const session = await exigeRole('moderateur');
   const estAdmin = session.role === 'admin';
 
   return (

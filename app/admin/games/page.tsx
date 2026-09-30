@@ -1,10 +1,12 @@
 import { EcranGames, type LigneGame } from '@/components/admin/EcranGames';
+import { exigeRole } from '@/lib/auth/acces';
 import { getStore } from '@/lib/db/store';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Games — Administration' };
 
 export default async function AdminGamesPage() {
+  await exigeRole('moderateur');
   const data = await getStore().read((db) => {
     const pseudo = (id: string) => db.players.find((p) => p.id === id)?.pseudo ?? 'Inconnu';
 

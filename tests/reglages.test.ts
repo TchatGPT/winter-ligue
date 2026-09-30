@@ -38,6 +38,7 @@ function joueur(id: string, snowflakes = 0): Player {
     subsOfferts: 0,
     creneauxBonus: 0,
     immuniseJusqua: null,
+    sessionsDepuis: null,
     joinedAt: '2027-01-01T00:00:00.000Z',
     active: true,
     role: 'joueur',

@@ -1,5 +1,5 @@
 import { EcranJoueurs, type LigneJoueur } from '@/components/admin/EcranJoueurs';
-import { getSession } from '@/lib/auth/session';
+import { exigeRole } from '@/lib/auth/acces';
 import { getStore } from '@/lib/db/store';
 import { totalsOf } from '@/lib/services/league';
 
@@ -7,8 +7,8 @@ export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Joueurs — Administration' };
 
 export default async function AdminJoueursPage() {
-  const session = await getSession();
-  const estAdmin = session?.role === 'admin';
+  const session = await exigeRole('moderateur');
+  const estAdmin = session.role === 'admin';
 
   const joueurs = await getStore().read((db) =>
     db.players

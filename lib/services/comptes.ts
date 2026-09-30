@@ -59,6 +59,7 @@ export function rattacheCompteTwitch(db: Database, profil: ProfilTwitch): Player
     subsOfferts: 0,
     creneauxBonus: 0,
     immuniseJusqua: null,
+    sessionsDepuis: null,
     joinedAt: new Date().toISOString(),
     active: true,
     role: profil.roleChaine ?? 'joueur',

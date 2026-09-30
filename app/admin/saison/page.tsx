@@ -1,10 +1,12 @@
 import { EcranSaison } from '@/components/admin/EcranSaison';
+import { exigeRole } from '@/lib/auth/acces';
 import { getStore } from '@/lib/db/store';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Saison — Administration' };
 
 export default async function AdminSaisonPage() {
+  await exigeRole('moderateur');
   const data = await getStore().read((db) => ({
     config: {
       maxGamesPerPlayer: db.config.maxGamesPerPlayer,

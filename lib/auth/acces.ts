@@ -1,7 +1,7 @@
 import 'server-only';
 
 import { redirect } from 'next/navigation';
-import { getSession, playerIdOf, type SessionPayload } from '@/lib/auth/session';
+import { aLeRang, getSession, playerIdOf, type Role, type SessionPayload } from '@/lib/auth/session';
 import { getStore, sansBaseDurable } from '@/lib/db/store';
 import { destination } from '@/lib/domain/aiguillage';
 
@@ -38,5 +38,19 @@ export async function exigeSession(): Promise<SessionPayload> {
   });
   if (ou || !session) redirect(ou ?? '/');
 
+  return session;
+}
+
+/**
+ * L'accès à une page de l'administration, en tête de **chaque** page.
+ *
+ * La mise en page de `/admin` vérifie aussi, mais elle ne suffit pas : lors
+ * d'une navigation entre deux onglets, Next ne rejoue que la page, pas la mise
+ * en page — et une requête fabriquée peut demander la seule page. Le contrôle
+ * est donc au plus près des données.
+ */
+export async function exigeRole(minimum: Extract<Role, 'moderateur' | 'admin'>): Promise<SessionPayload> {
+  const session = await getSession();
+  if (!session || !aLeRang(session.role, minimum)) redirect('/connexion');
   return session;
 }

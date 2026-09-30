@@ -14,11 +14,8 @@ import 'server-only';
 
 import { NextResponse } from 'next/server';
 import type { ZodType } from 'zod';
-import { getSession, type Role, type SessionPayload } from '@/lib/auth/session';
+import { aLeRang, getSession, type Role, type SessionPayload } from '@/lib/auth/session';
 import { consume, LIMITS } from '@/lib/security/ratelimit';
-
-/** Hiérarchie des rôles : chacun peut ce que peut le précédent, et davantage. */
-const RANG: Record<Role, number> = { joueur: 0, moderateur: 1, admin: 2 };
 
 export type ApiErrorCode =
   | 'REQUETE_INVALIDE'
@@ -145,7 +142,7 @@ export async function guard<T = undefined>(
      * oublier un le jour où on en ajoute un. Une route qui demande `admin`
      * n'accepte que lui.
      */
-    if (RANG[session.role] < RANG[options.role]) {
+    if (!aLeRang(session.role, options.role)) {
       return { ok: false, response: fail('NON_AUTORISE', 'Droits insuffisants.') };
     }
   }

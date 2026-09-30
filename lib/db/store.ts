@@ -22,7 +22,7 @@ import { synchroniseCatalogue } from './lecture';
 import { chargeBase, empreintes, enregistreBase, SCHEMA_SQL, TABLES } from './tables';
 import { dirname, join } from 'node:path';
 import { DEFAULT_MAX_GAMES_PER_PLAYER, ECONOMY, SEASON } from '@/lib/domain/rules';
-import type { Database } from './entities';
+import type { Database, PlayerRole } from './entities';
 
 /*
  * Sur Vercel, le dossier du projet est en lecture seule : seul /tmp s'écrit.
@@ -66,6 +66,13 @@ export function emptyDatabase(): Database {
   };
 }
 
+/** Ce qu'il faut savoir d'un joueur pour accepter sa session. */
+export interface EtatSession {
+  role: PlayerRole;
+  actif: boolean;
+  sessionsDepuis: string | null;
+}
+
 export interface Store {
   /** Lecture seule. Retourne une copie défensive : muter le résultat ne change rien. */
   read<T>(fn: (db: Readonly<Database>) => T): Promise<T>;
@@ -76,6 +83,13 @@ export interface Store {
   transaction<T>(fn: (db: Database) => T | Promise<T>): Promise<T>;
   /** Remplace intégralement le contenu (restauration de sauvegarde). */
   replace(db: Database): Promise<void>;
+  /**
+   * Le rôle, l'état et la date de révocation d'un joueur — rien d'autre.
+   *
+   * Appelée à chaque requête qui porte une session : c'est une seule ligne,
+   * lue par sa clé, et non la base entière que charge `read()`.
+   */
+  etatSession(joueurId: string): Promise<EtatSession | null>;
 }
 
 class JsonFileStore implements Store {
@@ -140,6 +154,12 @@ class JsonFileStore implements Store {
       () => undefined,
     );
     return run as Promise<T>;
+  }
+
+  async etatSession(joueurId: string): Promise<EtatSession | null> {
+    const db = await this.load();
+    const p = db.players.find((x) => x.id === joueurId);
+    return p ? { role: p.role, actif: p.active, sessionsDepuis: p.sessionsDepuis ?? null } : null;
   }
 
   async replace(next: Database): Promise<void> {
@@ -312,6 +332,20 @@ class PostgresStore implements Store {
     });
   }
 
+  async etatSession(joueurId: string): Promise<EtatSession | null> {
+    return this.enFile(async () => {
+      await this.prepare();
+      const [ligne] = await this.sql<{ role: PlayerRole; actif: boolean; sessions_depuis: Date | string | null }[]>`
+        select role, actif, sessions_depuis from joueurs where id = ${joueurId}`;
+      if (!ligne) return null;
+      return {
+        role: ligne.role,
+        actif: ligne.actif,
+        sessionsDepuis: ligne.sessions_depuis ? new Date(ligne.sessions_depuis).toISOString() : null,
+      };
+    });
+  }
+
   async replace(next: Database): Promise<void> {
     await this.transaction((db) => {
       const migrated = migrate(next);
@@ -348,6 +382,7 @@ function migrate(db: Partial<Database>): Database {
       creneauxBonus: p.creneauxBonus ?? 0,
       immuniseJusqua: p.immuniseJusqua ?? null,
       activisionId: p.activisionId ?? null,
+      sessionsDepuis: p.sessionsDepuis ?? null,
       snowflakes: Math.min(p.snowflakes ?? 0, ECONOMY.soldeMax),
     })),
     games: (db.games ?? []).map((g) => {
