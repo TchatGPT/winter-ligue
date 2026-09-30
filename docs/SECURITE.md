@@ -325,7 +325,10 @@ l'ancienne `/api/auth/twitch/demo` renvoient simplement à `/connexion`.
 
 **L'entrée par mot de passe** (`POST /api/admin/login`, `lib/auth/secours.ts`) est
 la porte de l'administration en attendant Twitch, et son filet ensuite. Elle
-n'existe que si `ADMIN_PASSWORD_HASH` est posé (empreinte scrypt, générée par
+s'ouvre par `ADMIN_PASSWORD` — le mot de passe lui-même, en variable Vercel de type
+*Secret*, comparé par HMAC à temps constant ; pas moins sûr que `AUTH_SECRET` ou le mot
+de passe de la base, rangés au même endroit — ou par `ADMIN_PASSWORD_HASH` (empreinte
+scrypt, générée par
 `npm run hash-password`, qui demande le mot de passe sans l'afficher, sans longueur
 imposée) : sans empreinte, le formulaire n'est pas montré et la route répond
 comme à un mauvais mot de passe, **dans le même temps** (une empreinte leurre est

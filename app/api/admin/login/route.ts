@@ -1,6 +1,7 @@
+import { createHmac, timingSafeEqual } from 'node:crypto';
 import { NextResponse } from 'next/server';
-import { empreinteAdmin, empreinteBienFormee } from '@/lib/auth/empreinte';
-import { createToken, setSessionCookie, verifyPassword } from '@/lib/auth/session';
+import { empreinteAdmin, empreinteBienFormee, motDePasseEnClair } from '@/lib/auth/empreinte';
+import { cleDerivee, createToken, setSessionCookie, verifyPassword } from '@/lib/auth/session';
 import { entreeParMotDePasse } from '@/lib/auth/secours';
 import { fail, guard, ok } from '@/lib/api/respond';
 import { loginSchema } from '@/lib/api/schemas';
@@ -38,15 +39,25 @@ export async function POST(request: Request): Promise<NextResponse> {
   });
   if (!g.ok) return g.response;
 
+  const essai = g.body.password;
+
+  // L'empreinte, si elle est posée — scrypt est toujours calculé, pour que la
+  // durée de la réponse ne dise rien de la configuration.
   const empreinte = empreinteAdmin();
   const utilisable = empreinte !== null && empreinteBienFormee(empreinte);
   if (empreinte && !utilisable) {
     // Visible dans les journaux de Vercel, jamais dans la réponse.
     console.error('[connexion] ADMIN_PASSWORD_HASH mal formée : attendu scrypt:<sel>:<clé>');
   }
-  const valide = await verifyPassword(g.body.password, utilisable ? empreinte : LEURRE);
+  const parEmpreinte = (await verifyPassword(essai, utilisable ? empreinte : LEURRE)) && utilisable;
 
-  if (!utilisable || !valide) {
+  // Le mot de passe en clair, s'il est posé : comparé par leurs HMAC, à temps
+  // constant quelle que soit leur longueur.
+  const clair = motDePasseEnClair();
+  const sceau = (texte: string) => createHmac('sha256', cleDerivee('mot-de-passe-admin')).update(texte).digest();
+  const parClair = clair !== null && timingSafeEqual(sceau(essai.trim()), sceau(clair));
+
+  if (!parEmpreinte && !parClair) {
     const indice = utilisable ? ` (empreinte en service : ${empreinte.slice(0, 13)}…)` : '';
     return fail('NON_AUTHENTIFIE', `Mot de passe incorrect.${indice}`);
   }

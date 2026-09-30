@@ -79,7 +79,8 @@ export default async function ConnexionPage({
       {porte === 'mal-forme' && (
         <Notice kind="error">
           Le mot de passe d’administration est mal configuré : dans Vercel, la valeur de ADMIN_PASSWORD_HASH doit
-          être l’empreinte seule, qui commence par « scrypt: ». Corrige-la, puis redéploie.
+          être l’empreinte seule, qui commence par « scrypt: ». Corrige-la — ou pose plutôt ADMIN_PASSWORD, le mot
+          de passe lui-même en type Secret —, puis redéploie.
         </Notice>
       )}
 

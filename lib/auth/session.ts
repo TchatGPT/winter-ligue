@@ -21,7 +21,7 @@ import { cookies } from 'next/headers';
 import { cache } from 'react';
 import { getStore } from '@/lib/db/store';
 import { roleConfirme } from '@/lib/domain/revocation';
-import { empreinteAdmin } from '@/lib/auth/empreinte';
+import { etatMotDePasse } from '@/lib/auth/empreinte';
 
 const scrypt = promisify(scryptCb) as (
   password: string,
@@ -153,7 +153,7 @@ export const getSession = cache(async (): Promise<SessionPayload | null> => {
  */
 async function confirme(jeton: SessionPayload): Promise<SessionPayload | null> {
   if (jeton.sub === SUJET_SECOURS) {
-    return empreinteAdmin() ? { ...jeton, role: 'admin' } : null;
+    return etatMotDePasse() === 'pret' ? { ...jeton, role: 'admin' } : null;
   }
   const role = roleConfirme(jeton, await getStore().etatSession(jeton.sub));
   return role ? { ...jeton, role } : null;
