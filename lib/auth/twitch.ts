@@ -29,6 +29,11 @@ const COOKIE_OAUTH = 'wl_oauth';
 /** Le temps laissé pour passer chez Twitch et revenir. */
 const DUREE_STATE_S = 10 * 60;
 
+/** Ce que toute connexion demande : la liste des chaînes que la personne modère. */
+const PORTEE_BASE = 'user:read:moderated_channels';
+/** Lire les subs de sa chaîne : demandé à la streameuse, pour brancher les subs. */
+export const PORTEE_SUBS = 'channel:read:subscriptions';
+
 export function isTwitchEnabled(): boolean {
   return Boolean(process.env.TWITCH_CLIENT_ID && process.env.TWITCH_CLIENT_SECRET);
 }
@@ -62,11 +67,19 @@ function egales(a: string, b: string): boolean {
 /**
  * Le départ d'une connexion : le `state` qui part chez Twitch, et le nonce qui
  * reste dans le navigateur. Au retour, les deux doivent se répondre.
+ *
+ * Le `state` dit aussi s'il s'agit de brancher les subs (`s`) : signé comme le
+ * reste, cela ne se change pas en route.
  */
-export function createState(returnTo: string): { state: string; nonce: string } {
+export function createState(returnTo: string, subs = false): { state: string; nonce: string } {
   const nonce = randomBytes(32).toString('base64url');
   const charge = Buffer.from(
-    JSON.stringify({ n: nonce, r: cheminInterne(returnTo), e: Math.floor(Date.now() / 1000) + DUREE_STATE_S }),
+    JSON.stringify({
+      n: nonce,
+      r: cheminInterne(returnTo),
+      e: Math.floor(Date.now() / 1000) + DUREE_STATE_S,
+      ...(subs ? { s: 1 } : {}),
+    }),
   ).toString('base64url');
   return { state: `${charge}.${signe(charge)}`, nonce };
 }
@@ -74,8 +87,8 @@ export function createState(returnTo: string): { state: string; nonce: string } 
 export function verifyState(
   state: string | null,
   nonce: string | undefined,
-): { valid: boolean; returnTo: string } {
-  const refus = { valid: false, returnTo: '/' };
+): { valid: boolean; returnTo: string; subs: boolean } {
+  const refus = { valid: false, returnTo: '/', subs: false };
   if (!state || !nonce) return refus;
   const point = state.lastIndexOf('.');
   if (point <= 0) return refus;
@@ -84,10 +97,15 @@ export function verifyState(
   if (!egales(state.slice(point + 1), signe(charge))) return refus;
 
   try {
-    const lu = JSON.parse(Buffer.from(charge, 'base64url').toString('utf8')) as { n?: unknown; r?: unknown; e?: unknown };
+    const lu = JSON.parse(Buffer.from(charge, 'base64url').toString('utf8')) as {
+      n?: unknown;
+      r?: unknown;
+      e?: unknown;
+      s?: unknown;
+    };
     if (typeof lu.e !== 'number' || lu.e * 1000 <= Date.now()) return refus;
     if (typeof lu.n !== 'string' || !egales(lu.n, nonce)) return refus;
-    return { valid: true, returnTo: cheminInterne(typeof lu.r === 'string' ? lu.r : '/') };
+    return { valid: true, returnTo: cheminInterne(typeof lu.r === 'string' ? lu.r : '/'), subs: lu.s === 1 };
   } catch {
     return refus;
   }
@@ -122,11 +140,15 @@ export async function reprendsNonce(): Promise<string | undefined> {
  * qui n'est pas déclarée chez lui.
  */
 export function redirectUri(origine: string): string {
-  const base = (process.env.NEXT_PUBLIC_SITE_URL?.trim() || origine).replace(/\/$/, '');
-  return `${base}/api/auth/twitch/callback`;
+  return `${baseDuSite(origine)}/api/auth/twitch/callback`;
 }
 
-export function authorizeUrl(state: string, origine: string): string {
+/** L'adresse du site : `NEXT_PUBLIC_SITE_URL` si elle est posée, sinon celle par laquelle on est arrivé. */
+export function baseDuSite(origine: string): string {
+  return (process.env.NEXT_PUBLIC_SITE_URL?.trim() || origine).replace(/\/$/, '');
+}
+
+export function authorizeUrl(state: string, origine: string, subs = false): string {
   const params = new URLSearchParams({
     client_id: process.env.TWITCH_CLIENT_ID ?? '',
     redirect_uri: redirectUri(origine),
@@ -134,7 +156,8 @@ export function authorizeUrl(state: string, origine: string): string {
     // Le strict nécessaire : la liste des chaînes que la personne modère,
     // qui dit si elle est modératrice de la chaîne de la ligue. L'identité
     // publique vient sans portée ; l'adresse e-mail n'est jamais demandée.
-    scope: 'user:read:moderated_channels',
+    // Le branchement des subs demande en plus de lire ceux de la chaîne.
+    scope: subs ? `${PORTEE_BASE} ${PORTEE_SUBS}` : PORTEE_BASE,
     state,
     force_verify: 'true',
   });
@@ -153,6 +176,8 @@ export interface TwitchProfile {
    * alors à aucun rôle.
    */
   roleChaine: 'admin' | 'joueur' | null;
+  /** Les portées que la personne a accordées à l'application. */
+  portees: string[];
 }
 
 /** La chaîne de la ligue : `TWITCH_BROADCASTER_LOGIN`, sinon celle de la saison. */
@@ -211,7 +236,7 @@ export async function exchangeCode(code: string, origine: string): Promise<Twitc
   });
   if (!tokenResponse.ok) return null;
 
-  const token = (await tokenResponse.json()) as { access_token?: string };
+  const token = (await tokenResponse.json()) as { access_token?: string; scope?: unknown };
   if (!token.access_token) return null;
 
   const userResponse = await fetch(USERS_URL, {
@@ -243,5 +268,6 @@ export async function exchangeCode(code: string, origine: string): Promise<Twitc
     displayName: user.display_name,
     avatarUrl: user.profile_image_url || null,
     roleChaine,
+    portees: Array.isArray(token.scope) ? token.scope.filter((p): p is string => typeof p === 'string') : [],
   };
 }

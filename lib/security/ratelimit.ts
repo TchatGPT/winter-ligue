@@ -93,6 +93,8 @@ export const LIMITS = {
   bid: { limit: 60, windowMs: 60_000 },
   /** Lectures d'API. */
   read: { limit: 240, windowMs: 60_000 },
+  /** Messages de Twitch : un cadeau de masse arrive d'un coup, un message par destinataire. */
+  eventsub: { limit: 1200, windowMs: 60_000 },
 } as const;
 
 /** Remet à zéro le compteur d'une clé (après une connexion réussie). */

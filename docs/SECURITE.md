@@ -183,6 +183,7 @@ juste après la remise à zéro d'une fenêtre :
 | Écritures de jeu | 30 / min / IP |
 | Enchères | 60 / min / IP |
 | Lectures d'API | 240 / min / IP |
+| Messages de Twitch (EventSub) | 1 200 / min / IP |
 
 ### 11. Équilibre de l'économie
 
@@ -320,6 +321,20 @@ plus, et la session est refusée. Chaque refus ramène à `/connexion?erreur=…
 le texte vient d'une table fixe. L'adresse de retour à déclarer chez Twitch est
 `https://www.winter-ligue.com/api/auth/twitch/callback`.
 
+**Les subs viennent de Twitch** (EventSub, en webhook : `POST /api/twitch/eventsub`).
+La streameuse branche une fois, depuis Admin → Saison : la connexion Twitch repart
+avec `subs=1`, signé dans le `state`, et demande en plus `channel:read:subscriptions`.
+Au retour, le site vérifie que c'est bien la chaîne de la ligue et que la portée est
+accordée, puis crée, avec le jeton de l'application, trois abonnements : nouveaux subs,
+subs offerts, réabonnements annoncés. Tout autre compte est connecté, sans rien
+brancher. À la réception : signature HMAC-SHA256 vérifiée **avant** de lire le corps
+(secret tiré d'`AUTH_SECRET`, jamais écrit), message de plus de dix minutes ignoré,
+chaîne de la ligue seulement, corps de 64 Kio au plus. Chaque message ne compte
+qu'une fois : sa trace (`saison.twitch_vus`, une heure) s'écrit dans la **même
+transaction** que le compteur, et un échec répond 500 pour que Twitch réessaie. Le
+compteur avance par `addSubs()`, comme la saisie de la modération. Un sub offert
+compte par le message du cadeau, jamais par ceux de ses destinataires.
+
 **Tant que Twitch n'est pas branché, la connexion Twitch est fermée.** Une
 connexion *simulée* a existé : un clic sur le bouton faisait entrer n'importe quel
 visiteur sur le compte administrateur. Elle est supprimée ; `/api/auth/twitch` et
@@ -400,7 +415,8 @@ son adresse. L'héberger dans `public/` retirerait ce domaine de la CSP.
   des données personnelles : hors du dépôt (`.gitignore` l'écarte), et supprimé une fois
   inutile. Il n'y a plus de restauration par le site.
 - **Variables Vercel** : `AUTH_SECRET`, `DATABASE_URL`, `ANTHROPIC_API_KEY`,
-  `TWITCH_CLIENT_SECRET` en **Production seulement**, marquées sensibles. Changer `AUTH_SECRET` déconnecte tout le monde et change les liens d'overlay.
+  `TWITCH_CLIENT_SECRET` en **Production seulement**, marquées sensibles. Changer `AUTH_SECRET` déconnecte tout le monde, change les liens d'overlay, et
+  coupe les subs Twitch jusqu'à ce que la streameuse les rebranche.
 - **`.env.local` n'est jamais commité.**
 
 ---

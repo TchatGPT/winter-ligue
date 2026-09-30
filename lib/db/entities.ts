@@ -197,7 +197,7 @@ export interface AuditEntry {
 
 export interface LeagueConfig {
   maxGamesPerPlayer: number;
-  /** Subs cumulés de la saison. Seule la modération l'incrémente. */
+  /** Subs cumulés de la saison : la modération et Twitch l'incrémentent, par `addSubs()`. */
   totalSubs: number;
   seasonStartsAt: string;
   seasonEndsAt: string;
@@ -206,6 +206,11 @@ export interface LeagueConfig {
    * changer révoque d'un coup tous les liens donnés jusque-là.
    */
   overlayGeneration: number;
+  /**
+   * Les derniers messages de Twitch déjà comptés (une heure au plus) : Twitch
+   * renvoie un message qu'il croit perdu, il ne doit compter qu'une fois.
+   */
+  twitchVus: { id: string; le: string }[];
 }
 
 /** Un versement déclenché par les subs Twitch, conservé pour l'historique. */
@@ -256,7 +261,7 @@ export interface Bataille {
   /** La mise de chaque camp, en flocons. Le pot vaut le double. */
   mise: number;
   hoteId: string;
-  /** Nul tant que personne n'a rejoint. `BOT` désigne l'adversaire virtuel. */
+  /** Nul tant que personne n'a rejoint. `BOT` : le bot, retiré depuis — il reste dans les anciens duels. */
   adversaireId: string | null;
   statut: 'ATTENTE' | 'TERMINEE' | 'ANNULEE';
   /** Les cartes tirées par camp, dans l'ordre des manches. Vide tant qu'on attend. */
@@ -272,7 +277,11 @@ export interface Bataille {
   resolueA: string | null;
 }
 
-/** L'identifiant réservé à l'adversaire virtuel. Aucun joueur ne peut le porter. */
+/**
+ * L'identifiant réservé au bot, l'adversaire virtuel des premiers duels. On ne
+ * joue plus contre lui ; on le lit encore dans les duels d'avant. Aucun joueur
+ * ne peut le porter.
+ */
 export const CAMP_BOT = 'BOT';
 
 /**

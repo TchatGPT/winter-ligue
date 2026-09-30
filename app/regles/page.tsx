@@ -294,8 +294,8 @@ export default async function ReglesPage(){
               jeu.
             </li>
             <li>
-              Le bot joue exactement comme toi. Une fois sur deux tu perds ta mise, une fois sur deux
-              tu la doubles.
+              Un duel se joue entre deux joueurs. Tant que personne ne l’a relevé, tu peux l’annuler : ta
+              mise t’est rendue.
             </li>
           </ul>
         </Rule>

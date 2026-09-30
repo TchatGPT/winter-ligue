@@ -67,7 +67,7 @@ export default async function DuelsPage() {
           <li className="duel-etape">
             <i>3</i>
             <b>Le premier qui tombe</b>
-            <p>Rocher, glace ou boule qui éclate : il a perdu. Une chance sur deux, bot compris.</p>
+            <p>Une chute, une boule qui éclate, une boule de neige en pleine face : il a perdu. Une chance sur deux pour chacun.</p>
           </li>
           <li className="duel-etape">
             <i>4</i>

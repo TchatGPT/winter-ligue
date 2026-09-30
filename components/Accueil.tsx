@@ -41,7 +41,7 @@ export function Accueil({ twitchEnabled, devLogin }: { twitchEnabled: boolean; d
     {
       icone: IconSwords,
       titre: 'Les duels',
-      texte: 'Tes flocons se misent contre un autre joueur ou contre le bot. Une seule manche, une chance sur deux : le gagnant prend le pot.',
+      texte: 'Tes flocons se misent contre un autre joueur. Une seule manche, une chance sur deux : le gagnant prend le pot.',
     },
     {
       icone: IconSnowflake,

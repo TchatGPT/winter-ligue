@@ -215,7 +215,7 @@ export const COLLECTIONS: Collection[] = [
  * ce qui n'a de sens qu'avec lui : ses games, ses mouvements de flocons, ses
  * cartes en attente, ses boosters à ouvrir, les duels qu'il a lancés. Ses
  * ouvertures de boosters restent, sans joueur. L'adversaire et le vainqueur
- * d'un duel n'ont pas de clé : ce peut être le bot, qui n'est pas un joueur ;
+ * d'un duel n'ont pas de clé : ce pouvait être le bot, qui n'est pas un joueur ;
  * un joueur disparu s'y affiche « Joueur inconnu ».
  */
 export const SCHEMA_SQL = `
@@ -227,7 +227,8 @@ create table if not exists saison (
   debut timestamptz not null,
   fin timestamptz not null,
   mis_a_jour timestamptz not null default now(),
-  overlay_generation integer not null default 1
+  overlay_generation integer not null default 1,
+  twitch_vus jsonb not null default '[]'
 );
 
 create table if not exists joueurs (
@@ -378,6 +379,9 @@ alter table joueurs add column if not exists role_manuel boolean not null defaul
 -- Les liens d'overlay OBS : en changer la génération les révoque tous.
 alter table saison add column if not exists overlay_generation integer not null default 1;
 
+-- Les messages de Twitch déjà comptés : un message renvoyé ne compte qu'une fois.
+alter table saison add column if not exists twitch_vus jsonb not null default '[]';
+
 -- Le journal ne s'écrit qu'en ajout : ni modification, ni suppression, ni
 -- vidage. Une ligne effacée par erreur de code — ou par qui aurait pris la
 -- main sur le site — fait échouer toute la transaction.
@@ -481,6 +485,7 @@ export async function chargeBase(sql: postgres.Sql | postgres.TransactionSql): P
       seasonStartsAt: new Date(saison.debut as string).toISOString(),
       seasonEndsAt: new Date(saison.fin as string).toISOString(),
       overlayGeneration: (saison.overlay_generation as number | undefined) ?? 1,
+      twitchVus: Array.isArray(saison.twitch_vus) ? (saison.twitch_vus as LeagueConfig['twitchVus']) : [],
     } satisfies LeagueConfig;
   }
   for (const col of CHARGEES) {
@@ -547,14 +552,15 @@ export async function enregistreBase(tx: postgres.TransactionSql, db: Database, 
 
   if (avant.get('saison')?.get('1') !== apres.get('saison')?.get('1')) {
     await tx`
-      insert into saison (id, version, total_subs, games_max_par_joueur, debut, fin, mis_a_jour, overlay_generation)
+      insert into saison (id, version, total_subs, games_max_par_joueur, debut, fin, mis_a_jour, overlay_generation, twitch_vus)
       values (1, ${db.version}, ${db.config.totalSubs}, ${db.config.maxGamesPerPlayer},
-              ${db.config.seasonStartsAt}, ${db.config.seasonEndsAt}, now(), ${db.config.overlayGeneration})
+              ${db.config.seasonStartsAt}, ${db.config.seasonEndsAt}, now(), ${db.config.overlayGeneration},
+              ${tx.json(db.config.twitchVus as unknown as postgres.JSONValue)})
       on conflict (id) do update set
         version = excluded.version, total_subs = excluded.total_subs,
         games_max_par_joueur = excluded.games_max_par_joueur,
         debut = excluded.debut, fin = excluded.fin, mis_a_jour = now(),
-        overlay_generation = excluded.overlay_generation`;
+        overlay_generation = excluded.overlay_generation, twitch_vus = excluded.twitch_vus`;
     touchees += 1;
   }
 

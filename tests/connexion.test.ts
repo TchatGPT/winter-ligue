@@ -12,7 +12,18 @@ describe('state OAuth', () => {
 
   it('revient valide avec le nonce de son départ', () => {
     const { state, nonce } = createState('/duels');
-    expect(verifyState(state, nonce)).toEqual({ valid: true, returnTo: '/duels' });
+    expect(verifyState(state, nonce)).toEqual({ valid: true, returnTo: '/duels', subs: false });
+  });
+
+  it('porte le branchement des subs, signé avec le reste', () => {
+    const { state, nonce } = createState('/admin/saison', true);
+    expect(verifyState(state, nonce)).toEqual({ valid: true, returnTo: '/admin/saison', subs: true });
+    // Ajouté après coup à un state ordinaire, il casse la signature.
+    const ordinaire = createState('/admin/saison');
+    const [charge, signature] = ordinaire.state.split('.');
+    const lu = JSON.parse(Buffer.from(charge, 'base64url').toString('utf8'));
+    const force = Buffer.from(JSON.stringify({ ...lu, s: 1 })).toString('base64url');
+    expect(verifyState(`${force}.${signature}`, ordinaire.nonce).valid).toBe(false);
   });
 
   it('refuse un state sans le nonce de ce navigateur', () => {

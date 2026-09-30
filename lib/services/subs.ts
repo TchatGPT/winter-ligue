@@ -3,7 +3,8 @@ import 'server-only';
 /**
  * Économie des subs Twitch.
  *
- * Un seul point d'entrée : `addSubs()`. Il incrémente le compteur de saison,
+ * Un seul point d'entrée : `addSubs()`, que les subs viennent de la
+ * modération ou de Twitch (`ajouteSubsTwitch`). Il incrémente le compteur de saison,
  * détermine les paliers franchis, verse les flocons **à tous les joueurs
  * actifs, à parts égales**, et met en file les packs collectifs. Personne ne
  * peut désigner le bénéficiaire d'un versement.
@@ -20,6 +21,7 @@ import type { PackId } from '@/lib/domain/types';
 import { audit, credit } from './ledger';
 import { ajoutePackDu } from './packs';
 import { declencheEvenements } from '@/lib/services/evenements';
+import { dejaVu, recitDuMessage, retiens, subsDuMessage } from '@/lib/domain/twitchSubs';
 
 export class SubError extends Error {
   constructor(
@@ -51,7 +53,7 @@ export interface AddSubsResult {
  * À appeler dans une transaction : compteur, versements et mise en file
  * réussissent ou échouent ensemble.
  */
-export function addSubs(db: Database, delta: number, actor: string): AddSubsResult {
+export function addSubs(db: Database, delta: number, actor: string, precision?: string): AddSubsResult {
   if (!Number.isInteger(delta) || delta <= 0 || delta > 10_000) {
     throw new SubError('Nombre de subs invalide.', 'DELTA_INVALIDE');
   }
@@ -106,7 +108,7 @@ export function addSubs(db: Database, delta: number, actor: string): AddSubsResu
     actor,
     'SUBS_AJOUTES',
     null,
-    `+${delta} subs (total ${to})${milestones.length ? ` — ${milestones.join(', ')}` : ''}${
+    `+${delta} subs (total ${to})${precision ? ` · ${precision}` : ''}${milestones.length ? ` — ${milestones.join(', ')}` : ''}${
       evenements.length ? ` — évènements : ${evenements.map((e) => e.label).join(', ')}` : ''
     }`,
   );
@@ -120,6 +122,27 @@ export function addSubs(db: Database, delta: number, actor: string): AddSubsResu
     recipients: recipients.length,
     next: nextMilestone(to),
   };
+}
+
+/**
+ * Un message de Twitch : un sub, des subs offerts, ou un réabonnement.
+ *
+ * Compté une seule fois : Twitch renvoie un message qu'il croit perdu, et la
+ * mémoire des messages comptés vit dans la même transaction que le compteur —
+ * les deux réussissent ou échouent ensemble. Un message qui n'ajoute rien (le
+ * destinataire d'un sub offert, déjà compté par le cadeau) n'est pas retenu.
+ *
+ * À appeler dans une transaction. Renvoie null si le message ne change rien.
+ */
+export function ajouteSubsTwitch(
+  db: Database,
+  message: { id: string; type: string; evenement: Record<string, unknown>; maintenant: number },
+): AddSubsResult | null {
+  if (dejaVu(db.config.twitchVus, message.id)) return null;
+  const subs = subsDuMessage(message.type, message.evenement);
+  if (subs === 0) return null;
+  db.config.twitchVus = retiens(db.config.twitchVus, message.id, message.maintenant);
+  return addSubs(db, subs, 'twitch', recitDuMessage(message.type, message.evenement, subs));
 }
 
 /** État du compteur, pour la bannière publique. */

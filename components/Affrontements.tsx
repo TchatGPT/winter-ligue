@@ -4,14 +4,18 @@
  * Le salon des duels.
  *
  * En tête, sur toute la largeur, les duels à rejoindre : c'est ce qu'on vient
- * voir d'abord. Dessous, à gauche le ring, où l'on règle sa mise et où deux
- * boutons engagent — le bot, tout de suite, ou les joueurs ; à droite les
- * résultats, aussi hauts que le ring.
+ * voir d'abord. Dessous, à gauche le ring, où l'on règle sa mise et lance son
+ * duel aux autres joueurs ; à droite les résultats, aussi hauts que le ring.
  *
  * Un duel joué ne se rejoue pas, et ne se saute pas : la course se voit une
  * fois, en direct, jusqu'au bout — la fenêtre ne se ferme pas avant. Une fois
  * finie, le verdict reste le temps d'être lu, puis la fenêtre se ferme
  * d'elle-même et le résultat passe en tête du salon.
+ *
+ * Celui qui a lancé le duel voit la course, lui aussi : dès que le sondage
+ * apprend qu'on l'a relevé, l'arène s'ouvre chez lui et la course s'y joue de
+ * bout en bout. Revenu sur la page dans le quart d'heure, il la voit encore ;
+ * une course vue ne revient pas (le navigateur s'en souvient).
  *
  * L'arène s'ouvre par-dessus, au centre de l'écran, dès le clic : les deux
  * pères Noël se mettent en place pendant que le serveur tire le duel, puis la
@@ -60,8 +64,6 @@ const MISE_DEPART = 100;
 /** Des places libres, pour que la bande des défis garde sa taille, vide ou pas. */
 const PLACES_VISIBLES = 3;
 
-const BOT: CampApercu = { pseudo: 'Le Bot', bot: true };
-
 /** Le pot : les deux mises réunies. C'est ce qui change de mains. */
 const pot = (b: BatailleVueClient) => b.mise * 2;
 
@@ -69,7 +71,7 @@ const pot = (b: BatailleVueClient) => b.mise * 2;
 function bilanDe(b: BatailleVueClient, moiId: string | null): { gagne: boolean; texte: string } {
   const gagne = moiId !== null && b.vainqueurId === moiId;
   const adverse = b.camps.find((c) => c.id !== moiId);
-  const contre = adverse ? (adverse.bot ? 'le Bot' : adverse.pseudo) : 'ton adversaire';
+  const contre = adverse?.pseudo ?? 'ton adversaire';
   return gagne
     ? { gagne, texte: `Duel gagné contre ${contre} : tu rafles ${flakes(pot(b))} ❄.` }
     : { gagne, texte: `Duel perdu contre ${contre} : ta mise de ${flakes(b.mise)} ❄ est partie.` };
@@ -218,6 +220,62 @@ type Resultat = { ok: true; data: BatailleVueClient } | { ok: false; message: st
 let dernierNumero = 0;
 const nouveauNumero = () => ++dernierNumero;
 
+/* ------------------------------------------------------------------------ */
+/* La course de celui qui a lancé le duel                                     */
+/* ------------------------------------------------------------------------ */
+
+/** Un duel relevé il y a plus longtemps ne rouvre plus l'arène. */
+const COURSE_FRAICHE_MS = 15 * 60_000;
+const CLE_VUES = 'wl-courses-vues';
+/** Sans mémoire du navigateur (navigation privée), celle de la page suffit. */
+const vuesEnMemoire = new Set<string>();
+
+function coursesVues(): string[] {
+  try {
+    const brut = window.localStorage.getItem(CLE_VUES);
+    const lu: unknown = brut ? JSON.parse(brut) : [];
+    return Array.isArray(lu) ? lu.filter((x): x is string => typeof x === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
+function marqueVue(id: string): void {
+  vuesEnMemoire.add(id);
+  try {
+    const vues = [...coursesVues().filter((x) => x !== id), id].slice(-100);
+    window.localStorage.setItem(CLE_VUES, JSON.stringify(vues));
+  } catch {
+    // Rien à faire : la mémoire de la page tiendra.
+  }
+}
+
+/**
+ * Mes duels relevés depuis peu, dont je n'ai pas vu la course : je les ai
+ * lancés, quelqu'un les a relevés, et la course s'est ouverte chez lui.
+ */
+function coursesAMontrer(charge: Charge, maintenant: number): BatailleVueClient[] {
+  if (charge.moiId === null) return [];
+  const vues = new Set([...vuesEnMemoire, ...coursesVues()]);
+  return charge.batailles.filter(
+    (b) =>
+      b.statut === 'TERMINEE' &&
+      b.hoteId === charge.moiId &&
+      !b.camps.some((c) => c.bot) &&
+      b.resolueA !== null &&
+      maintenant - Date.parse(b.resolueA) < COURSE_FRAICHE_MS &&
+      !vues.has(b.id),
+  );
+}
+
+/** La prochaine course en file, marquée vue : la fenêtre qui la joue. */
+function prochaineCourse(file: BatailleVueClient[]): Fenetre | null {
+  const b = file.shift();
+  if (!b) return null;
+  marqueVue(b.id);
+  return { etat: 'duel', bataille: b, anime: true, tour: nouveauNumero(), fini: false };
+}
+
 /**
  * Attend la promesse, et au moins `ms` millisecondes : sans ce minimum, la
  * réponse arrive si vite que l'attente clignote.
@@ -268,6 +326,21 @@ export function Affrontements({
   const [onglet, setOnglet] = useState<Onglet>('recents');
 
   const [fenetre, setFenetre] = useState<Fenetre | null>(null);
+  /** Les courses de mes duels relevés, en attente d'une fenêtre libre. */
+  const aMontrer = useRef<BatailleVueClient[]>([]);
+  /** Vrai tant qu'une fenêtre est ouverte : le sondage le lit hors du rendu. */
+  const fenetreLa = useRef(false);
+  useEffect(() => {
+    fenetreLa.current = fenetre !== null;
+  }, [fenetre]);
+
+  // Une course qui s'ouvre sans clic — celle d'un duel relevé — n'a de son que
+  // si la page a déjà reçu un geste : le premier réveille le son.
+  useEffect(() => {
+    const reveil = () => reveilleSonsDuel();
+    window.addEventListener('pointerdown', reveil, { once: true });
+    return () => window.removeEventListener('pointerdown', reveil);
+  }, []);
 
   const moi: CampApercu = { pseudo: moiPseudo ?? 'Toi', bot: false };
   const { min: miseMin, max: miseMax } = etat.bornes.mise;
@@ -280,12 +353,29 @@ export function Affrontements({
   const plafond = Math.max(miseMin, Math.min(miseMax, solde ?? miseMax));
 
   const recharge = useCallback(async () => {
+    let suivant: Charge;
     try {
       const reponse = await fetch('/api/affrontements', { cache: 'no-store' });
       const charge = await reponse.json();
-      if (charge.ok) setEtat(charge.data);
+      if (!charge.ok) return;
+      suivant = charge.data as Charge;
     } catch {
       // Un sondage qui échoue ne mérite pas de message : le suivant passera.
+      return;
+    }
+    setEtat(suivant);
+
+    // Un de mes duels vient d'être relevé : la course se joue chez moi aussi,
+    // dès que la fenêtre est libre.
+    for (const b of coursesAMontrer(suivant, Date.now())) {
+      if (!aMontrer.current.some((x) => x.id === b.id)) aMontrer.current.push(b);
+    }
+    if (!fenetreLa.current) {
+      const course = prochaineCourse(aMontrer.current);
+      if (course) {
+        fenetreLa.current = true;
+        setFenetre(course);
+      }
     }
   }, []);
 
@@ -320,6 +410,7 @@ export function Affrontements({
 
     const jeton = nouveauNumero();
     attenteOuverte.current = jeton;
+    fenetreLa.current = true;
     setFenetre({ etat: 'attente', jeton, ...apercu });
 
     const resultat = await auMoins(700, poste(url, corps));
@@ -361,16 +452,17 @@ export function Affrontements({
     void recharge();
   }
 
-  const contreLeBot = (m: number) =>
-    joue('/api/affrontements/bot', { mise: m }, { gauche: moi, droite: BOT, moi: 'gauche', mise: m });
-
-  const ouvreAuxJoueurs = () =>
-    agit(
+  const ouvreAuxJoueurs = () => {
+    // Le son se réveille pendant ce clic : la course s'ouvrira sans geste,
+    // quand quelqu'un relèvera le duel.
+    reveilleSonsDuel();
+    return agit(
       '/api/affrontements',
       { mise },
       (b) =>
-        `Ton duel est ouvert : ${flakes(b.mise)} ❄ misés. Il attend un adversaire dans « Duels à rejoindre », et tu peux l’annuler tant que personne ne l’a relevé.`,
+        `Ton duel est ouvert : ${flakes(b.mise)} ❄ misés. Il attend un adversaire dans « Duels à rejoindre » — la course s’ouvrira ici dès qu’on le relève. Tu peux l’annuler tant que personne ne l’a fait.`,
     );
+  };
 
   const releve = (b: BatailleVueClient) =>
     joue(
@@ -379,17 +471,17 @@ export function Affrontements({
       { gauche: { pseudo: b.camps[0]?.pseudo ?? '?', bot: false }, droite: moi, moi: 'droite', mise: b.mise },
     );
 
-  const botSurLeMien = (b: BatailleVueClient) =>
-    joue('/api/affrontements/bot', { batailleId: b.id }, { gauche: moi, droite: BOT, moi: 'gauche', mise: b.mise });
-
   const annule = (b: BatailleVueClient) =>
     agit('/api/affrontements/annuler', { batailleId: b.id }, () => `Duel annulé : ta mise de ${flakes(b.mise)} ❄ t’est rendue.`);
 
   function ferme() {
     attenteOuverte.current = null;
-    // Fermée à la main sur le verdict, la fenêtre laisse l'issue dans le salon.
+    // Fermée à la main sur le verdict, la fenêtre laisse l'issue dans le salon —
+    // et la place à la course suivante, s'il y en a une en file.
     if (fenetre?.etat === 'duel') setBilan(bilanDe(fenetre.bataille, etat.moiId));
-    setFenetre(null);
+    const suivante = prochaineCourse(aMontrer.current);
+    fenetreLa.current = suivante !== null;
+    setFenetre(suivante);
     void recharge();
   }
 
@@ -404,7 +496,9 @@ export function Affrontements({
   useEffect(() => {
     if (!duelTermine) return;
     const t = setTimeout(() => {
-      setFenetre(null);
+      const suivante = prochaineCourse(aMontrer.current);
+      fenetreLa.current = suivante !== null;
+      setFenetre(suivante);
       setBilan(bilanDe(duelTermine, moiId));
       void recharge();
     }, DELAI_VERDICT);
@@ -537,14 +631,9 @@ export function Affrontements({
                 </div>
                 <div className="defi-actions">
                   {mien ? (
-                    <>
-                      <button type="button" className="btn btn-ice" disabled={occupe} onClick={() => botSurLeMien(b)}>
-                        Contre le bot
-                      </button>
-                      <button type="button" className="btn btn-ghost" disabled={occupe} onClick={() => annule(b)}>
-                        Annuler
-                      </button>
-                    </>
+                    <button type="button" className="btn btn-ghost" disabled={occupe} onClick={() => annule(b)}>
+                      Annuler
+                    </button>
                   ) : (
                     <button
                       type="button"
@@ -714,24 +803,16 @@ export function Affrontements({
             </p>
           )}
 
-          {/* ---- Les deux façons d'engager ---- */}
+          {/* ---- Lancer le duel ---- */}
           <div className="ring-actions">
             <div>
-              <button
-                type="button"
-                className="btn btn-ice btn-lg w-full"
-                disabled={!peutJouer}
-                onClick={() => contreLeBot(mise)}
-              >
-                <span aria-hidden="true">🤖</span> Affronter le bot
-              </button>
-              <p>Tout de suite. Le bot mise autant que toi, une chance sur deux.</p>
-            </div>
-            <div>
-              <button type="button" className="btn btn-lg w-full" disabled={!peutJouer} onClick={ouvreAuxJoueurs}>
+              <button type="button" className="btn btn-ice btn-lg w-full" disabled={!peutJouer} onClick={ouvreAuxJoueurs}>
                 <IconSwords className="h-5 w-5" /> Lancer un duel
               </button>
-              <p>Il s’affiche dans « Duels à rejoindre » pour les autres joueurs. Annulable tant que personne ne l’a relevé.</p>
+              <p>
+                Il s’affiche dans « Duels à rejoindre » pour les autres joueurs, et la course s’ouvre ici dès qu’on
+                le relève. Annulable tant que personne ne l’a fait.
+              </p>
             </div>
           </div>
         </section>

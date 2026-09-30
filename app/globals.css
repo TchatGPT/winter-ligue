@@ -3474,11 +3474,6 @@
     gap: 0.9rem;
     margin-top: 1.25rem;
   }
-  @container (min-width: 560px) {
-    .ring-actions {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-  }
   .ring-actions p {
     margin-top: 0.45rem;
     font-size: 0.8125rem;

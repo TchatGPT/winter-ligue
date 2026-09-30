@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useAction } from '@/components/admin/action';
 import { Bloc, Ecran } from '@/components/admin/Cadre';
-import { flakes } from '@/components/ui';
+import { Notice, flakes } from '@/components/ui';
 import { PACKS_REGLES, SUBS, nextMilestone } from '@/lib/domain/rules';
 
 export interface ConfigSaison {
@@ -15,6 +15,32 @@ export interface JoueurSubs {
   id: string;
   pseudo: string;
   subsOfferts: number;
+}
+
+export interface RetourSubs {
+  kind: 'success' | 'error';
+  text: string;
+}
+
+/** Les subs Twitch : branchés ou non, et ce que dit le retour du branchement. */
+export interface TwitchSubs {
+  configure: boolean;
+  /** L'état des abonnements chez Twitch ; null s'il n'a pas répondu. */
+  etat: { types: { type: string; statut: string | null }[]; branche: boolean } | null;
+  retour: RetourSubs | null;
+}
+
+const NOMS_ABONNEMENTS: Record<string, string> = {
+  'channel.subscribe': 'Nouveaux subs',
+  'channel.subscription.gift': 'Subs offerts',
+  'channel.subscription.message': 'Réabonnements',
+};
+
+function libelleStatut(statut: string | null): string {
+  if (statut === 'enabled') return 'actif';
+  if (statut === 'webhook_callback_verification_pending') return 'vérification en cours';
+  if (statut === null) return 'absent';
+  return `coupé (${statut})`;
 }
 
 /**
@@ -33,11 +59,13 @@ export function EcranSaison({
   joueurs,
   packsEnFile,
   estAdmin,
+  twitch,
 }: {
   config: ConfigSaison;
   joueurs: JoueurSubs[];
   packsEnFile: number;
   estAdmin: boolean;
+  twitch: TwitchSubs;
 }) {
   const { busy, message, envoie, setMessage } = useAction();
   const [maxGames, setMaxGames] = useState(config.maxGamesPerPlayer);
@@ -46,6 +74,7 @@ export function EcranSaison({
   const [dernierVersement, setDernierVersement] = useState<string | null>(null);
 
   const prochain = nextMilestone(config.totalSubs);
+  const branche = twitch.etat?.branche === true;
   const joueurChoisi = joueurs.find((j) => j.id === gifteur);
 
   async function ajouteSubs(delta: number) {
@@ -75,9 +104,59 @@ export function EcranSaison({
   return (
     <Ecran
       titre="Saison"
-      lead="Le compteur de subs de la saison et les subs offerts par les joueurs. L’overlay du stream suit le compteur."
+      lead="Le compteur de subs de la saison — alimenté par Twitch une fois branché — et les subs offerts par les joueurs. L’overlay du stream suit le compteur."
       message={message}
     >
+      {twitch.configure && (
+        <Bloc
+          titre="Subs Twitch"
+          icone="antenne"
+          neige="admin-twitch"
+          aide={
+            branche
+              ? 'Branchés : chaque nouveau sub, chaque sub offert et chaque réabonnement annoncé dans le tchat s’ajoute tout seul au compteur, avec ses paliers.'
+              : 'Une fois branchés, les subs de la chaîne s’ajoutent tout seuls au compteur, avec ses paliers. Le branchement se fait une fois, par la streameuse elle-même : Twitch lui demande d’autoriser la ligue à voir ses subs.'
+          }
+          actions={
+            estAdmin ? (
+              <a
+                href="/api/auth/twitch?returnTo=/admin/saison&subs=1"
+                className={`btn btn-sm no-underline ${branche ? '' : 'btn-ice'}`}
+              >
+                {branche ? 'Rebrancher' : 'Brancher les subs Twitch'}
+              </a>
+            ) : undefined
+          }
+        >
+          {twitch.retour && (
+            <div className="mb-3">
+              <Notice kind={twitch.retour.kind}>{twitch.retour.text}</Notice>
+            </div>
+          )}
+          {twitch.etat === null ? (
+            <p className="text-[13px] text-faint">Twitch n’a pas répondu : état inconnu pour l’instant.</p>
+          ) : (
+            <ul className="flex flex-wrap gap-2">
+              {twitch.etat.types.map((t) => (
+                <li
+                  key={t.type}
+                  className={`rounded-full border border-white/15 px-3 py-1 text-[13px] ${
+                    t.statut === 'enabled' ? 'text-aurora' : 'text-faint'
+                  }`}
+                >
+                  {NOMS_ABONNEMENTS[t.type] ?? t.type} · {libelleStatut(t.statut)}
+                </li>
+              ))}
+            </ul>
+          )}
+          {estAdmin && !branche && (
+            <p className="mt-3 text-[13px] text-faint">
+              À faire par la streameuse, sur un navigateur où Twitch est ouvert sur son compte.
+            </p>
+          )}
+        </Bloc>
+      )}
+
       <div className="grid gap-5 xl:grid-cols-2">
         <Bloc
           titre="Compteur de subs"
@@ -88,6 +167,12 @@ export function EcranSaison({
               Chaque palier verse à <strong className="text-muted">tous les joueurs actifs</strong>,
               à parts égales, et met les Boosters Commu et Folie en file. Aucun versement ne vise un
               joueur en particulier.
+              {branche && (
+                <>
+                  {' '}
+                  Les subs de Twitch arrivent tout seuls : ne saisis ici que ce que Twitch ne compte pas.
+                </>
+              )}
             </>
           }
         >

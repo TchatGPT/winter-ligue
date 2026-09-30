@@ -15,8 +15,7 @@ import type { DuelOverlay } from '@/lib/services/overlay';
  *
  * La plaque tombe, les épées se croisent, le nom se révèle, puis la mise ; en
  * dessous, l'invitation à relever le défi dans le tchat. Elle reste le temps
- * qu'on la lise, et repart. Un duel monté et joué d'un coup contre le bot
- * n'attend personne : il n'est pas annoncé.
+ * qu'on la lise, et repart.
  */
 
 const DUREE_ALERTE = 9000;

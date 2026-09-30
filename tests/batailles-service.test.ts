@@ -1,11 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { CAMP_BOT, type Database, type Player } from '@/lib/db/entities';
+import type { Database, Player } from '@/lib/db/entities';
 import { emptyDatabase } from '@/lib/db/store';
 import { gagnantEchange } from '@/lib/domain/bataille';
 import { DUEL, ECONOMY } from '@/lib/domain/rules';
 import {
   annuleBataille,
-  batailleContreBot,
   batailleslibres,
   BatailleError,
   creeBataille,
@@ -109,7 +108,7 @@ describe('créer un duel', () => {
     const b = creeBataille(db, 'hote', MISE, 1);
     expect(batailleslibres(db).map((x) => x.id)).toEqual([b.id]);
 
-    batailleContreBot(db, 'hote', b.id);
+    rejointBataille(db, 'autre', b.id);
     expect(batailleslibres(db)).toHaveLength(0);
   });
 });
@@ -196,7 +195,6 @@ describe('résoudre un duel', () => {
   it('refuse un duel qui n’existe pas', () => {
     const db = base();
     expect(() => rejointBataille(db, 'autre', 'fantome')).toThrow(BatailleError);
-    expect(() => batailleContreBot(db, 'hote', 'fantome')).toThrow(BatailleError);
     expect(() => annuleBataille(db, 'hote', 'fantome')).toThrow(BatailleError);
   });
 
@@ -209,41 +207,6 @@ describe('résoudre un duel', () => {
     for (const id of ['hote', 'autre']) {
       expect(mouvements(db, id)).toBe(solde(db, id) - ECONOMY.soldeMax);
     }
-  });
-});
-
-describe('le bot', () => {
-  it('ne mise rien, ne gagne rien, et ne triche pas', () => {
-    /*
-     * Quand le bot gagne, le pot disparaît — c'est ce que le joueur a accepté
-     * en misant. Aucun flocon ne doit se retrouver au nom du bot.
-     */
-    const parties = 60;
-    const db = base({ hote: DEPART });
-    let botGagnant = 0;
-
-    for (let i = 0; i < parties; i += 1) {
-      const b = creeBataille(db, 'hote', DUEL.miseMin, 1);
-      batailleContreBot(db, 'hote', b.id);
-      expect(b.adversaireId).toBe(CAMP_BOT);
-      if (b.vainqueurId === CAMP_BOT) botGagnant += 1;
-    }
-
-    expect(db.ledger.some((l) => l.playerId === CAMP_BOT)).toBe(false);
-    // Une fois sur deux la mise est perdue, une fois sur deux elle est doublée.
-    expect(solde(db, 'hote')).toBe(DEPART + DUEL.miseMin * (parties - 2 * botGagnant));
-    // Il lance comme le joueur, donc il gagne à peu près une fois sur deux. Les
-    // bornes sont larges : c'est un garde-fou contre un bot truqué, pas un test
-    // statistique fin.
-    expect(botGagnant).toBeGreaterThan(10);
-    expect(botGagnant).toBeLessThan(50);
-  });
-
-  it('n’est lançable que par l’hôte', () => {
-    const db = base();
-    const b = creeBataille(db, 'hote', MISE, 1);
-    expect(() => batailleContreBot(db, 'autre', b.id)).toThrow(BatailleError);
-    expect(b.statut).toBe('ATTENTE');
   });
 });
 

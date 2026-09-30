@@ -52,6 +52,7 @@ export function emptyDatabase(): Database {
       seasonStartsAt: SEASON.startsAt,
       seasonEndsAt: SEASON.endsAt,
       overlayGeneration: 1,
+      twitchVus: [],
     },
     players: [],
     games: [],

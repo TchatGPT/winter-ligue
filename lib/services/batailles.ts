@@ -14,13 +14,13 @@ import 'server-only';
  * complet une fois qu'il est acquis et ne fait que le mettre en scène : rejouer
  * la requête, recharger la page ou fermer l'onglet ne change pas une carte.
  *
- * ## Le bot ne triche pas
+ * ## Joueur contre joueur
  *
- * Il lance ses boules de neige **exactement comme le joueur**, à la même
- * source d'entropie. Il gagne donc à peu près une fois sur deux. Jouer
- * contre lui est neutre : une fois sur deux on perd sa mise, une fois sur deux
- * on la double. Le mode n'enrichit personne, il ajoute du risque à ceux qui en
- * veulent — et c'est le seul endroit où les flocons se risquent.
+ * Un duel se joue entre deux joueurs : l'un le lance, un autre le relève. Il
+ * n'y a plus de bot — un duel sans adversaire attend, ou s'annule. Les lancers
+ * viennent de la même source pour les deux camps : une fois sur deux on perd sa
+ * mise, une fois sur deux on rafle le pot. C'est le seul endroit où les
+ * flocons se risquent.
  */
 
 import { CAMP_BOT, type Bataille, type Database } from '@/lib/db/entities';
@@ -66,9 +66,8 @@ export function duelsEnAttente(db: Database, hoteId: string): number {
 }
 
 /**
- * Lève si ce joueur a déjà `DUEL.enAttenteMax` duels en attente. Seuls les
- * duels ouverts à tous y sont soumis : un duel contre le bot se joue aussitôt,
- * il n'attend personne et n'est pas annoncé.
+ * Lève si ce joueur a déjà `DUEL.enAttenteMax` duels en attente : chacun est
+ * annoncé sur le stream.
  */
 export function verifieAttente(db: Database, hoteId: string): void {
   if (duelsEnAttente(db, hoteId) >= DUEL.enAttenteMax) {
@@ -116,9 +115,6 @@ export function creeBataille(db: Database, hoteId: string, mise: number, manches
  *
  * Chaque lancer vient du générateur cryptographique du serveur : `Math.random`
  * n'a rien à faire dans une décision qui verse des flocons.
- *
- * Le bot ne possède rien : s'il gagne, le pot disparaît, et c'est exactement
- * ce que le joueur a accepté en misant.
  */
 function resout(db: Database, bataille: Bataille): Bataille {
   const { echanges, vainqueur } = joueDuel(
@@ -132,9 +128,7 @@ function resout(db: Database, bataille: Bataille): Bataille {
   bataille.statut = 'TERMINEE';
   bataille.resolueA = new Date().toISOString();
 
-  if (bataille.vainqueurId !== CAMP_BOT) {
-    credit(db, bataille.vainqueurId, bataille.mise * 2, 'GAIN_BATAILLE', bataille.id);
-  }
+  credit(db, bataille.vainqueurId, bataille.mise * 2, 'GAIN_BATAILLE', bataille.id);
 
   return bataille;
 }
@@ -148,28 +142,13 @@ export function rejointBataille(db: Database, joueurId: string, batailleId: stri
   }
   if (bataille.hoteId === joueurId) {
     throw new BatailleError(
-      'On ne rejoint pas son propre duel — lance contre le bot.',
+      'On ne rejoint pas son propre duel : il attend qu’un autre joueur le relève.',
       'TA_PROPRE_BATAILLE',
     );
   }
 
   debit(db, joueurId, bataille.mise, 'MISE_BATAILLE', bataille.id);
   bataille.adversaireId = joueurId;
-  return resout(db, bataille);
-}
-
-/** Lance l'affrontement contre le bot. Réservé à l'hôte. */
-export function batailleContreBot(db: Database, joueurId: string, batailleId: string): Bataille {
-  const bataille = db.batailles.find((b) => b.id === batailleId);
-  if (!bataille) throw new BatailleError('Duel inconnu.', 'BATAILLE_INCONNUE');
-  if (bataille.statut !== 'ATTENTE') {
-    throw new BatailleError('Ce duel est déjà joué.', 'DEJA_RESOLUE');
-  }
-  if (bataille.hoteId !== joueurId) {
-    throw new BatailleError('Seul l’hôte peut lancer contre le bot.', 'PAS_TA_BATAILLE');
-  }
-
-  bataille.adversaireId = CAMP_BOT;
   return resout(db, bataille);
 }
 
@@ -205,7 +184,7 @@ export function batailleslibres(db: Database): Bataille[] {
 /* ------------------------------ Vue client ------------------------------ */
 
 export interface CampVue {
-  /** L'identifiant du camp : celui d'un joueur, ou `BOT`. */
+  /** L'identifiant du camp : celui d'un joueur, ou `BOT` dans les duels d'avant son retrait. */
   id: string;
   pseudo: string;
   bot: boolean;

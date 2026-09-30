@@ -147,8 +147,21 @@ export const createBatailleSchema = z.object({
 
 export const batailleSchema = z.object({ batailleId: uuid });
 
-/** Contre le bot : un duel qu'on a monté, ou un duel monté et joué d'un coup. */
-export const duelBotSchema = z.union([batailleSchema, createBatailleSchema]);
+/* --------------------------------- Twitch -------------------------------- */
+
+/**
+ * Un message EventSub, lu après la vérification de sa signature. Seul ce dont
+ * le site se sert est décrit ; l'évènement lui-même est lu avec prudence, champ
+ * par champ (`lib/domain/twitchSubs.ts`).
+ */
+export const eventSubSchema = z.object({
+  challenge: z.string().min(1).max(512).optional(),
+  subscription: z.object({
+    type: z.string().max(100),
+    status: z.string().max(100).optional(),
+  }),
+  event: z.record(z.string(), z.unknown()).optional(),
+});
 
 /* --------------------------------- Admin --------------------------------- */
 
