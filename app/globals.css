@@ -52,9 +52,9 @@
      texte blanc, c'est la lentille de .glass — le flou, et une luminance
      abaissée d'un cinquième sur ce qu'elle traverse — pas une nappe sombre :
      le décor garde ses couleurs derrière la plaque. */
-  --glass-1: rgb(6 22 46 / 0.14);
-  --glass-2: rgb(8 26 52 / 0.2);
-  --glass-3: rgb(6 22 46 / 0.28);
+  --glass-1: rgb(6 22 46 / 0.06);
+  --glass-2: rgb(8 26 52 / 0.1);
+  --glass-3: rgb(6 22 46 / 0.16);
   --glass-hi: rgb(255 255 255 / 0.42);
   --glass-hi-soft: rgb(255 255 255 / 0.16);
   --glass-edge: rgb(190 225 255 / 0.4);
@@ -342,9 +342,10 @@
      -------------------------------------------------------------------------- */
 
   /* --------------------------------------------------------------------------
-     LE DÉCOR — une aurore boréale figée au-dessus du massif. Voir
-     components/FondHiver. Rien n'y bouge : un décor animé obligeait à refaire
-     chaque flou de verre à chaque image.
+     LE DÉCOR — de la glace sous un ciel de néon. Voir components/FondHiver.
+     Des lueurs vives qui se fondent, les facettes d'un lac gelé, un grain de
+     pellicule et un vignettage. Rien n'y bouge : un décor animé obligeait à
+     refaire chaque flou de verre à chaque image.
      Le conteneur ne crée pas de contexte d'empilement (pas de z-index) : la
      colonne de navigation, en z 30, reste au-dessus.
      -------------------------------------------------------------------------- */
@@ -354,86 +355,42 @@
     overflow: hidden;
     pointer-events: none;
     background-color: var(--bg);
-    /* Le ciel : la nuit en haut, un bleu glacé qui monte de l'horizon. */
-    background-image: linear-gradient(
-      180deg,
-      var(--bg) 0%,
-      color-mix(in srgb, var(--ice) 6%, var(--bg)) 45%,
-      color-mix(in srgb, var(--ice) 16%, var(--bg)) 100%
-    );
+    /* Les lueurs : glace en haut à gauche, violet Twitch à droite, aurore et
+       glace vive au pied de l'écran, et un cœur violet pour les relier. */
+    background-image:
+      /* un rai de lumière qui traverse en diagonale */
+      linear-gradient(118deg, transparent 30%, color-mix(in srgb, var(--ice) 9%, transparent) 40%, transparent 52%),
+      radial-gradient(60% 66% at 6% 0%, color-mix(in srgb, var(--ice-3) 100%, transparent) 0%, transparent 70%),
+      radial-gradient(52% 62% at 100% 22%, color-mix(in srgb, var(--twitch) 88%, transparent) 0%, transparent 70%),
+      radial-gradient(54% 50% at 14% 100%, color-mix(in srgb, var(--aurora) 58%, transparent) 0%, transparent 70%),
+      radial-gradient(48% 50% at 78% 104%, color-mix(in srgb, var(--ice-2) 74%, transparent) 0%, transparent 70%),
+      radial-gradient(44% 40% at 50% 44%, color-mix(in srgb, var(--violet) 34%, transparent) 0%, transparent 72%),
+      linear-gradient(165deg, color-mix(in srgb, var(--ice-3) 20%, var(--bg)) 0%, var(--bg-deep) 100%);
   }
   .fond-hiver > * {
     position: absolute;
     inset: 0;
   }
-  /* L'aurore : trois voiles de lumière penchés, et sa lueur sur l'horizon,
-     fondus dans un flou qui ne se peint qu'une fois. */
-  .fh-aurore {
-    background:
-      radial-gradient(68% 40% at 18% 34%, color-mix(in srgb, var(--aurora) 58%, transparent) 0%, transparent 70%),
-      radial-gradient(58% 34% at 52% 26%, color-mix(in srgb, var(--ice) 44%, transparent) 0%, transparent 70%),
-      radial-gradient(50% 38% at 86% 36%, color-mix(in srgb, var(--violet) 42%, transparent) 0%, transparent 70%),
-      radial-gradient(95% 26% at 50% 62%, color-mix(in srgb, var(--aurora) 16%, transparent) 0%, transparent 75%);
-    filter: blur(42px) saturate(130%);
-    transform: skewY(-8deg) scale(1.3);
+  /* Les facettes de glace : leurs arêtes de givre et leurs éclats de lumière
+     prennent la couleur des lueurs qu'elles recouvrent. */
+  .fh-eclats {
+    background: url('/fond/eclats.svg') center / cover no-repeat;
+    opacity: 0.9;
   }
-  /* Les rideaux : des traits verticaux, plus vifs au cœur de l'aurore, qui s'effacent vers le bas. */
-  .fh-rideaux {
-    background: repeating-linear-gradient(
-      90deg,
-      color-mix(in srgb, var(--aurora) 20%, transparent) 0 2px,
-      transparent 2px 17px,
-      color-mix(in srgb, var(--ice) 12%, transparent) 17px 18px,
-      transparent 18px 29px
-    );
-    -webkit-mask-image: radial-gradient(72% 44% at 36% 32%, #000 0%, transparent 78%);
-    mask-image: radial-gradient(72% 44% at 36% 32%, #000 0%, transparent 78%);
-    transform: skewY(-8deg);
-    opacity: 0.75;
+  /* Le grain de pellicule : il casse les aplats des dégradés. */
+  .fh-grain {
+    background: url('/fond/grain.png') repeat;
+    background-size: 200px 200px;
+    mix-blend-mode: overlay;
+    opacity: 0.16;
   }
-  /* Les étoiles : six semis de tailles différentes, pour que le motif ne se lise pas en grille. */
-  .fh-etoiles {
-    background-image:
-      radial-gradient(circle at 23% 31%, var(--frost) 0.7px, transparent 1.4px),
-      radial-gradient(circle at 71% 64%, var(--frost) 0.6px, transparent 1.2px),
-      radial-gradient(circle at 47% 12%, var(--ice) 0.9px, transparent 1.7px),
-      radial-gradient(circle at 88% 83%, var(--frost) 0.5px, transparent 1.1px),
-      radial-gradient(circle at 9% 57%, var(--frost) 0.6px, transparent 1.2px),
-      radial-gradient(circle at 62% 41%, var(--ice) 0.5px, transparent 1.1px);
-    background-size:
-      173px 211px,
-      241px 163px,
-      389px 317px,
-      113px 149px,
-      277px 353px,
-      197px 131px;
-    -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 42%, transparent 72%);
-    mask-image: linear-gradient(180deg, #000 0%, #000 42%, transparent 72%);
-    opacity: 0.45;
-  }
-  /* Le massif, posé en bas, à toute largeur — plus large que l'écran sur mobile. */
-  .fh-massif {
-    top: auto;
-    height: 56vh;
-    background: url('/fond/massif.webp') no-repeat center bottom / max(100%, 1100px) auto;
-    opacity: 0.92;
-  }
-  /* La brume au pied du massif. */
-  .fh-brume {
-    background: linear-gradient(
-      0deg,
-      color-mix(in srgb, var(--ice) 22%, var(--bg)) 0%,
-      color-mix(in srgb, var(--ice) 10%, transparent) 12%,
-      transparent 32%
-    );
-  }
-  /* Le voile de lisibilité : plus dense vers le bas, et un assombrissement
-     radial derrière la zone du contenu. Le texte blanc sur les cartes de
-     verre garde plus de 4,5:1 quoi que fasse la scène derrière. */
+  /* Le voile : un vignettage qui tient les bords dans l'ombre, et une nappe
+     légère qui garde le texte blanc lisible sur le verre. */
   .fh-voile {
     z-index: 6;
-    background-image:
-      linear-gradient(180deg, rgb(5 8 15 / 0.26) 0%, rgb(5 8 15 / 0.42) 100%);
+    background:
+      radial-gradient(125% 100% at 50% 40%, transparent 55%, color-mix(in srgb, var(--bg-deep) 62%, transparent) 100%),
+      linear-gradient(180deg, color-mix(in srgb, var(--bg) 8%, transparent) 0%, color-mix(in srgb, var(--bg) 22%, transparent) 100%);
   }
 
   /* --------------------------------------------------------------------------
@@ -460,7 +417,7 @@
     /* La lentille. Le flou efface le détail du décor, la saturation en garde
        les couleurs, et la luminance baisse d'un cinquième : le texte blanc reste
        lisible sans qu'aucune nappe ne bouche la vue. */
-    backdrop-filter: blur(16px) saturate(175%) brightness(0.78);
+    backdrop-filter: blur(18px) saturate(170%) brightness(0.88);
     /* Transparente : le biseau conique de `::after` tient lieu de contour, et
        deux contours superposés se lisent comme un trait épais. La bordure reste
        pour que rien ne bouge d'un pixel dans la page. */
@@ -3061,7 +3018,7 @@
     padding: 1.4rem 1.5rem 1.5rem;
     border-radius: var(--r-lg);
     background: linear-gradient(160deg, var(--glass-2) 0%, var(--glass-3) 100%);
-    backdrop-filter: blur(16px) saturate(175%) brightness(0.78);
+    backdrop-filter: blur(18px) saturate(170%) brightness(0.88);
     box-shadow:
       inset 0 0 0 1px color-mix(in srgb, var(--aurora) 55%, transparent),
       inset 0 1px 0 rgb(255 255 255 / 0.3),
@@ -7123,52 +7080,35 @@
 }
 
 /* ==========================================================================
-   LES BARRES DE DÉFILEMENT — des stalactites
+   LES BARRES DE DÉFILEMENT — un fil de glace
    ==========================================================================
-   Les barres du système, blanches, tranchaient sur le verre. Elles sont
-   remplacées partout : la rainure n'est plus qu'un filet creusé, et le
-   curseur devient une stalactite — la glace translucide qui s'effile vers le
-   bas avec une goutte renflée, un reflet sur chaque flanc. Elle s'allonge
-   avec la longueur du contenu. (Une coiffe de neige la couronnait : à cette
-   taille, elle ne se lisait que comme un point blanc, et elle est partie.)
-
-   Chrome, Edge, Brave et Safari lisent les pseudo-éléments
-   `::-webkit-scrollbar`. Firefox ne les connaît pas : il reçoit une barre
-   fine aux couleurs de la glace. Les deux ne se cumulent pas — dès qu'un
-   élément déclare `scrollbar-color` ou `scrollbar-width`, Chrome ignore ses
-   pseudo-éléments —, d'où le `@supports` qui réserve les propriétés
-   standard à Firefox.
+   Partout la même : un curseur fin et arrondi, bleu glace translucide, sur un
+   rail invisible ; il s'éclaire au survol. (Il a été une stalactite dessinée :
+   trop présente.) Chrome, Edge, Brave et Safari lisent `::-webkit-scrollbar` ;
+   Firefox, qui ne les connaît pas, reçoit les propriétés standard — les deux
+   ne se cumulent pas : dès qu'un élément déclare `scrollbar-color`, Chrome
+   ignore ses pseudo-éléments, d'où le `@supports`.
 
    Dans la couche `base` : les règles qui cachent une barre (le menu, les
    rangées de boosters, les onglets) restent plus fortes.
    ========================================================================== */
 @layer base {
   ::-webkit-scrollbar {
-    width: 14px;
-    height: 12px;
+    width: 10px;
+    height: 10px;
   }
   ::-webkit-scrollbar-track {
-    background: linear-gradient(90deg, transparent 6px, rgb(0 10 30 / 0.32) 6px 8px, transparent 8px);
-  }
-  ::-webkit-scrollbar-track:horizontal {
-    background: linear-gradient(180deg, transparent 5px, rgb(0 10 30 / 0.32) 5px 7px, transparent 7px);
+    background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    min-height: 64px;
-    background:
-      url("data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2014%20100'%20preserveAspectRatio%3D'none'%3E%3Cdefs%3E%3ClinearGradient%20id%3D'g'%20x1%3D'0'%20x2%3D'1'%3E%3Cstop%20offset%3D'0'%20stop-color%3D'%23ffffff'%20stop-opacity%3D'0.92'%2F%3E%3Cstop%20offset%3D'.4'%20stop-color%3D'%23d4eeff'%20stop-opacity%3D'0.76'%2F%3E%3Cstop%20offset%3D'1'%20stop-color%3D'%234f9fd6'%20stop-opacity%3D'0.66'%2F%3E%3C%2FlinearGradient%3E%3ClinearGradient%20id%3D'v'%20x1%3D'0'%20y1%3D'0'%20x2%3D'0'%20y2%3D'1'%3E%3Cstop%20offset%3D'0'%20stop-color%3D'%23ffffff'%20stop-opacity%3D'.3'%2F%3E%3Cstop%20offset%3D'.6'%20stop-color%3D'%23ffffff'%20stop-opacity%3D'0'%2F%3E%3C%2FlinearGradient%3E%3C%2Fdefs%3E%3Cpath%20d%3D'M1.6%200H12.4C12.2%2014%2011.6%2034%2010.9%2052C10.6%2058%2011.3%2063%2010.4%2068C9.6%2078%208.4%2092%207%20100C5.6%2092%204.6%2080%204%2068C3.1%2060%203.6%2055%203.2%2050C2.5%2034%201.9%2016%201.6%200Z'%20fill%3D'url(%23g)'%2F%3E%3Cpath%20d%3D'M1.6%200H12.4C12.2%2014%2011.6%2034%2010.9%2052C10.6%2058%2011.3%2063%2010.4%2068C9.6%2078%208.4%2092%207%20100C5.6%2092%204.6%2080%204%2068C3.1%2060%203.6%2055%203.2%2050C2.5%2034%201.9%2016%201.6%200Z'%20fill%3D'url(%23v)'%2F%3E%3Cpath%20d%3D'M4.3%203C4.6%2022%205%2044%205.6%2070'%20stroke%3D'%23ffffff'%20stroke-opacity%3D'.9'%20stroke-width%3D'1.3'%20stroke-linecap%3D'round'%20vector-effect%3D'non-scaling-stroke'%20fill%3D'none'%2F%3E%3Cpath%20d%3D'M10.3%206C10%2022%209.6%2040%209.2%2056'%20stroke%3D'%23ffffff'%20stroke-opacity%3D'.35'%20stroke-width%3D'1'%20stroke-linecap%3D'round'%20vector-effect%3D'non-scaling-stroke'%20fill%3D'none'%2F%3E%3C%2Fsvg%3E") center top / 100% 100% no-repeat;
+    min-height: 48px;
+    border: 3px solid transparent;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--ice) 30%, transparent) padding-box;
   }
   ::-webkit-scrollbar-thumb:hover,
   ::-webkit-scrollbar-thumb:active {
-    background:
-      url("data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2014%20100'%20preserveAspectRatio%3D'none'%3E%3Cdefs%3E%3ClinearGradient%20id%3D'g'%20x1%3D'0'%20x2%3D'1'%3E%3Cstop%20offset%3D'0'%20stop-color%3D'%23ffffff'%20stop-opacity%3D'1'%2F%3E%3Cstop%20offset%3D'.4'%20stop-color%3D'%23d4eeff'%20stop-opacity%3D'0.92'%2F%3E%3Cstop%20offset%3D'1'%20stop-color%3D'%234f9fd6'%20stop-opacity%3D'0.86'%2F%3E%3C%2FlinearGradient%3E%3ClinearGradient%20id%3D'v'%20x1%3D'0'%20y1%3D'0'%20x2%3D'0'%20y2%3D'1'%3E%3Cstop%20offset%3D'0'%20stop-color%3D'%23ffffff'%20stop-opacity%3D'.3'%2F%3E%3Cstop%20offset%3D'.6'%20stop-color%3D'%23ffffff'%20stop-opacity%3D'0'%2F%3E%3C%2FlinearGradient%3E%3C%2Fdefs%3E%3Cpath%20d%3D'M1.6%200H12.4C12.2%2014%2011.6%2034%2010.9%2052C10.6%2058%2011.3%2063%2010.4%2068C9.6%2078%208.4%2092%207%20100C5.6%2092%204.6%2080%204%2068C3.1%2060%203.6%2055%203.2%2050C2.5%2034%201.9%2016%201.6%200Z'%20fill%3D'url(%23g)'%2F%3E%3Cpath%20d%3D'M1.6%200H12.4C12.2%2014%2011.6%2034%2010.9%2052C10.6%2058%2011.3%2063%2010.4%2068C9.6%2078%208.4%2092%207%20100C5.6%2092%204.6%2080%204%2068C3.1%2060%203.6%2055%203.2%2050C2.5%2034%201.9%2016%201.6%200Z'%20fill%3D'url(%23v)'%2F%3E%3Cpath%20d%3D'M4.3%203C4.6%2022%205%2044%205.6%2070'%20stroke%3D'%23ffffff'%20stroke-opacity%3D'.9'%20stroke-width%3D'1.3'%20stroke-linecap%3D'round'%20vector-effect%3D'non-scaling-stroke'%20fill%3D'none'%2F%3E%3Cpath%20d%3D'M10.3%206C10%2022%209.6%2040%209.2%2056'%20stroke%3D'%23ffffff'%20stroke-opacity%3D'.35'%20stroke-width%3D'1'%20stroke-linecap%3D'round'%20vector-effect%3D'non-scaling-stroke'%20fill%3D'none'%2F%3E%3C%2Fsvg%3E") center top / 100% 100% no-repeat;
-  }
-  /* À l'horizontale, une stalactite n'a pas de sens : un bâton de glace. */
-  ::-webkit-scrollbar-thumb:horizontal {
-    min-width: 64px;
-    border: 3px solid transparent;
-    border-radius: 999px;
-    background: linear-gradient(180deg, rgb(255 255 255 / 0.92), rgb(143 220 255 / 0.62)) padding-box;
+    background: color-mix(in srgb, var(--ice) 58%, transparent) padding-box;
   }
   ::-webkit-scrollbar-corner {
     background: transparent;
@@ -7177,7 +7117,7 @@
   @supports not selector(::-webkit-scrollbar) {
     * {
       scrollbar-width: thin;
-      scrollbar-color: rgb(214 238 255 / 0.72) rgb(0 10 30 / 0.22);
+      scrollbar-color: color-mix(in srgb, var(--ice) 36%, transparent) transparent;
     }
   }
 }
