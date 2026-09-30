@@ -2756,12 +2756,33 @@
     border-radius: var(--r-pilule);
   }
 
-  /* Le bilan : ce qu'on gagne, ce qu'on perd, sur la même ligne des yeux. */
+  /* Le bilan : ce qu'on mise, ce qu'on gagne, ce qu'on perd, sur la même
+     ligne des yeux. Étroit, il s'empile. */
   .ring-bilan {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.6rem;
     margin-top: 1.25rem;
+  }
+  @container (min-width: 560px) {
+    .ring-bilan {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+  .ring-bilan em {
+    display: block;
+    margin-top: 0.4rem;
+    padding-top: 0.35rem;
+    border-top: 1px solid rgb(255 255 255 / 0.1);
+    font-size: 0.8125rem;
+    font-style: normal;
+    font-weight: 700;
+    color: var(--ink-2);
+    font-variant-numeric: tabular-nums;
+  }
+  .ring-bilan > [data-issue='gain'] {
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.08),
+      inset 0 0 0 1px color-mix(in srgb, var(--aurora) 30%, transparent);
   }
   .ring-bilan > div {
     padding: 0.6rem 0.9rem;

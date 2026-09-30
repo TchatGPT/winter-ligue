@@ -479,7 +479,7 @@ export function Affrontements({
           </span>
           <p>
             {aRejoindre.length === 0
-              ? 'Personne n’attend d’adversaire. Défie les joueurs : ton duel s’affichera ici.'
+              ? 'Personne n’attend d’adversaire. Lance un duel : il s’affichera ici.'
               : 'Relève un défi : tu mises autant que lui, et la course part aussitôt.'}
           </p>
         </header>
@@ -541,7 +541,7 @@ export function Affrontements({
                 ?
               </span>
               <b>Place libre</b>
-              <small>Un défi lancé depuis le ring s’affiche ici, prêt à être relevé.</small>
+              <small>Un duel lancé depuis le ring s’affiche ici, prêt à être relevé.</small>
             </li>
           ))}
         </ul>
@@ -647,17 +647,30 @@ export function Affrontements({
             </div>
           </fieldset>
 
-          {/* ---- Le bilan : ce qu'on gagne, ce qu'on perd ---- */}
+          {/* ---- Le bilan : ce qu'on mise, ce qu'on gagne, ce qu'on perd ----
+              Au flocon près, et le solde qui en résulte : « +100 » ne disait
+              pas qu'on recevait 200, ni ce qu'il resterait. */}
           <div className="ring-bilan">
             <div>
+              <span>Tu mises</span>
+              <strong className="text-ink">{miseValide ? `${flakes(mise)} ❄` : '—'}</strong>
+              <small>retirés de ton solde au lancement du duel</small>
+            </div>
+            <div data-issue="gain">
               <span>Si tu gagnes</span>
               <strong className="text-aurora">{miseValide ? `+${flakes(gainReel)} ❄` : '—'}</strong>
-              <small>tu récupères ta mise, plus celle de l’adversaire</small>
+              <small>
+                {miseValide
+                  ? `tu reçois ${flakes(mise + gainReel)} ❄ : ta mise revient, plus ${flakes(gainReel)} ❄ de l’adversaire`
+                  : 'ta mise revient, plus celle de l’adversaire'}
+              </small>
+              {miseValide && solde !== null && abordable && <em>solde après : {flakes(solde + gainReel)} ❄</em>}
             </div>
-            <div>
+            <div data-issue="perte">
               <span>Si tu perds</span>
               <strong className="text-ink">{miseValide ? `−${flakes(mise)} ❄` : '—'}</strong>
-              <small>tu perds 100 % de ta mise</small>
+              <small>ta mise ne revient pas : tu la perds en entier</small>
+              {miseValide && solde !== null && abordable && <em>solde après : {flakes(solde - mise)} ❄</em>}
             </div>
           </div>
           {joueur && !miseValide && (
@@ -689,9 +702,9 @@ export function Affrontements({
             </div>
             <div>
               <button type="button" className="btn btn-lg w-full" disabled={!peutJouer} onClick={ouvreAuxJoueurs}>
-                <IconSwords className="h-5 w-5" /> Défier les joueurs
+                <IconSwords className="h-5 w-5" /> Lancer un duel
               </button>
-              <p>Ta mise attend un adversaire. Annulable tant que personne ne l’a relevée.</p>
+              <p>Il s’affiche dans « Duels à rejoindre » pour les autres joueurs. Annulable tant que personne ne l’a relevé.</p>
             </div>
           </div>
         </section>
