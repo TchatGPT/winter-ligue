@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import type { Chute, Fete } from '../../lib/domain/course';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { AXE, creeDecor, creeObstacle, LONGUEUR, palette, type GenreObstacle3D } from './decor';
 import { couleur, texCernes, texEcorce, texGrain, texOmbre } from './matieres';
@@ -11,8 +12,10 @@ import { creePereNoel, type EtatCoureur, type PereNoel3D } from './pereNoel';
  * (`lib/domain/course.ts`), et l'arène lui donne à chaque image l'avancée de
  * chaque camp, le tressaut sur un obstacle, et qui est tombé. Lui met en
  * scène : les pères Noël et leurs boules qui grossissent, la caméra qui suit
- * la course, la boule qui éclate à la chute, les confettis à l'arrivée, et le
- * nom de chaque joueur au-dessus de sa tête.
+ * la course, les façons de perdre — la boule qui éclate, celle qui revient
+ * écraser son pousseur, le souffle court, la boule de neige lancée en pleine
+ * face par le vainqueur —, les confettis à l'arrivée, et le nom de chaque
+ * joueur au-dessus de sa tête.
  *
  * Aucune dépendance à React : il se construit sur une toile, et se détruit
  * entièrement — géométries, matières, textures, contexte WebGL.
@@ -23,8 +26,10 @@ export type Camp3D = 'hote' | 'adversaire';
 export interface Donnees3D {
   bots: Record<Camp3D, boolean>;
   obstacles: Record<Camp3D, { position: number; genre: GenreObstacle3D }[]>;
-  /** Ce qui fait tomber le perdant, et où ; null avant que la course soit écrite. */
-  chute: { camp: Camp3D; type: 'rocher' | 'eclate' | 'glisse'; position: number } | null;
+  /** Ce qui fait perdre le perdant, et où ; null avant que la course soit écrite. */
+  chute: { camp: Camp3D; type: Chute; position: number } | null;
+  /** Comment le vainqueur fête. */
+  fete?: Fete;
 }
 
 export interface Moteur3D {
@@ -60,6 +65,18 @@ interface Coureur {
   roule: number;
   vitesse: number;
   x: number;
+  /** La boule qui revient écraser son pousseur : d'où elle part. */
+  retourDepuis: number | null;
+  /** Le prochain souffle, pour celui qui s'assoit à bout de souffle. */
+  souffle: number;
+}
+
+/** La boule de neige lancée par le vainqueur, en vol. */
+interface Projectile {
+  m: THREE.Mesh;
+  depart: THREE.Vector3;
+  arrivee: THREE.Vector3;
+  t: number;
 }
 
 interface Eclat {
@@ -176,8 +193,21 @@ export function creeMoteur(toile: HTMLCanvasElement, donnees: Donnees3D, options
       roule: 0,
       vitesse: 0,
       x: 0,
+      retourDepuis: null,
+      souffle: 0,
     };
   }
+  const perdant = donnees.chute?.camp ?? null;
+  const vainqueur: Camp3D | null = perdant === null ? null : perdant === 'hote' ? 'adversaire' : 'hote';
+  const mode: Chute = donnees.chute?.type ?? 'rocher';
+  /** La boule n'éclate que si c'est elle, ou l'obstacle, qui fait tomber. */
+  const eclateALaChute = mode === 'rocher' || mode === 'glisse' || mode === 'eclate';
+
+  let projectile: Projectile | null = null;
+  let lance = false;
+  const souffles: { m: THREE.Mesh; v: THREE.Vector3; vie: number }[] = [];
+  const geoSouffle = new THREE.SphereGeometry(1, 12, 8);
+  const tmp = new THREE.Vector3();
 
   /* ------------------------------ Les éclats -------------------------------- */
   const eclats: Eclat[] = [];
@@ -268,6 +298,14 @@ export function creeMoteur(toile: HTMLCanvasElement, donnees: Donnees3D, options
       c.boule.scale.setScalar(r);
       c.boule.position.set(bouleX, r + hausse, c.z);
       c.boule.rotation.z = -c.roule;
+      if (c.retourDepuis !== null) {
+        // Trop grosse, elle repart en arrière, saute, et lui retombe dessus.
+        const k = Math.min(1, c.depuis / 0.45);
+        const l = k * k * (3 - 2 * k);
+        c.boule.position.x = THREE.MathUtils.lerp(c.retourDepuis, c.x + 0.1, l);
+        c.boule.position.y = r + Math.sin(Math.PI * k) * 0.7 + 0.22 * l;
+        c.boule.rotation.z = -c.roule + l * 2.5;
+      }
       c.ombreBoule.visible = c.boule.visible;
       c.ombreBoule.position.set(bouleX, 0.012, c.z);
       c.ombreBoule.scale.setScalar(r * (2.5 - c.saut * 0.6));
@@ -283,8 +321,70 @@ export function creeMoteur(toile: HTMLCanvasElement, donnees: Donnees3D, options
         saut: c.saut,
         vitesse: c.vitesse,
         cible,
-        chute: donnees.chute?.type === 'glisse' ? 'arriere' : 'avant',
+        mode,
+        fete: donnees.fete ?? 'saute',
+        dessus: { dx: bouleX - c.x, hauteur: 2 * r },
       });
+
+      // À bout de souffle : de petites bouffées blanches, qui montent et fondent.
+      if (c.etat === 'chute' && mode === 'essouffle' && c.depuis > 0.4) {
+        c.souffle -= dt;
+        if (c.souffle <= 0) {
+          c.souffle = 0.55;
+          c.santa.visage.getWorldPosition(tmp);
+          const m = new THREE.Mesh(
+            geoSouffle,
+            new THREE.MeshBasicMaterial({ color: pal.neige, transparent: true, opacity: 0.75, depthWrite: false }),
+          );
+          m.position.copy(tmp).add(new THREE.Vector3(0.08, 0, 0));
+          m.scale.setScalar(0.05);
+          scene.add(m);
+          souffles.push({ m, v: new THREE.Vector3(0.35, 0.45, 0), vie: 0.9 });
+        }
+      }
+    }
+
+    // La boule de neige du vainqueur : elle part de sa moufle, file en cloche
+    // vers le visage de l'autre, et s'y écrase.
+    if (vainqueur && perdant && coureurs[vainqueur].etat === 'lancer') {
+      const lanceur = coureurs[vainqueur];
+      if (!lance && lanceur.depuis >= 0.56) {
+        lance = true;
+        const m = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 12), matEclat);
+        m.scale.setScalar(0.13);
+        m.castShadow = true;
+        lanceur.santa.main.getWorldPosition(tmp);
+        m.position.copy(tmp);
+        scene.add(m);
+        const arrivee = new THREE.Vector3();
+        coureurs[perdant].santa.visage.getWorldPosition(arrivee);
+        projectile = { m, depart: tmp.clone(), arrivee, t: 0 };
+      }
+    }
+    if (projectile) {
+      projectile.t = Math.min(1, projectile.t + dt / 0.5);
+      const k = projectile.t;
+      projectile.m.position.lerpVectors(projectile.depart, projectile.arrivee, k);
+      projectile.m.position.y += Math.sin(Math.PI * k) * 0.9;
+      projectile.m.rotation.x += dt * 12;
+      if (k >= 1) {
+        eclate(projectile.arrivee.x, projectile.arrivee.y, projectile.arrivee.z, 0.45, 12, 2.2);
+        scene.remove(projectile.m);
+        projectile.m.geometry.dispose();
+        projectile = null;
+      }
+    }
+    for (let i = souffles.length - 1; i >= 0; i -= 1) {
+      const sf = souffles[i];
+      sf.vie -= dt;
+      sf.m.position.addScaledVector(sf.v, dt);
+      sf.m.scale.setScalar(0.05 + (0.9 - sf.vie) * 0.16);
+      (sf.m.material as THREE.MeshBasicMaterial).opacity = Math.max(0, sf.vie / 0.9) * 0.75;
+      if (sf.vie <= 0) {
+        scene.remove(sf.m);
+        (sf.m.material as THREE.Material).dispose();
+        souffles.splice(i, 1);
+      }
     }
 
     // Les obstacles que la boule a passés s'aplatissent dans la neige.
@@ -391,10 +491,18 @@ export function creeMoteur(toile: HTMLCanvasElement, donnees: Donnees3D, options
     c.depuis = 0;
     if (nouveau === 'chute') {
       const r = rayonBoule(c.p);
-      c.boule.visible = false;
-      eclate(c.boule.position.x, c.boule.position.y, c.z, r, 16, 3.2);
+      if (eclateALaChute) {
+        c.boule.visible = false;
+        eclate(c.boule.position.x, c.boule.position.y, c.z, r, 16, 3.2);
+      } else if (mode === 'ecrase') {
+        c.retourDepuis = c.boule.position.x;
+      }
     } else {
       c.boule.visible = true;
+      c.retourDepuis = null;
+    }
+    if (nouveau === 'lancer') {
+      lance = false;
     }
     if (nouveau === 'victoire') fete(c.x + 0.8, c.z);
   }

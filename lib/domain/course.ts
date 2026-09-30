@@ -18,12 +18,60 @@
  *  - les allures ondulent, la tête change de camp en route ;
  *  - une fois sur deux, c'est celui qui **menait** qui tombe ;
  *  - la chute arrive tard, dans le dernier tiers de la course.
+ *
+ * ## Pas toujours la même fin
+ *
+ * La façon de perdre est tirée, elle aussi : percuter un obstacle, glisser sur
+ * la glace, voir sa boule éclater, se faire écraser par sa propre boule, s'asseoir
+ * à bout de souffle — ou aller jusqu'au bout et, battu d'un rien, se prendre la
+ * boule de neige du vainqueur en pleine face. Et le vainqueur ne fête pas
+ * toujours de la même façon : il saute, il danse, ou il grimpe sur sa boule. Le vainqueur, lui, ne change pas : c'est le serveur qui l'a tiré.
  */
 
 import type { Camp } from './bataille';
 
-/** Ce qui fait tomber le perdant. */
-export type Chute = 'rocher' | 'eclate' | 'glisse';
+/**
+ * Ce qui fait perdre le perdant.
+ *
+ *  - `rocher` : il percute une souche ou un rocher ;
+ *  - `glisse` : il glisse sur une plaque de glace ;
+ *  - `eclate` : sa boule éclate toute seule ;
+ *  - `ecrase` : sa boule, trop grosse, lui roule dessus ;
+ *  - `essouffle` : il s'assoit dans la neige, à bout de souffle ;
+ *  - `boule` : il va jusqu'au bout, battu d'un rien, et le vainqueur, la ligne
+ *    passée, se retourne et lui envoie une boule de neige en pleine face.
+ */
+export type Chute = 'rocher' | 'glisse' | 'eclate' | 'ecrase' | 'essouffle' | 'boule';
+
+/** Comment le vainqueur fête sa victoire, la ligne passée : il saute, il danse, ou il grimpe sur sa boule. */
+export type Fete = 'saute' | 'danse' | 'grimpe';
+
+/** Les issues et leur poids : la boule de neige en pleine face, une fois sur quatre. */
+const ISSUES: readonly [Chute, number][] = [
+  ['rocher', 16],
+  ['glisse', 15],
+  ['eclate', 14],
+  ['ecrase', 15],
+  ['essouffle', 15],
+  ['boule', 25],
+];
+
+const FETES: readonly [Fete, number][] = [
+  ['saute', 40],
+  ['danse', 35],
+  ['grimpe', 25],
+];
+
+/** Tire une valeur selon ses poids, avec un nombre de 0 à 1. */
+function pioche<T>(poids: readonly [T, number][], r: number): T {
+  const total = poids.reduce((s, [, w]) => s + w, 0);
+  let reste = r * total;
+  for (const [valeur, w] of poids) {
+    if (reste < w) return valeur;
+    reste -= w;
+  }
+  return poids[poids.length - 1][0];
+}
 
 export type GenreObstacle = 'rocher' | 'souche' | 'glace';
 
@@ -52,13 +100,19 @@ export interface Course {
   perdant: Camp;
   chute: {
     type: Chute;
-    /** L'instant de la chute, de 0 à 1 sur la durée de la course. */
+    /**
+     * L'instant où le perdant s'arrête, de 0 à 1 sur la durée de la course.
+     * Vaut 1 pour la boule de neige : il court jusqu'au bout, et c'est après
+     * la ligne, une fois touché, qu'il tombe.
+     */
     instant: number;
     /** L'avancée du perdant à cet instant. */
     position: number;
     /** Vrai si le perdant menait quand il est tombé. */
     enTete: boolean;
   };
+  /** La façon dont le vainqueur fête sa victoire. */
+  fete: Fete;
   couloirs: Record<Camp, Couloir>;
 }
 
@@ -115,16 +169,25 @@ export function ecritCourse(graine: string, vainqueur: Camp): Course {
   const duVainqueur = allure();
   const duPerdant = allure();
 
-  // La chute : tard, et une fois sur deux pour celui qui menait.
-  const instant = entre(CHUTE_AU_PLUS_TOT, CHUTE_AU_PLUS_TARD);
-  const enTete = rnd() < 0.5;
-  const ecart = entre(0.03, 0.08) * (enTete ? 1 : -1);
-  const vise = Math.min(0.9, Math.max(0.4, avancee(duVainqueur, instant) + ecart));
-  duPerdant.elan = vise / base(duPerdant, instant);
-  const position = avancee(duPerdant, instant);
+  const type = pioche(ISSUES, rnd());
 
-  const tirages: Chute[] = ['rocher', 'eclate', 'glisse'];
-  const type = tirages[Math.floor(rnd() * tirages.length)];
+  let instant: number;
+  let position: number;
+  if (type === 'boule') {
+    // Il court jusqu'au bout, et passe la ligne juste après l'autre — de quoi
+    // y croire jusqu'à la boule de neige.
+    instant = 1;
+    duPerdant.elan = entre(0.86, 0.95);
+    position = avancee(duPerdant, 1);
+  } else {
+    // La chute : tard, et une fois sur deux pour celui qui menait.
+    instant = entre(CHUTE_AU_PLUS_TOT, CHUTE_AU_PLUS_TARD);
+    const enTete = rnd() < 0.5;
+    const ecart = entre(0.03, 0.08) * (enTete ? 1 : -1);
+    const vise = Math.min(0.9, Math.max(0.4, avancee(duVainqueur, instant) + ecart));
+    duPerdant.elan = vise / base(duPerdant, instant);
+    position = avancee(duPerdant, instant);
+  }
 
   const genres: GenreObstacle[] = ['rocher', 'souche', 'glace'];
   const obstacles = (fatal: Obstacle | null, libre: number | null): Obstacle[] => {
@@ -153,10 +216,12 @@ export function ecritCourse(graine: string, vainqueur: Camp): Course {
     return poses.sort((a, b) => a.position - b.position);
   };
 
+  // Un obstacle là où il tombe, s'il tombe sur un obstacle ; sinon l'endroit
+  // reste dégagé — on doit voir que rien ne l'a fait trébucher.
   const fatal: Obstacle | null =
-    type === 'eclate'
-      ? null
-      : { position, genre: type === 'glisse' ? 'glace' : rnd() < 0.5 ? 'rocher' : 'souche' };
+    type === 'rocher' || type === 'glisse'
+      ? { position, genre: type === 'glisse' ? 'glace' : rnd() < 0.5 ? 'rocher' : 'souche' }
+      : null;
 
   const couloirs = {
     [vainqueur]: { allure: duVainqueur, obstacles: obstacles(null, null) },
@@ -166,7 +231,8 @@ export function ecritCourse(graine: string, vainqueur: Camp): Course {
   return {
     vainqueur,
     perdant,
-    chute: { type, instant, position, enTete: position > avancee(duVainqueur, instant) },
+    chute: { type, instant, position, enTete: type !== 'boule' && position > avancee(duVainqueur, instant) },
+    fete: pioche(FETES, rnd()),
     couloirs,
   };
 }

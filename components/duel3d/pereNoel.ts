@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import type { Chute, Fete } from '../../lib/domain/course';
 
 /**
  * Le père Noël de la course, en trois dimensions.
@@ -12,13 +13,17 @@ import * as THREE from 'three';
  *
  * Le bot est le même, d'acier : peau métallique, yeux allumés.
  *
- * Il sait quatre choses : attendre sur la ligne en respirant, courir en
- * poussant sa boule (les bras visent la boule, qui grossit), tomber — en avant
- * sur un obstacle, en arrière sur la glace, sonné sous trois étoiles — et
- * sauter de joie à l'arrivée.
+ * Il sait attendre en respirant, courir en poussant sa boule (les bras visent
+ * la boule, qui grossit), et finir de bien des façons, tirées par la course :
+ *
+ *  - perdre : en avant sur un obstacle, en arrière sur la glace, écrasé par sa
+ *    propre boule, assis à bout de souffle, ou à la renverse, une boule de neige
+ *    en pleine face — et sonné sous trois étoiles ;
+ *  - gagner : sauter de joie, danser en tournoyant, grimper sur sa boule ;
+ *  - lancer : la ligne passée, se retourner, armer, lancer, et rire.
  */
 
-export type EtatCoureur = 'depart' | 'course' | 'chute' | 'victoire';
+export type EtatCoureur = 'depart' | 'course' | 'chute' | 'victoire' | 'lancer';
 
 export interface Tenue {
   manteau: THREE.Color;
@@ -37,6 +42,10 @@ export interface PereNoel3D {
   racine: THREE.Group;
   /** Au-dessus du bonnet : là où s'accroche son nom. */
   ancre: THREE.Object3D;
+  /** La moufle qui lance la boule de neige. */
+  main: THREE.Object3D;
+  /** Le visage : là où la boule de neige arrive. */
+  visage: THREE.Object3D;
   /**
    * Une image. `cible` est le point de la boule que les mains visent, dans le
    * repère du monde ; `depuis` le temps passé dans l'état courant.
@@ -49,7 +58,12 @@ export interface PereNoel3D {
     saut: number;
     vitesse: number;
     cible: THREE.Vector3;
-    chute: 'avant' | 'arriere';
+    /** Comment il perd, s'il perd. */
+    mode: Chute;
+    /** Comment il fête, s'il gagne. */
+    fete: Fete;
+    /** Pour grimper sur sa boule : l'écart jusqu'à elle, et la hauteur de son sommet. */
+    dessus: { dx: number; hauteur: number };
   }): void;
 }
 
@@ -226,6 +240,7 @@ export function creePereNoel(tenue: Tenue): PereNoel3D {
   /* ------------------------------- Les bras -------------------------------- */
   const LONGUEUR_BRAS = 0.57;
   const bras: THREE.Group[] = [];
+  const moufles: THREE.Mesh[] = [];
   for (const cote of [-1, 1]) {
     const epaule = new THREE.Group();
     epaule.position.set(0.12, 0.28, cote * 0.36);
@@ -237,6 +252,7 @@ export function creePereNoel(tenue: Tenue): PereNoel3D {
     poignet.rotation.x = Math.PI / 2;
     epaule.add(poignet);
     const moufle = piece(new THREE.SphereGeometry(0.112, 20, 16), cuir, 0, -0.47, 0);
+    moufles.push(moufle);
     moufle.scale.set(1, 1.12, 0.9);
     epaule.add(moufle);
     bras.push(epaule);
@@ -271,6 +287,15 @@ export function creePereNoel(tenue: Tenue): PereNoel3D {
   }
   racine.add(etoiles);
 
+  // La neige d'une boule reçue en pleine face.
+  const masque = piece(new THREE.SphereGeometry(0.2, 20, 16), fourrure, 0.25, 0.03, 0);
+  masque.scale.set(0.55, 0.95, 1.05);
+  masque.visible = false;
+  tete.add(masque);
+  const visage = new THREE.Object3D();
+  visage.position.set(0.3, 0.02, 0);
+  tete.add(visage);
+
   const ancre = new THREE.Object3D();
   ancre.position.set(0, 0.78, 0);
   tete.add(ancre);
@@ -278,6 +303,8 @@ export function creePereNoel(tenue: Tenue): PereNoel3D {
   /* ------------------------------- Le jeu ---------------------------------- */
   let foulee = 0;
   const local = new THREE.Vector3();
+  const lisse = (k: number) => k * k * (3 - 2 * k);
+  const borne = (k: number) => Math.min(1, Math.max(0, k));
 
   function anime({
     t,
@@ -287,18 +314,28 @@ export function creePereNoel(tenue: Tenue): PereNoel3D {
     saut,
     vitesse,
     cible,
-    chute,
+    mode,
+    fete,
+    dessus,
   }: Parameters<PereNoel3D['anime']>[0]) {
     let penche = -0.1;
-    let sautille = 0;
+    let hauteur = 0;
+    let avance = 0;
+    let rotation = 0;
+    let tourne = 0;
     let jambe = 0;
+    let jambesEnsemble = false;
+    let ecarteJambes = 0;
     let flotte = 0.85;
-    corps.scale.y = 1;
-    bascule.rotation.z = 0;
-    bascule.position.x = 0;
-    etoiles.visible = false;
     let visees = true;
-    let brasLeves = 0;
+    // Les bras, quand ils ne visent pas la boule : [lanceur, autre], et leur écart.
+    let brasZ: [number, number] = [0.3, 0.3];
+    let brasX = 0.2;
+    corps.scale.set(1, 1, 1);
+    corps.rotation.x = 0;
+    tete.rotation.z = 0;
+    etoiles.visible = false;
+    masque.visible = false;
 
     if (etat === 'depart') {
       corps.scale.y = 1 + Math.sin(t * 2.4) * 0.014;
@@ -307,45 +344,123 @@ export function creePereNoel(tenue: Tenue): PereNoel3D {
     } else if (etat === 'course') {
       foulee += dt * (7 + vitesse * 60);
       jambe = Math.sin(foulee) * 0.8;
-      sautille = Math.abs(Math.sin(foulee)) * 0.05 + saut * 0.2;
+      hauteur = Math.abs(Math.sin(foulee)) * 0.05 + saut * 0.2;
       penche = -0.3 - saut * 0.1;
       flotte = 0.95 + Math.sin(foulee) * 0.18;
+    } else if (etat === 'lancer') {
+      // Il se retourne, arme le bras au-dessus de la tête, lance — et rit.
+      visees = false;
+      tourne = Math.PI * lisse(borne(depuis / 0.3));
+      penche = -0.05;
+      if (depuis < 0.3) {
+        brasZ = [0.6, 0.6];
+      } else if (depuis < 0.55) {
+        const k = lisse((depuis - 0.3) / 0.25);
+        brasZ = [0.6 - 3.1 * k, 0.6 + 0.7 * k];
+        penche = 0.1 * k;
+      } else if (depuis < 0.78) {
+        const k = 1 - (1 - (depuis - 0.55) / 0.23) ** 2;
+        brasZ = [-2.5 + 4 * k, 1.3];
+        penche = 0.1 - 0.4 * k;
+      } else {
+        brasZ = [0.45, 0.45];
+        brasX = 0.75;
+        penche = -0.05 + Math.sin(t * 24) * 0.05;
+        hauteur = Math.abs(Math.sin(t * 24)) * 0.025;
+      }
+      flotte = 1.1;
     } else if (etat === 'chute') {
-      const k = Math.min(1, depuis / 0.6);
+      const k = borne(depuis / 0.6);
       const e = rebond(k);
       visees = false;
-      if (chute === 'avant') {
-        bascule.rotation.z = -0.3 - 1.12 * e;
-        bascule.position.x = 0.3 * e;
-        jambe = 0.55 * e;
-      } else {
-        bascule.rotation.z = 1.45 * e;
-        bascule.position.x = 0.8 * (1 - (1 - k) * (1 - k));
-        jambe = -0.9 * e;
-      }
       flotte = 1.3;
-      brasLeves = chute === 'avant' ? 2.2 : 1.1 + Math.sin(t * 18) * 0.5 * (1 - k);
-      if (k >= 1) {
+      let etoilesX = 1.25;
+      let etoilesY = 0.55;
+      if (mode === 'rocher' || mode === 'eclate') {
+        rotation = -0.3 - 1.12 * e;
+        avance = 0.3 * e;
+        jambe = 0.55 * e;
+        brasZ = [2.2, 2.2];
+      } else if (mode === 'glisse') {
+        rotation = 1.45 * e;
+        avance = 0.8 * (1 - (1 - k) * (1 - k));
+        jambe = -0.9 * e;
+        brasZ = [1.1 + Math.sin(t * 18) * 0.5 * (1 - k), 1.1 - Math.sin(t * 18) * 0.5 * (1 - k)];
+        etoilesX = -1.0 + avance;
+        etoilesY = 0.48;
+      } else if (mode === 'boule') {
+        // À la renverse, la neige plein la figure.
+        masque.visible = true;
+        rotation = 1.45 * e;
+        jambe = -0.8 * e;
+        brasZ = [1.2 + Math.sin(t * 20) * 0.6 * (1 - k), 1.2 - Math.sin(t * 20) * 0.6 * (1 - k)];
+        brasX = 0.5;
+        etoilesX = -1.0;
+        etoilesY = 0.48;
+      } else if (mode === 'ecrase') {
+        // Sa boule lui retombe dessus : il s'aplatit, bras et jambes en croix.
+        const kk = rebond(borne((depuis - 0.35) / 0.35));
+        corps.scale.set(1 + 0.35 * kk, 1 - 0.62 * kk, 1 + 0.35 * kk);
+        ecarteJambes = 0.9 * kk;
+        brasZ = [0.9, 0.9];
+        brasX = 0.3 + 1.0 * kk;
+        penche = 0;
+        etoilesX = 0.1;
+        etoilesY = 1.35;
+      } else {
+        // À bout de souffle : il s'assoit dans la neige, la tête basse, et souffle.
+        const kk = lisse(borne(depuis / 0.5));
+        hauteur = -0.3 * kk;
+        jambe = 1.35 * kk;
+        jambesEnsemble = true;
+        penche = 0.18 * kk;
+        tete.rotation.z = -0.35 * kk;
+        brasZ = [0.25, 0.25];
+        brasX = 0.35;
+        corps.scale.y = 1 + Math.sin(t * 9) * 0.035 * kk;
+      }
+      if (k >= 1 && mode !== 'essouffle') {
         etoiles.visible = true;
         etoiles.rotation.y += dt * 3.2;
-        etoiles.position.y = (chute === 'avant' ? 0.55 : 0.48) + Math.sin(t * 5) * 0.03;
-        etoiles.position.x = chute === 'avant' ? 1.25 : -1.0;
+        etoiles.position.set(etoilesX, etoilesY + Math.sin(t * 5) * 0.03, 0);
       }
     } else {
-      // La victoire : il bondit, bras au ciel.
-      const bond = Math.abs(Math.sin(t * 7.2));
-      sautille = bond * 0.42;
-      penche = 0.06;
-      jambe = -0.35 * bond;
+      // La victoire, de trois façons.
       visees = false;
-      brasLeves = 2.75 + Math.sin(t * 14) * 0.18;
-      flotte = 0.6 + bond * 0.5;
+      if (fete === 'danse') {
+        tourne = t * 5.5;
+        hauteur = Math.abs(Math.sin(t * 10)) * 0.14;
+        jambe = Math.sin(t * 10) * 0.3;
+        brasZ = [1.45, 1.45];
+        brasX = 1.25 + Math.sin(t * 10) * 0.15;
+        penche = 0.05;
+      } else if (fete === 'grimpe') {
+        // Il saute sur sa boule, et s'y tient, bras au ciel.
+        const k = borne(depuis / 0.5);
+        avance = dessus.dx * lisse(k);
+        hauteur = dessus.hauteur * lisse(k) + Math.sin(Math.PI * k) * 0.55;
+        if (k >= 1) hauteur = dessus.hauteur + Math.abs(Math.sin(t * 6.5)) * 0.1;
+        jambe = k < 1 ? -0.5 : 0;
+        brasZ = [2.75 + Math.sin(t * 12) * 0.12, 2.75 - Math.sin(t * 12) * 0.12];
+        brasX = 0.62;
+        penche = 0.04;
+      } else {
+        const bond = Math.abs(Math.sin(t * 7.2));
+        hauteur = bond * 0.42;
+        penche = 0.06;
+        jambe = -0.35 * bond;
+        brasZ = [2.75 + Math.sin(t * 14) * 0.18, 2.75 + Math.sin(t * 14) * 0.18];
+        brasX = 0.62;
+        flotte = 0.6 + bond * 0.5;
+      }
     }
 
-    bascule.position.y = sautille;
+    racine.rotation.y = tourne;
+    bascule.rotation.z = rotation;
+    bascule.position.set(avance, hauteur, 0);
     corps.rotation.z = penche;
-    jambes[0].rotation.z = jambe;
-    jambes[1].rotation.z = etat === 'course' ? -jambe : jambe;
+    jambes[0].rotation.set(-ecarteJambes, 0, jambe);
+    jambes[1].rotation.set(ecarteJambes, 0, etat === 'course' && !jambesEnsemble ? -jambe : jambe);
     pointe.rotation.z = flotte;
 
     if (visees) {
@@ -361,16 +476,13 @@ export function creePereNoel(tenue: Tenue): PereNoel3D {
         epaule.scale.y = THREE.MathUtils.clamp(Math.hypot(dx, dy) / LONGUEUR_BRAS, 0.82, 1.3);
       }
     } else {
-      // Bras levés en V à la victoire ; à la chute, jetés vers l'avant.
-      const ecarte = etat === 'victoire' ? 0.62 : 0.2;
-      for (const [i, epaule] of bras.entries()) {
-        const cote = i === 0 ? -1 : 1;
-        epaule.rotation.z = brasLeves;
-        epaule.rotation.x = -cote * ecarte;
-        epaule.scale.y = 1;
-      }
+      // bras[1] lance ; bras[0] équilibre.
+      bras[1].rotation.set(-brasX, 0, brasZ[0]);
+      bras[0].rotation.set(brasX, 0, brasZ[1]);
+      bras[0].scale.y = 1;
+      bras[1].scale.y = 1;
     }
   }
 
-  return { racine, ancre, anime };
+  return { racine, ancre, main: moufles[1], visage, anime };
 }

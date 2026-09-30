@@ -27,9 +27,11 @@ describe('ecritCourse', () => {
         const c = ecritCourse(graine, vainqueur);
         expect(c.vainqueur).toBe(vainqueur);
         expect(c.perdant).not.toBe(vainqueur);
-        // Le vainqueur passe la ligne ; le perdant tombe avant.
+        // Le vainqueur passe la ligne ; le perdant tombe avant — ou, quand il
+        // court jusqu'au bout, ne l'atteint pas.
         expect(avancee(c.couloirs[vainqueur].allure, 1)).toBeCloseTo(1, 6);
-        expect(c.chute.position).toBeLessThanOrEqual(0.9 + 1e-9);
+        if (c.chute.type === 'boule') expect(avancee(c.couloirs[c.perdant].allure, 1)).toBeLessThan(1);
+        expect(c.chute.position).toBeLessThanOrEqual((c.chute.type === 'boule' ? 0.95 : 0.9) + 1e-9);
       }
     }
   });
@@ -42,9 +44,21 @@ describe('ecritCourse', () => {
   it('fait tomber le perdant tard, dans la fenêtre prévue', () => {
     for (const graine of graines) {
       const { chute } = ecritCourse(graine, 'hote');
+      if (chute.type === 'boule') continue;
       expect(chute.instant).toBeGreaterThanOrEqual(CHUTE_AU_PLUS_TOT);
       expect(chute.instant).toBeLessThanOrEqual(CHUTE_AU_PLUS_TARD);
       expect(chute.position).toBeGreaterThanOrEqual(0.4);
+    }
+  });
+
+  it('dans la boule de neige, mène le perdant jusqu’au bout, battu d’un rien', () => {
+    const boules = graines.map((g) => ecritCourse(g, 'hote')).filter((c) => c.chute.type === 'boule');
+    expect(boules.length).toBeGreaterThan(40);
+    for (const c of boules) {
+      expect(c.chute.instant).toBe(1);
+      expect(c.chute.enTete).toBe(false);
+      expect(c.chute.position).toBeGreaterThanOrEqual(0.86 - 1e-9);
+      expect(c.chute.position).toBeCloseTo(avancee(c.couloirs[c.perdant].allure, 1), 9);
     }
   });
 
@@ -77,23 +91,24 @@ describe('le suspense', () => {
     }
   });
 
-  it('met un obstacle là où le perdant tombe, sauf quand sa boule éclate', () => {
+  it('met un obstacle là où le perdant tombe sur un obstacle, et laisse dégagé sinon', () => {
     for (const graine of graines) {
       const c = ecritCourse(graine, 'hote');
       const positions = c.couloirs[c.perdant].obstacles.map((o) => o.position);
       const dessus = positions.some((p) => Math.abs(p - c.chute.position) < 1e-9);
-      if (c.chute.type === 'eclate') {
-        expect(positions.every((p) => Math.abs(p - c.chute.position) >= ECART_OBSTACLES - 1e-9)).toBe(true);
-      } else {
+      if (c.chute.type === 'rocher' || c.chute.type === 'glisse') {
         expect(dessus).toBe(true);
+      } else {
+        expect(positions.every((p) => Math.abs(p - c.chute.position) >= ECART_OBSTACLES - 1e-9)).toBe(true);
       }
     }
   });
 
   it('fait tomber celui qui menait à peu près une fois sur deux', () => {
-    const enTete = graines.filter((g) => ecritCourse(g, 'hote').chute.enTete).length;
-    expect(enTete / graines.length).toBeGreaterThan(0.38);
-    expect(enTete / graines.length).toBeLessThan(0.62);
+    const chutes = graines.map((g) => ecritCourse(g, 'hote')).filter((c) => c.chute.type !== 'boule');
+    const enTete = chutes.filter((c) => c.chute.enTete).length;
+    expect(enTete / chutes.length).toBeGreaterThan(0.38);
+    expect(enTete / chutes.length).toBeLessThan(0.62);
   });
 
   it('ne donne pas toujours la tête au futur vainqueur à mi-course', () => {
@@ -102,8 +117,11 @@ describe('le suspense', () => {
     expect(vainqueurDevant / graines.length).toBeGreaterThan(0.2);
   });
 
-  it('tire les trois chutes', () => {
-    const vues = new Set(graines.map((g) => ecritCourse(g, 'hote').chute.type));
-    expect([...vues].sort()).toEqual(['eclate', 'glisse', 'rocher']);
+  it('tire toutes les façons de perdre, et toutes les fêtes', () => {
+    const courses = graines.map((g) => ecritCourse(g, 'hote'));
+    expect([...new Set(courses.map((c) => c.chute.type))].sort()).toEqual(
+      ['boule', 'eclate', 'ecrase', 'essouffle', 'glisse', 'rocher'],
+    );
+    expect([...new Set(courses.map((c) => c.fete))].sort()).toEqual(['danse', 'grimpe', 'saute']);
   });
 });

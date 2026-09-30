@@ -70,6 +70,13 @@ export function initiale(camp: CampApercu): string {
 const DUREE = 7600;
 /** Après la chute, le vainqueur finit plus vite : on sait, inutile de traîner. */
 const HATE = 1.9;
+/**
+ * La boule de neige en pleine face : la ligne passée, le vainqueur se
+ * retourne et lance. La boule touche le perdant à cet instant (en secondes
+ * après l'arrivée) ; le verdict tombe un peu après.
+ */
+const IMPACT_BOULE = 1.1;
+const FIN_BOULE = 2.2;
 /** De part et d'autre d'un obstacle, la fenêtre où la boule tressaute. */
 const AVANT_BOSSE = 0.012;
 const APRES_BOSSE = 0.05;
@@ -257,7 +264,13 @@ function Couloir({
       data-camp={camp}
       data-bot={apercu.bot ? '' : undefined}
       data-etat={etat}
-      data-chute={course && course.perdant === camp ? course.chute.type : undefined}
+      data-chute={
+        course && course.perdant === camp
+          ? course.chute.type === 'boule' || course.chute.type === 'essouffle'
+            ? 'glisse'
+            : course.chute.type
+          : undefined
+      }
     >
       <p className="couloir-nom">
         <b>{apercu.pseudo}</b>
@@ -388,10 +401,14 @@ export function ArenePreparation({
 /* La course                                                                  */
 /* -------------------------------------------------------------------------- */
 
-type Phase = 'course' | 'chute' | 'fini';
+/** `lancer` : la ligne passée, le vainqueur se retourne, boule de neige en main. */
+type Phase = 'course' | 'lancer' | 'chute' | 'fini';
 
 /** Ce que dit la chute, selon ce qui l'a causée. */
 function recitChute(course: Course, nom: string): string {
+  if (course.chute.type === 'boule') return `${nom} se prend une boule de neige en pleine face !`;
+  if (course.chute.type === 'ecrase') return `${nom} se fait écraser par sa propre boule !`;
+  if (course.chute.type === 'essouffle') return `${nom} s’écroule, à bout de souffle !`;
   if (course.chute.type === 'eclate') return `La boule de ${nom} éclate !`;
   if (course.chute.type === 'glisse') return `${nom} glisse sur la glace !`;
   const fatal = course.couloirs[course.perdant].obstacles.find((o) => o.position === course.chute.position);
@@ -434,6 +451,7 @@ export function BatailleArene({
             bots: { hote: hote?.bot ?? false, adversaire: adversaire?.bot ?? false },
             obstacles: { hote: course.couloirs.hote.obstacles, adversaire: course.couloirs.adversaire.obstacles },
             chute: { camp: course.perdant, type: course.chute.type, position: course.chute.position },
+            fete: course.fete,
           }
         : null,
     [course, hote?.bot, adversaire?.bot],
@@ -495,13 +513,16 @@ export function BatailleArene({
     let tombe = false;
     let meneurAffiche: Camp | null = null;
     let image = 0;
+    /** La boule de neige en pleine face : le temps écoulé depuis l'arrivée, en secondes. */
+    const boule = course.chute.type === 'boule';
+    let apres = -1;
 
     const pas = (t: number) => {
       const dt = avant === null ? 0 : Math.min(64, t - avant);
       avant = t;
       u = Math.min(1, u + (dt / DUREE) * (tombe ? HATE : 1));
 
-      if (!tombe && u >= course.chute.instant) {
+      if (!tombe && !boule && u >= course.chute.instant) {
         tombe = true;
         roule[course.perdant].arrete();
         sonFracas();
@@ -532,6 +553,27 @@ export function BatailleArene({
         }
       }
 
+      if (u >= 1 && boule) {
+        // La ligne passée : il se retourne, lance, et la boule touche l'autre.
+        if (apres < 0) {
+          apres = 0;
+          roule.hote.arrete();
+          roule.adversaire.arrete();
+          setPhase('lancer');
+        } else {
+          apres += dt / 1000;
+        }
+        if (!tombe && apres >= IMPACT_BOULE) {
+          tombe = true;
+          sonFracas();
+          setPhase('chute');
+        }
+        if (apres < FIN_BOULE) {
+          image = requestAnimationFrame(pas);
+          return;
+        }
+      }
+
       if (u >= 1) {
         roule[course.vainqueur].arrete();
         if (jeJoue && !jeGagne) sonDefaite();
@@ -551,18 +593,20 @@ export function BatailleArene({
     };
   }, [course, anime, jeGagne, jeJoue]);
 
-  // La scène 3D suit l'état de chaque camp : départ, course, chute, victoire.
+  // La scène 3D suit l'état de chaque camp : course, lancer, chute, victoire.
   useEffect(() => {
     if (!course) return;
+    const boule = course.chute.type === 'boule';
     for (const camp of CAMPS) {
-      const etat =
-        course.perdant === camp
-          ? phase === 'course'
-            ? 'course'
-            : 'chute'
-          : phase === 'fini'
-            ? 'victoire'
-            : 'course';
+      let etat: 'course' | 'depart' | 'lancer' | 'chute' | 'victoire';
+      if (course.perdant === camp) {
+        // Battu d'un rien, il s'arrête juste après la ligne — et attend la boule.
+        etat = phase === 'course' ? 'course' : phase === 'lancer' ? 'depart' : 'chute';
+      } else if (phase === 'fini') {
+        etat = 'victoire';
+      } else {
+        etat = boule && phase !== 'course' ? 'lancer' : 'course';
+      }
       controle.current?.etat(camp, etat);
     }
   }, [course, phase, en3d]);
@@ -574,7 +618,7 @@ export function BatailleArene({
   const tirage = b.echanges.at(-1);
 
   const etatDe = (camp: Camp): EtatCouloir => {
-    if (course.perdant === camp) return phase === 'course' ? 'course' : 'chute';
+    if (course.perdant === camp) return phase === 'course' || phase === 'lancer' ? 'course' : 'chute';
     return phase === 'fini' ? 'victoire' : 'course';
   };
 
@@ -626,6 +670,11 @@ export function BatailleArene({
         {phase === 'course' && (
           <p className="font-display text-lg font-black tracking-wide text-ink uppercase sm:text-xl">
             {tete === null ? 'Au coude à coude…' : `${noms[tete]} prend la tête`}
+          </p>
+        )}
+        {phase === 'lancer' && (
+          <p className="font-display text-lg font-black tracking-wide text-ink uppercase sm:text-xl">
+            {noms[course.vainqueur]} passe la ligne… et se retourne !
           </p>
         )}
         {phase === 'chute' && (
