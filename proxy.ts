@@ -31,7 +31,7 @@ export function proxy(request: NextRequest): NextResponse {
     "font-src 'self'",
     // Les avatars Twitch, le jour où l'authentification sera branchée, et
     // la photo de montagne du fond, servie par le CDN de Midjourney.
-    "img-src 'self' data: blob: https://static-cdn.jtvnw.net https://cdn.midjourney.com",
+    "img-src 'self' data: blob: https://static-cdn.jtvnw.net",
     "connect-src 'self'",
     "form-action 'self'",
     "frame-ancestors 'none'",

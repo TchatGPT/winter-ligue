@@ -1,42 +1,24 @@
-'use client';
-
-import { useEffect, useRef, useState } from 'react';
-import { monteNeige } from './fond/neige';
-
-export { NEIGE } from './fond/neige';
-
 /**
- * Le décor du site, repris du pen « WebGL Mouse Controlled Snow » : la photo
- * de montagne en fond de `.fond-hiver` (CSS), et la neige WebGL pilotée par
- * la souris par-dessus. Voir `components/fond/neige.ts`. Le canvas est fixé
- * derrière tout le reste, sans événements — la souris est lue sur la
- * fenêtre. Il apparaît en fondu quand la texture du flocon est là. Sans
- * WebGL, la photo reste, sans une erreur en console.
+ * Le décor du site : une aurore boréale figée au-dessus du massif.
  *
- * Par-dessus, le voile : c'est lui qui garantit la lisibilité du contenu.
+ * Tout est immobile, et c'est voulu. Le site est fait de plaques de verre
+ * floutées : quand le décor bougeait — une neige WebGL plein écran —, chaque
+ * image obligeait le navigateur à refaire tous les flous, et le site ramait. Un
+ * décor fixe se peint une fois ; les flous ne se refont plus qu'au défilement.
+ *
+ * Du fond vers l'avant : le ciel de nuit, l'aurore et ses rideaux de lumière,
+ * les étoiles, le massif (`public/fond/massif.webp`, servi par le site) dans sa
+ * brume, puis le voile qui garantit la lisibilité du contenu. Tout se règle
+ * dans `app/globals.css`, sous « LE DÉCOR ».
  */
 export function FondHiver() {
-  const ref = useRef<HTMLDivElement>(null);
-  const [prete, setPrete] = useState(false);
-
-  useEffect(() => {
-    const holder = ref.current;
-    if (!holder) return;
-    let annule = false;
-    const neige = monteNeige(holder, '/fond/flocon.png');
-    if (!neige) return;
-    neige.prete.then(() => {
-      if (!annule) setPrete(true);
-    });
-    return () => {
-      annule = true;
-      neige.detruit();
-    };
-  }, []);
-
   return (
     <div className="fond-hiver" aria-hidden="true">
-      <div ref={ref} className={`fh-neige ${prete ? 'fh-neige-prete' : ''}`} />
+      <div className="fh-aurore" />
+      <div className="fh-rideaux" />
+      <div className="fh-etoiles" />
+      <div className="fh-massif" />
+      <div className="fh-brume" />
       <div className="fh-voile" />
     </div>
   );

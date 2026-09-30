@@ -342,11 +342,9 @@
      -------------------------------------------------------------------------- */
 
   /* --------------------------------------------------------------------------
-     LE DÉCOR — le pen « WebGL Mouse Controlled Snow » : la photo de
-     montagne en plein écran, et la neige WebGL pilotée par la souris
-     par-dessus. Voir components/FondHiver et components/fond/neige.ts.
-     L'image est celle du pen, servie par son CDN ; si elle ne vient pas,
-     le dégradé nuit reste dessous.
+     LE DÉCOR — une aurore boréale figée au-dessus du massif. Voir
+     components/FondHiver. Rien n'y bouge : un décor animé obligeait à refaire
+     chaque flou de verre à chaque image.
      Le conteneur ne crée pas de contexte d'empilement (pas de z-index) : la
      colonne de navigation, en z 30, reste au-dessus.
      -------------------------------------------------------------------------- */
@@ -355,28 +353,79 @@
     inset: 0;
     overflow: hidden;
     pointer-events: none;
-    background-color: #05080f;
-    background-image:
-      url(https://cdn.midjourney.com/95611dc3-ae01-4efa-ad9b-3fcda0322ec2/0_0.png),
-      radial-gradient(75% 75% at 50% 45%, #0c1626 0%, #05080f 100%);
-    background-size: cover, cover;
-    background-position: center, center;
-    background-repeat: no-repeat, no-repeat;
+    background-color: var(--bg);
+    /* Le ciel : la nuit en haut, un bleu glacé qui monte de l'horizon. */
+    background-image: linear-gradient(
+      180deg,
+      var(--bg) 0%,
+      color-mix(in srgb, var(--ice) 6%, var(--bg)) 45%,
+      color-mix(in srgb, var(--ice) 16%, var(--bg)) 100%
+    );
   }
   .fond-hiver > * {
     position: absolute;
     inset: 0;
   }
-  .fh-neige {
-    z-index: 0;
-    opacity: 0;
-    transition: opacity 1.2s ease-out;
+  /* L'aurore : trois voiles de lumière penchés, et sa lueur sur l'horizon,
+     fondus dans un flou qui ne se peint qu'une fois. */
+  .fh-aurore {
+    background:
+      radial-gradient(68% 40% at 18% 34%, color-mix(in srgb, var(--aurora) 58%, transparent) 0%, transparent 70%),
+      radial-gradient(58% 34% at 52% 26%, color-mix(in srgb, var(--ice) 44%, transparent) 0%, transparent 70%),
+      radial-gradient(50% 38% at 86% 36%, color-mix(in srgb, var(--violet) 42%, transparent) 0%, transparent 70%),
+      radial-gradient(95% 26% at 50% 62%, color-mix(in srgb, var(--aurora) 16%, transparent) 0%, transparent 75%);
+    filter: blur(42px) saturate(130%);
+    transform: skewY(-8deg) scale(1.3);
   }
-  .fh-neige canvas {
-    display: block;
+  /* Les rideaux : des traits verticaux, plus vifs au cœur de l'aurore, qui s'effacent vers le bas. */
+  .fh-rideaux {
+    background: repeating-linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--aurora) 20%, transparent) 0 2px,
+      transparent 2px 17px,
+      color-mix(in srgb, var(--ice) 12%, transparent) 17px 18px,
+      transparent 18px 29px
+    );
+    -webkit-mask-image: radial-gradient(72% 44% at 36% 32%, #000 0%, transparent 78%);
+    mask-image: radial-gradient(72% 44% at 36% 32%, #000 0%, transparent 78%);
+    transform: skewY(-8deg);
+    opacity: 0.75;
   }
-  .fh-neige-prete {
-    opacity: 1;
+  /* Les étoiles : six semis de tailles différentes, pour que le motif ne se lise pas en grille. */
+  .fh-etoiles {
+    background-image:
+      radial-gradient(circle at 23% 31%, var(--frost) 0.7px, transparent 1.4px),
+      radial-gradient(circle at 71% 64%, var(--frost) 0.6px, transparent 1.2px),
+      radial-gradient(circle at 47% 12%, var(--ice) 0.9px, transparent 1.7px),
+      radial-gradient(circle at 88% 83%, var(--frost) 0.5px, transparent 1.1px),
+      radial-gradient(circle at 9% 57%, var(--frost) 0.6px, transparent 1.2px),
+      radial-gradient(circle at 62% 41%, var(--ice) 0.5px, transparent 1.1px);
+    background-size:
+      173px 211px,
+      241px 163px,
+      389px 317px,
+      113px 149px,
+      277px 353px,
+      197px 131px;
+    -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 42%, transparent 72%);
+    mask-image: linear-gradient(180deg, #000 0%, #000 42%, transparent 72%);
+    opacity: 0.45;
+  }
+  /* Le massif, posé en bas, à toute largeur — plus large que l'écran sur mobile. */
+  .fh-massif {
+    top: auto;
+    height: 56vh;
+    background: url('/fond/massif.webp') no-repeat center bottom / max(100%, 1100px) auto;
+    opacity: 0.92;
+  }
+  /* La brume au pied du massif. */
+  .fh-brume {
+    background: linear-gradient(
+      0deg,
+      color-mix(in srgb, var(--ice) 22%, var(--bg)) 0%,
+      color-mix(in srgb, var(--ice) 10%, transparent) 12%,
+      transparent 32%
+    );
   }
   /* Le voile de lisibilité : plus dense vers le bas, et un assombrissement
      radial derrière la zone du contenu. Le texte blanc sur les cartes de

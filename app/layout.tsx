@@ -51,7 +51,7 @@ export const viewport: Viewport = {
  * Ossature de la page.
  *
  * L'empilement est volontaire, du fond vers la surface :
- *   0. le décor — la montagne et la neige — voir FondHiver,
+ *   0. le décor — l'aurore et le massif, immobiles — voir FondHiver,
  *   1. le contenu, en verre translucide.
  *
  * Déconnecté, il n'y a ni colonne ni barre : l'accueil et la connexion
