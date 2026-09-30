@@ -72,9 +72,7 @@ const TRAIT = '#eaf6ff';
  */
 const CIEL_HAUT: Record<Rarity, string> = {
   C: '#0a141d',
-  PC: '#04171f',
   R: '#0f0a24',
-  SR: '#1c0716',
   UR: '#1a0c04',
   L: '#1a1203',
 };

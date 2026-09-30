@@ -23,6 +23,7 @@ import { chargeBase, empreintes, enregistreBase, lisJournal, SCHEMA_SQL, TABLES 
 import { dirname, join } from 'node:path';
 import { DEFAULT_MAX_GAMES_PER_PLAYER, ECONOMY, SEASON } from '@/lib/domain/rules';
 import type { AuditEntry, Database, PlayerRole } from './entities';
+import type { Rarity } from '@/lib/domain/types';
 
 /*
  * Sur Vercel, le dossier du projet est en lecture seule : seul /tmp s'écrit.
@@ -576,12 +577,13 @@ function migrate(db: Partial<Database>): Database {
       };
     }),
     packsDus: db.packsDus ?? [],
-    ouvertures: db.ouvertures ?? [],
+    // Les raretés peu commune et super rare ont été fondues dans commune et rare.
+    ouvertures: (db.ouvertures ?? []).map((o) => ({ ...o, rarity: rareteActuelle(o.rarity) })),
     cartesEnAttente: (db.cartesEnAttente ?? []).map((c) => ({ ...c, paireId: c.paireId ?? null })),
     ledger: db.ledger ?? [],
     subEvents: (db.subEvents ?? []).map((e) => ({ ...e, packs: e.packs ?? [] })),
     audit: db.audit ?? [],
-    reglagesPacks: db.reglagesPacks ?? [],
+    reglagesPacks: (db.reglagesPacks ?? []).map((r) => ({ ...r, weights: tableActuelle(r.weights) })),
     // Les affrontements d'avant les packs portaient une liste de sachets. Ils
     // gardent leurs manches, leur mise et leurs tirages, qui suffisent à les
     // relire ; la liste, elle, ne désigne plus rien.
@@ -594,6 +596,23 @@ function migrate(db: Partial<Database>): Database {
       (e) => e.kind === 'FLOCONS_DOUBLES' || e.kind === 'CARTES_RENFORCEES',
     ),
     codesCadeaux: db.codesCadeaux ?? [],
+  };
+}
+
+/** Une rareté d'avant la fonte : peu commune → commune, super rare → rare. */
+function rareteActuelle(r: string): Rarity {
+  if (r === 'PC') return 'C';
+  if (r === 'SR') return 'R';
+  return r as Rarity;
+}
+
+/** Une table de taux d'avant la fonte : chaque rareté retirée s'ajoute à celle d'en dessous. */
+function tableActuelle(w: Record<string, number>): Record<Rarity, number> {
+  return {
+    C: (w.C ?? 0) + (w.PC ?? 0),
+    R: (w.R ?? 0) + (w.SR ?? 0),
+    UR: w.UR ?? 0,
+    L: w.L ?? 0,
   };
 }
 

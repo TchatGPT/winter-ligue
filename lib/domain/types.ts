@@ -7,9 +7,9 @@
  */
 
 /** Six paliers, du plus banal au plus convoité. */
-export type Rarity = 'C' | 'PC' | 'R' | 'SR' | 'UR' | 'L';
+export type Rarity = 'C' | 'R' | 'UR' | 'L';
 
-export const RARITIES: readonly Rarity[] = ['C', 'PC', 'R', 'SR', 'UR', 'L'];
+export const RARITIES: readonly Rarity[] = ['C', 'R', 'UR', 'L'];
 
 /**
  * Les quatre packs.

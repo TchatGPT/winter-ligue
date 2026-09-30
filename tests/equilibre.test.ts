@@ -48,13 +48,11 @@ describe('le budget de chaque rareté', () => {
     expect(CARD_IMPACT_CAP).toBeLessThanOrEqual(35);
   });
 
-  it('garde les trois raretés du bas à moins de la moitié du plafond', () => {
+  it('garde la commune à moins de la moitié du plafond', () => {
     // C'est la demande : des cartes « beaucoup moins fortes », sauf en haut.
-    for (const rarity of ['C', 'PC', 'R'] as const) {
-      expect(IMPACT_PAR_RARETE[rarity]).toBeLessThanOrEqual(CARD_IMPACT_CAP / 2);
-    }
-    // Et les trois du haut pèsent vraiment.
-    for (const rarity of ['SR', 'UR', 'L'] as const) {
+    expect(IMPACT_PAR_RARETE.C).toBeLessThanOrEqual(CARD_IMPACT_CAP / 2);
+    // Et les deux du haut pèsent vraiment.
+    for (const rarity of ['UR', 'L'] as const) {
       expect(IMPACT_PAR_RARETE[rarity]).toBeGreaterThan(CARD_IMPACT_CAP / 2);
     }
   });

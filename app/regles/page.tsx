@@ -25,7 +25,7 @@ import { TitreGlace } from '@/components/TitreGlace';
 
 export const metadata = { title: 'Règles de la saison' };
 
-const LADDER: Rarity[] = ['C', 'PC', 'R', 'SR', 'UR', 'L'];
+const LADDER: Rarity[] = ['C', 'R', 'UR', 'L'];
 
 function Rule({
   title,

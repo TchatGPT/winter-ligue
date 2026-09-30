@@ -46,8 +46,10 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   dans `impactMax()`, dans `momentDe()` et dans `resumeEffet()`.
 - Les taux de rareté sont dans `RARITY_WEIGHTS_BASE` et dans `PACKS[].weights`.
   Toute table doit sommer **exactement** à 100 000 — un test le vérifie.
-- **Une carte pèse ce que sa rareté autorise** : `IMPACT_PAR_RARETE`, de 4 points pour
-  une commune à `CARD_IMPACT_CAP` (25 points) pour une légendaire, au pire cas. Un
+- **Une carte pèse ce que sa rareté autorise** : `IMPACT_PAR_RARETE`, de 6 points pour
+  une commune à `CARD_IMPACT_CAP` (25 points) pour une légendaire, au pire cas. Quatre
+  raretés : commune, rare, ultra rare, légendaire (peu commune et super rare ont été
+  fondues dans commune et rare). Aucun malus parmi les communes. Un
   malus retire des points, il n'en donne jamais à l'attaquant, ne tombe que sur la
   prochaine game de sa cible, et ne supprime, ne vole ni ne copie jamais la game
   d'autrui. `tests/equilibre.test.ts` verrouille ces règles.

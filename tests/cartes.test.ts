@@ -523,7 +523,7 @@ describe('sur qui une carte tombe', () => {
     expect(peutRecevoir(db, db.players.find((p) => p.id === 'bravo')!)).toBe(true);
 
     // Le Booster Folie réglé sur les légendaires : le malus de tête en sort.
-    reglagePack(db, 'folie', { C: 0, PC: 0, R: 0, SR: 0, UR: 0, L: 100_000 });
+    reglagePack(db, 'folie', { C: 0, R: 0, UR: 0, L: 100_000 });
     for (let i = 0; i < 60; i += 1) {
       const o = ouvrePack(db, { packId: 'folie', idempotencyKey: `tete-${i}` }, 'test');
       const card = getCard(o.cardId)!;

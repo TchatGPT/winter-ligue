@@ -70,9 +70,7 @@ const ECLAT = `linear-gradient(102deg,
  */
 const REFLET: Record<string, { duree: string; force: string }> = {
   C: { duree: '18s', force: '0.55' },
-  PC: { duree: '16s', force: '0.65' },
   R: { duree: '14s', force: '0.75' },
-  SR: { duree: '12s', force: '0.85' },
   UR: { duree: '10.5s', force: '0.93' },
   L: { duree: '9s', force: '1' },
 };
@@ -80,9 +78,7 @@ const REFLET: Record<string, { duree: string; force: string }> = {
 /** La rareté garantie du booster donne sa couleur au halo. */
 const GEMME: Record<string, string> = {
   C: 'var(--ice)',
-  PC: 'var(--r-pc)',
   R: 'var(--r-r)',
-  SR: 'var(--r-sr)',
   UR: 'var(--r-ur)',
   L: 'var(--r-l)',
 };

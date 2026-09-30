@@ -99,9 +99,7 @@
 
   /* -- Raretés : froid pour le banal, chaud pour le convoité ------------- */
   --r-c: #9fb4c9;
-  --r-pc: #5cd2f5;
   --r-r: #9a8cff;
-  --r-sr: #ff8fd2;
   --r-ur: #ffab5e;
   --r-l: #ffdd85;
 
@@ -193,9 +191,7 @@
   --color-faint: var(--faint);
 
   --color-r-c: var(--r-c);
-  --color-r-pc: var(--r-pc);
   --color-r-r: var(--r-r);
-  --color-r-sr: var(--r-sr);
   --color-r-ur: var(--r-ur);
   --color-r-l: var(--r-l);
 
@@ -5182,7 +5178,7 @@
     line-height: 1.45;
   }
 
-  /* Sigle de rareté : C, PC, R, SR, UR, L. */
+  /* Sigle de rareté : C, R, UR, L. */
   /* La pastille de rareté.
 
      Elle était un carré de couleur portant un sigle. Le badge est désormais
@@ -5581,16 +5577,8 @@
     filter: hue-rotate(-55deg) saturate(0.45);
   }
 
-  .cadre[data-r='PC'] .cadre-planche {
-    filter: hue-rotate(-71deg) saturate(0.8);
-  }
-
   .cadre[data-r='R'] .cadre-planche {
     filter: hue-rotate(-19deg) saturate(1.05);
-  }
-
-  .cadre[data-r='SR'] .cadre-planche {
-    filter: hue-rotate(60deg) saturate(1.15);
   }
 
   .cadre[data-r='UR'] .cadre-planche {

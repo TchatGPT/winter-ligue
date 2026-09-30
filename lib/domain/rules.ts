@@ -320,11 +320,9 @@ export function crossedMilestones(from: number, to: number): SubMilestone[] {
 /** Ordre d'affichage et de comparaison des raretés. */
 export const RARITY_ORDER: Record<Rarity, number> = {
   C: 0,
-  PC: 1,
-  R: 2,
-  SR: 3,
-  UR: 4,
-  L: 5,
+  R: 1,
+  UR: 2,
+  L: 3,
 };
 
 /**
@@ -341,10 +339,8 @@ export const RARITY_ORDER: Record<Rarity, number> = {
  * et bien plus dans les packs Folie.
  */
 export const RARITY_WEIGHTS_BASE: Record<Rarity, number> = {
-  C: 58_000, // 58 %
-  PC: 27_000, // 27 %
-  R: 11_000, // 11 %
-  SR: 3_000, // 3 %
+  C: 85_000, // 85 %
+  R: 14_000, // 14 %
   UR: 800, // 0,8 %
   L: 200, // 0,2 %
 };
@@ -410,7 +406,7 @@ export function poidsAvecChance(
   const c = Math.max(0, Math.min(CHANCE.max, chance));
   if (c === 0) return { ...weights };
 
-  const hautes: Rarity[] = ['PC', 'R', 'SR', 'UR', 'L'];
+  const hautes: Rarity[] = ['R', 'UR', 'L'];
   const pousses = {} as Record<Rarity, number>;
   let total = 0;
   for (const r of hautes) {
@@ -449,9 +445,7 @@ export const WINTER_SPIN = {
   /** La table du second tirage. Somme exacte de `WEIGHT_TOTAL`. */
   weights: {
     C: 0,
-    PC: 0,
-    R: 15_000,
-    SR: 25_000,
+    R: 40_000,
     UR: 40_000,
     L: 20_000,
   } as Record<Rarity, number>,
@@ -488,10 +482,8 @@ export const CARD_IMPACT_CAP = 25;
  * budgets montent avec elle.
  */
 export const IMPACT_PAR_RARETE: Record<Rarity, number> = {
-  C: 4,
-  PC: 6,
-  R: 10,
-  SR: 15,
+  C: 6,
+  R: 15,
   UR: 20,
   L: CARD_IMPACT_CAP,
 };

@@ -29,7 +29,7 @@ import {
 } from '@/lib/domain/rules';
 import { PACK_IDS, type Rarity } from '@/lib/domain/types';
 
-const LADDER: Rarity[] = ['C', 'PC', 'R', 'SR', 'UR', 'L'];
+const LADDER: Rarity[] = ['C', 'R', 'UR', 'L'];
 
 const total = (weights: Record<string, number>) =>
   Object.values(weights).reduce((a, b) => a + b, 0);
@@ -67,8 +67,7 @@ describe('cohérence du catalogue', () => {
 
   it('réserve le reflet holographique aux raretés à partir de Rare', () => {
     expect(RARITY_META.C.holo).toBe(false);
-    expect(RARITY_META.PC.holo).toBe(false);
-    for (const rarity of ['R', 'SR', 'UR', 'L'] as Rarity[]) {
+    for (const rarity of ['R', 'UR', 'L'] as Rarity[]) {
       expect(RARITY_META[rarity].holo).toBe(true);
     }
   });
@@ -101,9 +100,8 @@ describe('les boosters', () => {
   it('ne promettent rien en dessous de rare dans le Booster Folie', () => {
     const folie = getPack('folie')!;
     expect(folie.weights.C).toBe(0);
-    expect(folie.weights.PC).toBe(0);
     for (const card of cartesDuPack('folie')) {
-      expect(['R', 'SR', 'UR', 'L']).toContain(card.rarity);
+      expect(['R', 'UR', 'L']).toContain(card.rarity);
     }
   });
 
@@ -175,11 +173,11 @@ describe('la chance', () => {
 
   it('double les raretés hautes au maximum, pas davantage', () => {
     const plein = poidsAvecChance(RARITY_WEIGHTS_BASE, CHANCE.max);
-    for (const rarity of ['PC', 'R', 'SR', 'UR', 'L'] as Rarity[]) {
+    for (const rarity of ['R', 'UR', 'L'] as Rarity[]) {
       expect(plein[rarity]).toBe(RARITY_WEIGHTS_BASE[rarity] * 2);
     }
     // La commune absorbe la différence, et il en reste.
-    expect(plein.C).toBe(16_000);
+    expect(plein.C).toBe(70_000);
   });
 
   it('ne change rien sans flocons', () => {
@@ -190,10 +188,8 @@ describe('la chance', () => {
     // Une table réglée à la main avec presque pas de communes.
     const serree: Record<Rarity, number> = {
       C: 1_000,
-      PC: 60_000,
-      R: 30_000,
-      SR: 6_000,
-      UR: 2_000,
+      R: 90_000,
+      UR: 8_000,
       L: 1_000,
     };
     const pousse = poidsAvecChance(serree, 1);
@@ -299,7 +295,6 @@ describe('le jeton Winter Spin', () => {
     const haut = WINTER_SPIN.weights.UR + WINTER_SPIN.weights.L;
     expect(haut / WEIGHT_TOTAL).toBeGreaterThan(0.5);
     expect(WINTER_SPIN.weights.C).toBe(0);
-    expect(WINTER_SPIN.weights.PC).toBe(0);
   });
 
   it('reste très rare, et jamais impossible', () => {

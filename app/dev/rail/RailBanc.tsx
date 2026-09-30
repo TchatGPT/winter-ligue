@@ -18,7 +18,7 @@ import {
   type NomCourbe,
 } from '@/lib/spin/courbe';
 
-const RARETES: Rarity[] = ['C', 'PC', 'R', 'SR', 'UR', 'L'];
+const RARETES: Rarity[] = ['C', 'R', 'UR', 'L'];
 
 const POOL: CarteRail[] = CARDS.map((c) => ({
   cardId: c.id,

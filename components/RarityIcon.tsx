@@ -2,7 +2,7 @@ import { RARITY_META } from '@/lib/domain/catalog';
 import type { Rarity } from '@/lib/domain/types';
 
 /**
- * Les six badges de rareté : des cristaux de glace.
+ * Les quatre badges de rareté : des cristaux de glace.
  *
  * Ils ont été des sigles, puis des pierres serties. Cette version les taille
  * dans la glace, la matière du site : chaque rareté est un **flocon** dans sa
@@ -10,9 +10,7 @@ import type { Rarity } from '@/lib/domain/types';
  * nature où un cristal grossit en se ramifiant.
  *
  *  - **Commune** — un petit cristal hexagonal, plat, sans branche ;
- *  - **Peu commune** — six bras nus ;
- *  - **Rare** — six bras avec une paire de ramifications ;
- *  - **Super rare** — une plaque hexagonale au cœur, des bras ramifiés deux fois ;
+ *  - **Rare** — six bras ramifiés deux fois, autour d'une plaque hexagonale ;
  *  - **Ultra rare** — des bras doubles, des pointes perlées, un léger halo ;
  *  - **Légendaire** — douze rayons, un cœur en gemme, le halo le plus fort.
  *
@@ -85,9 +83,7 @@ interface Dessin {
 
 const DESSINS: Record<Rarity, Dessin> = {
   C: { coeur: hexagone(9), plaque: hexagone(4.8), halo: 0, epaisseur: 1.4 },
-  PC: { bras: bras(12, []), branches: 6, coeur: hexagone(3), halo: 0, epaisseur: 1.5 },
-  R: { bras: bras(12.5, [{ a: 7.5, l: 4 }]), branches: 6, coeur: hexagone(3.2), halo: 0, epaisseur: 1.5 },
-  SR: {
+  R: {
     bras: bras(13, [
       { a: 6.5, l: 3.4 },
       { a: 10, l: 3.6 },

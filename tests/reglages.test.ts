@@ -22,7 +22,7 @@ const premier = PACKS[0];
 
 /** Une table qui ne sert qu'une rareté : le tirage devient prévisible. */
 function seulement(rarity: Rarity): Record<Rarity, number> {
-  return { C: 0, PC: 0, R: 0, SR: 0, UR: 0, L: 0, [rarity]: WEIGHT_TOTAL };
+  return { C: 0, R: 0, UR: 0, L: 0, [rarity]: WEIGHT_TOTAL };
 }
 
 function joueur(id: string, snowflakes = 0): Player {
@@ -63,9 +63,9 @@ describe('réglages de booster', () => {
 
   it('applique une table, et seulement au booster réglé', () => {
     const db = base();
-    reglagePack(db, premier.id, { ...RARITY_WEIGHTS_BASE, C: 57_000, PC: 28_000 });
+    reglagePack(db, premier.id, { ...RARITY_WEIGHTS_BASE, C: 84_000, R: 15_000 });
     const resolu = resolvedPack(db, premier.id)!;
-    expect(resolu.weights.C).toBe(57_000);
+    expect(resolu.weights.C).toBe(84_000);
     expect(resolu.name).toBe(premier.name);
     for (const autre of PACKS.slice(1)) {
       expect(resolvedPack(db, autre.id)!.weights).toEqual(autre.weights);
@@ -75,9 +75,9 @@ describe('réglages de booster', () => {
   it('garde un seul réglage par booster', () => {
     const db = base();
     reglagePack(db, premier.id, seulement('R'));
-    reglagePack(db, premier.id, seulement('SR'));
+    reglagePack(db, premier.id, seulement('UR'));
     expect(db.reglagesPacks).toHaveLength(1);
-    expect(resolvedPack(db, premier.id)!.weights).toEqual(seulement('SR'));
+    expect(resolvedPack(db, premier.id)!.weights).toEqual(seulement('UR'));
   });
 
   it('revient au catalogue quand on remet à zéro', () => {
@@ -175,7 +175,7 @@ describe('ouvrir un booster', () => {
     // attend la prochaine game.
     for (let essai = 0; essai < 400; essai += 1) {
       const db = ligue('a');
-      reglagePack(db, 'perso', seulement('SR'));
+      reglagePack(db, 'perso', seulement('R'));
       const o = ouvrePack(db, { packId: 'perso', joueurId: 'a', idempotencyKey: `k${essai}` }, 'modo');
       if (momentDe(getCard(o.cardId)!.effect) !== 'PROCHAINE') continue;
 

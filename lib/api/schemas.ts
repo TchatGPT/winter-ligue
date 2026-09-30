@@ -55,7 +55,7 @@ export const monActivisionSchema = z.object({ activisionId });
 /** La modération corrige celui d'un joueur. */
 export const activisionJoueurSchema = z.object({ playerId: uuid, activisionId: activisionId.nullable() });
 
-export const rarity = z.enum(['C', 'PC', 'R', 'SR', 'UR', 'L']);
+export const rarity = z.enum(['C', 'R', 'UR', 'L']);
 
 export const gameSchema = z.object({
   playerId: uuid,

@@ -30,7 +30,7 @@ export interface CarteSaison {
   impact: number | null;
 }
 
-const ECHELLE: Rarity[] = ['C', 'PC', 'R', 'SR', 'UR', 'L'];
+const ECHELLE: Rarity[] = ['C', 'R', 'UR', 'L'];
 
 const MOMENTS: Record<MomentCarte, string> = {
   PROCHAINE: 'Prochaine game',

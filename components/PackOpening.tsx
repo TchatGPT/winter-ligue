@@ -16,7 +16,7 @@ import { COURBE_MESUREE } from '@/lib/spin/courbe';
 import { TitreGlace } from '@/components/TitreGlace';
 import { GlaceCartes, GlaceEpees, GlaceSachet } from '@/components/DessinsGlace';
 
-const RARITY_LADDER: Rarity[] = ['C', 'PC', 'R', 'SR', 'UR', 'L'];
+const RARITY_LADDER: Rarity[] = ['C', 'R', 'UR', 'L'];
 
 /**
  * Les taux, du blanc de la commune au vert des évènements pour la
@@ -25,9 +25,7 @@ const RARITY_LADDER: Rarity[] = ['C', 'PC', 'R', 'SR', 'UR', 'L'];
  */
 const COULEURS_TAUX: Record<Rarity, string> = {
   C: '#ffffff',
-  PC: '#e4f3ff',
   R: '#bfe6ff',
-  SR: '#93dcff',
   UR: '#7cefe2',
   L: '#63eec4',
 };
@@ -420,9 +418,7 @@ export function PackOpening({
                     ? '★ Légendaire ★'
                     : ouverture.rarity === 'UR'
                       ? 'Ultra rare !'
-                      : ouverture.rarity === 'SR'
-                        ? 'Super rare !'
-                        : ouverture.rarity === 'R'
+                      : ouverture.rarity === 'R'
                           ? 'Une rare'
                           : 'Ouvert'}
                 </span>

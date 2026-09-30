@@ -65,7 +65,7 @@ export const CARDS_BY_RARITY = CARDS.reduce(
  * à l'antenne, devant tout le monde.
  */
 export function pickFromPool(pool: Record<Rarity, string[]>, wanted: Rarity): string | null {
-  const ladder: Rarity[] = ['L', 'UR', 'SR', 'R', 'PC', 'C'];
+  const ladder: Rarity[] = ['L', 'UR', 'R', 'C'];
   const from = ladder.indexOf(wanted);
   for (let i = from; i < ladder.length; i += 1) {
     const candidates = pool[ladder[i]];

@@ -48,16 +48,6 @@ export const RARITY_META: Record<
     order: 0,
     holo: false,
   },
-  PC: {
-    code: 'PC',
-    label: 'Peu commune',
-    short: 'P. com.',
-    color: '#4fc9f0',
-    deep: '#123a4e',
-    glow: 'rgba(79,201,240,0.38)',
-    order: 1,
-    holo: false,
-  },
   R: {
     code: 'R',
     label: 'Rare',
@@ -65,17 +55,7 @@ export const RARITY_META: Record<
     color: '#8b7dff',
     deep: '#251f52',
     glow: 'rgba(139,125,255,0.45)',
-    order: 2,
-    holo: true,
-  },
-  SR: {
-    code: 'SR',
-    label: 'Super rare',
-    short: 'S. rare',
-    color: '#ff7dc8',
-    deep: '#4a1738',
-    glow: 'rgba(255,125,200,0.50)',
-    order: 3,
+    order: 1,
     holo: true,
   },
   UR: {
@@ -85,7 +65,7 @@ export const RARITY_META: Record<
     color: '#ff9a4d',
     deep: '#4d2510',
     glow: 'rgba(255,154,77,0.55)',
-    order: 4,
+    order: 2,
     holo: true,
   },
   L: {
@@ -95,7 +75,7 @@ export const RARITY_META: Record<
     color: '#ffd76a',
     deep: '#4b3708',
     glow: 'rgba(255,215,106,0.62)',
-    order: 5,
+    order: 3,
     holo: true,
   },
 };
@@ -189,12 +169,12 @@ export const CARDS: readonly CardDefinition[] = [
     cible: 'HASARD',
   },
 
-  /* ============================== Peu communes ============================ */
+  /* ================= Communes (autrefois peu communes) ================== */
   {
     id: 'poudreuse',
     name: 'Poudreuse',
     subtitle: '+5 pts bonus',
-    rarity: 'PC',
+    rarity: 'C',
     glyph: '❄',
     description: '+5 points sur ta prochaine game.',
     effect: { kind: 'bonus_points', value: 5 },
@@ -207,7 +187,7 @@ export const CARDS: readonly CardDefinition[] = [
     id: 'filet',
     name: 'Filet de Neige',
     subtitle: 'Joker',
-    rarity: 'PC',
+    rarity: 'C',
     glyph: '🕸',
     description: 'Joker : ta prochaine game vaut au moins 6 points, même ratée.',
     effect: { kind: 'plancher', value: 6 },
@@ -220,7 +200,7 @@ export const CARDS: readonly CardDefinition[] = [
     id: 'etoile-polaire',
     name: 'Étoile Polaire',
     subtitle: '+200 flocons',
-    rarity: 'PC',
+    rarity: 'C',
     glyph: '⭐',
     description: '200 flocons, tout de suite.',
     effect: { kind: 'snowflakes', value: 200 },
@@ -233,7 +213,7 @@ export const CARDS: readonly CardDefinition[] = [
     id: 'manne',
     name: 'Manne',
     subtitle: 'Flocons doublés',
-    rarity: 'PC',
+    rarity: 'C',
     glyph: '💠',
     description: 'Les flocons de ta prochaine game sont doublés.',
     effect: { kind: 'flocons_doubles' },
@@ -246,7 +226,7 @@ export const CARDS: readonly CardDefinition[] = [
     id: 'givre-mordant',
     name: 'Givre Mordant',
     subtitle: '−4 pts à un joueur',
-    rarity: 'PC',
+    rarity: 'R'  /* un malus : jamais parmi les communes */,
     glyph: '🥶',
     description: 'MALUS : un joueur tiré au sort perd 4 points sur sa prochaine game.',
     effect: { kind: 'malus_points', value: 4 },
@@ -353,12 +333,12 @@ export const CARDS: readonly CardDefinition[] = [
     cible: 'HASARD',
   },
 
-  /* =============================== Super rares ============================ */
+  /* ==================== Rares (autrefois super rares) ==================== */
   {
     id: 'second-souffle',
     name: 'Second Souffle',
     subtitle: '+12 pts bonus',
-    rarity: 'SR',
+    rarity: 'R',
     glyph: '🌬',
     description: '+12 points sur ta prochaine game.',
     effect: { kind: 'bonus_points', value: 12 },
@@ -371,7 +351,7 @@ export const CARDS: readonly CardDefinition[] = [
     id: 'blizzard',
     name: 'Blizzard',
     subtitle: 'Multiplicateur game',
-    rarity: 'SR',
+    rarity: 'R',
     glyph: '🌪',
     description:
       'Le score entier de ta prochaine game, kills et top, est multiplié par 1,3, jusqu’à +15 points.',
@@ -385,7 +365,7 @@ export const CARDS: readonly CardDefinition[] = [
     id: 'socle',
     name: 'Socle de Glace',
     subtitle: 'Joker',
-    rarity: 'SR',
+    rarity: 'R',
     glyph: '🧱',
     description: 'Joker : ta prochaine game vaut au moins 15 points, même ratée.',
     effect: { kind: 'plancher', value: 15 },
@@ -398,7 +378,7 @@ export const CARDS: readonly CardDefinition[] = [
     id: 'sang-froid',
     name: 'Sang-Froid',
     subtitle: '+12 pts à partir du Top 3',
-    rarity: 'SR',
+    rarity: 'R',
     glyph: '🧊',
     description: 'Si ta prochaine game finit dans le Top 3, elle gagne 12 points.',
     effect: { kind: 'bonus_top', top: 3, value: 12 },
@@ -411,7 +391,7 @@ export const CARDS: readonly CardDefinition[] = [
     id: 'bouclier-givre',
     name: 'Bouclier de Givre',
     subtitle: 'Immunité 2 jours',
-    rarity: 'SR',
+    rarity: 'R',
     glyph: '🛡',
     description:
       'Pendant 48 heures, aucun malus ne peut toucher tes games. Les bonus t’atteignent toujours.',
@@ -425,7 +405,7 @@ export const CARDS: readonly CardDefinition[] = [
     id: 'degel',
     name: 'Dégel',
     subtitle: 'Pire game ramenée à la moyenne',
-    rarity: 'SR',
+    rarity: 'R',
     glyph: '💧',
     description:
       'Ta pire game encore sans carte remonte au niveau de ta moyenne, jusqu’à +15 points.',
@@ -439,7 +419,7 @@ export const CARDS: readonly CardDefinition[] = [
     id: 'traineau-perce',
     name: 'Traîneau Percé',
     subtitle: '−12 pts au premier',
-    rarity: 'SR',
+    rarity: 'R',
     glyph: '🛷',
     description: 'MALUS : le premier du classement perd 12 points sur sa prochaine game.',
     effect: { kind: 'malus_points', value: 12 },
@@ -452,7 +432,7 @@ export const CARDS: readonly CardDefinition[] = [
     id: 'verglas',
     name: 'Verglas',
     subtitle: 'Une game ÷ 2',
-    rarity: 'SR',
+    rarity: 'R',
     glyph: '⛸',
     description:
       'MALUS : la prochaine game d’un joueur tiré au sort est divisée par 2, jusqu’à −15 points.',
@@ -749,9 +729,7 @@ export function cardArt(id: string): string | null {
 /** Traitement de foil appliqué à chaque rareté. */
 export const FOIL: Record<Rarity, 'none' | 'satin' | 'linear' | 'cross' | 'cosmos' | 'gold'> = {
   C: 'none',
-  PC: 'satin',
   R: 'linear',
-  SR: 'cross',
   UR: 'cosmos',
   L: 'gold',
 };
@@ -817,7 +795,7 @@ export const PACKS: readonly PackDefinition[] = [
     gradient: ['#2f6f8f', '#10283a'],
     portee: 'TOUS',
     pourQui: 'ceux que le sort désigne',
-    weights: { C: 40_000, PC: 30_000, R: 20_000, SR: 7_000, UR: 2_400, L: 600 },
+    weights: { C: 70_000, R: 27_000, UR: 2_400, L: 600 },
   },
   {
     id: 'folie',
@@ -828,7 +806,7 @@ export const PACKS: readonly PackDefinition[] = [
     gradient: ['#6b4bab', '#241540'],
     portee: 'TOUS',
     pourQui: 'toute la ligue, le plus souvent',
-    weights: { C: 0, PC: 0, R: 40_000, SR: 35_000, UR: 20_000, L: 5_000 },
+    weights: { C: 0, R: 75_000, UR: 20_000, L: 5_000 },
   },
   {
     id: 'finisseur',
@@ -839,7 +817,7 @@ export const PACKS: readonly PackDefinition[] = [
     gradient: ['#b07a2a', '#3d2708'],
     portee: 'JOUEUR',
     pourQui: 'un joueur',
-    weights: { C: 20_000, PC: 30_000, R: 28_000, SR: 15_000, UR: 5_500, L: 1_500 },
+    weights: { C: 50_000, R: 43_000, UR: 5_500, L: 1_500 },
   },
 ];
 
@@ -867,7 +845,7 @@ export function packArt(id: string): string | null {
 
 /** La rareté qui donne sa couleur au halo du sachet : la plus haute qu'il promet vraiment. */
 export const GEMME_DU_PACK: Record<PackId, Rarity> = {
-  perso: 'PC',
+  perso: 'C',
   commu: 'R',
   folie: 'L',
   finisseur: 'UR',
