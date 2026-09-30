@@ -3985,17 +3985,75 @@
     transform-origin: 50% 96%;
     transition: transform 0.45s cubic-bezier(0.3, 1.5, 0.5, 1);
   }
-  .noel-manteau,
-  .noel-pantalon {
-    fill: var(--manteau);
+  /*
+   * Le modelé : chaque teinte a sa lumière et son ombre, déduites de la
+   * variable du couloir — le manteau d'un camp, la peau d'acier du bot.
+   */
+  .noel-s-lumiere {
+    stop-color: color-mix(in oklab, var(--manteau) 60%, white);
   }
+  .noel-s-base {
+    stop-color: var(--manteau);
+  }
+  .noel-s-ombre {
+    stop-color: color-mix(in oklab, var(--manteau) 55%, black);
+  }
+  .noel-s-fourrure-lumiere {
+    stop-color: var(--neige-1);
+  }
+  .noel-s-fourrure {
+    stop-color: var(--noel-fourrure);
+  }
+  .noel-s-fourrure-ombre {
+    stop-color: color-mix(in oklab, var(--noel-fourrure) 70%, var(--nuit));
+  }
+  .noel-s-peau-lumiere {
+    stop-color: color-mix(in oklab, var(--noel-peau) 55%, white);
+  }
+  .noel-s-peau {
+    stop-color: var(--noel-peau);
+  }
+  .noel-s-peau-ombre {
+    stop-color: color-mix(in oklab, var(--noel-peau) 78%, black);
+  }
+  .noel-s-botte-lumiere {
+    stop-color: color-mix(in oklab, var(--noel-botte) 72%, white);
+  }
+  .noel-s-botte {
+    stop-color: var(--noel-botte);
+  }
+  .noel-s-botte-ombre {
+    stop-color: color-mix(in oklab, var(--noel-botte) 55%, black);
+  }
+  .noel-s-or-lumiere {
+    stop-color: color-mix(in oklab, var(--gold) 40%, white);
+  }
+  .noel-s-or {
+    stop-color: var(--gold);
+  }
+  .noel-s-or-ombre {
+    stop-color: color-mix(in oklab, var(--gold) 55%, black);
+  }
+  .noel-s-nez-lumiere {
+    stop-color: color-mix(in oklab, var(--noel-nez) 50%, white);
+  }
+  .noel-s-nez {
+    stop-color: var(--noel-nez);
+  }
+  .noel-s-nez-ombre {
+    stop-color: color-mix(in oklab, var(--noel-nez) 70%, black);
+  }
+
+  /* Le pantalon, un ton sous le manteau ; la jambe du fond, dans l'ombre. */
   .noel-pantalon {
-    filter: brightness(0.78);
+    filter: brightness(0.86);
+  }
+  .noel-loin {
+    filter: brightness(0.8);
   }
   .noel-bras,
   .noel-bonnet {
     fill: none;
-    stroke: var(--manteau);
     stroke-linecap: round;
   }
   .noel-bras {
@@ -4004,14 +4062,40 @@
   .noel-bonnet {
     stroke-width: 7;
   }
-  .noel-fourrure {
-    fill: var(--noel-fourrure);
+  /* L'ombre qu'une pièce porte sur une autre : nette, sans halo. */
+  .noel-ao {
+    fill: var(--nuit);
+    opacity: 0.3;
   }
-  .noel-peau {
-    fill: var(--noel-peau);
+  .noel-ao-douce {
+    opacity: 0.18;
   }
-  .noel-nez {
+  /* Les reflets : le cuir des bottes, l'or de la boucle, le nez, l'œil, la fourrure. */
+  .noel-reflet {
+    fill: var(--neige-1);
+    opacity: 0.72;
+  }
+  .noel-lisere {
+    fill: none;
+    stroke: var(--neige-1);
+    stroke-width: 0.8;
+    stroke-linecap: round;
+    opacity: 0.35;
+  }
+  .noel-joue {
     fill: var(--noel-nez);
+    opacity: 0.38;
+  }
+  .noel-boucles,
+  .noel-sourcil {
+    fill: none;
+    stroke: color-mix(in oklab, var(--noel-fourrure) 62%, var(--nuit));
+    stroke-width: 0.9;
+    stroke-linecap: round;
+  }
+  .noel-sourcil {
+    stroke: var(--noel-fourrure);
+    stroke-width: 1.5;
   }
   .noel-oeil {
     fill: var(--nuit);
@@ -4019,11 +4103,28 @@
   .couloir[data-bot] .noel-oeil {
     fill: var(--ice-2);
   }
-  .noel-botte {
-    fill: var(--noel-botte);
+
+  /* L'ombre de contact, au sol. Elle ne saute pas avec lui : elle se resserre. */
+  .noel-ombre {
+    position: absolute;
+    bottom: -3px;
+    left: calc(var(--s) * 0.08);
+    width: calc(var(--s) * 0.84);
+    height: calc(var(--s) * 0.11);
+    border-radius: 50%;
+    background: radial-gradient(closest-side, rgb(0 8 24 / 0.55), rgb(0 8 24 / 0));
   }
-  .noel-boucle {
-    fill: var(--gold);
+  .couloir[data-etat='victoire'] .noel-ombre {
+    animation: noel-ombre-saut 0.42s ease-out infinite alternate;
+  }
+  @keyframes noel-ombre-saut {
+    to {
+      transform: scale(0.62);
+      opacity: 0.55;
+    }
+  }
+  .couloir[data-etat='chute'] .noel-ombre {
+    transform: translateX(calc(var(--s) * 0.4)) scaleX(1.45);
   }
   .noel-jambe {
     transform-box: fill-box;

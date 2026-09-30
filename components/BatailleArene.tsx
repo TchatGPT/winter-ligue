@@ -17,7 +17,7 @@
  * boules, ce serait cher payé.
  */
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import {
   demarreRoulement,
   sonBosse,
@@ -80,39 +80,122 @@ type EtatCouloir = 'depart' | 'course' | 'chute' | 'victoire';
 /* -------------------------------------------------------------------------- */
 
 /**
- * Le père Noël, de profil, penché sur sa boule. Les couleurs viennent des
- * variables du couloir : le manteau change d'un camp à l'autre.
+ * Le père Noël, de profil, penché sur sa boule, en volume.
+ *
+ * Il était dessiné en aplats, et se lisait comme une silhouette découpée. Il
+ * est maintenant modelé : chaque pièce a sa lumière (en haut à gauche) et son
+ * ombre, les membres sont des cylindres, la tête et le pompon des sphères ; les
+ * pièces portent leur ombre les unes sur les autres — la barbe sur la poitrine,
+ * le bonnet sur le front —, et le cuir, l'or et le nez ont leur reflet. La
+ * jambe du fond est plus sombre que celle de devant.
+ *
+ * Les teintes des dégradés se déduisent des variables du couloir : le manteau
+ * change d'un camp à l'autre, la peau du bot est d'acier. D'où des dégradés
+ * propres à chaque dessin — deux couloirs, deux jeux d'identifiants.
  */
 function PereNoel() {
+  const id = useId().replace(/[^a-zA-Z0-9]/g, '');
+  const u = (nom: string) => `url(#${id}-${nom})`;
+
   return (
     <svg className="noel" viewBox="0 0 80 100" aria-hidden="true">
-      {/* La jambe arrière, puis le corps, puis la jambe avant : l'ordre du dessin. */}
-      <g className="noel-jambe noel-jambe-arriere">
-        <rect x="27" y="62" width="10" height="24" rx="5" className="noel-pantalon" />
-        <ellipse cx="35" cy="90" rx="9" ry="5.5" className="noel-botte" />
+      <defs>
+        <radialGradient id={`${id}-manteau`} cx="0.36" cy="0.26" r="0.8">
+          <stop offset="0" className="noel-s-lumiere" />
+          <stop offset="0.45" className="noel-s-base" />
+          <stop offset="1" className="noel-s-ombre" />
+        </radialGradient>
+        <linearGradient id={`${id}-membre`} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" className="noel-s-lumiere" />
+          <stop offset="0.42" className="noel-s-base" />
+          <stop offset="1" className="noel-s-ombre" />
+        </linearGradient>
+        <linearGradient id={`${id}-bras`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" className="noel-s-lumiere" />
+          <stop offset="0.5" className="noel-s-base" />
+          <stop offset="1" className="noel-s-ombre" />
+        </linearGradient>
+        <radialGradient id={`${id}-fourrure`} cx="0.34" cy="0.26" r="0.85">
+          <stop offset="0" className="noel-s-fourrure-lumiere" />
+          <stop offset="0.55" className="noel-s-fourrure" />
+          <stop offset="1" className="noel-s-fourrure-ombre" />
+        </radialGradient>
+        <radialGradient id={`${id}-peau`} cx="0.42" cy="0.3" r="0.75">
+          <stop offset="0" className="noel-s-peau-lumiere" />
+          <stop offset="0.62" className="noel-s-peau" />
+          <stop offset="1" className="noel-s-peau-ombre" />
+        </radialGradient>
+        <linearGradient id={`${id}-botte`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" className="noel-s-botte-lumiere" />
+          <stop offset="0.45" className="noel-s-botte" />
+          <stop offset="1" className="noel-s-botte-ombre" />
+        </linearGradient>
+        <linearGradient id={`${id}-or`} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" className="noel-s-or-lumiere" />
+          <stop offset="0.5" className="noel-s-or" />
+          <stop offset="1" className="noel-s-or-ombre" />
+        </linearGradient>
+        <radialGradient id={`${id}-nez`} cx="0.36" cy="0.3" r="0.8">
+          <stop offset="0" className="noel-s-nez-lumiere" />
+          <stop offset="0.55" className="noel-s-nez" />
+          <stop offset="1" className="noel-s-nez-ombre" />
+        </radialGradient>
+      </defs>
+
+      {/* La jambe du fond, dans l'ombre du corps. */}
+      <g className="noel-jambe noel-jambe-arriere noel-loin">
+        <rect x="27" y="62" width="10" height="24" rx="5" fill={u('membre')} className="noel-pantalon" />
+        <ellipse cx="35" cy="90" rx="9" ry="5.5" fill={u('botte')} />
+        <ellipse cx="32.5" cy="87.4" rx="4" ry="1.2" className="noel-reflet" />
       </g>
+
       <g className="noel-corps">
-        <ellipse cx="38" cy="50" rx="17" ry="21" transform="rotate(14 38 50)" className="noel-manteau" />
-        <path d="M21 62 Q36 74 54 61 L55 67 Q37 80 21 68 Z" className="noel-fourrure" />
-        <path d="M22 50 Q38 60 56 48 L57 54 Q39 66 22 56 Z" className="noel-botte" />
-        <rect x="42" y="50" width="8" height="8" rx="1.5" transform="rotate(-14 46 54)" className="noel-boucle" />
+        <ellipse cx="38" cy="50" rx="17" ry="21" transform="rotate(14 38 50)" fill={u('manteau')} />
+        {/* Les ombres que portent la barbe et la fourrure du bas. */}
+        <ellipse cx="50" cy="42.5" rx="9.5" ry="6" className="noel-ao" />
+        <path d="M21 59.5 Q36 71.5 54 58.5 L54.4 62 Q37 75 21 63 Z" className="noel-ao" />
+        <path d="M21 62 Q36 74 54 61 L55 67 Q37 80 21 68 Z" fill={u('fourrure')} />
+        {/* La ceinture, son liseré de lumière, sa boucle d'or. */}
+        <path d="M22 50 Q38 60 56 48 L57 54 Q39 66 22 56 Z" fill={u('botte')} />
+        <path d="M23 51.2 Q38 60.6 55.8 49.2" className="noel-lisere" />
+        <g transform="rotate(-14 46 54)">
+          <rect x="42" y="50" width="8" height="8" rx="1.5" fill={u('or')} />
+          <rect x="44.2" y="52.2" width="3.6" height="3.6" rx="0.6" fill={u('botte')} />
+          <rect x="42.9" y="50.7" width="3.2" height="1.1" rx="0.55" className="noel-reflet" />
+        </g>
       </g>
+
       <g className="noel-jambe noel-jambe-avant">
-        <rect x="35" y="62" width="10" height="24" rx="5" className="noel-pantalon" />
-        <ellipse cx="43" cy="90" rx="9" ry="5.5" className="noel-botte" />
+        <rect x="35" y="62" width="10" height="24" rx="5" fill={u('membre')} className="noel-pantalon" />
+        <ellipse cx="43" cy="90" rx="9" ry="5.5" fill={u('botte')} />
+        <ellipse cx="40.5" cy="87.4" rx="4" ry="1.2" className="noel-reflet" />
       </g>
-      {/* Le bras tendu, moufle contre la boule. */}
-      <path d="M44 41 Q58 44 69 52" className="noel-bras" />
-      <circle cx="71" cy="53" r="6" className="noel-fourrure" />
-      {/* La tête : le visage, la barbe, le bonnet et son pompon. */}
-      <circle cx="51" cy="25" r="10" className="noel-peau" />
-      <path d="M42 27 Q43 44 56 42 Q65 38 61 26 Q56 33 50 30 Q45 31 42 27 Z" className="noel-fourrure" />
-      <circle cx="61" cy="27" r="2.4" className="noel-nez" />
+
+      {/* Le bras tendu, un cylindre ; le poignet de fourrure, la moufle contre la boule. */}
+      <path d="M44 41 Q58 44 69 52" stroke={u('bras')} className="noel-bras" />
+      <ellipse cx="65.5" cy="50.2" rx="3.1" ry="5.2" transform="rotate(35 65.5 50.2)" fill={u('fourrure')} />
+      <circle cx="71" cy="53" r="6" fill={u('fourrure')} />
+      <ellipse cx="69" cy="50.4" rx="2.3" ry="1.3" className="noel-reflet" />
+
+      {/* La tête : une sphère ; la joue rosit, le bonnet ombre le front. */}
+      <circle cx="51" cy="25" r="10" fill={u('peau')} />
+      <circle cx="57" cy="27.6" r="3.4" className="noel-joue" />
+      <ellipse cx="52" cy="21.2" rx="9" ry="1.8" className="noel-ao noel-ao-douce" />
+      <path d="M42 27 Q43 44 56 42 Q65 38 61 26 Q56 33 50 30 Q45 31 42 27 Z" fill={u('fourrure')} />
+      <path d="M45.5 35 q2.2 2.2 4.4 0 M50.5 38.4 q2.2 2.2 4.4 0 M55.2 35.2 q2.2 2 4.2 -0.6" className="noel-boucles" />
+      <path d="M54.6 29.6 Q58 27.4 61.4 29.4 Q63.8 31.4 61.2 32.2 Q58.2 30.6 55.6 32.2 Q52.9 31.6 54.6 29.6 Z" fill={u('fourrure')} />
+      <circle cx="61" cy="27" r="2.4" fill={u('nez')} />
+      <circle cx="60.2" cy="26.1" r="0.7" className="noel-reflet" />
       <circle cx="55" cy="22" r="1.5" className="noel-oeil" />
-      <path d="M40 20 Q40 4 58 9 Q50 11 49 17 Z" className="noel-manteau" />
-      <path d="M58 9 Q40 2 27 14" className="noel-bonnet" />
-      <circle cx="26" cy="15" r="5" className="noel-fourrure" />
-      <rect x="39" y="15" width="25" height="7" rx="3.5" transform="rotate(12 51 18)" className="noel-fourrure" />
+      <circle cx="55.45" cy="21.5" r="0.45" className="noel-reflet" />
+      <path d="M52.6 19.4 Q55 18.2 57.4 19.6" className="noel-sourcil" />
+
+      {/* Le bonnet, sa pointe qui retombe, son pompon, son revers. */}
+      <path d="M40 20 Q40 4 58 9 Q50 11 49 17 Z" fill={u('manteau')} />
+      <path d="M58 9 Q40 2 27 14" stroke={u('bras')} className="noel-bonnet" />
+      <circle cx="26" cy="15" r="5" fill={u('fourrure')} />
+      <circle cx="24.5" cy="13.3" r="1.4" className="noel-reflet" />
+      <rect x="39" y="15" width="25" height="7" rx="3.5" transform="rotate(12 51 18)" fill={u('fourrure')} />
     </svg>
   );
 }
@@ -194,6 +277,8 @@ function Couloir({
       ))}
 
       <div className="attelage" aria-hidden="true">
+        {/* L'ombre de contact : au sol, elle ne suit ni le saut ni la chute. */}
+        <span className="noel-ombre" />
         <PereNoel />
         <span className="boule">
           <i />
