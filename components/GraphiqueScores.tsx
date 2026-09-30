@@ -62,10 +62,13 @@ export function GraphiqueScores({
   const comptees = points.filter((p) => !p.passee);
   const meilleure = comptees.length > 0 ? comptees.reduce((m, p) => (p.score > m.score ? p : m)) : null;
   const tousLesScores = points.length <= 12;
-  const bulle = survol !== null ? points[survol] : null;
+  // Sur un écran étroit, seules les places proches restent : trois après la
+  // dernière game, dix colonnes au moins. Toute la saison sur 330 px, c'étaient
+  // des colonnes de douze pixels, et des médailles les unes sur les autres.
+  const loin = (numero: number) => numero > points.length + 3 && numero > 10;
 
   return (
-    <figure className="graphe">
+    <figure className="graphe" data-nombreux={points.length + 3 > 14 ? '' : undefined}>
       <figcaption className="sr-only">Le score de chaque game, dans l’ordre où elles ont été jouées.</figcaption>
       {moyenne > 0 && (
         <p className="graphe-cle">
@@ -98,41 +101,41 @@ export function GraphiqueScores({
                     <b className="graphe-valeur">{p.score}</b>
                   )}
                 </span>
+                {/* L'infobulle, accrochée à sa colonne, en haut du graphique : au-dessus,
+                    elle montait sur le titre de la plaque. À droite de la colonne dans
+                    la première moitié, à gauche dans la seconde. */}
+                {survol === i && (
+                  <div
+                    className="graphe-bulle"
+                    data-cote={(i + 0.5) / places < 0.55 ? 'droite' : 'gauche'}
+                    role="status"
+                  >
+                    <strong>
+                      {p.score} <small>pts</small>
+                    </strong>
+                    <span>
+                      Game {p.numero} · {p.date}
+                    </span>
+                    <span>
+                      {p.kills} kills{p.placement ? ` · Top ${p.placement}` : ''}
+                      {p.cartes !== 0 ? ` · cartes ${p.cartes > 0 ? '+' : ''}${p.cartes}` : ''}
+                    </span>
+                    {p.passee && <span>passée, hors du total</span>}
+                  </div>
+                )}
               </li>
             ))}
             {Array.from({ length: libres }, (_, i) => (
-              <li key={`libre-${i}`} className="graphe-colonne" aria-hidden="true">
+              <li
+                key={`libre-${i}`}
+                className="graphe-colonne"
+                aria-hidden="true"
+                data-loin={loin(points.length + i + 1) ? '' : undefined}
+              >
                 <span className="graphe-place" />
               </li>
             ))}
           </ol>
-
-          {bulle && survol !== null && (
-            <div
-              className="graphe-bulle"
-              // À côté de la colonne, en haut du graphique : au-dessus, elle
-              // montait sur le titre de la plaque. À droite de la colonne dans
-              // la première moitié, à gauche dans la seconde.
-              style={
-                (survol + 0.5) / places < 0.55
-                  ? { left: `calc(${((survol + 1) / places) * 100}% + 0.5rem)` }
-                  : { right: `calc(${(1 - survol / places) * 100}% + 0.5rem)` }
-              }
-              role="status"
-            >
-              <strong>
-                {bulle.score} <small>pts</small>
-              </strong>
-              <span>
-                Game {bulle.numero} · {bulle.date}
-              </span>
-              <span>
-                {bulle.kills} kills{bulle.placement ? ` · Top ${bulle.placement}` : ''}
-                {bulle.cartes !== 0 ? ` · cartes ${bulle.cartes > 0 ? '+' : ''}${bulle.cartes}` : ''}
-              </span>
-              {bulle.passee && <span>passée, hors du total</span>}
-            </div>
-          )}
         </div>
 
         {/* La congère, par-dessus le pied des colonnes : elles y sont plantées. */}
@@ -170,7 +173,11 @@ export function GraphiqueScores({
               </li>
             );
           }
-          return <li key={numero}>{numero === 1 || numero % 5 === 0 || numero === places ? numero : null}</li>;
+          return (
+            <li key={numero} data-loin={loin(numero) ? '' : undefined}>
+              {numero === 1 || numero % 5 === 0 || numero === places ? numero : null}
+            </li>
+          );
         })}
       </ol>
     </figure>

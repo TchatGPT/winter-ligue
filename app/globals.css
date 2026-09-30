@@ -2262,9 +2262,23 @@
      games à jouer en places pointillées. Pas de cadre sombre, pas d'axe
      gradué : le score se lit au sommet des colonnes. */
   .graphe {
+    container: graphe / inline-size;
     display: flex;
     flex-direction: column;
     margin-top: 0.6rem;
+  }
+  /* Étroit : seules les places proches restent, et quand les games sont
+     nombreuses, les médailles se réduisent à des pastilles — la liste et
+     l'infobulle gardent le détail. */
+  @container graphe (max-width: 560px) {
+    .graphe [data-loin] {
+      display: none;
+    }
+    .graphe[data-nombreux] .graphe-medaille {
+      width: 10px;
+      height: 10px;
+      font-size: 0;
+    }
   }
   .graphe-cle {
     display: flex;
@@ -2425,6 +2439,12 @@
     color: var(--ink-2);
     white-space: nowrap;
     pointer-events: none;
+  }
+  .graphe-bulle[data-cote='droite'] {
+    left: calc(100% + 0.4rem);
+  }
+  .graphe-bulle[data-cote='gauche'] {
+    right: calc(100% + 0.4rem);
   }
   .graphe-bulle strong {
     font-family: var(--font-display);
