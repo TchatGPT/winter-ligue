@@ -15,7 +15,6 @@ import { createInterface } from 'node:readline';
 import { promisify } from 'node:util';
 
 const derive = promisify(scrypt);
-const MINIMUM = 16;
 
 /** Une question dont la réponse ne s'affiche pas. */
 function demandeMasque(question) {
@@ -47,9 +46,14 @@ if (password) {
   }
 }
 
-if (password.length < MINIMUM) {
-  console.error(`Refusé : au moins ${MINIMUM} caractères, ce mot de passe ouvre l’administration de toute la ligue.`);
+// Pas de longueur imposée : c'est le choix de qui l'administre. Seul le vide
+// est refusé, et un mot de passe très court est signalé, sans être bloqué.
+if (!password) {
+  console.error('Mot de passe vide.');
   process.exit(1);
+}
+if (password.length < 10) {
+  console.warn('Note : un mot de passe court se devine plus facilement (cinq essais par quart d’heure et par adresse).');
 }
 
 const salt = randomUUID().replace(/-/g, '');

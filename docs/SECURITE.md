@@ -326,8 +326,8 @@ l'ancienne `/api/auth/twitch/demo` renvoient simplement à `/connexion`.
 **L'entrée par mot de passe** (`POST /api/admin/login`, `lib/auth/secours.ts`) est
 la porte de l'administration en attendant Twitch, et son filet ensuite. Elle
 n'existe que si `ADMIN_PASSWORD_HASH` est posé (empreinte scrypt, générée par
-`npm run hash-password`, qui demande le mot de passe sans l'afficher et en exige 16
-caractères) : sans empreinte, le formulaire n'est pas montré et la route répond
+`npm run hash-password`, qui demande le mot de passe sans l'afficher, sans longueur
+imposée) : sans empreinte, le formulaire n'est pas montré et la route répond
 comme à un mauvais mot de passe, **dans le même temps** (une empreinte leurre est
 vérifiée). Cinq tentatives par quart d'heure et par adresse. Elle ouvre une
 session sur le compte de l'administratrice (celui de la chaîne, sinon le premier
@@ -367,8 +367,8 @@ que la saisie à la main.
 ### 1. Déporter la limitation de débit
 
 Elle est en mémoire, donc par instance Vercel : sur plusieurs instances, la limite
-effective est multipliée par leur nombre. Le mot de passe d'administration reste protégé
-par sa longueur (16 caractères au moins) et par scrypt, mais une règle de limitation du
+effective est multipliée par leur nombre. Le mot de passe d'administration n'a pas de
+longueur imposée : sa solidité dépend de qui le choisit, et une règle de limitation du
 **pare-feu Vercel** sur `/api/admin/login` et `/api/overlay`, ou un compteur partagé
 (Upstash), fermerait le dernier écart.
 
