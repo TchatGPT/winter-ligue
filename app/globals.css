@@ -7494,8 +7494,8 @@
   }
   .ov-subs-gain {
     position: absolute;
-    top: 6px;
-    right: -26px;
+    top: 44px;
+    right: -44px;
     font-family: var(--font-display);
     font-size: 34px;
     font-weight: 900;
@@ -7587,7 +7587,7 @@
     gap: 4px;
     border-radius: inherit;
     text-align: center;
-    background: linear-gradient(160deg, rgb(20 88 96 / 0.97) 0%, rgb(7 30 52 / 0.98) 100%);
+    background: linear-gradient(160deg, rgb(20 88 96) 0%, rgb(7 30 52) 100%);
     animation: ov-palier 6s ease both;
   }
   .ov-subs-palier span {

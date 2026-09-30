@@ -29,6 +29,11 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
    Une route qui l'oublie est une faille.
 6. **`lib/domain/rng.ts` et tout module manipulant des secrets gardent
    `import 'server-only'`.**
+7. **Le rôle d'une session se lit en base, jamais dans le jeton.** `getSession()` confronte
+   chaque jeton au compte (actif, rôle, `sessions_depuis`). Les pages de `/admin` appellent
+   `exigeRole()` elles-mêmes, pas seulement la mise en page.
+8. **Le journal est en ajout seul.** Ni rognage, ni modification, ni suppression : un
+   déclencheur en base le refuse, et une transaction qui s'y essaierait échouerait.
 
 ## Conventions
 
@@ -71,9 +76,14 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   la plage dans laquelle `pickWeighted` tire. Une somme fausse rend les taux affichés
   mensongers sans que personne puisse s'en apercevoir.
 - Trois rôles, hiérarchiques : un **modérateur** fait vivre la saison (games, crédits,
-  ouverture de la boutique), un **admin** en change les règles (prix, taux, rôles). Le
-  garde compare les rangs, donc une route `moderateur` accepte un admin. Ne jamais
-  donner à un modérateur de quoi se promouvoir.
+  boosters de la file), un **admin** en change les règles (limite de games, rôles,
+  sauvegarde). Le garde compare les rangs, donc une route `moderateur` accepte un admin.
+  Ne jamais donner à un modérateur de quoi se promouvoir, ni d'agir sur son propre
+  compte (flocons, subs offerts, games, boosters) : c'est vérifié route par route.
+- Les taux de rareté ne se règlent plus depuis le site : ce sont ceux du catalogue, et
+  les réglages déjà en base restent lus par `resolvedBooster()`.
+- Les overlays OBS (`/overlay/…`) lisent par `Store.fluxOverlay`, jamais par `read()` :
+  ils interrogent le serveur toutes les deux secondes pendant un live.
 - Les couleurs viennent des variables CSS de `app/globals.css`, jamais codées en dur.
 - Avant de livrer : `npm run typecheck && npm test && npm run build`.
 

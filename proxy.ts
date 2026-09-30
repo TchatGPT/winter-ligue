@@ -11,7 +11,7 @@ import { NextResponse, type NextRequest } from 'next/server';
  * `frame-ancestors 'none'` interdit l'inclusion du site dans une iframe : pas
  * de détournement de clic sur les boutons d'enchère.
  */
-export function middleware(request: NextRequest): NextResponse {
+export function proxy(request: NextRequest): NextResponse {
   const nonce = Buffer.from(crypto.randomUUID()).toString('base64');
   const isDev = process.env.NODE_ENV !== 'production';
 

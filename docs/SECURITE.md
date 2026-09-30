@@ -96,17 +96,32 @@ de débiter ou de consommer une seconde fois.
 - Comparaison de signature à **temps constant** (`timingSafeEqual`).
 - Cookie **HttpOnly** (invisible au JavaScript, donc insensible au vol par XSS),
   **SameSite=Lax**, **Secure** en production.
-- Le jeton ne porte qu'un identifiant et un rôle : solde, collection et droits réels sont
-  toujours relus en base.
-- Mot de passe admin stocké en **scrypt** salé, jamais en clair. La réponse est identique
-  que le hash soit absent ou le mot de passe faux.
-- `AUTH_SECRET` manquant ou trop court fait **échouer le démarrage en production**.
+- Le jeton ne porte qu'un identifiant et un rôle, et **le rôle du jeton ne sert à rien** :
+  à chaque requête, `getSession()` relit en base le rôle, l'état actif et la date de
+  révocation du joueur (`Store.etatSession`, une ligne lue par sa clé, mise en cache le
+  temps d'une requête). Un modérateur rétrogradé perd ses droits à la requête suivante,
+  un compte désactivé est dehors. Décision pure : `lib/domain/revocation.ts`, testée.
+- **Se déconnecter révoque** : la déconnexion pose `joueurs.sessions_depuis`, et tout
+  jeton émis avant est refusé, sur tous les appareils — un cookie copié ne survit pas.
+- La session de secours (sans joueur) ne vaut que tant que `ADMIN_PASSWORD_HASH` existe,
+  et dure une heure.
+- Mot de passe admin stocké en **scrypt** salé, jamais en clair. La réponse est identique,
+  dans son texte comme dans sa durée, que le hash soit absent ou le mot de passe faux.
+- `AUTH_SECRET` manquant ou trop court fait **échouer le démarrage en production**. Les
+  autres secrets du site (state OAuth, clés d'overlay) en sont dérivés par HMAC, avec un
+  usage distinct : une signature valable pour l'un ne l'est jamais pour l'autre.
 
 ### 7. Contrôle d'accès en profondeur
 
-Masquer un onglet n'est pas un contrôle d'accès. Chaque page sensible (`/admin`,
-`/ma-collection`) revérifie la session côté serveur, **et** chaque route d'API la
-revérifie de son côté. Taper l'URL directement ne donne rien.
+Masquer un onglet n'est pas un contrôle d'accès. Chaque page de `/admin` appelle
+`exigeRole()` **elle-même** — la mise en page le fait aussi, mais Next ne la rejoue pas
+lors d'une navigation entre onglets, et une requête fabriquée peut demander la seule
+page. Chaque route d'API revérifie la session de son côté. Taper l'URL directement ne
+donne rien.
+
+Rien de la ligue ne se lit sans compte : le classement (`GET /api/players`), les duels
+(`GET /api/affrontements`) et le compteur de subs (`GET /api/admin/subs`) exigent une
+session, comme les pages.
 
 Le profil public (`getPublicProfile`) retire la main, le grand livre et les enchères en
 cours **avant** l'envoi : ces informations ne transitent jamais, elles ne sont pas
@@ -126,7 +141,7 @@ balise HTML ne peut y entrer, avant même l'échappement de React.
 
 ### 9. En-têtes et CSP
 
-`middleware.ts` pose sur chaque réponse :
+`proxy.ts` (l'ancien `middleware.ts`, renommé par Next 16) pose sur chaque réponse :
 
 | En-tête | Ce qu'il empêche |
 |---|---|
@@ -134,8 +149,12 @@ balise HTML ne peut y entrer, avant même l'échappement de React.
 | `frame-ancestors 'none'` + `X-Frame-Options: DENY` | le détournement de clic sur les boutons d'enchère |
 | `X-Content-Type-Options: nosniff` | l'interprétation d'un fichier comme script |
 | `Referrer-Policy: strict-origin-when-cross-origin` | la fuite d'URL vers des tiers |
-| `Permissions-Policy` | l'accès caméra/micro/position |
+| `Permissions-Policy` | l'accès caméra/micro/position, le suivi publicitaire (`browsing-topics`) |
 | `Strict-Transport-Security` (prod) | la rétrogradation en HTTP |
+
+`X-Powered-By` n'est plus envoyé (`poweredByHeader: false`). Les réponses d'API portent
+`Cache-Control: private, no-store` : un solde ou un rôle n'est jamais servi depuis un
+cache à la mauvaise personne.
 
 `connect-src 'self'` : même en cas d'injection, aucune donnée ne peut être exfiltrée vers
 un domaine tiers.
@@ -144,7 +163,14 @@ un domaine tiers.
 
 Cookies en `SameSite=Lax` : une requête d'écriture intersite n'emporte déjà pas la
 session. La vérification d'origine (`sameOrigin()`) ferme le cas des navigateurs anciens
-et des requêtes forgées côté serveur.
+et des requêtes forgées côté serveur. Toute route qui lit un corps exige
+`Content-Type: application/json` — qu'un formulaire d'un autre site ne peut pas envoyer
+sans demander la permission au navigateur — et le borne à 64 Kio (sauf la lecture des
+captures, qui déclare sa propre taille).
+
+Chaque seau de limitation se purge selon **sa** fenêtre : la purge utilisait celle de la
+requête qui la déclenchait, et les tentatives de connexion (fenêtre d'un quart d'heure)
+étaient oubliées au bout de quatre minutes.
 
 La déconnexion est un **POST**, jamais un lien GET : une image piégée sur un autre site ne
 peut pas déconnecter un visiteur.
@@ -154,7 +180,7 @@ juste après la remise à zéro d'une fenêtre :
 
 | Action | Limite |
 |---|---|
-| Connexion admin | 5 / 15 min / IP |
+| Connexion par mot de passe | 5 / 15 min / IP |
 | Écritures de jeu | 30 / min / IP |
 | Enchères | 60 / min / IP |
 | Lectures d'API | 240 / min / IP |
@@ -191,8 +217,15 @@ plutôt que des listes : une route qui demande `moderateur` accepte un admin, et
 un échelon ne demande pas de relire chaque route.
 
 La frontière n'est pas décorative. Un modérateur agit sur le **déroulement** de la saison,
-un admin sur ses **règles** : prix, taux de rareté, attribution des rôles. Un modérateur ne
-peut donc ni se promouvoir, ni rendre les légendaires dix fois plus fréquentes.
+un admin sur ses **règles** : limite de games, rôles, sauvegarde. Un modérateur ne peut
+donc pas se promouvoir. Et un modérateur qui joue **n'agit jamais sur son propre compte** :
+il ne se crédite pas de flocons, ne s'inscrit pas de subs offerts, ne saisit ni ne modifie
+ses games, n'ouvre pas un booster qui lui revient. Ses attributions sont bornées à mille
+flocons et cent subs à la fois, et il n'ouvre que les boosters **de la file** : ouvrir « à
+la main » crée un booster de rien, c'est l'affaire d'un administrateur.
+
+Les taux de rareté ne se règlent plus depuis le site : ce sont ceux du catalogue. Un
+compte administrateur compromis ne peut pas rendre les légendaires certaines.
 
 Deux garde-fous sur les rôles, qui ne se recouvrent pas : un administrateur ne peut pas se
 rétrograder lui-même — c'est la faute de manipulation la plus banale, et elle est
@@ -201,10 +234,9 @@ sans quoi deux admins peuvent se rétrograder l'un l'autre et laisser la ligue s
 personne. Le mot de passe de secours permettrait de se rattraper, mais compter dessus
 revient à transformer une faute de clic en incident.
 
-Les taux réglés sont vérifiés côté serveur, pas côté formulaire : la somme doit valoir
-exactement 100 000, faute de quoi `pickWeighted` tire dans une plage qui ne correspond
-plus aux taux affichés. Le refus est net plutôt que normalisé en silence — l'administrateur
-doit voir son erreur, pas la voir corrigée.
+Les réglages de taux enregistrés avant ce retrait restent lus par `resolvedBooster()` et
+vérifiés par `verifieTable()` : somme exacte de 100 000, faute de quoi `pickWeighted`
+tirerait dans une plage qui ne correspond plus aux taux affichés.
 
 ### 13. Traçabilité
 
@@ -213,8 +245,18 @@ joueur doit toujours être reconstructible à partir de son historique, ce qui r
 manipulation détectable.
 
 Le **journal d'audit** enregistre chaque action de modération, chaque carte jouée, chaque
-vente conclue. Toute attribution manuelle exige un motif : la modération peut donner, mais
-jamais discrètement.
+entrée par mot de passe. Toute attribution manuelle exige un motif : la modération peut
+donner, mais jamais discrètement.
+
+Le journal est **en ajout seul**. Il n'est plus rogné (il l'était aux cinq mille dernières
+lignes : enchaîner les actions effaçait les traces des précédentes), il n'est plus chargé
+avec le reste de la base (il se lit à part, `Store.journal`), et un **déclencheur en base**
+refuse toute modification, suppression ou vidage de la table `journal`. La restauration
+de sauvegarde par le site, qui remplaçait toute la base d'une requête, est supprimée ;
+l'export (`GET /api/admin/backup`, admin, cinq par quart d'heure) inclut le journal.
+
+Les textes libres (note de game, motif) perdent leurs caractères de contrôle et ceux qui
+retournent le sens de lecture : une ligne du journal ne peut pas se déguiser.
 
 ---
 
@@ -239,8 +281,22 @@ pure, `lib/domain/aiguillage.ts`, verrouillée par `tests/aiguillage.test.ts`.
 `monActivisionSchema` (lettres, chiffres, `_ - .`, espace, suffixe `#chiffres`
 facultatif ; jamais de `<`). La modération corrige celui d'un joueur par
 `PATCH /api/players` (`moderateur`). Les deux passent par `transaction()` et
-laissent une trace au journal. Le retour Twitch envoie vers `/bienvenue` tant
-qu'il manque.
+laissent une trace au journal — seulement sur un vrai changement. Un nom déjà pris
+par un autre joueur est refusé (comparé sans suffixe, casse ni accents,
+`lib/domain/activision.ts`) : sinon l'un se ferait attribuer les games de
+l'autre. Le retour Twitch envoie vers `/bienvenue` tant qu'il manque.
+
+**Les overlays OBS** (`/overlay/booster`, `/overlay/duel`, `/overlay/subs`) n'ont
+pas de session : ils s'ouvrent par un lien qui porte une clé signée (dérivée
+d'`AUTH_SECRET`) et une **génération** ; « Régénérer les liens » (admin) avance la
+génération et révoque tous les liens donnés. Une clé mal signée est refusée sans
+toucher à la base. La clé n'ouvre que ce que le stream montre déjà — compteur de
+subs, boosters ouverts, duels lancés — par une lecture ciblée
+(`Store.fluxOverlay`, quelques lignes par index, jamais la base entière), bornée
+à 240 lectures par minute et par adresse. Les pages d'overlay sont rendues sans
+décor (le proxy pose un en-tête qu'il efface de toute requête entrante), en
+`Referrer-Policy: no-referrer` et `noindex`. Un joueur a au plus trois duels en
+attente : chacun est annoncé sur le stream.
 
 **Les rôles viennent de Twitch.** Il n'y a plus de connexion « modération » à
 l'écran. À chaque connexion, le retour OAuth lit, avec le jeton de la personne
@@ -286,7 +342,12 @@ Sans `DATABASE_URL`, sur Vercel, les données vont dans `/tmp` et sont éphémè
 catalogue `cartes` et `boosters` recopié du code. Chaque transaction verrouille
 la ligne `saison` (`FOR UPDATE`), ce qui sérialise les écritures entre serveurs,
 puis n'écrit que les lignes modifiées. RLS activée partout sans politique, droits
-d'`anon` et `authenticated` retirés : seule la connexion serveur lit la base.
+d'`anon` et `authenticated` retirés : seule la connexion serveur lit la base. La
+connexion est **chiffrée** (`ssl: 'require'`) : l'adresse n'imposant pas `sslmode`,
+requêtes et réponses passaient en clair entre Vercel et Supabase. Le certificat du
+pooler est signé par l'autorité de Supabase, que Node ne connaît pas : l'épingler
+(`verify-full` avec son certificat racine) protégerait aussi d'une interception
+active — c'est l'étape suivante.
 L'ancienne ligne unique `league_state` est gardée comme sauvegarde ; vider les
 tables la fait reverser au démarrage suivant.
 
@@ -301,71 +362,79 @@ proposition, et chaque game est ensuite enregistrée par `POST /api/games`, qui
 recalcule le score. Sans clé, la route répond `INTROUVABLE` et l'écran ne propose
 que la saisie à la main.
 
-## Ce qui reste à faire avant la production
+## Ce qui reste à faire
 
-### ⚠️ 1. Remplacer le stockage fichier
+### 1. Déporter la limitation de débit
 
-`lib/db/store.ts` écrit dans `.data/league.json`. La sérialisation des écritures est
-**correcte pour un seul processus Node**, mais deux instances (montée en charge Vercel,
-plusieurs conteneurs) écriraient chacune leur copie et se perdraient mutuellement des
-transactions.
+Elle est en mémoire, donc par instance Vercel : sur plusieurs instances, la limite
+effective est multipliée par leur nombre. Le mot de passe d'administration reste protégé
+par sa longueur (16 caractères au moins) et par scrypt, mais une règle de limitation du
+**pare-feu Vercel** sur `/api/admin/login` et `/api/overlay`, ou un compteur partagé
+(Upstash), fermerait le dernier écart.
 
-**À faire :** implémenter `Store` sur Postgres/Supabase, avec de vraies transactions
-`SERIALIZABLE` ou `SELECT … FOR UPDATE` sur la ligne du joueur et sur celle de la vente.
-L'interface est faite pour ça : rien de `lib/domain` ni de `lib/services` n'est à toucher.
+### 2. Épingler le certificat de la base
 
-Contraintes à poser au niveau du schéma, pour que la base refuse elle-même l'incohérence :
+La connexion est chiffrée, sans vérifier le certificat du pooler. L'épingler
+(`ssl: { ca }`, avec le certificat racine de Supabase téléchargé depuis son tableau de
+bord) protégerait aussi d'une interception active entre Vercel et Supabase.
 
-- `CHECK (snowflakes >= 0)` sur les joueurs ;
-- unicité sur `(player_id, idempotency_key)` pour les ouvertures de boosters ;
-- unicité partielle sur `card_instance_id WHERE status = 'ACTIVE'` pour les ventes.
+### 3. Un rôle de base sans droits de structure
 
-### ⚠️ 2. Déporter la limitation de débit
+Le site se connecte avec le rôle propriétaire : il crée ses tables au démarrage, et
+pourrait donc aussi retirer le déclencheur du journal. Un rôle limité aux lectures et
+écritures, les migrations passant par un autre, fermerait cette porte.
 
-Elle est en mémoire, donc par instance. Sur plusieurs instances, la limite effective est
-multipliée par leur nombre. **À faire :** Redis/Upstash, en gardant le contrat de
-`consume()`.
+### 4. Contraintes de schéma
 
-### 3. Points de vigilance
+`CHECK (flocons >= 0)` sur `joueurs` : la base refuserait elle-même un solde négatif, que
+le code interdit déjà (`debit()` lève, `adjust()` borne).
+
+### 5. La photo de fond
+
+Elle est servie par `cdn.midjourney.com`, déclaré dans la CSP : chaque visiteur y envoie
+son adresse. L'héberger dans `public/` retirerait ce domaine de la CSP.
+
+### Points de vigilance
 
 - **`x-forwarded-for`** n'est fiable que derrière un proxy qui le réécrit (Vercel le fait).
-  En auto-hébergement, s'assurer que le reverse proxy l'impose, sinon la limitation par IP
-  se contourne avec un en-tête forgé.
-- **`ALLOW_DEV_LOGIN`** est doublement verrouillée (`NODE_ENV !== 'production'` **et**
-  la variable à `true`). Ne pas la définir en production.
-- **`CRON_SECRET`** : sans lui, `/api/market/close` est fermée et la clôture des ventes
-  reste paresseuse — correcte, mais déclenchée seulement à la visite. Avec un cron, les
-  adjudications tombent à l'heure même sans public.
-- **Sauvegardes** : `/api/admin/backup` exporte tout en JSON. À faire avant toute
-  manipulation. La restauration est destructive et tracée.
+- **`ALLOW_DEV_LOGIN`** est triplement verrouillée (hors production, variable à `true`,
+  base locale). Ne jamais la définir sur Vercel.
+- **Sauvegardes** : `/api/admin/backup` exporte tout, journal compris. Le fichier contient
+  des données personnelles : hors du dépôt (`.gitignore` l'écarte), et supprimé une fois
+  inutile. Il n'y a plus de restauration par le site.
+- **Variables Vercel** : `AUTH_SECRET`, `DATABASE_URL`, `ANTHROPIC_API_KEY`,
+  `ADMIN_PASSWORD_HASH`, `TWITCH_CLIENT_SECRET` en **Production seulement**, marquées
+  sensibles. Changer `AUTH_SECRET` déconnecte tout le monde et change les liens d'overlay.
 - **`.env.local` n'est jamais commité.** Le séparateur de `ADMIN_PASSWORD_HASH` est un
-  deux-points et non un dollar : les fichiers `.env` développent les `$VAR`, un format à
-  dollars serait tronqué en silence et la connexion échouerait sans explication.
+  deux-points et non un dollar : les fichiers `.env` développent les `$VAR`.
 
 ---
 
 ## Vérifier soi-même
 
 ```bash
-npm test          # règles de score, économie, collection, marché
+npm test          # règles de score, économie, sessions, state OAuth, schémas
 npm run typecheck # aucune erreur tolérée
 npm run build     # échoue si un module server-only fuit côté client
 ```
 
-Contrôles manuels utiles, serveur lancé :
+Contrôles en ligne :
 
 ```bash
-# Une écriture admin sans session doit être refusée
-curl -X PATCH localhost:3000/api/admin/config \
-  -H 'content-type: application/json' -d '{"shopOpen":false}'
+# La connexion simulée n'existe plus : départ et retour renvoient à /connexion
+curl -sI 'https://www.winter-ligue.com/api/auth/twitch' | grep -i location
 
-# Une écriture depuis une origine étrangère doit être refusée
-curl -X POST localhost:3000/api/market/bid \
-  -H 'origin: https://evil.example' -H 'content-type: application/json' \
-  -d '{"listingId":"…","amount":50}'
+# Une écriture d'administration sans session est refusée
+curl -s -X POST https://www.winter-ligue.com/api/admin/grant -H 'content-type: application/json' -d '{}'
 
-# Les en-têtes de sécurité doivent être présents
-curl -sI localhost:3000/ | grep -i 'content-security\|x-frame\|nosniff'
+# Une écriture depuis une origine étrangère est refusée
+curl -s -X POST https://www.winter-ligue.com/api/admin/login -H 'origin: https://evil.example' -H 'content-type: application/json' -d '{"password":"x"}'
+
+# Un overlay sans clé valide ne lit rien
+curl -s 'https://www.winter-ligue.com/api/overlay?cle=1-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+
+# Les en-têtes de sécurité sont présents
+curl -sI https://www.winter-ligue.com/ | grep -i 'content-security\|x-frame\|nosniff'
 ```
 
 ---

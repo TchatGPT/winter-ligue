@@ -15,6 +15,20 @@ const packIds = PACK_IDS as unknown as [string, ...string[]];
 
 export const uuid = z.string().uuid('Identifiant invalide.');
 
+/**
+ * Un texte libre — une note de game, un motif d'attribution. React l'échappe
+ * à l'affichage ; on en retire en plus les caractères de contrôle et ceux qui
+ * retournent le sens de lecture : ils servent à faire lire au journal autre
+ * chose que ce qui y est écrit.
+ */
+const INVISIBLES = /[\p{Cc}\u200B-\u200F\u202A-\u202E\u2060-\u2069\uFEFF]/gu;
+const texteLibre = (max: number) =>
+  z
+    .string()
+    .max(max * 2)
+    .transform((t) => t.replace(INVISIBLES, '').trim())
+    .pipe(z.string().max(max));
+
 /** Pseudo : lettres, chiffres, tirets et underscores. Pas de HTML possible. */
 export const pseudo = z
   .string()
@@ -62,7 +76,7 @@ export const gameSchema = z.object({
   kills: z.number().int().min(GAME_LIMITS.minKills).max(GAME_LIMITS.maxKills),
   /** 1, 2, 3 ou aucun classement. */
   placement: z.union([z.literal(1), z.literal(2), z.literal(3), z.null()]),
-  note: z.string().trim().max(140).optional().nullable(),
+  note: texteLibre(140).optional().nullable(),
   /**
    * Les kills du meilleur tueur de la partie, lus sur la même capture. C'est
    * une donnée de jeu, comme les kills : elle ne sert qu'à la carte « Clone
@@ -84,7 +98,7 @@ export const gameSchema = z.object({
 export const updateGameSchema = z.object({
   gameId: uuid,
   skipped: z.boolean().optional(),
-  note: z.string().trim().max(140).optional().nullable(),
+  note: texteLibre(140).optional().nullable(),
 });
 
 export const deleteGameSchema = z.object({ gameId: uuid });
@@ -145,7 +159,7 @@ export const adminConfigSchema = z.object({
 export const adminGrantSchema = z.object({
   playerId: uuid,
   snowflakes: z.number().int().min(-1_000_000).max(1_000_000),
-  reason: z.string().trim().min(1).max(140),
+  reason: texteLibre(140).pipe(z.string().min(1, 'Un motif est obligatoire.')),
 });
 
 /** Saisie des subs : au compteur de la saison, ou au compte d'un joueur. */
