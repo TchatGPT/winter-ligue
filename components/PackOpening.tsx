@@ -109,6 +109,21 @@ export function PackOpening({
   /** La file, restreinte au pack choisi. */
   const dus = useMemo(() => file.filter((p) => p.packId === pack?.id), [file, pack]);
 
+  /**
+   * Ce qui reste à ouvrir, d'un coup d'œil : le total, puis chaque booster avec
+   * son nombre et, pour ceux qui vont à quelqu'un, le détail par joueur.
+   */
+  const aOuvrir = useMemo(
+    () =>
+      packs.map((p) => {
+        const siens = file.filter((d) => d.packId === p.id);
+        const parJoueur = new Map<string, number>();
+        for (const d of siens) if (d.pseudo) parJoueur.set(d.pseudo, (parJoueur.get(d.pseudo) ?? 0) + 1);
+        return { id: p.id, nom: p.name, n: siens.length, parJoueur: [...parJoueur] };
+      }),
+    [packs, file],
+  );
+
   async function ouvre(corps: Record<string, unknown>) {
     if (!pack || busy) return;
     // Le contexte audio se réveille sur ce clic, avant le premier `await`.
@@ -247,6 +262,36 @@ export function PackOpening({
                   {pack.name}
                 </TitreGlace>
               </div>
+
+              {moderateur && (
+                <section className="a-ouvrir" aria-label="Boosters à ouvrir">
+                  <p className="a-ouvrir-total">
+                    À ouvrir : <strong className="num">{file.length}</strong>
+                  </p>
+                  <ul className="a-ouvrir-liste">
+                    {aOuvrir.map((t) => (
+                      <li key={t.id}>
+                        <button
+                          type="button"
+                          className="a-ouvrir-type"
+                          data-vide={t.n === 0 ? '' : undefined}
+                          aria-pressed={pack.id === t.id}
+                          disabled={busy}
+                          onClick={() => choisir(t.id)}
+                        >
+                          <span>{t.nom}</span>
+                          <strong className="num">{t.n}</strong>
+                        </button>
+                        {t.parJoueur.length > 0 && (
+                          <p className="a-ouvrir-joueurs">
+                            {t.parJoueur.map(([pseudo, n]) => (n > 1 ? `${pseudo} ×${n}` : pseudo)).join(' · ')}
+                          </p>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
 
               <RangeePacks packs={packs} selection={pack.id} onSelection={choisir} fige={busy} />
 
