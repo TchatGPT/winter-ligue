@@ -132,7 +132,7 @@ export function addSubs(db: Database, delta: number, actor: string, precision?: 
 }
 
 /**
- * Un message de Twitch : un sub, des subs offerts, ou un réabonnement.
+ * Un message de Twitch : un sub, ou des subs offerts. Un réabonnement ne compte pas.
  *
  * Compté une seule fois : Twitch renvoie un message qu'il croit perdu, et la
  * mémoire des messages comptés vit dans la même transaction que le compteur —

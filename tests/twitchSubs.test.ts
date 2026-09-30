@@ -16,9 +16,9 @@ import {
  * Les subs qui arrivent de Twitch : chaque sub compte une fois, et une seule.
  */
 describe('ce que vaut un message', () => {
-  it('compte un nouveau sub et un réabonnement annoncé', () => {
+  it('compte un nouveau sub, et jamais un réabonnement', () => {
     expect(subsDuMessage('channel.subscribe', { is_gift: false, user_name: 'A' })).toBe(1);
-    expect(subsDuMessage('channel.subscription.message', { user_name: 'A' })).toBe(1);
+    expect(subsDuMessage('channel.subscription.message', { user_name: 'A' })).toBe(0);
   });
 
   it('compte un cadeau par son nombre, et jamais ses destinataires en plus', () => {
@@ -45,7 +45,6 @@ describe('ce que vaut un message', () => {
 
   it('raconte le message pour le journal, sans nommer un donateur anonyme', () => {
     expect(recitDuMessage('channel.subscribe', { user_name: 'Alex' }, 1)).toBe('sub de Alex');
-    expect(recitDuMessage('channel.subscription.message', { user_name: 'Alex' }, 1)).toBe('réabonnement de Alex');
     expect(recitDuMessage('channel.subscription.gift', { user_name: 'Alex', is_anonymous: true }, 3)).toBe(
       '3 subs offerts par un anonyme',
     );

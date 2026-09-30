@@ -9,7 +9,7 @@ import 'server-only';
  * (`channel:read:subscriptions`), en passant par la connexion Twitch avec
  * `subs=1`. Le site crée alors, avec le jeton de l'application, trois
  * abonnements EventSub en webhook vers `/api/twitch/eventsub` : nouveaux subs,
- * subs offerts, réabonnements annoncés. Rien n'est stocké ici : Twitch garde
+ * subs offerts. Rien n'est stocké ici : Twitch garde
  * l'autorisation et les abonnements, et l'administration relit leur état chez
  * lui.
  *

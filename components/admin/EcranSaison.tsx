@@ -33,7 +33,6 @@ export interface TwitchSubs {
 const NOMS_ABONNEMENTS: Record<string, string> = {
   'channel.subscribe': 'Nouveaux subs',
   'channel.subscription.gift': 'Subs offerts',
-  'channel.subscription.message': 'Réabonnements',
 };
 
 function libelleStatut(statut: string | null): string {
@@ -126,7 +125,7 @@ export function EcranSaison({
           neige="admin-twitch"
           aide={
             branche
-              ? 'Branchés : chaque nouveau sub, chaque sub offert et chaque réabonnement annoncé s’ajoute tout seul au compteur, avec ses paliers. Le même branchement autorise la ligue à annoncer les codes cadeaux dans le tchat — s’il a été fait avant, rebranchez une fois.'
+              ? 'Branchés : chaque nouveau sub et chaque sub offert s’ajoute tout seul au compteur — les réabonnements ne comptent pas, avec ses paliers. Le même branchement autorise la ligue à annoncer les codes cadeaux dans le tchat — s’il a été fait avant, rebranchez une fois.'
               : 'Une fois branchés, les subs de la chaîne s’ajoutent tout seuls au compteur, et les codes cadeaux s’annoncent dans le tchat. Le branchement se fait une fois, par la streameuse elle-même : Twitch lui demande d’autoriser la ligue à voir ses subs et à écrire dans son tchat.'
           }
           actions={

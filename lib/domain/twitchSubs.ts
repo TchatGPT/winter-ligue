@@ -7,8 +7,8 @@
  *
  * ## Ce qui compte pour un sub
  *
- * Un nouvel abonnement, un réabonnement annoncé dans le tchat, et chaque sub
- * offert. Twitch annonce un cadeau deux fois — un message pour celui qui offre,
+ * Un nouvel abonnement, et chaque sub offert. Les réabonnements ne comptent
+ * pas : le site ne les demande même pas à Twitch. Twitch annonce un cadeau deux fois — un message pour celui qui offre,
  * avec le nombre, puis un message par destinataire : il n'est compté qu'une
  * fois, par le premier. Le palier du sub (1, 2 ou 3) ne change rien : un sub
  * est un sub.
@@ -28,7 +28,6 @@ import { PACKS_REGLES } from './rules';
 export const TYPES_SUBS = [
   'channel.subscribe',
   'channel.subscription.gift',
-  'channel.subscription.message',
 ] as const;
 
 /** Le plus qu'un seul message peut ajouter : un cadeau de masse, borné. */
@@ -64,9 +63,8 @@ export function subsDuMessage(type: string, evenement: Evenement): number {
       if (typeof total !== 'number' || !Number.isInteger(total) || total < 1) return 0;
       return Math.min(total, SUBS_PAR_MESSAGE_MAX);
     }
-    case 'channel.subscription.message':
-      return 1;
     default:
+      // Les réabonnements (`channel.subscription.message`) ne comptent pas.
       return 0;
   }
 }
@@ -111,7 +109,6 @@ export function recitDuMessage(type: string, evenement: Evenement, subs: number)
     const qui = e.is_anonymous === true ? 'un anonyme' : nomDe(e);
     return `${subs} sub${subs > 1 ? 's' : ''} offert${subs > 1 ? 's' : ''} par ${qui}`;
   }
-  if (type === 'channel.subscription.message') return `réabonnement de ${nomDe(e)}`;
   return `sub de ${nomDe(e)}`;
 }
 

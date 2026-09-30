@@ -171,8 +171,8 @@ export const PACKS_REGLES = {
   /**
    * Depuis Twitch, seuls comptent pour les subs offerts d'un joueur les cadeaux
    * groupés d'au moins N subs d'un coup (5, 10, 20…), faits à visage découvert.
-   * Un sub simple, un réabonnement ou un petit cadeau ne comptent que pour la
-   * saison.
+   * Un sub simple ou un petit cadeau ne comptent que pour la saison ; un
+   * réabonnement ne compte pas du tout.
    */
   cadeauMinTwitch: 5,
 } as const;

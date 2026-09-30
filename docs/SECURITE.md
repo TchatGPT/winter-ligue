@@ -337,8 +337,8 @@ La streameuse branche une fois, depuis Admin → Saison : la connexion Twitch re
 avec `subs=1`, signé dans le `state`, et demande en plus `channel:read:subscriptions`,
 ainsi que `user:write:chat`, `user:bot` et `channel:bot` pour annoncer les codes cadeaux dans le tchat.
 Au retour, le site vérifie que c'est bien la chaîne de la ligue et que la portée est
-accordée, puis crée, avec le jeton de l'application, trois abonnements : nouveaux subs,
-subs offerts, réabonnements annoncés. Tout autre compte est connecté, sans rien
+accordée, puis crée, avec le jeton de l'application, deux abonnements : nouveaux subs
+et subs offerts — les réabonnements ne comptent pas. Tout autre compte est connecté, sans rien
 brancher. À la réception : signature HMAC-SHA256 vérifiée **avant** de lire le corps
 (secret tiré d'`AUTH_SECRET`, jamais écrit), message de plus de dix minutes ignoré,
 chaîne de la ligue seulement, corps de 64 Kio au plus. Chaque message ne compte

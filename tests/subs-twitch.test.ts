@@ -36,13 +36,13 @@ const joueur = (db: Database) => db.players.find((p) => p.twitchId === 'tw-joueu
 const boostersPerso = (db: Database) => db.packsDus.filter((p) => p.packId === 'perso' && p.joueurId !== null);
 
 describe('les subs de Twitch, au compteur de la saison', () => {
-  it('comptent tous, et chacun une seule fois', () => {
+  it('comptent chacun une seule fois, sans les réabonnements', () => {
     const db = base();
     const sub = message('channel.subscribe', { user_id: 'x', tier: '1000', is_gift: false });
     ajouteSubsTwitch(db, sub);
     ajouteSubsTwitch(db, sub); // renvoyé par Twitch
     ajouteSubsTwitch(db, message('channel.subscription.message', { user_id: 'x', tier: '1000' }));
-    expect(db.config.totalSubs).toBe(2);
+    expect(db.config.totalSubs).toBe(1);
   });
 });
 
