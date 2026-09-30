@@ -5,7 +5,7 @@ import { getStore } from '@/lib/db/store';
 import { cartesDuPack, impactMax, momentDe } from '@/lib/domain/catalog';
 import { chanceDe } from '@/lib/domain/rules';
 import { fileDesPacks, resolvedPacks } from '@/lib/services/packs';
-import { TitreGlace } from '@/components/TitreGlace';
+import { EnTetePage } from '@/components/EnTetePage';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Boosters' };
@@ -69,13 +69,12 @@ export default async function PacksPage(){
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
-        <TitreGlace taille="page">Les boosters</TitreGlace>
-        <p className="text-[15px] text-muted">
-          Une carte par booster, ouverte à l’antenne. Les actions des roues de la Summer, à la mesure de
-          l’hiver.
-        </p>
-      </header>
+      <EnTetePage
+        icone="rocket"
+        eyebrow="Cartes de la saison"
+        titre="Les boosters"
+        lead="Une carte par booster, ouverte à l’antenne. Les actions des roues de la Summer, à la mesure de l’hiver."
+      />
 
       <PackOpening packs={packs} file={file} joueurs={joueurs} moderateur={moderateur} />
     </div>

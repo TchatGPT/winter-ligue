@@ -1,4 +1,5 @@
-import { PageHead, RarityChip } from '@/components/ui';
+import { EnTetePage } from '@/components/EnTetePage';
+import { RarityChip } from '@/components/ui';
 import Link from 'next/link';
 import { CARDS, RARITY_META, cartesDuPack } from '@/lib/domain/catalog';
 import { getStore } from '@/lib/db/store';
@@ -63,7 +64,12 @@ export default async function ReglesPage(){
 
   return (
     <div className="space-y-4">
-      <PageHead eyebrow={SEASON.edition} title="Les" accent="Règles" />
+      <EnTetePage
+        icone="book"
+        eyebrow={SEASON.edition}
+        titre="Les règles"
+        lead="Tout ce qui compte dans la ligue : le score d’une game, les boosters, les cartes, les flocons, les évènements et les duels."
+      />
 
       {/* Deux colonnes sur grand écran, en flux de colonnes : les blocs n'ont
           pas la même hauteur, une grille laisserait des trous. */}

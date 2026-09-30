@@ -4,7 +4,6 @@ import { RarityIcon } from '@/components/RarityIcon';
 import { RARITY_META } from '@/lib/domain/catalog';
 import type { Rarity } from '@/lib/domain/types';
 import { compact, num } from '@/lib/format';
-import { TitreGlace } from '@/components/TitreGlace';
 
 /** Une rareté inconnue retombe sur la commune plutôt que de casser le rendu. */
 export function rarityMeta(rarity: string) {
@@ -263,36 +262,6 @@ export function Meter({ ratio, color }: { ratio: number; color: string }) {
         }}
       />
     </div>
-  );
-}
-
-export function PageHead({
-  eyebrow,
-  title,
-  accent,
-  lead,
-  actions,
-}: {
-  eyebrow: string;
-  title: string;
-  accent: string;
-  lead?: React.ReactNode;
-  actions?: React.ReactNode;
-}) {
-  return (
-    <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-      <div className="min-w-0">
-        <TitreGlace taille="page" eyebrow={eyebrow}>
-          {`${title} ${accent}`}
-        </TitreGlace>
-        {lead && (
-          <p className="mt-3 max-w-3xl text-[15px] leading-relaxed text-ink-2 sm:text-base">
-            {lead}
-          </p>
-        )}
-      </div>
-      {actions && <div className="flex shrink-0 flex-wrap gap-2">{actions}</div>}
-    </header>
   );
 }
 

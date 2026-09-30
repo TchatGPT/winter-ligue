@@ -1,5 +1,5 @@
 import { Affrontements } from '@/components/Affrontements';
-import { TitreGlace } from '@/components/TitreGlace';
+import { EnTetePage } from '@/components/EnTetePage';
 import { flakes } from '@/components/ui';
 import { exigeSession } from '@/lib/auth/acces';
 import { getSession, playerIdOf } from '@/lib/auth/session';
@@ -42,14 +42,12 @@ export default async function DuelsPage() {
 
   return (
     <div className="space-y-5">
-      <header>
-        <TitreGlace taille="page" eyebrow="Duel de flocons">
-          Les duels
-        </TitreGlace>
-        <p className="mt-2 max-w-3xl text-[15px] text-ink-2">
-          Deux pères Noël, deux boules de neige. Le premier qui tombe a perdu, et le gagnant rafle tout.
-        </p>
-      </header>
+      <EnTetePage
+        icone="swords"
+        eyebrow="Duel de flocons"
+        titre="Les duels"
+        lead="Deux pères Noël, deux boules de neige. Le premier qui tombe a perdu, et le gagnant rafle tout."
+      />
 
       {/* ---- Les règles : une bande, en tête ---- */}
       <section className="glass regles-duel" aria-label="Les règles du duel">

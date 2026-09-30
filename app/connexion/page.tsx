@@ -5,7 +5,7 @@ import { getSession, playerIdOf } from '@/lib/auth/session';
 import { isTwitchEnabled } from '@/lib/auth/twitch';
 import { Notice } from '@/components/ui';
 import { getStore, sansBaseDurable } from '@/lib/db/store';
-import { TitreGlace } from '@/components/TitreGlace';
+import { EnTetePage } from '@/components/EnTetePage';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Connexion' };
@@ -46,14 +46,16 @@ export default async function ConnexionPage() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <TitreGlace taille="page" eyebrow="Accès">
-          Se connecter
-        </TitreGlace>
-        <Link href="/" className="btn btn-sm no-underline">
-          ← Retour à l’accueil
-        </Link>
-      </header>
+      <EnTetePage
+        icone="user"
+        eyebrow="Accès"
+        titre="Se connecter"
+        droite={
+          <Link href="/" className="btn btn-sm no-underline">
+            ← Retour à l’accueil
+          </Link>
+        }
+      />
 
       {sansCompte && (
         <Notice>

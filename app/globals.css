@@ -48,9 +48,13 @@
      nettement à travers. Ni nappe nuit (plaque opaque), ni bleu glacier
      (plastique). C'est l'ombre portée du texte (voir .glass) qui garde les
      lettres lisibles, pas l'obscurité de la matière. */
-  --glass-1: rgb(6 22 46 / 0.3);
-  --glass-2: rgb(8 26 52 / 0.4);
-  --glass-3: rgb(6 22 46 / 0.5);
+  /* Verre liquide : la teinte redescend encore de moitié. Ce qui tient le
+     texte blanc, c'est la lentille de .glass — le flou, et une luminance
+     abaissée d'un cinquième sur ce qu'elle traverse — pas une nappe sombre :
+     le décor garde ses couleurs derrière la plaque. */
+  --glass-1: rgb(6 22 46 / 0.14);
+  --glass-2: rgb(8 26 52 / 0.2);
+  --glass-3: rgb(6 22 46 / 0.28);
   --glass-hi: rgb(255 255 255 / 0.42);
   --glass-hi-soft: rgb(255 255 255 / 0.16);
   --glass-edge: rgb(190 225 255 / 0.4);
@@ -89,7 +93,9 @@
      les gris : les libellés secondaires et tertiaires passent donc presque
      au blanc, et c'est la graisse et la taille qui font la hiérarchie. */
   --muted: #cfdceb;
-  --faint: #bccbdd;
+  /* Relevé avec le verre liquide : sur une plaque plus claire, l'ancien
+     gris des petits textes passait sous 3:1. */
+  --faint: #c9d6e5;
 
   /* -- Raretés : froid pour le banal, chaud pour le convoité ------------- */
   --r-c: #9fb4c9;
@@ -369,7 +375,7 @@
   .fh-voile {
     z-index: 6;
     background-image:
-      linear-gradient(180deg, rgb(5 8 15 / 0.18) 0%, rgb(5 8 15 / 0.42) 100%);
+      linear-gradient(180deg, rgb(5 8 15 / 0.26) 0%, rgb(5 8 15 / 0.42) 100%);
   }
 
   /* --------------------------------------------------------------------------
@@ -389,8 +395,14 @@
        fêlure, pas de halo laiteux : tout ce qui se peint sur la plaque se
        lit comme du plastique. Le verre, c'est ce qu'on voit à travers, et
        son arête. */
-    background: linear-gradient(160deg, var(--glass-2) 0%, var(--glass-3) 100%);
-    backdrop-filter: blur(20px) saturate(140%);
+    background:
+      /* Le lustre : la lumière qui glisse sur la face, et s'éteint à mi-hauteur. */
+      linear-gradient(165deg, rgb(255 255 255 / 0.1) 0%, rgb(255 255 255 / 0.02) 38%, transparent 60%),
+      linear-gradient(160deg, var(--glass-2) 0%, var(--glass-3) 100%);
+    /* La lentille. Le flou efface le détail du décor, la saturation en garde
+       les couleurs, et la luminance baisse d'un cinquième : le texte blanc reste
+       lisible sans qu'aucune nappe ne bouche la vue. */
+    backdrop-filter: blur(24px) saturate(175%) brightness(0.78);
     /* Transparente : le biseau conique de `::after` tient lieu de contour, et
        deux contours superposés se lisent comme un trait épais. La bordure reste
        pour que rien ne bouge d'un pixel dans la page. */
@@ -398,20 +410,21 @@
     /* Le texte porte sa propre ombre, courte et un halo doux. C'est elle qui
        le tient sur une matière transparente, sans noircir la matière. */
     text-shadow:
-      0 1px 2px rgb(0 8 24 / 0.7),
-      0 0 10px rgb(0 8 24 / 0.35);
+      0 1px 2px rgb(0 8 24 / 0.78),
+      0 0 12px rgb(0 8 24 / 0.42);
     box-shadow:
       /* L'arête haute, vive : la lumière tombe d'en haut. */
-      inset 0 1px 0 rgb(255 255 255 / 0.7),
-      /* Les flancs et le bas, ce que le fond renvoie. */
-      inset 0 -1px 0 rgb(255 255 255 / 0.18),
-      inset 1px 0 0 rgb(255 255 255 / 0.2),
-      inset -1px 0 0 rgb(255 255 255 / 0.12),
-      /* L'épaisseur : la lentille qui éclaircit le haut et assombrit le bas.
-         C'est le seul volume peint, et il reste sous 35 %. */
-      inset 0 14px 26px -20px rgb(255 255 255 / 0.32),
-      inset 0 -16px 30px -24px rgb(0 10 30 / 0.5),
-      0 24px 60px -18px rgb(0 8 24 / 0.55);
+      inset 0 1px 0 rgb(255 255 255 / 0.82),
+      /* Le pourtour : un verre liquide renvoie la lumière sur tous ses bords,
+         plus faiblement en bas et à droite. */
+      inset 0 -1px 0 rgb(255 255 255 / 0.28),
+      inset 1px 0 0 rgb(255 255 255 / 0.3),
+      inset -1px 0 0 rgb(255 255 255 / 0.18),
+      /* L'épaisseur : la lentille éclaircit le haut, et la lumière qui
+         traverse la plaque ressort par le bas au lieu de s'y assombrir. */
+      inset 0 16px 28px -20px rgb(255 255 255 / 0.38),
+      inset 0 -18px 30px -24px rgb(255 255 255 / 0.14),
+      0 24px 60px -18px rgb(0 8 24 / 0.45);
   }
 
   /*
@@ -471,8 +484,8 @@
     /* La réfraction, approchée : la lumière entre par le haut et le coin
        opposé se creuse un peu. Deux dégradés très doux, et rien d'autre. */
     background-image:
-      radial-gradient(120% 90% at 30% -10%, rgb(255 255 255 / 0.12) 0%, transparent 55%),
-      radial-gradient(80% 60% at 100% 105%, rgb(0 10 30 / 0.18) 0%, transparent 60%);
+      radial-gradient(120% 90% at 28% -12%, rgb(255 255 255 / 0.16) 0%, transparent 55%),
+      radial-gradient(70% 55% at 102% 108%, rgb(143 220 255 / 0.1) 0%, transparent 62%);
   }
 
   /*
@@ -492,7 +505,7 @@
     --biseau-retour: rgb(255 255 255 / 0.18);
     --biseau-flanc: rgb(255 255 255 / 0.04);
     background: linear-gradient(160deg, var(--glass-1) 0%, var(--glass-2) 100%);
-    backdrop-filter: blur(16px) saturate(135%);
+    backdrop-filter: blur(18px) saturate(165%) brightness(0.82);
     box-shadow:
       inset 0 1px 0 rgb(255 255 255 / 0.5),
       inset 0 10px 20px -18px rgb(255 255 255 / 0.25),
@@ -1508,15 +1521,13 @@
    * hero, le titre d'une page, celui d'un container. Ce qui le fait lire comme
    * un bloc et non comme un texte pâle :
    *
-   *  - la **masse**, translucide : on voit la plaque à travers, presque
-   *    incolore en haut, plus bleue et plus dense vers le bas ;
-   *  - les **arêtes** : un fil blanc sur le bord haut, là où la lumière tombe,
-   *    un fil bleu nuit sur le bord bas ;
-   *  - les **facettes** : des stries obliques dans la masse ;
-   *  - une ombre de contact courte, pour poser le tout.
+   *  - la **masse**, pleine : blanche en haut, bleuie vers le bas, comme la
+   *    neige tassée des boutons ;
+   *  - une ombre de contact nette, puis une ombre douce qui décolle le mot.
    *
-   * Trois couches faites du même texte (`data-text`) : l'élément porte la
-   * masse, `::before` l'arête claire, `::after` l'arête sombre.
+   * La masse était translucide, bordée d'arêtes claires et sombres. Sur un
+   * ciel clair, le décor passait dans les lettres : elles viraient au gris et
+   * semblaient posées sur la photo. Pleine, elle se lit d'abord.
    *
    * Il y a eu une version avec une tranche extrudée sous les lettres, sept ombres
    * empilées vers le bas à droite. Elle faisait « lettrage 3D », pas glace, et
@@ -1532,52 +1543,18 @@
     text-shadow: none;
     -webkit-background-clip: text;
     background-clip: text;
-    --glace-haut: rgb(250 253 255 / 0.96);
-    --glace-mi: rgb(228 243 255 / 0.72);
-    --glace-bas: rgb(160 206 246 / 0.58);
-    background-image:
-      /* les stries de taille */
-      repeating-linear-gradient(
-        112deg,
-        transparent 0 0.42em,
-        rgb(255 255 255 / 0.1) 0.42em 0.47em,
-        transparent 0.47em 1.05em
-      ),
-      /* la masse */
-      linear-gradient(180deg, var(--glace-haut) 0%, var(--glace-mi) 42%, var(--glace-bas) 100%);
-    /* l'ombre de contact */
-    filter: drop-shadow(0 2px 1.5px rgb(4 18 42 / 0.55));
-  }
-
-  .glace::before,
-  .glace::after {
-    content: attr(data-text);
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    color: transparent;
-    background: none;
-    -webkit-background-clip: border-box;
-    background-clip: border-box;
-  }
-
-  /* L'arête sombre : le contour bleu nuit, gardé sur le bas des lettres. */
-  .glace::after {
-    -webkit-text-stroke: 1px rgb(14 46 88 / 0.75);
-    mask-image: linear-gradient(0deg, #fff 0%, rgb(255 255 255 / 0.3) 38%, transparent 70%);
-  }
-
-  /* L'arête claire : le contour blanc, gardé sur le haut des lettres. */
-  .glace::before {
-    -webkit-text-stroke: 1.1px rgb(255 255 255 / 0.9);
-    mask-image: linear-gradient(180deg, #fff 0%, rgb(255 255 255 / 0.35) 45%, transparent 82%);
+    --glace-haut: var(--neige-1);
+    --glace-mi: var(--neige-2);
+    --glace-bas: var(--neige-3);
+    background-image: linear-gradient(180deg, var(--glace-haut) 0%, var(--glace-mi) 52%, var(--glace-bas) 100%);
+    filter: drop-shadow(0 2px 0 rgb(4 18 40 / 0.5)) drop-shadow(0 6px 10px rgb(0 8 24 / 0.3));
   }
 
   /* « Ligue » : la même glace, plus bleue, avec le reflet qui balaie. */
   .hero-titre em.glace {
-    --glace-haut: rgb(240 250 255 / 0.92);
-    --glace-mi: rgb(160 220 255 / 0.7);
-    --glace-bas: rgb(92 168 236 / 0.66);
+    --glace-haut: var(--frost);
+    --glace-mi: var(--ice);
+    --glace-bas: var(--ice-2);
     background-image:
       repeating-linear-gradient(
         112deg,
@@ -1632,7 +1609,76 @@
   }
 
   .titre-glace-page {
-    font-size: clamp(2.1rem, 6vw, 3.4rem);
+    font-size: clamp(1.85rem, 1.15rem + 1.5vw, 2.75rem);
+  }
+
+  /*
+   * L'en-tête d'une page (components/EnTetePage.tsx) : une plaque sur toute la
+   * largeur. L'icône dans son médaillon, le surtitre et le titre, puis la
+   * phrase, séparée par un filet sur grand écran. Sur un téléphone, la phrase
+   * passe dessous.
+   */
+  .entete-page {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.9rem 1.75rem;
+    padding: 1.1rem 1.2rem;
+  }
+  @media (min-width: 640px) {
+    .entete-page {
+      padding: 1.3rem 1.75rem;
+    }
+  }
+  .entete-page-titre {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 1rem;
+  }
+  /* Le médaillon : une bille de glace, l'icône du menu gravée dedans. */
+  .entete-page-icone {
+    display: grid;
+    width: 3.5rem;
+    height: 3.5rem;
+    flex-shrink: 0;
+    place-items: center;
+    border-radius: 999px;
+    color: var(--frost);
+    background: radial-gradient(
+      circle at 34% 28%,
+      rgb(255 255 255 / 0.4) 0%,
+      rgb(143 220 255 / 0.16) 46%,
+      rgb(8 30 60 / 0.34) 100%
+    );
+    box-shadow:
+      inset 0 1.5px 0 rgb(255 255 255 / 0.75),
+      inset 0 -6px 12px -6px rgb(0 16 40 / 0.6),
+      0 6px 10px -6px rgb(0 8 24 / 0.75);
+  }
+  .entete-page-icone svg {
+    filter: drop-shadow(0 1px 1px rgb(0 10 30 / 0.6));
+  }
+  .entete-page-lead {
+    min-width: 0;
+    flex: 1 1 22rem;
+    max-width: 64rem;
+    font-size: 0.9375rem;
+    line-height: 1.55;
+    color: var(--ink-2);
+  }
+  @media (min-width: 1024px) {
+    .entete-page-lead {
+      padding-left: 1.75rem;
+      border-left: 1px solid rgb(255 255 255 / 0.2);
+    }
+  }
+  .entete-page-droite {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin-left: auto;
   }
 
   .titre-glace-bloc {
@@ -1642,16 +1688,6 @@
   .titre-glace-petit {
     font-size: 1.05rem;
     letter-spacing: 0.02em;
-  }
-
-  /* Petit corps : la tranche et les arêtes seraient plus grosses que les
-     lettres. On garde la masse et l'arête claire, on allège le reste. */
-  .titre-glace-petit .glace::after {
-    -webkit-text-stroke: 0.6px rgb(12 40 78 / 0.6);
-  }
-
-  .titre-glace-petit .glace::before {
-    -webkit-text-stroke: 0.7px rgb(255 255 255 / 0.85);
   }
 
   @keyframes hero-balaye {
@@ -1954,6 +1990,11 @@
     /* Le vert de l'aurore, comme les gains de flocons : le cyan se perdait
        sur le verre. */
     color: var(--aurora);
+    /* Clair et fin : une ombre plus serrée que celle du verre le détache
+       d'une plaque claire. */
+    text-shadow:
+      0 1px 1px rgb(0 8 24 / 0.9),
+      0 0 8px rgb(0 8 24 / 0.55);
   }
 
   .num {
@@ -2285,7 +2326,7 @@
     padding: 1.1rem 1.25rem 1.25rem;
     border-radius: var(--r-lg);
     background: linear-gradient(160deg, var(--glass-2) 0%, var(--glass-3) 100%);
-    backdrop-filter: blur(20px) saturate(140%);
+    backdrop-filter: blur(24px) saturate(175%) brightness(0.78);
     box-shadow:
       inset 0 0 0 1px color-mix(in srgb, var(--aurora) 55%, transparent),
       inset 0 1px 0 rgb(255 255 255 / 0.3),
@@ -6030,6 +6071,68 @@
     .sachet-lueur {
       animation-duration: var(--duree-lueur) !important;
       animation-iteration-count: infinite !important;
+    }
+  }
+}
+
+/* ==========================================================================
+   LES BARRES DE DÉFILEMENT — des stalactites
+   ==========================================================================
+   Les barres du système, blanches, tranchaient sur le verre. Elles sont
+   remplacées partout : la rainure n'est plus qu'un filet creusé, et le
+   curseur devient une stalactite — une coiffe de neige qui déborde en haut,
+   la glace translucide qui s'effile vers le bas avec une goutte renflée, un
+   reflet sur chaque flanc. La coiffe garde sa taille, seul le corps s'allonge
+   avec la longueur du contenu.
+
+   Chrome, Edge, Brave et Safari lisent les pseudo-éléments
+   `::-webkit-scrollbar`. Firefox ne les connaît pas : il reçoit une barre
+   fine aux couleurs de la glace. Les deux ne se cumulent pas — dès qu'un
+   élément déclare `scrollbar-color` ou `scrollbar-width`, Chrome ignore ses
+   pseudo-éléments —, d'où le `@supports` qui réserve les propriétés
+   standard à Firefox.
+
+   Dans la couche `base` : les règles qui cachent une barre (le menu, les
+   rangées de boosters, les onglets) restent plus fortes.
+   ========================================================================== */
+@layer base {
+  ::-webkit-scrollbar {
+    width: 14px;
+    height: 12px;
+  }
+  ::-webkit-scrollbar-track {
+    background: linear-gradient(90deg, transparent 6px, rgb(0 10 30 / 0.32) 6px 8px, transparent 8px);
+  }
+  ::-webkit-scrollbar-track:horizontal {
+    background: linear-gradient(180deg, transparent 5px, rgb(0 10 30 / 0.32) 5px 7px, transparent 7px);
+  }
+  ::-webkit-scrollbar-thumb {
+    min-height: 64px;
+    background:
+      url("data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2014%2011'%3E%3Cdefs%3E%3ClinearGradient%20id%3D'n'%20x1%3D'0'%20y1%3D'0'%20x2%3D'0'%20y2%3D'1'%3E%3Cstop%20offset%3D'0'%20stop-color%3D'%23ffffff'%2F%3E%3Cstop%20offset%3D'1'%20stop-color%3D'%23d4e7f5'%2F%3E%3C%2FlinearGradient%3E%3C%2Fdefs%3E%3Cpath%20d%3D'M.8%206.4C.4%202.9%203%201%207%201s6.6%201.9%206.2%205.4c-.4%201.3-1.5%201-2.1%201.6-.5.6-.4%202-1.4%202.1-1%20.1-1-1.3-1.9-1.3-.9%200-1.1.9-2%20.8-.9-.1-.9-1.2-1.8-1.3-.9-.1-1.4%201.6-2.3%201.3C.9%208.2%201.1%207.3.8%206.4Z'%20fill%3D'url(%23n)'%2F%3E%3Cpath%20d%3D'M2.6%203.6C3.9%202.3%205.3%201.9%207.2%202'%20stroke%3D'%23fff'%20stroke-width%3D'.9'%20stroke-linecap%3D'round'%20fill%3D'none'%2F%3E%3C%2Fsvg%3E") center top / 14px 11px no-repeat,
+      url("data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2014%20100'%20preserveAspectRatio%3D'none'%3E%3Cdefs%3E%3ClinearGradient%20id%3D'g'%20x1%3D'0'%20x2%3D'1'%3E%3Cstop%20offset%3D'0'%20stop-color%3D'%23ffffff'%20stop-opacity%3D'0.92'%2F%3E%3Cstop%20offset%3D'.4'%20stop-color%3D'%23d4eeff'%20stop-opacity%3D'0.76'%2F%3E%3Cstop%20offset%3D'1'%20stop-color%3D'%234f9fd6'%20stop-opacity%3D'0.66'%2F%3E%3C%2FlinearGradient%3E%3ClinearGradient%20id%3D'v'%20x1%3D'0'%20y1%3D'0'%20x2%3D'0'%20y2%3D'1'%3E%3Cstop%20offset%3D'0'%20stop-color%3D'%23ffffff'%20stop-opacity%3D'.3'%2F%3E%3Cstop%20offset%3D'.6'%20stop-color%3D'%23ffffff'%20stop-opacity%3D'0'%2F%3E%3C%2FlinearGradient%3E%3C%2Fdefs%3E%3Cpath%20d%3D'M1.6%200H12.4C12.2%2014%2011.6%2034%2010.9%2052C10.6%2058%2011.3%2063%2010.4%2068C9.6%2078%208.4%2092%207%20100C5.6%2092%204.6%2080%204%2068C3.1%2060%203.6%2055%203.2%2050C2.5%2034%201.9%2016%201.6%200Z'%20fill%3D'url(%23g)'%2F%3E%3Cpath%20d%3D'M1.6%200H12.4C12.2%2014%2011.6%2034%2010.9%2052C10.6%2058%2011.3%2063%2010.4%2068C9.6%2078%208.4%2092%207%20100C5.6%2092%204.6%2080%204%2068C3.1%2060%203.6%2055%203.2%2050C2.5%2034%201.9%2016%201.6%200Z'%20fill%3D'url(%23v)'%2F%3E%3Cpath%20d%3D'M4.3%203C4.6%2022%205%2044%205.6%2070'%20stroke%3D'%23ffffff'%20stroke-opacity%3D'.9'%20stroke-width%3D'1.3'%20stroke-linecap%3D'round'%20vector-effect%3D'non-scaling-stroke'%20fill%3D'none'%2F%3E%3Cpath%20d%3D'M10.3%206C10%2022%209.6%2040%209.2%2056'%20stroke%3D'%23ffffff'%20stroke-opacity%3D'.35'%20stroke-width%3D'1'%20stroke-linecap%3D'round'%20vector-effect%3D'non-scaling-stroke'%20fill%3D'none'%2F%3E%3C%2Fsvg%3E") center 5px / 100% calc(100% - 5px) no-repeat;
+  }
+  ::-webkit-scrollbar-thumb:hover,
+  ::-webkit-scrollbar-thumb:active {
+    background:
+      url("data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2014%2011'%3E%3Cdefs%3E%3ClinearGradient%20id%3D'n'%20x1%3D'0'%20y1%3D'0'%20x2%3D'0'%20y2%3D'1'%3E%3Cstop%20offset%3D'0'%20stop-color%3D'%23ffffff'%2F%3E%3Cstop%20offset%3D'1'%20stop-color%3D'%23d4e7f5'%2F%3E%3C%2FlinearGradient%3E%3C%2Fdefs%3E%3Cpath%20d%3D'M.8%206.4C.4%202.9%203%201%207%201s6.6%201.9%206.2%205.4c-.4%201.3-1.5%201-2.1%201.6-.5.6-.4%202-1.4%202.1-1%20.1-1-1.3-1.9-1.3-.9%200-1.1.9-2%20.8-.9-.1-.9-1.2-1.8-1.3-.9-.1-1.4%201.6-2.3%201.3C.9%208.2%201.1%207.3.8%206.4Z'%20fill%3D'url(%23n)'%2F%3E%3Cpath%20d%3D'M2.6%203.6C3.9%202.3%205.3%201.9%207.2%202'%20stroke%3D'%23fff'%20stroke-width%3D'.9'%20stroke-linecap%3D'round'%20fill%3D'none'%2F%3E%3C%2Fsvg%3E") center top / 14px 11px no-repeat,
+      url("data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2014%20100'%20preserveAspectRatio%3D'none'%3E%3Cdefs%3E%3ClinearGradient%20id%3D'g'%20x1%3D'0'%20x2%3D'1'%3E%3Cstop%20offset%3D'0'%20stop-color%3D'%23ffffff'%20stop-opacity%3D'1'%2F%3E%3Cstop%20offset%3D'.4'%20stop-color%3D'%23d4eeff'%20stop-opacity%3D'0.92'%2F%3E%3Cstop%20offset%3D'1'%20stop-color%3D'%234f9fd6'%20stop-opacity%3D'0.86'%2F%3E%3C%2FlinearGradient%3E%3ClinearGradient%20id%3D'v'%20x1%3D'0'%20y1%3D'0'%20x2%3D'0'%20y2%3D'1'%3E%3Cstop%20offset%3D'0'%20stop-color%3D'%23ffffff'%20stop-opacity%3D'.3'%2F%3E%3Cstop%20offset%3D'.6'%20stop-color%3D'%23ffffff'%20stop-opacity%3D'0'%2F%3E%3C%2FlinearGradient%3E%3C%2Fdefs%3E%3Cpath%20d%3D'M1.6%200H12.4C12.2%2014%2011.6%2034%2010.9%2052C10.6%2058%2011.3%2063%2010.4%2068C9.6%2078%208.4%2092%207%20100C5.6%2092%204.6%2080%204%2068C3.1%2060%203.6%2055%203.2%2050C2.5%2034%201.9%2016%201.6%200Z'%20fill%3D'url(%23g)'%2F%3E%3Cpath%20d%3D'M1.6%200H12.4C12.2%2014%2011.6%2034%2010.9%2052C10.6%2058%2011.3%2063%2010.4%2068C9.6%2078%208.4%2092%207%20100C5.6%2092%204.6%2080%204%2068C3.1%2060%203.6%2055%203.2%2050C2.5%2034%201.9%2016%201.6%200Z'%20fill%3D'url(%23v)'%2F%3E%3Cpath%20d%3D'M4.3%203C4.6%2022%205%2044%205.6%2070'%20stroke%3D'%23ffffff'%20stroke-opacity%3D'.9'%20stroke-width%3D'1.3'%20stroke-linecap%3D'round'%20vector-effect%3D'non-scaling-stroke'%20fill%3D'none'%2F%3E%3Cpath%20d%3D'M10.3%206C10%2022%209.6%2040%209.2%2056'%20stroke%3D'%23ffffff'%20stroke-opacity%3D'.35'%20stroke-width%3D'1'%20stroke-linecap%3D'round'%20vector-effect%3D'non-scaling-stroke'%20fill%3D'none'%2F%3E%3C%2Fsvg%3E") center 5px / 100% calc(100% - 5px) no-repeat;
+  }
+  /* À l'horizontale, une stalactite n'a pas de sens : un bâton de glace. */
+  ::-webkit-scrollbar-thumb:horizontal {
+    min-width: 64px;
+    border: 3px solid transparent;
+    border-radius: 999px;
+    background: linear-gradient(180deg, rgb(255 255 255 / 0.92), rgb(143 220 255 / 0.62)) padding-box;
+  }
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  @supports not selector(::-webkit-scrollbar) {
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: rgb(214 238 255 / 0.72) rgb(0 10 30 / 0.22);
     }
   }
 }
