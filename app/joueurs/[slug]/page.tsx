@@ -203,7 +203,7 @@ export default async function FicheJoueurPage({ params }: { params: Promise<{ sl
             <p className="fil-vide mt-4 text-[14px] text-muted">Aucune game saisie pour l’instant.</p>
           ) : (
             <>
-              <GraphiqueScores points={points} moyenne={t.averageScore} />
+              <GraphiqueScores points={points} moyenne={t.averageScore} creneaux={fiche.creneaux} />
 
               <ol className="fiche-games">
                 {recentes.map((g) => (
