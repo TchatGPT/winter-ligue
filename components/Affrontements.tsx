@@ -6,7 +6,9 @@
  * En tête, sur toute la largeur, les duels à rejoindre : c'est ce qu'on vient
  * voir d'abord. Dessous, à gauche le ring, où l'on règle sa mise et où deux
  * boutons engagent — le bot, tout de suite, ou les joueurs ; à droite les
- * résultats, à revoir d'un clic.
+ * résultats, aussi hauts que le ring.
+ *
+ * Un duel joué ne se rejoue pas : la course se voit une fois, en direct.
  *
  * L'arène s'ouvre par-dessus, au centre de l'écran, dès le clic : les deux
  * pères Noël se mettent en place pendant que le serveur tire le duel, puis la
@@ -45,8 +47,11 @@ interface Charge {
   moiId: string | null;
 }
 
-/** Les mises proposées d'un clic. Le curseur et le champ font le reste. */
-const MISES = [100, 250, 500, 1000, 2500, 5000];
+/** La mise proposée à l'arrivée. Le curseur et le champ font le reste. */
+const MISE_DEPART = 100;
+
+/** Des places libres, pour que la bande des défis garde sa taille, vide ou pas. */
+const PLACES_VISIBLES = 3;
 
 const BOT: CampApercu = { pseudo: 'Le Bot', bot: true };
 
@@ -216,7 +221,7 @@ export function Affrontements({
   const [occupe, setOccupe] = useState(false);
 
   /** La mise du duel qu'on monte. */
-  const [mise, setMise] = useState(MISES[0]);
+  const [mise, setMise] = useState(MISE_DEPART);
 
   type Onglet = 'recents' | 'miens' | 'top';
   const [onglet, setOnglet] = useState<Onglet>('recents');
@@ -341,11 +346,6 @@ export function Affrontements({
   const annule = (b: BatailleVueClient) =>
     agit('/api/affrontements/annuler', { batailleId: b.id }, () => `Duel annulé : ta mise de ${flakes(b.mise)} ❄ t’est rendue.`);
 
-  const revoit = (b: BatailleVueClient) => {
-    reveilleSonsDuel();
-    setFenetre({ etat: 'duel', bataille: b, anime: true, tour: nouveauNumero(), fini: false });
-  };
-
   function ferme() {
     attenteOuverte.current = null;
     setFenetre(null);
@@ -420,9 +420,6 @@ export function Affrontements({
             Revanche · {flakes(b.mise)} ❄
           </button>
         )}
-        <button type="button" className="btn" onClick={() => revoit(b)}>
-          Revoir la course
-        </button>
         <button type="button" className="btn btn-ghost" onClick={ferme}>
           Fermer
         </button>
@@ -462,61 +459,70 @@ export function Affrontements({
           </p>
         </header>
 
-        {aRejoindre.length > 0 && (
-          <ul className="rejoindre-grille">
-            {aRejoindre.map((b) => {
-              const hote = b.camps[0];
-              const mien = b.hoteId === etat.moiId;
-              const manque = solde !== null && solde < b.mise ? b.mise - solde : 0;
-              return (
-                <li key={b.id} className="defi" data-mien={mien ? '' : undefined}>
-                  <div className="defi-qui">
-                    <span className="orbe orbe-sm" aria-hidden="true">
-                      {hote ? initiale(hote) : '?'}
-                    </span>
-                    <div className="min-w-0">
-                      <b>{mien ? 'Ton duel' : (hote?.pseudo ?? '?')}</b>
-                      <small>
-                        {mien ? 'attend un adversaire' : 'te défie'} · {shortDateTime(b.creeeA)}
-                      </small>
-                    </div>
+        <ul className="rejoindre-grille">
+          {aRejoindre.map((b) => {
+            const hote = b.camps[0];
+            const mien = b.hoteId === etat.moiId;
+            const manque = solde !== null && solde < b.mise ? b.mise - solde : 0;
+            return (
+              <li key={b.id} className="defi" data-mien={mien ? '' : undefined}>
+                <div className="defi-qui">
+                  <span className="orbe orbe-sm" aria-hidden="true">
+                    {hote ? initiale(hote) : '?'}
+                  </span>
+                  <div className="min-w-0">
+                    <b>{mien ? 'Ton duel' : (hote?.pseudo ?? '?')}</b>
+                    <small>
+                      {mien ? 'attend un adversaire' : 'te défie'} · {shortDateTime(b.creeeA)}
+                    </small>
                   </div>
-                  <div className="defi-mise">
-                    <small>Mise</small>
-                    <strong>
-                      {flakes(b.mise)} <span className="text-ice">❄</span>
-                    </strong>
-                    <small>le gagnant rafle {flakes(pot(b))} ❄</small>
-                  </div>
-                  <div className="defi-actions">
-                    {mien ? (
-                      <>
-                        <button type="button" className="btn btn-ice" disabled={occupe} onClick={() => botSurLeMien(b)}>
-                          Contre le bot
-                        </button>
-                        <button type="button" className="btn btn-ghost" disabled={occupe} onClick={() => annule(b)}>
-                          Annuler
-                        </button>
-                      </>
-                    ) : (
-                      <button
-                        type="button"
-                        className="btn btn-ice"
-                        disabled={occupe || !joueur || solde === null || manque > 0}
-                        onClick={() => releve(b)}
-                      >
-                        {manque > 0 ? `Il te manque ${flakes(manque)} ❄` : 'Relever le défi'}
+                </div>
+                <div className="defi-mise">
+                  <small>Mise</small>
+                  <strong>
+                    {flakes(b.mise)} <span className="text-ice">❄</span>
+                  </strong>
+                  <small>le gagnant rafle {flakes(pot(b))} ❄</small>
+                </div>
+                <div className="defi-actions">
+                  {mien ? (
+                    <>
+                      <button type="button" className="btn btn-ice" disabled={occupe} onClick={() => botSurLeMien(b)}>
+                        Contre le bot
                       </button>
-                    )}
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        )}
+                      <button type="button" className="btn btn-ghost" disabled={occupe} onClick={() => annule(b)}>
+                        Annuler
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      className="btn btn-ice"
+                      disabled={occupe || !joueur || solde === null || manque > 0}
+                      onClick={() => releve(b)}
+                    >
+                      {manque > 0 ? `Il te manque ${flakes(manque)} ❄` : 'Relever le défi'}
+                    </button>
+                  )}
+                </div>
+              </li>
+            );
+          })}
+          {/* Les places libres : la bande garde sa taille, et on voit où
+              un défi viendra se poser. */}
+          {Array.from({ length: Math.max(0, PLACES_VISIBLES - aRejoindre.length) }, (_, i) => (
+            <li key={`libre-${i}`} className="defi defi-libre" aria-hidden="true">
+              <span className="orbe orbe-sm" data-inconnu="">
+                ?
+              </span>
+              <b>Place libre</b>
+              <small>Un défi lancé depuis le ring s’affiche ici, prêt à être relevé.</small>
+            </li>
+          ))}
+        </ul>
       </section>
 
-      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
+      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] xl:items-stretch">
         {/* =============================== Le ring ============================== */}
         <section className="glass ring relative overflow-hidden" aria-labelledby="ring-titre">
           <header className="relative flex flex-wrap items-start justify-between gap-3">
@@ -614,30 +620,6 @@ export function Affrontements({
                 aria-label="Mise exacte en flocons"
               />
             </div>
-            <div className="flex flex-wrap gap-2">
-              {MISES.map((m) => (
-                <button
-                  key={m}
-                  type="button"
-                  aria-pressed={mise === m}
-                  disabled={!joueur || occupe || (solde !== null && solde < m)}
-                  onClick={() => setMise(m)}
-                  className={`btn btn-sm ${mise === m ? 'btn-ice' : ''}`}
-                >
-                  {flakes(m)}
-                </button>
-              ))}
-              <button
-                type="button"
-                aria-pressed={mise === plafond && !MISES.includes(plafond)}
-                disabled={!joueur || occupe || solde === null || solde < miseMin}
-                onClick={() => setMise(plafond)}
-                className={`btn btn-sm ${mise === plafond && !MISES.includes(plafond) ? 'btn-ice' : ''}`}
-                title="Tout ce que tu peux miser"
-              >
-                Tapis
-              </button>
-            </div>
           </fieldset>
 
           {/* ---- Le bilan : ce qu'on gagne, ce qu'on perd ---- */}
@@ -690,10 +672,10 @@ export function Affrontements({
         </section>
 
         {/* ============================= Les résultats ========================== */}
-        <section className="glass relative overflow-hidden p-5 sm:p-6" aria-labelledby="resultats-titre">
+        <section className="glass resultats relative overflow-hidden p-5 sm:p-6" aria-labelledby="resultats-titre">
           <header className="relative flex flex-wrap items-end justify-between gap-3">
             <div>
-              <p className="eyebrow">Des courses à revoir</p>
+              <p className="eyebrow">Les derniers duels</p>
               <h2
                 id="resultats-titre"
                 className="mt-1 font-display text-2xl leading-none font-black tracking-wide text-ink uppercase"
@@ -729,8 +711,7 @@ export function Affrontements({
                 const gagnant = hoteGagne ? hote : adverse;
                 const perdant = hoteGagne ? adverse : hote;
                 return (
-                  <li key={b.id}>
-                    <button type="button" className="fil-ligne" onClick={() => revoit(b)} title="Revoir la course">
+                  <li key={b.id} className="fil-ligne">
                       {onglet === 'top' && (
                         <span className="medaille" data-rang={i + 1}>
                           {i + 1}
@@ -753,10 +734,6 @@ export function Affrontements({
                           mise par camp
                         </p>
                       </div>
-                      <span className="hidden text-[18px] text-ice sm:inline" aria-hidden="true">
-                        ▶
-                      </span>
-                    </button>
                   </li>
                 );
               })}

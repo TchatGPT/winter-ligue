@@ -2318,12 +2318,12 @@
 
   /*
    * ---- Les duels à rejoindre ----
-   * Une bande en tête de page, sur toute la largeur. Vide, elle tient sur une
-   * ligne ; dès qu'un défi attend, elle s'ouvre en cartes et son compteur
-   * passe à l'aurore : on le voit en arrivant.
+   * Un container en tête de page, sur toute la largeur, qui garde sa taille :
+   * les défis ouverts y sont des cartes, et les places libres complètent la
+   * rangée. Dès qu'un défi attend, le compteur passe à l'aurore.
    */
   .rejoindre {
-    padding: 1.1rem 1.25rem 1.25rem;
+    padding: 1.4rem 1.5rem 1.5rem;
     border-radius: var(--r-lg);
     background: linear-gradient(160deg, var(--glass-2) 0%, var(--glass-3) 100%);
     backdrop-filter: blur(24px) saturate(175%) brightness(0.78);
@@ -2333,10 +2333,10 @@
       var(--lift-2);
   }
   .rejoindre[data-vide] {
-    padding: 0.8rem 1.25rem;
     box-shadow:
-      inset 0 0 0 1px rgb(255 255 255 / 0.14),
-      var(--lift-1);
+      inset 0 0 0 1px rgb(255 255 255 / 0.16),
+      inset 0 1px 0 rgb(255 255 255 / 0.3),
+      var(--lift-2);
   }
   .rejoindre-tete {
     display: flex;
@@ -2346,15 +2346,12 @@
   }
   .rejoindre-tete h2 {
     font-family: var(--font-display);
-    font-size: 1.5rem;
+    font-size: 1.75rem;
     font-weight: 900;
     letter-spacing: 0.04em;
     line-height: 1;
     text-transform: uppercase;
     color: var(--ink);
-  }
-  .rejoindre[data-vide] .rejoindre-tete h2 {
-    font-size: 1.1rem;
   }
   .rejoindre-compte {
     display: grid;
@@ -2382,9 +2379,43 @@
   }
   .rejoindre-grille {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, 21rem), 1fr));
-    gap: 0.8rem;
-    margin-top: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 21rem), 1fr));
+    gap: 0.9rem;
+    margin-top: 1.1rem;
+  }
+
+  /* Une place libre : le creux où un défi viendra se poser. */
+  .defi-libre {
+    min-height: 11.5rem;
+    align-content: center;
+    justify-items: center;
+    gap: 0.45rem;
+    text-align: center;
+    background: rgb(0 10 30 / 0.16);
+    box-shadow: none;
+    outline: 1.5px dashed rgb(255 255 255 / 0.22);
+    outline-offset: -1.5px;
+  }
+  .defi-libre b {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: 900;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .defi-libre small {
+    max-width: 18rem;
+    font-size: 0.8125rem;
+    line-height: 1.4;
+    color: var(--faint);
+  }
+  /* Sur un téléphone, une seule place libre : trois creux empilés feraient
+     un écran vide. */
+  @media (max-width: 639px) {
+    .defi-libre ~ .defi-libre {
+      display: none;
+    }
   }
 
   /* Un défi : qui, combien, et le bouton — dans cet ordre, de haut en bas. */
@@ -2774,10 +2805,32 @@
   }
   .fil-liste {
     display: grid;
+    align-content: start;
     gap: 0.5rem;
-    max-height: 26rem;
+    max-height: 34rem;
     overflow-y: auto;
     padding-right: 0.15rem;
+  }
+
+  /*
+   * Les résultats, aussi hauts que le ring sur grand écran. La section ne
+   * compte pas son contenu dans la hauteur de la rangée (`contain: size`) :
+   * c'est le ring qui la fixe, et la liste remplit ce qui reste, en
+   * défilant au-delà.
+   */
+  .resultats {
+    display: flex;
+    flex-direction: column;
+  }
+  @media (min-width: 1280px) {
+    .resultats {
+      contain: size;
+    }
+    .resultats > .fil-liste {
+      min-height: 0;
+      flex: 1;
+      max-height: none;
+    }
   }
 
   /*

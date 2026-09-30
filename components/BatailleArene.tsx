@@ -10,7 +10,7 @@
  * Tout est déjà décidé par le serveur. La course (`lib/domain/course.ts`) ne
  * fait que raconter un résultat acquis, sans le trahir : les deux couloirs se
  * ressemblent, la tête change de camp, et c'est une fois sur deux celui qui
- * menait qui tombe. Revoir, recharger ou fermer ne change rien.
+ * menait qui tombe. Recharger ou fermer ne change rien.
  *
  * L'animation tourne hors de React : une boucle d'images écrit l'avancée dans
  * des variables CSS du couloir. Soixante rendus par seconde pour déplacer deux
