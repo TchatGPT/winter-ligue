@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { empreinteAdmin, empreinteBienFormee } from '@/lib/auth/empreinte';
 import { createToken, setSessionCookie, verifyPassword } from '@/lib/auth/session';
 import { entreeParMotDePasse } from '@/lib/auth/secours';
 import { fail, guard, ok } from '@/lib/api/respond';
@@ -33,10 +34,15 @@ export async function POST(request: Request): Promise<NextResponse> {
   });
   if (!g.ok) return g.response;
 
-  const empreinte = process.env.ADMIN_PASSWORD_HASH?.trim();
-  const valide = await verifyPassword(g.body.password, empreinte || LEURRE);
+  const empreinte = empreinteAdmin();
+  const utilisable = empreinte !== null && empreinteBienFormee(empreinte);
+  if (empreinte && !utilisable) {
+    // Visible dans les journaux de Vercel, jamais dans la réponse.
+    console.error('[connexion] ADMIN_PASSWORD_HASH mal formée : attendu scrypt:<sel>:<clé>');
+  }
+  const valide = await verifyPassword(g.body.password, utilisable ? empreinte : LEURRE);
 
-  if (!empreinte || !valide) {
+  if (!utilisable || !valide) {
     return fail('NON_AUTHENTIFIE', 'Mot de passe incorrect.');
   }
 

@@ -3,7 +3,7 @@ import { connexionDeDeveloppement } from '@/lib/auth/dev';
 import { redirect } from 'next/navigation';
 import { LoginForms } from '@/components/LoginForms';
 import { getSession, playerIdOf } from '@/lib/auth/session';
-import { motDePasseConfigure } from '@/lib/auth/secours';
+import { etatMotDePasse } from '@/lib/auth/secours';
 import { isTwitchEnabled } from '@/lib/auth/twitch';
 import { Notice } from '@/components/ui';
 import { getStore, sansBaseDurable } from '@/lib/db/store';
@@ -38,6 +38,7 @@ export default async function ConnexionPage({
     sansCompte = true;
   }
 
+  const porte = etatMotDePasse();
   const brut = (await searchParams).erreur;
   const erreur = typeof brut === 'string' ? (ERREURS[brut] ?? null) : null;
 
@@ -75,7 +76,14 @@ export default async function ConnexionPage({
         </Notice>
       )}
 
-      <LoginForms twitchEnabled={isTwitchEnabled()} motDePasse={motDePasseConfigure()} devPlayers={devPlayers} />
+      {porte === 'mal-forme' && (
+        <Notice kind="error">
+          Le mot de passe d’administration est mal configuré : dans Vercel, la valeur de ADMIN_PASSWORD_HASH doit
+          être l’empreinte seule, qui commence par « scrypt: ». Corrige-la, puis redéploie.
+        </Notice>
+      )}
+
+      <LoginForms twitchEnabled={isTwitchEnabled()} motDePasse={porte === 'pret'} devPlayers={devPlayers} />
     </div>
   );
 }

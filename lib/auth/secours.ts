@@ -39,7 +39,9 @@ export async function entreeParMotDePasse(): Promise<{ sujet: string; secours: b
   });
 }
 
-/** La porte est-elle posée ? Sert à montrer le formulaire, rien de plus. */
-export function motDePasseConfigure(): boolean {
-  return Boolean(process.env.ADMIN_PASSWORD_HASH?.trim());
-}
+/**
+ * La porte est-elle posée, et bien posée ? Sert à montrer le formulaire — ou à
+ * dire que l'empreinte collée dans Vercel ne peut pas marcher, plutôt que de
+ * répondre « Mot de passe incorrect » à un mot de passe juste.
+ */
+export { etatMotDePasse } from '@/lib/auth/empreinte';
