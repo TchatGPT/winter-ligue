@@ -67,6 +67,8 @@ export function PackOpening({
   file,
   joueurs,
   moderateur,
+  aLaMain = false,
+  moiId = null,
 }: {
   packs: PackVitrine[];
   /** Toutes les cartes de la saison, montrées par rareté sous les boosters. */
@@ -77,6 +79,13 @@ export function PackOpening({
   joueurs: JoueurOuverture[];
   /** Vrai si la session peut ouvrir. Le serveur revérifie de toute façon. */
   moderateur: boolean;
+  /**
+   * Vrai si la session peut ouvrir un booster hors de la file — un
+   * administrateur. Un modérateur n'ouvre que ce qui est dû.
+   */
+  aLaMain?: boolean;
+  /** Le joueur derrière la session : un modérateur n'ouvre pas ce qui lui revient. */
+  moiId?: string | null;
 }) {
   const [selected, setSelected] = useState<PackId>(packs[0]?.id ?? 'perso');
   const [joueurId, setJoueurId] = useState('');
@@ -243,7 +252,7 @@ export function PackOpening({
 
               {moderateur ? (
                 <div className="flex w-full max-w-md flex-col items-center gap-3">
-                  {pourUnJoueur && (
+                  {aLaMain && pourUnJoueur && (
                     <select
                       className="field w-full"
                       value={joueurId}
@@ -259,7 +268,7 @@ export function PackOpening({
                       ))}
                     </select>
                   )}
-                  {pourUnJoueur && joueur && (
+                  {aLaMain && pourUnJoueur && joueur && (
                     <p className="text-center text-[14px] text-ink-2">
                       Multiplicateur de chance de <strong className="text-ink">{joueur.pseudo}</strong> :{' '}
                       <strong className="num text-aurora">{libelleMultiplicateur(joueur.chance)}</strong>{' '}
@@ -268,30 +277,36 @@ export function PackOpening({
                       </span>
                     </p>
                   )}
-                  <button
-                    className={`btn btn-ice ${busy ? 'btn-lg' : 'btn-ouvrir'}`}
-                    disabled={busy || (pourUnJoueur && !joueurId)}
-                    onClick={() =>
-                      ouvre({ packId: pack.id, ...(pourUnJoueur ? { joueurId } : {}) })
-                    }
-                  >
-                    <span>
-                      {busy
-                        ? 'Ouverture…'
-                        : pourUnJoueur && !joueurId
-                          ? 'Choisis un joueur'
-                          : 'Ouvrir'}
-                    </span>
-                    {!busy && (
-                      <span className="btn-ouvrir-prix">
-                        {pourUnJoueur && joueur
-                          ? `pour ${joueur.pseudo}`
-                          : pourUnJoueur
-                            ? '1 carte'
-                            : `pour ${pack.pourQui}`}
+                  {aLaMain && (
+                    <button
+                      className={`btn btn-ice ${busy ? 'btn-lg' : 'btn-ouvrir'}`}
+                      disabled={busy || (pourUnJoueur && !joueurId)}
+                      onClick={() =>
+                        ouvre({ packId: pack.id, ...(pourUnJoueur ? { joueurId } : {}) })
+                      }
+                    >
+                      <span>
+                        {busy
+                          ? 'Ouverture…'
+                          : pourUnJoueur && !joueurId
+                            ? 'Choisis un joueur'
+                            : 'Ouvrir'}
                       </span>
+                      {!busy && (
+                        <span className="btn-ouvrir-prix">
+                          {pourUnJoueur && joueur
+                            ? `pour ${joueur.pseudo}`
+                            : pourUnJoueur
+                              ? '1 carte'
+                              : `pour ${pack.pourQui}`}
+                        </span>
                     )}
                   </button>
+                  )}
+
+                  {!aLaMain && dus.length === 0 && (
+                    <p className="text-center text-[14px] text-muted">Rien dans la file pour ce booster.</p>
+                  )}
 
                   {dus.length > 0 && (
                     <div className="w-full">
@@ -317,7 +332,12 @@ export function PackOpening({
                             <button
                               type="button"
                               className="btn btn-sm btn-ice"
-                              disabled={busy}
+                              disabled={busy || (!aLaMain && d.joueurId !== null && d.joueurId === moiId)}
+                              title={
+                                !aLaMain && d.joueurId !== null && d.joueurId === moiId
+                                  ? 'Il te revient : un autre membre de la modération l’ouvre pour toi.'
+                                  : undefined
+                              }
                               onClick={() => ouvre({ packDuId: d.id })}
                             >
                               Ouvrir

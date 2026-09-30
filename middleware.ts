@@ -44,17 +44,24 @@ export function middleware(request: NextRequest): NextResponse {
 
   const headers = new Headers(request.headers);
   headers.set('x-nonce', nonce);
+  // Les overlays OBS sont rendus sans décor (voir `app/layout.tsx`). L'en-tête
+  // n'est posé qu'ici, et effacé de toute requête qui l'apporterait.
+  const overlay = request.nextUrl.pathname === '/overlay' || request.nextUrl.pathname.startsWith('/overlay/');
+  headers.delete('x-wl-surface');
+  if (overlay) headers.set('x-wl-surface', 'overlay');
 
   const response = NextResponse.next({ request: { headers } });
 
   response.headers.set('Content-Security-Policy', csp);
   response.headers.set('X-Content-Type-Options', 'nosniff');
   response.headers.set('X-Frame-Options', 'DENY');
-  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  // Le lien d'un overlay porte sa clé : il ne part jamais en référent.
+  response.headers.set('Referrer-Policy', overlay ? 'no-referrer' : 'strict-origin-when-cross-origin');
   response.headers.set(
     'Permissions-Policy',
-    'camera=(), microphone=(), geolocation=(), interest-cohort=()',
+    'camera=(), microphone=(), geolocation=(), interest-cohort=(), browsing-topics=()',
   );
+  if (overlay) response.headers.set('X-Robots-Tag', 'noindex, nofollow');
   response.headers.set('Cross-Origin-Opener-Policy', 'same-origin');
   response.headers.set('X-DNS-Prefetch-Control', 'off');
   if (!isDev) {

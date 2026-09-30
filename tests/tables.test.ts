@@ -5,7 +5,7 @@ import { COLLECTIONS, empreintes } from '@/lib/db/tables';
 function base(): Database {
   return {
     version: 2,
-    config: { maxGamesPerPlayer: 60, totalSubs: 0, seasonStartsAt: '2026-12-01T00:00:00.000Z', seasonEndsAt: '2027-03-01T00:00:00.000Z' },
+    config: { maxGamesPerPlayer: 60, totalSubs: 0, seasonStartsAt: '2026-12-01T00:00:00.000Z', seasonEndsAt: '2027-03-01T00:00:00.000Z', overlayGeneration: 1 },
     players: [
       {
         id: 'p1', slug: 'boreal', pseudo: 'Boreal', twitchId: null, twitchLogin: null, avatarUrl: null,

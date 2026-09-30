@@ -36,6 +36,7 @@ export function RailPack({
   poids,
   gagnante,
   duree,
+  sourdine = false,
   onFini,
 }: {
   /** Tout ce qu'on peut montrer en leurre — les cartes du pack. */
@@ -46,6 +47,8 @@ export function RailPack({
   gagnante: CarteRailPack;
   /** La durée nominale d'une course, en ms. Zéro pour une révélation directe. */
   duree: number;
+  /** Sans un bruit : l'overlay du stream ne sonne que si on le lui demande. */
+  sourdine?: boolean;
   onFini: () => void;
 }) {
   // La bande est construite une fois, au montage, et plus jamais : un
@@ -75,6 +78,7 @@ export function RailPack({
     axe: 'x',
     rang,
     bandeMeilleure: 0,
+    sourdine,
     onFini,
   });
 

@@ -196,6 +196,11 @@ export interface LeagueConfig {
   totalSubs: number;
   seasonStartsAt: string;
   seasonEndsAt: string;
+  /**
+   * La génération des liens d'overlay OBS. Chaque lien porte la sienne ; en
+   * changer révoque d'un coup tous les liens donnés jusque-là.
+   */
+  overlayGeneration: number;
 }
 
 /** Un versement déclenché par les subs Twitch, conservé pour l'historique. */

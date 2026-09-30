@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Database, Player } from '@/lib/db/entities';
 import { emptyDatabase } from '@/lib/db/store';
-import { cartesDuPack, getCard, PACKS } from '@/lib/domain/catalog';
+import { cartesDuPack, getCard, momentDe, PACKS } from '@/lib/domain/catalog';
 import { ECONOMY, PACKS_REGLES, RARITY_WEIGHTS_BASE, WEIGHT_TOTAL } from '@/lib/domain/rules';
 import { RARITIES, type Rarity } from '@/lib/domain/types';
 import {
@@ -168,12 +168,22 @@ describe('ouvrir un booster', () => {
   });
 
   it('pose la carte sur la prochaine game, sans toucher au solde', () => {
-    const db = ligue('a');
-    reglagePack(db, 'perso', seulement('SR'));
-    ouvrePack(db, { packId: 'perso', joueurId: 'a', idempotencyKey: 'k' }, 'modo');
-    expect(cartesEnAttenteDe(db, 'a')).toHaveLength(1);
-    expect(db.players[0].snowflakes).toBe(0);
-    expect(db.ledger).toHaveLength(0);
+    // Des super rares du Booster Perso se règlent dans l'instant — un créneau,
+    // une immunité. Tirées au sort, elles faisaient échouer ce test une fois
+    // sur trois : on rouvre, sur une base neuve, jusqu'à tirer une carte qui
+    // attend la prochaine game.
+    for (let essai = 0; essai < 400; essai += 1) {
+      const db = ligue('a');
+      reglagePack(db, 'perso', seulement('SR'));
+      const o = ouvrePack(db, { packId: 'perso', joueurId: 'a', idempotencyKey: `k${essai}` }, 'modo');
+      if (momentDe(getCard(o.cardId)!.effect) !== 'PROCHAINE') continue;
+
+      expect(cartesEnAttenteDe(db, 'a')).toHaveLength(1);
+      expect(db.players[0].snowflakes).toBe(0);
+      expect(db.ledger).toHaveLength(0);
+      return;
+    }
+    throw new Error('aucune carte « prochaine game » en 400 ouvertures : le pool du Booster Perso a changé');
   });
 
   it('crédite une carte de flocons dans l’instant, par le grand livre', () => {

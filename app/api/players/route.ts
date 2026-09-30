@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 import { toResponse } from '@/lib/api/errors';
-import { guard, ok } from '@/lib/api/respond';
+import { fail, guard, ok } from '@/lib/api/respond';
 import { activisionJoueurSchema, createPlayerSchema } from '@/lib/api/schemas';
 import { getStore, newId } from '@/lib/db/store';
+import { activisionPris } from '@/lib/domain/activision';
 import { ECONOMY } from '@/lib/domain/rules';
 import { LIMITS } from '@/lib/security/ratelimit';
 import { getRanking, makeSlug } from '@/lib/services/league';
@@ -11,9 +12,9 @@ import { audit, credit } from '@/lib/services/ledger';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-/** Classement public. */
+/** Le classement. Rien de la ligue ne se lit sans compte, pas plus ici qu'à l'écran. */
 export async function GET(request: Request): Promise<NextResponse> {
-  const g = await guard(request, { scope: 'ranking' });
+  const g = await guard(request, { scope: 'ranking', role: 'joueur' });
   if (!g.ok) return g.response;
   return ok({ ranking: await getRanking() });
 }
@@ -33,6 +34,7 @@ export async function POST(request: Request): Promise<NextResponse> {
 
   try {
     const player = await getStore().transaction((db) => {
+      if (g.body.activisionId && activisionPris(g.body.activisionId, db.players, null)) return null;
       const created = {
         id: newId(),
         slug: makeSlug(db, g.body.pseudo),
@@ -52,9 +54,10 @@ export async function POST(request: Request): Promise<NextResponse> {
       };
       db.players.push(created);
       credit(db, created.id, ECONOMY.welcomeGrant, 'INSCRIPTION', null);
-      audit(db, 'admin', 'JOUEUR_CREE', created.id, created.pseudo);
+      audit(db, g.session?.sub ?? 'admin', 'JOUEUR_CREE', created.id, created.pseudo);
       return created;
     });
+    if (!player) return fail('CONFLIT', 'Ce pseudo Activision est déjà celui d’un autre joueur.');
     return ok(player);
   } catch (error) {
     return toResponse(error);
@@ -79,10 +82,12 @@ export async function PATCH(request: Request): Promise<NextResponse> {
     const player = await getStore().transaction((db) => {
       const found = db.players.find((p) => p.id === g.body.playerId);
       if (!found) throw new Error('Joueur introuvable.');
+      if (g.body.activisionId && activisionPris(g.body.activisionId, db.players, found.id)) return null;
       found.activisionId = g.body.activisionId;
       audit(db, g.session?.sub ?? 'admin', 'ACTIVISION_MODIFIE', found.id, `${found.pseudo} → ${g.body.activisionId ?? '(vide)'}`);
       return found;
     });
+    if (!player) return fail('CONFLIT', 'Ce pseudo Activision est déjà celui d’un autre joueur.');
     return ok({ id: player.id, activisionId: player.activisionId });
   } catch (error) {
     return toResponse(error);

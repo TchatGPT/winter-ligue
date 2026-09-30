@@ -12,17 +12,34 @@ import 'server-only';
 interface Bucket {
   tokens: number;
   updatedAt: number;
+  /** La fenêtre de ce seau : chacun se purge selon la sienne. */
+  windowMs: number;
 }
 
 const buckets = new Map<string, Bucket>();
 let lastSweep = Date.now();
 
-/** Nettoyage paresseux pour éviter que la table grossisse indéfiniment. */
-function sweep(now: number, windowMs: number) {
-  if (now - lastSweep < 60_000) return;
+/** Au-delà, les plus anciens seaux partent : la table ne grossit pas sans fin. */
+const SEAUX_MAX = 50_000;
+
+/**
+ * Nettoyage paresseux.
+ *
+ * Chaque seau se purge selon **sa** fenêtre. La purge utilisait celle de la
+ * requête qui la déclenchait : une lecture, fenêtre d'une minute, effaçait
+ * les compteurs de connexion au bout de quatre minutes au lieu d'une heure —
+ * et remettait à zéro les tentatives d'un forçage du mot de passe.
+ */
+function sweep(now: number) {
+  if (now - lastSweep < 60_000 && buckets.size < SEAUX_MAX) return;
   lastSweep = now;
   for (const [key, bucket] of buckets) {
-    if (now - bucket.updatedAt > windowMs * 4) buckets.delete(key);
+    if (now - bucket.updatedAt > bucket.windowMs * 4) buckets.delete(key);
+  }
+  // Encore trop plein (une rafale d'adresses) : on retire les plus anciens.
+  if (buckets.size > SEAUX_MAX) {
+    const tries = [...buckets.entries()].sort((a, b) => a[1].updatedAt - b[1].updatedAt);
+    for (const [key] of tries.slice(0, buckets.size - SEAUX_MAX)) buckets.delete(key);
   }
 }
 
@@ -40,13 +57,13 @@ export interface RateLimitResult {
  */
 export function consume(key: string, limit: number, windowMs: number): RateLimitResult {
   const now = Date.now();
-  sweep(now, windowMs);
+  sweep(now);
 
   const bucket = buckets.get(key);
   const refillRate = limit / windowMs;
 
   if (!bucket) {
-    buckets.set(key, { tokens: limit - 1, updatedAt: now });
+    buckets.set(key, { tokens: limit - 1, updatedAt: now, windowMs });
     return { ok: true, retryAfter: 0, remaining: limit - 1 };
   }
 

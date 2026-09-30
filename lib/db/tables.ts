@@ -225,7 +225,8 @@ create table if not exists saison (
   games_max_par_joueur integer not null,
   debut timestamptz not null,
   fin timestamptz not null,
-  mis_a_jour timestamptz not null default now()
+  mis_a_jour timestamptz not null default now(),
+  overlay_generation integer not null default 1
 );
 
 create table if not exists joueurs (
@@ -369,6 +370,27 @@ alter table joueurs add column if not exists immunise_jusqua timestamptz;
 -- La révocation des sessions : celles ouvertes avant cette date sont refusées.
 alter table joueurs add column if not exists sessions_depuis timestamptz;
 
+-- Les liens d'overlay OBS : en changer la génération les révoque tous.
+alter table saison add column if not exists overlay_generation integer not null default 1;
+
+-- Le journal ne s'écrit qu'en ajout : ni modification, ni suppression, ni
+-- vidage. Une ligne effacée par erreur de code — ou par qui aurait pris la
+-- main sur le site — fait échouer toute la transaction.
+create or replace function journal_ajout_seul() returns trigger language plpgsql as $f$
+begin
+  raise exception 'Le journal est en ajout seul.';
+end $f$;
+drop trigger if exists journal_ajout_seul on journal;
+create trigger journal_ajout_seul before update or delete on journal
+  for each row execute function journal_ajout_seul();
+drop trigger if exists journal_sans_vidage on journal;
+create trigger journal_sans_vidage before truncate on journal
+  for each statement execute function journal_ajout_seul();
+
+-- Les overlays lisent les dernières ouvertures et les derniers duels par date.
+create index if not exists ouvertures_le on ouvertures (ouvert_le);
+create index if not exists duels_cree_le on duels (cree_le);
+
 -- Les tables créées avant la suppression en cascade : leurs clés sont
 -- remplacées, une seule fois, par celles décrites ci-dessus.
 do $$
@@ -421,6 +443,17 @@ function versObjet(ligne: Record<string, unknown>, colonnes: Colonne[]): Record<
 }
 
 /**
+ * Les tables que charge `chargeBase` : toutes, sauf le journal.
+ *
+ * Le journal ne fait que grandir — il est en ajout seul — et aucune règle du
+ * jeu ne le relit : le charger à chaque page ferait payer à tout le site le
+ * poids de son historique. Il se lit à part (`lisJournal`). Une transaction
+ * qui journalise pousse ses lignes dans un tableau parti vide : l'écriture ne
+ * voit que des lignes nouvelles, et les insère.
+ */
+const CHARGEES = COLLECTIONS.filter((col) => col.cle !== 'audit');
+
+/**
  * Charge toute la base en une seule requête : chaque table revient agrégée en
  * JSON dans un seul document. Un aller-retour réseau, quel que soit le nombre
  * de tables.
@@ -428,7 +461,7 @@ function versObjet(ligne: Record<string, unknown>, colonnes: Colonne[]): Record<
 export async function chargeBase(sql: postgres.Sql | postgres.TransactionSql): Promise<Partial<Database>> {
   const morceaux = [
     `'saison', (select row_to_json(s) from saison s where id = 1)`,
-    ...COLLECTIONS.map((col) => `'${col.table}', coalesce((select json_agg(t) from ${col.table} t), '[]'::json)`),
+    ...CHARGEES.map((col) => `'${col.table}', coalesce((select json_agg(t) from ${col.table} t), '[]'::json)`),
   ].join(',\n');
   const [ligne] = await sql.unsafe<{ doc: Record<string, unknown> }[]>(`select json_build_object(${morceaux}) as doc`);
   const doc = ligne.doc;
@@ -442,13 +475,23 @@ export async function chargeBase(sql: postgres.Sql | postgres.TransactionSql): P
       maxGamesPerPlayer: saison.games_max_par_joueur as number,
       seasonStartsAt: new Date(saison.debut as string).toISOString(),
       seasonEndsAt: new Date(saison.fin as string).toISOString(),
+      overlayGeneration: (saison.overlay_generation as number | undefined) ?? 1,
     } satisfies LeagueConfig;
   }
-  for (const col of COLLECTIONS) {
+  for (const col of CHARGEES) {
     const lignes = (doc[col.table] as Record<string, unknown>[]) ?? [];
     (base as Record<string, unknown>)[col.cle] = lignes.map((l) => versObjet(l, col.colonnes));
   }
+  base.audit = [];
   return base;
+}
+
+/** Les dernières lignes du journal, la plus récente en tête. */
+export async function lisJournal(sql: postgres.Sql, combien: number): Promise<Database['audit']> {
+  const col = COLLECTIONS.find((c) => c.cle === 'audit')!;
+  const lignes = await sql<Record<string, unknown>[]>`
+    select * from journal order by le desc limit ${Math.max(1, Math.floor(combien))}`;
+  return lignes.map((l) => versObjet(l, col.colonnes)) as unknown as Database['audit'];
 }
 
 /* ---------------------------- Enregistrement ----------------------------- */
@@ -499,13 +542,14 @@ export async function enregistreBase(tx: postgres.TransactionSql, db: Database, 
 
   if (avant.get('saison')?.get('1') !== apres.get('saison')?.get('1')) {
     await tx`
-      insert into saison (id, version, total_subs, games_max_par_joueur, debut, fin, mis_a_jour)
+      insert into saison (id, version, total_subs, games_max_par_joueur, debut, fin, mis_a_jour, overlay_generation)
       values (1, ${db.version}, ${db.config.totalSubs}, ${db.config.maxGamesPerPlayer},
-              ${db.config.seasonStartsAt}, ${db.config.seasonEndsAt}, now())
+              ${db.config.seasonStartsAt}, ${db.config.seasonEndsAt}, now(), ${db.config.overlayGeneration})
       on conflict (id) do update set
         version = excluded.version, total_subs = excluded.total_subs,
         games_max_par_joueur = excluded.games_max_par_joueur,
-        debut = excluded.debut, fin = excluded.fin, mis_a_jour = now()`;
+        debut = excluded.debut, fin = excluded.fin, mis_a_jour = now(),
+        overlay_generation = excluded.overlay_generation`;
     touchees += 1;
   }
 

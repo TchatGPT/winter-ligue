@@ -41,14 +41,14 @@ export async function POST(request: Request): Promise<NextResponse> {
     // Chaque appel coûte : un barème serré, bien en dessous des écritures.
     limit: { limit: 20, windowMs: 60_000 },
     schema: analyseSchema,
+    // L'image voyage en base64 : un tiers de plus que ses octets.
+    corpsMax: Math.ceil((TAILLE_MAX * 4) / 3) + 4096,
   });
   if (!g.ok) return g.response;
 
   if (!isReconnaissanceEnabled()) {
-    return fail(
-      'INTROUVABLE',
-      'La reconnaissance des captures n’est pas activée : ANTHROPIC_API_KEY manque côté serveur.',
-    );
+    // Rien sur la configuration dans la réponse : elle se lit dans les journaux du serveur.
+    return fail('INTROUVABLE', 'La reconnaissance des captures n’est pas activée.');
   }
 
   const chaine = chaineDeLaLigue();
@@ -72,7 +72,8 @@ export async function POST(request: Request): Promise<NextResponse> {
     return ok(analyse);
   } catch (error) {
     if (error instanceof Anthropic.AuthenticationError) {
-      return fail('ERREUR_SERVEUR', 'Clé d’API Anthropic refusée.');
+      console.error('[analyse] clé refusée par le service de lecture');
+      return fail('ERREUR_SERVEUR', 'La lecture des captures est indisponible.');
     }
     if (error instanceof Anthropic.RateLimitError) {
       return fail('TROP_DE_REQUETES', 'Le service de lecture est saturé, réessaie dans un instant.');

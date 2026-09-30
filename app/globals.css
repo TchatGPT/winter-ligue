@@ -6882,3 +6882,1198 @@
     }
   }
 }
+
+/* ==========================================================================
+   LES OVERLAYS OBS (app/overlay, components/overlay)
+
+   Posés sur la vidéo du stream : la page est transparente, et chaque overlay
+   est un plateau dessiné à taille fixe, mis à l'échelle de la source. Les
+   plaques ne comptent pas sur le flou d'arrière-plan — OBS compose la vidéo
+   après la page, il n'y aurait rien à flouter — : elles sont franchement
+   teintées, pour se lire sur n'importe quelle image de jeu.
+   ========================================================================== */
+
+@layer components {
+  html[data-surface='overlay'],
+  html[data-surface='overlay'] body {
+    min-height: 0;
+    overflow: hidden;
+    background: transparent;
+  }
+
+  .ov-boite {
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  .ov-plateau {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform-origin: center;
+  }
+
+  /* La matière des plaques d'overlay : le verre du site, épaissi. */
+  .ov-duel-plaque.glass,
+  .ov-subs.glass,
+  .ov-legende.glass,
+  .ov-refus.glass {
+    background: linear-gradient(160deg, rgb(24 58 96 / 0.9) 0%, rgb(7 24 48 / 0.93) 100%);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  /* ------------------------------ Boosters ------------------------------- */
+
+  .ov-booster {
+    position: absolute;
+    inset: 0;
+  }
+
+  .ov-bandeau {
+    position: absolute;
+    top: 70px;
+    left: 50%;
+    z-index: 3;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 18px 52px 22px;
+    border-radius: 26px;
+    background: linear-gradient(160deg, rgb(24 58 96 / 0.92) 0%, rgb(7 24 48 / 0.94) 100%);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.4),
+      inset 0 0 0 1px rgb(255 255 255 / 0.12),
+      0 22px 30px -18px rgb(0 8 24 / 0.9);
+    white-space: nowrap;
+    animation: ov-bandeau-entre 0.75s cubic-bezier(0.2, 1.35, 0.4, 1) both;
+  }
+  .ov-booster[data-phase='sort'] .ov-bandeau {
+    animation: ov-bandeau-sort 0.6s ease-in both;
+  }
+  .ov-bandeau-pack {
+    font-family: var(--font-display);
+    font-size: 24px;
+    font-weight: 800;
+    letter-spacing: 0.26em;
+    text-transform: uppercase;
+    color: var(--ice);
+  }
+  .ov-bandeau-pour {
+    font-family: var(--font-display);
+    font-size: 30px;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
+  .ov-bandeau-pour strong {
+    margin-left: 0.2em;
+    font-size: 1.75em;
+    font-weight: 900;
+    color: var(--frost);
+  }
+  @keyframes ov-bandeau-entre {
+    from {
+      opacity: 0;
+      transform: translate(-50%, -60px) scale(0.9);
+    }
+    to {
+      opacity: 1;
+      transform: translate(-50%, 0) scale(1);
+    }
+  }
+  @keyframes ov-bandeau-sort {
+    from {
+      transform: translate(-50%, 0);
+    }
+    to {
+      opacity: 0;
+      transform: translate(-50%, -40px) scale(0.94);
+    }
+  }
+
+  /* Le sachet : il surgit en tournant, se charge, puis éclate. */
+  .ov-sachet {
+    position: absolute;
+    top: 250px;
+    left: 50%;
+    width: 360px;
+    margin-left: -180px;
+    perspective: 1400px;
+  }
+  .ov-sachet-corps {
+    transform-style: preserve-3d;
+    animation: ov-surgit 1.35s cubic-bezier(0.18, 1.2, 0.35, 1) both;
+    filter: drop-shadow(0 26px 18px rgb(0 8 24 / 0.55));
+  }
+  .ov-booster[data-phase='charge'] .ov-sachet-corps {
+    animation: ov-charge 1.3s ease-in both;
+  }
+  .ov-booster[data-phase='eclate'] .ov-sachet-corps {
+    animation: ov-eclate 0.55s cubic-bezier(0.5, 0, 0.9, 0.4) both;
+  }
+  @keyframes ov-surgit {
+    0% {
+      opacity: 0;
+      transform: translateY(140px) scale(0.25) rotateY(-540deg) rotateX(24deg);
+    }
+    45% {
+      opacity: 1;
+    }
+    62% {
+      transform: translateY(-18px) scale(1.08) rotateY(18deg) rotateX(-6deg);
+    }
+    80% {
+      transform: translateY(6px) scale(0.97) rotateY(-7deg) rotateX(2deg);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0) scale(1) rotateY(0) rotateX(0);
+    }
+  }
+  @keyframes ov-charge {
+    0% {
+      transform: rotate(0) scale(1);
+    }
+    20% {
+      transform: rotate(-2deg) scale(1.01);
+    }
+    35% {
+      transform: rotate(2.5deg) scale(1.02);
+    }
+    50% {
+      transform: rotate(-3.5deg) scale(1.03);
+    }
+    62% {
+      transform: rotate(4deg) scale(1.04);
+    }
+    72% {
+      transform: rotate(-5deg) scale(1.05);
+    }
+    80% {
+      transform: rotate(5.5deg) scale(1.06);
+    }
+    87% {
+      transform: rotate(-6deg) scale(1.07);
+    }
+    93% {
+      transform: rotate(6deg) scale(1.08);
+    }
+    100% {
+      transform: rotate(0) scale(1.1);
+    }
+  }
+  @keyframes ov-eclate {
+    0% {
+      opacity: 1;
+      transform: scale(1.1);
+      filter: brightness(1) drop-shadow(0 26px 18px rgb(0 8 24 / 0.55));
+    }
+    45% {
+      opacity: 1;
+      transform: scale(1.22);
+      filter: brightness(2.4) drop-shadow(0 26px 18px rgb(0 8 24 / 0));
+    }
+    100% {
+      opacity: 0;
+      transform: scale(1.6);
+      filter: brightness(3) drop-shadow(0 26px 18px rgb(0 8 24 / 0));
+    }
+  }
+
+  /* Les éclats de neige : ils partent du sachet quand il surgit, et quand il éclate. */
+  .ov-eclats {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+  }
+  .ov-eclats > i {
+    position: absolute;
+    width: var(--taille);
+    height: var(--taille);
+    margin: calc(var(--taille) / -2);
+    border-radius: 50%;
+    background: var(--frost);
+    box-shadow: 0 2px 2px rgb(0 8 24 / 0.45);
+    opacity: 0;
+    animation: ov-eclat 1.1s cubic-bezier(0.15, 0.7, 0.3, 1) var(--retard) both;
+  }
+  .ov-booster[data-phase='charge'] .ov-eclats > i {
+    animation: none;
+  }
+  .ov-booster[data-phase='eclate'] .ov-eclats > i {
+    animation: ov-eclat-bis 0.9s cubic-bezier(0.15, 0.7, 0.3, 1) var(--retard) both;
+  }
+  @keyframes ov-eclat {
+    0% {
+      opacity: 0;
+      transform: rotate(var(--angle)) translateX(20px) scale(0.4);
+    }
+    25% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+      transform: rotate(var(--angle)) translateX(var(--portee)) scale(1);
+    }
+  }
+  @keyframes ov-eclat-bis {
+    0% {
+      opacity: 0;
+      transform: rotate(var(--angle)) translateX(10px) scale(0.5);
+    }
+    20% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+      transform: rotate(var(--angle)) translateX(calc(var(--portee) * 1.6)) scale(1.2);
+    }
+  }
+
+  /* L'onde de l'éclatement : un anneau net, qui s'ouvre et s'efface. */
+  .ov-onde {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 120px;
+    height: 120px;
+    margin: -60px;
+    border: 5px solid var(--frost);
+    border-radius: 50%;
+    animation: ov-onde 0.6s ease-out both;
+  }
+  @keyframes ov-onde {
+    from {
+      opacity: 1;
+      transform: scale(0.4);
+    }
+    to {
+      opacity: 0;
+      border-width: 1px;
+      transform: scale(6);
+    }
+  }
+
+  /* Le rail du site, au milieu de l'écran. */
+  .ov-rail {
+    position: absolute;
+    top: 330px;
+    left: 50%;
+    width: 1100px;
+    margin-left: -550px;
+    padding: 26px 0;
+    border-radius: 30px;
+    background: linear-gradient(160deg, rgb(24 58 96 / 0.78) 0%, rgb(7 24 48 / 0.86) 100%);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.35),
+      inset 0 0 0 1px rgb(255 255 255 / 0.1),
+      0 24px 34px -20px rgb(0 8 24 / 0.9);
+    animation: ov-apparait 0.35s ease-out both;
+  }
+  @keyframes ov-apparait {
+    from {
+      opacity: 0;
+      transform: scale(0.96);
+    }
+  }
+
+  /* La carte tirée, grande, et ce qu'elle fait. */
+  .ov-revelation {
+    position: absolute;
+    top: 230px;
+    left: 50%;
+    display: flex;
+    align-items: center;
+    gap: 56px;
+    transform: translateX(-50%);
+  }
+  .ov-carte {
+    position: relative;
+    z-index: 1;
+    width: 390px;
+    flex: none;
+    perspective: 1400px;
+    animation: ov-carte-entre 0.9s cubic-bezier(0.2, 1.25, 0.4, 1) both;
+  }
+  @keyframes ov-carte-entre {
+    0% {
+      opacity: 0;
+      transform: translateY(80px) scale(0.5) rotateY(180deg);
+    }
+    60% {
+      opacity: 1;
+      transform: translateY(-10px) scale(1.04) rotateY(-10deg);
+    }
+    100% {
+      transform: translateY(0) scale(1) rotateY(0);
+    }
+  }
+  .ov-anneau {
+    position: absolute;
+    top: 50%;
+    left: 195px;
+    width: 300px;
+    height: 300px;
+    margin: -150px;
+    border: 6px solid var(--r);
+    border-radius: 50%;
+    animation: ov-onde 1.1s ease-out 0.25s both;
+  }
+  .ov-legende {
+    display: flex;
+    min-width: 420px;
+    max-width: 560px;
+    flex-direction: column;
+    gap: 10px;
+    padding: 28px 34px 30px;
+    border-radius: 26px;
+    animation: ov-legende-entre 0.7s cubic-bezier(0.2, 1.2, 0.4, 1) 0.35s both;
+  }
+  @keyframes ov-legende-entre {
+    from {
+      opacity: 0;
+      transform: translateX(-40px);
+    }
+  }
+  .ov-legende-rarete {
+    align-self: flex-start;
+    padding: 5px 14px;
+    border-radius: 999px;
+    font-family: var(--font-display);
+    font-size: 17px;
+    font-weight: 800;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--bg-deep);
+    background: var(--r);
+  }
+  .ov-legende-nom {
+    font-family: var(--font-display);
+    font-size: 54px;
+    font-weight: 900;
+    line-height: 1;
+    text-transform: uppercase;
+    color: var(--ink);
+  }
+  .ov-legende-action {
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--ice);
+  }
+  .ov-legende-cible {
+    margin-top: 6px;
+    font-size: 24px;
+    color: var(--ink-2);
+  }
+  .ov-legende-cible strong {
+    color: var(--frost);
+  }
+  .ov-booster[data-phase='sort'] .ov-revelation {
+    animation: ov-revelation-sort 0.8s ease-in both;
+  }
+  @keyframes ov-revelation-sort {
+    from {
+      transform: translateX(-50%);
+    }
+    to {
+      opacity: 0;
+      transform: translate(-50%, 30px) scale(0.94);
+    }
+  }
+
+  /* -------------------------------- Duels -------------------------------- */
+
+  .ov-duel {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 22px;
+  }
+  .ov-duel-plaque {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 30px;
+    padding: 34px 50px 34px 36px;
+    border-radius: var(--r-lg);
+    animation: ov-duel-tombe 0.8s cubic-bezier(0.2, 1.35, 0.4, 1) both;
+  }
+  .ov-duel[data-sort] .ov-duel-plaque {
+    animation: ov-duel-sort 0.7s ease-in both;
+  }
+  @keyframes ov-duel-tombe {
+    0% {
+      opacity: 0;
+      transform: translateY(-120px) rotate(-3deg) scale(0.9);
+    }
+    60% {
+      opacity: 1;
+      transform: translateY(8px) rotate(0.6deg) scale(1.02);
+    }
+    100% {
+      transform: translateY(0) rotate(0) scale(1);
+    }
+  }
+  @keyframes ov-duel-sort {
+    to {
+      opacity: 0;
+      transform: translateY(-80px) scale(0.94);
+    }
+  }
+  .ov-duel-medaillon {
+    display: grid;
+    width: 104px;
+    height: 104px;
+    flex: none;
+    place-items: center;
+    border-radius: 50%;
+    color: var(--frost);
+    background: radial-gradient(circle at 35% 30%, rgb(143 220 255 / 0.5), rgb(12 44 80 / 0.95) 70%);
+    box-shadow:
+      inset 0 2px 0 rgb(255 255 255 / 0.45),
+      inset 0 0 0 2px rgb(143 220 255 / 0.35),
+      0 10px 16px -8px rgb(0 8 24 / 0.9);
+    animation: ov-epees 0.9s cubic-bezier(0.2, 1.6, 0.4, 1) 0.35s both;
+  }
+  @keyframes ov-epees {
+    0% {
+      transform: scale(0.3) rotate(-120deg);
+    }
+    100% {
+      transform: scale(1) rotate(0);
+    }
+  }
+  .ov-duel-texte {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .ov-duel-surtitre {
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--aurora);
+  }
+  .ov-duel-titre {
+    font-family: var(--font-display);
+    font-size: 76px;
+    font-weight: 900;
+    line-height: 0.95;
+    text-transform: uppercase;
+    white-space: nowrap;
+    animation: ov-devoile 0.7s cubic-bezier(0.3, 0.9, 0.3, 1) 0.5s both;
+  }
+  @keyframes ov-devoile {
+    from {
+      clip-path: inset(-20% 100% -20% 0);
+    }
+    to {
+      clip-path: inset(-20% -10% -20% 0);
+    }
+  }
+  .ov-duel-lance {
+    font-size: 26px;
+    font-weight: 600;
+    color: var(--ink-2);
+    animation: ov-monte 0.5s ease-out 0.95s both;
+  }
+  .ov-duel-lance strong {
+    color: var(--frost);
+  }
+  @keyframes ov-monte {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+  }
+  .ov-duel-appel {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 28px;
+    border-radius: 999px;
+    font-family: var(--font-display);
+    font-size: 30px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink);
+    background: rgb(7 24 48 / 0.88);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.3),
+      inset 0 0 0 1px rgb(255 255 255 / 0.12),
+      0 12px 18px -12px rgb(0 8 24 / 0.9);
+    animation:
+      ov-monte 0.5s ease-out 1.2s both,
+      ov-appel 1.6s ease-in-out 1.8s infinite;
+  }
+  .ov-duel[data-sort] .ov-duel-appel {
+    animation: ov-duel-sort 0.6s ease-in both;
+  }
+  .ov-duel-appel kbd {
+    padding: 2px 14px 4px;
+    border-radius: 12px;
+    font-family: var(--font-display);
+    font-size: 1.1em;
+    font-weight: 900;
+    text-transform: none;
+    color: var(--bg-deep);
+    background: var(--aurora);
+    box-shadow: inset 0 -3px 0 rgb(0 0 0 / 0.18);
+  }
+  @keyframes ov-appel {
+    0%,
+    100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.04);
+    }
+  }
+
+  /* --------------------------------- Subs -------------------------------- */
+
+  .ov-subs {
+    position: absolute;
+    inset: 20px 16px 16px;
+    display: flex;
+    align-items: center;
+    gap: 34px;
+    padding: 26px 36px;
+    border-radius: var(--r-lg);
+    animation: ov-apparait 0.5s ease-out both;
+  }
+  .ov-subs-compte {
+    position: relative;
+    display: flex;
+    flex: none;
+    flex-direction: column;
+    align-items: center;
+  }
+  .ov-subs-surtitre {
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: var(--aurora);
+  }
+  .ov-subs-nombre {
+    font-family: var(--font-display);
+    font-size: 110px;
+    font-weight: 900;
+    line-height: 0.95;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+  .ov-subs-nombre[data-monte] {
+    animation: ov-bond 0.6s cubic-bezier(0.2, 1.6, 0.4, 1) both;
+  }
+  @keyframes ov-bond {
+    0% {
+      transform: scale(1);
+    }
+    40% {
+      transform: scale(1.14);
+      color: var(--frost);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+  .ov-subs-gain {
+    position: absolute;
+    top: 6px;
+    right: -26px;
+    font-family: var(--font-display);
+    font-size: 34px;
+    font-weight: 900;
+    color: var(--aurora);
+    animation: ov-gain 1.6s ease-out both;
+  }
+  @keyframes ov-gain {
+    0% {
+      opacity: 0;
+      transform: translateY(20px) scale(0.7);
+    }
+    20% {
+      opacity: 1;
+      transform: translateY(0) scale(1.1);
+    }
+    100% {
+      opacity: 0;
+      transform: translateY(-40px) scale(1);
+    }
+  }
+  .ov-subs-suite {
+    display: flex;
+    min-width: 0;
+    flex: 1;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .ov-subs-prochain {
+    font-family: var(--font-display);
+    font-size: 30px;
+    font-weight: 700;
+    line-height: 1.05;
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
+  .ov-subs-prochain strong {
+    font-weight: 900;
+    color: var(--ink);
+  }
+  .ov-subs-prochain b {
+    color: var(--aurora);
+  }
+  .ov-subs-jauge {
+    display: block;
+    height: 14px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgb(0 10 30 / 0.55);
+    box-shadow: inset 0 1px 3px rgb(0 8 24 / 0.6);
+  }
+  .ov-subs-jauge > b {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--ice-3), var(--aurora));
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.45);
+    transition: width 0.9s cubic-bezier(0.2, 0.8, 0.3, 1);
+  }
+  .ov-subs-effet {
+    font-size: 19px;
+    color: var(--ink-2);
+  }
+  .ov-subs-evenement {
+    display: flex;
+    min-height: 26px;
+    align-items: center;
+    gap: 10px;
+    font-size: 18px;
+    color: var(--muted);
+  }
+  .ov-subs-evenement strong {
+    color: var(--ink);
+  }
+  .ov-subs-pastille {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--aurora);
+    animation: ov-appel 1.4s ease-in-out infinite;
+  }
+  .ov-subs-palier {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    border-radius: inherit;
+    text-align: center;
+    background: linear-gradient(160deg, rgb(20 88 96 / 0.97) 0%, rgb(7 30 52 / 0.98) 100%);
+    animation: ov-palier 6s ease both;
+  }
+  .ov-subs-palier span {
+    font-family: var(--font-display);
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--aurora);
+  }
+  .ov-subs-palier strong {
+    font-family: var(--font-display);
+    font-size: 64px;
+    font-weight: 900;
+    line-height: 1;
+    text-transform: uppercase;
+    color: var(--frost);
+  }
+  .ov-subs-palier em {
+    font-size: 21px;
+    font-style: normal;
+    color: var(--ink-2);
+  }
+  @keyframes ov-palier {
+    0% {
+      opacity: 0;
+      transform: scale(0.9);
+    }
+    8% {
+      opacity: 1;
+      transform: scale(1.03);
+    }
+    14% {
+      transform: scale(1);
+    }
+    88% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+    }
+  }
+
+  /* Un lien qui ne mène nulle part : visible, pour le réglage. */
+  .ov-refus {
+    position: fixed;
+    top: 24px;
+    left: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 18px 24px;
+    border-radius: var(--r-md);
+    font-size: 18px;
+    color: var(--ink-2);
+  }
+  .ov-refus strong {
+    font-family: var(--font-display);
+    font-size: 24px;
+    text-transform: uppercase;
+    color: var(--ink);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ov-booster *,
+    .ov-duel *,
+    .ov-subs * {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+    }
+  }
+}
+
+/* ==========================================================================
+   L'ADMINISTRATION (app/admin, components/admin)
+
+   La même matière que le reste du site : l'en-tête des pages, des plaques de
+   verre, des médaillons de glace. Une navigation en pastilles, la section
+   active en glace pleine ; des blocs qui disent à quoi ils servent ; des
+   listes plutôt que des tableaux partout où l'on ne compare pas des colonnes.
+   ========================================================================== */
+
+@layer components {
+  /* Le rôle, dans l'en-tête : une pastille, rouge pour l'admin. */
+  .admin-role {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.3rem 0.85rem;
+    border-radius: var(--r-pilule);
+    font-family: var(--font-display);
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ice);
+    background: rgb(143 220 255 / 0.12);
+    box-shadow: inset 0 0 0 1px rgb(143 220 255 / 0.4);
+  }
+  .admin-role[data-role='admin'] {
+    color: var(--danger);
+    background: rgb(255 120 120 / 0.1);
+    box-shadow: inset 0 0 0 1px rgb(255 120 120 / 0.45);
+  }
+
+  /* ---- La navigation : des pastilles dans une gouttière de verre ---- */
+  .admin-nav {
+    display: flex;
+    gap: 0.4rem;
+    padding: 0.4rem;
+    border-radius: var(--r-pilule);
+    background: rgb(4 16 36 / 0.34);
+    box-shadow:
+      inset 0 1px 3px rgb(0 8 24 / 0.5),
+      inset 0 -1px 0 rgb(255 255 255 / 0.08);
+    backdrop-filter: blur(18px) saturate(160%);
+    -webkit-backdrop-filter: blur(18px) saturate(160%);
+  }
+  .admin-onglet {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1.1rem;
+    border-radius: var(--r-pilule);
+    font-family: var(--font-display);
+    font-size: 0.9375rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    color: var(--ink-2);
+    text-shadow: 0 1px 2px rgb(0 8 24 / 0.6);
+    transition:
+      background 0.15s ease,
+      color 0.15s ease;
+  }
+  .admin-onglet:hover {
+    color: var(--ink);
+    background: rgb(255 255 255 / 0.08);
+  }
+  .admin-onglet[data-actif] {
+    color: var(--nuit);
+    text-shadow: none;
+    background: linear-gradient(180deg, var(--neige-1) 0%, var(--neige-2) 55%, var(--neige-3) 100%);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.9),
+      0 4px 8px -4px rgb(0 8 24 / 0.7);
+  }
+
+  /* ---- L'entête d'un écran ---- */
+  .admin-ecran-tete {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 0.75rem 1.5rem;
+    padding: 0.25rem 0.25rem 0;
+  }
+  .admin-ecran-titre {
+    font-family: var(--font-display);
+    font-size: clamp(1.6rem, 3vw, 2.1rem);
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--ink);
+    text-shadow: 0 2px 3px rgb(0 8 24 / 0.6);
+  }
+  .admin-ecran-lead {
+    max-width: 52rem;
+    margin-top: 0.45rem;
+    font-size: 0.9375rem;
+    line-height: 1.55;
+    color: var(--ink-2);
+    text-shadow: 0 1px 2px rgb(0 8 24 / 0.7);
+  }
+
+  /* ---- Un bloc : médaillon, titre, aide, contenu ---- */
+  .admin-bloc {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    padding: 1.15rem 1.2rem 1.25rem;
+  }
+  @media (min-width: 640px) {
+    .admin-bloc {
+      padding: 1.35rem 1.5rem 1.45rem;
+    }
+  }
+  .admin-bloc-neige {
+    padding-top: 2rem;
+  }
+  .admin-bloc-tete {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.85rem;
+  }
+  .admin-medaillon {
+    display: grid;
+    width: 2.4rem;
+    height: 2.4rem;
+    flex: none;
+    place-items: center;
+    border-radius: 999px;
+    color: var(--frost);
+    background: radial-gradient(
+      circle at 34% 28%,
+      rgb(255 255 255 / 0.38) 0%,
+      rgb(143 220 255 / 0.16) 46%,
+      rgb(8 30 60 / 0.36) 100%
+    );
+    box-shadow:
+      inset 0 1.5px 0 rgb(255 255 255 / 0.7),
+      inset 0 -5px 10px -5px rgb(0 16 40 / 0.6),
+      0 5px 8px -5px rgb(0 8 24 / 0.75);
+  }
+  .admin-bloc-titre {
+    padding-top: 0.15rem;
+    font-family: var(--font-display);
+    font-size: 1.125rem;
+    font-weight: 900;
+    line-height: 1.15;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--ink);
+  }
+  .admin-bloc-aide {
+    margin-top: 0.25rem;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    color: var(--muted);
+  }
+  .admin-bloc-corps {
+    min-width: 0;
+    flex: 1;
+    margin-top: 1rem;
+  }
+
+  /* ---- Les chiffres de la vue d'ensemble ---- */
+  .admin-chiffres {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+  @media (min-width: 1024px) {
+    .admin-chiffres {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 1rem;
+    }
+  }
+  .admin-chiffre {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 0.2rem;
+    padding: 1rem 1.2rem 1.05rem;
+  }
+  .admin-chiffre > span {
+    font-family: var(--font-display);
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--faint);
+  }
+  .admin-chiffre > strong {
+    font-family: var(--font-display);
+    font-size: 2.4rem;
+    font-weight: 900;
+    line-height: 1.05;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+  .admin-chiffre[data-accent='ice'] > strong {
+    color: var(--ice);
+  }
+  .admin-chiffre[data-accent='aurora'] > strong {
+    color: var(--aurora);
+  }
+  .admin-chiffre > em {
+    font-size: 0.8125rem;
+    font-style: normal;
+    color: var(--muted);
+  }
+
+  /* ---- Une liste d'évènements : titre, détail, date ---- */
+  .admin-liste {
+    display: flex;
+    flex-direction: column;
+  }
+  .admin-liste > li {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: 1rem;
+    row-gap: 0.1rem;
+    padding: 0.65rem 0.15rem;
+    border-bottom: 1px solid rgb(255 255 255 / 0.08);
+  }
+  .admin-liste > li:last-child {
+    border-bottom: 0;
+  }
+  .admin-liste > li[data-eteint] {
+    opacity: 0.5;
+  }
+  .admin-liste-titre {
+    display: inline-flex;
+    min-width: 0;
+    align-items: center;
+    gap: 0.45rem;
+    font-weight: 700;
+    color: var(--ink);
+  }
+  .admin-liste-detail {
+    grid-column: 1;
+    min-width: 0;
+    overflow: hidden;
+    font-size: 0.875rem;
+    color: var(--muted);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .admin-liste-date {
+    grid-row: 1 / span 2;
+    grid-column: 2;
+    align-self: center;
+    font-size: 0.8125rem;
+    color: var(--faint);
+    white-space: nowrap;
+  }
+  .admin-liste-plus {
+    font-size: 0.875rem;
+    color: var(--faint);
+  }
+
+  /* ---- Le journal ---- */
+  .admin-barre-outils {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin-bottom: 0.9rem;
+  }
+  .admin-journal {
+    display: flex;
+    flex-direction: column;
+  }
+  .admin-journal > li {
+    display: grid;
+    grid-template-columns: 7.5rem minmax(0, 1fr) auto;
+    column-gap: 1rem;
+    align-items: baseline;
+    padding: 0.7rem 0.15rem;
+    border-bottom: 1px solid rgb(255 255 255 / 0.07);
+  }
+  .admin-journal > li:last-child {
+    border-bottom: 0;
+  }
+  .admin-journal time {
+    font-size: 0.8125rem;
+    color: var(--faint);
+    white-space: nowrap;
+  }
+  .admin-journal-action {
+    font-weight: 700;
+    color: var(--ink);
+  }
+  .admin-journal-acteur {
+    font-size: 0.8125rem;
+    color: var(--ice);
+    white-space: nowrap;
+  }
+  .admin-journal-detail {
+    grid-column: 2 / -1;
+    margin-top: 0.1rem;
+    font-size: 0.875rem;
+    color: var(--muted);
+    overflow-wrap: anywhere;
+  }
+  @media (max-width: 639px) {
+    .admin-journal > li {
+      grid-template-columns: minmax(0, 1fr) auto;
+    }
+    .admin-journal time {
+      grid-column: 1 / -1;
+    }
+    .admin-journal-detail {
+      grid-column: 1 / -1;
+    }
+  }
+
+  /* ---- Un tableau dans un bloc : il perd son cadre, garde ses lignes ---- */
+  .admin-table {
+    margin: 0 -0.4rem;
+  }
+
+  /* ---- Les overlays ---- */
+  .admin-overlays {
+    display: grid;
+    gap: 1.25rem;
+  }
+  @media (min-width: 1280px) {
+    .admin-overlays {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    /* Le booster, en 16:9, prend toute la largeur : c'est lui qu'on règle. */
+    .admin-overlays > :first-child {
+      grid-column: 1 / -1;
+    }
+  }
+  .admin-etapes {
+    display: grid;
+    gap: 0.5rem;
+    padding-left: 1.3rem;
+    list-style: decimal;
+    color: var(--ink-2);
+  }
+  .admin-etapes strong {
+    color: var(--ink);
+  }
+  .admin-note {
+    margin-top: 0.9rem;
+    font-size: 0.875rem;
+    color: var(--muted);
+  }
+  /*
+   * L'aperçu d'un overlay : une vignette de scène, sombre comme un jeu, et un
+   * damier léger — ce qui se voit à travers est transparent dans OBS. Le
+   * `contain` fait de la vignette le cadre des éléments fixes de l'overlay :
+   * sans lui, l'aperçu s'étalerait sur toute la fenêtre.
+   */
+  .admin-apercu {
+    position: relative;
+    overflow: hidden;
+    contain: strict;
+    width: 100%;
+    border-radius: var(--r-md);
+    background:
+      repeating-conic-gradient(rgb(255 255 255 / 0.035) 0% 25%, transparent 0% 50%) 0 0 / 24px 24px,
+      radial-gradient(ellipse 80% 70% at 50% 40%, #1d3550 0%, #0b1a2b 70%, #07111d 100%);
+    box-shadow:
+      inset 0 1px 3px rgb(0 8 24 / 0.6),
+      inset 0 0 0 1px rgb(255 255 255 / 0.08);
+  }
+  .admin-lien {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem;
+    margin-top: 0.9rem;
+    padding: 0.55rem 0.55rem 0.55rem 0.9rem;
+    border-radius: var(--r-sm);
+    background: rgb(0 10 30 / 0.3);
+    box-shadow: inset 0 1px 3px rgb(0 8 24 / 0.45);
+  }
+  .admin-lien code {
+    min-width: 0;
+    flex: 1 1 16rem;
+    overflow: hidden;
+    font-size: 0.8125rem;
+    color: var(--ink-2);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .admin-lien-actions {
+    display: flex;
+    gap: 0.4rem;
+  }
+  .admin-overlay-pied {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 1.25rem;
+    margin-top: 0.75rem;
+    font-size: 0.875rem;
+    color: var(--muted);
+  }
+  .admin-overlay-pied strong {
+    color: var(--ink);
+  }
+  .admin-case {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    color: var(--ink-2);
+  }
+  .admin-lien-demo {
+    margin-left: auto;
+    color: var(--ice);
+  }
+}

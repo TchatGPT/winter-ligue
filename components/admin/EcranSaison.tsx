@@ -19,7 +19,8 @@ export interface JoueurSubs {
 
 /**
  * Ce qui se règle une fois, ou une fois par soir : les subs, la limite de
- * games, la sauvegarde.
+ * games, la sauvegarde. Les deux dernières touchent aux règles de la saison :
+ * elles sont réservées aux administrateurs, et le serveur le revérifie.
  *
  * Deux compteurs de subs, et la distinction compte. Le compteur de saison
  * verse à tout le monde et met les packs collectifs en file. Les subs offerts
@@ -31,10 +32,12 @@ export function EcranSaison({
   config,
   joueurs,
   packsEnFile,
+  estAdmin,
 }: {
   config: ConfigSaison;
   joueurs: JoueurSubs[];
   packsEnFile: number;
+  estAdmin: boolean;
 }) {
   const { busy, message, envoie, setMessage } = useAction();
   const [maxGames, setMaxGames] = useState(config.maxGamesPerPlayer);
@@ -72,12 +75,14 @@ export function EcranSaison({
   return (
     <Ecran
       titre="Saison"
-      lead="Le compteur de subs, les subs offerts par les joueurs, la limite de games et la sauvegarde."
+      lead="Le compteur de subs de la saison et les subs offerts par les joueurs. L’overlay du stream suit le compteur."
       message={message}
     >
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-5 xl:grid-cols-2">
         <Bloc
           titre="Compteur de subs"
+          icone="snowflake"
+          neige="admin-subs"
           aide={
             <>
               Chaque palier verse à <strong className="text-muted">tous les joueurs actifs</strong>,
@@ -100,7 +105,7 @@ export function EcranSaison({
               ))}
             </div>
             <div className="text-right">
-              <div className="num font-display text-3xl leading-none font-black text-aurora">
+              <div className="num font-display text-5xl leading-none font-black text-ink">
                 {flakes(config.totalSubs)}
               </div>
               {prochain && (
@@ -127,6 +132,7 @@ export function EcranSaison({
 
         <Bloc
           titre="Subs offerts par un joueur"
+          icone="user"
           aide={
             <>
               Un Booster Perso tous les {PACKS_REGLES.persoTousLes} subs offerts, mis en file pour ce
@@ -192,47 +198,51 @@ export function EcranSaison({
         </Bloc>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Bloc
-          titre="Limite de games"
-          aide="Le nombre de games comptées par joueur. La dernière ouvre le Booster Finisseur."
-        >
-          <div className="flex gap-2">
-            <input
-              id="max-games"
-              type="number"
-              className="field num"
-              min={1}
-              max={100}
-              value={maxGames}
-              onChange={(e) => setMaxGames(Number(e.target.value))}
-              aria-label="Limite de games par joueur"
-            />
-            <button
-              className="btn shrink-0"
-              disabled={busy !== null}
-              onClick={() =>
-                envoie('/api/admin/config', { maxGamesPerPlayer: maxGames }, { methode: 'PATCH' })
-              }
-            >
-              Appliquer
-            </button>
-          </div>
-        </Bloc>
-
-        <Bloc
-          titre="Sauvegarde"
-          aide="À exporter avant toute manipulation lourde. La restauration se fait par POST sur la même route, et elle est réservée aux administrateurs."
-        >
-          <a
-            href="/api/admin/backup"
-            className="btn no-underline"
-            onClick={() => setMessage({ kind: 'success', text: 'Export lancé.' })}
+      {estAdmin && (
+        <div className="grid gap-5 xl:grid-cols-2">
+          <Bloc
+            titre="Limite de games"
+            icone="trophy"
+            aide="Le nombre de games comptées par joueur. La dernière ouvre le Booster Finisseur."
           >
-            Exporter la base (JSON)
-          </a>
-        </Bloc>
-      </div>
+            <div className="flex gap-2">
+              <input
+                id="max-games"
+                type="number"
+                className="field num"
+                min={1}
+                max={100}
+                value={maxGames}
+                onChange={(e) => setMaxGames(Number(e.target.value))}
+                aria-label="Limite de games par joueur"
+              />
+              <button
+                className="btn shrink-0"
+                disabled={busy !== null}
+                onClick={() =>
+                  envoie('/api/admin/config', { maxGamesPerPlayer: maxGames }, { methode: 'PATCH' })
+                }
+              >
+                Appliquer
+              </button>
+            </div>
+          </Bloc>
+
+          <Bloc
+            titre="Sauvegarde"
+            icone="layers"
+            aide="Un export complet, journal compris. Il contient des données personnelles : à garder hors du dépôt, et à supprimer une fois inutile. La restauration depuis le site est fermée."
+          >
+            <a
+              href="/api/admin/backup"
+              className="btn no-underline"
+              onClick={() => setMessage({ kind: 'success', text: 'Export lancé.' })}
+            >
+              Exporter la base (JSON)
+            </a>
+          </Bloc>
+        </div>
+      )}
     </Ecran>
   );
 }

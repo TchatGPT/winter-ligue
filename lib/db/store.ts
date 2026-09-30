@@ -19,10 +19,10 @@ import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import postgres from 'postgres';
 import { synchroniseCatalogue } from './lecture';
-import { chargeBase, empreintes, enregistreBase, SCHEMA_SQL, TABLES } from './tables';
+import { chargeBase, empreintes, enregistreBase, lisJournal, SCHEMA_SQL, TABLES } from './tables';
 import { dirname, join } from 'node:path';
 import { DEFAULT_MAX_GAMES_PER_PLAYER, ECONOMY, SEASON } from '@/lib/domain/rules';
-import type { Database, PlayerRole } from './entities';
+import type { AuditEntry, Database, PlayerRole } from './entities';
 
 /*
  * Sur Vercel, le dossier du projet est en lecture seule : seul /tmp s'écrit.
@@ -51,6 +51,7 @@ export function emptyDatabase(): Database {
       totalSubs: 0,
       seasonStartsAt: SEASON.startsAt,
       seasonEndsAt: SEASON.endsAt,
+      overlayGeneration: 1,
     },
     players: [],
     games: [],
@@ -73,6 +74,32 @@ export interface EtatSession {
   sessionsDepuis: string | null;
 }
 
+/**
+ * Ce que lisent les overlays du stream : le compteur de subs, les boosters
+ * ouverts et les duels lancés depuis une date. Quelques lignes, par index.
+ */
+export interface FluxOverlay {
+  maintenant: string;
+  generation: number;
+  totalSubs: number;
+  ouvertures: {
+    id: string;
+    packId: string;
+    cardId: string;
+    openedAt: string;
+    /** Pour qui le booster s'ouvre, s'il s'ouvre pour quelqu'un. */
+    joueur: string | null;
+    /** Sur qui la carte est tombée : six pseudos au plus. */
+    beneficiaires: string[];
+    nbBeneficiaires: number;
+  }[];
+  duels: { id: string; hote: string; mise: number; creeA: string }[];
+  evenements: { label: string; endsAt: string }[];
+}
+
+/** Ce qu'un overlay remonte au plus par lecture : il les joue l'un après l'autre. */
+const OVERLAY_LOT = 5;
+
 export interface Store {
   /** Lecture seule. Retourne une copie défensive : muter le résultat ne change rien. */
   read<T>(fn: (db: Readonly<Database>) => T): Promise<T>;
@@ -90,6 +117,13 @@ export interface Store {
    * lue par sa clé, et non la base entière que charge `read()`.
    */
   etatSession(joueurId: string): Promise<EtatSession | null>;
+  /**
+   * Le flux des overlays depuis `depuis` (date ISO). Interrogé toutes les deux
+   * secondes pendant un live : jamais la base entière.
+   */
+  fluxOverlay(depuis: string): Promise<FluxOverlay>;
+  /** Les dernières lignes du journal, la plus récente en tête. */
+  journal(combien: number): Promise<AuditEntry[]>;
 }
 
 class JsonFileStore implements Store {
@@ -162,6 +196,44 @@ class JsonFileStore implements Store {
     return p ? { role: p.role, actif: p.active, sessionsDepuis: p.sessionsDepuis ?? null } : null;
   }
 
+  async journal(combien: number): Promise<AuditEntry[]> {
+    const db = await this.load();
+    return db.audit.slice(-Math.max(1, combien)).reverse();
+  }
+
+  async fluxOverlay(depuis: string): Promise<FluxOverlay> {
+    const db = await this.load();
+    const pseudo = (id: string) => db.players.find((p) => p.id === id)?.pseudo ?? 'Joueur inconnu';
+    const maintenant = new Date().toISOString();
+    return {
+      maintenant,
+      generation: db.config.overlayGeneration ?? 1,
+      totalSubs: db.config.totalSubs,
+      ouvertures: db.ouvertures
+        .filter((o) => o.openedAt > depuis)
+        .sort((a, b) => a.openedAt.localeCompare(b.openedAt))
+        .slice(0, OVERLAY_LOT)
+        .map((o) => ({
+          id: o.id,
+          packId: o.packId,
+          cardId: o.cardId,
+          openedAt: o.openedAt,
+          joueur: o.joueurId ? pseudo(o.joueurId) : null,
+          beneficiaires: o.beneficiaires.slice(0, 6).map(pseudo),
+          nbBeneficiaires: o.beneficiaires.length,
+        })),
+      duels: db.batailles
+        .filter((b) => b.creeeA > depuis && b.statut === 'ATTENTE' && !b.adversaireId)
+        .sort((a, b) => a.creeeA.localeCompare(b.creeeA))
+        .slice(0, OVERLAY_LOT)
+        .map((b) => ({ id: b.id, hote: pseudo(b.hoteId), mise: b.mise, creeA: b.creeeA })),
+      evenements: db.evenements
+        .filter((e) => e.endsAt > maintenant)
+        .slice(0, 2)
+        .map((e) => ({ label: e.label, endsAt: e.endsAt })),
+    };
+  }
+
   async replace(next: Database): Promise<void> {
     await this.transaction((db) => {
       const migrated = migrate(next);
@@ -210,6 +282,23 @@ function versModeTransaction(url: string): string {
     // Adresse illisible : le client dira pourquoi.
   }
   return url;
+}
+
+/** Le document que renvoie la requête des overlays, tel que Postgres le rend. */
+interface DocOverlay {
+  maintenant: string;
+  saison: { generation: number; subs: number } | null;
+  ouvertures: {
+    id: string;
+    booster_id: string;
+    carte_id: string;
+    le: string;
+    joueur: string | null;
+    beneficiaires: string[];
+    nb: number;
+  }[];
+  duels: { id: string; mise: number; le: string; hote: string }[];
+  evenements: { label: string; fin: string }[];
 }
 
 class PostgresStore implements Store {
@@ -329,6 +418,66 @@ class PostgresStore implements Store {
         return { valeur };
       });
       return resultat.valeur;
+    });
+  }
+
+  async journal(combien: number): Promise<AuditEntry[]> {
+    return this.enFile(async () => {
+      await this.prepare();
+      return lisJournal(this.sql, combien);
+    });
+  }
+
+  async fluxOverlay(depuis: string): Promise<FluxOverlay> {
+    return this.enFile(async () => {
+      await this.prepare();
+      const [ligne] = await this.sql<{ doc: DocOverlay }[]>`
+        select json_build_object(
+          'maintenant', now(),
+          'saison', (select json_build_object('generation', overlay_generation, 'subs', total_subs)
+                       from saison where id = 1),
+          'ouvertures', coalesce((
+            select json_agg(x order by x.le) from (
+              select o.id, o.booster_id, o.carte_id, o.ouvert_le as le,
+                     (select j.pseudo from joueurs j where j.id = o.joueur_id) as joueur,
+                     coalesce((select json_agg(b.pseudo) from (
+                        select j.pseudo from joueurs j
+                         where j.id in (select jsonb_array_elements_text(o.beneficiaires))
+                         limit 6) b), '[]'::json) as beneficiaires,
+                     jsonb_array_length(o.beneficiaires) as nb
+                from ouvertures o
+               where o.ouvert_le > ${depuis}::timestamptz
+               order by o.ouvert_le
+               limit ${OVERLAY_LOT}) x), '[]'::json),
+          'duels', coalesce((
+            select json_agg(x order by x.le) from (
+              select d.id, d.mise, d.cree_le as le, j.pseudo as hote
+                from duels d join joueurs j on j.id = d.hote_id
+               where d.cree_le > ${depuis}::timestamptz and d.statut = 'ATTENTE' and d.adversaire_id is null
+               order by d.cree_le
+               limit ${OVERLAY_LOT}) x), '[]'::json),
+          'evenements', coalesce((
+            select json_agg(x) from (
+              select nom as label, fin from evenements where fin > now() order by fin desc limit 2) x), '[]'::json)
+        ) as doc`;
+      const doc = ligne.doc;
+      const iso = (v: string) => new Date(v).toISOString();
+      return {
+        maintenant: iso(doc.maintenant),
+        generation: doc.saison?.generation ?? 1,
+        totalSubs: doc.saison?.subs ?? 0,
+        ouvertures: doc.ouvertures.map((o) => ({
+          id: o.id,
+          packId: o.booster_id,
+          cardId: o.carte_id,
+          openedAt: iso(o.le),
+          joueur: o.joueur,
+          beneficiaires: o.beneficiaires,
+          nbBeneficiaires: o.nb,
+        })),
+        duels: doc.duels.map((d) => ({ id: d.id, hote: d.hote, mise: d.mise, creeA: iso(d.le) })),
+        evenements: doc.evenements.map((e) => ({ label: e.label, endsAt: iso(e.fin) })),
+      };
     });
   }
 

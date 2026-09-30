@@ -8,11 +8,14 @@ import { audit } from '@/lib/services/ledger';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-/** Réglages de saison : la limite de games par joueur. */
+/**
+ * Réglages de saison : la limite de games par joueur. C'est une règle de la
+ * saison, pas son animation : réservé aux administrateurs.
+ */
 export async function PATCH(request: Request): Promise<NextResponse> {
   const g = await guard(request, {
     scope: 'admin-config',
-    role: 'moderateur',
+    role: 'admin',
     limit: LIMITS.mutation,
     schema: adminConfigSchema,
   });

@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Saison — Administration' };
 
 export default async function AdminSaisonPage() {
-  await exigeRole('moderateur');
+  const session = await exigeRole('moderateur');
   const data = await getStore().read((db) => ({
     config: {
       maxGamesPerPlayer: db.config.maxGamesPerPlayer,
@@ -19,5 +19,12 @@ export default async function AdminSaisonPage() {
     packsEnFile: db.packsDus.filter((p) => p.ouvertureId === null).length,
   }));
 
-  return <EcranSaison config={data.config} joueurs={data.joueurs} packsEnFile={data.packsEnFile} />;
+  return (
+    <EcranSaison
+      config={data.config}
+      joueurs={data.joueurs}
+      packsEnFile={data.packsEnFile}
+      estAdmin={session.role === 'admin'}
+    />
+  );
 }

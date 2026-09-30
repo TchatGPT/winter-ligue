@@ -21,7 +21,8 @@ export const dynamic = 'force-dynamic';
  * en un clic, deux secondes de latence n'ont jamais fait rater personne.
  */
 export async function GET(request: Request): Promise<NextResponse> {
-  const g = await guard(request, { scope: 'batailles-read' });
+  // Les duels, comme tout le reste de la ligue, ne se lisent qu'avec un compte.
+  const g = await guard(request, { scope: 'batailles-read', role: 'joueur' });
   if (!g.ok) return g.response;
 
   const { batailles, top, balance } = await getStore().read((db) => {

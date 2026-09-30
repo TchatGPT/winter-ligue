@@ -4,6 +4,7 @@ import { fail, guard, ok } from '@/lib/api/respond';
 import { monActivisionSchema } from '@/lib/api/schemas';
 import { playerIdOf } from '@/lib/auth/session';
 import { getStore } from '@/lib/db/store';
+import { activisionPris } from '@/lib/domain/activision';
 import { LIMITS } from '@/lib/security/ratelimit';
 import { audit } from '@/lib/services/ledger';
 import { isTwitchEnabled } from '@/lib/auth/twitch';
@@ -44,6 +45,10 @@ export async function GET(request: Request): Promise<NextResponse> {
  * ne touche ni score ni flocons : elle sert à le reconnaître sur les
  * captures de fin de game. La session de modération n'a pas de profil,
  * donc rien à renseigner.
+ *
+ * Un nom déjà pris par un autre joueur est refusé : sinon l'un se ferait
+ * attribuer les games de l'autre. Le journal ne note qu'un vrai changement —
+ * renvoyer le même pseudo en boucle ne le remplit pas.
  */
 export async function PATCH(request: Request): Promise<NextResponse> {
   const g = await guard(request, {
@@ -60,14 +65,18 @@ export async function PATCH(request: Request): Promise<NextResponse> {
   }
 
   try {
-    const activisionId = await getStore().transaction((db) => {
+    const resultat = await getStore().transaction((db) => {
       const player = db.players.find((p) => p.id === playerId);
       if (!player) throw new Error('Joueur introuvable.');
-      player.activisionId = g.body.activisionId;
-      audit(db, playerId, 'ACTIVISION_RENSEIGNE', playerId, g.body.activisionId);
-      return player.activisionId;
+      if (activisionPris(g.body.activisionId, db.players, player.id)) return null;
+      if (player.activisionId !== g.body.activisionId) {
+        player.activisionId = g.body.activisionId;
+        audit(db, playerId, 'ACTIVISION_RENSEIGNE', playerId, g.body.activisionId);
+      }
+      return { activisionId: player.activisionId };
     });
-    return ok({ activisionId });
+    if (!resultat) return fail('CONFLIT', 'Ce pseudo Activision est déjà celui d’un autre joueur.');
+    return ok(resultat);
   } catch (error) {
     return toResponse(error);
   }

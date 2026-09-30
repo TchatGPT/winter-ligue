@@ -24,9 +24,9 @@ const ROLES: { id: RoleJoueur; label: string; aide: string }[] = [
   {
     id: 'moderateur',
     label: 'Modérateur',
-    aide: 'Saisit les games, crédite, ouvre les packs.',
+    aide: 'Saisit les games, crédite, ouvre les boosters de la file — jamais pour lui-même.',
   },
-  { id: 'admin', label: 'Admin', aide: 'Tout cela, plus les taux et les rôles.' },
+  { id: 'admin', label: 'Admin', aide: 'Tout cela, plus les rôles, la limite de games et la sauvegarde.' },
 ];
 
 /** Retire accents et casse, pour que « boreal » trouve « Boréal ». */
@@ -72,79 +72,89 @@ export function EcranJoueurs({
   return (
     <Ecran
       titre="Joueurs"
-      lead="Inscrire, créditer, promouvoir. Chaque attribution exige un motif et laisse une trace au journal."
+      lead="Créditer, corriger un pseudo Activision, promouvoir. Chaque attribution exige un motif et laisse une trace au journal."
       message={message}
     >
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Bloc
-          titre="Inscrire un joueur"
-          aide="En attendant la connexion Twitch. Le joueur reçoit sa dotation de départ."
-        >
-          <form
-            className="space-y-3"
-            onSubmit={async (e) => {
-              e.preventDefault();
-              const fait = await envoie('/api/players', {
-                pseudo,
-                twitchLogin: twitch || null,
-                activisionId: activision || null,
-              });
-              if (fait) {
-                setPseudo('');
-                setTwitch('');
-                setActivision('');
-              }
-            }}
+      <div className="grid gap-5 xl:grid-cols-2">
+        {estAdmin && (
+          <Bloc
+            titre="Inscrire un joueur"
+            icone="plus"
+            neige="admin-inscrire"
+            aide="En attendant la connexion Twitch. Le joueur reçoit sa dotation de départ."
           >
-            <div>
-              <label className="label" htmlFor="new-pseudo">
-                Pseudo
-              </label>
-              <input
-                id="new-pseudo"
-                className="field"
-                value={pseudo}
-                onChange={(e) => setPseudo(e.target.value)}
-                minLength={2}
-                maxLength={24}
-                required
-              />
-            </div>
-            <div>
-              <label className="label" htmlFor="new-twitch">
-                Chaîne Twitch (facultatif)
-              </label>
-              <input
-                id="new-twitch"
-                className="field"
-                value={twitch}
-                onChange={(e) => setTwitch(e.target.value)}
-                pattern="[a-zA-Z0-9_]{3,25}"
-                placeholder="pseudo_twitch"
-              />
-            </div>
-            <div>
-              <label className="label" htmlFor="new-activision">
-                Pseudo Activision (facultatif)
-              </label>
-              <input
-                id="new-activision"
-                className="field"
-                value={activision}
-                onChange={(e) => setActivision(e.target.value)}
-                maxLength={40}
-                placeholder="Pseudo#1234567"
-              />
-            </div>
-            <button className="btn btn-ice w-full" disabled={busy !== null || pseudo.length < 2}>
-              Inscrire
-            </button>
-          </form>
-        </Bloc>
+            <form
+              className="space-y-3"
+              onSubmit={async (e) => {
+                e.preventDefault();
+                const fait = await envoie('/api/players', {
+                  pseudo,
+                  twitchLogin: twitch || null,
+                  activisionId: activision || null,
+                });
+                if (fait) {
+                  setPseudo('');
+                  setTwitch('');
+                  setActivision('');
+                }
+              }}
+            >
+              <div>
+                <label className="label" htmlFor="new-pseudo">
+                  Pseudo
+                </label>
+                <input
+                  id="new-pseudo"
+                  className="field"
+                  value={pseudo}
+                  onChange={(e) => setPseudo(e.target.value)}
+                  minLength={2}
+                  maxLength={24}
+                  required
+                />
+              </div>
+              <div>
+                <label className="label" htmlFor="new-twitch">
+                  Chaîne Twitch (facultatif)
+                </label>
+                <input
+                  id="new-twitch"
+                  className="field"
+                  value={twitch}
+                  onChange={(e) => setTwitch(e.target.value)}
+                  pattern="[a-zA-Z0-9_]{3,25}"
+                  placeholder="pseudo_twitch"
+                />
+              </div>
+              <div>
+                <label className="label" htmlFor="new-activision">
+                  Pseudo Activision (facultatif)
+                </label>
+                <input
+                  id="new-activision"
+                  className="field"
+                  value={activision}
+                  onChange={(e) => setActivision(e.target.value)}
+                  maxLength={40}
+                  placeholder="Pseudo#1234567"
+                />
+              </div>
+              <button className="btn btn-ice w-full" disabled={busy !== null || pseudo.length < 2}>
+                Inscrire
+              </button>
+            </form>
+          </Bloc>
+        )}
 
         <Bloc
           titre="Attribuer des flocons"
-          aide="Un motif est obligatoire : c'est lui qu'on relira dans le journal le jour où quelqu'un demandera pourquoi."
+          icone="snowflake"
+          neige={estAdmin ? undefined : 'admin-flocons'}
+          aide={
+            estAdmin
+              ? 'Un motif est obligatoire : c’est lui qu’on relira dans le journal le jour où quelqu’un demandera pourquoi.'
+              : 'Un motif est obligatoire, mille flocons au plus par attribution, et jamais sur ton propre compte.'
+          }
         >
           <form
             className="space-y-3"
@@ -216,21 +226,21 @@ export function EcranJoueurs({
         </Bloc>
       </div>
 
-      <section className="glass">
-        <div className="flex flex-wrap items-center gap-3 border-b border-white/10 px-4 py-3">
-          <h3 className="font-display text-sm font-black tracking-wider text-ink uppercase">
-            {visibles.length} joueur{visibles.length > 1 ? 's' : ''}
-          </h3>
+      <Bloc
+        titre={`${visibles.length} joueur${visibles.length > 1 ? 's' : ''}`}
+        icone="user"
+        aide="Le pseudo Activision est celui que la lecture des captures compare au tableau de fin de game."
+        actions={
           <input
-            className="field ml-auto max-w-xs"
+            className="field max-w-[220px]"
             placeholder="Rechercher…"
             value={recherche}
             onChange={(e) => setRecherche(e.target.value)}
             aria-label="Rechercher un joueur"
           />
-        </div>
-
-        <div className="scroll-x">
+        }
+      >
+        <div className="scroll-x admin-table">
           <table className="grid-table min-w-[720px]">
             <thead>
               <tr>
@@ -309,7 +319,7 @@ export function EcranJoueurs({
             </tbody>
           </table>
         </div>
-      </section>
+      </Bloc>
     </Ecran>
   );
 }

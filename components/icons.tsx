@@ -183,6 +183,30 @@ export function IconRocket(props: IconProps) {
   );
 }
 
+/** Vue d'ensemble — un cadran, son aiguille levée. */
+export function IconJauge(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M4 17a8 8 0 1 1 16 0" />
+      <path d="M12 17l3.6-5.2" />
+      <circle cx="12" cy="17" r="1.3" />
+      <path d="M6.3 12.2l1.2.7M12 9v1.3M17.7 12.2l-1.2.7" />
+    </Svg>
+  );
+}
+
+/** Overlays — une antenne qui émet : ce qui part sur le stream. */
+export function IconAntenne(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <circle cx="12" cy="10" r="1.6" />
+      <path d="M12 11.6 9 21M12 11.6 15 21M10 18h4" />
+      <path d="M8.2 6.2a5.4 5.4 0 0 0 0 7.6M15.8 6.2a5.4 5.4 0 0 1 0 7.6" />
+      <path d="M5.4 3.4a9.4 9.4 0 0 0 0 13.2M18.6 3.4a9.4 9.4 0 0 1 0 13.2" />
+    </Svg>
+  );
+}
+
 /** Le glyphe de Twitch, en aplat : c'est un logo, pas un pictogramme au trait. */
 export function IconTwitch(props: IconProps) {
   return (
@@ -204,6 +228,9 @@ export const NAV_ICONS = {
   gear: IconGear,
   shield: IconShield,
   user: IconUser,
+  snowflake: IconSnowflake,
+  jauge: IconJauge,
+  antenne: IconAntenne,
 } as const;
 
 export type NavIconName = keyof typeof NAV_ICONS;

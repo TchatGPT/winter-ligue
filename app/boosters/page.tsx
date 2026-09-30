@@ -1,5 +1,5 @@
 import { PackOpening, type JoueurOuverture, type PackVitrine } from '@/components/PackOpening';
-import { getSession } from '@/lib/auth/session';
+import { getSession, playerIdOf } from '@/lib/auth/session';
 import { exigeSession } from '@/lib/auth/acces';
 import { getStore } from '@/lib/db/store';
 import { CARDS, cartesDuPack, impactMax, momentDe } from '@/lib/domain/catalog';
@@ -20,6 +20,9 @@ export default async function PacksPage(){
   await exigeSession();
   const session = await getSession();
   const moderateur = session?.role === 'admin' || session?.role === 'moderateur';
+  // Ouvrir hors de la file crée un booster de rien : c'est l'affaire d'un
+  // administrateur. La route le revérifie.
+  const aLaMain = session?.role === 'admin';
 
   const { packs, file, joueurs } = await getStore().read((db) => ({
     // Les taux réglés par l'administration, pas ceux du catalogue : la page
@@ -39,8 +42,8 @@ export default async function PacksPage(){
       }),
     ),
     file: fileDesPacks(db),
-    // La liste des joueurs ne quitte le serveur que pour la modération.
-    joueurs: moderateur
+    // La liste des joueurs ne quitte le serveur que pour qui peut ouvrir à la main.
+    joueurs: aLaMain
       ? db.players
           .filter((p) => p.active)
           .map(
@@ -80,7 +83,15 @@ export default async function PacksPage(){
         lead="Une carte par booster, ouverte à l’antenne. Les actions des roues de la Summer, à la mesure de l’hiver."
       />
 
-      <PackOpening packs={packs} saison={saison} file={file} joueurs={joueurs} moderateur={moderateur} />
+      <PackOpening
+        packs={packs}
+        saison={saison}
+        file={file}
+        joueurs={joueurs}
+        moderateur={moderateur}
+        aLaMain={aLaMain}
+        moiId={playerIdOf(session)}
+      />
     </div>
   );
 }

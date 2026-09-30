@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { Barlow, Barlow_Condensed } from 'next/font/google';
+import { headers } from 'next/headers';
 import { Analytics } from '@vercel/analytics/next';
 import { FondHiver } from '@/components/FondHiver';
 import { Sidebar, SIDEBAR_MARGE, SIDEBAR_WIDTH } from '@/components/Sidebar';
@@ -58,6 +59,20 @@ export const viewport: Viewport = {
  * qui exigent d'être connecté le revérifient de leur côté (`exigeSession`).
  */
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  /*
+   * Les overlays OBS (`/overlay/…`) se posent sur la vidéo du stream : ni
+   * décor, ni menu, ni fond — une page transparente. C'est le middleware qui
+   * le dit, par un en-tête qu'il pose lui-même et qu'il efface de toute
+   * requête entrante : un visiteur ne peut pas le forger.
+   */
+  if ((await headers()).get('x-wl-surface') === 'overlay') {
+    return (
+      <html lang="fr" data-surface="overlay" className={`${barlow.variable} ${barlowCondensed.variable}`}>
+        <body className="overlay-corps">{children}</body>
+      </html>
+    );
+  }
+
   const connecte = (await getSession()) !== null;
   return (
     <html lang="fr" className={`${barlow.variable} ${barlowCondensed.variable}`}>

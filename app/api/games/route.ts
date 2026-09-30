@@ -3,6 +3,7 @@ import { chaineDeLaLigue } from '@/lib/auth/twitch';
 import { estLaStreameuse } from '@/lib/domain/streameuse';
 import { toResponse } from '@/lib/api/errors';
 import { fail, guard, ok } from '@/lib/api/respond';
+import { playerIdOf } from '@/lib/auth/session';
 import { deleteGameSchema, gameSchema, updateGameSchema } from '@/lib/api/schemas';
 import type { Game } from '@/lib/db/entities';
 import { getStore, newId } from '@/lib/db/store';
@@ -28,6 +29,9 @@ export const dynamic = 'force-dynamic';
  *
  * La limite de games est celle de la saison, plus les créneaux qu'une carte
  * « Game supplémentaire » a donnés à ce joueur.
+ *
+ * Un modérateur qui joue ne saisit jamais ses propres games : un autre le
+ * fait, sur la capture.
  */
 export async function POST(request: Request): Promise<NextResponse> {
   const g = await guard(request, {
@@ -37,6 +41,10 @@ export async function POST(request: Request): Promise<NextResponse> {
     schema: gameSchema,
   });
   if (!g.ok) return g.response;
+
+  if (g.session?.role !== 'admin' && g.body.playerId === playerIdOf(g.session)) {
+    return fail('NON_AUTORISE', 'Un modérateur ne saisit pas ses propres games.');
+  }
 
   try {
     const result = await getStore().transaction((db) => {
@@ -110,7 +118,13 @@ export async function POST(request: Request): Promise<NextResponse> {
   }
 }
 
-/** Passe une game (elle ne compte plus) ou modifie sa note. */
+/**
+ * Passe une game (elle ne compte plus) ou modifie sa note.
+ *
+ * Rétablir une game passée la fait compter de nouveau : on vérifie donc la
+ * limite, comme à la saisie — sinon, passer puis rétablir aurait permis de
+ * dépasser le nombre de games de la saison.
+ */
 export async function PATCH(request: Request): Promise<NextResponse> {
   const g = await guard(request, {
     scope: 'game-update',
@@ -120,9 +134,17 @@ export async function PATCH(request: Request): Promise<NextResponse> {
   });
   if (!g.ok) return g.response;
 
+  const moi = playerIdOf(g.session);
+  const moderateur = g.session?.role !== 'admin';
+
   const updated = await getStore().transaction((db) => {
     const game = db.games.find((x) => x.id === g.body.gameId);
     if (!game) return null;
+    if (moderateur && game.playerId === moi) return 'SIENNE' as const;
+    if (g.body.skipped === false && game.skipped) {
+      const joueur = db.players.find((p) => p.id === game.playerId);
+      if (joueur && gamesComptees(db, joueur.id) >= limiteDe(db, joueur)) return 'LIMITE' as const;
+    }
     if (g.body.skipped !== undefined) game.skipped = g.body.skipped;
     if (g.body.note !== undefined) game.note = g.body.note ?? null;
     recomputeGame(db, game);
@@ -131,6 +153,8 @@ export async function PATCH(request: Request): Promise<NextResponse> {
   });
 
   if (!updated) return fail('INTROUVABLE', 'Game introuvable.');
+  if (updated === 'SIENNE') return fail('NON_AUTORISE', 'Un modérateur ne modifie pas ses propres games.');
+  if (updated === 'LIMITE') return fail('CONFLIT', 'Ce joueur a déjà toutes ses games : celle-ci ne peut pas compter.');
   return ok(updated);
 }
 

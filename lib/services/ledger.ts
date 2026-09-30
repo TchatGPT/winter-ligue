@@ -111,7 +111,15 @@ export function adjust(
   return player.snowflakes;
 }
 
-/** Journalise une action sensible (modération, clôture de vente, malus subi). */
+/**
+ * Journalise une action sensible (modération, carte jouée, connexion
+ * d'administration).
+ *
+ * Le journal est en **ajout seul** : il n'est plus rogné — il l'a été, aux cinq
+ * mille dernières lignes, ce qui laissait quiconque enchaînait les actions
+ * effacer les traces des précédentes. En base, un déclencheur refuse toute
+ * modification et toute suppression.
+ */
 export function audit(
   db: Database,
   actor: string,
@@ -127,6 +135,4 @@ export function audit(
     detail,
     at: new Date().toISOString(),
   });
-  // Le journal reste borné pour ne pas faire enfler le fichier indéfiniment.
-  if (db.audit.length > 5000) db.audit.splice(0, db.audit.length - 5000);
 }

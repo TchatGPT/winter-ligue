@@ -1,130 +1,174 @@
 import Link from 'next/link';
+import { Bloc, Chiffre, Ecran } from '@/components/admin/Cadre';
+import { EmptyState, RarityChip, flakes } from '@/components/ui';
 import { exigeRole } from '@/lib/auth/acces';
-import { StatTile, flakes } from '@/components/ui';
 import { getStore } from '@/lib/db/store';
 import { nextMilestone } from '@/lib/domain/rules';
 import { shortDateTime } from '@/lib/format';
+import { dernieresOuvertures, fileDesPacks } from '@/lib/services/packs';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Tableau de bord — Administration' };
+export const metadata = { title: 'Vue d’ensemble — Administration' };
 
 /**
- * Le tableau de bord : ce qu'on regarde en arrivant.
+ * La vue d'ensemble : ce qu'on regarde en arrivant.
  *
- * Des chiffres, et rien à remplir. C'est délibéré — un écran d'accueil qui
- * porte un formulaire finit par recevoir des saisies faites sans le vouloir, et
- * il n'y a aucune raison que le premier écran soit celui du geste le plus
- * fréquent : celui-là a son onglet.
+ * Des chiffres, et rien à remplir. Les boosters en attente se lisent ici mais
+ * s'ouvrent sur leur page, à l'antenne ; les games se saisissent depuis le
+ * classement. Un écran d'accueil qui porte un formulaire finit par recevoir
+ * des saisies faites sans le vouloir.
  */
 export default async function AdminAccueilPage() {
   await exigeRole('moderateur');
-  const data = await getStore().read((db) => {
-    const actifs = db.players.filter((p) => p.active);
-    const pseudo = (id: string) => db.players.find((p) => p.id === id)?.pseudo ?? 'Inconnu';
+  const store = getStore();
 
-    return {
-      joueurs: actifs.length,
-      moderateurs: actifs.filter((p) => p.role === 'moderateur' || p.role === 'admin').length,
-      games: db.games.length,
-      packsEnFile: db.packsDus.filter((p) => p.ouvertureId === null).length,
-      packsOuverts: db.ouvertures.length,
-      cartesEnAttente: db.cartesEnAttente.filter((c) => c.consommeeA === null).length,
-      subs: db.config.totalSubs,
-      reglages: db.reglagesPacks.length,
-      dernieres: db.audit
-        .slice(-8)
-        .reverse()
-        .map((e) => ({ at: e.at, action: e.action, detail: e.detail })),
-      derniereGame: [...db.games].sort(
-        (a, b) => new Date(b.playedAt).getTime() - new Date(a.playedAt).getTime(),
-      )[0],
-      pseudo,
-    };
-  });
+  const [data, journal] = await Promise.all([
+    store.read((db) => {
+      const actifs = db.players.filter((p) => p.active);
+      const pseudo = (id: string) => db.players.find((p) => p.id === id)?.pseudo ?? 'Joueur inconnu';
+      return {
+        joueurs: actifs.length,
+        avecDroits: actifs.filter((p) => p.role === 'moderateur' || p.role === 'admin').length,
+        games: db.games.filter((g) => !g.skipped).length,
+        cartesEnAttente: db.cartesEnAttente.filter((c) => c.consommeeA === null).length,
+        subs: db.config.totalSubs,
+        file: fileDesPacks(db),
+        ouvertures: dernieresOuvertures(db, 6),
+        dernieresGames: [...db.games]
+          .sort((a, b) => b.playedAt.localeCompare(a.playedAt))
+          .slice(0, 7)
+          .map((g) => ({
+            id: g.id,
+            pseudo: pseudo(g.playerId),
+            kills: g.kills,
+            placement: g.placement,
+            score: g.score,
+            skipped: g.skipped,
+            playedAt: g.playedAt,
+          })),
+      };
+    }),
+    store.journal(8),
+  ]);
 
   const prochain = nextMilestone(data.subs);
 
   return (
-    <div className="space-y-5">
-      <section className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
-        <StatTile label="Joueurs actifs" value={data.joueurs} hint={`dont ${data.moderateurs} avec des droits`} />
-        <StatTile label="Games saisies" value={data.games} accent="ink" />
-        <StatTile
+    <Ecran titre="Vue d’ensemble" lead="L’état de la ligue, ce qui attend l’antenne, et les dernières traces du journal.">
+      <section className="admin-chiffres">
+        <Chiffre label="Joueurs actifs" valeur={data.joueurs} note={`dont ${data.avecDroits} avec des droits`} />
+        <Chiffre label="Games comptées" valeur={data.games} note={`${data.cartesEnAttente} carte(s) en attente`} />
+        <Chiffre
           label="Boosters à ouvrir"
-          value={data.packsEnFile}
-          hint={`${data.packsOuverts} déjà ouverts`}
-          accent="violet"
+          valeur={data.file.length}
+          note={data.file.length ? 'sur la page Boosters' : 'rien en attente'}
+          accent="ice"
         />
-        <StatTile
+        <Chiffre
           label="Subs de la saison"
-          value={flakes(data.subs)}
-          hint={prochain ? `${prochain.milestone.label} dans ${prochain.remaining}` : 'tous franchis'}
-          accent="gold"
+          valeur={flakes(data.subs)}
+          note={prochain ? `${prochain.milestone.label} dans ${prochain.remaining}` : 'tous les paliers franchis'}
+          accent="aurora"
         />
       </section>
 
-      <section className="grid gap-4 lg:grid-cols-2">
-        <div className="glass p-4 sm:p-5">
-          <h2 className="font-display text-base font-black tracking-wide text-ice uppercase">
-            État de la ligue
-          </h2>
-          <dl className="mt-3 space-y-2 text-[14px]">
-            <div className="flex items-baseline justify-between gap-3 border-b border-white/8 pb-2">
-              <dt className="text-faint">Cartes en attente d’une game</dt>
-              <dd className="text-aurora">{data.cartesEnAttente}</dd>
-            </div>
-            <div className="flex items-baseline justify-between gap-3 border-b border-white/8 pb-2">
-              <dt className="text-faint">Boosters réglés</dt>
-              <dd className={data.reglages > 0 ? 'text-gold' : 'text-muted'}>
-                {data.reglages === 0 ? 'aucun — taux du catalogue' : `${data.reglages} modifié(s)`}
-              </dd>
-            </div>
-            <div className="flex items-baseline justify-between gap-3">
-              <dt className="text-faint">Dernière game</dt>
-              <dd className="text-muted">
-                {data.derniereGame
-                  ? `${data.pseudo(data.derniereGame.playerId)} — ${shortDateTime(data.derniereGame.playedAt)}`
-                  : 'aucune'}
-              </dd>
-            </div>
-          </dl>
+      <div className="grid gap-5 xl:grid-cols-2">
+        <Bloc
+          titre="Boosters à ouvrir"
+          icone="rocket"
+          neige="admin-file"
+          aide="Dans l’ordre d’arrivée. Ils s’ouvrent à l’antenne, sur la page Boosters : l’overlay du stream suit."
+          actions={
+            <Link href="/boosters" className="btn btn-sm btn-ice no-underline">
+              Ouvrir →
+            </Link>
+          }
+        >
+          {data.file.length === 0 ? (
+            <EmptyState title="Rien en attente" hint="Les subs, les paliers et les fins de saison remplissent cette file." />
+          ) : (
+            <ul className="admin-liste">
+              {data.file.slice(0, 8).map((p) => (
+                <li key={p.id}>
+                  <span className="admin-liste-titre">{p.nom}</span>
+                  <span className="admin-liste-detail">
+                    {p.pseudo ? `pour ${p.pseudo}` : 'pour la communauté'} · {p.raison}
+                  </span>
+                  <time className="admin-liste-date">{shortDateTime(p.creeA)}</time>
+                </li>
+              ))}
+              {data.file.length > 8 && (
+                <li className="admin-liste-plus">…et {data.file.length - 8} autre(s).</li>
+              )}
+            </ul>
+          )}
+        </Bloc>
 
-          <div className="mt-4 flex flex-wrap gap-2">
-            <Link href="/admin/packs" className="btn btn-sm btn-ice no-underline">
-              Ouvrir les boosters
-            </Link>
-            <Link href="/" className="btn btn-sm no-underline">
-              Saisir une game
-            </Link>
-            <Link href="/admin/saison" className="btn btn-sm no-underline">
-              Compteur de subs
-            </Link>
-          </div>
-        </div>
+        <Bloc titre="Dernières ouvertures" icone="layers" aide="Ce qui est sorti des boosters, et pour qui.">
+          {data.ouvertures.length === 0 ? (
+            <EmptyState title="Aucune ouverture" hint="La première carte tirée apparaîtra ici." />
+          ) : (
+            <ul className="admin-liste">
+              {data.ouvertures.map((o) => (
+                <li key={o.id}>
+                  <span className="admin-liste-titre">
+                    <RarityChip rarity={o.rarity} taille={16} /> {o.nom}
+                  </span>
+                  <span className="admin-liste-detail">
+                    {o.pack} · {o.pseudo ? `pour ${o.pseudo}` : o.tous ? 'toute la ligue' : o.beneficiaires.join(', ')}
+                  </span>
+                  <time className="admin-liste-date">{shortDateTime(o.openedAt)}</time>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Bloc>
 
-        <div className="glass p-4 sm:p-5">
-          <div className="flex items-baseline justify-between gap-3">
-            <h2 className="font-display text-base font-black tracking-wide text-ice uppercase">
-              Dernières actions
-            </h2>
-            <Link href="/admin/journal" className="text-[13px] text-muted no-underline hover:text-ice">
-              Tout le journal →
+        <Bloc titre="Dernières games" icone="trophy" aide="Saisies depuis le classement, par capture de fin de game.">
+          {data.dernieresGames.length === 0 ? (
+            <EmptyState title="Aucune game" hint="La première saisie apparaîtra ici." />
+          ) : (
+            <ul className="admin-liste">
+              {data.dernieresGames.map((g) => (
+                <li key={g.id} data-eteint={g.skipped ? '' : undefined}>
+                  <span className="admin-liste-titre">{g.pseudo}</span>
+                  <span className="admin-liste-detail">
+                    {g.kills} kills{g.placement ? ` · Top ${g.placement}` : ''} ·{' '}
+                    <strong className="text-ice">{flakes(g.score)} pts</strong>
+                    {g.skipped ? ' · passée' : ''}
+                  </span>
+                  <time className="admin-liste-date">{shortDateTime(g.playedAt)}</time>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Bloc>
+
+        <Bloc
+          titre="Dernières actions"
+          icone="book"
+          aide="Le journal, en ajout seul : rien ne s’y efface."
+          actions={
+            <Link href="/admin/journal" className="btn btn-sm no-underline">
+              Tout le journal
             </Link>
-          </div>
-          <ul className="mt-3 space-y-2">
-            {data.dernieres.length === 0 && <li className="text-[13px] text-faint">Rien encore.</li>}
-            {data.dernieres.map((e, i) => (
-              <li key={i} className="border-b border-white/8 pb-2 last:border-0 last:pb-0">
-                <div className="flex items-baseline justify-between gap-3">
-                  <span className="text-[13px] text-ink">{e.action.replaceAll('_', ' ')}</span>
-                  <span className="text-xs whitespace-nowrap text-faint">{shortDateTime(e.at)}</span>
-                </div>
-                <p className="truncate text-xs text-muted">{e.detail}</p>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
-    </div>
+          }
+        >
+          {journal.length === 0 ? (
+            <EmptyState title="Rien encore" hint="Chaque action de modération laisse une ligne ici." />
+          ) : (
+            <ul className="admin-liste">
+              {journal.map((e) => (
+                <li key={e.id}>
+                  <span className="admin-liste-titre">{e.action.replaceAll('_', ' ').toLowerCase()}</span>
+                  <span className="admin-liste-detail">{e.detail}</span>
+                  <time className="admin-liste-date">{shortDateTime(e.at)}</time>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Bloc>
+      </div>
+    </Ecran>
   );
 }

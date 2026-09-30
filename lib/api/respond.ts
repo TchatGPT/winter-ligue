@@ -38,8 +38,18 @@ const STATUS: Record<ApiErrorCode, number> = {
   ERREUR_SERVEUR: 500,
 };
 
+/**
+ * Une réponse d'API ne se met jamais en cache, ni par le navigateur ni par un
+ * intermédiaire : elle dépend de la session, et un solde ou un rôle servi à la
+ * mauvaise personne est une fuite.
+ */
+const SANS_CACHE = { 'cache-control': 'private, no-store' };
+
 export function ok<T>(data: T, init?: ResponseInit): NextResponse {
-  return NextResponse.json({ ok: true, data }, { status: 200, ...init });
+  return NextResponse.json(
+    { ok: true, data },
+    { status: 200, ...init, headers: { ...SANS_CACHE, ...(init?.headers ?? {}) } },
+  );
 }
 
 export function fail(
@@ -49,7 +59,7 @@ export function fail(
 ): NextResponse {
   return NextResponse.json(
     { ok: false, error: { code, message, ...(extra ?? {}) } },
-    { status: STATUS[code] },
+    { status: STATUS[code], headers: SANS_CACHE },
   );
 }
 
@@ -86,9 +96,14 @@ export function sameOrigin(request: Request): boolean {
   return allowed.has(origin.replace(/\/$/, ''));
 }
 
+/** Le corps d'une requête d'API ne dépasse pas 64 Kio, sauf route qui le dit. */
+const CORPS_MAX = 64 * 1024;
+
 export interface GuardOptions<T> {
   /** Rôle minimum exigé. Omis = route publique. */
   role?: Role;
+  /** Taille maximale du corps, en octets. 64 Kio par défaut. */
+  corpsMax?: number;
   /** Barème de limitation ; par défaut celui des lectures. */
   limit?: { limit: number; windowMs: number };
   /** Schéma du corps JSON. Omis = corps ignoré. */
@@ -149,9 +164,24 @@ export async function guard<T = undefined>(
 
   let body = undefined as T;
   if (options.schema) {
+    // Du JSON, et rien d'autre : un formulaire posté depuis un autre site ne
+    // peut envoyer ce type sans demander la permission au navigateur.
+    const type = request.headers.get('content-type') ?? '';
+    if (!type.toLowerCase().startsWith('application/json')) {
+      return { ok: false, response: fail('REQUETE_INVALIDE', 'Le corps doit être du JSON.') };
+    }
+    const max = options.corpsMax ?? CORPS_MAX;
+    const annonce = Number(request.headers.get('content-length') ?? '0');
+    if (annonce > max) {
+      return { ok: false, response: fail('REQUETE_INVALIDE', 'Corps de requête trop volumineux.') };
+    }
     let raw: unknown;
     try {
-      raw = await request.json();
+      const texte = await request.text();
+      if (Buffer.byteLength(texte) > max) {
+        return { ok: false, response: fail('REQUETE_INVALIDE', 'Corps de requête trop volumineux.') };
+      }
+      raw = JSON.parse(texte);
     } catch {
       return { ok: false, response: fail('REQUETE_INVALIDE', 'Corps JSON illisible.') };
     }

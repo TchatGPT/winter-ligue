@@ -4,54 +4,56 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Notice } from '@/components/ui';
 import type { Message } from '@/components/admin/action';
-import { TitreGlace } from '@/components/TitreGlace';
+import { NAV_ICONS, type NavIconName } from '@/components/icons';
+import { SnowCap } from '@/components/SnowCap';
 
 export interface Section {
   href: string;
   label: string;
-  /** Réservée aux administrateurs : elle touche aux règles, pas au quotidien. */
-  admin?: boolean;
+  icone: NavIconName;
 }
 
 /**
  * Les sections de l'espace, dans l'ordre où on s'en sert.
  *
- * Le quotidien d'abord — ouvrir un pack à l'antenne et saisir une game sont
- * les gestes de chaque soir de live — puis ce qui se règle une fois par
- * saison, puis le journal. Les taux des packs se règlent sur l'écran des packs,
- * et seuls les administrateurs y ont les champs.
+ * Il n'y a plus ici ni ouverture de booster, ni saisie de game, ni réglage des
+ * taux : les boosters s'ouvrent sur leur page, à l'antenne ; les games se
+ * saisissent depuis le classement ; les taux sont ceux du catalogue. L'espace
+ * garde ce qui ne se fait nulle part ailleurs — les joueurs, les subs, les
+ * overlays du stream, le journal.
  */
 export const SECTIONS: Section[] = [
-  { href: '/admin', label: 'Tableau de bord' },
-  { href: '/admin/packs', label: 'Boosters' },
-  { href: '/admin/games', label: 'Games' },
-  { href: '/admin/joueurs', label: 'Joueurs' },
-  { href: '/admin/saison', label: 'Saison' },
-  { href: '/admin/journal', label: 'Journal' },
+  { href: '/admin', label: 'Vue d’ensemble', icone: 'jauge' },
+  { href: '/admin/joueurs', label: 'Joueurs', icone: 'user' },
+  { href: '/admin/saison', label: 'Saison', icone: 'snowflake' },
+  { href: '/admin/overlays', label: 'Overlays', icone: 'antenne' },
+  { href: '/admin/journal', label: 'Journal', icone: 'book' },
 ];
 
-/** La navigation de l'espace, en onglets. */
-export function AdminNav({ estAdmin }: { estAdmin: boolean }) {
+/** La navigation de l'espace : des pastilles, l'active en glace pleine. */
+export function AdminNav() {
   const chemin = usePathname();
-  const visibles = SECTIONS.filter((s) => !s.admin || estAdmin);
 
   return (
-    <nav className="scroll-x-clean">
-      <div className="flex min-w-max gap-5">
-        {visibles.map((s) => (
+    <nav className="admin-nav scroll-x-clean" aria-label="Sections de l’administration">
+      {SECTIONS.map((s) => {
+        const Icone = NAV_ICONS[s.icone];
+        // Comparaison exacte pour la racine, sinon `/admin` resterait actif
+        // sur toutes les sous-sections.
+        const actif = s.href === '/admin' ? chemin === s.href : chemin.startsWith(s.href);
+        return (
           <Link
             key={s.href}
             href={s.href}
-            className="tab no-underline"
-            // Comparaison exacte pour la racine, sinon `/admin` resterait actif
-            // sur toutes les sous-sections.
-            data-active={s.href === '/admin' ? chemin === s.href : chemin.startsWith(s.href)}
+            className="admin-onglet no-underline"
+            data-actif={actif ? '' : undefined}
+            aria-current={actif ? 'page' : undefined}
           >
+            <Icone className="h-[18px] w-[18px]" />
             {s.label}
-            {s.admin && <span className="tab-count">admin</span>}
           </Link>
-        ))}
-      </div>
+        );
+      })}
     </nav>
   );
 }
@@ -77,11 +79,11 @@ export function Ecran({
   children: React.ReactNode;
 }) {
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <TitreGlace taille="bloc">{titre}</TitreGlace>
-          {lead && <p className="mt-1 max-w-2xl text-[13px] leading-relaxed text-faint">{lead}</p>}
+    <div className="space-y-5">
+      <div className="admin-ecran-tete">
+        <div className="min-w-0">
+          <h2 className="admin-ecran-titre">{titre}</h2>
+          {lead && <p className="admin-ecran-lead">{lead}</p>}
         </div>
         {actions}
       </div>
@@ -93,23 +95,68 @@ export function Ecran({
   );
 }
 
-/** Un bloc de contenu dans un écran. */
+/**
+ * Un bloc de contenu : une plaque de verre, son médaillon, son titre, et la
+ * phrase qui dit quand s'en servir. La neige ne coiffe que les blocs qu'on
+ * lui désigne — partout, elle ne se remarquerait plus.
+ */
 export function Bloc({
   titre,
   aide,
+  icone,
+  neige,
+  actions,
+  className,
   children,
 }: {
   titre: string;
   aide?: React.ReactNode;
+  icone?: NavIconName;
+  /** La graine de la neige posée sur le bloc ; sans elle, pas de neige. */
+  neige?: string;
+  /** Ce qui se range à droite du titre : un lien, un bouton. */
+  actions?: React.ReactNode;
+  className?: string;
   children: React.ReactNode;
 }) {
+  const Icone = icone ? NAV_ICONS[icone] : null;
   return (
-    <section className="glass p-4 sm:p-5">
-      <h3 className="font-display text-base font-black tracking-wide text-ice uppercase">
-        {titre}
-      </h3>
-      {aide && <p className="mt-1 text-[13px] leading-relaxed text-faint">{aide}</p>}
-      <div className="mt-4">{children}</div>
+    <section className={`glass admin-bloc ${neige ? 'admin-bloc-neige' : ''} ${className ?? ''}`}>
+      {neige && <SnowCap radius="var(--r-lg)" seed={neige} epaisseur={14} />}
+      <header className="admin-bloc-tete">
+        {Icone && (
+          <span className="admin-medaillon" aria-hidden="true">
+            <Icone className="h-[18px] w-[18px]" />
+          </span>
+        )}
+        <div className="min-w-0 flex-1">
+          <h3 className="admin-bloc-titre">{titre}</h3>
+          {aide && <p className="admin-bloc-aide">{aide}</p>}
+        </div>
+        {actions && <div className="shrink-0">{actions}</div>}
+      </header>
+      <div className="admin-bloc-corps">{children}</div>
     </section>
+  );
+}
+
+/** Un chiffre de la vue d'ensemble : son nom, sa valeur, et ce qu'il veut dire. */
+export function Chiffre({
+  label,
+  valeur,
+  note,
+  accent,
+}: {
+  label: string;
+  valeur: React.ReactNode;
+  note?: React.ReactNode;
+  accent?: 'ice' | 'aurora' | 'gold';
+}) {
+  return (
+    <div className="glass admin-chiffre" data-accent={accent}>
+      <span>{label}</span>
+      <strong>{valeur}</strong>
+      {note && <em>{note}</em>}
+    </div>
   );
 }
