@@ -116,14 +116,17 @@ export function EcranJoueurs({ joueurs, codes }: { joueurs: LigneJoueur[]; codes
               );
               if (!data) return;
               const code = String(data.code);
-              const annonce = (data.tchat as { envoye?: boolean } | undefined)?.envoye === true;
+              const tchat = data.tchat as { envoye?: boolean; detail?: string } | undefined;
+              const annonce = tchat?.envoye === true;
               setDernierCode({ code, annonce });
               setMessage(
                 annonce
                   ? { kind: 'success', text: `Code ${code} créé et annoncé dans le tchat.` }
                   : {
                       kind: 'error',
-                      text: `Code ${code} créé, mais pas annoncé dans le tchat : la streameuse doit rebrancher Twitch (Modération → Saison).`,
+                      text: `Code ${code} créé, mais Twitch a refusé l’annonce dans le tchat${
+                        tchat?.detail ? ` (${tchat.detail})` : ''
+                      }. Le détail est au journal.`,
                     },
               );
             }}

@@ -7,6 +7,7 @@ import { getStore } from '@/lib/db/store';
 import { annonceDuCode } from '@/lib/domain/codes';
 import { LIMITS } from '@/lib/security/ratelimit';
 import { creeCode, desactiveCode, supprimeCode } from '@/lib/services/codes';
+import { audit } from '@/lib/services/ledger';
 import { annonceDansLeTchat, type AnnonceTchat } from '@/lib/services/twitchChat';
 
 export const runtime = 'nodejs';
@@ -35,7 +36,13 @@ export async function POST(request: Request): Promise<NextResponse> {
     const site = baseDuSite(new URL(request.url).origin).replace(/^https?:\/\//, '').replace(/^www\./, '');
     const tchat: AnnonceTchat = isTwitchEnabled()
       ? await annonceDansLeTchat(annonceDuCode(code, site))
-      : { envoye: false, raison: 'jeton' };
+      : { envoye: false, raison: 'jeton', detail: 'Twitch n’est pas configuré' };
+    if (!tchat.envoye) {
+      // Le refus de Twitch, mot pour mot, au journal : c'est ce qui dit quoi réparer.
+      await getStore().transaction((db) => {
+        audit(db, g.session?.sub ?? 'admin', 'CODE_NON_ANNONCE', null, `${code.code} : ${tchat.detail}`);
+      });
+    }
     return ok({ id: code.id, code: code.code, montant: code.montant, utilisationsMax: code.utilisationsMax, tchat });
   } catch (error) {
     return toResponse(error);

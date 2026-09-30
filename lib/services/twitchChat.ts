@@ -41,15 +41,26 @@ async function idDeLaChaine(jeton: string): Promise<string | null> {
 
 export type AnnonceTchat =
   | { envoye: true }
-  | { envoye: false; raison: 'jeton' | 'chaine' | 'autorisation' | 'refus' | 'reseau' };
+  | {
+      envoye: false;
+      raison: 'jeton' | 'chaine' | 'autorisation' | 'refus' | 'reseau';
+      /** Ce que Twitch a répondu, borné : pour le journal et l'écran de modération. */
+      detail: string;
+    };
+
+/** La réponse de Twitch, lisible et bornée — jamais un jeton, Twitch n'en renvoie pas ici. */
+async function detailDe(reponse: Response): Promise<string> {
+  const texte = await reponse.text().catch(() => '');
+  return `${reponse.status} ${texte}`.replace(/\s+/g, ' ').trim().slice(0, 300);
+}
 
 /** Écrit ce message dans le tchat de la chaîne. Ne lève jamais : dit seulement si c'est parti. */
 export async function annonceDansLeTchat(message: string): Promise<AnnonceTchat> {
   try {
     const jeton = await jetonApplication();
-    if (!jeton) return { envoye: false, raison: 'jeton' };
+    if (!jeton) return { envoye: false, raison: 'jeton', detail: 'jeton de l’application refusé' };
     const id = await idDeLaChaine(jeton);
-    if (!id) return { envoye: false, raison: 'chaine' };
+    if (!id) return { envoye: false, raison: 'chaine', detail: 'chaîne introuvable chez Twitch' };
 
     const reponse = await fetch(CHAT_URL, {
       method: 'POST',
@@ -58,11 +69,22 @@ export async function annonceDansLeTchat(message: string): Promise<AnnonceTchat>
       cache: 'no-store',
       signal: AbortSignal.timeout(5000),
     });
-    if (reponse.status === 401 || reponse.status === 403) return { envoye: false, raison: 'autorisation' };
-    if (!reponse.ok) return { envoye: false, raison: 'refus' };
-    const charge = (await reponse.json()) as { data?: { is_sent?: boolean }[] };
-    return charge.data?.[0]?.is_sent ? { envoye: true } : { envoye: false, raison: 'refus' };
-  } catch {
-    return { envoye: false, raison: 'reseau' };
+    if (reponse.status === 401 || reponse.status === 403) {
+      return { envoye: false, raison: 'autorisation', detail: await detailDe(reponse) };
+    }
+    if (!reponse.ok) return { envoye: false, raison: 'refus', detail: await detailDe(reponse) };
+    const charge = (await reponse.json()) as {
+      data?: { is_sent?: boolean; drop_reason?: { code?: string; message?: string } | null }[];
+    };
+    const envoi = charge.data?.[0];
+    if (envoi?.is_sent) return { envoye: true };
+    const motif = envoi?.drop_reason;
+    return {
+      envoye: false,
+      raison: 'refus',
+      detail: `non envoyé : ${motif?.code ?? '?'} ${motif?.message ?? ''}`.trim().slice(0, 300),
+    };
+  } catch (e) {
+    return { envoye: false, raison: 'reseau', detail: e instanceof Error ? e.message.slice(0, 200) : 'réseau' };
   }
 }
