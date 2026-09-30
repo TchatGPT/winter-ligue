@@ -13,7 +13,7 @@ function base(): Database {
       },
     ],
     games: [], packsDus: [], ouvertures: [], cartesEnAttente: [], ledger: [], subEvents: [],
-    audit: [], reglagesPacks: [], batailles: [], evenements: [], codesCadeaux: [],
+    audit: [], reglagesPacks: [], batailles: [], evenements: [], codesCadeaux: [], subsTwitch: [],
   };
 }
 

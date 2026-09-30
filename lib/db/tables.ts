@@ -219,6 +219,20 @@ export const COLLECTIONS: Collection[] = [
       c('creePar', 'cree_par', 'text'),
     ],
   },
+  {
+    cle: 'subsTwitch',
+    table: 'subs_twitch',
+    idChamp: 'id',
+    colonnes: [
+      c('id', 'id', 'text'),
+      c('le', 'le', 'ts'),
+      c('genre', 'genre', 'text'),
+      c('twitchId', 'twitch_id', 'text'),
+      c('pseudo', 'pseudo', 'text'),
+      c('nombre', 'nombre', 'int'),
+      c('niveau', 'niveau', 'int'),
+    ],
+  },
 ];
 
 /**
@@ -376,6 +390,18 @@ create table if not exists evenements (
   declenche_a integer not null
 );
 
+-- Le registre des subs comptés depuis Twitch : qui, combien, quand.
+create table if not exists subs_twitch (
+  id text primary key,
+  le timestamptz not null,
+  genre text not null check (genre in ('sub', 'cadeau')),
+  twitch_id text,
+  pseudo text not null,
+  nombre integer not null check (nombre > 0),
+  niveau integer not null
+);
+create index if not exists subs_twitch_le on subs_twitch (le);
+
 -- Les codes cadeaux : leurs utilisations sont au grand livre (flocons, motif
 -- CODE_CADEAU, référence = le code).
 create table if not exists codes_cadeaux (
@@ -481,7 +507,8 @@ function versObjet(ligne: Record<string, unknown>, colonnes: Colonne[]): Record<
 }
 
 /**
- * Les tables que charge `chargeBase` : toutes, sauf le journal.
+ * Les tables que charge `chargeBase` : toutes, sauf le journal et le registre
+ * des subs.
  *
  * Le journal ne fait que grandir — il est en ajout seul — et aucune règle du
  * jeu ne le relit : le charger à chaque page ferait payer à tout le site le
@@ -489,7 +516,7 @@ function versObjet(ligne: Record<string, unknown>, colonnes: Colonne[]): Record<
  * qui journalise pousse ses lignes dans un tableau parti vide : l'écriture ne
  * voit que des lignes nouvelles, et les insère.
  */
-const CHARGEES = COLLECTIONS.filter((col) => col.cle !== 'audit');
+const CHARGEES = COLLECTIONS.filter((col) => col.cle !== 'audit' && col.cle !== 'subsTwitch');
 
 /**
  * Charge toute la base en une seule requête : chaque table revient agrégée en
@@ -522,7 +549,16 @@ export async function chargeBase(sql: postgres.Sql | postgres.TransactionSql): P
     (base as Record<string, unknown>)[col.cle] = lignes.map((l) => versObjet(l, col.colonnes));
   }
   base.audit = [];
+  base.subsTwitch = [];
   return base;
+}
+
+/** Les derniers subs du registre, le plus récent en tête. */
+export async function lisSubsTwitch(sql: postgres.Sql, combien: number): Promise<Database['subsTwitch']> {
+  const col = COLLECTIONS.find((c) => c.cle === 'subsTwitch')!;
+  const lignes = await sql<Record<string, unknown>[]>`
+    select * from subs_twitch order by le desc limit ${Math.max(1, Math.floor(combien))}`;
+  return lignes.map((l) => versObjet(l, col.colonnes)) as unknown as Database['subsTwitch'];
 }
 
 /** Les dernières lignes du journal, la plus récente en tête. */

@@ -1,168 +1,167 @@
 import Link from 'next/link';
 import { Bloc, Chiffre, Ecran } from '@/components/admin/Cadre';
-import { EmptyState, RarityChip, flakes } from '@/components/ui';
+import { EmptyState, flakes } from '@/components/ui';
 import { exigeRole } from '@/lib/auth/acces';
+import { chaineDeLaLigue } from '@/lib/auth/twitch';
 import { getStore } from '@/lib/db/store';
-import { nextMilestone } from '@/lib/domain/rules';
+import { nextMilestone, PACKS_REGLES } from '@/lib/domain/rules';
+import { estLaStreameuse } from '@/lib/domain/streameuse';
+import { cadeauxEnAttente } from '@/lib/domain/twitchSubs';
 import { shortDateTime } from '@/lib/format';
-import { dernieresOuvertures, fileDesPacks } from '@/lib/services/packs';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Vue d’ensemble — Modération' };
 
+/** Assez de registre pour additionner les cadeaux d'une saison ; la liste n'en montre que le début. */
+const REGISTRE = 2000;
+const SUBS_AFFICHES = 40;
+
 /**
- * La vue d'ensemble : ce qu'on regarde en arrivant.
- *
- * Des chiffres, et rien à remplir. Les boosters en attente se lisent ici mais
- * s'ouvrent sur leur page, à l'antenne ; les games se saisissent depuis le
- * classement. Un écran d'accueil qui porte un formulaire finit par recevoir
- * des saisies faites sans le vouloir.
+ * La vue d'ensemble : les joueurs inscrits, et les subs — qui, combien, quand,
+ * et qui a offert des subs sans être inscrit à la ligue, ses Boosters Perso en
+ * attente de son inscription.
  */
 export default async function AdminAccueilPage() {
   await exigeRole('admin');
   const store = getStore();
+  const chaine = chaineDeLaLigue();
 
-  const [data, journal] = await Promise.all([
-    store.read((db) => {
-      const actifs = db.players.filter((p) => p.active);
-      const pseudo = (id: string) => db.players.find((p) => p.id === id)?.pseudo ?? 'Joueur inconnu';
-      return {
-        joueurs: actifs.length,
-        avecDroits: actifs.filter((p) => p.role === 'admin').length,
-        games: db.games.filter((g) => !g.skipped).length,
-        cartesEnAttente: db.cartesEnAttente.filter((c) => c.consommeeA === null).length,
-        subs: db.config.totalSubs,
-        file: fileDesPacks(db),
-        ouvertures: dernieresOuvertures(db, 6),
-        dernieresGames: [...db.games]
-          .sort((a, b) => b.playedAt.localeCompare(a.playedAt))
-          .slice(0, 7)
-          .map((g) => ({
-            id: g.id,
-            pseudo: pseudo(g.playerId),
-            kills: g.kills,
-            placement: g.placement,
-            score: g.score,
-            skipped: g.skipped,
-            playedAt: g.playedAt,
-          })),
-      };
-    }),
-    store.journal(8),
+  const [ligue, registre] = await Promise.all([
+    store.read((db) => ({
+      joueurs: db.players
+        .filter((p) => p.active)
+        .sort((a, b) => b.joinedAt.localeCompare(a.joinedAt))
+        .map((p) => ({
+          id: p.id,
+          slug: p.slug,
+          pseudo: p.pseudo,
+          twitchId: p.twitchId,
+          inscritLe: p.joinedAt,
+          modo: p.role === 'admin',
+          streameuse: estLaStreameuse(p, chaine),
+        })),
+      subs: db.config.totalSubs,
+    })),
+    store.subsTwitch(REGISTRE),
   ]);
 
-  const prochain = nextMilestone(data.subs);
+  const inscrits = new Set(ligue.joueurs.map((j) => j.twitchId).filter((id): id is string => Boolean(id)));
+  const enAttente = cadeauxEnAttente(registre, inscrits);
+  const subsEnAttente = enAttente.reduce((n, c) => n + c.subs, 0);
+  const dernier = ligue.joueurs[0] ?? null;
+  const prochain = nextMilestone(ligue.subs);
 
   return (
-    <Ecran titre="Vue d’ensemble" lead="L’état de la ligue, ce qui attend l’antenne, et les dernières traces du journal.">
+    <Ecran titre="Vue d’ensemble" lead="Les joueurs inscrits, et les subs : qui, combien, quand — et qui attend son Booster Perso.">
       <section className="admin-chiffres">
-        <Chiffre label="Joueurs actifs" valeur={data.joueurs} note={`dont ${data.avecDroits} avec des droits`} />
-        <Chiffre label="Games comptées" valeur={data.games} note={`${data.cartesEnAttente} carte(s) en attente`} />
+        <Chiffre label="Joueurs inscrits" valeur={ligue.joueurs.length} note="par Twitch" />
         <Chiffre
-          label="Boosters à ouvrir"
-          valeur={data.file.length}
-          note={data.file.length ? 'sur la page Boosters' : 'rien en attente'}
+          label="Dernier inscrit"
+          valeur={dernier ? dernier.pseudo : '—'}
+          note={dernier ? shortDateTime(dernier.inscritLe) : 'personne encore'}
           accent="ice"
         />
         <Chiffre
           label="Subs de la saison"
-          valeur={flakes(data.subs)}
+          valeur={flakes(ligue.subs)}
           note={prochain ? `${prochain.milestone.label} dans ${prochain.remaining}` : 'tous les paliers franchis'}
           accent="aurora"
+        />
+        <Chiffre
+          label="Cadeaux en attente"
+          valeur={enAttente.length}
+          note={enAttente.length ? `${subsEnAttente} subs offerts par des non-inscrits` : 'aucun donateur non inscrit'}
+          accent="gold"
         />
       </section>
 
       <div className="grid gap-5 xl:grid-cols-2">
         <Bloc
-          titre="Boosters à ouvrir"
-          icone="rocket"
-          neige="admin-file"
-          aide="Dans l’ordre d’arrivée. Ils s’ouvrent à l’antenne, sur la page Boosters : l’overlay du stream suit."
-          actions={
-            <Link href="/boosters" className="btn btn-sm btn-ice no-underline">
-              Ouvrir →
-            </Link>
-          }
+          titre="Subs cadeaux en attente"
+          icone="snowflake"
+          neige="admin-attente"
+          aide={`Ils ont offert des subs sans être inscrits à la ligue. Un Booster Perso tous les ${PACKS_REGLES.persoTousLes} subs offerts : dès qu’ils s’inscrivent, ajoute-les dans Joueurs.`}
         >
-          {data.file.length === 0 ? (
-            <EmptyState title="Rien en attente" hint="Les subs, les paliers et les fins de saison remplissent cette file." />
+          {enAttente.length === 0 ? (
+            <EmptyState title="Personne en attente" hint="Un donateur non inscrit apparaîtra ici." />
           ) : (
             <ul className="admin-liste">
-              {data.file.slice(0, 8).map((p) => (
-                <li key={p.id}>
-                  <span className="admin-liste-titre">{p.nom}</span>
-                  <span className="admin-liste-detail">
-                    {p.pseudo ? `pour ${p.pseudo}` : 'pour la communauté'} · {p.raison}
+              {enAttente.map((c) => {
+                const boosters = Math.floor(c.subs / PACKS_REGLES.persoTousLes);
+                return (
+                  <li key={c.twitchId}>
+                    <span className="admin-liste-titre">{c.pseudo}</span>
+                    <span className="admin-liste-detail">
+                      {c.subs} sub{c.subs > 1 ? 's' : ''} offert{c.subs > 1 ? 's' : ''} ·{' '}
+                      <strong className="text-aurora">
+                        {boosters} Booster{boosters > 1 ? 's' : ''} Perso
+                      </strong>{' '}
+                      à son inscription
+                    </span>
+                    <time className="admin-liste-date">{shortDateTime(c.dernier)}</time>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </Bloc>
+
+        <Bloc titre="Les subs" icone="antenne" aide="Chaque sub compté depuis Twitch, le plus récent en tête.">
+          {registre.length === 0 ? (
+            <EmptyState title="Aucun sub encore" hint="Chaque sub et chaque cadeau arrivé par Twitch s’inscrit ici." />
+          ) : (
+            <ul className="admin-liste">
+              {registre.slice(0, SUBS_AFFICHES).map((s) => (
+                <li key={s.id}>
+                  <span className="admin-liste-titre">
+                    {s.pseudo}
+                    {s.twitchId && !inscrits.has(s.twitchId) && (
+                      <span className="ml-2 text-[11px] font-normal tracking-[0.12em] text-gold uppercase">
+                        pas inscrit
+                      </span>
+                    )}
                   </span>
-                  <time className="admin-liste-date">{shortDateTime(p.creeA)}</time>
+                  <span className="admin-liste-detail">
+                    {s.genre === 'cadeau'
+                      ? `${s.nombre} sub${s.nombre > 1 ? 's' : ''} offert${s.nombre > 1 ? 's' : ''}`
+                      : 'sub'}{' '}
+                    · niveau {s.niveau}
+                  </span>
+                  <time className="admin-liste-date">{shortDateTime(s.le)}</time>
                 </li>
               ))}
-              {data.file.length > 8 && (
-                <li className="admin-liste-plus">…et {data.file.length - 8} autre(s).</li>
+              {registre.length > SUBS_AFFICHES && (
+                <li className="admin-liste-plus">…et {registre.length - SUBS_AFFICHES} plus anciens.</li>
               )}
             </ul>
           )}
         </Bloc>
 
-        <Bloc titre="Dernières ouvertures" icone="layers" aide="Ce qui est sorti des boosters, et pour qui.">
-          {data.ouvertures.length === 0 ? (
-            <EmptyState title="Aucune ouverture" hint="La première carte tirée apparaîtra ici." />
-          ) : (
-            <ul className="admin-liste">
-              {data.ouvertures.map((o) => (
-                <li key={o.id}>
-                  <span className="admin-liste-titre">
-                    <RarityChip rarity={o.rarity} taille={16} /> {o.nom}
-                  </span>
-                  <span className="admin-liste-detail">
-                    {o.pack} · {o.pseudo ? `pour ${o.pseudo}` : o.tous ? 'toute la ligue' : o.beneficiaires.join(', ')}
-                  </span>
-                  <time className="admin-liste-date">{shortDateTime(o.openedAt)}</time>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Bloc>
-
-        <Bloc titre="Dernières games" icone="trophy" aide="Saisies depuis le classement, par capture de fin de game.">
-          {data.dernieresGames.length === 0 ? (
-            <EmptyState title="Aucune game" hint="La première saisie apparaîtra ici." />
-          ) : (
-            <ul className="admin-liste">
-              {data.dernieresGames.map((g) => (
-                <li key={g.id} data-eteint={g.skipped ? '' : undefined}>
-                  <span className="admin-liste-titre">{g.pseudo}</span>
-                  <span className="admin-liste-detail">
-                    {g.kills} kills{g.placement ? ` · Top ${g.placement}` : ''} ·{' '}
-                    <strong className="text-ice">{flakes(g.score)} pts</strong>
-                    {g.skipped ? ' · passée' : ''}
-                  </span>
-                  <time className="admin-liste-date">{shortDateTime(g.playedAt)}</time>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Bloc>
-
         <Bloc
-          titre="Dernières actions"
-          icone="book"
-          aide="Le journal, en ajout seul : rien ne s’y efface."
+          titre="Joueurs inscrits"
+          icone="user"
+          aide="Du plus récent au plus ancien."
           actions={
-            <Link href="/admin/journal" className="btn btn-sm no-underline">
-              Tout le journal
+            <Link href="/admin/joueurs" className="btn btn-sm no-underline">
+              Gérer →
             </Link>
           }
         >
-          {journal.length === 0 ? (
-            <EmptyState title="Rien encore" hint="Chaque action de modération laisse une ligne ici." />
+          {ligue.joueurs.length === 0 ? (
+            <EmptyState title="Personne encore" hint="Les joueurs s’inscrivent en se connectant avec Twitch." />
           ) : (
             <ul className="admin-liste">
-              {journal.map((e) => (
-                <li key={e.id}>
-                  <span className="admin-liste-titre">{e.action.replaceAll('_', ' ').toLowerCase()}</span>
-                  <span className="admin-liste-detail">{e.detail}</span>
-                  <time className="admin-liste-date">{shortDateTime(e.at)}</time>
+              {ligue.joueurs.map((j) => (
+                <li key={j.id}>
+                  <span className="admin-liste-titre">
+                    <Link href={`/joueurs/${j.slug}`} className="text-ink no-underline hover:text-ice">
+                      {j.pseudo}
+                    </Link>
+                  </span>
+                  <span className="admin-liste-detail">
+                    {j.streameuse ? 'la streameuse' : j.modo ? 'modération' : 'joueur'}
+                  </span>
+                  <time className="admin-liste-date">{shortDateTime(j.inscritLe)}</time>
                 </li>
               ))}
             </ul>

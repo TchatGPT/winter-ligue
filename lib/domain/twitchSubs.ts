@@ -97,3 +97,69 @@ export function retiens(vus: readonly MessageVu[], id: string, maintenant: numbe
   const gardes = vus.filter((v) => Date.parse(v.le) >= limite);
   return [...gardes, { id, le: new Date(maintenant).toISOString() }].slice(-MEMOIRE_MAX);
 }
+
+/* ------------------------------ Le registre ------------------------------ */
+
+export interface LigneSub {
+  id: string;
+  le: string;
+  genre: 'sub' | 'cadeau';
+  twitchId: string | null;
+  pseudo: string;
+  nombre: number;
+  niveau: number;
+}
+
+/** Le niveau d'un sub, tel que Twitch l'écrit (`1000`, `2000`, `3000`). */
+export function niveauDe(tier: unknown): number {
+  return tier === '3000' ? 3 : tier === '2000' ? 2 : 1;
+}
+
+/** La ligne du registre pour un message compté. */
+export function ligneDuSub(
+  message: { id: string; type: string; evenement: Record<string, unknown> | undefined; maintenant: number },
+  nombre: number,
+): LigneSub {
+  const e = message.evenement ?? {};
+  const cadeau = message.type === 'channel.subscription.gift';
+  const anonyme = cadeau && e.is_anonymous === true;
+  return {
+    id: message.id,
+    le: new Date(message.maintenant).toISOString(),
+    genre: cadeau ? 'cadeau' : 'sub',
+    twitchId: !anonyme && typeof e.user_id === 'string' && e.user_id ? e.user_id : null,
+    pseudo: anonyme ? 'Anonyme' : nomDe(e),
+    nombre,
+    niveau: niveauDe(e.tier),
+  };
+}
+
+export interface CadeauEnAttente {
+  twitchId: string;
+  pseudo: string;
+  /** Tous les subs qu'il a offerts. */
+  subs: number;
+  dernier: string;
+}
+
+/**
+ * Qui a offert des subs sans être inscrit à la ligue : ses Boosters Perso
+ * l'attendent. Les cadeaux anonymes n'y figurent pas — on ne sait pas de qui.
+ */
+export function cadeauxEnAttente(registre: readonly LigneSub[], inscrits: ReadonlySet<string>): CadeauEnAttente[] {
+  const parDonateur = new Map<string, CadeauEnAttente>();
+  for (const l of registre) {
+    if (l.genre !== 'cadeau' || !l.twitchId || inscrits.has(l.twitchId)) continue;
+    const deja = parDonateur.get(l.twitchId);
+    if (deja) {
+      deja.subs += l.nombre;
+      if (l.le > deja.dernier) {
+        deja.dernier = l.le;
+        deja.pseudo = l.pseudo;
+      }
+    } else {
+      parDonateur.set(l.twitchId, { twitchId: l.twitchId, pseudo: l.pseudo, subs: l.nombre, dernier: l.le });
+    }
+  }
+  return [...parDonateur.values()].sort((a, b) => b.subs - a.subs || b.dernier.localeCompare(a.dernier));
+}

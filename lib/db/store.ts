@@ -20,10 +20,10 @@ import { tmpdir } from 'node:os';
 import postgres from 'postgres';
 import { cache } from 'react';
 import { synchroniseCatalogue } from './lecture';
-import { chargeBase, empreintes, enregistreBase, lisJournal, SCHEMA_SQL, TABLES } from './tables';
+import { chargeBase, empreintes, enregistreBase, lisJournal, lisSubsTwitch, SCHEMA_SQL, TABLES } from './tables';
 import { dirname, join } from 'node:path';
 import { DEFAULT_MAX_GAMES_PER_PLAYER, ECONOMY, SEASON } from '@/lib/domain/rules';
-import type { AuditEntry, Database, PlayerRole } from './entities';
+import type { AuditEntry, Database, PlayerRole, SubTwitch } from './entities';
 import type { Rarity } from '@/lib/domain/types';
 
 /*
@@ -68,6 +68,7 @@ export function emptyDatabase(): Database {
     batailles: [],
     evenements: [],
     codesCadeaux: [],
+    subsTwitch: [],
   };
 }
 
@@ -128,6 +129,8 @@ export interface Store {
   fluxOverlay(depuis: string): Promise<FluxOverlay>;
   /** Les dernières lignes du journal, la plus récente en tête. */
   journal(combien: number): Promise<AuditEntry[]>;
+  /** Les derniers subs comptés depuis Twitch, le plus récent en tête. */
+  subsTwitch(combien: number): Promise<SubTwitch[]>;
 }
 
 class JsonFileStore implements Store {
@@ -203,6 +206,11 @@ class JsonFileStore implements Store {
   async journal(combien: number): Promise<AuditEntry[]> {
     const db = await this.load();
     return db.audit.slice(-Math.max(1, combien)).reverse();
+  }
+
+  async subsTwitch(combien: number): Promise<SubTwitch[]> {
+    const db = await this.load();
+    return db.subsTwitch.slice(-Math.max(1, combien)).reverse();
   }
 
   async fluxOverlay(depuis: string): Promise<FluxOverlay> {
@@ -500,6 +508,13 @@ class PostgresStore implements Store {
     });
   }
 
+  async subsTwitch(combien: number): Promise<SubTwitch[]> {
+    return this.enFile(async () => {
+      await this.prepare();
+      return lisSubsTwitch(this.sql, combien);
+    });
+  }
+
   async fluxOverlay(depuis: string): Promise<FluxOverlay> {
     return this.enFile(async () => {
       await this.prepare();
@@ -640,6 +655,7 @@ function migrate(db: Partial<Database>): Database {
       (e) => e.kind === 'FLOCONS_DOUBLES' || e.kind === 'CARTES_RENFORCEES',
     ),
     codesCadeaux: db.codesCadeaux ?? [],
+    subsTwitch: db.subsTwitch ?? [],
   };
 }
 

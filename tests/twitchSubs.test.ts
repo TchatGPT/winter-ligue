@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
+  cadeauxEnAttente,
   dejaVu,
+  ligneDuSub,
   FRAICHEUR_MS,
   MEMOIRE_MAX,
   MEMOIRE_MS,
@@ -92,5 +94,36 @@ describe('la mémoire des messages comptés', () => {
     expect(vus).toHaveLength(MEMOIRE_MAX);
     expect(dejaVu(vus, `m${MEMOIRE_MAX + 10}`)).toBe(true);
     expect(dejaVu(vus, 'm0')).toBe(false);
+  });
+});
+
+describe('le registre des subs', () => {
+  const maintenant = Date.parse('2026-12-01T20:00:00.000Z');
+
+  it('note qui a sub, combien, quand, et à quel niveau', () => {
+    expect(
+      ligneDuSub(
+        { id: 'm1', type: 'channel.subscribe', evenement: { user_id: 't1', user_name: 'Alex', tier: '3000' }, maintenant },
+        1,
+      ),
+    ).toEqual({ id: 'm1', le: '2026-12-01T20:00:00.000Z', genre: 'sub', twitchId: 't1', pseudo: 'Alex', nombre: 1, niveau: 3 });
+    const anonyme = ligneDuSub(
+      { id: 'm2', type: 'channel.subscription.gift', evenement: { user_id: null, is_anonymous: true, total: 5 }, maintenant },
+      5,
+    );
+    expect(anonyme).toMatchObject({ genre: 'cadeau', twitchId: null, pseudo: 'Anonyme', nombre: 5, niveau: 1 });
+  });
+
+  it('retrouve qui a offert des subs sans être inscrit, en additionnant ses cadeaux', () => {
+    const registre = [
+      { id: 'a', le: '2026-12-01T20:00:00.000Z', genre: 'cadeau' as const, twitchId: 'x', pseudo: 'Xavier', nombre: 5, niveau: 1 },
+      { id: 'b', le: '2026-12-02T20:00:00.000Z', genre: 'cadeau' as const, twitchId: 'x', pseudo: 'Xavier_', nombre: 10, niveau: 1 },
+      { id: 'c', le: '2026-12-01T21:00:00.000Z', genre: 'cadeau' as const, twitchId: 'i', pseudo: 'Inscrit', nombre: 20, niveau: 1 },
+      { id: 'd', le: '2026-12-01T22:00:00.000Z', genre: 'sub' as const, twitchId: 'y', pseudo: 'Yann', nombre: 1, niveau: 1 },
+      { id: 'e', le: '2026-12-01T23:00:00.000Z', genre: 'cadeau' as const, twitchId: null, pseudo: 'Anonyme', nombre: 50, niveau: 1 },
+    ];
+    expect(cadeauxEnAttente(registre, new Set(['i']))).toEqual([
+      { twitchId: 'x', pseudo: 'Xavier_', subs: 15, dernier: '2026-12-02T20:00:00.000Z' },
+    ]);
   });
 });

@@ -23,6 +23,7 @@ import { ajoutePackDu } from './packs';
 import { declencheEvenements } from '@/lib/services/evenements';
 import {
   dejaVu,
+  ligneDuSub,
   recitDuMessage,
   retiens,
   subsDuMessage,
@@ -151,6 +152,8 @@ export function ajouteSubsTwitch(
   if (subs === 0) return null;
   db.config.twitchVus = retiens(db.config.twitchVus, message.id, message.maintenant);
   const resultat = addSubs(db, subs, 'twitch', recitDuMessage(message.type, message.evenement, subs));
+  // Au registre, que lit la modération : qui, combien, quand.
+  db.subsTwitch.push(ligneDuSub(message, subs));
   return resultat;
 }
 

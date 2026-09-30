@@ -322,6 +322,25 @@ export interface CodeCadeau {
   creePar: string;
 }
 
+/**
+ * Un sub compté depuis Twitch : le registre que lit la modération — qui a sub
+ * ou offert, combien, quand. Comme le journal, il ne se charge pas avec le
+ * reste de la base : il se lit à part (`Store.subsTwitch`).
+ */
+export interface SubTwitch {
+  /** L'identifiant du message Twitch : un geste, une ligne. */
+  id: string;
+  le: string;
+  genre: 'sub' | 'cadeau';
+  /** L'identifiant Twitch de qui a sub ou offert ; nul pour un cadeau anonyme. */
+  twitchId: string | null;
+  pseudo: string;
+  /** Un pour un sub, le nombre offert pour un cadeau. */
+  nombre: number;
+  /** Le niveau du sub : 1, 2 ou 3. */
+  niveau: number;
+}
+
 export interface Database {
   /** Incrémentée à chaque migration de forme. */
   version: number;
@@ -338,4 +357,6 @@ export interface Database {
   batailles: Bataille[];
   evenements: EvenementActif[];
   codesCadeaux: CodeCadeau[];
+  /** Le registre des subs : toujours vide au chargement, on n'y fait qu'ajouter. */
+  subsTwitch: SubTwitch[];
 }
