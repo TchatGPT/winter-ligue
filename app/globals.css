@@ -2262,16 +2262,34 @@
      de couleur sur la plaque sombre. Des colonnes de 24 px au plus, arrondies
      au sommet, carrées sur la ligne de base ; des filets d'un pixel. */
   .graphe {
-    margin-top: 1.6rem;
+    display: flex;
+    flex-direction: column;
+    margin-top: 1rem;
+  }
+  .graphe-cle {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.45rem;
+    margin-bottom: 0.9rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--muted);
+  }
+  .graphe-cle > i {
+    width: 18px;
+    border-top: 1px solid rgb(207 220 235 / 0.55);
   }
   .graphe-cadre {
     display: grid;
+    min-height: 180px;
+    flex: 1 1 auto;
     grid-template-columns: 2rem minmax(0, 1fr);
     gap: 0.4rem;
   }
   .graphe-axe-y {
     position: relative;
-    height: 180px;
+    min-height: 180px;
   }
   .graphe-axe-y > span {
     position: absolute;
@@ -2284,7 +2302,7 @@
   }
   .graphe-zone {
     position: relative;
-    height: 180px;
+    min-height: 180px;
     border-radius: var(--r-sm) var(--r-sm) 0 0;
     background: rgb(0 10 30 / 0.3);
     box-shadow: inset 0 1px 3px rgb(0 8 24 / 0.45);
@@ -2304,15 +2322,6 @@
     right: 0;
     left: 0;
     border-top: 1px solid rgb(207 220 235 / 0.55);
-  }
-  .graphe-moyenne > em {
-    position: absolute;
-    right: 0.5rem;
-    bottom: 3px;
-    font-size: 0.6875rem;
-    font-style: normal;
-    font-weight: 600;
-    color: var(--muted);
   }
   .graphe-colonnes {
     position: absolute;
@@ -2407,6 +2416,29 @@
     width: 20px;
     height: 20px;
     font-size: 0.6875rem;
+  }
+
+  /*
+   * Sur grand écran, l'historique prend la hauteur de la colonne de droite
+   * (`contain: size` : son contenu ne compte pas dans la hauteur de la rangée).
+   * Le graphique grandit pour la remplir ; la liste, elle, défile au-delà.
+   */
+  .fiche-saison {
+    display: flex;
+    flex-direction: column;
+  }
+  .fiche-saison > .graphe {
+    flex: 1 1 auto;
+  }
+  @media (min-width: 1280px) {
+    .fiche-saison {
+      contain: size;
+    }
+    .fiche-saison > .fiche-games {
+      min-height: 0;
+      flex: 0 1 auto;
+      max-height: none;
+    }
   }
 
   /* ---- La liste des games : le tableau du graphique ---- */

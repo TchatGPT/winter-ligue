@@ -188,9 +188,9 @@ export default async function FicheJoueurPage({ params }: { params: Promise<{ sl
         </div>
       </section>
 
-      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.45fr)_minmax(0,1fr)]">
+      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.45fr)_minmax(0,1fr)] xl:items-stretch">
         {/* =========================== Sa saison, game par game =========================== */}
-        <section className="glass relative overflow-hidden p-5 sm:p-6" aria-labelledby="fiche-games">
+        <section className="glass fiche-saison relative overflow-hidden p-5 sm:p-6" aria-labelledby="fiche-games">
           <SnowCap radius="var(--r-lg)" seed={`fiche-games-${p.slug}`} epaisseur={14} />
           <header className="relative">
             <p className="eyebrow">Sa saison, game par game</p>

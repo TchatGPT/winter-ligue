@@ -53,6 +53,13 @@ export function GraphiqueScores({ points, moyenne }: { points: PointScore[]; moy
   return (
     <figure className="graphe">
       <figcaption className="sr-only">Le score de chaque game, dans l’ordre où elles ont été jouées.</figcaption>
+      {/* La clé de la ligne de moyenne, au-dessus : posée sur la ligne, elle
+          se heurtait au score de la meilleure game. */}
+      {moyenne > 0 && (
+        <p className="graphe-cle">
+          <i aria-hidden="true" /> moyenne {moyenne} pts
+        </p>
+      )}
 
       <div className="graphe-cadre">
         {/* L'axe des scores : des filets, et leurs valeurs à gauche. */}
@@ -69,9 +76,7 @@ export function GraphiqueScores({ points, moyenne }: { points: PointScore[]; moy
             <i key={g} className="graphe-filet" style={{ bottom: hauteur(g) }} aria-hidden="true" />
           ))}
           {moyenne > 0 && (
-            <i className="graphe-moyenne" style={{ bottom: hauteur(moyenne) }} aria-hidden="true">
-              <em>moyenne {moyenne}</em>
-            </i>
+            <i className="graphe-moyenne" style={{ bottom: hauteur(moyenne) }} aria-hidden="true" />
           )}
 
           <ol className="graphe-colonnes">
