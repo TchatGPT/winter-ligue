@@ -21,6 +21,12 @@
   --bg: #030711;
   --bg-deep: #010409;
 
+  /* Le ciel du décor, du zénith à l'horizon — voir « LE DÉCOR ». */
+  --ciel-zenith: #02050e;
+  --ciel-haut: #061130;
+  --ciel-milieu: #0c1d4a;
+  --ciel-horizon: #1c2a6e;
+
   /* Teintes du verre.
 
      Elles étaient nettement plus opaques — 0,52 à 0,70 — et pour une bonne
@@ -336,46 +342,67 @@
   }
 
   /* --------------------------------------------------------------------------
-     L'AURORE
-     Le verre n'existe que s'il a quelque chose à laisser passer. Ces nappes
-     dérivent lentement sous toute l'interface.
-     -------------------------------------------------------------------------- */
-
-  /* --------------------------------------------------------------------------
-     LE DÉCOR — de la glace sous un ciel de néon. Voir components/FondHiver.
-     Des lueurs vives qui se fondent, les facettes d'un lac gelé, un grain de
-     pellicule et un vignettage. Rien n'y bouge : un décor animé obligeait à
-     refaire chaque flou de verre à chaque image.
-     Le conteneur ne crée pas de contexte d'empilement (pas de z-index) : la
-     colonne de navigation, en z 30, reste au-dessus.
+     LE DÉCOR — une nuit d'hiver. Voir components/FondHiver.
+     Du haut vers le bas : le dégradé du ciel et ses étoiles, l'aurore boréale,
+     les montagnes, puis la neige. Les trois images sortent de
+     scripts/paysage.mjs. Rien n'y bouge : un décor animé obligeait à refaire
+     chaque flou de verre à chaque image.
+     Le conteneur n'a pas de z-index : la colonne de navigation, en z 30, et le
+     contenu passent au-dessus.
      -------------------------------------------------------------------------- */
   .fond-hiver {
     position: fixed;
     inset: 0;
+    /* La hauteur du grand viewport : sur téléphone, la barre d'adresse qui
+       paraît et disparaît en plein défilement ne redimensionne pas le décor,
+       ce qui ferait redessiner l'aurore et les montagnes. */
+    height: 100vh;
+    height: 100lvh;
     overflow: hidden;
     pointer-events: none;
     background-color: var(--bg);
-    /* Les lueurs : glace en haut à gauche, violet Twitch à droite, aurore et
-       glace vive au pied de l'écran, et un cœur violet pour les relier. */
     background-image:
-      /* un rai de lumière qui traverse en diagonale */
-      linear-gradient(118deg, transparent 30%, color-mix(in srgb, var(--ice) 9%, transparent) 40%, transparent 52%),
-      radial-gradient(60% 66% at 6% 0%, color-mix(in srgb, var(--ice-3) 100%, transparent) 0%, transparent 70%),
-      radial-gradient(52% 62% at 100% 22%, color-mix(in srgb, var(--twitch) 88%, transparent) 0%, transparent 70%),
-      radial-gradient(54% 50% at 14% 100%, color-mix(in srgb, var(--aurora) 58%, transparent) 0%, transparent 70%),
-      radial-gradient(48% 50% at 78% 104%, color-mix(in srgb, var(--ice-2) 74%, transparent) 0%, transparent 70%),
-      radial-gradient(44% 40% at 50% 44%, color-mix(in srgb, var(--violet) 34%, transparent) 0%, transparent 72%),
-      linear-gradient(165deg, color-mix(in srgb, var(--ice-3) 20%, var(--bg)) 0%, var(--bg-deep) 100%);
+      /* la lueur de l'aurore, diffuse dans le ciel */
+      radial-gradient(80% 36% at 50% 22%, color-mix(in srgb, var(--aurora) 13%, transparent) 0%, transparent 70%),
+      /* l'horizon qui s'embrase de violet derrière les montagnes */
+      radial-gradient(110% 30% at 50% 56%, color-mix(in srgb, var(--violet) 36%, transparent) 0%, transparent 70%),
+      radial-gradient(50% 22% at 78% 52%, color-mix(in srgb, var(--twitch) 22%, transparent) 0%, transparent 70%),
+      /* le dégradé de la nuit, du zénith vers l'horizon */
+      linear-gradient(
+        180deg,
+        var(--ciel-zenith) 0%,
+        var(--ciel-haut) 26%,
+        var(--ciel-milieu) 44%,
+        var(--ciel-horizon) 58%,
+        var(--ciel-horizon) 100%
+      );
   }
   .fond-hiver > * {
     position: absolute;
     inset: 0;
   }
-  /* Les facettes de glace : leurs arêtes de givre et leurs éclats de lumière
-     prennent la couleur des lueurs qu'elles recouvrent. */
-  .fh-eclats {
-    background: url('/fond/eclats.svg') center / cover no-repeat;
-    opacity: 0.9;
+  /* Les étoiles : une tuile qui se répète à sa taille réelle, pour rester
+     nette, et qui s'éteint en approchant de l'horizon. Le masque ne lit que
+     l'opacité : --bg n'y sert que de couleur pleine. */
+  .fh-etoiles {
+    background: url('/fond/etoiles.svg') 0 0 / 1600px 900px repeat;
+    mask-image: linear-gradient(180deg, var(--bg) 0%, var(--bg) 32%, transparent 60%);
+  }
+  /* L'aurore : les trois quarts hauts de l'écran, en éclaircissement — ses
+     rais s'ajoutent au ciel au lieu de le recouvrir. */
+  .fh-aurore {
+    bottom: auto;
+    height: 72%;
+    background: url('/fond/aurore.svg') center top / cover no-repeat;
+    mix-blend-mode: screen;
+  }
+  /* Les montagnes et la neige, posées au pied de l'écran sur 60 % de sa
+     hauteur. L'image se raccorde bord à bord : sur un écran plus large
+     qu'elle, elle se répète sans couture. */
+  .fh-montagnes {
+    top: auto;
+    height: 60%;
+    background: url('/fond/montagnes.svg') center bottom / auto 100% repeat-x;
   }
   /* Le grain de pellicule : il casse les aplats des dégradés. */
   .fh-grain {
