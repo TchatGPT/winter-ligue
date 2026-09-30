@@ -541,7 +541,7 @@ export function Affrontements({
                 ?
               </span>
               <b>Place libre</b>
-              <small>Un duel lancé depuis le ring s’affiche ici, prêt à être relevé.</small>
+              <small>Un duel lancé s’affiche ici, prêt à être relevé.</small>
             </li>
           ))}
         </ul>
@@ -576,7 +576,7 @@ export function Affrontements({
             <div className="ring-reconnexion">
               <p>
                 <strong>Ta session ne permet pas de jouer.</strong> Elle a expiré, ou elle n’est rattachée à aucun
-                joueur. Reconnecte-toi, et le ring est à toi.
+                joueur. Reconnecte-toi pour jouer.
               </p>
               <a href="/connexion" className="btn btn-ice no-underline">
                 Se reconnecter
@@ -769,7 +769,7 @@ export function Affrontements({
                           {flakes(b.mise)} <span className="text-ice">❄</span>
                         </p>
                         <p className="mt-0.5 text-[11px] font-bold tracking-[0.14em] text-faint uppercase">
-                          mise par camp
+                          mise
                         </p>
                       </div>
                   </li>

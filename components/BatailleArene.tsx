@@ -224,7 +224,7 @@ function Enjeu({ mise }: { mise: number }) {
         {flakes(mise * 2)} <span className="text-ice">❄</span>
       </p>
       <p className="mt-1 font-display text-[12px] font-bold tracking-[0.2em] text-muted uppercase">
-        Pour le gagnant · {flakes(mise)} ❄ misés par camp
+        Pour le gagnant · {flakes(mise)} ❄ misés chacun
       </p>
     </header>
   );
@@ -262,7 +262,7 @@ export function ArenePreparation({
       </div>
       <div className="arene-recit">
         <p className="font-display text-lg font-black tracking-wide text-ink uppercase sm:text-xl">
-          {droite.bot ? 'Le Bot tasse sa boule de neige…' : 'Les deux camps tassent leur boule…'}
+          {droite.bot ? 'Le Bot tasse sa boule de neige…' : 'Les deux joueurs tassent leur boule…'}
         </p>
       </div>
     </div>

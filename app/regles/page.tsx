@@ -280,7 +280,7 @@ export default async function ReglesPage(){
           </p>
         </Rule>
 
-        <Rule title="Les duels" lead="Deux camps, la même mise, le gagnant rafle tout.">
+        <Rule title="Les duels" lead="Deux joueurs, la même mise, le gagnant rafle tout.">
           <ul className="list-inside list-disc space-y-1">
             <li>
               Mise de {DUEL.miseMin} à {DUEL.miseMax.toLocaleString('fr-FR')} ❄, en une seule manche.
