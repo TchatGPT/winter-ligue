@@ -64,6 +64,18 @@ export function EcranJoueurs({ joueurs, codes }: { joueurs: LigneJoueur[]; codes
   const [montant, setMontant] = useState(100);
   const [utilisationsMax, setUtilisationsMax] = useState(10);
   const [dernierCode, setDernierCode] = useState<{ code: string; annonce: boolean } | null>(null);
+  /** Le code dont la suppression attend sa confirmation : un premier clic la propose. */
+  const [aSupprimer, setASupprimer] = useState<string | null>(null);
+
+  async function supprime(c: LigneCode) {
+    const fait = await envoie(
+      '/api/admin/codes',
+      { id: c.id },
+      { methode: 'DELETE', cle: `code:${c.id}`, succes: `${c.code} supprimé. Les flocons déjà versés restent.` },
+    );
+    setASupprimer(null);
+    if (fait && dernierCode?.code === c.code) setDernierCode(null);
+  }
 
   async function copie(code: string) {
     try {
@@ -176,7 +188,7 @@ export function EcranJoueurs({ joueurs, codes }: { joueurs: LigneJoueur[]; codes
         <Bloc
           titre="Codes cadeaux"
           icone="snowflake"
-          aide="Un code épuisé ou désactivé ne sert plus ; ce qu’il a versé reste versé."
+          aide="Un code épuisé ou désactivé ne sert plus ; un code supprimé disparaît. Ce qu’il a versé reste versé, et le journal garde sa trace."
         >
           {codes.length === 0 ? (
             <p className="text-[13px] text-faint">Aucun code pour l’instant.</p>
@@ -219,20 +231,41 @@ export function EcranJoueurs({ joueurs, codes }: { joueurs: LigneJoueur[]; codes
                         </span>
                       </td>
                       <td className="text-right">
-                        {c.etat === 'actif' && (
-                          <button
-                            className="btn btn-sm btn-ghost"
-                            disabled={busy !== null}
-                            onClick={() =>
-                              envoie(
-                                '/api/admin/codes',
-                                { id: c.id },
-                                { methode: 'PATCH', cle: `code:${c.id}`, succes: `${c.code} désactivé.` },
-                              )
-                            }
-                          >
-                            Désactiver
-                          </button>
+                        {aSupprimer === c.id ? (
+                          <div className="inline-flex gap-1.5">
+                            <button className="btn btn-sm btn-danger" disabled={busy !== null} onClick={() => supprime(c)}>
+                              Supprimer {c.code}
+                            </button>
+                            <button className="btn btn-sm btn-ghost" disabled={busy !== null} onClick={() => setASupprimer(null)}>
+                              Annuler
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="inline-flex gap-1.5">
+                            {c.etat === 'actif' && (
+                              <button
+                                className="btn btn-sm btn-ghost"
+                                disabled={busy !== null}
+                                onClick={() =>
+                                  envoie(
+                                    '/api/admin/codes',
+                                    { id: c.id },
+                                    { methode: 'PATCH', cle: `code:${c.id}`, succes: `${c.code} désactivé.` },
+                                  )
+                                }
+                              >
+                                Désactiver
+                              </button>
+                            )}
+                            <button
+                              className="btn btn-sm btn-ghost"
+                              disabled={busy !== null}
+                              title="Supprimer ce code pour de bon"
+                              onClick={() => setASupprimer(c.id)}
+                            >
+                              Supprimer
+                            </button>
+                          </div>
                         )}
                       </td>
                     </tr>

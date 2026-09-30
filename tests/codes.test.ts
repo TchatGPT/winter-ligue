@@ -3,7 +3,7 @@ import type { Database } from '@/lib/db/entities';
 import { emptyDatabase } from '@/lib/db/store';
 import { annonceDuCode, etatDuCode, normaliseCode } from '@/lib/domain/codes';
 import { ECONOMY } from '@/lib/domain/rules';
-import { CodeError, creeCode, desactiveCode, utiliseCode, vueCodes } from '@/lib/services/codes';
+import { CodeError, creeCode, desactiveCode, supprimeCode, utiliseCode, vueCodes } from '@/lib/services/codes';
 import { rattacheCompteTwitch } from '@/lib/services/comptes';
 
 /**
@@ -125,5 +125,29 @@ describe('utiliser un code', () => {
     const r = utiliseCode(db, a, code, CHAINE);
     expect(solde(db, a)).toBe(ECONOMY.soldeMax);
     expect(r.recu).toBe(ECONOMY.soldeMax - avant);
+  });
+});
+
+describe('supprimer un code', () => {
+  it('le retire pour de bon, sans reprendre ce qu’il a versé', () => {
+    const { db, modo, a } = base();
+    const cree = creeCode(db, { montant: 100, utilisationsMax: 5 }, modo);
+    utiliseCode(db, a, cree.code, CHAINE);
+    const apres = solde(db, a);
+
+    expect(supprimeCode(db, cree.id, modo)).toEqual({ code: cree.code, utilisations: 1 });
+    expect(db.codesCadeaux).toHaveLength(0);
+    expect(vueCodes(db)).toHaveLength(0);
+    // Le crédit reste au grand livre, et le solde ne bouge pas.
+    expect(db.ledger.some((l) => l.reason === 'CODE_CADEAU' && l.refId === cree.id)).toBe(true);
+    expect(solde(db, a)).toBe(apres);
+    expect(db.audit.some((e) => e.action === 'CODE_SUPPRIME')).toBe(true);
+    // Supprimé, il ne sert plus.
+    refuse(() => utiliseCode(db, a, cree.code, CHAINE), 'CODE_INCONNU');
+  });
+
+  it('refuse un code qui n’existe pas', () => {
+    const { db, modo } = base();
+    refuse(() => supprimeCode(db, 'inconnu', modo), 'CODE_INCONNU');
   });
 });

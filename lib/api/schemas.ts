@@ -168,6 +168,8 @@ export const creeCodeSchema = z.object({
 
 export const desactiveCodeSchema = z.object({ id: uuid });
 
+export const supprimeCodeSchema = z.object({ id: uuid });
+
 /** Saisie des subs : au compteur de la saison, au compte d'un joueur, ou remise à zéro. */
 export const adminSubsSchema = z.union([
   z.object({ action: z.literal('remise-a-zero') }),

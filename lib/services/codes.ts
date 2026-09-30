@@ -110,6 +110,27 @@ export function desactiveCode(db: Database, id: string, auteur: string): CodeCad
 }
 
 /**
+ * Supprime un code, pour de bon : il quitte la liste et la base. Ce qu'il a
+ * versé reste versé — les crédits restent au grand livre, avec sa référence —
+ * et le journal garde la trace de sa création, de ses utilisations et de sa
+ * suppression.
+ */
+export function supprimeCode(db: Database, id: string, auteur: string): { code: string; utilisations: number } {
+  const code = db.codesCadeaux.find((c) => c.id === id);
+  if (!code) throw new CodeError('Code introuvable.', 'CODE_INCONNU');
+  const n = utilisations(db, code.id).length;
+  db.codesCadeaux = db.codesCadeaux.filter((c) => c.id !== id);
+  audit(
+    db,
+    auteur,
+    'CODE_SUPPRIME',
+    null,
+    `${code.code} : ${code.montant} ❄, ${n} utilisation(s) sur ${code.utilisationsMax}`,
+  );
+  return { code: code.code, utilisations: n };
+}
+
+/**
  * Un joueur tape un code. Il reçoit le montant du code — moins si son solde
  * touche le plafond : le crédit s'arrête là, comme partout.
  */

@@ -312,8 +312,10 @@ possibilités). Un joueur le tape derrière l'icône cadeau
 dans `utiliseCode`, dans une transaction — un joueur ne s'en sert qu'une fois, le
 code ne sert pas plus que prévu, celui qui l'a créé ne s'en sert pas, la
 streameuse non plus. Chaque utilisation est un `credit()` au grand livre avec le
-code en référence : les utilisations se comptent là, sans double écriture. Dix
-essais par dix minutes et par adresse. À sa création, le code est annoncé dans le
+code en référence : les utilisations se comptent là, sans double écriture. Un
+code se désactive, ou se supprime pour de bon : les flocons versés restent, le
+grand livre garde ses crédits et le journal sa trace. Dix essais par dix minutes
+et par adresse. À sa création, le code est annoncé dans le
 tchat de la chaîne (`POST /helix/chat/messages`, jeton de l'application ; la
 streameuse accorde `user:bot` et `channel:bot` au branchement) : le message est
 composé par le serveur (`annonceDuCode`), sans aucun texte venu de l'écran.
