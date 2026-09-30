@@ -2420,7 +2420,7 @@
       inset 0 1px 0 rgb(255 255 255 / 0.4),
       inset 0 0 0 1px rgb(255 255 255 / 0.12),
       0 10px 20px -8px rgb(0 8 24 / 0.85);
-    transform: translateX(-50%);
+    top: 0;
     font-size: 0.75rem;
     color: var(--ink-2);
     white-space: nowrap;
@@ -2459,28 +2459,6 @@
     width: 20px;
     height: 20px;
     font-size: 0.6875rem;
-  }
-
-  /*
-   * Sur grand écran, l'historique prend la hauteur de la colonne de droite
-   * (`contain: size` : son contenu ne compte pas dans la hauteur de la rangée).
-   * Le graphique garde sa hauteur ; la liste prend le reste, et défile
-   * au-delà.
-   */
-  .fiche-saison {
-    display: flex;
-    flex-direction: column;
-  }
-  @media (min-width: 1280px) {
-    .fiche-saison {
-      contain: size;
-    }
-    .fiche-saison > .fiche-games {
-      min-height: 0;
-      flex: 1 1 auto;
-      align-content: start;
-      max-height: none;
-    }
   }
 
   /* ---- La liste des games : le tableau du graphique ---- */

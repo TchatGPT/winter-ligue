@@ -188,73 +188,123 @@ export default async function FicheJoueurPage({ params }: { params: Promise<{ sl
         </div>
       </section>
 
-      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.45fr)_minmax(0,1fr)] xl:items-stretch">
-        {/* =========================== Sa saison, game par game =========================== */}
-        <section className="glass fiche-saison relative overflow-hidden p-5 sm:p-6" aria-labelledby="fiche-games">
-          <SnowCap radius="var(--r-lg)" seed={`fiche-games-${p.slug}`} epaisseur={14} />
-          <header className="relative">
-            <p className="eyebrow">Sa saison, game par game</p>
-            <h2 id="fiche-games" className="fiche-titre">
-              Historique des games
-            </h2>
-          </header>
+      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.45fr)_minmax(0,1fr)]">
+        <div className="grid gap-5">
+          {/* =========================== Sa saison, game par game =========================== */}
+          <section className="glass relative overflow-hidden p-5 sm:p-6" aria-labelledby="fiche-games">
+            <SnowCap radius="var(--r-lg)" seed={`fiche-games-${p.slug}`} epaisseur={14} />
+            <header className="relative">
+              <p className="eyebrow">Sa saison, game par game</p>
+              <h2 id="fiche-games" className="fiche-titre">
+                Historique des games
+              </h2>
+            </header>
 
-          {p.games.length === 0 ? (
-            <p className="fil-vide mt-4 text-[14px] text-muted">Aucune game saisie pour l’instant.</p>
-          ) : (
-            <>
-              <GraphiqueScores points={points} moyenne={t.averageScore} creneaux={fiche.creneaux} />
+            {p.games.length === 0 ? (
+              <p className="fil-vide mt-4 text-[14px] text-muted">Aucune game saisie pour l’instant.</p>
+            ) : (
+              <>
+                <GraphiqueScores points={points} moyenne={t.averageScore} creneaux={fiche.creneaux} />
 
-              <ol className="fiche-games">
-                {recentes.map((g) => (
-                  <li key={g.id} className="fiche-game" data-passee={g.skipped ? '' : undefined}>
-                    <span className="fiche-game-numero">#{numeroDe.get(g.id)}</span>
-                    <div className="min-w-0 flex-1">
-                      <p className="fiche-game-ligne">
-                        {g.placement !== null && g.placement <= 3 ? (
-                          <span className="fiche-top">
-                            <b className="medaille" data-rang={g.placement}>
-                              {g.placement}
-                            </b>
-                            Top {g.placement}
+                <ol className="fiche-games">
+                  {recentes.map((g) => (
+                    <li key={g.id} className="fiche-game" data-passee={g.skipped ? '' : undefined}>
+                      <span className="fiche-game-numero">#{numeroDe.get(g.id)}</span>
+                      <div className="min-w-0 flex-1">
+                        <p className="fiche-game-ligne">
+                          {g.placement !== null && g.placement <= 3 ? (
+                            <span className="fiche-top">
+                              <b className="medaille" data-rang={g.placement}>
+                                {g.placement}
+                              </b>
+                              Top {g.placement}
+                            </span>
+                          ) : (
+                            <span className="fiche-top fiche-top-aucun">Hors top 3</span>
+                          )}
+                          <span>
+                            <strong>{g.kills}</strong> kills
                           </span>
-                        ) : (
-                          <span className="fiche-top fiche-top-aucun">Hors top 3</span>
-                        )}
-                        <span>
-                          <strong>{g.kills}</strong> kills
-                        </span>
-                        {g.skipped && <span className="fiche-passee">passée</span>}
-                      </p>
-                      <p className="fiche-game-date">{shortDateTime(g.playedAt)}</p>
-                      {g.applied.length > 0 && (
-                        <p className="fiche-game-cartes">
-                          {g.applied.map((effet, i) => {
-                            const carte = getCard(effet.cardId);
-                            if (!carte) return null;
-                            return (
-                              <span key={`${effet.cardId}-${i}`} data-malus={effet.points < 0 ? '' : undefined}>
-                                {carte.glyph} {carte.name}
-                                <b>
-                                  {effet.points > 0 ? '+' : ''}
-                                  {effet.points}
-                                </b>
-                              </span>
-                            );
-                          })}
+                          {g.skipped && <span className="fiche-passee">passée</span>}
                         </p>
-                      )}
-                    </div>
-                    <div className="fiche-game-score">
-                      <strong>{g.score}</strong>
-                      <small>pts</small>
-                    </div>
-                  </li>
-                ))}
-              </ol>
-            </>
-          )}
-        </section>
+                        <p className="fiche-game-date">{shortDateTime(g.playedAt)}</p>
+                        {g.applied.length > 0 && (
+                          <p className="fiche-game-cartes">
+                            {g.applied.map((effet, i) => {
+                              const carte = getCard(effet.cardId);
+                              if (!carte) return null;
+                              return (
+                                <span key={`${effet.cardId}-${i}`} data-malus={effet.points < 0 ? '' : undefined}>
+                                  {carte.glyph} {carte.name}
+                                  <b>
+                                    {effet.points > 0 ? '+' : ''}
+                                    {effet.points}
+                                  </b>
+                                </span>
+                              );
+                            })}
+                          </p>
+                        )}
+                      </div>
+                      <div className="fiche-game-score">
+                        <strong>{g.score}</strong>
+                        <small>pts</small>
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+              </>
+            )}
+          </section>
+
+          {/* =============================== Les duels =============================== */}
+          <section className="glass relative overflow-hidden p-5 sm:p-6" aria-labelledby="fiche-duels">
+            <SnowCap radius="var(--r-lg)" seed={`fiche-duels-${p.slug}`} epaisseur={14} />
+            <header className="relative">
+              <p className="eyebrow">Duels de flocons</p>
+              <h2 id="fiche-duels" className="fiche-titre">
+                Duels
+              </h2>
+            </header>
+
+            {duels.joues === 0 ? (
+              <p className="mt-3 text-[13.5px] text-muted">Aucun duel joué pour l’instant.</p>
+            ) : (
+              <>
+                <dl className="fiche-duels-chiffres">
+                  <div>
+                    <dt>Joués</dt>
+                    <dd>{duels.joues}</dd>
+                  </div>
+                  <div>
+                    <dt>Gagnés</dt>
+                    <dd>{duels.gagnes}</dd>
+                  </div>
+                  <div>
+                    <dt>Bilan</dt>
+                    <dd className={duels.net >= 0 ? 'text-aurora' : 'text-ink'}>
+                      {signe(duels.net)} <span className="text-ice">❄</span>
+                    </dd>
+                  </div>
+                </dl>
+                <ul className="fiche-duels">
+                  {duels.derniers.map((d) => (
+                    <li key={d.id} data-gagne={d.gagne ? '' : undefined}>
+                      <span>
+                        <b>{d.gagne ? 'Gagné' : 'Perdu'}</b> contre {d.adversaire}
+                      </span>
+                      <span className="tabular-nums">
+                        {d.gagne ? '+' : '−'}
+                        {flakes(d.mise)} ❄
+                      </span>
+                      <small>{shortDateTime(d.resolueA)}</small>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+          </section>
+        </div>
 
         <div className="grid gap-5">
           {/* =============================== Les flocons ============================== */}
@@ -382,54 +432,6 @@ export default async function FicheJoueurPage({ params }: { params: Promise<{ sl
                   </li>
                 ))}
               </ul>
-            )}
-          </section>
-
-          {/* =============================== Les duels =============================== */}
-          <section className="glass relative overflow-hidden p-5 sm:p-6" aria-labelledby="fiche-duels">
-            <SnowCap radius="var(--r-lg)" seed={`fiche-duels-${p.slug}`} epaisseur={14} />
-            <header className="relative">
-              <p className="eyebrow">Duels de flocons</p>
-              <h2 id="fiche-duels" className="fiche-titre">
-                Duels
-              </h2>
-            </header>
-
-            {duels.joues === 0 ? (
-              <p className="mt-3 text-[13.5px] text-muted">Aucun duel joué pour l’instant.</p>
-            ) : (
-              <>
-                <dl className="fiche-duels-chiffres">
-                  <div>
-                    <dt>Joués</dt>
-                    <dd>{duels.joues}</dd>
-                  </div>
-                  <div>
-                    <dt>Gagnés</dt>
-                    <dd>{duels.gagnes}</dd>
-                  </div>
-                  <div>
-                    <dt>Bilan</dt>
-                    <dd className={duels.net >= 0 ? 'text-aurora' : 'text-ink'}>
-                      {signe(duels.net)} <span className="text-ice">❄</span>
-                    </dd>
-                  </div>
-                </dl>
-                <ul className="fiche-duels">
-                  {duels.derniers.map((d) => (
-                    <li key={d.id} data-gagne={d.gagne ? '' : undefined}>
-                      <span>
-                        <b>{d.gagne ? 'Gagné' : 'Perdu'}</b> contre {d.adversaire}
-                      </span>
-                      <span className="tabular-nums">
-                        {d.gagne ? '+' : '−'}
-                        {flakes(d.mise)} ❄
-                      </span>
-                      <small>{shortDateTime(d.resolueA)}</small>
-                    </li>
-                  ))}
-                </ul>
-              </>
             )}
           </section>
         </div>

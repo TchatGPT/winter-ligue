@@ -110,11 +110,14 @@ export function GraphiqueScores({
           {bulle && survol !== null && (
             <div
               className="graphe-bulle"
-              style={{
-                // Bornée pour que la bulle ne déborde pas de la plaque aux deux bouts.
-                left: `clamp(5rem, ${((survol + 0.5) / places) * 100}%, calc(100% - 5rem))`,
-                bottom: `calc(${hauteur(bulle.score)} + 2.2rem)`,
-              }}
+              // À côté de la colonne, en haut du graphique : au-dessus, elle
+              // montait sur le titre de la plaque. À droite de la colonne dans
+              // la première moitié, à gauche dans la seconde.
+              style={
+                (survol + 0.5) / places < 0.55
+                  ? { left: `calc(${((survol + 1) / places) * 100}% + 0.5rem)` }
+                  : { right: `calc(${(1 - survol / places) * 100}% + 0.5rem)` }
+              }
               role="status"
             >
               <strong>
