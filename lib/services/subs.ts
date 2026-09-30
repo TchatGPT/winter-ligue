@@ -19,15 +19,13 @@ import { newId } from '@/lib/db/store';
 import { crossedMilestones, nextMilestone, SUBS } from '@/lib/domain/rules';
 import type { PackId } from '@/lib/domain/types';
 import { audit, credit } from './ledger';
-import { ajoutePackDu, attribueSubsJoueur } from './packs';
+import { ajoutePackDu } from './packs';
 import { declencheEvenements } from '@/lib/services/evenements';
 import {
   dejaVu,
   recitDuMessage,
-  recompenseDuMessage,
   retiens,
   subsDuMessage,
-  type RecompenseTwitch,
 } from '@/lib/domain/twitchSubs';
 
 export class SubError extends Error {
@@ -139,9 +137,8 @@ export function addSubs(db: Database, delta: number, actor: string, precision?: 
  * les deux réussissent ou échouent ensemble. Un message qui n'ajoute rien (le
  * destinataire d'un sub offert, déjà compté par le cadeau) n'est pas retenu.
  *
- * Un cadeau groupé d'au moins cinq subs, ou un sub de niveau 3 pris pour soi,
- * vaut en plus un Booster Perso à son auteur s'il a un compte dans la ligue
- * (`recompenseDuMessage`).
+ * Twitch ne donne de Booster Perso à personne : la modération les règle à la
+ * main, joueur par joueur (`ajusteBoostersPerso`).
  *
  * À appeler dans une transaction. Renvoie null si le message ne change rien.
  */
@@ -154,25 +151,7 @@ export function ajouteSubsTwitch(
   if (subs === 0) return null;
   db.config.twitchVus = retiens(db.config.twitchVus, message.id, message.maintenant);
   const resultat = addSubs(db, subs, 'twitch', recitDuMessage(message.type, message.evenement, subs));
-  recompense(db, recompenseDuMessage(message.type, message.evenement));
   return resultat;
-}
-
-/**
- * Ce qu'un message vaut à un joueur de la ligue : ses subs offerts, ou un
- * Booster Perso pour un sub de niveau 3. Quelqu'un qui n'a pas encore de
- * compte sur le site n'y gagne rien — le compteur de la saison, lui, a compté.
- */
-function recompense(db: Database, r: RecompenseTwitch | null): void {
-  if (!r) return;
-  const joueur = db.players.find((p) => p.twitchId === r.twitchId && p.active);
-  if (!joueur) return;
-  if (r.genre === 'subs-offerts') {
-    attribueSubsJoueur(db, joueur.id, r.subs, 'twitch');
-    return;
-  }
-  ajoutePackDu(db, 'perso', joueur.id, 'sub de niveau 3');
-  audit(db, 'twitch', 'SUB_NIVEAU_3', joueur.id, `Sub de niveau 3 de ${joueur.pseudo} : un Booster Perso en file`);
 }
 
 /**

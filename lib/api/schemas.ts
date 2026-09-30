@@ -170,15 +170,13 @@ export const desactiveCodeSchema = z.object({ id: uuid });
 
 export const supprimeCodeSchema = z.object({ id: uuid });
 
-/** Saisie des subs : au compteur de la saison, au compte d'un joueur, ou remise à zéro. */
+/** Saisie des subs : au compteur de la saison, ou remise à zéro. */
 export const adminSubsSchema = z.union([
   z.object({ action: z.literal('remise-a-zero') }),
   z.object({ action: z.literal('subs'), delta: z.number().int().min(1).max(10_000) }),
-  z.object({
-    action: z.literal('subs-joueur'),
-    playerId: uuid,
-    delta: z.number().int().min(1).max(10_000),
-  }),
 ]);
+
+/** Le − ou le + du compteur de Boosters Perso d'un joueur. */
+export const boostersPersoSchema = z.object({ playerId: uuid, sens: z.enum(['plus', 'moins']) });
 
 export type GameInput = z.infer<typeof gameSchema>;

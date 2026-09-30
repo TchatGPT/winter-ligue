@@ -6,7 +6,6 @@ import {
   MEMOIRE_MS,
   messageFrais,
   recitDuMessage,
-  recompenseDuMessage,
   retiens,
   SUBS_PAR_MESSAGE_MAX,
   subsDuMessage,
@@ -49,46 +48,6 @@ describe('ce que vaut un message', () => {
       '3 subs offerts par un anonyme',
     );
     expect(recitDuMessage('channel.subscription.gift', { user_name: 'Alex' }, 1)).toBe('1 sub offert par Alex');
-  });
-});
-
-describe('ce qu’un message vaut à celui qui l’a fait', () => {
-  const chaine = { broadcaster_user_id: 'tw-chaine' };
-
-  it('un cadeau groupé de cinq subs ou plus : autant de subs offerts', () => {
-    expect(recompenseDuMessage('channel.subscription.gift', { ...chaine, user_id: 'a', total: 5 })).toEqual({
-      genre: 'subs-offerts',
-      twitchId: 'a',
-      subs: 5,
-    });
-    expect(recompenseDuMessage('channel.subscription.gift', { ...chaine, user_id: 'a', total: 20 })).toEqual({
-      genre: 'subs-offerts',
-      twitchId: 'a',
-      subs: 20,
-    });
-  });
-
-  it('rien pour un petit cadeau, un cadeau anonyme, ou la streameuse chez elle', () => {
-    expect(recompenseDuMessage('channel.subscription.gift', { ...chaine, user_id: 'a', total: 4 })).toBeNull();
-    expect(
-      recompenseDuMessage('channel.subscription.gift', { ...chaine, user_id: 'a', total: 10, is_anonymous: true }),
-    ).toBeNull();
-    expect(recompenseDuMessage('channel.subscription.gift', { ...chaine, user_id: null, total: 10 })).toBeNull();
-    expect(
-      recompenseDuMessage('channel.subscription.gift', { ...chaine, user_id: 'tw-chaine', total: 10 }),
-    ).toBeNull();
-  });
-
-  it('un sub de niveau 3 pris pour soi vaut un Booster Perso ; rien d’autre ne le vaut', () => {
-    expect(recompenseDuMessage('channel.subscribe', { ...chaine, user_id: 'a', tier: '3000', is_gift: false })).toEqual({
-      genre: 'sub-niveau-3',
-      twitchId: 'a',
-    });
-    // Niveau 1 ou 2, reçu en cadeau, ou réabonnement : rien.
-    expect(recompenseDuMessage('channel.subscribe', { ...chaine, user_id: 'a', tier: '1000', is_gift: false })).toBeNull();
-    expect(recompenseDuMessage('channel.subscribe', { ...chaine, user_id: 'a', tier: '2000', is_gift: false })).toBeNull();
-    expect(recompenseDuMessage('channel.subscribe', { ...chaine, user_id: 'a', tier: '3000', is_gift: true })).toBeNull();
-    expect(recompenseDuMessage('channel.subscription.message', { ...chaine, user_id: 'a', tier: '3000' })).toBeNull();
   });
 });
 

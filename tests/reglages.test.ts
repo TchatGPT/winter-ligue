@@ -2,10 +2,10 @@ import { describe, expect, it } from 'vitest';
 import type { Database, Player } from '@/lib/db/entities';
 import { emptyDatabase } from '@/lib/db/store';
 import { cartesDuPack, getCard, momentDe, PACKS } from '@/lib/domain/catalog';
-import { ECONOMY, PACKS_REGLES, RARITY_WEIGHTS_BASE, WEIGHT_TOTAL } from '@/lib/domain/rules';
+import { ECONOMY, RARITY_WEIGHTS_BASE, WEIGHT_TOTAL } from '@/lib/domain/rules';
 import { RARITIES, type Rarity } from '@/lib/domain/types';
 import {
-  attribueSubsJoueur,
+  ajusteBoostersPerso,
   cartesEnAttenteDe,
   fileDesPacks,
   ouvrePack,
@@ -286,35 +286,30 @@ describe('ouvrir un booster', () => {
 });
 
 describe('la file des boosters', () => {
-  it('doit un Booster Perso à chaque multiple de subs offerts', () => {
+  it('règle le compteur de Boosters Perso d’un joueur : + en met un en file, − retire le dernier', () => {
     const db = ligue('a');
-    const n = PACKS_REGLES.persoTousLes;
-
-    expect(attribueSubsJoueur(db, 'a', n - 1, 'modo').packsAjoutes).toBe(0);
-    expect(attribueSubsJoueur(db, 'a', 1, 'modo').packsAjoutes).toBe(1);
-    // Un gros gift en franchit plusieurs d'un coup.
-    expect(attribueSubsJoueur(db, 'a', n * 3, 'modo').packsAjoutes).toBe(3);
+    expect(ajusteBoostersPerso(db, 'a', 'plus', 'modo').boostersPerso).toBe(1);
+    expect(ajusteBoostersPerso(db, 'a', 'plus', 'modo').boostersPerso).toBe(2);
+    expect(ajusteBoostersPerso(db, 'a', 'moins', 'modo').boostersPerso).toBe(1);
 
     const file = fileDesPacks(db);
-    expect(file).toHaveLength(4);
+    expect(file).toHaveLength(1);
     expect(file.every((p) => p.packId === 'perso' && p.joueurId === 'a')).toBe(true);
     // Mis en file, jamais ouverts automatiquement.
     expect(db.ouvertures).toHaveLength(0);
+    expect(db.audit.filter((e) => e.action.startsWith('BOOSTER_PERSO_'))).toHaveLength(3);
   });
 
-  it('refuse un nombre de subs invalide, et un joueur inconnu', () => {
+  it('ne descend pas sous zéro, et refuse un joueur inconnu', () => {
     const db = ligue('a');
-    for (const delta of [0, -5, 2.5, 10_001]) {
-      expect(() => attribueSubsJoueur(db, 'a', delta, 'modo')).toThrow(PackError);
-    }
-    expect(() => attribueSubsJoueur(db, 'inconnu', 5, 'modo')).toThrow(PackError);
-    expect(db.players[0].subsOfferts).toBe(0);
+    expect(() => ajusteBoostersPerso(db, 'a', 'moins', 'modo')).toThrow(PackError);
+    expect(() => ajusteBoostersPerso(db, 'inconnu', 'plus', 'modo')).toThrow(PackError);
     expect(db.packsDus).toHaveLength(0);
   });
 
   it('sort un booster de la file quand il est ouvert, une seule fois', () => {
     const db = ligue('a');
-    attribueSubsJoueur(db, 'a', PACKS_REGLES.persoTousLes, 'modo');
+    ajusteBoostersPerso(db, 'a', 'plus', 'modo');
     const [du] = fileDesPacks(db);
 
     const o = ouvrePack(db, { packDuId: du.id, idempotencyKey: 'k1' }, 'modo');

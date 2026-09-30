@@ -177,7 +177,7 @@ export function PackOpening({
             {
               titre: 'Un booster t’est dû',
               texte:
-                'Cinq subs offerts d’un coup, ou un sub de niveau 3, c’est un Booster Perso pour toi. Cinquante subs de la saison, c’est un Booster Commu pour ceux que le sort désigne. Ta dernière game de la saison, c’est le Booster Finisseur.',
+                'Cinq subs offerts, c’est un Booster Perso pour toi. Cinquante subs de la saison, c’est un Booster Commu pour ceux que le sort désigne. Ta dernière game de la saison, c’est le Booster Finisseur.',
               icone: <GlaceSachet className="h-16 w-16" />,
             },
             {

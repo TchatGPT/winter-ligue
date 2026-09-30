@@ -3836,6 +3836,41 @@
   .code-cadeau-pastille:focus-visible {
     background: color-mix(in srgb, var(--ice) 26%, transparent);
   }
+  /* ---- Le compteur de Boosters Perso : − n +, comme les roues perso de la Summer ---- */
+  .compteur-perso {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.2rem;
+    border: 1px solid color-mix(in srgb, var(--aurora) 45%, transparent);
+    border-radius: 999px;
+    color: var(--aurora);
+  }
+  .compteur-perso[data-vide] {
+    border-color: color-mix(in srgb, var(--faint) 30%, transparent);
+    color: var(--faint);
+  }
+  .compteur-perso .num {
+    min-width: 1.5rem;
+    text-align: center;
+    font-weight: 700;
+  }
+  .compteur-perso button {
+    display: grid;
+    place-items: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 999px;
+    font-weight: 700;
+    line-height: 1;
+    transition: background-color 0.2s ease;
+  }
+  .compteur-perso button:hover:not(:disabled) {
+    background: color-mix(in srgb, currentColor 16%, transparent);
+  }
+  .compteur-perso button:disabled {
+    opacity: 0.35;
+  }
   .cadeau-carte {
     max-width: 26rem;
   }

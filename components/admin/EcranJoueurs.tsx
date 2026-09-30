@@ -5,7 +5,7 @@ import { useAction } from '@/components/admin/action';
 import { Bloc, Ecran } from '@/components/admin/Cadre';
 import { flakes } from '@/components/ui';
 import { UTILISATIONS_MAX } from '@/lib/domain/codes';
-import { ECONOMY } from '@/lib/domain/rules';
+import { ECONOMY, PACKS_REGLES } from '@/lib/domain/rules';
 import { shortDateTime } from '@/lib/format';
 
 export type RoleJoueur = 'joueur' | 'admin';
@@ -18,6 +18,10 @@ export interface LigneJoueur {
   /** Le pseudo en jeu, que la reconnaissance des captures compare aux noms lus. */
   activisionId: string | null;
   snowflakes: number;
+  /** Ses Boosters Perso en attente : le compteur que la modération règle. */
+  boostersPerso: number;
+  /** La streameuse ne joue pas : pas de compteur pour elle. */
+  streameuse: boolean;
   games: number;
   score: number;
 }
@@ -57,7 +61,15 @@ function plie(valeur: string): string {
  * une fois derrière l'icône cadeau. Aucune carte ne se donne ici : une carte
  * sort d'un pack, ouvert à l'antenne, ou ne sort pas.
  */
-export function EcranJoueurs({ joueurs, codes }: { joueurs: LigneJoueur[]; codes: LigneCode[] }) {
+export function EcranJoueurs({
+  joueurs,
+  codes,
+  moiId,
+}: {
+  joueurs: LigneJoueur[];
+  codes: LigneCode[];
+  moiId: string | null;
+}) {
   const { busy, message, envoie, setMessage } = useAction();
 
   const [recherche, setRecherche] = useState('');
@@ -295,7 +307,7 @@ export function EcranJoueurs({ joueurs, codes }: { joueurs: LigneJoueur[]; codes
         }
       >
         <div className="scroll-x admin-table">
-          <table className="grid-table min-w-[720px]">
+          <table className="grid-table min-w-[820px]">
             <thead>
               <tr>
                 <th>Joueur</th>
@@ -304,6 +316,9 @@ export function EcranJoueurs({ joueurs, codes }: { joueurs: LigneJoueur[]; codes
                 <th className="text-right">Games</th>
                 <th className="text-right">Points</th>
                 <th className="text-right">Flocons</th>
+                <th className="text-right" title={`Un Booster Perso tous les ${PACKS_REGLES.persoTousLes} subs offerts`}>
+                  Boosters Perso
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -340,6 +355,43 @@ export function EcranJoueurs({ joueurs, codes }: { joueurs: LigneJoueur[]; codes
                   <td className="num text-right text-muted">{p.games}</td>
                   <td className="num text-right text-ice">{p.score}</td>
                   <td className="num text-right text-faint">❄ {flakes(p.snowflakes)}</td>
+                  <td className="text-right">
+                    {p.streameuse ? (
+                      <span className="text-faint">—</span>
+                    ) : (
+                      <div className="compteur-perso" data-vide={p.boostersPerso === 0 ? '' : undefined}>
+                        <button
+                          type="button"
+                          aria-label={`Retirer un Booster Perso à ${p.pseudo}`}
+                          disabled={busy !== null || p.boostersPerso === 0 || p.id === moiId}
+                          onClick={() =>
+                            envoie(
+                              '/api/admin/boosters-perso',
+                              { playerId: p.id, sens: 'moins' },
+                              { cle: `perso:${p.id}`, succes: `${p.pseudo} : un Booster Perso en moins.` },
+                            )
+                          }
+                        >
+                          −
+                        </button>
+                        <span className="num">{p.boostersPerso}</span>
+                        <button
+                          type="button"
+                          aria-label={`Ajouter un Booster Perso à ${p.pseudo}`}
+                          disabled={busy !== null || p.id === moiId}
+                          onClick={() =>
+                            envoie(
+                              '/api/admin/boosters-perso',
+                              { playerId: p.id, sens: 'plus' },
+                              { cle: `perso:${p.id}`, succes: `${p.pseudo} : un Booster Perso en plus.` },
+                            )
+                          }
+                        >
+                          +
+                        </button>
+                      </div>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>

@@ -31,8 +31,6 @@ import { getCard, getPack, momentDe, PACKS } from '@/lib/domain/catalog';
 import { pick, tirePack } from '@/lib/domain/rng';
 import {
   chanceDe,
-  packsPersoAcquis,
-  PACKS_REGLES,
   poidsAvecChance,
   tailleDeLaQueue,
   WEIGHT_TOTAL,
@@ -163,44 +161,46 @@ export function ajoutePackDu(
 }
 
 /**
- * Attribue des subs offerts à un joueur, et met en file les packs Perso qu'ils
- * lui valent.
+ * Le compteur de Boosters Perso d'un joueur, réglé à la main par la
+ * modération — comme les roues perso de la Summer Ligue.
  *
- * Saisi par la modération aujourd'hui, par les notifications Twitch demain :
- * dans les deux cas, on ne fait qu'incrémenter et compter les multiples de
- * cinq franchis. Le pack n'est jamais ouvert ici.
+ * Un Booster Perso se donne pour des subs offerts (un tous les
+ * `PACKS_REGLES.persoTousLes`), et peut passer d'un joueur à un autre quand
+ * celui qui l'a gagné l'offre : un − chez l'un, un + chez l'autre. Le compteur,
+ * c'est le nombre de Boosters Perso en file pour ce joueur, pas encore ouverts :
+ * `+` en met un en file, `−` retire le plus récent. La streameuse n'en reçoit
+ * pas, et personne ne règle le sien. Chaque geste est au journal.
  */
-export function attribueSubsJoueur(
+export function ajusteBoostersPerso(
   db: Database,
   joueurId: string,
-  delta: number,
-  actor: string,
-): { subsOfferts: number; packsAjoutes: number } {
-  const player = db.players.find((p) => p.id === joueurId && p.active);
-  if (!player) throw new PackError('Joueur introuvable.', 'JOUEUR_INTROUVABLE');
-  if (!Number.isInteger(delta) || delta <= 0 || delta > 10_000) {
-    throw new PackError('Nombre de subs invalide.', 'TABLE_INVALIDE');
+  sens: 'plus' | 'moins',
+  auteur: string,
+): { boostersPerso: number } {
+  const joueur = db.players.find((p) => p.id === joueurId && p.active);
+  if (!joueur) throw new PackError('Joueur introuvable.', 'JOUEUR_INTROUVABLE');
+  if (estLaStreameuse(joueur, chaineDeLaLigue())) {
+    throw new PackError('La streameuse ne joue pas : pas de Booster Perso pour elle.', 'STREAMEUSE');
   }
 
-  const avant = packsPersoAcquis(player.subsOfferts);
-  player.subsOfferts += delta;
-  const apres = packsPersoAcquis(player.subsOfferts);
-
-  for (let n = avant + 1; n <= apres; n += 1) {
-    ajoutePackDu(db, 'perso', player.id, `${n * PACKS_REGLES.persoTousLes} subs offerts`);
+  const enFile = () => db.packsDus.filter((p) => p.packId === 'perso' && p.joueurId === joueurId && p.ouvertureId === null);
+  if (sens === 'plus') {
+    ajoutePackDu(db, 'perso', joueurId, 'ajouté par la modération');
+  } else {
+    const dernier = enFile().sort((a, b) => b.creeA.localeCompare(a.creeA))[0];
+    if (!dernier) throw new PackError(`${joueur.pseudo} n’a pas de Booster Perso en attente.`, 'PACK_DU_INCONNU');
+    db.packsDus = db.packsDus.filter((p) => p.id !== dernier.id);
   }
 
+  const n = enFile().length;
   audit(
     db,
-    actor,
-    'SUBS_JOUEUR',
-    player.id,
-    `+${delta} subs offerts (total ${player.subsOfferts})${
-      apres > avant ? ` — ${apres - avant} pack(s) Perso en file` : ''
-    }`,
-  );
-
-  return { subsOfferts: player.subsOfferts, packsAjoutes: apres - avant };
+    auteur,
+    sens === 'plus' ? 'BOOSTER_PERSO_AJOUTE' : 'BOOSTER_PERSO_RETIRE',
+    joueurId,
+    `${joueur.pseudo} : ${n} Booster(s) Perso en attente`,
+  )
+  return { boostersPerso: n };
 }
 
 /**

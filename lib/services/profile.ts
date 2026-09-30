@@ -10,7 +10,7 @@ import 'server-only';
 import { chaineDeLaLigue } from '@/lib/auth/twitch';
 import { CAMP_BOT, type Database } from '@/lib/db/entities';
 import { getStore } from '@/lib/db/store';
-import { chanceDe, packsPersoAcquis, PACKS_REGLES, SEASON } from '@/lib/domain/rules';
+import { chanceDe, SEASON } from '@/lib/domain/rules';
 import { estLaStreameuse } from '@/lib/domain/streameuse';
 import { classementDe, gamesOf, totalsOf } from './league';
 import {
@@ -29,9 +29,6 @@ export interface ProfileView {
   snowflakes: number;
   /** La chance que le solde donne aux packs ouverts pour ce joueur, de 0 à 1. */
   chance: number;
-  subsOfferts: number;
-  /** Subs qu'il reste à offrir avant le prochain Booster Perso. */
-  subsAvantPack: number;
   /** Packs en file pour ce joueur, pas encore ouverts. */
   packsDus: { id: string; pack: string; raison: string; creeA: string }[];
   cartesEnAttente: CarteEnAttenteVue[];
@@ -56,9 +53,6 @@ function buildProfile(db: Database, playerId: string): ProfileView | null {
   const player = db.players.find((p) => p.id === playerId);
   if (!player) return null;
 
-  const acquis = packsPersoAcquis(player.subsOfferts);
-  const subsAvantPack = (acquis + 1) * PACKS_REGLES.persoTousLes - player.subsOfferts;
-
   return {
     id: player.id,
     slug: player.slug,
@@ -67,8 +61,6 @@ function buildProfile(db: Database, playerId: string): ProfileView | null {
     twitchLogin: player.twitchLogin,
     snowflakes: player.snowflakes,
     chance: chanceDe(player.snowflakes),
-    subsOfferts: player.subsOfferts,
-    subsAvantPack,
     packsDus: db.packsDus
       .filter((p) => p.joueurId === playerId && p.ouvertureId === null)
       .map((p) => ({ id: p.id, pack: p.packId, raison: p.raison, creeA: p.creeA })),

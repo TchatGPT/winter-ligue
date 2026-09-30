@@ -4,17 +4,11 @@ import { useState } from 'react';
 import { useAction } from '@/components/admin/action';
 import { Bloc, Ecran } from '@/components/admin/Cadre';
 import { Notice, flakes } from '@/components/ui';
-import { PACKS_REGLES, SUBS, nextMilestone } from '@/lib/domain/rules';
+import { SUBS, nextMilestone } from '@/lib/domain/rules';
 
 export interface ConfigSaison {
   maxGamesPerPlayer: number;
   totalSubs: number;
-}
-
-export interface JoueurSubs {
-  id: string;
-  pseudo: string;
-  subsOfferts: number;
 }
 
 export interface RetourSubs {
@@ -47,36 +41,29 @@ function libelleStatut(statut: string | null): string {
  * games, la sauvegarde. Les deux dernières touchent aux règles de la saison :
  * elles sont réservées aux administrateurs, et le serveur le revérifie.
  *
- * Deux compteurs de subs, et la distinction compte. Le compteur de saison
- * verse à tout le monde et met les packs collectifs en file. Les subs offerts
- * par un joueur nommé lui valent ses packs Perso — c'est la seule chose qu'un
- * sub achète à quelqu'un en particulier, et elle passe par la file, jamais par
- * un versement direct.
+ * Le compteur de saison verse à tout le monde et met les packs collectifs en
+ * file. Les Boosters Perso, eux, se règlent joueur par joueur, dans
+ * Modération → Joueurs.
  */
 export function EcranSaison({
   config,
-  joueurs,
   packsEnFile,
   estAdmin,
   twitch,
 }: {
   config: ConfigSaison;
-  joueurs: JoueurSubs[];
   packsEnFile: number;
   estAdmin: boolean;
   twitch: TwitchSubs;
 }) {
   const { busy, message, envoie, setMessage } = useAction();
   const [maxGames, setMaxGames] = useState(config.maxGamesPerPlayer);
-  const [gifteur, setGifteur] = useState('');
-  const [subsGifteur, setSubsGifteur] = useState<number>(PACKS_REGLES.persoTousLes);
   const [dernierVersement, setDernierVersement] = useState<string | null>(null);
   /** La remise à zéro se confirme : un premier clic la propose, le second la fait. */
   const [confirmeZero, setConfirmeZero] = useState(false);
 
   const prochain = nextMilestone(config.totalSubs);
   const branche = twitch.etat?.branche === true;
-  const joueurChoisi = joueurs.find((j) => j.id === gifteur);
 
   async function remetAZero() {
     const data = await envoie(
@@ -115,7 +102,7 @@ export function EcranSaison({
   return (
     <Ecran
       titre="Saison"
-      lead="Le compteur de subs de la saison — alimenté par Twitch une fois branché — et les subs offerts par les joueurs. L’overlay du stream suit le compteur."
+      lead="Le compteur de subs de la saison, alimenté par Twitch une fois branché. L’overlay du stream suit le compteur. Les Boosters Perso se règlent dans Modération → Joueurs."
       message={message}
     >
       {twitch.configure && (
@@ -254,74 +241,6 @@ export function EcranSaison({
           </p>
         </Bloc>
 
-        <Bloc
-          titre="Subs offerts par un joueur"
-          icone="user"
-          aide={
-            <>
-              Un Booster Perso tous les {PACKS_REGLES.persoTousLes} subs offerts, mis en file pour ce
-              joueur. Depuis Twitch, un cadeau groupé d’au moins {PACKS_REGLES.cadeauMinTwitch} subs
-              s’ajoute tout seul à celui qui l’offre, et un sub de niveau 3 lui vaut un Booster Perso.
-              Ici, on saisit à la main ce que Twitch n’a pas pu rattacher — un cadeau fait avant
-              d’avoir un compte, par exemple. Cette saisie ne touche pas au compteur de la saison.
-            </>
-          }
-        >
-          <div className="space-y-3">
-            <select
-              className="field w-full"
-              value={gifteur}
-              onChange={(e) => setGifteur(e.target.value)}
-              aria-label="Joueur qui a offert des subs"
-            >
-              <option value="">— Joueur —</option>
-              {joueurs.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.pseudo} — {p.subsOfferts} offert{p.subsOfferts > 1 ? 's' : ''}
-                </option>
-              ))}
-            </select>
-            <div className="flex flex-wrap gap-2">
-              <input
-                type="number"
-                className="field num max-w-[120px]"
-                min={1}
-                max={10_000}
-                value={subsGifteur}
-                onChange={(e) => setSubsGifteur(Number(e.target.value))}
-                aria-label="Nombre de subs offerts"
-              />
-              <button
-                className="btn btn-ice flex-1"
-                disabled={busy !== null || !gifteur || subsGifteur < 1}
-                onClick={async () => {
-                  const data = await envoie(
-                    '/api/admin/subs',
-                    { action: 'subs-joueur', playerId: gifteur, delta: subsGifteur },
-                    { cle: 'subs-joueur', succes: 'Subs attribués.' },
-                  );
-                  if (!data) return;
-                  const d = data as { subsOfferts: number; packsAjoutes: number };
-                  setMessage({
-                    kind: 'success',
-                    text: `${joueurChoisi?.pseudo ?? 'Joueur'} : ${d.subsOfferts} subs offerts${
-                      d.packsAjoutes ? ` — ${d.packsAjoutes} Booster(s) Perso en file` : ''
-                    }.`,
-                  });
-                }}
-              >
-                Attribuer
-              </button>
-            </div>
-            {joueurChoisi && (
-              <p className="text-[13px] text-faint">
-                Prochain Booster Perso dans{' '}
-                {PACKS_REGLES.persoTousLes - (joueurChoisi.subsOfferts % PACKS_REGLES.persoTousLes)}{' '}
-                sub(s).
-              </p>
-            )}
-          </div>
-        </Bloc>
       </div>
 
       {estAdmin && (

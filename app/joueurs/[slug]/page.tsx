@@ -71,7 +71,6 @@ export default async function FicheJoueurPage({ params }: { params: Promise<{ sl
   const recentes = [...chronologie].reverse();
 
   const restantes = Math.max(0, fiche.creneaux - t.countedGames);
-  const subsDansLeCycle = PACKS_REGLES.persoTousLes - p.subsAvantPack;
 
   return (
     <div className="space-y-5">
@@ -341,17 +340,14 @@ export default async function FicheJoueurPage({ params }: { params: Promise<{ sl
 
             <div className="fiche-bloc mt-3">
               <div className="flex items-baseline justify-between gap-2">
-                <span className="fiche-bloc-titre">Subs offerts</span>
-                <strong className="font-display text-2xl leading-none font-black text-ink">{p.subsOfferts}</strong>
-              </div>
-              <div className="fiche-subs" aria-hidden="true">
-                {Array.from({ length: PACKS_REGLES.persoTousLes }, (_, i) => (
-                  <i key={i} data-plein={i < subsDansLeCycle ? '' : undefined} />
-                ))}
+                <span className="fiche-bloc-titre">Boosters Perso</span>
+                <strong className="font-display text-2xl leading-none font-black text-ink">
+                  {p.packsDus.filter((b) => b.pack === 'perso').length}
+                </strong>
               </div>
               <p className="mt-1.5 text-[12.5px] text-muted">
-                Prochain Booster Perso dans {p.subsAvantPack} sub{p.subsAvantPack > 1 ? 's' : ''}. Seuls
-                comptent les cadeaux groupés d’au moins {PACKS_REGLES.cadeauMinTwitch} subs.
+                Un Booster Perso tous les {PACKS_REGLES.persoTousLes} subs offerts, ajouté par la modération.
+                La streameuse l’ouvre à l’antenne.
               </p>
             </div>
 
@@ -382,8 +378,8 @@ export default async function FicheJoueurPage({ params }: { params: Promise<{ sl
             <h3 className="fiche-bloc-titre mt-4">En attente</h3>
             {p.cartesEnAttente.length === 0 ? (
               <p className="mt-1.5 text-[13.5px] text-muted">
-                Aucune. Un Booster Perso tous les {PACKS_REGLES.persoTousLes} subs offerts ou pour un sub de
-                niveau 3, et les boosters de la ligue.
+                Aucune. Un Booster Perso tous les {PACKS_REGLES.persoTousLes} subs offerts, et les boosters de
+                la ligue.
               </p>
             ) : (
               <ul className="fiche-cartes">

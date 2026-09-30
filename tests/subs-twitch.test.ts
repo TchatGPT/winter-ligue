@@ -47,40 +47,12 @@ describe('les subs de Twitch, au compteur de la saison', () => {
 });
 
 describe('ce qu’un sub vaut à un joueur', () => {
-  it('un cadeau groupé de cinq ou plus : ses subs offerts, et les Boosters Perso qui vont avec', () => {
+  it('rien : les Boosters Perso se règlent à la main, quel que soit le sub', () => {
     const db = base();
     ajouteSubsTwitch(db, message('channel.subscription.gift', { user_id: 'tw-joueur', total: 10, tier: '1000' }));
-    expect(db.config.totalSubs).toBe(10);
-    expect(joueur(db).subsOfferts).toBe(10);
-    expect(boostersPerso(db)).toHaveLength(2);
-  });
-
-  it('rien pour moins de cinq subs offerts, ni pour un cadeau anonyme', () => {
-    const db = base();
-    ajouteSubsTwitch(db, message('channel.subscription.gift', { user_id: 'tw-joueur', total: 4, tier: '1000' }));
-    ajouteSubsTwitch(
-      db,
-      message('channel.subscription.gift', { user_id: null, is_anonymous: true, total: 10, tier: '1000' }),
-    );
-    expect(db.config.totalSubs).toBe(14);
-    expect(joueur(db).subsOfferts).toBe(0);
-    expect(boostersPerso(db)).toHaveLength(0);
-  });
-
-  it('un Booster Perso pour un sub de niveau 3 pris pour soi, et pour rien d’autre', () => {
-    const db = base();
     ajouteSubsTwitch(db, message('channel.subscribe', { user_id: 'tw-joueur', tier: '3000', is_gift: false }));
-    ajouteSubsTwitch(db, message('channel.subscribe', { user_id: 'tw-joueur', tier: '1000', is_gift: false }));
-    ajouteSubsTwitch(db, message('channel.subscription.message', { user_id: 'tw-joueur', tier: '3000' }));
-    ajouteSubsTwitch(db, message('channel.subscribe', { user_id: 'tw-joueur', tier: '3000', is_gift: true }));
-    expect(boostersPerso(db)).toHaveLength(1);
+    expect(db.config.totalSubs).toBe(11);
     expect(joueur(db).subsOfferts).toBe(0);
-  });
-
-  it('rien pour quelqu’un qui n’a pas de compte : le compteur, lui, compte', () => {
-    const db = base();
-    ajouteSubsTwitch(db, message('channel.subscription.gift', { user_id: 'inconnu', total: 5, tier: '1000' }));
-    expect(db.config.totalSubs).toBe(5);
     expect(boostersPerso(db)).toHaveLength(0);
   });
 });
@@ -95,8 +67,6 @@ describe('la remise à zéro du compteur', () => {
     expect(db.config.totalSubs).toBe(0);
     expect(db.subEvents).toHaveLength(0);
     expect(joueur(db).snowflakes).toBe(solde);
-    expect(joueur(db).subsOfferts).toBe(10);
-    expect(boostersPerso(db)).toHaveLength(2);
     expect(db.audit.some((a) => a.action === 'SUBS_REMIS_A_ZERO')).toBe(true);
   });
 });

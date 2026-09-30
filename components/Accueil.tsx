@@ -36,7 +36,7 @@ export function Accueil({ twitchEnabled, devLogin }: { twitchEnabled: boolean; d
     {
       icone: IconRocket,
       titre: 'Les boosters',
-      texte: `Cinq subs offerts d’un coup, ou un sub de niveau 3, et la streameuse ouvre un booster pour toi à l’antenne. La carte tirée se pose sur ta prochaine game : bonus ou malus, jamais plus de ${CARD_IMPACT_CAP} points.`,
+      texte: `Cinq subs offerts, et la streameuse ouvre un booster pour toi à l’antenne. La carte tirée se pose sur ta prochaine game : bonus ou malus, jamais plus de ${CARD_IMPACT_CAP} points.`,
     },
     {
       icone: IconSwords,

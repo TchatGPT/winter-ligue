@@ -36,10 +36,6 @@ export default async function AdminSaisonPage({
         maxGamesPerPlayer: db.config.maxGamesPerPlayer,
         totalSubs: db.config.totalSubs,
       },
-      joueurs: db.players
-        .filter((p) => p.active)
-        .map((p) => ({ id: p.id, pseudo: p.pseudo, subsOfferts: p.subsOfferts }))
-        .sort((a, b) => a.pseudo.localeCompare(b.pseudo, 'fr')),
       packsEnFile: db.packsDus.filter((p) => p.ouvertureId === null).length,
     })),
     // L'état se lit chez Twitch : c'est lui qui garde les abonnements.
@@ -51,7 +47,6 @@ export default async function AdminSaisonPage({
   return (
     <EcranSaison
       config={data.config}
-      joueurs={data.joueurs}
       packsEnFile={data.packsEnFile}
       estAdmin={session.role === 'admin'}
       twitch={{ configure: twitchConfigure, etat: etatTwitch, retour }}
