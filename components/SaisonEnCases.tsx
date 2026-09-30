@@ -38,8 +38,9 @@ export function SaisonEnCases({ games, creneaux }: { games: CaseGame[]; creneaux
   const places = Math.max(creneaux, games.length);
   const comptees = games.filter((g) => !g.passee);
   const record = comptees.length > 0 ? Math.max(...comptees.map((g) => g.score)) : null;
-  // La glace monte avec le score, le record remplit sa case aux neuf dixièmes.
-  const echelle = Math.max(10, record ?? 0) / 0.9;
+  // La glace monte avec le score ; le record la remplit aux trois quarts, pour
+  // que sa surface reste sous la ligne du numéro et de la médaille.
+  const echelle = Math.max(10, record ?? 0) / 0.74;
 
   return (
     <div className="cases">
