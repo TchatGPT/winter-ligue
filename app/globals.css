@@ -4086,16 +4086,13 @@
     fill: var(--noel-nez);
     opacity: 0.38;
   }
-  .noel-boucles,
-  .noel-sourcil {
+  /* Les mèches de la barbe : fines, dans le sens où elle tombe. */
+  .noel-boucles {
     fill: none;
-    stroke: color-mix(in oklab, var(--noel-fourrure) 62%, var(--nuit));
-    stroke-width: 0.9;
+    stroke: color-mix(in oklab, var(--noel-fourrure) 66%, var(--nuit));
+    stroke-width: 0.7;
     stroke-linecap: round;
-  }
-  .noel-sourcil {
-    stroke: var(--noel-fourrure);
-    stroke-width: 1.5;
+    opacity: 0.7;
   }
   .noel-oeil {
     fill: var(--nuit);

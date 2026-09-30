@@ -180,15 +180,15 @@ function PereNoel() {
       {/* La tête : une sphère ; la joue rosit, le bonnet ombre le front. */}
       <circle cx="51" cy="25" r="10" fill={u('peau')} />
       <circle cx="57" cy="27.6" r="3.4" className="noel-joue" />
-      <ellipse cx="52" cy="21.2" rx="9" ry="1.8" className="noel-ao noel-ao-douce" />
+      <ellipse cx="52" cy="22.6" rx="9" ry="1.6" className="noel-ao noel-ao-douce" />
       <path d="M42 27 Q43 44 56 42 Q65 38 61 26 Q56 33 50 30 Q45 31 42 27 Z" fill={u('fourrure')} />
-      <path d="M45.5 35 q2.2 2.2 4.4 0 M50.5 38.4 q2.2 2.2 4.4 0 M55.2 35.2 q2.2 2 4.2 -0.6" className="noel-boucles" />
+      <path d="M46.2 32.5 q0.6 3.4 2.6 5.6 M51 34 q0.4 3.6 2.4 5.8 M56.4 33.4 q0.8 3 3 4.4" className="noel-boucles" />
       <path d="M54.6 29.6 Q58 27.4 61.4 29.4 Q63.8 31.4 61.2 32.2 Q58.2 30.6 55.6 32.2 Q52.9 31.6 54.6 29.6 Z" fill={u('fourrure')} />
       <circle cx="61" cy="27" r="2.4" fill={u('nez')} />
       <circle cx="60.2" cy="26.1" r="0.7" className="noel-reflet" />
-      <circle cx="55" cy="22" r="1.5" className="noel-oeil" />
-      <circle cx="55.45" cy="21.5" r="0.45" className="noel-reflet" />
-      <path d="M52.6 19.4 Q55 18.2 57.4 19.6" className="noel-sourcil" />
+      {/* L'œil, juste sous le revers du bonnet, qui lui fait sourcil. */}
+      <circle cx="56.2" cy="24.6" r="1.35" className="noel-oeil" />
+      <circle cx="56.6" cy="24.1" r="0.42" className="noel-reflet" />
 
       {/* Le bonnet, sa pointe qui retombe, son pompon, son revers. */}
       <path d="M40 20 Q40 4 58 9 Q50 11 49 17 Z" fill={u('manteau')} />
