@@ -12,9 +12,6 @@ export const ALPHABET_CODES = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 /** Huit signes tirés au sort : près de mille milliards de codes, introuvables en devinant. */
 export const LONGUEUR_CODE_TIRE = 8;
 
-export const CODE_MIN = 4;
-export const CODE_MAX = 24;
-
 /** Le plus de joueurs qu'un même code peut servir. */
 export const UTILISATIONS_MAX = 1000;
 
@@ -27,9 +24,17 @@ export function normaliseCode(brut: string): string {
     .replace(/[^A-Z0-9]/g, '');
 }
 
-/** Un code choisi par la modération : de quatre à vingt-quatre lettres ou chiffres. */
-export function codeValide(code: string): boolean {
-  return code.length >= CODE_MIN && code.length <= CODE_MAX && /^[A-Z0-9]+$/.test(code);
+/**
+ * Le message qui annonce un code dans le tchat : court, et tout ce qu'il faut
+ * pour s'en servir. Composé ici, à partir du code lui-même — jamais d'un texte
+ * venu de l'écran.
+ */
+export function annonceDuCode(
+  code: { code: string; montant: number; utilisationsMax: number },
+  site: string,
+): string {
+  const qui = code.utilisationsMax === 1 ? 'pour le premier' : `pour les ${code.utilisationsMax} premiers`;
+  return `🎁 Code cadeau : ${code.code} — ${code.montant} ❄ ${qui} ! À taper sur ${site}, derrière le cadeau près de ton solde.`;
 }
 
 export type EtatCode = 'actif' | 'epuise' | 'desactive';

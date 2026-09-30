@@ -9,7 +9,9 @@ import { num } from '@/lib/format';
 const rienAEcouter = () => () => {};
 
 /**
- * L'icône cadeau, près du solde : on y tape un code donné par la modération —
+ * Le code cadeau, près du solde — un lien sous la capsule des flocons dans le
+ * menu, une pastille dans le solde de l'en-tête mobile : on y tape un code
+ * donné par la modération —
  * lu sur le stream, dans le tchat — et ses flocons tombent aussitôt.
  *
  * Le navigateur n'envoie que le code. Le montant, les utilisations et le droit
@@ -19,7 +21,7 @@ const rienAEcouter = () => () => {};
  * plaques de verre du menu portent un backdrop-filter, qui couperait un
  * panneau accroché au bouton.
  */
-export function CodeCadeau({ className }: { className?: string }) {
+export function CodeCadeau({ variante }: { variante: 'lien' | 'pastille' }) {
   const router = useRouter();
   const navigateur = useSyncExternalStore(
     rienAEcouter,
@@ -77,18 +79,32 @@ export function CodeCadeau({ className }: { className?: string }) {
 
   return (
     <>
-      <button
-        type="button"
-        className={`code-cadeau ${className ?? ''}`}
-        onClick={() => {
-          setMessage(null);
-          setOuvert(true);
-        }}
-        aria-label="Utiliser un code cadeau"
-        title="Un code cadeau ?"
-      >
-        <IconCadeau className="h-[17px] w-[17px]" />
-      </button>
+      {variante === 'lien' ? (
+        <button
+          type="button"
+          className="code-cadeau-lien"
+          onClick={() => {
+            setMessage(null);
+            setOuvert(true);
+          }}
+        >
+          <IconCadeau className="h-[14px] w-[14px]" />
+          Code cadeau
+        </button>
+      ) : (
+        <button
+          type="button"
+          className="code-cadeau-pastille"
+          onClick={() => {
+            setMessage(null);
+            setOuvert(true);
+          }}
+          aria-label="Utiliser un code cadeau"
+          title="Un code cadeau ?"
+        >
+          <IconCadeau className="h-[15px] w-[15px]" />
+        </button>
+      )}
 
       {ouvert &&
         navigateur &&

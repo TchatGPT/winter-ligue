@@ -160,9 +160,8 @@ export const adminConfigSchema = z.object({
 /** Le code tapé par un joueur : le serveur le normalise, et décide de tout le reste. */
 export const utiliseCodeSchema = z.object({ code: z.string().trim().min(1).max(40) });
 
-/** Un code créé par la modération : sans texte, il est tiré au sort. */
+/** Un code créé par la modération : un montant, un nombre d'utilisations ; le code est tiré au sort. */
 export const creeCodeSchema = z.object({
-  code: z.string().trim().max(40).nullable().optional(),
   montant: z.number().int().min(1).max(ECONOMY.soldeMax),
   utilisationsMax: z.number().int().min(1).max(UTILISATIONS_MAX),
 });

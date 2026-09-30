@@ -3802,27 +3802,39 @@
     max-width: 44rem;
   }
 
-  /* ---- Le code cadeau : une icône discrète près du solde, et sa petite fenêtre ---- */
-  .code-cadeau {
+  /* ---- Le code cadeau : un lien discret sous le solde, ou une pastille dedans ---- */
+  .code-cadeau-lien {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    padding: 0.2rem 0.5rem;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--faint);
+    transition: color 0.2s ease;
+  }
+  .code-cadeau-lien:hover,
+  .code-cadeau-lien:focus-visible {
+    color: var(--ice);
+  }
+  .code-cadeau-pastille {
     display: inline-grid;
     flex: none;
     place-items: center;
-    width: 1.9rem;
-    height: 1.9rem;
-    border: 1px solid color-mix(in srgb, var(--ice) 20%, transparent);
+    width: 1.625rem;
+    height: 1.625rem;
+    margin-left: 0.2rem;
     border-radius: 999px;
-    background: color-mix(in srgb, var(--ice) 7%, transparent);
-    color: var(--faint);
-    transition:
-      color 0.2s ease,
-      border-color 0.2s ease,
-      background-color 0.2s ease;
-  }
-  .code-cadeau:hover,
-  .code-cadeau:focus-visible {
-    border-color: color-mix(in srgb, var(--ice) 50%, transparent);
-    background: color-mix(in srgb, var(--ice) 14%, transparent);
+    background: color-mix(in srgb, var(--ice) 13%, transparent);
     color: var(--ice);
+    transition: background-color 0.2s ease;
+  }
+  .code-cadeau-pastille:hover,
+  .code-cadeau-pastille:focus-visible {
+    background: color-mix(in srgb, var(--ice) 26%, transparent);
   }
   .cadeau-carte {
     max-width: 26rem;

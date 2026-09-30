@@ -64,10 +64,9 @@ export function SessionBadge({
         {/* La capsule du solde, la même que les pastilles de stats du hero. */}
         {balance !== null && (
           <div
-            className="glass glass-soft relative flex flex-col items-center px-2 py-3 text-center"
+            className="glass glass-soft flex flex-col items-center px-2 py-3 text-center"
             title="Tes flocons — la monnaie de la saison"
           >
-            <CodeCadeau className="absolute top-1.5 right-1.5" />
             <span className="num block font-display text-[20px] leading-none font-black text-ink">
               <span className="mr-1 text-[15px] text-ice" aria-hidden="true">
                 ❄
@@ -79,8 +78,11 @@ export function SessionBadge({
             </span>
           </div>
         )}
-        <div className="truncate text-center text-[11px] tracking-[0.18em] text-white/80 uppercase">
-          {role === 'admin' ? 'Modération' : pseudo}
+        <div className="space-y-1">
+          {balance !== null && <CodeCadeau variante="lien" />}
+          <div className="truncate text-center text-[11px] tracking-[0.18em] text-white/80 uppercase">
+            {role === 'admin' ? 'Modération' : pseudo}
+          </div>
         </div>
         <button className="btn menu-bouton" onClick={logout} disabled={busy || pending}>
           {avatar}
@@ -94,14 +96,14 @@ export function SessionBadge({
     <div className="flex items-center gap-2">
       {balance !== null && (
         <span
-          className="flex items-center gap-1.5 rounded-full border border-white/15 bg-white/8 px-3 py-1.5 font-display text-sm font-bold text-ice"
+          className="flex items-center gap-1.5 rounded-full border border-white/15 bg-white/8 py-1 pr-1 pl-3 font-display text-sm font-bold text-ice"
           title="Tes flocons — la monnaie de la saison"
         >
           <span aria-hidden="true">❄</span>
           <span className="num">{num(balance)}</span>
+          <CodeCadeau variante="pastille" />
         </span>
       )}
-      {balance !== null && <CodeCadeau />}
       <button
         className="btn btn-sm btn-ghost"
         onClick={logout}

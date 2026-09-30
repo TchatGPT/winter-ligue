@@ -25,8 +25,8 @@ import { createHmac, timingSafeEqual } from 'node:crypto';
 import { cleDerivee } from '@/lib/auth/session';
 import { baseDuSite } from '@/lib/auth/twitch';
 import { TYPES_SUBS } from '@/lib/domain/twitchSubs';
+import { entetes, jetonApplication, oublieJeton } from './twitchApp';
 
-const TOKEN_URL = 'https://id.twitch.tv/oauth2/token';
 const EVENTSUB_URL = 'https://api.twitch.tv/helix/eventsub/subscriptions';
 
 /** Là où Twitch envoie ses messages. */
@@ -42,40 +42,6 @@ export function signatureValide(id: string, horodatage: string, corps: string, s
   const a = Buffer.from(signature);
   const b = Buffer.from(attendue);
   return a.length === b.length && timingSafeEqual(a, b);
-}
-
-/* --------------------------- Le jeton d'application ------------------------ */
-
-let jetonEnCache: { valeur: string; expire: number } | null = null;
-
-/**
- * Le jeton de l'application (« client credentials »), gardé en mémoire tant
- * qu'il vaut : les abonnements EventSub en webhook se gèrent avec lui, pas avec
- * celui de la streameuse.
- */
-async function jetonApplication(): Promise<string | null> {
-  if (jetonEnCache && jetonEnCache.expire > Date.now()) return jetonEnCache.valeur;
-  const reponse = await fetch(TOKEN_URL, {
-    method: 'POST',
-    headers: { 'content-type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      client_id: process.env.TWITCH_CLIENT_ID ?? '',
-      client_secret: process.env.TWITCH_CLIENT_SECRET ?? '',
-      grant_type: 'client_credentials',
-    }),
-    cache: 'no-store',
-  });
-  if (!reponse.ok) return null;
-  const charge = (await reponse.json()) as { access_token?: string; expires_in?: number };
-  if (!charge.access_token) return null;
-  // Une marge d'une minute : on ne s'en sert jamais au bord de l'expiration.
-  const duree = Math.max(0, (charge.expires_in ?? 3600) - 60) * 1000;
-  jetonEnCache = { valeur: charge.access_token, expire: Date.now() + duree };
-  return charge.access_token;
-}
-
-function entetes(jeton: string): Record<string, string> {
-  return { authorization: `Bearer ${jeton}`, 'client-id': process.env.TWITCH_CLIENT_ID ?? '' };
 }
 
 /* ------------------------------ Les abonnements ---------------------------- */
@@ -97,7 +63,7 @@ async function nosAbonnements(jeton: string): Promise<AbonnementTwitch[] | null>
     if (curseur) params.set('after', curseur);
     const reponse = await fetch(`${EVENTSUB_URL}?${params.toString()}`, { headers: entetes(jeton), cache: 'no-store' });
     if (!reponse.ok) {
-      if (reponse.status === 401) jetonEnCache = null;
+      if (reponse.status === 401) oublieJeton();
       return null;
     }
     const charge = (await reponse.json()) as { data?: AbonnementTwitch[]; pagination?: { cursor?: string } };

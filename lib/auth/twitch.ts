@@ -33,6 +33,11 @@ const DUREE_STATE_S = 10 * 60;
 const PORTEE_BASE = 'user:read:moderated_channels';
 /** Lire les subs de sa chaîne : demandé à la streameuse, pour brancher les subs. */
 export const PORTEE_SUBS = 'channel:read:subscriptions';
+/**
+ * Écrire dans son tchat, au nom de sa chaîne, avec le jeton de l'application :
+ * demandé au même branchement, pour annoncer les codes cadeaux.
+ */
+export const PORTEES_TCHAT = ['user:bot', 'channel:bot'] as const;
 
 export function isTwitchEnabled(): boolean {
   return Boolean(process.env.TWITCH_CLIENT_ID && process.env.TWITCH_CLIENT_SECRET);
@@ -156,8 +161,9 @@ export function authorizeUrl(state: string, origine: string, subs = false): stri
     // Le strict nécessaire : la liste des chaînes que la personne modère,
     // qui dit si elle est modératrice de la chaîne de la ligue. L'identité
     // publique vient sans portée ; l'adresse e-mail n'est jamais demandée.
-    // Le branchement des subs demande en plus de lire ceux de la chaîne.
-    scope: subs ? `${PORTEE_BASE} ${PORTEE_SUBS}` : PORTEE_BASE,
+    // Le branchement demande en plus de lire les subs de la chaîne, et
+    // d'écrire dans son tchat pour y annoncer les codes cadeaux.
+    scope: subs ? [PORTEE_BASE, PORTEE_SUBS, ...PORTEES_TCHAT].join(' ') : PORTEE_BASE,
     state,
     force_verify: 'true',
   });

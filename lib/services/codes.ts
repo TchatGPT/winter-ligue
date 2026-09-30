@@ -21,9 +21,6 @@ import type { CodeCadeau, Database } from '@/lib/db/entities';
 import { newId } from '@/lib/db/store';
 import {
   ALPHABET_CODES,
-  CODE_MAX,
-  CODE_MIN,
-  codeValide,
   etatDuCode,
   LONGUEUR_CODE_TIRE,
   normaliseCode,
@@ -40,7 +37,6 @@ export class CodeError extends Error {
     message: string,
     readonly code:
       | 'CODE_INVALIDE'
-      | 'CODE_PRIS'
       | 'CODE_INCONNU'
       | 'CODE_EPUISE'
       | 'DEJA_UTILISE'
@@ -70,12 +66,12 @@ function tire(db: Database): string {
 }
 
 /**
- * Crée un code. Sans texte choisi, il est tiré au sort. Le montant et le nombre
- * d'utilisations sont revérifiés ici, quoi qu'ait accepté le schéma.
+ * Crée un code, tiré au sort. Le montant et le nombre d'utilisations sont
+ * revérifiés ici, quoi qu'ait accepté le schéma.
  */
 export function creeCode(
   db: Database,
-  reglages: { code?: string | null; montant: number; utilisationsMax: number },
+  reglages: { montant: number; utilisationsMax: number },
   auteur: string,
 ): CodeCadeau {
   const { montant, utilisationsMax } = reglages;
@@ -86,18 +82,7 @@ export function creeCode(
     throw new CodeError(`Un code sert de 1 à ${UTILISATIONS_MAX} fois.`, 'CODE_INVALIDE');
   }
 
-  let texte: string;
-  if (reglages.code?.trim()) {
-    texte = normaliseCode(reglages.code);
-    if (!codeValide(texte)) {
-      throw new CodeError(`Un code tient en ${CODE_MIN} à ${CODE_MAX} lettres ou chiffres.`, 'CODE_INVALIDE');
-    }
-    if (db.codesCadeaux.some((c) => c.code === texte)) {
-      throw new CodeError('Ce code existe déjà : choisis-en un autre.', 'CODE_PRIS');
-    }
-  } else {
-    texte = tire(db);
-  }
+  const texte = tire(db);
 
   const code: CodeCadeau = {
     id: newId(),

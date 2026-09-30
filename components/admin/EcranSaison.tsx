@@ -121,13 +121,13 @@ export function EcranSaison({
     >
       {twitch.configure && (
         <Bloc
-          titre="Subs Twitch"
+          titre="Twitch : subs et tchat"
           icone="antenne"
           neige="admin-twitch"
           aide={
             branche
-              ? 'Branchés : chaque nouveau sub, chaque sub offert et chaque réabonnement annoncé dans le tchat s’ajoute tout seul au compteur, avec ses paliers.'
-              : 'Une fois branchés, les subs de la chaîne s’ajoutent tout seuls au compteur, avec ses paliers. Le branchement se fait une fois, par la streameuse elle-même : Twitch lui demande d’autoriser la ligue à voir ses subs.'
+              ? 'Branchés : chaque nouveau sub, chaque sub offert et chaque réabonnement annoncé s’ajoute tout seul au compteur, avec ses paliers. Le même branchement autorise la ligue à annoncer les codes cadeaux dans le tchat — s’il a été fait avant, rebranchez une fois.'
+              : 'Une fois branchés, les subs de la chaîne s’ajoutent tout seuls au compteur, et les codes cadeaux s’annoncent dans le tchat. Le branchement se fait une fois, par la streameuse elle-même : Twitch lui demande d’autoriser la ligue à voir ses subs et à écrire dans son tchat.'
           }
           actions={
             estAdmin ? (

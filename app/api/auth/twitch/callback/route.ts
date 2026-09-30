@@ -6,6 +6,7 @@ import {
   exchangeCode,
   isTwitchEnabled,
   PORTEE_SUBS,
+  PORTEES_TCHAT,
   reprendsNonce,
   verifyState,
 } from '@/lib/auth/twitch';
@@ -70,6 +71,7 @@ export async function GET(request: Request): Promise<NextResponse> {
       cible.searchParams.set('subs', 'refuse');
     } else {
       const branchement = await brancheSubs(profile.id, url.origin).catch(() => ({ ok: false, details: [] }));
+      const tchat = PORTEES_TCHAT.every((p) => profile.portees.includes(p));
       await getStore().transaction((db) => {
         audit(
           db,
@@ -77,7 +79,9 @@ export async function GET(request: Request): Promise<NextResponse> {
           branchement.ok ? 'SUBS_TWITCH_BRANCHES' : 'SUBS_TWITCH_REFUSES',
           null,
           branchement.ok
-            ? 'Subs Twitch branchés : nouveaux subs, subs offerts, réabonnements.'
+            ? `Twitch branché : nouveaux subs, subs offerts, réabonnements${
+                tchat ? ', et annonces des codes cadeaux dans le tchat' : ' (sans le tchat)'
+              }.`
             : `Twitch a refusé le branchement (${
                 branchement.details.map((d) => `${d.type} : ${d.statut}`).join(', ') || 'jeton de l’application'
               }).`,

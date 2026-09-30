@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import { useAction } from '@/components/admin/action';
 import { Bloc, Ecran } from '@/components/admin/Cadre';
 import { flakes } from '@/components/ui';
-import { CODE_MAX, UTILISATIONS_MAX } from '@/lib/domain/codes';
+import { UTILISATIONS_MAX } from '@/lib/domain/codes';
 import { ECONOMY } from '@/lib/domain/rules';
 import { shortDateTime } from '@/lib/format';
 
@@ -63,8 +63,7 @@ export function EcranJoueurs({ joueurs, codes }: { joueurs: LigneJoueur[]; codes
   const [recherche, setRecherche] = useState('');
   const [montant, setMontant] = useState(100);
   const [utilisationsMax, setUtilisationsMax] = useState(10);
-  const [texteCode, setTexteCode] = useState('');
-  const [dernierCode, setDernierCode] = useState<string | null>(null);
+  const [dernierCode, setDernierCode] = useState<{ code: string; annonce: boolean } | null>(null);
 
   async function copie(code: string) {
     try {
@@ -92,7 +91,7 @@ export function EcranJoueurs({ joueurs, codes }: { joueurs: LigneJoueur[]; codes
           titre="Créer un code cadeau"
           icone="cadeau"
           neige="admin-codes"
-          aide="C’est ainsi que les flocons se donnent : un montant, un nombre de joueurs. Chacun le tape une fois, derrière l’icône cadeau près de son solde. Celui qui crée un code ne peut pas s’en servir."
+          aide="C’est ainsi que les flocons se donnent : un montant, un nombre de joueurs, et un code tiré au sort, aussitôt annoncé dans le tchat. Chacun le tape une fois, derrière le cadeau près de son solde. Celui qui crée un code ne peut pas s’en servir."
         >
           <form
             className="space-y-3"
@@ -100,13 +99,21 @@ export function EcranJoueurs({ joueurs, codes }: { joueurs: LigneJoueur[]; codes
               e.preventDefault();
               const data = await envoie(
                 '/api/admin/codes',
-                { code: texteCode.trim() || null, montant, utilisationsMax },
+                { montant, utilisationsMax },
                 { cle: 'code-cree', succes: 'Code créé.' },
               );
-              if (data) {
-                setDernierCode(String(data.code));
-                setTexteCode('');
-              }
+              if (!data) return;
+              const code = String(data.code);
+              const annonce = (data.tchat as { envoye?: boolean } | undefined)?.envoye === true;
+              setDernierCode({ code, annonce });
+              setMessage(
+                annonce
+                  ? { kind: 'success', text: `Code ${code} créé et annoncé dans le tchat.` }
+                  : {
+                      kind: 'error',
+                      text: `Code ${code} créé, mais pas annoncé dans le tchat : la streameuse doit rebrancher Twitch (Modération → Saison).`,
+                    },
+              );
             }}
           >
             <div className="grid grid-cols-2 gap-3">
@@ -141,21 +148,6 @@ export function EcranJoueurs({ joueurs, codes }: { joueurs: LigneJoueur[]; codes
                 />
               </div>
             </div>
-            <div>
-              <label className="label" htmlFor="code-texte">
-                Code (facultatif)
-              </label>
-              <input
-                id="code-texte"
-                className="field tracking-[0.12em] uppercase"
-                value={texteCode}
-                onChange={(e) => setTexteCode(e.target.value)}
-                maxLength={CODE_MAX}
-                autoComplete="off"
-                spellCheck={false}
-                placeholder="Tiré au sort si vide — ex. NOEL26"
-              />
-            </div>
             <button
               className="btn btn-ice w-full"
               disabled={busy !== null || !(montant >= 1) || !(utilisationsMax >= 1)}
@@ -167,10 +159,14 @@ export function EcranJoueurs({ joueurs, codes }: { joueurs: LigneJoueur[]; codes
           {dernierCode && (
             <div className="mt-4 flex items-center justify-between gap-3 rounded-lg border border-aurora/40 px-3 py-2.5">
               <div className="min-w-0">
-                <p className="text-[12px] text-faint">Code créé — à annoncer sur le stream</p>
-                <p className="truncate font-display text-2xl font-black tracking-[0.14em] text-ink">{dernierCode}</p>
+                <p className="text-[12px] text-faint">
+                  {dernierCode.annonce ? 'Code créé — annoncé dans le tchat' : 'Code créé — à annoncer sur le stream'}
+                </p>
+                <p className="truncate font-display text-2xl font-black tracking-[0.14em] text-ink">
+                  {dernierCode.code}
+                </p>
               </div>
-              <button type="button" className="btn btn-sm shrink-0" onClick={() => copie(dernierCode)}>
+              <button type="button" className="btn btn-sm shrink-0" onClick={() => copie(dernierCode.code)}>
                 Copier
               </button>
             </div>

@@ -305,15 +305,18 @@ défaut. Les rôles ne se choisissent plus à la main, et plus personne ne
 s'inscrit autrement que par Twitch.
 
 **Les codes cadeaux** distribuent les flocons. La modération crée un code
-(`/api/admin/codes`, admin) : un montant, un nombre d'utilisations, un texte
-choisi ou tiré au sort (huit signes sans caractères ambigus, près de mille
-milliards de possibilités). Un joueur le tape derrière l'icône cadeau
+(`/api/admin/codes`, admin) : un montant, un nombre d'utilisations, et un code
+tiré au sort (huit signes sans caractères ambigus, près de mille milliards de
+possibilités). Un joueur le tape derrière l'icône cadeau
 (`POST /api/codes`) : le navigateur n'envoie que le code, tout le reste se décide
 dans `utiliseCode`, dans une transaction — un joueur ne s'en sert qu'une fois, le
 code ne sert pas plus que prévu, celui qui l'a créé ne s'en sert pas, la
 streameuse non plus. Chaque utilisation est un `credit()` au grand livre avec le
 code en référence : les utilisations se comptent là, sans double écriture. Dix
-essais par dix minutes et par adresse.
+essais par dix minutes et par adresse. À sa création, le code est annoncé dans le
+tchat de la chaîne (`POST /helix/chat/messages`, jeton de l'application ; la
+streameuse accorde `user:bot` et `channel:bot` au branchement) : le message est
+composé par le serveur (`annonceDuCode`), sans aucun texte venu de l'écran.
 
 **Le circuit OAuth.** `GET /api/auth/twitch` signe un `state` (clé dérivée de
 `AUTH_SECRET`, distincte de celle des sessions) qui expire au bout de dix minutes
@@ -329,7 +332,8 @@ le texte vient d'une table fixe. L'adresse de retour à déclarer chez Twitch es
 
 **Les subs viennent de Twitch** (EventSub, en webhook : `POST /api/twitch/eventsub`).
 La streameuse branche une fois, depuis Admin → Saison : la connexion Twitch repart
-avec `subs=1`, signé dans le `state`, et demande en plus `channel:read:subscriptions`.
+avec `subs=1`, signé dans le `state`, et demande en plus `channel:read:subscriptions`,
+ainsi que `user:bot` et `channel:bot` pour annoncer les codes cadeaux dans le tchat.
 Au retour, le site vérifie que c'est bien la chaîne de la ligue et que la portée est
 accordée, puis crée, avec le jeton de l'application, trois abonnements : nouveaux subs,
 subs offerts, réabonnements annoncés. Tout autre compte est connecté, sans rien
