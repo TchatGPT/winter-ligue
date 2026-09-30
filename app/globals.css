@@ -2283,9 +2283,12 @@
   /* La scène : les colonnes au-dessus, la congère au pied. */
   .graphe-scene {
     position: relative;
-    min-height: 230px;
-    max-height: 420px;
-    flex: 1 1 auto;
+    height: 230px;
+  }
+  @media (min-width: 1024px) {
+    .graphe-scene {
+      height: 300px;
+    }
   }
   /* Le tracé : la place des colonnes. En haut, l'air pour la neige et le
      score de la plus haute ; en bas, le pied qui s'enfonce dans la congère. */
@@ -2461,15 +2464,12 @@
   /*
    * Sur grand écran, l'historique prend la hauteur de la colonne de droite
    * (`contain: size` : son contenu ne compte pas dans la hauteur de la rangée).
-   * Le graphique grandit pour la remplir, jusqu'à 420 px ; la liste, elle,
-   * défile au-delà.
+   * Le graphique garde sa hauteur ; la liste prend le reste, et défile
+   * au-delà.
    */
   .fiche-saison {
     display: flex;
     flex-direction: column;
-  }
-  .fiche-saison > .graphe {
-    flex: 1 1 auto;
   }
   @media (min-width: 1280px) {
     .fiche-saison {
@@ -2477,7 +2477,8 @@
     }
     .fiche-saison > .fiche-games {
       min-height: 0;
-      flex: 0 1 auto;
+      flex: 1 1 auto;
+      align-content: start;
       max-height: none;
     }
   }
