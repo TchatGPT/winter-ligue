@@ -158,8 +158,9 @@ export function PackOpening({
       )}
 
       {/* Comment ça marche, en tête et en travers. */}
-      <section className="glass px-6 py-6 xl:col-span-2">
-        <TitreGlace taille="bloc" eyebrow="En trois étapes" className="mb-5">
+      <section className="glass relative overflow-hidden px-6 py-6 xl:col-span-2">
+        <SnowCap radius="var(--r-lg)" seed="boosters-etapes" epaisseur={16} />
+        <TitreGlace taille="bloc" eyebrow="En trois étapes" className="relative mb-5">
           Comment ça marche
         </TitreGlace>
         <ol className="etapes-cartes">
@@ -476,8 +477,9 @@ export function PackOpening({
         </section>
 
         {/* 2. Les taux, une ligne par rareté. */}
-        <section className="glass xl:flex xl:flex-1 xl:flex-col">
-          <div className="border-b border-white/10 px-4 pt-4 pb-3">
+        <section className="glass relative overflow-hidden xl:flex xl:flex-1 xl:flex-col">
+          <SnowCap radius="var(--r-lg)" seed="boosters-taux" epaisseur={14} />
+          <div className="relative border-b border-white/10 px-4 pt-6 pb-3">
             <TitreGlace taille="bloc" eyebrow={pack.name}>
               Taux de rareté
             </TitreGlace>

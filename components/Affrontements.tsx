@@ -34,6 +34,7 @@ import {
   type CampApercu,
 } from '@/components/BatailleArene';
 import { IconSwords } from '@/components/icons';
+import { SnowCap } from '@/components/SnowCap';
 import { reveilleSonsDuel } from '@/components/sonsDuel';
 import { Notice, flakes } from '@/components/ui';
 import { shortDateTime } from '@/lib/format';
@@ -471,8 +472,13 @@ export function Affrontements({
           En tête, sur toute la largeur : c'est ce qu'on vient voir d'abord. Un
           défi ouvert est une carte entière, avec sa mise en grand et son
           bouton — pas une ligne dans une colonne. */}
-      <section className="rejoindre" aria-labelledby="rejoindre-titre" data-vide={aRejoindre.length === 0 ? '' : undefined}>
-        <header className="rejoindre-tete">
+      <section
+        className="rejoindre relative overflow-hidden"
+        aria-labelledby="rejoindre-titre"
+        data-vide={aRejoindre.length === 0 ? '' : undefined}
+      >
+        <SnowCap radius="var(--r-lg)" seed="duels-rejoindre" epaisseur={16} />
+        <header className="rejoindre-tete relative">
           <h2 id="rejoindre-titre">Duels à rejoindre</h2>
           <span className="rejoindre-compte" data-actif={aRejoindre.length > 0 ? '' : undefined}>
             {aRejoindre.length}
@@ -550,6 +556,7 @@ export function Affrontements({
       <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] xl:items-stretch">
         {/* =============================== Le ring ============================== */}
         <section className="glass ring relative overflow-hidden" aria-labelledby="ring-titre">
+          <SnowCap radius="var(--r-lg)" seed="duels-lancer" epaisseur={18} />
           <header className="relative flex flex-wrap items-start justify-between gap-3">
             <div>
               <p className="eyebrow">Nouveau duel</p>
@@ -711,6 +718,7 @@ export function Affrontements({
 
         {/* ============================= Les résultats ========================== */}
         <section className="glass resultats relative overflow-hidden p-5 sm:p-6" aria-labelledby="resultats-titre">
+          <SnowCap radius="var(--r-lg)" seed="duels-resultats" epaisseur={14} />
           <header className="relative flex flex-wrap items-end justify-between gap-3">
             <div>
               <p className="eyebrow">Les derniers duels</p>
