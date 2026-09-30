@@ -41,10 +41,11 @@ const EMPREINTE = createHash('sha256')
   .digest('hex')
   .slice(0, 16);
 
-export async function synchroniseCatalogue(sql: postgres.Sql): Promise<void> {
+/** Recopie le catalogue s'il a changé. Vrai s'il a fallu le recopier. */
+export async function synchroniseCatalogue(sql: postgres.Sql): Promise<boolean> {
   const [actuel] = await sql<{ empreinte: string | null }[]>`
     select obj_description(to_regclass('public.cartes'), 'pg_class') as empreinte`;
-  if (actuel?.empreinte === EMPREINTE) return;
+  if (actuel?.empreinte === EMPREINTE) return false;
 
   await sql.begin(async (tx) => {
     await tx`select pg_advisory_xact_lock(724243)`;
@@ -74,4 +75,5 @@ export async function synchroniseCatalogue(sql: postgres.Sql): Promise<void> {
         id text, nom text, accroche text, declencheur text, portee text, pour_qui text, taux_catalogue jsonb)`;
     await tx.unsafe(`comment on table cartes is '${EMPREINTE}'`);
   });
+  return true;
 }

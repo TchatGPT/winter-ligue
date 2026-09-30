@@ -9,18 +9,31 @@
  * souris et faire évoluer le vent. Pas de bibliothèque.
  *
  * L'onglet caché met la boucle en pause, et le temps ne saute pas à la
- * reprise. Comme le pen, la neige tombe toujours, même sous « mouvement
+ * reprise.
+ *
+ * ## Le prix de la neige
+ *
+ * Tout le site est fait de plaques de verre floutées posées sur elle : chaque
+ * image de neige oblige le navigateur à refaire chaque flou visible. La neige
+ * se dessine donc à trente images par seconde au plus (elle tombe lentement,
+ * l'œil n'y voit pas de différence), à la résolution de l'écran et non à celle
+ * de la dalle, avec moitié moins de flocons que le pen, et elle se fige pendant
+ * un défilement — le temps de faire glisser la page sans refaire les flous. Comme le pen, la neige tombe toujours, même sous « mouvement
  * réduit » : c'est le décor, pas une animation d'interface.
  */
 
 export const NEIGE = {
   /** Le nombre de flocons pour un écran carré ; il suit le ratio de l'écran. */
-  nombre: 7000,
+  nombre: 3800,
   /** La gravité, et le vent : sa force au repos, ses bornes, son inertie. */
   gravite: 100,
   vent: { min: 0.1, max: 0.15, inertie: 0.01 },
-  /** Le pixel ratio, plafonné. */
-  dprMax: 2,
+  /** Le pixel ratio, plafonné : des flocons flous n'ont rien à gagner à la haute définition. */
+  dprMax: 1,
+  /** L'intervalle minimal entre deux images, en millisecondes : trente par seconde. */
+  intervalle: 1000 / 30,
+  /** Après un défilement, la neige reste figée ce temps-là, en millisecondes. */
+  repriseApresDefilement: 180,
 } as const;
 
 const VERTEX = `
@@ -227,6 +240,13 @@ export function monteNeige(holder: HTMLElement, textureUrl: string): Neige | nul
     souris.y = e.clientY;
   };
   window.addEventListener('pointermove', surSouris, { passive: true });
+
+  /* ---- le défilement : la neige se fige le temps qu'il dure ---- */
+  let figeeJusqua = 0;
+  const surDefilement = () => {
+    figeeJusqua = performance.now() + NEIGE.repriseApresDefilement;
+  };
+  window.addEventListener('scroll', surDefilement, { passive: true, capture: true });
   const vent: { courant: number; force: number; cible: number } = { courant: 0, force: NEIGE.vent.min, cible: NEIGE.vent.min };
 
   /* ---- la boucle ---- */
@@ -236,6 +256,7 @@ export function monteNeige(holder: HTMLElement, textureUrl: string): Neige | nul
   let perdu = 0; // le temps passé caché, retiré de l'horloge
   let cacheDepuis = 0;
   let precedent = debut;
+  let dernierDessin = 0;
   let resoudPrete: () => void = () => {};
   const prete = new Promise<void>((r) => {
     resoudPrete = r;
@@ -245,6 +266,13 @@ export function monteNeige(holder: HTMLElement, textureUrl: string): Neige | nul
   const image_ = (maintenant: number) => {
     id = 0;
     if (cache) return;
+    // Trente images par seconde au plus, et rien pendant un défilement : la
+    // neige garde son horloge, elle ne fait que se dessiner moins souvent.
+    if (maintenant - dernierDessin < NEIGE.intervalle || maintenant < figeeJusqua) {
+      id = requestAnimationFrame(image_);
+      return;
+    }
+    dernierDessin = maintenant;
     const elapsed = (maintenant - debut - perdu) / 5000;
     const delta = maintenant - precedent;
     precedent = maintenant;
@@ -291,6 +319,7 @@ export function monteNeige(holder: HTMLElement, textureUrl: string): Neige | nul
       if (id) cancelAnimationFrame(id);
       document.removeEventListener('visibilitychange', visibilite);
       window.removeEventListener('pointermove', surSouris);
+      window.removeEventListener('scroll', surDefilement, { capture: true });
       window.removeEventListener('resize', redimensionne);
       for (const t of Object.values(tampons)) gl.deleteBuffer(t.buffer);
       gl.deleteTexture(texture);

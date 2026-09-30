@@ -14,10 +14,11 @@ import 'server-only';
  * lecture-modification-écriture entrelacée, donc pas de duplication.
  */
 
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import postgres from 'postgres';
+import { cache } from 'react';
 import { synchroniseCatalogue } from './lecture';
 import { chargeBase, empreintes, enregistreBase, lisJournal, SCHEMA_SQL, TABLES } from './tables';
 import { dirname, join } from 'node:path';
@@ -324,11 +325,33 @@ export function baseDistante(): boolean {
   return Boolean(url) && !estLocale(url!);
 }
 
+/**
+ * L'empreinte du schéma : posée en commentaire sur `saison` une fois le schéma
+ * appliqué. Un serveur qui démarre la retrouve et saute la création des tables
+ * — une douzaine d'instructions et un bloc de sécurité, à chaque démarrage à
+ * froid. Au moindre changement du schéma dans le code, elle change, et le
+ * schéma est réappliqué.
+ */
+const EMPREINTE_SCHEMA = createHash('sha256')
+  .update(JSON.stringify({ SCHEMA_SQL, TABLES }))
+  .digest('hex')
+  .slice(0, 16);
+
+/**
+ * Le chargement de la base, gardé le temps d'un rendu : la page, le menu et le
+ * contrôle d'accès le demandaient chacun, et la base était relue trois fois
+ * pour une seule page. `generation` change à chaque transaction, si bien qu'un
+ * rendu ne relit jamais une base d'avant sa propre écriture.
+ */
+const chargeDuRendu = cache((store: PostgresStore, _generation: number) => store.chargeDirect());
+
 class PostgresStore implements Store {
   private readonly sql: postgres.Sql;
   private pret: Promise<void> | null = null;
   /** La file : une seule opération à la fois sur la connexion. */
   private file: Promise<unknown> = Promise.resolve();
+  /** Avance à chaque transaction : c'est la clé de `chargeDuRendu`. */
+  private generation = 0;
 
   constructor(url: string) {
     this.sql = postgres(versModeTransaction(url), {
@@ -344,7 +367,9 @@ class PostgresStore implements Store {
       // en moins d'une seconde.
       prepare: false,
       max: 1,
-      idle_timeout: 20,
+      // Deux minutes avant de rendre la connexion : la rouvrir coûte une
+      // poignée de main chiffrée (~300 ms), que payait le visiteur suivant.
+      idle_timeout: 120,
       connect_timeout: 10,
       // Chiffré. Sans cette ligne, requêtes et réponses passaient en clair
       // entre Vercel et Supabase : l'adresse n'impose pas `sslmode`. Le
@@ -369,6 +394,38 @@ class PostgresStore implements Store {
   /** Crée les tables et verse l'ancienne ligne unique, une fois par instance. */
   private prepare(): Promise<void> {
     this.pret ??= (async () => {
+      // Le schéma est déjà celui du code : rien à créer, rien à sécuriser de plus.
+      const [pose] = await this.sql<{ empreinte: string | null }[]>`
+        select obj_description(to_regclass('public.saison'), 'pg_class') as empreinte`;
+      if (pose?.empreinte !== EMPREINTE_SCHEMA) await this.appliqueSchema();
+
+      // Le catalogue n'est qu'une copie du code : son échec ne doit jamais
+      // empêcher le site de servir.
+      await synchroniseCatalogue(this.sql)
+        .then((recopie) =>
+          recopie
+            ? this.sql.unsafe(`
+            do $$ begin
+              alter table public.cartes enable row level security;
+              alter table public.boosters enable row level security;
+              if exists (select 1 from pg_roles where rolname = 'anon') then
+                revoke all on table public.cartes, public.boosters from anon, authenticated;
+              end if;
+            end $$`)
+            : undefined,
+        )
+        .catch((error) => console.error('[base] catalogue', error));
+    })().catch((error) => {
+      // On retentera à l'appel suivant plutôt que de garder l'échec en cache.
+      this.pret = null;
+      throw error;
+    });
+    return this.pret;
+  }
+
+  /** Crée les tables, pose la sécurité, verse l'ancienne ligne unique, et signe le schéma. */
+  private async appliqueSchema(): Promise<void> {
+    {
       await this.sql.begin(async (tx) => {
         // Deux instances qui démarrent ensemble ne créent pas les tables en même temps.
         await tx`select pg_advisory_xact_lock(724241)`;
@@ -399,35 +456,21 @@ class PostgresStore implements Store {
           const depart = migrate(ancienne?.data ?? emptyDatabase());
           await enregistreBase(tx, depart, new Map());
         }
+        await tx.unsafe(`comment on table saison is '${EMPREINTE_SCHEMA}'`);
       });
-
-      // Le catalogue n'est qu'une copie du code : son échec ne doit jamais
-      // empêcher le site de servir.
-      await synchroniseCatalogue(this.sql)
-        .then(() =>
-          this.sql.unsafe(`
-            do $$ begin
-              alter table public.cartes enable row level security;
-              alter table public.boosters enable row level security;
-              if exists (select 1 from pg_roles where rolname = 'anon') then
-                revoke all on table public.cartes, public.boosters from anon, authenticated;
-              end if;
-            end $$`),
-        )
-        .catch((error) => console.error('[base] catalogue', error));
-    })().catch((error) => {
-      // On retentera à l'appel suivant plutôt que de garder l'échec en cache.
-      this.pret = null;
-      throw error;
-    });
-    return this.pret;
+    }
   }
 
-  async read<T>(fn: (db: Readonly<Database>) => T): Promise<T> {
-    const db = await this.enFile(async () => {
+  /** La base, chargée d'un coup — sans mémoire. Voir `chargeDuRendu`. */
+  chargeDirect(): Promise<Partial<Database>> {
+    return this.enFile(async () => {
       await this.prepare();
       return chargeBase(this.sql);
     });
+  }
+
+  async read<T>(fn: (db: Readonly<Database>) => T): Promise<T> {
+    const db = await chargeDuRendu(this, this.generation);
     return fn(migrate(db));
   }
 
@@ -445,6 +488,7 @@ class PostgresStore implements Store {
         await enregistreBase(tx, db, avant);
         return { valeur };
       });
+      this.generation += 1;
       return resultat.valeur;
     });
   }
