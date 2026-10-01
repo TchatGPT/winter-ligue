@@ -186,8 +186,8 @@ export function FenetreCadeauDuJour({
           Cadeau du jour
         </h2>
         <p className="mt-2 text-[14px] leading-relaxed text-muted lg:mt-3 lg:text-[16px]">
-          Chaque jour, {num(CADEAU_DU_JOUR.parJour)} ❄ ; le {CADEAU_DU_JOUR.cycle}ᵉ jour d’affilée,{' '}
-          {num(CADEAU_DU_JOUR.septiemeJour)} ❄, puis la semaine recommence. Un jour manqué, et la série repart du
+          Chaque jour, {num(CADEAU_DU_JOUR.parJour)} flocons ; le {CADEAU_DU_JOUR.cycle}ᵉ jour d’affilée,{' '}
+          {num(CADEAU_DU_JOUR.septiemeJour)} flocons, puis la semaine recommence. Un jour manqué, et la série repart du
           premier jour. Le jour change à minuit, heure de Paris.
         </p>
 
