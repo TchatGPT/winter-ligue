@@ -221,7 +221,7 @@ export const COMMU_ACCELERE_TOUS_LES = 20;
  * Ils s'ajoutent aux paliers de flocons et de packs, ils ne les remplacent
  * pas : un palier de flocons donne quelque chose à garder, un évènement change
  * les règles le temps de sa fenêtre — une heure pour l'Avalanche, quatre jours
- * pour la Tempête, qui fait tomber le Booster Commu bien plus souvent.
+ * pour la Tempête de neige, qui fait tomber le Booster Commu bien plus souvent.
  *
  * Tous s'appliquent à tout le monde. Ils ne versent rien à personne, ils
  * changent les règles pendant leur fenêtre.
@@ -232,15 +232,16 @@ export const EVENEMENTS_SUBS: readonly EvenementSubs[] = [
     kind: 'FLOCONS_DOUBLES',
     dureeMinutes: 60,
     label: 'Avalanche',
-    description: 'Les flocons de chaque game sont doublés pendant une heure.',
+    description:
+      'Pendant 1 heure, chaque game rapporte deux fois plus de flocons, à tous les joueurs.',
     resume: 'Flocons ×2',
   },
   {
     every: 500,
     kind: 'COMMU_ACCELERE',
     dureeMinutes: 4 * 24 * 60,
-    label: 'Tempête',
-    description: `Le Booster Commu tombe tous les ${COMMU_ACCELERE_TOUS_LES} subs au lieu de 50, pendant quatre jours.`,
+    label: 'Tempête de neige',
+    description: `Pendant 4 jours, le Booster Commu tombe tous les ${COMMU_ACCELERE_TOUS_LES} subs au lieu de 50.`,
     resume: `Commu tous les ${COMMU_ACCELERE_TOUS_LES} subs`,
   },
 ];
@@ -327,13 +328,13 @@ export interface PalierAVenir {
   kind?: EvenementKind;
   label: string;
   every: number;
-  /** Ce qu'il donne, en quelques mots : « Flocons ×2 · 1 h ». */
-  resume: string;
+  /** Ce qu'il fait, en une phrase, quand il y a à expliquer : un évènement, un Commu accéléré. */
+  explication: string | null;
   /** Combien de subs il manque. */
   remaining: number;
   /** Où l'on en est du cycle, de 0 à 1. */
   progress: number;
-  /** Le Booster Commu tombe plus souvent : une Tempête court. */
+  /** Le Booster Commu tombe plus souvent : une Tempête de neige court. */
   accelere?: boolean;
 }
 
@@ -357,7 +358,9 @@ export function paliersDuCompteur(totalSubs: number, commuDepuis: number | null 
         packId: m.packId,
         label: m.label,
         every,
-        resume: accelere ? 'Accéléré par la Tempête' : 'À ouvrir à l’antenne',
+        explication: accelere
+          ? `Tempête de neige en cours : il tombe tous les ${COMMU_ACCELERE_TOUS_LES} subs au lieu de ${m.every}.`
+          : null,
         accelere,
         ...position(every, accelere ? (commuDepuis ?? 0) : 0),
       };
@@ -368,7 +371,7 @@ export function paliersDuCompteur(totalSubs: number, commuDepuis: number | null 
         kind: e.kind,
         label: e.label,
         every: e.every,
-        resume: `${e.resume} · ${dureeLisible(e.dureeMinutes)}`,
+        explication: e.description,
         ...position(e.every),
       }),
     ),

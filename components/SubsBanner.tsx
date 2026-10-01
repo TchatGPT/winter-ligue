@@ -42,18 +42,18 @@ export function SubsBanner({
   const plusProche = Math.min(...paliers.map((p) => p.remaining));
 
   return (
-    <section className="subs-route glass @container relative px-5 pt-10 pb-6 sm:px-8 sm:pt-11">
+    <section className="subs-route glass @container relative px-5 pt-10 pb-6 sm:px-8 sm:pt-11 4xl:pt-9 4xl:pb-5">
       <SnowCap radius="var(--r-lg)" seed="subs" />
       <div className="subs-route-lueur" aria-hidden="true" />
 
-      <div className="relative flex h-full flex-col gap-5">
+      <div className="relative flex h-full flex-col gap-5 4xl:gap-4">
         {/* 1. Le nombre. */}
         <div className="subs-route-tete">
           <div>
             <p className="font-display text-[13px] font-bold tracking-[0.12em] text-aurora uppercase">
               Subs de la saison
             </p>
-            <p className="num mt-1 font-display text-[64px] leading-none font-black text-ink sm:text-[76px]">
+            <p className="num mt-1 font-display text-[64px] leading-none font-black text-ink sm:text-[76px] 4xl:text-[64px]">
               {flakes(totalSubs)}
             </p>
           </div>
@@ -112,11 +112,12 @@ export function SubsBanner({
                         dans <strong>{p.remaining}</strong>
                       </span>
                     </div>
+                    {p.explication && <p className="palier-explication">{p.explication}</p>}
                     <div className="palier-pied">
                       <span className="palier-jauge" aria-hidden="true">
                         <span style={{ width: `${Math.round(p.progress * 100)}%` }} />
                       </span>
-                      <span className="palier-resume">{p.resume}</span>
+                      <span className="palier-resume">subs</span>
                     </div>
                   </div>
                 </li>

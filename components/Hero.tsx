@@ -44,7 +44,7 @@ export function Hero({
     <section className="hero glass glass-reflet @container relative">
       <SnowCap radius="var(--r-xl)" seed="hero" epaisseur={26} />
 
-      <div className="relative flex h-full flex-col gap-7 px-6 py-9 sm:px-10 sm:py-12 4xl:gap-5 4xl:py-8 @4xl:flex-row @4xl:items-center @4xl:justify-between @4xl:gap-10">
+      <div className="relative flex h-full flex-col gap-7 px-6 py-9 sm:px-10 sm:py-12 4xl:gap-5 4xl:py-6 @4xl:flex-row @4xl:items-center @4xl:justify-between @4xl:gap-10">
         <div className="min-w-0">
           <p className="eyebrow">
             {SEASON.edition} · du {debut.getDate()} {mois(debut)} au {fin.getDate()} {mois(fin)}

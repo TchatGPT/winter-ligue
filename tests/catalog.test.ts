@@ -330,7 +330,7 @@ describe('les paliers du compteur de subs', () => {
       ['Booster Commu', 50, 14],
       ['Avalanche', 100, 64],
       ['Booster Folie', 200, 164],
-      ['Tempête', 500, 464],
+      ['Tempête de neige', 500, 464],
     ]);
   });
 

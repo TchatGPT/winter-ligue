@@ -34,7 +34,7 @@ const T0 = new Date('2027-01-10T20:00:00.000Z');
 const minutes = (n: number) => new Date(T0.getTime() + n * 60_000);
 
 const avalanche = EVENEMENTS_SUBS.find((e) => e.label === 'Avalanche')!;
-const tempete = EVENEMENTS_SUBS.find((e) => e.label === 'Tempête')!;
+const tempete = EVENEMENTS_SUBS.find((e) => e.label === 'Tempête de neige')!;
 
 function joueur(id: string): Player {
   return {
