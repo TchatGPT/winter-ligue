@@ -4,13 +4,13 @@ import { useMemo } from 'react';
 import { PackArtwork } from './PackArtwork';
 
 /**
- * Rapport largeur-hauteur des planches détourées : **1:1,545**.
+ * Rapport largeur-hauteur des planches détourées : **1:1,865**.
  *
- * Mesuré sur les quatre après suppression du fond — elles s'accordent à deux
- * millièmes près. Ce n'est pas le rapport d'un sachet vu de face : les planches
- * sont peintes en perspective trois quarts, et un sachet de face y paraîtrait
- * plus élancé. Mais c'est la planche qui fait foi ; l'écart se paierait en
- * illustration étirée.
+ * Mesuré sur les quatre après suppression du fond — elles s'accordent à trois
+ * millièmes près, et les fichiers livrés ont tous le même gabarit (600 × 1119).
+ * Ce n'est pas le rapport d'un sachet vu de face : les planches sont peintes en
+ * perspective trois quarts. Mais c'est la planche qui fait foi ; l'écart se
+ * paierait en illustration étirée.
  *
  * La **taille**, elle, ne vit plus ici. Le sachet occupe toute la boîte qu'on
  * lui donne, et c'est la rangée qui la fixe — voir `--l-sachet` dans
@@ -18,7 +18,7 @@ import { PackArtwork } from './PackArtwork';
  * choisir entre un sachet lisible sur un ordinateur et un sachet qui tienne
  * dans un téléphone.
  */
-const RATIO = 1.545;
+const RATIO = 1.865;
 
 /**
  * Le reflet qui balaie le sachet.

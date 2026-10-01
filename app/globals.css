@@ -7006,12 +7006,14 @@
      Elle se calcule à partir de la largeur du cadre : les quatre sachets, leurs
      trois écarts et les deux marges occupent exactement la place disponible,
      moins dix pixels de jeu. Ils grandissent donc avec le panneau au lieu de
-     sauter d'un palier à l'autre, et le plancher de 126 px les fait passer au
-     défilement sur un téléphone plutôt que de les y rendre illisibles. */
+     sauter d'un palier à l'autre, et le plancher de 104 px les fait passer au
+     défilement sur un téléphone plutôt que de les y rendre illisibles. Les
+     bornes se lisent en hauteur : de 194 à 494 px, celle des sachets depuis
+     qu'ils existent (planches au rapport 1:1,865). */
   .rangee-piste {
     --ecart: 12px;
     --marge: 16px;
-    --l-sachet: clamp(126px, calc((100cqw - 78px) / 4), 320px);
+    --l-sachet: clamp(104px, calc((100cqw - 78px) / 4), 265px);
     gap: var(--ecart);
     padding: 44px var(--marge) 48px;
   }
@@ -7454,12 +7456,14 @@
   }
 
   /* Le sachet : il surgit en tournant, se charge, puis éclate. */
+  /* 332 px de large : 619 de haut au rapport des planches, la hauteur pour
+     laquelle la scène de l'overlay est composée. */
   .ov-sachet {
     position: absolute;
     top: 236px;
     left: 50%;
-    width: 400px;
-    margin-left: -200px;
+    width: 332px;
+    margin-left: -166px;
     perspective: 1400px;
   }
   .ov-sachet-corps {

@@ -11,8 +11,8 @@ export const CARD_ART: Record<string, string> = {
 };
 
 export const BOOSTER_ART: Record<string, string> = {
-  'aurore': '/boosters/aurore.webp',
-  'blizzard': '/boosters/blizzard.webp',
-  'givre': '/boosters/givre.webp',
-  'solstice': '/boosters/solstice.webp',
+  'commu': '/boosters/commu.webp',
+  'finisseur': '/boosters/finisseur.webp',
+  'folie': '/boosters/folie.webp',
+  'perso': '/boosters/perso.webp',
 };

@@ -816,7 +816,8 @@ export const PACKS: readonly PackDefinition[] = [
     tagline: 'Pour qui va au bout',
     declencheur: 'Quand un joueur a joué toutes ses games de la saison.',
     glyph: '🏁',
-    gradient: ['#b07a2a', '#3d2708'],
+    // Le vert de l'aurore qui couronne sa planche.
+    gradient: ['#2e8b7a', '#0c2a26'],
     portee: 'JOUEUR',
     pourQui: 'un joueur',
     // Une légendaire sur cinquante : jouer toute sa saison vaut mieux qu'offrir.
@@ -827,23 +828,15 @@ export const PACKS: readonly PackDefinition[] = [
 const PACK_INDEX = new Map(PACKS.map((p) => [p.id, p]));
 
 /**
- * La planche peinte de chaque pack.
+ * La planche peinte de chaque pack : `public/boosters/<id du pack>.webp`.
  *
- * Les quatre planches ont été peintes pour les anciens sachets, et elles
- * restent justes : une par teinte. Le Perso reprend le bleu du Givre, le Commu
- * le bleu clair du Blizzard, le Folie le violet du Hors-Piste, le Finisseur
- * l'ambre de l'Everest. Un pack sans planche retombe sur le sachet dessiné.
+ * Une série de chats des neiges, un par booster : le Perso sort d'une grotte
+ * de glace, le Commu tourne en bande dans un tourbillon, le Folie se fait
+ * tornade sous l'aurore, le Finisseur, en armure, a gagné le sommet. Un pack
+ * sans planche retombe sur le sachet dessiné.
  */
-const PLANCHE_DU_PACK: Record<PackId, string> = {
-  perso: 'givre',
-  commu: 'blizzard',
-  folie: 'aurore',
-  finisseur: 'solstice',
-};
-
 export function packArt(id: string): string | null {
-  const planche = PLANCHE_DU_PACK[id as PackId];
-  return planche ? (BOOSTER_ART[planche] ?? null) : null;
+  return BOOSTER_ART[id] ?? null;
 }
 
 /** La rareté qui donne sa couleur au halo du sachet : la plus haute qu'il promet vraiment. */

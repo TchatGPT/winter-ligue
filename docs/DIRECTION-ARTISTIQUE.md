@@ -180,103 +180,65 @@ dégradés CSS.
 Tant qu'aucune planche n'est fournie, un sachet dessiné prend le relais — aurore, massif
 enneigé, lac, refuge éclairé, avec ses propres soudures, son cadre ciselé et ses textes.
 Il tient la route et permet de livrer les quatre sachets au fil de l'eau, mais un SVG
-écrit à la main n'atteindra jamais une illustration peinte. Compare `givre` aux trois
-autres, l'écart est net.
+écrit à la main n'atteindra jamais une illustration peinte.
 
 ### Gabarit
 
 | | |
 |---|---|
-| Format | **vertical, ratio 1:1,700** — celui de la découpe des quatre planches |
-| Résolution | 760 × 1292 |
-| Livraison | JPEG qualité 90 ou WebP 84, moins de 250 Ko |
-| Nom du fichier | l'identifiant du booster : `givre`, `blizzard`, `aurore`, `solstice` |
+| Format | **vertical, ratio 1:1,865** — celui des quatre planches détourées, perspective comprise |
+| Résolution | 600 × 1119, fond transparent |
+| Livraison | WebP qualité 82, alpha intact, moins de 200 Ko |
+| Nom du fichier | l'identifiant du booster : `perso`, `commu`, `folie`, `finisseur` |
 | Emplacement | `public/boosters/` |
 
-Puis `npm run cartes` pour rafraîchir l'index.
+Puis `npm run cartes` pour rafraîchir l'index (le build le fait aussi).
 
-**Cadrage — c'est le point qui compte le plus.** Le fichier ne doit contenir **que le
-sachet**, détouré, bord à bord : sertissage haut sur la toute première ligne de pixels,
-sertissage bas sur la dernière, et rien sur les côtés. Le fichier est affiché tel quel,
-étiré au cadre : tout fond laissé autour s'imprimerait sur le sachet, et toute marge le
-ferait paraître plus petit qu'il ne devrait.
+Le fichier est servi tel quel — ni redimensionné ni converti à la volée : c'est une
+image de fond CSS, pas un `next/image`. D'où la largeur de 600 px, qui couvre le plus
+grand sachet de la rangée (265 px) sur un écran à double densité.
 
-Un générateur pose presque toujours le sachet sur un fond blanc. Recadre-le au plus
-juste **à l'intérieur** de sa ligne la plus étroite — sur la planche `givre`, les
-sertissages étaient 9 px plus étroits que le corps, et s'arrêter au corps laissait un
-liseré blanc visible en haut et en bas.
+### La recette
 
-Next convertit et redimensionne à la volée : un JPEG propre suffit, il sera servi en
-WebP.
+Le générateur rend le sachet **de trois quarts, posé sur du blanc**, avec son ombre
+portée, dans une image de 1760 × 2336. On garde la perspective : elle fait le volume du
+sachet, et le composant ne le fait plus tourner par-dessus.
 
-### Le prompt
+1. `node scripts/detoure-planche.mjs source.png detoure.png` — retire le fond blanc,
+   l'ombre portée et le liseré de contact sous le sertissage bas, puis recadre au plus
+   juste. Le remplissage part des bords : la neige claire peinte dans le sachet n'est
+   jamais atteinte (le script explique pourquoi un simple seuil la percerait).
+2. Redimensionner en 600 × 1119 et encoder en WebP 82 (sharp : `resize(600, 1119,
+   { fit: 'fill' })`, `webp({ quality: 82, alphaQuality: 100 })`).
+3. Contrôler les quatre côte à côte **sur le fond du site** (`--fond`), et de près sur les
+   sertissages et les coins : aucun liseré blanc, aucune trace d'ombre.
 
-```
-A complete vertical trading card booster pack, product shot, ratio 1:1.75,
-filling the entire frame edge to edge with no background and no margin.
+Les quatre planches actuelles sortent du détourage à 1 202 × 2 242 à un pixel près : le
+générateur rend toujours le même placement, et c'est ce qui leur donne le même gabarit.
+**Si une planche nouvelle sort à un autre rapport**, ne l'étire pas : mesure-le, et
+reporte-le dans `RATIO` (`components/BoosterPack3D.tsx`), puis dans les bornes de
+`--l-sachet` (la rangée) et la largeur de `.ov-sachet` (l'overlay), qui sont réglées pour
+garder la même hauteur de sachet — 494 px au plus dans la rangée, 619 px dans l'overlay.
 
-Glossy silver mylar foil packaging. A finely serrated crimped seal runs across
-the very top and the very bottom of the pack, bright metallic, horizontally
-ribbed. Between them, a full-bleed painted illustration framed by a thin white
-keyline.
+### La série
 
-The illustration: <SUJET>
+**Une série de chats des neiges**, un par booster, chacun sur son film : on reconnaît le
+booster à sa couleur avant de lire son nom, et la montée vers le Finisseur se lit dans le
+sujet.
 
-Bottom right of the illustration, a small round embossed gold foil seal
-reading <RARETE>.
-
-Painted digital art, cold desaturated winter palette, cinematic, high detail.
-No other text anywhere on the pack.
-```
-
-### La variante par booster
-
-Garde la structure, change le sujet et le sceau — c'est ce qui distingue les quatre
-sachets tout en gardant la gamme cohérente :
-
-**Les quatre boosters ont leur planche.** Chacune illustre son nom plutôt que sa rareté,
-et la montée du prix se lit dans le sujet : on progresse dans la neige, on la dévale, on
-atteint le sommet.
-
-Le fichier garde le nom de l'identifiant — `aurore.jpg` pour Hors-Piste, `solstice.jpg`
-pour Everest — parce que l'identifiant n'a pas suivi le renommage : il est écrit dans
-l'historique d'ouverture et dans le grand livre.
-
-| Booster | Sujet | Sceau |
+| Booster | Planche | Film |
 |---|---|---|
-| `givre` | une escouade prise sous des séracs géants, l'échelle donnée par les silhouettes au pied de la glace | `COMMON` |
-| `blizzard` | un opérateur avançant seul de face dans la poudreuse, la glace occupant tout le fond | `RARE` |
-| `aurore` — **Hors-Piste** | un opérateur à ski dans une pente vierge, gerbe de neige, sommet au fond | `SUPER RARE` |
-| `solstice` — **Everest** | un sommet gagné, drapeau planté, la brume en contrebas | `ULTRA RARE` |
+| `perso` — **Booster Perso** | un chat gris sort d'une grotte de glace, les pattes dans l'eau gelée | argent |
+| `commu` — **Booster Commu** | des chats de glace qui tournent en bande dans un tourbillon de neige | bleu nuit |
+| `folie` — **Booster Folie** | un chat devenu tornade, yeux roses, sous l'aurore | violet |
+| `finisseur` — **Booster Finisseur** | un chat en armure irisée, assis au sommet, l'aurore derrière lui | argent irisé |
 
-Les quatre partagent une découpe identique — même boîte de 1258 × 2139 dans la
-planche source — parce que le générateur rend toujours le même placement. C'est ce
-qui garantit qu'elles ont exactement le même gabarit, le composant n'ayant qu'un seul
-ratio pour tous.
+La teinte de chaque booster (`gradient` dans `lib/domain/catalog.ts`) suit sa planche :
+c'est elle qui colore la lueur de la scène derrière le sachet choisi.
 
-**La boîte est rentrée d'environ 25 px sous le bord du sachet**, et c'est important.
-Le générateur peint un liseré sombre le long du film, sur une vingtaine de pixels. Le
-garder plaçait un trait noir vertical de chaque côté du sachet à l'écran — un défaut
-qui ressemblait à s'y méprendre à un artefact de rendu, et qui a coûté plusieurs
-fausses pistes avant qu'on ne le cherche dans l'image elle-même.
-
-Pour une planche supplémentaire, reprends cette boîte et vérifie la luminance moyenne
-des colonnes de bord du fichier produit : elle doit rester dans la plage du centre. Si
-elle est nettement plus basse, le liseré est encore dedans.
-
-### Si le générateur rend le sachet de trois quarts
-
-C'est le cas courant, et c'est rattrapable. La planche de `blizzard` est arrivée en
-perspective : bord haut incliné de 3,7°, côté gauche 3 % plus haut que le droit.
-
-Un simple recadrage ne suffit pas — ce n'est pas un cisaillement mais une vraie
-perspective, il faut une **homographie**. Le script
-`scripts/redresse-planche.ps1` fait le travail : on lui donne les quatre coins mesurés du
-sachet dans la planche source, il rend un rectangle droit à la bonne taille.
-
-Pour mesurer les coins, balaie l'image par lignes et par colonnes en cherchant le premier
-pixel non blanc — les quatre extrêmes sont les quatre coins. Rentre-les ensuite de cinq
-pixels vers l'intérieur, sinon le halo d'antialiasing du bord se retrouve sur le sachet.
+Les précédentes séries ont été redressées par homographie puis recadrées dans une boîte
+commune (`scripts/redresse-planche.ps1`) ; on y a renoncé, la perspective peinte rendant
+mieux qu'un sachet redressé.
 
 ---
 
