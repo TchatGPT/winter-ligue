@@ -35,6 +35,15 @@ export function MedailleGlace({
           <stop offset="0.6" stopColor="#ffffff" stopOpacity="0.3" />
           <stop offset="1" stopColor="#ffffff" stopOpacity="0.08" />
         </linearGradient>
+        {/* L'éclat qui passe, découpé au disque. */}
+        <clipPath id={`${cle}-forme`}>
+          <circle cx="20" cy="26" r="14" />
+        </clipPath>
+        <linearGradient id={`${cle}-reflet`} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" style={{ stopColor: 'var(--neige-1)' }} stopOpacity="0" />
+          <stop offset="0.5" style={{ stopColor: 'var(--neige-1)' }} stopOpacity="0.8" />
+          <stop offset="1" style={{ stopColor: 'var(--neige-1)' }} stopOpacity="0" />
+        </linearGradient>
         <filter id={`${cle}-ombre`} x="-15%" y="-10%" width="130%" height="130%">
           <feDropShadow dx="0" dy="1.2" stdDeviation="0.9" floodColor="#04122a" floodOpacity="0.45" />
         </filter>
@@ -66,6 +75,11 @@ export function MedailleGlace({
 
       {/* L'éclat. */}
       <path d="M12.2 17.6 L13.8 16.2 L14.6 19.4 L13.2 21.4 Z" fill="#ffffff" opacity="0.85" />
+
+      {/* La lumière qui passe, un peu après celle de la couronne (`.eclat-glace`). */}
+      <g clipPath={`url(#${cle}-forme)`}>
+        <rect className="eclat-glace" data-rang={rang} x="-14" y="6" width="12" height="44" fill={`url(#${cle}-reflet)`} />
+      </g>
     </svg>
   );
 }

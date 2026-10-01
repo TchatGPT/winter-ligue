@@ -6295,6 +6295,88 @@
   border-radius: inherit;
   background: linear-gradient(90deg, color-mix(in srgb, var(--teinte) 45%, transparent), var(--teinte));
 }
+/*
+ * Les jauges vivent, sans peser : à l'arrivée, chacune se remplit, l'une après
+ * l'autre ; ensuite, de temps en temps, un reflet de sa teinte glisse le long
+ * du rail, du départ vers le palier. Transform et opacité seulement : rien ne
+ * se recalcule dans la page.
+ */
+.palier-jauge > span {
+  transform-origin: left center;
+  animation: jauge-remplit 1.1s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.palier-jauge::after {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 30%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--teinte) 55%, transparent),
+    color-mix(in srgb, var(--neige-1) 45%, transparent),
+    transparent
+  );
+  transform: translateX(-110%);
+  animation: jauge-reflet 5.5s ease-in-out 1.4s infinite;
+}
+.palier:nth-child(2) .palier-jauge > span { animation-delay: 0.12s; }
+.palier:nth-child(3) .palier-jauge > span { animation-delay: 0.24s; }
+.palier:nth-child(4) .palier-jauge > span { animation-delay: 0.36s; }
+.palier:nth-child(2) .palier-jauge::after { animation-delay: 1.75s; }
+.palier:nth-child(3) .palier-jauge::after { animation-delay: 2.1s; }
+.palier:nth-child(4) .palier-jauge::after { animation-delay: 2.45s; }
+@keyframes jauge-remplit {
+  from {
+    transform: scaleX(0);
+  }
+}
+@keyframes jauge-reflet {
+  0% {
+    transform: translateX(-110%);
+  }
+  35%,
+  100% {
+    transform: translateX(340%);
+  }
+}
+
+/*
+ * L'éclat de la couronne et des médailles : de temps en temps, une bande de
+ * lumière traverse la glace, découpée à sa forme — la couronne d'abord, puis
+ * le deuxième, puis le troisième. Jamais de halo autour.
+ */
+.eclat-glace {
+  transform: translateX(0) skewX(-18deg);
+  animation: eclat-glace 6.5s ease-in-out 1.2s infinite;
+}
+.eclat-glace[data-rang='2'] {
+  animation-delay: 1.6s;
+}
+.eclat-glace[data-rang='3'] {
+  animation-delay: 2s;
+}
+@keyframes eclat-glace {
+  0% {
+    transform: translateX(0) skewX(-18deg);
+  }
+  18%,
+  100% {
+    transform: translateX(76px) skewX(-18deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .palier-jauge > span {
+    animation: none;
+  }
+  .palier-jauge::after,
+  .eclat-glace {
+    animation: none;
+    display: none;
+  }
+}
+
 /* L'unité du décompte, sous lui : « dans 50 » / « SUBS ». */
 .palier-resume {
   flex: none;

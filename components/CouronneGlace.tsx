@@ -52,6 +52,16 @@ export function CouronneGlace({
           <stop offset="0" stopColor="#cfeaff" stopOpacity="0.55" />
           <stop offset="1" stopColor="#ffffff" stopOpacity="0.08" />
         </linearGradient>
+        {/* L'éclat qui passe : une bande de lumière, découpée à la forme de la couronne. */}
+        <clipPath id={`${id}-forme`}>
+          <path d={corps} />
+          <rect x="7" y="29" width="34" height="6" rx="1.5" />
+        </clipPath>
+        <linearGradient id={`${id}-reflet`} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" style={{ stopColor: 'var(--neige-1)' }} stopOpacity="0" />
+          <stop offset="0.5" style={{ stopColor: 'var(--neige-1)' }} stopOpacity="0.85" />
+          <stop offset="1" style={{ stopColor: 'var(--neige-1)' }} stopOpacity="0" />
+        </linearGradient>
         {/* Une ombre de contact courte sous la couronne, pour qu'elle pèse. */}
         <filter id={`${id}-ombre`} x="-10%" y="-10%" width="120%" height="130%">
           <feDropShadow dx="0" dy="1.2" stdDeviation="0.9" floodColor="#04122a" floodOpacity="0.45" />
@@ -100,6 +110,11 @@ export function CouronneGlace({
       <circle cx="14" cy="32" r="1.3" fill="#ffffff" opacity="0.55" />
       <circle cx="24" cy="32" r="1.5" fill="#ffffff" opacity="0.65" />
       <circle cx="34" cy="32" r="1.3" fill="#ffffff" opacity="0.55" />
+
+      {/* L'éclat : de temps en temps, la lumière glisse sur la glace (`.eclat-glace`). */}
+      <g clipPath={`url(#${id}-forme)`}>
+        <rect className="eclat-glace" x="-14" y="-6" width="12" height="56" fill={`url(#${id}-reflet)`} />
+      </g>
     </svg>
   );
 }
