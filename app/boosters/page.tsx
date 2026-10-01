@@ -6,7 +6,6 @@ import { CARDS, cartesDuPack, impactMax, momentDe } from '@/lib/domain/catalog';
 import type { CarteSaison } from '@/components/CartesParRarete';
 import { chanceDe } from '@/lib/domain/rules';
 import { fileDesPacks, resolvedPacks } from '@/lib/services/packs';
-import { EnTetePage } from '@/components/EnTetePage';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Boosters' };
@@ -78,12 +77,10 @@ export default async function PacksPage(){
 
   return (
     <div className="space-y-6">
-      <EnTetePage
-        icone="rocket"
-        eyebrow="Cartes de la saison"
-        titre="Les boosters"
-        lead="Une carte par booster, ouverte à l’antenne. Les actions des roues de la Summer, à la mesure de l’hiver."
-      />
+      {/* Pas d'en-tête : la page s'ouvre sur « Comment ça marche », puis la
+          scène, qui porte le nom du booster choisi. Le titre de la page reste
+          pour les lecteurs d'écran. */}
+      <h1 className="sr-only">Les boosters</h1>
 
       <PackOpening
         packs={packs}
