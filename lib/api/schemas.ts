@@ -155,6 +155,11 @@ export const adminConfigSchema = z.object({
   maxGamesPerPlayer: z.number().int().min(1).max(100).optional(),
 });
 
+/* ----------------------------- Cadeau du jour ----------------------------- */
+
+/** Le cadeau du jour : rien à envoyer, le serveur décide de tout. */
+export const cadeauDuJourSchema = z.object({}).strict();
+
 /* ------------------------------ Codes cadeaux ----------------------------- */
 
 /** Le code tapé par un joueur : le serveur le normalise, et décide de tout le reste. */

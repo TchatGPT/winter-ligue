@@ -84,7 +84,7 @@ function bilanDe(b: BatailleVueClient, moiId: string | null): { gagne: boolean; 
 /* ------------------------------------------------------------------------ */
 
 /*
- * Le curseur n'est pas linéaire : de 50 à 20 000, un pixel vaudrait trente
+ * Le curseur n'est pas linéaire : de 100 à 50 000, un pixel vaudrait cent
  * flocons, et les petites mises — les plus jouées — tiendraient dans le
  * premier centimètre. La position suit la racine carrée de la mise : la
  * moitié de la course couvre le premier quart des montants.

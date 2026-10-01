@@ -2,9 +2,11 @@
 
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
+import { CadeauDuJour } from '@/components/CadeauDuJour';
 import { CodeCadeau } from '@/components/CodeCadeau';
 import { IconQuitter } from '@/components/icons';
 import { num } from '@/lib/format';
+import type { EtatCadeau } from '@/lib/services/cadeauDuJour';
 
 /**
  * Pastille de session : solde de flocons, pseudo, déconnexion.
@@ -17,11 +19,14 @@ export function SessionBadge({
   role,
   pseudo,
   balance,
+  cadeau = null,
   stacked = false,
 }: {
   role: 'admin' | 'joueur' | null;
   pseudo: string | null;
   balance: number | null;
+  /** Le cadeau du jour, s'il y a un joueur. */
+  cadeau?: EtatCadeau | null;
   /** Disposition verticale, dans le bloc compte de la colonne. */
   stacked?: boolean;
 }) {
@@ -79,6 +84,7 @@ export function SessionBadge({
             </span>
           </div>
         )}
+        {cadeau && <CadeauDuJour etat={cadeau} variante="tuile" />}
         {balance !== null && <CodeCadeau variante="tuile" />}
         {/* Le compte : qui est connecté, et de quoi se déconnecter. Il disait
             « Modération » pour un modérateur, qu'on prenait pour un lien. */}
@@ -111,6 +117,7 @@ export function SessionBadge({
         >
           <span aria-hidden="true">❄</span>
           <span className="num">{num(balance)}</span>
+          {cadeau && <CadeauDuJour etat={cadeau} variante="pastille" />}
           <CodeCadeau variante="pastille" />
         </span>
       )}

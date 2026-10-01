@@ -17,6 +17,7 @@ import {
   DEFAULT_MAX_GAMES_PER_PLAYER,
   ECONOMY,
   multiplicateurChance,
+  PALIERS_CHANCE,
   nextMilestone,
   packsPersoAcquis,
   paliersDuCompteur,
@@ -163,22 +164,35 @@ describe('tables de raretés', () => {
 });
 
 describe('la chance', () => {
-  it('monte avec le solde, de ×1 à ×1,5, et s’arrête au plafond', () => {
+  it('monte par paliers avec le solde, de ×1 à ×4, et s’arrête au plafond', () => {
     expect(chanceDe(0)).toBe(0);
     expect(chanceDe(-500)).toBe(0);
     expect(chanceDe(Number.NaN)).toBe(0);
-    expect(chanceDe(ECONOMY.soldeMax / 2)).toBeCloseTo(CHANCE.max / 2, 10);
+    expect(multiplicateurChance(0)).toBe(1);
+    expect(multiplicateurChance(999)).toBe(1);
+    expect(multiplicateurChance(1_000)).toBe(1.1);
+    expect(multiplicateurChance(17_999)).toBe(1.9);
+    expect(multiplicateurChance(18_000)).toBe(2);
+    expect(multiplicateurChance(32_000)).toBe(3);
+    expect(multiplicateurChance(ECONOMY.soldeMax)).toBe(4);
     expect(chanceDe(ECONOMY.soldeMax)).toBe(CHANCE.max);
     expect(chanceDe(ECONOMY.soldeMax * 10)).toBe(CHANCE.max);
-    expect(multiplicateurChance(0)).toBe(1);
-    expect(multiplicateurChance(ECONOMY.soldeMax)).toBe(1.5);
+  });
+
+  it('a des paliers qui montent, du premier au plafond', () => {
+    expect(PALIERS_CHANCE[0]).toEqual({ des: 0, multiplicateur: 1 });
+    expect(PALIERS_CHANCE.at(-1)).toEqual({ des: ECONOMY.soldeMax, multiplicateur: 1 + CHANCE.max });
+    for (let i = 1; i < PALIERS_CHANCE.length; i += 1) {
+      expect(PALIERS_CHANCE[i].des).toBeGreaterThan(PALIERS_CHANCE[i - 1].des);
+      expect(PALIERS_CHANCE[i].multiplicateur).toBeGreaterThan(PALIERS_CHANCE[i - 1].multiplicateur);
+    }
   });
 
   it('garde la somme exacte, quelle que soit la chance', () => {
     // C'est la plage dans laquelle le tirage se fait : une table poussée qui
     // ne totaliserait plus 100 000 rendrait les taux affichés mensongers.
     for (const pack of PACKS) {
-      for (const chance of [0, 0.01, 0.333, 0.5, 0.999, 1]) {
+      for (const chance of [0, 0.01, 0.333, 0.5, 0.999, 1, 1.5, 2, 2.5, 3]) {
         const pousse = poidsAvecChance(pack.weights, chance);
         expect(total(pousse)).toBe(WEIGHT_TOTAL);
         for (const poids of Object.values(pousse)) {
@@ -189,13 +203,16 @@ describe('la chance', () => {
     }
   });
 
-  it('multiplie les raretés hautes par 1,5 au maximum, pas davantage', () => {
+  it('multiplie les raretés hautes par 4 au maximum, pas davantage', () => {
     const plein = poidsAvecChance(RARITY_WEIGHTS_BASE, CHANCE.max);
     for (const rarity of ['R', 'UR', 'L'] as Rarity[]) {
-      expect(plein[rarity]).toBe(RARITY_WEIGHTS_BASE[rarity] * 1.5);
+      expect(plein[rarity]).toBe(RARITY_WEIGHTS_BASE[rarity] * 4);
     }
-    // La commune absorbe la différence, et il en reste.
-    expect(plein.C).toBe(74_500);
+    // La commune absorbe la différence, et il en reste : au Booster Perso,
+    // 32 % de communes et une légendaire sur cent vingt-cinq.
+    expect(plein.C).toBe(32_000);
+    expect(plein.L).toBe(800);
+    expect(poidsAvecChance(RARITY_WEIGHTS_BASE, CHANCE.max * 10)).toEqual(plein);
   });
 
   it('ne change rien sans flocons', () => {

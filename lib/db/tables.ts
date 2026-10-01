@@ -59,6 +59,8 @@ export const COLLECTIONS: Collection[] = [
       c('joinedAt', 'inscrit_le', 'ts'),
       c('sessionsDepuis', 'sessions_depuis', 'ts'),
       c('roleManuel', 'role_manuel', 'bool'),
+      c('cadeauDernier', 'cadeau_dernier', 'text'),
+      c('cadeauSerie', 'cadeau_serie', 'int'),
     ],
   },
   {
@@ -427,6 +429,10 @@ alter table joueurs add column if not exists sessions_depuis timestamptz;
 
 -- Un rôle choisi à la main : la connexion Twitch n'y touche plus.
 alter table joueurs add column if not exists role_manuel boolean not null default false;
+
+-- Le cadeau du jour : le dernier jour pris, et la série.
+alter table joueurs add column if not exists cadeau_dernier text;
+alter table joueurs add column if not exists cadeau_serie integer;
 
 -- Il n'y a plus de rôle modérateur à part : les modérateurs sont admins.
 update joueurs set role = 'admin' where role = 'moderateur';

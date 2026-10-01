@@ -5,6 +5,7 @@ import { CARDS, RARITY_META, cartesDuPack } from '@/lib/domain/catalog';
 import { getStore } from '@/lib/db/store';
 import { exigeSession } from '@/lib/auth/acces';
 import {
+  CADEAU_DU_JOUR,
   CARD_IMPACT_CAP,
   CHANCE,
   CRENEAUX_BONUS,
@@ -14,6 +15,7 @@ import {
   ECONOMY,
   EVENEMENTS_SUBS,
   PACKS_REGLES,
+  PALIERS_CHANCE,
   PLACEMENT_POINTS,
   rarityPercent,
   SEASON,
@@ -138,12 +140,20 @@ export default async function ReglesPage(){
             un par un.
           </p>
           <p className="text-[13px] text-faint">
-            La chance vient des flocons : le multiplicateur monte de ×1 à ×1,5 avec le solde, et
-            atteint ×1,5 au plafond de {CHANCE.floconsPourPlein.toLocaleString('fr-FR')} flocons. À
-            ×1,5, les raretés hautes sont une fois et demie plus probables, pas davantage — une rare n’est
-            jamais garantie. Les flocons ne sont pas dépensés, et la chance ne s’applique jamais à un
-            booster collectif.
+            La chance vient des flocons : le multiplicateur monte par paliers, de ×1 à 0 flocon jusqu’à ×4
+            au plafond de {CHANCE.floconsPourPlein.toLocaleString('fr-FR')} flocons. À ×4, les raretés
+            hautes sont quatre fois plus probables — une légendaire du Booster Perso passe de 1 sur 500 à
+            1 sur 125 —, et une rare n’est jamais garantie. Les flocons ne sont pas dépensés, et la chance
+            ne s’applique jamais à un booster collectif.
           </p>
+          <ul className="grid grid-cols-3 gap-1.5 text-[13px] sm:grid-cols-5">
+            {PALIERS_CHANCE.map((p) => (
+              <li key={p.des} className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-center">
+                <strong className="num block text-ink">×{p.multiplicateur.toLocaleString('fr-FR')}</strong>
+                <span className="num text-faint">{p.des.toLocaleString('fr-FR')} ❄</span>
+              </li>
+            ))}
+          </ul>
         </Rule>
 
         <Rule
@@ -242,8 +252,11 @@ export default async function ReglesPage(){
                   {ECONOMY.perPlacement['1']} ❄ pour un Top 1, {ECONOMY.perPlacement['2']} ❄ pour
                   un Top 2, {ECONOMY.perPlacement['3']} ❄ pour un Top 3
                 </li>
-                <li>{ECONOMY.participation} ❄ par game enregistrée</li>
-                <li>{ECONOMY.welcomeGrant} ❄ offerts à l’inscription</li>
+                <li>
+                  Le cadeau du jour : {CADEAU_DU_JOUR.parJour} ❄ par jour, {CADEAU_DU_JOUR.septiemeJour} ❄ le{' '}
+                  {CADEAU_DU_JOUR.cycle}e jour d’affilée, dès ta première game
+                </li>
+                <li>On démarre la saison à 0 ❄</li>
               </ul>
             </div>
             <div className="rounded-lg border border-white/10 bg-white/5 p-3">

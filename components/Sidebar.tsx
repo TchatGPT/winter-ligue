@@ -3,6 +3,7 @@ import { getSession, playerIdOf } from '@/lib/auth/session';
 import { getStore } from '@/lib/db/store';
 import { BottomNav, SidebarNav } from './NavTabs';
 import { SessionBadge } from './SessionBadge';
+import { etatCadeau } from '@/lib/services/cadeauDuJour';
 import { IconSnowflake } from './icons';
 
 /** Largeur de la plaque, et la marge qui la décolle des bords de l'écran. */
@@ -26,10 +27,11 @@ export async function Sidebar() {
   const isAdmin = session?.role === 'admin';
   const isPlayer = playerIdOf(session) !== null;
 
-  const { player } = await getStore().read((db) => {
+  const { player, cadeau } = await getStore().read((db) => {
     const found = isPlayer ? db.players.find((p) => p.id === session!.sub) : undefined;
     return {
       player: found ? { pseudo: found.pseudo, snowflakes: found.snowflakes } : null,
+      cadeau: found ? etatCadeau(db, found.id) : null,
     };
   });
 
@@ -67,6 +69,7 @@ export async function Sidebar() {
               role={session?.role ?? null}
               pseudo={player?.pseudo ?? null}
               balance={player?.snowflakes ?? null}
+              cadeau={cadeau}
               stacked
             />
           </div>
@@ -90,6 +93,7 @@ export async function Sidebar() {
               role={session?.role ?? null}
               pseudo={player?.pseudo ?? null}
               balance={player?.snowflakes ?? null}
+              cadeau={cadeau}
             />
           </div>
         </div>

@@ -7,7 +7,7 @@ import { IconTwitch } from '@/components/icons';
 import { flakes } from '@/components/ui';
 import { exigeSession } from '@/lib/auth/acces';
 import { getCard } from '@/lib/domain/catalog';
-import { ECONOMY, libelleMultiplicateur, PACKS_REGLES } from '@/lib/domain/rules';
+import { CHANCE, ECONOMY, libelleMultiplicateur, PACKS_REGLES } from '@/lib/domain/rules';
 import { shortDateTime } from '@/lib/format';
 import { getFicheJoueur, getPublicProfile } from '@/lib/services/profile';
 
@@ -332,10 +332,10 @@ export default async function FicheJoueurPage({ params }: { params: Promise<{ sl
                 </strong>
               </div>
               <div className="jauge-chance mt-2.5" aria-hidden="true">
-                <span style={{ width: `${p.chance * 100}%` }} />
+                <span style={{ width: `${(p.chance / CHANCE.max) * 100}%` }} />
               </div>
               <p className="mt-1.5 text-[12.5px] text-muted">
-                Son solde pousse les raretés des boosters ouverts pour lui, jusqu’à ×1,50 à{' '}
+                Son solde pousse les raretés des boosters ouverts pour lui, jusqu’à ×4 à{' '}
                 {flakes(ECONOMY.soldeMax)} ❄.
               </p>
             </div>

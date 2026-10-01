@@ -90,11 +90,12 @@ export default async function DuelsPage() {
               )}
             </div>
             <div className="jauge-chance mt-2" aria-hidden="true">
-              <span style={{ width: `${(chance ?? 0) * 100}%` }} />
+              <span style={{ width: `${((chance ?? 0) / CHANCE.max) * 100}%` }} />
             </div>
             <p className="mt-2 text-[13px] leading-snug text-ink-2">
               Ton solde pousse la chance de tes boosters, de {libelleMultiplicateur(0)} à {libelleMultiplicateur(CHANCE.max)}{' '}
-              pour {flakes(ECONOMY.soldeMax)} ❄. Miser, c’est la risquer.
+              à {flakes(ECONOMY.soldeMax)} ❄. En jouant, on finit la saison vers ×2,5 ; au-delà, il faut gagner des duels.
+              Miser, c’est la risquer.
             </p>
           </li>
         </ol>

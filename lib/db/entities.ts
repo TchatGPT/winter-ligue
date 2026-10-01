@@ -73,6 +73,10 @@ export interface Player {
    * connexion ; le champ reste pour les comptes qui le portent.
    */
   roleManuel: boolean;
+  /** Le dernier jour (à Paris, « AAAA-MM-JJ ») où il a pris son cadeau du jour. */
+  cadeauDernier?: string | null;
+  /** Sa série de jours d'affilée, ce jour-là compris. */
+  cadeauSerie?: number | null;
 }
 
 /** Trace d'un effet de carte appliqué à une game, avec son delta exact. */

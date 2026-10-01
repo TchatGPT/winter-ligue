@@ -4223,6 +4223,79 @@
   .code-cadeau-pastille:focus-visible {
     background: color-mix(in srgb, var(--ice) 26%, transparent);
   }
+  /* ---- Le cadeau du jour : la tuile du code cadeau, teintée de glace, et sa semaine ---- */
+  .cadeau-jour-tuile {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.6rem 0.75rem 0.6rem 0.6rem;
+    border: 1px solid color-mix(in srgb, var(--ice) 28%, transparent);
+    border-radius: var(--r-md);
+    background: color-mix(in srgb, var(--fond) 30%, transparent);
+    box-shadow: inset 0 1px 0 color-mix(in srgb, var(--ink) 10%, transparent);
+    transition:
+      background-color 0.2s ease,
+      border-color 0.2s ease;
+  }
+  /* Il attend : la tuile s'allume, comme un cadeau qu'on n'a pas ouvert. */
+  .cadeau-jour-tuile[data-dispo] {
+    border-color: color-mix(in srgb, var(--ice) 60%, transparent);
+    background: linear-gradient(135deg, color-mix(in srgb, var(--ice) 20%, transparent), transparent 75%);
+    cursor: pointer;
+  }
+  .cadeau-jour-tuile[data-dispo]:hover,
+  .cadeau-jour-tuile[data-dispo]:focus-visible {
+    border-color: var(--ice);
+    background-color: color-mix(in srgb, var(--ice) 10%, transparent);
+  }
+  .cadeau-jour-tuile[data-message='ok'] .code-cadeau-aide {
+    color: var(--aurora);
+  }
+  .cadeau-jour-tuile[data-message='erreur'] .code-cadeau-aide {
+    color: color-mix(in srgb, var(--danger) 70%, var(--ink));
+  }
+  .cadeau-jour-medaillon {
+    background: color-mix(in srgb, var(--ice) 18%, transparent);
+    color: var(--ice);
+  }
+  .cadeau-jour-fleche {
+    color: var(--ice);
+  }
+  /* La semaine : sept crans, ceux déjà pris pleins, le septième doré. */
+  .cadeau-jour-semaine {
+    display: flex;
+    gap: 4px;
+    margin-top: 0.4rem;
+  }
+  .cadeau-jour-semaine i {
+    width: 100%;
+    max-width: 18px;
+    height: 5px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--ink) 14%, transparent);
+  }
+  .cadeau-jour-semaine i[data-fait] {
+    background: var(--ice);
+  }
+  .cadeau-jour-semaine i[data-septieme] {
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gold) 70%, transparent);
+  }
+  .cadeau-jour-semaine i[data-septieme][data-fait] {
+    background: var(--gold);
+  }
+  .cadeau-jour-pastille {
+    display: inline-grid;
+    flex: none;
+    place-items: center;
+    width: 1.625rem;
+    height: 1.625rem;
+    margin-left: 0.2rem;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--gold) 22%, transparent);
+    color: var(--gold);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gold) 50%, transparent);
+  }
   /* ---- Le compteur de Boosters Perso : − n +, comme les roues perso de la Summer ---- */
   .compteur-perso {
     display: inline-flex;

@@ -1,8 +1,8 @@
 /**
  * Les flocons : la monnaie de la saison.
  *
- * Ils se gagnent en jouant et par les paliers de subs, se misent dans les
- * affrontements, et poussent les taux quand un pack s'ouvre pour soi. Chaque
+ * Ils se gagnent en jouant, par le cadeau du jour et les codes cadeaux, se
+ * misent dans les affrontements, et poussent les taux quand un pack s'ouvre pour soi. Chaque
  * mouvement passe par le grand livre (`LedgerEntry`) : le solde d'un joueur
  * doit toujours être reconstructible à partir de son historique, ce qui rend
  * une manipulation détectable.
@@ -52,7 +52,9 @@ export type LedgerReason =
   | 'REMBOURSEMENT_BATAILLE'
   | 'AJUSTEMENT_ADMIN'
   /** Des flocons récupérés avec un code cadeau ; la référence est le code. */
-  | 'CODE_CADEAU';
+  | 'CODE_CADEAU'
+  /** Le cadeau du jour ; la référence est le jour, à Paris. */
+  | 'CADEAU_DU_JOUR';
 
 /**
  * Vérifie qu'un débit est possible. On refuse tout solde négatif : c'est la

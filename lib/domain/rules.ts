@@ -75,24 +75,31 @@ export const DEFAULT_MAX_GAMES_PER_PLAYER = 60;
  * s'échangent contre rien d'autre.
  */
 export const ECONOMY = {
-  /** Flocons gagnés par kill. La récompense de base du skill. */
-  perKill: 25,
-  /** Flocons gagnés selon le placement. Un Top 1 vaut environ 16 kills. */
-  perPlacement: { '1': 400, '2': 250, '3': 120 } as Record<'1' | '2' | '3', number>,
-  /** Flocons gagnés simplement en enregistrant une game. */
-  participation: 150,
-  /** Dotation de départ à l'inscription : de quoi miser un premier affrontement. */
-  welcomeGrant: 400,
+  /** Flocons gagnés par kill. */
+  perKill: 10,
+  /**
+   * Flocons gagnés selon le placement, en plus des kills. Un Top 1 vaut
+   * vingt-cinq kills.
+   *
+   * Calibré sur la Summer Ligue : sur une saison de soixante games, les plus
+   * assidus y faisaient de 300 à 1 000 kills et de 35 à 52 Top 1 — soit, ici,
+   * de 15 000 à 23 000 flocons de games, une trentaine de milliers avec les
+   * Avalanches, les cartes, le cadeau du jour et les codes. À mi-chemin du
+   * plafond : le reste se gagne en duel.
+   */
+  perPlacement: { '1': 250, '2': 200, '3': 125 } as Record<'1' | '2' | '3', number>,
+  /** Rien pour une game jouée : ce sont les kills et les tops qui paient. */
+  participation: 0,
+  /** Rien à l'inscription : on part de zéro, et la première game rapporte. */
+  welcomeGrant: 0,
   /**
    * Le solde maximum. Ce qui dépasse est perdu.
    *
-   * Vingt mille : une game rapporte cinq cents flocons en moyenne, et un
-   * joueur assidu en joue une quinzaine par semaine. On approche donc du
-   * plafond en deux mois de jeu sans rien miser — pas en une semaine — sur une
-   * saison de deux à trois mois et de soixante games. C'est aussi ce qui borne
-   * la chance : elle est pleine au plafond, jamais avant.
+   * Cinquante mille : en jouant toute la saison, les meilleurs finissent vers
+   * trente-cinq mille. Le plafond — et la chance pleine, ×4 — ne s'atteint
+   * qu'en gagnant des duels, à pile ou face, en risquant ce qu'on a.
    */
-  soldeMax: 20_000,
+  soldeMax: 50_000,
 } as const;
 
 /* --------------------------- Subs Twitch --------------------------------- */
@@ -444,15 +451,14 @@ export const WEIGHT_TOTAL = 100_000;
  *
  * Quand un booster s'ouvre **pour un joueur**, son solde de flocons pousse les
  * raretés vers le haut. Le poids de chaque rareté au-dessus de la commune est
- * multiplié par `1 + chance` — le **multiplicateur**, de ×1 à ×1,5 —, la
- * commune absorbe la différence, et la somme reste exactement `WEIGHT_TOTAL`.
+ * multiplié par le **multiplicateur** de son palier, la commune absorbe la
+ * différence, et la somme reste exactement `WEIGHT_TOTAL`.
  *
- * Le multiplicateur monte linéairement avec le solde, et plafonne à ×1,5 au
- * solde maximum. Il a plafonné à ×2 : un compte plein doublait ses
- * légendaires, ce qui pesait trop pour une saison qui n'en voit qu'une ou
- * deux. Au Booster Perso, ×1,5 fait passer la légendaire de 0,2 % à 0,3 %. Un
- * joueur riche tire mieux, il ne tire pas à coup sûr — et les flocons ne
- * s'achètent pas, ils se gagnent en jouant.
+ * Quinze paliers, de ×1 à 0 flocon à ×4 au plafond. En jouant toute la saison,
+ * on finit vers ×2,5 ou ×3 ; ×3,5 et ×4 passent par les duels. Au Booster
+ * Perso, ×4 fait passer la légendaire de 0,2 % à 0,8 % — une sur cent vingt-cinq —
+ * et l'ultra rare de 1,3 % à 5,2 %. Un joueur riche tire mieux, il ne tire pas à
+ * coup sûr, et les flocons ne s'achètent pas : ils se gagnent en jouant.
  *
  * Les flocons ne sont **pas dépensés** : les mêmes servent à miser dans les
  * affrontements. Tenir son solde pour tirer mieux, ou le risquer pour le
@@ -461,27 +467,57 @@ export const WEIGHT_TOTAL = 100_000;
  * Les Boosters Commu et Folie ne s'ouvrent pour personne : aucune chance ne
  * s'y applique.
  */
+export const PALIERS_CHANCE: readonly { des: number; multiplicateur: number }[] = [
+  { des: 0, multiplicateur: 1 },
+  { des: 1_000, multiplicateur: 1.1 },
+  { des: 2_000, multiplicateur: 1.2 },
+  { des: 3_000, multiplicateur: 1.3 },
+  { des: 4_500, multiplicateur: 1.4 },
+  { des: 6_000, multiplicateur: 1.5 },
+  { des: 8_000, multiplicateur: 1.6 },
+  { des: 10_000, multiplicateur: 1.7 },
+  { des: 12_500, multiplicateur: 1.8 },
+  { des: 15_000, multiplicateur: 1.9 },
+  { des: 18_000, multiplicateur: 2 },
+  { des: 25_000, multiplicateur: 2.5 },
+  { des: 32_000, multiplicateur: 3 },
+  { des: 40_000, multiplicateur: 3.5 },
+  { des: 50_000, multiplicateur: 4 },
+];
+
 export const CHANCE = {
   /** Le solde auquel le multiplicateur est plein : le plafond de flocons. */
   floconsPourPlein: ECONOMY.soldeMax,
-  /** La chance maximale : ×1,5. */
-  max: 0.5,
+  /** La chance maximale : ×4. */
+  max: 3,
 } as const;
+
+/** Le palier de chance d'un solde : le plus haut dont il atteint le seuil. */
+export function palierDeChance(solde: number): { des: number; multiplicateur: number } {
+  const s = Number.isFinite(solde) ? solde : 0;
+  let palier = PALIERS_CHANCE[0];
+  for (const p of PALIERS_CHANCE) if (s >= p.des) palier = p;
+  return palier;
+}
 
 /** La chance d'un joueur, entre 0 et `CHANCE.max`, d'après son solde. */
 export function chanceDe(solde: number): number {
-  if (!Number.isFinite(solde) || solde <= 0) return 0;
-  return Math.min(CHANCE.max, (solde / CHANCE.floconsPourPlein) * CHANCE.max);
+  return Math.round((palierDeChance(solde).multiplicateur - 1) * 100) / 100;
 }
 
-/** Le multiplicateur de chance, de 1 à 1,5, tel qu'on l'affiche : « ×1,25 ». */
+/** Le multiplicateur de chance, de 1 à 4, tel qu'on l'affiche : « ×2,5 ». */
 export function multiplicateurChance(solde: number): number {
-  return 1 + chanceDe(solde);
+  return palierDeChance(solde).multiplicateur;
 }
 
-/** « ×1,45 », arrondi au centième. */
+/** Le palier suivant, pour dire combien il manque ; null au plafond. */
+export function palierSuivant(solde: number): { des: number; multiplicateur: number } | null {
+  return PALIERS_CHANCE.find((p) => p.des > (Number.isFinite(solde) ? solde : 0)) ?? null;
+}
+
+/** « ×1,4 », « ×2 », « ×2,5 ». */
 export function libelleMultiplicateur(chance: number): string {
-  return `×${(1 + chance).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return `×${(1 + chance).toLocaleString('fr-FR', { maximumFractionDigits: 2 })}`;
 }
 
 /**
@@ -619,12 +655,33 @@ export const CRENEAUX_BONUS = {
  * prend rien au passage.
  */
 export const DUEL = {
-  miseMin: 50,
-  miseMax: 20_000,
+  miseMin: 100,
+  miseMax: 50_000,
   /**
    * Les duels qu'un joueur peut laisser en attente à la fois. Chacun est
    * annoncé sur le stream : sans borne, un joueur pouvait en lancer cinquante
    * d'affilée et occuper l'écran des minutes durant.
    */
   enAttenteMax: 3,
+} as const;
+
+/* ---------------------------- Le cadeau du jour --------------------------- */
+
+/**
+ * Le cadeau du jour : quelques flocons pour qui passe sur le site, chaque jour.
+ *
+ * Quarante par jour, et deux cents le septième jour d'affilée — puis la
+ * semaine recommence, tant que la série tient. Un jour manqué la fait
+ * repartir du premier. Sur une saison de trois mois, un joueur présent tous les
+ * jours en tire environ cinq mille cinq cents : de quoi revenir, pas de quoi
+ * remplacer une bonne game ni approcher le plafond sans duel.
+ *
+ * Réservé à qui a au moins une game : un compte qui ne joue jamais n'en
+ * touche pas, et des comptes secondaires ne peuvent pas s'en servir pour
+ * nourrir un compte principal en duel.
+ */
+export const CADEAU_DU_JOUR = {
+  parJour: 40,
+  septiemeJour: 200,
+  cycle: 7,
 } as const;

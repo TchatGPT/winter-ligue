@@ -67,7 +67,8 @@ export function rattacheCompteTwitch(db: Database, profil: ProfilTwitch): Player
     roleManuel: false,
   };
   db.players.push(cree);
-  credit(db, cree.id, ECONOMY.welcomeGrant, 'INSCRIPTION', null);
+  // Rien à l'inscription aujourd'hui : on n'écrit pas une ligne à zéro.
+  if (ECONOMY.welcomeGrant > 0) credit(db, cree.id, ECONOMY.welcomeGrant, 'INSCRIPTION', null);
   if (cree.role !== 'joueur') {
     audit(db, 'twitch', 'ROLE_CHAINE', cree.id, `${cree.pseudo} : ${cree.role}`);
   }

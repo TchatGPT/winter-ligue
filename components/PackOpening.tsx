@@ -275,7 +275,7 @@ export function PackOpening({
             {
               titre: 'La streameuse l’ouvre',
               texte:
-                'À l’antenne, devant tout le monde. Le serveur tire une carte, une seule, avant que le rail ne tourne. Tes flocons poussent les raretés vers le haut quand le booster est pour toi, jusqu’à ×1,5.',
+                'À l’antenne, devant tout le monde. Le serveur tire une carte, une seule, avant que le rail ne tourne. Tes flocons poussent les raretés vers le haut quand le booster est pour toi, jusqu’à ×4.',
               icone: <GlaceCartes className="h-full w-full" />,
             },
             {

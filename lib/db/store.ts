@@ -649,6 +649,8 @@ function migrate(db: Partial<Database>): Database {
       activisionId: p.activisionId ?? null,
       sessionsDepuis: p.sessionsDepuis ?? null,
       roleManuel: p.roleManuel ?? false,
+      cadeauDernier: p.cadeauDernier ?? null,
+      cadeauSerie: p.cadeauSerie ?? 0,
       snowflakes: Math.min(p.snowflakes ?? 0, ECONOMY.soldeMax),
     })),
     games: (db.games ?? []).map((g) => {
