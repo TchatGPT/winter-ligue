@@ -4207,12 +4207,26 @@
     line-height: 1;
     color: var(--aurora);
   }
+  /* Les pastilles du solde, dans l'en-tête mobile : 36 px à l'œil, et une
+     zone de toucher élargie à 44 px tout autour — à 26 px, on les ratait du
+     doigt. */
+  .code-cadeau-pastille,
+  .cadeau-jour-pastille {
+    position: relative;
+    width: 2.25rem;
+    height: 2.25rem;
+  }
+  .code-cadeau-pastille::before,
+  .cadeau-jour-pastille::before {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: 999px;
+  }
   .code-cadeau-pastille {
     display: inline-grid;
     flex: none;
     place-items: center;
-    width: 1.625rem;
-    height: 1.625rem;
     margin-left: 0.2rem;
     border-radius: 999px;
     background: color-mix(in srgb, var(--ice) 13%, transparent);
@@ -4287,12 +4301,9 @@
   /* La pastille de l'en-tête mobile : toujours là, glace quand il est pris,
      dorée et marquée d'un point quand il attend. */
   .cadeau-jour-pastille {
-    position: relative;
     display: inline-grid;
     flex: none;
     place-items: center;
-    width: 1.625rem;
-    height: 1.625rem;
     margin-left: 0.2rem;
     border-radius: 999px;
     background: color-mix(in srgb, var(--ice) 13%, transparent);

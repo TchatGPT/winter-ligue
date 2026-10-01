@@ -111,7 +111,7 @@ export function CodeCadeau({ variante }: { variante: 'tuile' | 'pastille' }) {
           aria-label="Utiliser un code cadeau"
           title="Un code cadeau ?"
         >
-          <IconCadeau className="h-[15px] w-[15px]" />
+          <IconCadeau className="h-[19px] w-[19px]" />
         </button>
       )}
 

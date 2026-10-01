@@ -108,7 +108,7 @@ export function CadeauDuJour({ etat, variante }: { etat: EtatCadeau; variante: '
           aria-label={dispo ? `Cadeau du jour : ${etat.montant} flocons à prendre` : 'Cadeau du jour'}
           title={dispo ? `Cadeau du jour : +${etat.montant} ❄` : 'Cadeau du jour'}
         >
-          <IconSnowflake className="h-[15px] w-[15px]" />
+          <IconSnowflake className="h-[19px] w-[19px]" />
         </button>
       ) : (
         <button type="button" className="cadeau-jour-tuile" data-dispo={dispo ? '' : undefined} onClick={ouvre}>

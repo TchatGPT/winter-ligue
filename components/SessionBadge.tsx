@@ -112,7 +112,7 @@ export function SessionBadge({
     <div className="flex items-center gap-2">
       {balance !== null && (
         <span
-          className="flex items-center gap-1.5 rounded-full border border-white/15 bg-white/8 py-1 pr-1 pl-3 font-display text-sm font-bold text-ice"
+          className="flex items-center gap-1.5 rounded-full border border-white/15 bg-white/8 py-1 pr-1 pl-3 font-display text-sm font-bold text-ice max-sm:gap-2"
           title="Tes flocons — la monnaie de la saison"
         >
           <span aria-hidden="true">❄</span>
