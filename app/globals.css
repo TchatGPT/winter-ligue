@@ -366,24 +366,29 @@
 
   /* --------------------------------------------------------------------------
      LE PIED DE PAGE — voir components/PiedDePage.
-     Un bloc de verre comme les autres, aligné sur le contenu : la marque et
-     les droits à gauche, la signature à droite ; empilés et centrés sur
-     téléphone, où la marge basse dégage la barre de navigation flottante
-     (78 px du bord de l'écran).
+     Une bande sur toute la largeur, collée au bas de la page comme le menu
+     l'est au bord gauche : le cadre du site, plat, sans neige ni reflet — la
+     même matière que le menu, et la même arête claire, en haut cette fois.
+     La marque et les droits à gauche, la signature à droite ; empilés et
+     centrés sur téléphone. Connecté, la barre de navigation des téléphones
+     flotte par-dessus (78 px du bord de l'écran) : la bande se prolonge
+     dessous, et son contenu reste au-dessus.
      -------------------------------------------------------------------------- */
   .pied-de-page {
     position: relative;
     z-index: 10;
-    width: 100%;
-    padding: 0 1rem 7rem;
-  }
-  .pied-de-page-bloc {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 1rem;
-    padding: 1.4rem 1.25rem 1.25rem;
+    width: 100%;
+    padding: 1.4rem 1rem 1.5rem;
     text-align: center;
+    background: var(--glass-3);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.12);
+  }
+  .pied-de-page[data-barre] {
+    padding-bottom: calc(1.5rem + 78px + env(safe-area-inset-bottom, 0px));
   }
   .pied-de-page-marque {
     display: flex;
@@ -436,27 +441,31 @@
     width: 1.1rem;
     height: 1.1rem;
   }
+  /* Le contenu s'aligne sur celui des pages : mêmes marges que le <main>. */
   @media (min-width: 640px) {
     .pied-de-page {
-      padding-inline: 1.5rem;
-    }
-    .pied-de-page-bloc {
       flex-direction: row;
       justify-content: space-between;
-      padding: 1.25rem 1.5rem;
+      padding: 1.1rem 1.5rem;
       text-align: left;
+    }
+    .pied-de-page[data-barre] {
+      padding-bottom: calc(1.1rem + 78px + env(safe-area-inset-bottom, 0px));
     }
     .pied-de-page-marque {
       flex-direction: row;
     }
   }
+  /* La barre flottante n'existe plus à partir de 1024 px : le menu la remplace. */
   @media (min-width: 1024px) {
-    .pied-de-page {
-      padding: 0 2rem 1.5rem;
+    .pied-de-page,
+    .pied-de-page[data-barre] {
+      padding: 1.1rem 2rem;
     }
   }
   @media (min-width: 1536px) {
-    .pied-de-page {
+    .pied-de-page,
+    .pied-de-page[data-barre] {
       padding-inline: 2.5rem;
     }
   }
@@ -3098,13 +3107,50 @@
   }
 
   /*
+   * ---- Le salon : trois blocs ----
+   * Empilés sur téléphone : les défis ouverts, le ring, les résultats. À
+   * partir de 1 280 px, les défis forment une bande au-dessus du ring et des
+   * résultats ; à partir de 1 920 px, trois colonnes, le ring au milieu.
+   * C'est le ring qui fixe la hauteur de la rangée : les deux listes n'y
+   * comptent pas leur contenu (`contain: size`) et défilent au-delà.
+   */
+  .duels-salon {
+    display: grid;
+    gap: 1.25rem;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  @media (min-width: 1280px) {
+    .duels-salon {
+      grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+      grid-template-areas:
+        'rejoindre rejoindre'
+        'ring resultats';
+    }
+    .duels-salon > .rejoindre {
+      grid-area: rejoindre;
+    }
+    .duels-salon > .ring {
+      grid-area: ring;
+    }
+    .duels-salon > .resultats {
+      grid-area: resultats;
+    }
+  }
+  @media (min-width: 1920px) {
+    .duels-salon {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr) minmax(0, 1fr);
+      grid-template-areas: 'rejoindre ring resultats';
+    }
+  }
+
+  /*
    * ---- Les duels à rejoindre ----
-   * Un container en tête de page, sur toute la largeur, qui garde sa taille :
-   * les défis ouverts y sont des cartes, et les places libres complètent la
-   * rangée. Dès qu'un défi attend, le compteur passe à l'aurore.
+   * Les défis ouverts sont des cartes ; les places libres complètent la
+   * liste, pour qu'on voie où un défi viendra se poser. Dès qu'un défi
+   * attend, le compteur passe à l'aurore.
    */
   .rejoindre {
-    padding: 1.4rem 1.5rem 1.5rem;
+    padding: 1.4rem 1.1rem 1.25rem;
     border-radius: var(--r-lg);
     background: linear-gradient(160deg, var(--glass-2) 0%, var(--glass-3) 100%);
     backdrop-filter: blur(18px) saturate(140%);
@@ -3122,23 +3168,29 @@
   .rejoindre-tete {
     display: flex;
     flex-wrap: wrap;
-    align-items: center;
-    gap: 0.4rem 0.8rem;
+    align-items: flex-end;
+    gap: 0.6rem 1.5rem;
   }
-  .rejoindre-tete h2 {
+  .rejoindre-titre {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-top: 0.25rem;
+  }
+  .rejoindre-titre h2 {
     font-family: var(--font-display);
     font-size: 1.75rem;
     font-weight: 900;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.025em;
     line-height: 1;
     text-transform: uppercase;
     color: var(--ink);
   }
   .rejoindre-compte {
     display: grid;
-    min-width: 1.9rem;
-    height: 1.9rem;
-    padding: 0 0.5rem;
+    min-width: 1.75rem;
+    height: 1.75rem;
+    padding: 0 0.45rem;
     place-items: center;
     border-radius: var(--r-pilule);
     background: rgb(0 10 30 / 0.35);
@@ -3152,63 +3204,49 @@
     background: var(--aurora);
     color: var(--nuit);
   }
-  .rejoindre-tete p {
+  .rejoindre-aide {
     min-width: 0;
-    flex: 1 1 18rem;
+    flex: 1 1 20rem;
     font-size: 0.9375rem;
+    line-height: 1.45;
     color: var(--ink-2);
   }
   .rejoindre-grille {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 21rem), 1fr));
-    gap: 0.9rem;
-    margin-top: 1.1rem;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+    gap: 0.75rem;
+    margin-top: 1rem;
   }
 
-  /* Une place libre : le creux où un défi viendra se poser. */
-  .defi-libre {
-    min-height: 11.5rem;
-    align-content: center;
-    justify-items: center;
-    gap: 0.45rem;
-    text-align: center;
-    background: rgb(0 10 30 / 0.16);
-    box-shadow: none;
-    outline: 1.5px dashed rgb(255 255 255 / 0.22);
-    outline-offset: -1.5px;
-  }
-  .defi-libre b {
-    font-family: var(--font-display);
-    font-size: 1.1rem;
-    font-weight: 900;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--muted);
-  }
-  .defi-libre small {
-    max-width: 18rem;
-    font-size: 0.875rem;
-    line-height: 1.4;
-    color: var(--faint);
-  }
-  /* Sur un téléphone, une seule place libre : trois creux empilés feraient
-     un écran vide. */
-  @media (max-width: 639px) {
-    .defi-libre ~ .defi-libre {
-      display: none;
-    }
+  /* Une case de la liste : le défi s'y règle sur sa propre largeur. */
+  .defi-case {
+    display: flex;
+    container-type: inline-size;
   }
 
-  /* Un défi : qui, combien, et le bouton — dans cet ordre, de haut en bas. */
+  /* Un défi : qui et combien sur une ligne, le bouton dessous — ou les trois
+     sur une seule ligne, quand la case est large. */
   .defi {
     display: grid;
-    gap: 0.9rem;
-    padding: 1rem 1.1rem 1.1rem;
+    flex: 1;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'qui mise'
+      'actions actions';
+    align-items: center;
+    gap: 0.75rem 1rem;
+    padding: 0.8rem 0.9rem 0.85rem;
     border-radius: var(--r-md);
     background: rgb(0 10 30 / 0.3);
     box-shadow:
       inset 0 1px 0 rgb(255 255 255 / 0.16),
       inset 0 0 0 1px rgb(255 255 255 / 0.08);
+  }
+  @container (min-width: 34rem) {
+    .defi {
+      grid-template-columns: minmax(0, 1fr) auto auto;
+      grid-template-areas: 'qui mise actions';
+    }
   }
   .defi[data-mien] {
     box-shadow:
@@ -3217,6 +3255,7 @@
   }
   .defi-qui {
     display: flex;
+    grid-area: qui;
     min-width: 0;
     align-items: center;
     gap: 0.7rem;
@@ -3227,56 +3266,123 @@
     text-overflow: ellipsis;
     white-space: nowrap;
     font-family: var(--font-display);
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     font-weight: 900;
     letter-spacing: 0.04em;
     text-transform: uppercase;
     color: var(--ink);
   }
   .defi-qui small {
-    font-size: 0.875rem;
+    display: block;
+    font-size: 0.8125rem;
     color: var(--muted);
   }
   .defi-mise {
     display: grid;
-    gap: 0.1rem;
-  }
-  .defi-mise small {
-    font-size: 0.8125rem;
-    letter-spacing: 0.06em;
-    color: var(--muted);
-  }
-  .defi-mise small:first-child {
-    font-family: var(--font-display);
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--faint);
+    grid-area: mise;
+    justify-items: end;
+    gap: 0.2rem;
+    text-align: right;
   }
   .defi-mise strong {
     font-family: var(--font-display);
-    font-size: 2.4rem;
+    font-size: 1.6rem;
     font-weight: 900;
     line-height: 1;
+    white-space: nowrap;
     color: var(--ink);
     font-variant-numeric: tabular-nums;
   }
+  /* Étroit, le pot passe sur deux lignes plutôt que de rogner le pseudo. */
+  .defi-mise small {
+    max-width: 9.5rem;
+    font-size: 0.8125rem;
+    line-height: 1.35;
+    color: var(--muted);
+  }
   .defi-actions {
     display: flex;
+    grid-area: actions;
     gap: 0.5rem;
   }
   .defi-actions > .btn {
     flex: 1;
   }
+  @container (min-width: 34rem) {
+    .defi-actions > .btn {
+      flex: none;
+    }
+  }
+
+  /* Une place libre : le creux où un défi viendra se poser. */
+  .defi-libre {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    background: rgb(0 10 30 / 0.16);
+    box-shadow: none;
+    outline: 1.5px dashed rgb(255 255 255 / 0.22);
+    outline-offset: -1.5px;
+  }
+  .defi-libre b {
+    display: block;
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-weight: 900;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .defi-libre small {
+    display: block;
+    font-size: 0.875rem;
+    line-height: 1.4;
+    color: var(--faint);
+  }
+  /* Sur un téléphone, une seule place libre : trois creux empilés feraient
+     un écran vide. */
+  @media (max-width: 639px) {
+    .defi-case-libre ~ .defi-case-libre {
+      display: none;
+    }
+  }
+  /* En colonne : la liste défile dans la hauteur du ring, et une seule place
+     libre prend le reste, le creux au centre. */
+  @media (min-width: 1920px) {
+    .duels-salon > .rejoindre {
+      display: flex;
+      flex-direction: column;
+      contain: size;
+    }
+    .duels-salon > .rejoindre > .rejoindre-grille {
+      display: flex;
+      flex: 1 1 0;
+      min-height: 0;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+    .defi-case-libre ~ .defi-case-libre {
+      display: none;
+    }
+    .defi-case-libre {
+      flex: 1 0 6rem;
+    }
+    .defi-libre {
+      flex-direction: column;
+      justify-content: center;
+      gap: 0.55rem;
+      text-align: center;
+    }
+  }
 
   /* ---- Le ring : là où l'on monte son duel ---- */
   .ring {
     container-type: inline-size;
-    padding: 1.75rem 1.1rem 1.4rem;
+    padding: 1.4rem 1.1rem 1.25rem;
   }
   @media (min-width: 640px) {
     .ring {
-      padding: 2rem 1.9rem 1.7rem;
+      padding: 1.6rem 1.5rem 1.4rem;
     }
   }
 
@@ -3302,7 +3408,7 @@
   }
   .ring-solde strong {
     font-family: var(--font-display);
-    font-size: 1.35rem;
+    font-size: 1.25rem;
     font-weight: 900;
     line-height: 1;
     color: var(--ink);
@@ -3345,8 +3451,8 @@
     grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
     align-items: center;
     gap: 0.5rem;
-    margin-top: 1.25rem;
-    padding: 1.4rem 0.75rem 1.25rem;
+    margin-top: 1rem;
+    padding: 1rem 0.75rem 0.9rem;
     border-radius: calc(var(--r-lg) - 0.6rem);
     background: rgb(0 10 30 / 0.22);
     box-shadow:
@@ -3355,7 +3461,7 @@
   }
   /* Étroite, l'affiche passe sur deux rangs : les deux camps côte à côte, le
      pot dessous. Sur trois colonnes, un téléphone coupait les noms. */
-  @container (max-width: 519px) {
+  @container (max-width: 399px) {
     .ring-affiche {
       grid-template-columns: repeat(2, minmax(0, 1fr));
       grid-template-areas:
@@ -3382,7 +3488,7 @@
     text-align: center;
   }
   .ring-camp .orbe {
-    --taille: clamp(58px, 13cqi, 96px);
+    --taille: clamp(52px, 11cqi, 76px);
   }
   .ring-camp b {
     max-width: 100%;
@@ -3390,7 +3496,7 @@
     text-overflow: ellipsis;
     white-space: nowrap;
     font-family: var(--font-display);
-    font-size: 1.15rem;
+    font-size: 1.05rem;
     font-weight: 900;
     letter-spacing: 0.04em;
     text-transform: uppercase;
@@ -3411,7 +3517,7 @@
   }
   .ring-pot strong {
     font-family: var(--font-display);
-    font-size: clamp(2.1rem, 8cqi, 3.9rem);
+    font-size: clamp(1.9rem, 6.5cqi, 2.8rem);
     font-weight: 900;
     line-height: 0.95;
     color: var(--ink);
@@ -3427,16 +3533,9 @@
     color: var(--muted);
   }
 
-  .ring-reglages {
-    display: grid;
-    gap: 1.25rem;
-    margin-top: 1.4rem;
-  }
-  @container (min-width: 720px) {
-    .ring-reglages {
-      grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
-      gap: 1.75rem;
-    }
+  .ring-mise {
+    min-width: 0;
+    margin-top: 1rem;
   }
 
   /*
@@ -3508,9 +3607,9 @@
   .ring-bilan {
     display: grid;
     gap: 0.6rem;
-    margin-top: 1.25rem;
+    margin-top: 1rem;
   }
-  @container (min-width: 560px) {
+  @container (min-width: 26rem) {
     .ring-bilan {
       grid-template-columns: repeat(3, minmax(0, 1fr));
     }
@@ -3532,7 +3631,7 @@
       inset 0 0 0 1px color-mix(in srgb, var(--aurora) 30%, transparent);
   }
   .ring-bilan > div {
-    padding: 0.6rem 0.9rem;
+    padding: 0.6rem 0.8rem;
     border-radius: var(--r-sm);
     background: rgb(0 10 30 / 0.2);
     box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.08);
@@ -3549,7 +3648,7 @@
   .ring-bilan small {
     display: block;
     margin-top: 0.15rem;
-    font-size: 0.875rem;
+    font-size: 0.8125rem;
     line-height: 1.3;
     color: var(--muted);
   }
@@ -3557,7 +3656,7 @@
     display: block;
     margin-top: 0.1rem;
     font-family: var(--font-display);
-    font-size: 1.5rem;
+    font-size: 1.3rem;
     font-weight: 900;
     line-height: 1.05;
     font-variant-numeric: tabular-nums;
@@ -3565,12 +3664,15 @@
 
   .ring-actions {
     display: grid;
-    gap: 0.9rem;
-    margin-top: 1.25rem;
+    gap: 0.5rem;
+    margin-top: 1rem;
+  }
+  .ring-actions > .btn {
+    min-height: 50px;
+    font-size: 1rem;
   }
   .ring-actions p {
-    margin-top: 0.45rem;
-    font-size: 0.875rem;
+    font-size: 0.8125rem;
     line-height: 1.4;
     text-align: center;
     color: var(--faint);
@@ -3618,6 +3720,13 @@
   .resultats {
     display: flex;
     flex-direction: column;
+    padding: 1.4rem 1.1rem 1.25rem;
+  }
+  @media (min-width: 640px) {
+    .rejoindre,
+    .resultats {
+      padding: 1.6rem 1.5rem 1.4rem;
+    }
   }
   @media (min-width: 1280px) {
     .resultats {
@@ -3627,49 +3736,6 @@
       min-height: 0;
       flex: 1;
       max-height: none;
-    }
-  }
-
-  /*
-   * Un duel ouvert : qui l'a lancé, la mise, et de quoi le relever. Étroite,
-   * la ligne passe ses boutons dessous — serrés à côté du texte, ils le
-   * pliaient sur quatre lignes.
-   */
-  .fil-ouverts {
-    container-type: inline-size;
-  }
-  .fil-ouvert {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    grid-template-areas:
-      'orbe qui mise'
-      'actions actions actions';
-    gap: 0.7rem 0.8rem;
-  }
-  .fil-ouvert > :nth-child(1) {
-    grid-area: orbe;
-  }
-  .fil-ouvert > :nth-child(2) {
-    grid-area: qui;
-  }
-  .fil-ouvert > :nth-child(3) {
-    grid-area: mise;
-  }
-  .fil-actions {
-    display: flex;
-    grid-area: actions;
-    gap: 0.5rem;
-  }
-  .fil-actions > .btn {
-    flex: 1;
-  }
-  @container (min-width: 600px) {
-    .fil-ouvert {
-      grid-template-columns: auto minmax(0, 1fr) auto auto;
-      grid-template-areas: 'orbe qui mise actions';
-    }
-    .fil-actions > .btn {
-      flex: none;
     }
   }
 
@@ -3846,7 +3912,7 @@
     color: var(--ink-2);
   }
 
-  /* La chance aux boosters, de ×1 à ×2 : une rainure, et la glace jusqu'au solde. */
+  /* La chance aux boosters, de ×1 à ×1,5 : une rainure, et la glace jusqu'au solde. */
   .jauge-chance {
     position: relative;
     height: 12px;
@@ -4823,35 +4889,109 @@
     0 2px 4px rgb(3 14 34 / 0.55);
 }
 
-/* Les trois étapes en cartes, côte à côte : une pastille de glace qui porte
-   l'icône et le numéro, un titre, deux phrases. En colonne sous 768 px. */
+/*
+ * Les trois étapes des boosters, en cartes : le dessin en glace, « Étape 1 »,
+ * un titre, deux phrases. Empilées quand leur bloc est étroit ; côte à côte
+ * dès qu'il s'élargit, reliées par une flèche qui dit dans quel ordre les lire.
+ */
 .etapes-cartes {
   display: grid;
   gap: 12px;
 }
-/* Selon la largeur de leur bloc : côte à côte quand il est large, empilées
-   quand il se fait colonne, à gauche de la scène sur un très grand écran. */
 @container (min-width: 44rem) {
   .etapes-cartes {
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 14px;
+    gap: 40px;
   }
+  /* La flèche, dans l'espace entre deux cartes : un chevron de glace. */
+  .etape-case:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    right: -20px;
+    width: 13px;
+    height: 13px;
+    border-top: 3px solid color-mix(in srgb, var(--ice) 75%, transparent);
+    border-right: 3px solid color-mix(in srgb, var(--ice) 75%, transparent);
+    border-radius: 2px;
+    transform: translate(calc(50% - 3px), -50%) rotate(45deg);
+  }
+}
+.etape-case {
+  position: relative;
+  display: flex;
 }
 .etape-carte {
   display: flex;
+  flex: 1;
   gap: 14px;
   align-items: flex-start;
-  padding: 16px 18px;
+  padding: 16px;
 }
 .etape-icone {
   /* Le dessin en glace, posé tel quel : pas de pastille derrière, la glace se
-     suffit sur le verre. */
+     suffit sur le verre. Petit sur un téléphone, pour laisser la place au
+     texte. */
   position: relative;
   display: grid;
-  width: 64px;
-  height: 64px;
+  width: 52px;
+  height: 52px;
   flex: none;
   place-items: center;
+}
+@container (min-width: 30rem) {
+  .etape-carte {
+    gap: 18px;
+    padding: 20px 22px;
+  }
+  .etape-icone {
+    width: 72px;
+    height: 72px;
+  }
+}
+.etape-numero {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 0.875rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--aurora);
+}
+.etape-titre {
+  display: block;
+  margin-top: 2px;
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 900;
+  line-height: 1.1;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.etape-texte {
+  display: block;
+  margin-top: 8px;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: var(--ink-2);
+}
+/* Sur un très grand écran, la bande a la place d'être lue de loin. */
+@media (min-width: 120rem) {
+  .etape-carte {
+    gap: 22px;
+    padding: 24px 28px;
+  }
+  .etape-icone {
+    width: 88px;
+    height: 88px;
+  }
+  .etape-titre {
+    font-size: 1.4rem;
+  }
+  .etape-texte {
+    font-size: 1.0625rem;
+  }
 }
 /* Le classement, en grand : corps de 17 px, lignes plus hautes, et une
    plaque qui défile au-delà de 68 % de l'écran avec son en-tête collé. */
@@ -4999,6 +5139,54 @@
     inset 0 1px 0 rgb(226 242 255 / 0.12),
     inset 0 -2px 0 rgb(6 18 38 / 0.7),
     inset 0 -1px 0 rgb(226 242 255 / 0.22);
+}
+
+/*
+ * Le tableau se règle sur sa propre largeur (le classement est un conteneur).
+ * Étroit, il efface ses colonnes secondaires et resserre ses cellules : sans
+ * cela, il exigeait 1 170 px et poussait la page hors de l'écran d'un
+ * portable. Très large, ses lignes s'agrandissent : corps de 18 px, cellules
+ * plus hautes.
+ */
+@container (max-width: 74.99rem) {
+  .tableau-verre-secondaire {
+    display: none;
+  }
+  .tableau-verre-table th,
+  .tableau-verre-table td {
+    padding-inline: 0.7rem;
+  }
+}
+@container (min-width: 100rem) {
+  .tableau-verre-table th {
+    padding: 1.05rem 1.4rem;
+    font-size: 0.9375rem;
+  }
+  .tableau-verre-table td {
+    padding: 1.2rem 1.4rem;
+    font-size: 1.125rem;
+  }
+}
+
+/*
+ * À partir de 2 400 px (accueil) : le classement, à droite du hero et des subs,
+ * descend aussi bas qu'eux. Il ne compte pas ses lignes dans la hauteur de la
+ * rangée (`contain: size`) : c'est la colonne de gauche qui la fixe, et le
+ * tableau remplit ce qui reste, en défilant au-delà. Ce palier est celui de
+ * la grille de la page (`4xl`) : sans la seconde colonne, la plaque n'aurait
+ * plus de hauteur.
+ */
+@media (min-width: 150rem) {
+  .grille-classement > .tableau-verre {
+    display: flex;
+    flex-direction: column;
+    contain: size;
+  }
+  .grille-classement > .tableau-verre > .tableau-verre-defile {
+    flex: 1 1 0;
+    min-height: 0;
+    max-height: none;
+  }
 }
 
 /* ------------------------- Les tuiles mobiles ---------------------------- */

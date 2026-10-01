@@ -181,15 +181,16 @@ export function PackOpening({
   const packOuvert = ouverture ? (packs.find((p) => p.id === ouverture.packId) ?? pack) : pack;
 
   return (
-    <div className="space-y-6 xl:grid xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] xl:items-start xl:gap-6 xl:space-y-0 4xl:grid-cols-[minmax(0,0.9fr)_minmax(0,2fr)_minmax(0,1fr)]">
+    <div className="space-y-6 xl:grid xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] xl:items-start xl:gap-6 xl:space-y-0">
       {error && (
-        <div className="xl:col-span-2 4xl:col-span-3">
+        <div className="xl:col-span-2">
           <Notice kind="error">{error}</Notice>
         </div>
       )}
 
-      {/* Comment ça marche, en tête et en travers. */}
-      <section className="glass @container relative overflow-hidden px-6 py-6 xl:col-span-2 4xl:col-span-1">
+      {/* Comment ça marche, en tête et en travers : trois étapes numérotées,
+          reliées par une flèche quand elles tiennent sur une ligne. */}
+      <section className="glass @container relative overflow-hidden px-4 py-5 sm:px-6 sm:py-6 xl:col-span-2 3xl:px-8 3xl:py-7">
         <SnowCap radius="var(--r-lg)" seed="boosters-etapes" epaisseur={16} />
         <TitreGlace taille="bloc" eyebrow="En trois étapes" className="relative mb-5">
           Comment ça marche
@@ -200,31 +201,32 @@ export function PackOpening({
               titre: 'Un booster t’est dû',
               texte:
                 'Cinq subs offerts, c’est un Booster Perso pour toi. Cinquante subs de la saison, c’est un Booster Commu pour ceux que le sort désigne. Ta dernière game de la saison, c’est le Booster Finisseur.',
-              icone: <GlaceSachet className="h-16 w-16" />,
+              icone: <GlaceSachet className="h-full w-full" />,
             },
             {
               titre: 'La streameuse l’ouvre',
               texte:
                 'À l’antenne, devant tout le monde. Le serveur tire une carte, une seule, avant que le rail ne tourne. Tes flocons poussent les raretés vers le haut quand le booster est pour toi, jusqu’à ×1,5.',
-              icone: <GlaceCartes className="h-16 w-16" />,
+              icone: <GlaceCartes className="h-full w-full" />,
             },
             {
               titre: 'La carte se joue',
               texte:
                 'Le plus souvent sur ta prochaine game : elle s’y applique, puis disparaît. Certaines relèvent une game déjà jouée, ou donnent tout de suite des flocons, une game de plus, une immunité. Jamais plus de 25 points sur une game.',
-              icone: <GlaceEpees className="h-16 w-16" />,
+              icone: <GlaceEpees className="h-full w-full" />,
             },
-          ].map((etape) => (
-            <li key={etape.titre} className="etape-carte glass glass-soft">
-              <span className="etape-icone" aria-hidden="true">
-                {etape.icone}
-              </span>
-              <span className="min-w-0">
-                <span className="block font-display text-[17px] leading-tight font-black tracking-wide text-ink uppercase">
-                  {etape.titre}
+          ].map((etape, i) => (
+            <li key={etape.titre} className="etape-case">
+              <div className="etape-carte glass glass-soft">
+                <span className="etape-icone" aria-hidden="true">
+                  {etape.icone}
                 </span>
-                <span className="mt-1.5 block text-[14px] leading-relaxed text-ink-2">{etape.texte}</span>
-              </span>
+                <span className="min-w-0">
+                  <span className="etape-numero">Étape {i + 1}</span>
+                  <span className="etape-titre">{etape.titre}</span>
+                  <span className="etape-texte">{etape.texte}</span>
+                </span>
+              </div>
             </li>
           ))}
         </ol>
@@ -525,7 +527,7 @@ export function PackOpening({
           quel que soit le booster. Elle ne suit plus la sélection de la
           rangée — on cherche ce que fait une légendaire, pas ce que contient
           un booster. */}
-      <section className="glass relative overflow-hidden px-5 py-6 sm:px-6 xl:col-span-2 4xl:col-span-3">
+      <section className="glass relative overflow-hidden px-5 py-6 sm:px-6 xl:col-span-2">
         <SnowCap radius="var(--r-lg)" seed="cartes-saison" epaisseur={14} />
         <TitreGlace taille="bloc" eyebrow="Par rareté" className="mb-3">
           Les cartes de la saison

@@ -1,11 +1,13 @@
 'use client';
 
 /**
- * Le salon des duels.
+ * Le salon des duels : les duels à rejoindre, le ring, les résultats.
  *
- * En tête, sur toute la largeur, les duels à rejoindre : c'est ce qu'on vient
- * voir d'abord. Dessous, à gauche le ring, où l'on règle sa mise et lance son
- * duel aux autres joueurs ; à droite les résultats, aussi hauts que le ring.
+ * Sur téléphone, ils s'empilent dans cet ordre — les défis ouverts d'abord,
+ * c'est ce qu'on vient voir. À partir de 1 280 px, les défis forment une
+ * bande au-dessus du ring et des résultats ; à partir de 1 920 px, les trois
+ * se rangent en colonnes de même hauteur, le ring au milieu. C'est le ring
+ * qui fixe cette hauteur : les listes défilent au-delà (voir `.duels-salon`).
  *
  * Un duel joué ne se rejoue pas, et ne se saute pas : la course se voit une
  * fois, en direct, jusqu'au bout — la fenêtre ne se ferme pas avant. Une fois
@@ -582,87 +584,96 @@ export function Affrontements({
       {info && <Notice kind="success">{info}</Notice>}
       {bilan && <Notice kind={bilan.gagne ? 'success' : 'info'}>{bilan.texte}</Notice>}
 
-      {/* ========================= Les duels à rejoindre =======================
-          En tête, sur toute la largeur : c'est ce qu'on vient voir d'abord. Un
-          défi ouvert est une carte entière, avec sa mise en grand et son
-          bouton — pas une ligne dans une colonne. */}
-      <section
-        className="rejoindre relative overflow-hidden"
-        aria-labelledby="rejoindre-titre"
-        data-vide={aRejoindre.length === 0 ? '' : undefined}
-      >
-        <SnowCap radius="var(--r-lg)" seed="duels-rejoindre" epaisseur={16} />
-        <header className="rejoindre-tete relative">
-          <h2 id="rejoindre-titre">Duels à rejoindre</h2>
-          <span className="rejoindre-compte" data-actif={aRejoindre.length > 0 ? '' : undefined}>
-            {aRejoindre.length}
-          </span>
-          <p>
-            {aRejoindre.length === 0
-              ? 'Personne n’attend d’adversaire. Lance un duel : il s’affichera ici.'
-              : 'Relève un défi : tu mises autant que lui, et la course part aussitôt.'}
-          </p>
-        </header>
+      <div className="duels-salon">
+        {/* ========================= Les duels à rejoindre =======================
+            Un défi ouvert est une carte : qui, combien, et son bouton. Les
+            places libres complètent la liste, pour qu'on voie où un défi
+            viendra se poser. */}
+        <section
+          className="rejoindre relative overflow-hidden"
+          aria-labelledby="rejoindre-titre"
+          data-vide={aRejoindre.length === 0 ? '' : undefined}
+        >
+          <SnowCap radius="var(--r-lg)" seed="duels-rejoindre" epaisseur={16} />
+          <header className="rejoindre-tete relative">
+            <div>
+              <p className="eyebrow">Défis ouverts</p>
+              <div className="rejoindre-titre">
+                <h2 id="rejoindre-titre">Duels à rejoindre</h2>
+                <span className="rejoindre-compte" data-actif={aRejoindre.length > 0 ? '' : undefined}>
+                  {aRejoindre.length}
+                </span>
+              </div>
+            </div>
+            <p className="rejoindre-aide">
+              {aRejoindre.length === 0
+                ? 'Personne n’attend d’adversaire. Lance un duel : il s’affichera ici.'
+                : 'Relève un défi : tu mises autant que lui, et la course part aussitôt.'}
+            </p>
+          </header>
 
-        <ul className="rejoindre-grille">
-          {aRejoindre.map((b) => {
-            const hote = b.camps[0];
-            const mien = b.hoteId === etat.moiId;
-            const manque = solde !== null && solde < b.mise ? b.mise - solde : 0;
-            return (
-              <li key={b.id} className="defi" data-mien={mien ? '' : undefined}>
-                <div className="defi-qui">
-                  <span className="orbe orbe-sm" aria-hidden="true">
-                    {hote ? initiale(hote) : '?'}
-                  </span>
-                  <div className="min-w-0">
-                    <b>{mien ? 'Ton duel' : (hote?.pseudo ?? '?')}</b>
-                    <small>
-                      {mien ? 'attend un adversaire' : 'te défie'} · {shortDateTime(b.creeeA)}
-                    </small>
+          <ul className="rejoindre-grille">
+            {aRejoindre.map((b) => {
+              const hote = b.camps[0];
+              const mien = b.hoteId === etat.moiId;
+              const manque = solde !== null && solde < b.mise ? b.mise - solde : 0;
+              return (
+                <li key={b.id} className="defi-case">
+                  <div className="defi" data-mien={mien ? '' : undefined}>
+                    <div className="defi-qui">
+                      <span className="orbe orbe-sm" aria-hidden="true">
+                        {hote ? initiale(hote) : '?'}
+                      </span>
+                      <div className="min-w-0">
+                        <b>{mien ? 'Ton duel' : (hote?.pseudo ?? '?')}</b>
+                        <small>
+                          {mien ? 'attend un adversaire' : 'te défie'} ·{' '}
+                          <span className="whitespace-nowrap">{shortDateTime(b.creeeA)}</span>
+                        </small>
+                      </div>
+                    </div>
+                    <div className="defi-mise">
+                      <strong>
+                        {flakes(b.mise)} <span className="text-ice">❄</span>
+                      </strong>
+                      <small>misés · {flakes(pot(b))}&nbsp;❄ au gagnant</small>
+                    </div>
+                    <div className="defi-actions">
+                      {mien ? (
+                        <button type="button" className="btn btn-ghost" disabled={occupe} onClick={() => annule(b)}>
+                          Annuler
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          className="btn btn-ice"
+                          disabled={occupe || !joueur || solde === null || manque > 0}
+                          onClick={() => releve(b)}
+                        >
+                          {manque > 0 ? `Il te manque ${flakes(manque)} ❄` : 'Relever le défi'}
+                        </button>
+                      )}
+                    </div>
                   </div>
-                </div>
-                <div className="defi-mise">
-                  <small>Mise</small>
-                  <strong>
-                    {flakes(b.mise)} <span className="text-ice">❄</span>
-                  </strong>
-                  <small>le gagnant rafle {flakes(pot(b))} ❄</small>
-                </div>
-                <div className="defi-actions">
-                  {mien ? (
-                    <button type="button" className="btn btn-ghost" disabled={occupe} onClick={() => annule(b)}>
-                      Annuler
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      className="btn btn-ice"
-                      disabled={occupe || !joueur || solde === null || manque > 0}
-                      onClick={() => releve(b)}
-                    >
-                      {manque > 0 ? `Il te manque ${flakes(manque)} ❄` : 'Relever le défi'}
-                    </button>
-                  )}
+                </li>
+              );
+            })}
+            {Array.from({ length: Math.max(0, PLACES_VISIBLES - aRejoindre.length) }, (_, i) => (
+              <li key={`libre-${i}`} className="defi-case defi-case-libre" aria-hidden="true">
+                <div className="defi defi-libre">
+                  <span className="orbe orbe-sm" data-inconnu="">
+                    ?
+                  </span>
+                  <span className="min-w-0">
+                    <b>Place libre</b>
+                    <small>Un duel lancé s’affiche ici, prêt à être relevé.</small>
+                  </span>
                 </div>
               </li>
-            );
-          })}
-          {/* Les places libres : la bande garde sa taille, et on voit où
-              un défi viendra se poser. */}
-          {Array.from({ length: Math.max(0, PLACES_VISIBLES - aRejoindre.length) }, (_, i) => (
-            <li key={`libre-${i}`} className="defi defi-libre" aria-hidden="true">
-              <span className="orbe orbe-sm" data-inconnu="">
-                ?
-              </span>
-              <b>Place libre</b>
-              <small>Un duel lancé s’affiche ici, prêt à être relevé.</small>
-            </li>
-          ))}
-        </ul>
-      </section>
+            ))}
+          </ul>
+        </section>
 
-      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] xl:items-stretch">
         {/* =============================== Le ring ============================== */}
         <section className="glass ring relative overflow-hidden" aria-labelledby="ring-titre">
           <SnowCap radius="var(--r-lg)" seed="duels-lancer" epaisseur={18} />
@@ -671,7 +682,7 @@ export function Affrontements({
               <p className="eyebrow">Nouveau duel</p>
               <h2
                 id="ring-titre"
-                className="mt-1 font-display text-3xl leading-none font-black tracking-wide text-ink uppercase sm:text-4xl"
+                className="mt-1 font-display text-[28px] leading-none font-black tracking-wide text-ink uppercase"
               >
                 Lance ton duel
               </h2>
@@ -720,7 +731,7 @@ export function Affrontements({
               <strong>
                 {miseValide ? flakes(mise * 2) : '—'} <span className="text-ice">❄</span>
               </strong>
-              <small>Le perdant perd toute sa mise</small>
+              <small>Le perdant perd sa mise</small>
             </div>
             <div className="ring-camp">
               <span className="orbe" data-inconnu="">
@@ -732,8 +743,8 @@ export function Affrontements({
           </div>
 
           {/* ---- La mise ---- */}
-          <fieldset className="mt-5 min-w-0 space-y-3">
-            <legend className="eyebrow mb-3">Ta mise</legend>
+          <fieldset className="ring-mise">
+            <legend className="eyebrow mb-2">Ta mise</legend>
             <div className="flex items-center gap-3">
               <input
                 type="range"
@@ -769,24 +780,24 @@ export function Affrontements({
           <div className="ring-bilan">
             <div>
               <span>Tu mises</span>
-              <strong className="text-ink">{miseValide ? `${flakes(mise)} ❄` : '—'}</strong>
-              <small>retirés de ton solde au lancement du duel</small>
+              <strong className="text-ink">{miseValide ? `${flakes(mise)}\u00a0❄` : '—'}</strong>
+              <small>retirés de ton solde au lancement</small>
             </div>
             <div data-issue="gain">
               <span>Si tu gagnes</span>
-              <strong className="text-aurora">{miseValide ? `+${flakes(gainReel)} ❄` : '—'}</strong>
+              <strong className="text-aurora">{miseValide ? `+${flakes(gainReel)}\u00a0❄` : '—'}</strong>
               <small>
                 {miseValide
-                  ? `tu reçois ${flakes(mise + gainReel)} ❄ : ta mise revient, plus ${flakes(gainReel)} ❄ de l’adversaire`
+                  ? `tu reçois ${flakes(mise + gainReel)}\u00a0❄ : ta mise revient, plus ${flakes(gainReel)}\u00a0❄ de l’adversaire`
                   : 'ta mise revient, plus celle de l’adversaire'}
               </small>
-              {miseValide && solde !== null && abordable && <em>solde après : {flakes(solde + gainReel)} ❄</em>}
+              {miseValide && solde !== null && abordable && <em>solde après : {flakes(solde + gainReel)}&nbsp;❄</em>}
             </div>
             <div data-issue="perte">
               <span>Si tu perds</span>
-              <strong className="text-ink">{miseValide ? `−${flakes(mise)} ❄` : '—'}</strong>
-              <small>ta mise ne revient pas : tu la perds en entier</small>
-              {miseValide && solde !== null && abordable && <em>solde après : {flakes(solde - mise)} ❄</em>}
+              <strong className="text-ink">{miseValide ? `−${flakes(mise)}\u00a0❄` : '—'}</strong>
+              <small>ta mise ne revient pas</small>
+              {miseValide && solde !== null && abordable && <em>solde après : {flakes(solde - mise)}&nbsp;❄</em>}
             </div>
           </div>
           {joueur && !miseValide && (
@@ -805,27 +816,25 @@ export function Affrontements({
 
           {/* ---- Lancer le duel ---- */}
           <div className="ring-actions">
-            <div>
-              <button type="button" className="btn btn-ice btn-lg w-full" disabled={!peutJouer} onClick={ouvreAuxJoueurs}>
-                <IconSwords className="h-5 w-5" /> Lancer un duel
-              </button>
-              <p>
-                Il s’affiche dans « Duels à rejoindre » pour les autres joueurs, et la course s’ouvre ici dès qu’on
-                le relève. Annulable tant que personne ne l’a fait.
-              </p>
-            </div>
+            <button type="button" className="btn btn-ice w-full" disabled={!peutJouer} onClick={ouvreAuxJoueurs}>
+              <IconSwords className="h-5 w-5" /> Lancer un duel
+            </button>
+            <p>
+              Il s’affiche dans « Duels à rejoindre » pour les autres joueurs, et la course s’ouvre ici dès qu’on le
+              relève. Annulable tant que personne ne l’a fait.
+            </p>
           </div>
         </section>
 
         {/* ============================= Les résultats ========================== */}
-        <section className="glass resultats relative overflow-hidden p-5 sm:p-6" aria-labelledby="resultats-titre">
+        <section className="glass resultats relative overflow-hidden" aria-labelledby="resultats-titre">
           <SnowCap radius="var(--r-lg)" seed="duels-resultats" epaisseur={14} />
           <header className="relative flex flex-wrap items-end justify-between gap-3">
             <div>
               <p className="eyebrow">Les derniers duels</p>
               <h2
                 id="resultats-titre"
-                className="mt-1 font-display text-2xl leading-none font-black tracking-wide text-ink uppercase"
+                className="mt-1 font-display text-[28px] leading-none font-black tracking-wide text-ink uppercase"
               >
                 Résultats
               </h2>
@@ -859,28 +868,26 @@ export function Affrontements({
                 const perdant = hoteGagne ? adverse : hote;
                 return (
                   <li key={b.id} className="fil-ligne">
-                      {onglet === 'top' && (
-                        <span className="medaille" data-rang={i + 1}>
-                          {i + 1}
-                        </span>
-                      )}
-                      <div className="min-w-0 flex-1">
-                        {/* Le vainqueur d'abord, toujours : on lit l'issue sans chercher. */}
-                        <p className="resultat">
-                          <b data-gagne="">{gagnant?.pseudo ?? '?'}</b>
-                          <em>a battu</em>
-                          <b>{perdant?.pseudo ?? '?'}</b>
-                        </p>
-                        <p className="mt-1 text-[13px] text-faint">{shortDateTime(b.resolueA ?? b.creeeA)}</p>
-                      </div>
-                      <div className="shrink-0 text-right">
-                        <p className="font-display text-xl leading-none font-black text-ink tabular-nums">
-                          {flakes(b.mise)} <span className="text-ice">❄</span>
-                        </p>
-                        <p className="mt-0.5 text-[13px] font-bold tracking-[0.14em] text-faint uppercase">
-                          mise
-                        </p>
-                      </div>
+                    {onglet === 'top' && (
+                      <span className="medaille" data-rang={i + 1}>
+                        {i + 1}
+                      </span>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      {/* Le vainqueur d'abord, toujours : on lit l'issue sans chercher. */}
+                      <p className="resultat">
+                        <b data-gagne="">{gagnant?.pseudo ?? '?'}</b>
+                        <em>a battu</em>
+                        <b>{perdant?.pseudo ?? '?'}</b>
+                      </p>
+                      <p className="mt-0.5 text-[13px] text-faint">{shortDateTime(b.resolueA ?? b.creeeA)}</p>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <p className="font-display text-lg leading-none font-black text-ink tabular-nums">
+                        {flakes(b.mise)} <span className="text-ice">❄</span>
+                      </p>
+                      <p className="mt-0.5 text-[13px] font-bold tracking-[0.12em] text-faint uppercase">mise</p>
+                    </div>
                   </li>
                 );
               })}

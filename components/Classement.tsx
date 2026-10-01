@@ -28,12 +28,16 @@ import type { RankingRow } from '@/lib/services/league';
  * Chaque en-tête de colonne trie ; un second clic inverse. Le rang affiché
  * reste le rang réel de la saison, quel que soit le tri — trier par kills ne
  * fait pas d'un cinquième un premier. La recherche filtre par pseudo, sans
- * accent ni casse. Le tableau défile dans sa plaque au-delà de 68 % de
+ * accent ni casse. Le tableau défile dans sa plaque au-delà de 72 % de
  * l'écran, l'en-tête collé en haut : cent joueurs tiennent sans que la page
- * s'allonge.
+ * s'allonge. Sur un très grand écran, à droite du hero et des subs, il
+ * descend aussi bas qu'eux, et ses lignes s'agrandissent avec la place.
  *
- * Sous 768 px, chaque ligne devient une tuile `.glass .glass-soft`, celle des
- * stats du hero : rang, pseudo et points visibles, le reste derrière un dépli.
+ * Le tableau se règle sur sa propre largeur, pas sur celle de la fenêtre :
+ * sous 1 200 px, la moyenne et la meilleure game s'effacent et les cellules se
+ * resserrent ; sous 896 px, chaque ligne devient une tuile `.glass
+ * .glass-soft`, celle des stats du hero — rang, pseudo et points visibles, le
+ * reste derrière un dépli. Au-delà de 1 600 px, les lignes s'agrandissent.
  */
 
 type Cle =
@@ -48,16 +52,27 @@ type Cle =
   | 'meilleure'
   | 'flocons';
 
-const COLONNES: { cle: Cle; libelle: string; align: 'left' | 'right' | 'center'; large?: string }[] = [
+/**
+ * `secondaire` : une colonne qui s'efface quand le tableau manque de place.
+ * La moyenne se déduit des points et des games ; la meilleure game se lit sur
+ * la fiche du joueur.
+ */
+const COLONNES: {
+  cle: Cle;
+  libelle: string;
+  align: 'left' | 'right' | 'center';
+  large?: string;
+  secondaire?: boolean;
+}[] = [
   { cle: 'rang', libelle: 'Rang', align: 'center', large: 'w-16' },
   { cle: 'pseudo', libelle: 'Joueur', align: 'left' },
   { cle: 'carte', libelle: 'Carte active', align: 'left' },
   { cle: 'points', libelle: 'Points', align: 'right' },
   { cle: 'games', libelle: 'Games', align: 'right' },
-  { cle: 'moyenne', libelle: 'Moy.', align: 'right' },
+  { cle: 'moyenne', libelle: 'Moy.', align: 'right', secondaire: true },
   { cle: 'kills', libelle: 'Kills', align: 'right' },
   { cle: 'top1', libelle: 'Top 1 / 2 / 3', align: 'center' },
-  { cle: 'meilleure', libelle: 'Meilleure', align: 'right' },
+  { cle: 'meilleure', libelle: 'Meilleure', align: 'right', secondaire: true },
   { cle: 'flocons', libelle: 'Flocons', align: 'right' },
 ];
 
@@ -126,7 +141,7 @@ export function Classement({ rows, outils }: { rows: RankingRow[]; outils?: Reac
     );
 
   return (
-    <section className="glass tableau-verre relative" aria-label="Classement général">
+    <section className="glass tableau-verre @container relative" aria-label="Classement général">
       <SnowCap radius="var(--r-lg)" seed="classement" />
 
       {fiche?.carte && (
@@ -143,7 +158,7 @@ export function Classement({ rows, outils }: { rows: RankingRow[]; outils?: Reac
       )}
 
       <header className="relative flex flex-wrap items-end justify-between gap-x-6 gap-y-3 px-5 pt-7 pb-4 sm:px-7">
-        <h2 className="font-display text-[30px] leading-none font-black tracking-wide text-ink uppercase sm:text-[34px]">
+        <h2 className="font-display text-[30px] leading-none font-black tracking-wide text-ink uppercase sm:text-[34px] @min-[100rem]:text-[40px]">
           Classement
         </h2>
 
@@ -160,8 +175,8 @@ export function Classement({ rows, outils }: { rows: RankingRow[]; outils?: Reac
               autoComplete="off"
             />
           </label>
-          {/* Sur mobile, le tri passe par un menu : il n'y a pas d'en-têtes à cliquer. */}
-          <label className="block w-full sm:hidden">
+          {/* Avec les tuiles, le tri passe par un menu : il n'y a pas d'en-têtes à cliquer. */}
+          <label className="block w-full @min-[56rem]:hidden">
             <span className="sr-only">Trier par</span>
             <select
               className="field"
@@ -185,8 +200,8 @@ export function Classement({ rows, outils }: { rows: RankingRow[]; outils?: Reac
         </div>
       </header>
 
-      {/* ---------------- Écran large : la grille ---------------- */}
-      <div className="tableau-verre-defile relative hidden md:block">
+      {/* ---------------- Large : la grille ---------------- */}
+      <div className="tableau-verre-defile relative hidden @min-[56rem]:block">
         <table className="tableau-verre-table">
           <thead>
             <tr>
@@ -195,7 +210,7 @@ export function Classement({ rows, outils }: { rows: RankingRow[]; outils?: Reac
                 return (
                   <th
                     key={c.cle}
-                    className={`${c.large ?? ''} text-${c.align}`}
+                    className={`${c.large ?? ''} text-${c.align} ${c.secondaire ? 'tableau-verre-secondaire' : ''}`}
                     aria-sort={actif ? (tri.desc ? 'descending' : 'ascending') : 'none'}
                   >
                     <button
@@ -226,16 +241,20 @@ export function Classement({ rows, outils }: { rows: RankingRow[]; outils?: Reac
                 <td>
                   <CarteActive row={row} onOuvrir={() => setFiche(row)} />
                 </td>
-                <td className="num text-right font-display text-[26px] leading-none font-black text-ink">
-                  {row.totals.totalScore}
+                <td className="num text-right text-ink">
+                  {/* La taille sur le chiffre, pas sur la cellule : la règle des
+                      cellules du tableau l'emporterait. */}
+                  <span className="font-display text-[26px] leading-none font-black @min-[100rem]:text-[34px]">
+                    {row.totals.totalScore}
+                  </span>
                 </td>
                 <td className="num text-right text-ink-2">{row.totals.countedGames}</td>
-                <td className="num text-right text-ink-2">{row.totals.averageScore}</td>
+                <td className="tableau-verre-secondaire num text-right text-ink-2">{row.totals.averageScore}</td>
                 <td className="num text-right text-ink-2">{row.totals.totalKills}</td>
                 <td className="num text-center text-ink-2">
                   <Podiums totals={row.totals} />
                 </td>
-                <td className="num text-right text-ink-2">{row.totals.bestScore}</td>
+                <td className="tableau-verre-secondaire num text-right text-ink-2">{row.totals.bestScore}</td>
                 <td className="num text-right text-ink-2">{flakesShort(row.snowflakes)}</td>
               </tr>
             ))}
@@ -252,8 +271,8 @@ export function Classement({ rows, outils }: { rows: RankingRow[]; outils?: Reac
         </table>
       </div>
 
-      {/* ---------------- Mobile : une tuile par joueur ---------------- */}
-      <ol className="relative space-y-2.5 px-3 pb-5 md:hidden">
+      {/* ---------------- Étroit : une tuile par joueur ---------------- */}
+      <ol className="relative space-y-2.5 px-3 pb-5 @min-[56rem]:hidden">
         {visibles.map((row) => (
           <li key={row.id} className="glass glass-soft tableau-verre-carte">
             <details>
@@ -307,9 +326,9 @@ export function Classement({ rows, outils }: { rows: RankingRow[]; outils?: Reac
  * pour les autres. Le podium se lit avant même qu'on lise les points.
  */
 function Rang({ rang }: { rang: number }) {
-  if (rang === 1) return <CouronneGlace className="mx-auto h-8 w-8" id="couronne-classement" />;
-  if (rang === 2 || rang === 3) return <MedailleGlace rang={rang} className="mx-auto h-8 w-8" />;
-  return <span className="num font-display text-[20px] font-black text-muted">{rang}</span>;
+  if (rang === 1) return <CouronneGlace className="mx-auto h-8 w-8 @min-[100rem]:h-10 @min-[100rem]:w-10" id="couronne-classement" />;
+  if (rang === 2 || rang === 3) return <MedailleGlace rang={rang} className="mx-auto h-8 w-8 @min-[100rem]:h-10 @min-[100rem]:w-10" />;
+  return <span className="num font-display text-[20px] font-black text-muted @min-[100rem]:text-[24px]">{rang}</span>;
 }
 
 function Pseudo({ row }: { row: RankingRow }) {
@@ -317,7 +336,7 @@ function Pseudo({ row }: { row: RankingRow }) {
     <span className="flex min-w-0 items-center gap-2">
       <Link
         href={`/joueurs/${row.slug}`}
-        className="truncate font-display text-[18px] font-bold tracking-wide text-ink no-underline hover:text-ice"
+        className="truncate font-display text-[18px] font-bold tracking-wide text-ink no-underline hover:text-ice @min-[100rem]:text-[22px]"
       >
         {row.pseudo}
       </Link>
@@ -348,7 +367,7 @@ function CarteActive({ row, onOuvrir }: { row: RankingRow; onOuvrir: () => void 
       title={`${c.nom} — ${c.description}`}
       aria-label={`Voir la carte ${c.nom}`}
     >
-      <span className="w-[46px] shrink-0">
+      <span className="w-[46px] shrink-0 @min-[100rem]:w-[56px]">
         <CardFrame
           cardId={c.cardId}
           name={c.nom}
@@ -360,9 +379,9 @@ function CarteActive({ row, onOuvrir }: { row: RankingRow; onOuvrir: () => void 
         />
       </span>
       <span className="min-w-0 leading-tight">
-        <span className="block truncate text-[14px] font-bold text-ink">{c.nom}</span>
-        <span className="block truncate text-[13px] text-ink-2">{c.action}</span>
-        <span className="block text-[13px] text-muted">{c.resume}</span>
+        <span className="block truncate text-[14px] font-bold text-ink @min-[100rem]:text-[16px]">{c.nom}</span>
+        <span className="block truncate text-[13px] text-ink-2 @min-[100rem]:text-[15px]">{c.action}</span>
+        <span className="block text-[13px] text-muted @min-[100rem]:text-[14px]">{c.resume}</span>
       </span>
     </button>
   );

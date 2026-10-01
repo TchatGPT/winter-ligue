@@ -93,12 +93,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             {/* Toute la largeur, sans plafond : sur un grand écran, ce sont les
                 grilles des pages qui gagnent des colonnes (paliers 3xl et 4xl),
                 pas des marges vides. La réserve du bas, qui dégage la barre de
-                navigation flottante des téléphones, est au pied de page. */}
+                navigation flottante des téléphones, est au pied de page : il
+                n'y a de barre que pour un visiteur connecté. */}
             <main className="relative z-10 w-full flex-1 px-4 pt-6 pb-8 sm:px-6 sm:pt-8 lg:px-8 lg:pt-6 lg:pb-10 2xl:px-10">
               {children}
             </main>
-            <PiedDePage />
-
+            <PiedDePage barreMobile={connecte} />
           </div>
         </div>
         <Analytics />

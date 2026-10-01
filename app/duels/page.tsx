@@ -20,8 +20,9 @@ export const metadata = { title: 'Duels' };
  * serveur dans une seule transaction — la page ne fait que rejouer un
  * résultat déjà acquis.
  *
- * De haut en bas : les règles, en une bande qu'on lit d'un regard ; les duels
- * à rejoindre ; puis le ring et les résultats.
+ * De haut en bas : les règles, en une bande qu'on lit d'un regard ; puis le
+ * salon — les duels à rejoindre, le ring et les résultats, côte à côte sur un
+ * grand écran (voir Affrontements).
  */
 export default async function DuelsPage() {
   await exigeSession();
