@@ -179,6 +179,8 @@ export function PackOpening({
       }
     : null;
   const packOuvert = ouverture ? (packs.find((p) => p.id === ouverture.packId) ?? pack) : pack;
+  /** Ce qui se pose par-dessus le repos : le rail qui tourne, ou la carte tirée. */
+  const surScene = phase === 'tirage' && gagnante ? 'tirage' : phase === 'reveal' && ouverture ? 'reveal' : null;
 
   return (
     <div className="space-y-6 xl:grid xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] xl:items-start xl:gap-6 xl:space-y-0">
@@ -243,9 +245,123 @@ export function PackOpening({
           aria-hidden="true"
         />
 
-        <div className="relative flex min-h-[400px] flex-col items-center justify-center gap-6 px-4 py-10 sm:min-h-[460px]">
-          {phase === 'tirage' && gagnante ? (
-            <div className="w-full">
+        {/* La scène garde sa hauteur. Le repos — titre, rangée, réglages — reste
+            toujours en place : invisible pendant le tirage et la révélation,
+            qui se posent par-dessus dans la même case. Changer de booster,
+            choisir un joueur ou ouvrir ne fait donc rien bouger autour, ni la
+            scène ni la colonne des taux, qui suit sa hauteur. */}
+        <div className="relative grid min-h-[400px] px-4 py-10 sm:min-h-[460px]">
+          <div
+            className={`col-start-1 row-start-1 flex flex-col items-center justify-center gap-6 ${
+              surScene ? 'invisible' : ''
+            }`}
+          >
+            <div className="flex flex-col items-center gap-2 text-center">
+              <TitreGlace taille="page" niveau={2} align="center" givre={false}>
+                {pack.name}
+              </TitreGlace>
+            </div>
+
+            <RangeePacks packs={packs} selection={pack.id} onSelection={choisir} fige={busy || surScene !== null} />
+
+            {moderateur ? (
+              <div className="flex w-full max-w-md flex-col items-center gap-3">
+                {/* La liste garde sa place pour les boosters collectifs, où il n'y
+                    a personne à choisir : sans elle, la scène raccourcissait. */}
+                {aLaMain && (
+                  <select
+                    className={`field w-full ${pourUnJoueur ? '' : 'invisible'}`}
+                    value={joueurId}
+                    onChange={(e) => setJoueurId(e.target.value)}
+                    disabled={busy || !pourUnJoueur}
+                    aria-label="Joueur pour qui le pack s’ouvre"
+                  >
+                    <option value="">— Pour quel joueur ? —</option>
+                    {joueursTries.map((j) => {
+                      const n = dusParJoueur.get(j.id) ?? 0;
+                      return (
+                        <option key={j.id} value={j.id} disabled={n === 0}>
+                          {j.pseudo} — {n === 0 ? 'aucun à ouvrir' : `${n} à ouvrir`} · {libelleMultiplicateur(j.chance)}
+                        </option>
+                      );
+                    })}
+                  </select>
+                )}
+                {/* La ligne du multiplicateur, réservée sur deux lignes : un long
+                    pseudo la fait passer à la ligne. */}
+                {aLaMain && (
+                  <div className="grid min-h-[2.75rem] w-full place-items-center text-center text-[14px] leading-snug text-ink-2">
+                    {pourUnJoueur && joueur && (
+                      <p>
+                        Multiplicateur de chance de <strong className="text-ink">{joueur.pseudo}</strong> :{' '}
+                        <strong className="num text-aurora">{libelleMultiplicateur(joueur.chance)}</strong>{' '}
+                        <span className="text-faint">
+                          · ❄ {flakes(joueur.snowflakes)} sur {flakes(ECONOMY.soldeMax)}
+                        </span>
+                      </p>
+                    )}
+                  </div>
+                )}
+                {aLaMain && (
+                  <button
+                    className={`btn btn-ice ${busy ? 'btn-lg min-h-[62px]' : 'btn-ouvrir'}`}
+                    disabled={busy || restants === 0}
+                    onClick={() => ouvre({ packId: pack.id, ...(pourUnJoueur ? { joueurId } : {}) })}
+                  >
+                    <span>
+                      {busy
+                        ? 'Ouverture…'
+                        : pourUnJoueur && !joueurId
+                          ? dus.length === 0
+                            ? 'Aucun à ouvrir'
+                            : 'Choisis un joueur'
+                          : restants === 0
+                            ? pourUnJoueur
+                              ? 'Aucun à ouvrir'
+                              : 'Palier pas atteint'
+                            : pourUnJoueur && joueur
+                              ? `Ouvrir pour ${joueur.pseudo}`
+                              : 'Ouvrir'}
+                    </span>
+                    {!busy && (
+                      <span className="btn-ouvrir-prix">
+                        {pourUnJoueur && !joueurId
+                          ? `${dus.length} à ouvrir`
+                          : restants > 0
+                            ? `${restants} restant${restants > 1 ? 's' : ''}`
+                            : prochainPalier !== null
+                              ? `à ${prochainPalier} subs`
+                              : '0 restant'}
+                      </span>
+                    )}
+                  </button>
+                )}
+
+                {!aLaMain && dus.length === 0 && (
+                  <p className="text-center text-[14px] text-muted">Rien dans la file pour ce booster.</p>
+                )}
+              </div>
+            ) : (
+              <div className="grid min-h-[3.25rem] max-w-md place-items-center text-center text-[14px] leading-relaxed text-muted">
+                <p>
+                  Les boosters s’ouvrent à l’antenne, par la streameuse.
+                  {dus.length > 0 && (
+                    <>
+                      {' '}
+                      <strong className="text-aurora">
+                        {dus.length} {pack.name}
+                        {dus.length > 1 ? 's' : ''}
+                      </strong>{' '}
+                      en attente d’ouverture.
+                    </>
+                  )}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {surScene === 'tirage' && gagnante && (
+            <div className="col-start-1 row-start-1 w-full self-center">
               <p className="mb-4 text-center font-display text-[13px] tracking-[0.12em] text-faint uppercase">
                 {packOuvert.name}
                 {ouverture?.pseudo ? ` — pour ${ouverture.pseudo}` : ` — pour ${packOuvert.pourQui}`}
@@ -264,106 +380,10 @@ export function PackOpening({
                 onFini={() => setPhase('reveal')}
               />
             </div>
-          ) : phase !== 'reveal' ? (
-            <>
-              <div className="flex flex-col items-center gap-2 text-center">
-                <TitreGlace taille="page" niveau={2} align="center" givre={false}>
-                  {pack.name}
-                </TitreGlace>
-              </div>
+          )}
 
-              <RangeePacks packs={packs} selection={pack.id} onSelection={choisir} fige={busy} />
-
-              {moderateur ? (
-                <div className="flex w-full max-w-md flex-col items-center gap-3">
-                  {aLaMain && pourUnJoueur && (
-                    <select
-                      className="field w-full"
-                      value={joueurId}
-                      onChange={(e) => setJoueurId(e.target.value)}
-                      disabled={busy}
-                      aria-label="Joueur pour qui le pack s’ouvre"
-                    >
-                      <option value="">— Pour quel joueur ? —</option>
-                      {joueursTries.map((j) => {
-                        const n = dusParJoueur.get(j.id) ?? 0;
-                        return (
-                          <option key={j.id} value={j.id} disabled={n === 0}>
-                            {j.pseudo} — {n === 0 ? 'aucun à ouvrir' : `${n} à ouvrir`} · {libelleMultiplicateur(j.chance)}
-                          </option>
-                        );
-                      })}
-                    </select>
-                  )}
-                  {aLaMain && pourUnJoueur && joueur && (
-                    <p className="text-center text-[14px] text-ink-2">
-                      Multiplicateur de chance de <strong className="text-ink">{joueur.pseudo}</strong> :{' '}
-                      <strong className="num text-aurora">{libelleMultiplicateur(joueur.chance)}</strong>{' '}
-                      <span className="text-faint">
-                        · ❄ {flakes(joueur.snowflakes)} sur {flakes(ECONOMY.soldeMax)}
-                      </span>
-                    </p>
-                  )}
-                  {aLaMain && (
-                    <button
-                      className={`btn btn-ice ${busy ? 'btn-lg' : 'btn-ouvrir'}`}
-                      disabled={busy || restants === 0}
-                      onClick={() =>
-                        ouvre({ packId: pack.id, ...(pourUnJoueur ? { joueurId } : {}) })
-                      }
-                    >
-                      <span>
-                        {busy
-                          ? 'Ouverture…'
-                          : pourUnJoueur && !joueurId
-                            ? dus.length === 0
-                              ? 'Aucun à ouvrir'
-                              : 'Choisis un joueur'
-                            : restants === 0
-                              ? pourUnJoueur
-                                ? 'Aucun à ouvrir'
-                                : 'Palier pas atteint'
-                              : pourUnJoueur && joueur
-                                ? `Ouvrir pour ${joueur.pseudo}`
-                                : 'Ouvrir'}
-                      </span>
-                      {!busy && (
-                        <span className="btn-ouvrir-prix">
-                          {pourUnJoueur && !joueurId
-                            ? `${dus.length} à ouvrir`
-                            : restants > 0
-                              ? `${restants} restant${restants > 1 ? 's' : ''}`
-                              : prochainPalier !== null
-                                ? `à ${prochainPalier} subs`
-                                : '0 restant'}
-                        </span>
-                    )}
-                  </button>
-                  )}
-
-                  {!aLaMain && dus.length === 0 && (
-                    <p className="text-center text-[14px] text-muted">Rien dans la file pour ce booster.</p>
-                  )}
-
-                </div>
-              ) : (
-                <p className="max-w-md text-center text-[14px] leading-relaxed text-muted">
-                  Les boosters s’ouvrent à l’antenne, par la streameuse.
-                  {dus.length > 0 && (
-                    <>
-                      {' '}
-                      <strong className="text-aurora">
-                        {dus.length} {pack.name}
-                        {dus.length > 1 ? 's' : ''}
-                      </strong>{' '}
-                      en attente d’ouverture.
-                    </>
-                  )}
-                </p>
-              )}
-            </>
-          ) : ouverture ? (
-            <div className="w-full">
+          {surScene === 'reveal' && ouverture && (
+            <div className="col-start-1 row-start-1 w-full self-center">
               <div className="mb-5 flex flex-wrap items-center justify-center gap-3 text-center">
                 <span
                   className="font-display text-xl font-black tracking-wide uppercase"
@@ -429,7 +449,7 @@ export function PackOpening({
                 </button>
               </div>
             </div>
-          ) : null}
+          )}
         </div>
       </div>
 
@@ -478,15 +498,18 @@ export function PackOpening({
                   1 carte
                 </dd>
               </div>
+              {/* Deux lignes réservées pour « Pour qui » et le déclencheur : d'un
+                  booster à l'autre, le bloc garde sa hauteur, et les taux dessous
+                  la leur. */}
               <div>
                 <dt className="text-[13px] tracking-[0.12em] text-faint uppercase">Pour qui</dt>
-                <dd className="mt-0.5 font-display text-[20px] leading-none font-black text-ink">
+                <dd className="mt-0.5 min-h-[2.4em] font-display text-[20px] leading-[1.2] font-black text-ink">
                   {pack.pourQui}
                 </dd>
               </div>
               <div className="col-span-2">
                 <dt className="text-[13px] tracking-[0.12em] text-faint uppercase">Déclencheur</dt>
-                <dd className="mt-1 text-[16px] text-ink">{pack.declencheur}</dd>
+                <dd className="mt-1 min-h-[3em] text-[16px] leading-normal text-ink">{pack.declencheur}</dd>
               </div>
             </dl>
           </div>
