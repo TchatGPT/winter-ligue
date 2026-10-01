@@ -75,7 +75,10 @@ export default async function AdminAccueilPage() {
         />
       </section>
 
-      <div className="grid gap-5 xl:grid-cols-2">
+      {/* Trois blocs : sur deux colonnes, les subs prennent toute la hauteur à
+          droite — le dernier bloc ne reste pas seul sur sa ligne ; sur un très
+          grand écran, les trois côte à côte. */}
+      <div className="grid gap-5 xl:grid-cols-2 3xl:grid-cols-3">
         <Bloc
           titre="Subs cadeaux en attente"
           icone="snowflake"
@@ -106,7 +109,12 @@ export default async function AdminAccueilPage() {
           )}
         </Bloc>
 
-        <Bloc titre="Les subs" icone="antenne" aide="Chaque sub compté depuis Twitch, le plus récent en tête.">
+        <Bloc
+          titre="Les subs"
+          icone="antenne"
+          aide="Chaque sub compté depuis Twitch, le plus récent en tête."
+          className="xl:row-span-2 3xl:row-span-1"
+        >
           {registre.length === 0 ? (
             <EmptyState title="Aucun sub encore" hint="Chaque sub et chaque cadeau arrivé par Twitch s’inscrit ici." />
           ) : (

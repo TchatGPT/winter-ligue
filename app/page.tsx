@@ -43,11 +43,13 @@ export default async function ClassementPage() {
   ]);
 
   return (
-    <div className="space-y-6">
+    <div className="grid gap-6 3xl:grid-cols-[minmax(0,1fr)_minmax(0,2.15fr)] 3xl:items-start">
       {/* Sur grand écran, le hero et les subs se partagent la largeur ; en
-          dessous, ils s'empilent. Chacun se réorganise selon sa propre
-          largeur, pas celle de la fenêtre. */}
-      <div className="grid gap-6 xl:grid-cols-[1.15fr_1fr] xl:items-stretch">
+          dessous, ils s'empilent. Sur un très grand écran, ils passent en
+          colonne à gauche du classement, qui prend le reste : tout se voit
+          sans défiler. Chacun se réorganise selon sa propre largeur, pas
+          celle de la fenêtre. */}
+      <div className="grid gap-6 xl:grid-cols-[1.15fr_1fr] xl:items-stretch 3xl:grid-cols-1">
         <Hero
           leader={
             ranking[0]

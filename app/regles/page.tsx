@@ -73,7 +73,7 @@ export default async function ReglesPage(){
 
       {/* Deux colonnes sur grand écran, en flux de colonnes : les blocs n'ont
           pas la même hauteur, une grille laisserait des trous. */}
-      <div className="space-y-4 2xl:columns-2 2xl:gap-5 2xl:space-y-0">
+      <div className="space-y-4 2xl:columns-2 2xl:gap-5 2xl:space-y-0 3xl:columns-3">
         <Rule title="Le score d’une game">
           <p className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 font-display text-base text-ink">
             score = kills + points de classement + cartes

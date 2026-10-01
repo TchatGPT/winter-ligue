@@ -107,6 +107,9 @@ export function EcranSaison({
       lead="Le compteur de subs de la saison, alimenté par Twitch une fois branché. L’overlay du stream suit le compteur. Les Boosters Perso se règlent dans Modération → Joueurs."
       message={message}
     >
+      {/* Une seule grille : deux colonnes, trois sur un très grand écran, où la
+          limite et la sauvegarde se rangent l'une sous l'autre. */}
+      <div className="grid gap-5 xl:grid-cols-2 3xl:grid-cols-3">
       {twitch.configure && (
         <Bloc
           titre="Twitch : subs, tchat et modos"
@@ -157,7 +160,6 @@ export function EcranSaison({
         </Bloc>
       )}
 
-      <div className="grid gap-5 xl:grid-cols-2">
         <Bloc
           titre="Compteur de subs"
           icone="snowflake"
@@ -243,10 +245,8 @@ export function EcranSaison({
           </p>
         </Bloc>
 
-      </div>
-
       {estAdmin && (
-        <div className="grid gap-5 xl:grid-cols-2">
+        <div className="grid gap-5 xl:contents 3xl:grid 3xl:content-start">
           <Bloc
             titre="Limite de games"
             icone="trophy"
@@ -290,6 +290,7 @@ export function EcranSaison({
           </Bloc>
         </div>
       )}
+      </div>
     </Ecran>
   );
 }

@@ -68,7 +68,7 @@ export function Accueil({ twitchEnabled, devLogin }: { twitchEnabled: boolean; d
   ];
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6 lg:space-y-8">
+    <div className="mx-auto max-w-6xl space-y-6 lg:space-y-8 3xl:max-w-[1500px] 4xl:max-w-[1760px]">
       {/* ---- Le hero ---- */}
       <section className="glass glass-reflet relative overflow-hidden px-6 py-10 text-center sm:px-10 sm:py-14 lg:py-16">
         <SnowCap radius="var(--r-lg)" seed="accueil" epaisseur={22} />

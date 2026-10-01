@@ -187,8 +187,10 @@ export default async function FicheJoueurPage({ params }: { params: Promise<{ sl
         </div>
       </section>
 
-      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.45fr)_minmax(0,1fr)]">
-        <div className="grid gap-5">
+      {/* Sur un très grand écran, trois colonnes : les games, les duels, puis
+          les flocons et les cartes — la première colonne s'ouvre (contents). */}
+      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.45fr)_minmax(0,1fr)] 4xl:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)_minmax(0,1fr)]">
+        <div className="grid gap-5 4xl:contents">
           {/* =========================== Sa saison, game par game =========================== */}
           <section className="glass relative overflow-hidden p-5 sm:p-6" aria-labelledby="fiche-games">
             <SnowCap radius="var(--r-lg)" seed={`fiche-games-${p.slug}`} epaisseur={14} />

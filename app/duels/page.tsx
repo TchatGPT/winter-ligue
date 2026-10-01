@@ -5,7 +5,7 @@ import { exigeSession } from '@/lib/auth/acces';
 import { getSession, playerIdOf } from '@/lib/auth/session';
 import { getStore } from '@/lib/db/store';
 import { MANCHES_MAX, MANCHES_MIN } from '@/lib/domain/bataille';
-import { DUEL, ECONOMY, libelleMultiplicateur, chanceDe } from '@/lib/domain/rules';
+import { CHANCE, DUEL, ECONOMY, libelleMultiplicateur, chanceDe } from '@/lib/domain/rules';
 import { tableauBatailles, topSemaine } from '@/lib/services/batailles';
 
 export const dynamic = 'force-dynamic';
@@ -92,7 +92,7 @@ export default async function DuelsPage() {
               <span style={{ width: `${(chance ?? 0) * 100}%` }} />
             </div>
             <p className="mt-2 text-[13px] leading-snug text-ink-2">
-              Ton solde pousse la chance de tes boosters, de {libelleMultiplicateur(0)} à {libelleMultiplicateur(1)}{' '}
+              Ton solde pousse la chance de tes boosters, de {libelleMultiplicateur(0)} à {libelleMultiplicateur(CHANCE.max)}{' '}
               pour {flakes(ECONOMY.soldeMax)} ❄. Miser, c’est la risquer.
             </p>
           </li>

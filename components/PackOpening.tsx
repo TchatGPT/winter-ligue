@@ -131,21 +131,6 @@ export function PackOpening({
   const palier = SUB_MILESTONES.find((m) => m.kind === 'PACK' && m.packId === pack?.id);
   const prochainPalier = palier ? (Math.floor(totalSubs / palier.every) + 1) * palier.every : null;
 
-  /**
-   * Ce qui reste à ouvrir, d'un coup d'œil : le total, puis chaque booster avec
-   * son nombre et, pour ceux qui vont à quelqu'un, le détail par joueur.
-   */
-  const aOuvrir = useMemo(
-    () =>
-      packs.map((p) => {
-        const siens = file.filter((d) => d.packId === p.id);
-        const parJoueur = new Map<string, number>();
-        for (const d of siens) if (d.pseudo) parJoueur.set(d.pseudo, (parJoueur.get(d.pseudo) ?? 0) + 1);
-        return { id: p.id, nom: p.name, n: siens.length, parJoueur: [...parJoueur] };
-      }),
-    [packs, file],
-  );
-
   async function ouvre(corps: Record<string, unknown>) {
     if (!pack || busy) return;
     // Le contexte audio se réveille sur ce clic, avant le premier `await`.
@@ -196,15 +181,15 @@ export function PackOpening({
   const packOuvert = ouverture ? (packs.find((p) => p.id === ouverture.packId) ?? pack) : pack;
 
   return (
-    <div className="space-y-6 xl:grid xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] xl:items-start xl:gap-6 xl:space-y-0">
+    <div className="space-y-6 xl:grid xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] xl:items-start xl:gap-6 xl:space-y-0 4xl:grid-cols-[minmax(0,0.9fr)_minmax(0,2fr)_minmax(0,1fr)]">
       {error && (
-        <div className="xl:col-span-2">
+        <div className="xl:col-span-2 4xl:col-span-3">
           <Notice kind="error">{error}</Notice>
         </div>
       )}
 
       {/* Comment ça marche, en tête et en travers. */}
-      <section className="glass relative overflow-hidden px-6 py-6 xl:col-span-2">
+      <section className="glass @container relative overflow-hidden px-6 py-6 xl:col-span-2 4xl:col-span-1">
         <SnowCap radius="var(--r-lg)" seed="boosters-etapes" epaisseur={16} />
         <TitreGlace taille="bloc" eyebrow="En trois étapes" className="relative mb-5">
           Comment ça marche
@@ -285,36 +270,6 @@ export function PackOpening({
                 </TitreGlace>
               </div>
 
-              {moderateur && (
-                <section className="a-ouvrir" aria-label="Boosters à ouvrir">
-                  <p className="a-ouvrir-total">
-                    À ouvrir : <strong className="num">{file.length}</strong>
-                  </p>
-                  <ul className="a-ouvrir-liste">
-                    {aOuvrir.map((t) => (
-                      <li key={t.id}>
-                        <button
-                          type="button"
-                          className="a-ouvrir-type"
-                          data-vide={t.n === 0 ? '' : undefined}
-                          aria-pressed={pack.id === t.id}
-                          disabled={busy}
-                          onClick={() => choisir(t.id)}
-                        >
-                          <span>{t.nom}</span>
-                          <strong className="num">{t.n}</strong>
-                        </button>
-                        {t.parJoueur.length > 0 && (
-                          <p className="a-ouvrir-joueurs">
-                            {t.parJoueur.map(([pseudo, n]) => (n > 1 ? `${pseudo} ×${n}` : pseudo)).join(' · ')}
-                          </p>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                </section>
-              )}
-
               <RangeePacks packs={packs} selection={pack.id} onSelection={choisir} fige={busy} />
 
               {moderateur ? (
@@ -388,40 +343,6 @@ export function PackOpening({
                     <p className="text-center text-[14px] text-muted">Rien dans la file pour ce booster.</p>
                   )}
 
-                  {dus.length > 0 && (
-                    <div className="w-full">
-                      <p className="mb-1.5 text-center text-[13px] tracking-[0.12em] text-faint uppercase">
-                        Dus — {dus.length}
-                      </p>
-                      <ul className="space-y-1.5">
-                        {dus.map((d) => (
-                          <li
-                            key={d.id}
-                            className="flex items-center gap-3 rounded-full bg-black/22 py-1.5 pr-1.5 pl-4 text-[14px]"
-                          >
-                            <span className="min-w-0 flex-1 truncate text-ink-2">
-                              {d.pseudo ? (
-                                <>
-                                  pour <strong className="text-aurora">{d.pseudo}</strong>
-                                </>
-                              ) : (
-                                `pour ${pack.pourQui}`
-                              )}{' '}
-                              <span className="text-faint">· {d.raison}</span>
-                            </span>
-                            <button
-                              type="button"
-                              className="btn btn-sm btn-ice"
-                              disabled={busy}
-                              onClick={() => ouvre({ packDuId: d.id })}
-                            >
-                              Ouvrir
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
                 </div>
               ) : (
                 <p className="max-w-md text-center text-[14px] leading-relaxed text-muted">
@@ -604,7 +525,7 @@ export function PackOpening({
           quel que soit le booster. Elle ne suit plus la sélection de la
           rangée — on cherche ce que fait une légendaire, pas ce que contient
           un booster. */}
-      <section className="glass relative overflow-hidden px-5 py-6 sm:px-6 xl:col-span-2">
+      <section className="glass relative overflow-hidden px-5 py-6 sm:px-6 xl:col-span-2 4xl:col-span-3">
         <SnowCap radius="var(--r-lg)" seed="cartes-saison" epaisseur={14} />
         <TitreGlace taille="bloc" eyebrow="Par rareté" className="mb-3">
           Les cartes de la saison

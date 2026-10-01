@@ -182,6 +182,13 @@
   --blur-fort: 24px;
 }
 
+/* Deux paliers de plus pour les très grands écrans : à partir de 1 920 px, puis
+   de 2 400 px, les pages gagnent des colonnes au lieu de laisser du vide. */
+@theme {
+  --breakpoint-3xl: 120rem;
+  --breakpoint-4xl: 150rem;
+}
+
 @theme inline {
   --color-bg: var(--bg);
   --color-ice: var(--ice);
@@ -359,52 +366,88 @@
 
   /* --------------------------------------------------------------------------
      LE PIED DE PAGE — voir components/PiedDePage.
-     Un filet, les droits à gauche et la signature à droite ; empilés et
-     centrés sur téléphone, où la marge basse dégage la barre de navigation
-     flottante (78 px du bord de l'écran).
+     Un bloc de verre comme les autres, aligné sur le contenu : la marque et
+     les droits à gauche, la signature à droite ; empilés et centrés sur
+     téléphone, où la marge basse dégage la barre de navigation flottante
+     (78 px du bord de l'écran).
      -------------------------------------------------------------------------- */
   .pied-de-page {
     position: relative;
     z-index: 10;
     width: 100%;
-    max-width: 1880px;
-    margin: 0 auto;
     padding: 0 1rem 7rem;
   }
-  .pied-de-page-ligne {
+  .pied-de-page-bloc {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.35rem;
-    padding-top: 1.1rem;
-    border-top: 1px solid rgb(255 255 255 / 0.1);
-    color: var(--muted);
-    font-size: 0.875rem;
+    gap: 1rem;
+    padding: 1.4rem 1.25rem 1.25rem;
     text-align: center;
   }
-  .pied-de-page-ligne strong {
-    color: var(--ink);
-    font-weight: 700;
+  .pied-de-page-marque {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.7rem;
   }
+  .pied-de-page-nom {
+    display: block;
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: 0.01em;
+    text-transform: uppercase;
+  }
+  .pied-de-page-droits {
+    display: block;
+    margin-top: 0.35rem;
+    font-size: 0.875rem;
+    color: var(--muted);
+  }
+  /* La signature, dans sa capsule. */
   .pied-de-page-credit {
     display: inline-flex;
     align-items: center;
-    gap: 0.4rem;
+    gap: 0.55rem;
+    padding: 0.5rem 0.65rem 0.5rem 1rem;
+    border: 1px solid rgb(255 255 255 / 0.12);
+    border-radius: 999px;
+    background: rgb(255 255 255 / 0.05);
+    font-size: 0.875rem;
+    color: var(--ink-2);
+  }
+  .pied-de-page-credit strong {
+    color: var(--ink);
+    font-weight: 700;
   }
   .pied-de-page-claude {
-    width: 1.05rem;
-    height: 1.05rem;
+    display: grid;
+    place-items: center;
+    width: 1.9rem;
+    height: 1.9rem;
     flex: 0 0 auto;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--claude) 16%, transparent);
     color: var(--claude);
+  }
+  .pied-de-page-claude svg {
+    width: 1.1rem;
+    height: 1.1rem;
   }
   @media (min-width: 640px) {
     .pied-de-page {
       padding-inline: 1.5rem;
     }
-    .pied-de-page-ligne {
+    .pied-de-page-bloc {
       flex-direction: row;
       justify-content: space-between;
+      padding: 1.25rem 1.5rem;
       text-align: left;
+    }
+    .pied-de-page-marque {
+      flex-direction: row;
     }
   }
   @media (min-width: 1024px) {
@@ -3922,67 +3965,6 @@
   .compteur-perso button:disabled {
     opacity: 0.35;
   }
-  /* ---- Les boosters à ouvrir : le décompte de la modération ---- */
-  .a-ouvrir {
-    width: 100%;
-    max-width: 56rem;
-  }
-  .a-ouvrir-total {
-    margin-bottom: 0.6rem;
-    text-align: center;
-    font-size: 0.875rem;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--faint);
-  }
-  .a-ouvrir-total strong {
-    margin-left: 0.3rem;
-    font-size: 1.25rem;
-    letter-spacing: 0;
-    color: var(--ink);
-  }
-  .a-ouvrir-liste {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
-    gap: 0.5rem;
-  }
-  .a-ouvrir-type {
-    display: flex;
-    width: 100%;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.5rem;
-    padding: 0.55rem 0.85rem;
-    border: 1px solid color-mix(in srgb, var(--aurora) 45%, transparent);
-    border-radius: 999px;
-    background: color-mix(in srgb, var(--aurora) 8%, transparent);
-    font-size: 0.875rem;
-    color: var(--ink);
-    transition: border-color 0.2s ease, background-color 0.2s ease;
-  }
-  .a-ouvrir-type strong {
-    font-size: 1.1rem;
-    color: var(--aurora);
-  }
-  .a-ouvrir-type[data-vide] {
-    border-color: color-mix(in srgb, var(--faint) 25%, transparent);
-    background: transparent;
-    color: var(--faint);
-  }
-  .a-ouvrir-type[data-vide] strong {
-    color: var(--faint);
-  }
-  .a-ouvrir-type[aria-pressed='true'] {
-    border-color: var(--ice);
-    background: color-mix(in srgb, var(--ice) 14%, transparent);
-  }
-  .a-ouvrir-joueurs {
-    margin-top: 0.3rem;
-    padding: 0 0.6rem;
-    font-size: 0.8125rem;
-    line-height: 1.35;
-    color: var(--muted);
-  }
   .cadeau-carte {
     max-width: 26rem;
   }
@@ -4847,7 +4829,9 @@
   display: grid;
   gap: 12px;
 }
-@media (min-width: 768px) {
+/* Selon la largeur de leur bloc : côte à côte quand il est large, empilées
+   quand il se fait colonne, à gauche de la scène sur un très grand écran. */
+@container (min-width: 44rem) {
   .etapes-cartes {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 14px;
@@ -8277,6 +8261,16 @@
     /* Le booster, en 16:9, prend toute la largeur : c'est lui qu'on règle. */
     .admin-overlays > :first-child {
       grid-column: 1 / -1;
+    }
+  }
+  /* Sur un très grand écran, les trois overlays tiennent sur une ligne : le
+     booster en pleine largeur y ferait un aperçu de deux mille pixels. */
+  @media (min-width: 120rem) {
+    .admin-overlays {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    .admin-overlays > :first-child {
+      grid-column: auto;
     }
   }
   .admin-etapes {
