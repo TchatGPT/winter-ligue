@@ -173,19 +173,19 @@ export function FenetreCadeauDuJour({
   return (
     <div className="fenetre-voile" role="dialog" aria-modal="true" aria-label="Cadeau du jour" onClick={onFermer}>
       <div
-        className="fenetre-carte cadeau-carte glass glass-reflet relative px-6 pt-7 pb-6"
+        className="fenetre-carte cadeau-carte cadeau-jour-fenetre glass glass-reflet relative px-6 pt-7 pb-6 lg:px-9 lg:pt-9 lg:pb-8"
         onClick={(e) => e.stopPropagation()}
       >
         <button type="button" className="btn btn-sm absolute top-4 right-4" onClick={onFermer} aria-label="Fermer">
           ✕
         </button>
         <span className="cadeau-medaillon cadeau-jour-medaillon-grand" aria-hidden="true">
-          <IconSnowflake className="h-6 w-6" />
+          <IconSnowflake className="h-6 w-6 lg:h-7 lg:w-7" />
         </span>
-        <h2 className="mt-3 font-display text-2xl leading-none font-black tracking-wide text-ink uppercase">
+        <h2 className="mt-3 font-display text-2xl leading-none font-black tracking-wide text-ink uppercase lg:mt-4 lg:text-[34px]">
           Cadeau du jour
         </h2>
-        <p className="mt-2 text-[14px] leading-relaxed text-muted">
+        <p className="mt-2 text-[14px] leading-relaxed text-muted lg:mt-3 lg:text-[16px]">
           Chaque jour, {num(CADEAU_DU_JOUR.parJour)} ❄ ; le {CADEAU_DU_JOUR.cycle}ᵉ jour d’affilée,{' '}
           {num(CADEAU_DU_JOUR.septiemeJour)} ❄, puis la semaine recommence. Un jour manqué, et la série repart du
           premier jour. Le jour change à minuit, heure de Paris.
@@ -213,25 +213,25 @@ export function FenetreCadeauDuJour({
 
         <div className="cadeau-jour-etat">
           {!etat.eligible ? (
-            <p className="text-[14px] text-muted">Le cadeau du jour s’ouvre après ta première game dans la ligue.</p>
+            <p className="text-[14px] text-muted lg:text-[16px]">Le cadeau du jour s’ouvre après ta première game dans la ligue.</p>
           ) : etat.dejaPris ? (
             <>
-              <p className="text-[14px] text-ink-2">
+              <p className="text-[14px] text-ink-2 lg:text-[16px]">
                 Pris aujourd’hui · série de <strong className="text-ink">{etat.serie}</strong> jour
                 {etat.serie > 1 ? 's' : ''}.
               </p>
-              <p className="mt-1 text-[14px] text-muted">
+              <p className="mt-1 text-[14px] text-muted lg:text-[16px]">
                 Demain : <strong className="text-ice">+{num(montantDuJour(etat.serie + 1))} ❄</strong>
                 <AvantMinuit />
               </p>
             </>
           ) : (
             <>
-              <p className="text-[14px] text-ink-2">
+              <p className="text-[14px] text-ink-2 lg:text-[16px]">
                 Jour <strong className="text-ink">{etat.jour}</strong> sur {CADEAU_DU_JOUR.cycle}
                 {etat.serie > 1 ? ` · série de ${etat.serie} jours` : ''}.
               </p>
-              <button type="button" className="btn btn-ice mt-3 w-full" onClick={onPrendre} disabled={busy}>
+              <button type="button" className="btn btn-ice mt-3 w-full lg:mt-4" onClick={onPrendre} disabled={busy}>
                 Prendre +{num(etat.montant)} ❄
               </button>
             </>

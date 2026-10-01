@@ -4381,6 +4381,37 @@
   .cadeau-jour-etat {
     margin-top: 1rem;
   }
+  /* Sur PC, la fenêtre prend de l'ampleur : à 26 rem, elle se perdait au
+     milieu d'un grand écran. */
+  @media (min-width: 64rem) {
+    .cadeau-carte.cadeau-jour-fenetre {
+      max-width: 36rem;
+    }
+    .cadeau-jour-fenetre .cadeau-medaillon {
+      width: 3.75rem;
+      height: 3.75rem;
+    }
+    .cadeau-jour-calendrier {
+      gap: 0.55rem;
+      margin-top: 1.4rem;
+    }
+    .cadeau-jour-case {
+      gap: 0.3rem;
+      padding: 0.8rem 0.1rem 0.7rem;
+    }
+    .cadeau-jour-case-jour {
+      font-size: 0.875rem;
+    }
+    .cadeau-jour-case-montant {
+      font-size: 1rem;
+    }
+    .cadeau-jour-etat {
+      margin-top: 1.4rem;
+    }
+    .cadeau-jour-fenetre .cadeau-message {
+      font-size: 1rem;
+    }
+  }
   /* ---- Le compteur de Boosters Perso : − n +, comme les roues perso de la Summer ---- */
   .compteur-perso {
     display: inline-flex;
@@ -6366,14 +6397,13 @@
   }
 }
 
+/* Moins d'animations demandées — Windows le dit dès que ses effets
+   d'animation sont coupés, ce qui est courant sur PC : les jauges ne se
+   remplissent plus, mais l'éclat et le reflet restent. Ce ne sont que des
+   lumières qui passent, lentes, sans rien déplacer dans la page. */
 @media (prefers-reduced-motion: reduce) {
   .palier-jauge > span {
     animation: none;
-  }
-  .palier-jauge::after,
-  .eclat-glace {
-    animation: none;
-    display: none;
   }
 }
 
