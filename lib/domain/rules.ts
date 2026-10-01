@@ -64,13 +64,11 @@ export const DEFAULT_MAX_GAMES_PER_PLAYER = 60;
 /* ------------------------------- Économie ------------------------------- */
 
 /**
- * Les flocons ont deux sources, et c'est volontaire :
- *
- *   1. **Le jeu** — kills et placements. C'est la seule source qui crée un
- *      écart *entre* joueurs. Un bon joueur est plus riche qu'un mauvais.
- *   2. **Les subs Twitch** — versés à *tous* les joueurs actifs à parts égales
- *      (voir SUBS plus bas). Le chat fait grossir l'économie entière, sans
- *      jamais faire monter quelqu'un en particulier.
+ * Les flocons viennent du **jeu** — kills et placements : c'est ce qui crée
+ * un écart *entre* joueurs, un bon joueur est plus riche qu'un mauvais —, et
+ * des codes cadeaux que la modération lâche pendant le stream. Les subs n'en
+ * versent plus : ils font tomber des boosters de la ligue et des évènements
+ * (voir SUBS plus bas), pour tout le monde à la fois.
  *
  * Ils servent à deux choses : se miser dans les affrontements, et améliorer
  * les taux de rareté quand un pack s'ouvre pour soi — voir `CHANCE`. Ils ne
@@ -88,10 +86,9 @@ export const ECONOMY = {
   /**
    * Le solde maximum. Ce qui dépasse est perdu.
    *
-   * Vingt mille : une game rapporte cinq cents flocons en moyenne, un joueur
-   * assidu en joue une quinzaine par semaine, et les paliers de subs ajoutent
-   * deux mille par semaine dans une bonne semaine. On approche donc du plafond
-   * en un mois et demi de jeu sans rien miser — pas en une semaine — sur une
+   * Vingt mille : une game rapporte cinq cents flocons en moyenne, et un
+   * joueur assidu en joue une quinzaine par semaine. On approche donc du
+   * plafond en deux mois de jeu sans rien miser — pas en une semaine — sur une
    * saison de deux à trois mois et de soixante games. C'est aussi ce qui borne
    * la chance : elle est pleine au plafond, jamais avant.
    */
@@ -100,41 +97,26 @@ export const ECONOMY = {
 
 /* --------------------------- Subs Twitch --------------------------------- */
 
-export type SubRewardKind = 'FLOCONS' | 'PACK';
+/** Ce qu'un palier de subs fait tomber : un booster de la ligue. */
+export type SubRewardKind = 'PACK';
 
 export interface SubMilestone {
   /** Tous les N subs cumulés de la saison. */
   every: number;
   kind: SubRewardKind;
-  /** Flocons versés à chaque joueur actif, ou identifiant du pack mis en file. */
-  amount?: number;
-  packId?: PackId;
+  /** Le booster mis en file. */
+  packId: PackId;
   label: string;
   description: string;
 }
 
 /**
- * Paliers de subs. Chaque palier se déclenche à *chaque* multiple atteint.
- *
- * Les flocons vont à **tous les joueurs actifs**. Les packs sont mis en file :
- * la streameuse les ouvre à l'antenne, et la carte tombe sur tout le monde ou
- * sur un joueur tiré au sort — jamais sur quelqu'un que le chat aurait choisi.
+ * Paliers de subs. Chaque palier se déclenche à *chaque* multiple atteint, et
+ * met un booster de la ligue en file : la streameuse l'ouvre à l'antenne, et
+ * la carte tombe sur tout le monde ou sur un joueur tiré au sort — jamais sur
+ * quelqu'un que le chat aurait choisi. Les subs ne versent pas de flocons.
  */
 export const SUB_MILESTONES: readonly SubMilestone[] = [
-  {
-    every: 5,
-    kind: 'FLOCONS',
-    amount: 40,
-    label: 'Bourrasque',
-    description: '40 flocons pour chaque joueur actif.',
-  },
-  {
-    every: 25,
-    kind: 'FLOCONS',
-    amount: 200,
-    label: 'Rafale',
-    description: '200 flocons de plus pour tout le monde.',
-  },
   {
     every: 50,
     kind: 'PACK',
@@ -350,7 +332,7 @@ export function paliersDuCompteur(totalSubs: number, commuDepuis: number | null 
     return { remaining: every - fait, progress: fait / every };
   };
   const paliers: PalierAVenir[] = [
-    ...SUB_MILESTONES.filter((m) => m.kind === 'PACK').map((m): PalierAVenir => {
+    ...SUB_MILESTONES.map((m): PalierAVenir => {
       const accelere = m.packId === 'commu' && commuDepuis !== null && totalSubs >= commuDepuis;
       const every = accelere ? COMMU_ACCELERE_TOUS_LES : m.every;
       return {
@@ -392,7 +374,7 @@ export function nextMilestone(
 
 /**
  * Paliers franchis en passant de `from` à `to` subs. Retourne une entrée par
- * franchissement — passer de 0 à 12 déclenche donc deux Bourrasques.
+ * franchissement — passer de 0 à 120 met donc deux Boosters Commu en file.
  *
  * Pendant une Tempête — `commuDepuis`, le total d'où elle compte —, le Booster
  * Commu ne suit plus ses multiples de 50 : il tombe tous les

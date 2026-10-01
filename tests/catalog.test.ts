@@ -239,35 +239,34 @@ describe('économie de jeu', () => {
 });
 
 describe('économie des subs', () => {
-  it('déclenche un palier à chaque multiple franchi', () => {
-    // 0 → 12 : deux Bourrasques (5 et 10), rien d'autre.
-    const crossed = crossedMilestones(0, 12);
-    expect(crossed.map((m) => m.label)).toEqual(['Bourrasque', 'Bourrasque']);
+  it('met un booster en file à chaque multiple franchi', () => {
+    // 0 → 120 : deux Boosters Commu (50 et 100), rien d'autre.
+    expect(crossedMilestones(0, 120).map((m) => m.label)).toEqual(['Booster Commu', 'Booster Commu']);
   });
 
   it('cumule les paliers quand un gros gift en franchit plusieurs', () => {
-    // 0 → 100 : 20 Bourrasques, 4 Rafales, 2 Boosters Commu.
-    const labels = crossedMilestones(0, 100).map((m) => m.label);
-    expect(labels.filter((l) => l === 'Bourrasque')).toHaveLength(20);
-    expect(labels.filter((l) => l === 'Rafale')).toHaveLength(4);
-    expect(labels.filter((l) => l === 'Booster Commu')).toHaveLength(2);
+    // 0 → 400 : 8 Boosters Commu, 2 Boosters Folie.
+    const labels = crossedMilestones(0, 400).map((m) => m.label);
+    expect(labels.filter((l) => l === 'Booster Commu')).toHaveLength(8);
+    expect(labels.filter((l) => l === 'Booster Folie')).toHaveLength(2);
   });
 
   it('ne déclenche rien quand on reste dans le même intervalle', () => {
-    expect(crossedMilestones(6, 9)).toEqual([]);
+    expect(crossedMilestones(6, 49)).toEqual([]);
   });
 
   it('annonce le palier le plus proche', () => {
-    const next = nextMilestone(3);
-    expect(next?.milestone.label).toBe('Bourrasque');
-    expect(next?.remaining).toBe(2);
+    const next = nextMilestone(36);
+    expect(next?.milestone.label).toBe('Booster Commu');
+    expect(next?.remaining).toBe(14);
   });
 
-  it('ne verse jamais rien à un joueur nommé', () => {
+  it('ne verse jamais rien à un joueur nommé, ni de flocons', () => {
     // Garde-fou de conception : aucun palier ne cible un joueur. Si un jour une
     // récompense individuelle apparaît ici, l'équilibre anti-pay-to-win saute.
     for (const milestone of SUB_MILESTONES) {
-      expect(['FLOCONS', 'PACK']).toContain(milestone.kind);
+      expect(milestone.kind).toBe('PACK');
+      expect(milestone).not.toHaveProperty('amount');
       expect(milestone).not.toHaveProperty('playerId');
       expect(milestone).not.toHaveProperty('joueurId');
     }
@@ -275,25 +274,10 @@ describe('économie des subs', () => {
 
   it('ne met en file que des boosters collectifs', () => {
     // Un Booster Perso tombé d'un palier irait à quelqu'un en particulier.
-    const packs = SUB_MILESTONES.filter((m) => m.kind === 'PACK');
-    expect(packs.length).toBeGreaterThan(0);
-    for (const milestone of packs) {
-      expect(getPack(milestone.packId!)?.portee).toBe('TOUS');
+    expect(SUB_MILESTONES.length).toBeGreaterThan(0);
+    for (const milestone of SUB_MILESTONES) {
+      expect(getPack(milestone.packId)?.portee).toBe('TOUS');
     }
-  });
-
-  it('garde les deux sources de flocons du même ordre de grandeur', () => {
-    // Hypothèse de saison : toutes les games jouées, environ 900 subs.
-    const parGame = rewardForGame(11, null).total;
-    const duJeu = parGame * DEFAULT_MAX_GAMES_PER_PLAYER;
-
-    const desSubs = crossedMilestones(0, 900)
-      .filter((m) => m.kind === 'FLOCONS')
-      .reduce((sum, m) => sum + (m.amount ?? 0), 0);
-
-    // Ni l'une ni l'autre ne doit écraser sa voisine : on tolère un facteur 2.
-    expect(desSubs).toBeGreaterThan(duJeu / 2);
-    expect(desSubs).toBeLessThan(duJeu * 2);
   });
 });
 

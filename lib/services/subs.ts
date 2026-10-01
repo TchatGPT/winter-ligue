@@ -19,7 +19,7 @@ import type { Database } from '@/lib/db/entities';
 import { newId } from '@/lib/db/store';
 import { crossedMilestones, nextMilestone, SUBS } from '@/lib/domain/rules';
 import type { PackId } from '@/lib/domain/types';
-import { audit, credit } from './ledger';
+import { audit } from './ledger';
 import { ajoutePackDu } from './packs';
 import { commuAccelereDepuis, declencheEvenements } from '@/lib/services/evenements';
 import { dejaVu, gesteDuMessage, ligneDuGeste, recitDuGeste, retiens } from '@/lib/domain/twitchSubs';
@@ -40,7 +40,6 @@ export interface AddSubsResult {
   milestones: string[];
   /** Les évènements ouverts par cette saisie, avec leur heure de fin. */
   evenements: { label: string; endsAt: string }[];
-  snowflakesEach: number;
   /** Les packs mis en file, à ouvrir à l'antenne. */
   packs: PackId[];
   recipients: number;
@@ -71,22 +70,10 @@ export function addSubs(db: Database, delta: number, actor: string, precision?: 
   const crossed = crossedMilestones(from, to, commuAccelereDepuis(db));
   const recipients = db.players.filter((p) => p.active);
 
-  let snowflakesEach = 0;
   const packs: PackId[] = [];
-
   for (const milestone of crossed) {
-    if (milestone.kind === 'FLOCONS' && milestone.amount) {
-      snowflakesEach += milestone.amount;
-    } else if (milestone.kind === 'PACK' && milestone.packId) {
-      packs.push(milestone.packId);
-      ajoutePackDu(db, milestone.packId, null, `palier de ${milestone.every} subs (total ${to})`);
-    }
-  }
-
-  if (snowflakesEach > 0) {
-    for (const player of recipients) {
-      credit(db, player.id, snowflakesEach, 'SUBS_TWITCH', String(to));
-    }
+    packs.push(milestone.packId);
+    ajoutePackDu(db, milestone.packId, null, `palier de ${milestone.every} subs (total ${to})`);
   }
 
   const milestones = crossed.map((m) => m.label);
@@ -98,7 +85,8 @@ export function addSubs(db: Database, delta: number, actor: string, precision?: 
       delta,
       totalAfter: to,
       milestones,
-      snowflakesEach,
+      // Les subs ne versent plus de flocons : la colonne reste, à zéro.
+      snowflakesEach: 0,
       packs,
       recipients: recipients.length,
     });
@@ -118,7 +106,6 @@ export function addSubs(db: Database, delta: number, actor: string, precision?: 
     totalSubs: to,
     milestones,
     evenements: evenements.map((e) => ({ label: e.label, endsAt: e.endsAt })),
-    snowflakesEach,
     packs,
     recipients: recipients.length,
     next: nextMilestone(to),

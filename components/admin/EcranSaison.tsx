@@ -85,18 +85,24 @@ export function EcranSaison({
     if (!data) return;
     const d = data as {
       milestones: string[];
-      snowflakesEach: number;
-      packs: string[];
-      recipients: number;
       evenements?: { label: string; endsAt: string }[];
     };
-    const evenements = (d.evenements ?? []).map((e) => e.label);
+    // « Booster Commu ×3 » plutôt que trois fois son nom.
+    const groupe = (noms: string[]) =>
+      [...new Set(noms)].map((n) => {
+        const fois = noms.filter((x) => x === n).length;
+        return fois > 1 ? `${n} ×${fois}` : n;
+      });
+    const boosters = groupe(d.milestones);
+    const evenements = groupe((d.evenements ?? []).map((e) => e.label));
     setDernierVersement(
-      (d.milestones.length === 0
-        ? `+${delta} subs — aucun palier franchi`
-        : `${d.milestones.join(', ')} — ${d.snowflakesEach} ❄ pour ${d.recipients} joueur(s)${
-            d.packs.length ? ` + ${d.packs.length} pack(s) en file` : ''
-          }`) + (evenements.length ? ` · évènements ouverts : ${evenements.join(', ')}` : ''),
+      [
+        `+${delta} subs`,
+        boosters.length ? `en file : ${boosters.join(', ')}` : 'aucun booster',
+        evenements.length ? `évènements ouverts : ${evenements.join(', ')}` : null,
+      ]
+        .filter(Boolean)
+        .join(' · '),
     );
   }
 
@@ -176,8 +182,8 @@ export function EcranSaison({
           }
           aide={
             <>
-              Chaque palier verse à <strong className="text-muted">tous les joueurs actifs</strong>,
-              à parts égales, et met les Boosters Commu et Folie en file. Aucun versement ne vise un
+              Les paliers mettent les Boosters Commu et Folie en file et ouvrent les évènements, pour{' '}
+              <strong className="text-muted">tous les joueurs actifs</strong> à la fois. Rien ne vise un
               joueur en particulier.
               {branche && (
                 <>

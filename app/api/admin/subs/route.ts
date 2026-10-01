@@ -19,7 +19,7 @@ export async function GET(request: Request): Promise<NextResponse> {
 /**
  * Saisie des subs par la modération.
  *
- * `subs` alimente le compteur de la saison : flocons pour tous, packs
+ * `subs` alimente le compteur de la saison : boosters de la ligue et
  * collectifs en file, évènements. Les Boosters Perso se règlent à part, joueur
  * par joueur (`/api/admin/boosters-perso`).
  *

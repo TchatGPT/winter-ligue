@@ -66,7 +66,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   cible (`joueursTires`) — le ou les joueurs sur qui elle tombe. Le serveur fait les deux
   dans la même transaction ; l'écran et l'overlay ne font que les dérouler (`tirageDe`,
   `RailJoueurs`). Jamais de joueur choisi côté client.
-- Les paliers de subs versent à **tous les joueurs actifs**. Ne jamais ajouter de
+- Les paliers de subs profitent à **tous les joueurs actifs** (boosters de la ligue,
+  évènements) ; ils ne versent plus de flocons. Ne jamais ajouter de
   récompense individuelle : c'est l'invariant anti-pay-to-win, et il est testé.
 - **Aucun avantage permanent ne se gagne en ouvrant des cartes.** Il n'y a ni familles,
   ni bonus de collection, ni plafond de réserve, ni taxe de vente : tout cela existait et

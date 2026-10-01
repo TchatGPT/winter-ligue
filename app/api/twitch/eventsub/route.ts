@@ -29,7 +29,7 @@ const reponse = (status: number) => new NextResponse(null, { status, headers: { 
  * de Twitch — est vérifiée avant de lire le message ; un message de plus de dix
  * minutes est ignoré ; et chaque message ne compte qu'une fois, car Twitch
  * renvoie ce qu'il croit perdu. Le compteur avance par `addSubs()`, comme depuis
- * l'administration : paliers, flocons pour tous, boosters en file.
+ * l'administration : paliers, boosters en file, évènements.
  *
  * Twitch attend une réponse en quelques secondes : un 2xx dit « reçu », tout le
  * reste le fait réessayer.

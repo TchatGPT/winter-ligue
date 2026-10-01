@@ -248,7 +248,27 @@ export default async function ReglesPage(){
             </div>
             <div className="rounded-lg border border-white/10 bg-white/5 p-3">
               <h3 className="font-display text-sm font-bold tracking-wide text-ink uppercase">
-                2. Les subs Twitch — pour tout le monde
+                2. Les codes cadeaux du stream
+              </h3>
+              <p className="mt-1.5 text-[13px]">
+                La modération lâche des codes pendant le live : chacun le tape une fois, près de son
+                solde. Les subs, eux, ne versent pas de flocons : ils font tomber des boosters et des
+                évènements — voir « Les subs ».
+              </p>
+            </div>
+          </div>
+          <p>
+            Les flocons servent à deux choses : miser dans les duels, et pousser les raretés
+            quand un booster s’ouvre pour soi. Rien d’autre ne s’achète. Le solde plafonne à{' '}
+            <strong className="text-ink">{ECONOMY.soldeMax.toLocaleString('fr-FR')} ❄</strong> :
+            ce qui dépasse est perdu.
+          </p>
+        </Rule>
+
+        <Rule title="Les subs" lead="Ce que les subs font tomber, pour tout le monde à la fois.">
+          <div className="rounded-lg border border-white/10 bg-white/5 p-3">
+              <h3 className="font-display text-sm font-bold tracking-wide text-ink uppercase">
+                Ce qui compte pour un sub
               </h3>
               <p className="mt-1.5 text-[13px]">
                 <strong className="text-aurora">Compte, un sub chacun :</strong>{' '}
@@ -265,17 +285,10 @@ export default async function ReglesPage(){
                   </li>
                 ))}
               </ul>
-            </div>
           </div>
-          <p>
-            Les flocons servent à deux choses : miser dans les duels, et pousser les raretés
-            quand un booster s’ouvre pour soi. Rien d’autre ne s’achète. Le solde plafonne à{' '}
-            <strong className="text-ink">{ECONOMY.soldeMax.toLocaleString('fr-FR')} ❄</strong> :
-            ce qui dépasse est perdu.
-          </p>
-        </Rule>
-
-        <Rule title="Les évènements" lead="Aux paliers de subs, les règles changent une heure ou deux.">
+          <h3 className="pt-1 font-display text-sm font-bold tracking-wide text-ink uppercase">
+            Les évènements
+          </h3>
           <ul className="space-y-1 text-[13px]">
             {EVENEMENTS_SUBS.map((e) => (
               <li key={`${e.every}-${e.kind}`}>

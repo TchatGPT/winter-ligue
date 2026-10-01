@@ -303,11 +303,10 @@ describe('addSubs déclenche les évènements', () => {
     const a = db.players.find((p) => p.id === 'a')!.snowflakes;
     const b = db.players.find((p) => p.id === 'b')!.snowflakes;
     expect(a).toBe(b);
-    // Chacun a touché les flocons des paliers, et rien d'autre.
-    expect(a).toBe(r.snowflakesEach);
-    // Un évènement n'a pas de bénéficiaire : aucune ligne de grand livre ne
-    // le mentionne.
-    expect(db.ledger.every((l) => l.reason === 'SUBS_TWITCH')).toBe(true);
+    // Ni les paliers ni les évènements ne versent de flocons.
+    expect(a).toBe(0);
+    expect(r.packs.length).toBeGreaterThan(0);
+    expect(db.ledger).toHaveLength(0);
   });
 
   it('laisse de côté les joueurs inactifs', () => {

@@ -11,7 +11,7 @@ import 'server-only';
  *
  * Un évènement est collectif et borné dans le temps. Il ne verse rien à
  * personne en particulier : il change les *règles* pour tous les joueurs actifs
- * pendant sa fenêtre, exactement comme les paliers de flocons versent à tous.
+ * pendant sa fenêtre, exactement comme les boosters de la ligue tombent pour tous.
  * Celui qui a déclenché le palier n'en tire pas plus que les autres — et
  * pendant une fenêtre « flocons doublés », le meilleur joueur gagne toujours
  * deux fois plus que le moins bon, ni plus ni moins qu'en temps normal.
