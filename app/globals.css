@@ -84,6 +84,8 @@
   --danger: #ff7a7a;
   /* Le violet de Twitch, pour le bouton de connexion et lui seul. */
   --twitch: #9146ff;
+  /* L'orange de Claude, pour sa signature dans le pied de page et elle seule. */
+  --claude: #d97757;
   --twitch-clair: #a970ff;
 
   /* -- Texte ------------------------------------------------------------- */
@@ -353,6 +355,67 @@
     inset: 0;
     pointer-events: none;
     background-color: var(--fond);
+  }
+
+  /* --------------------------------------------------------------------------
+     LE PIED DE PAGE — voir components/PiedDePage.
+     Un filet, les droits à gauche et la signature à droite ; empilés et
+     centrés sur téléphone, où la marge basse dégage la barre de navigation
+     flottante (78 px du bord de l'écran).
+     -------------------------------------------------------------------------- */
+  .pied-de-page {
+    position: relative;
+    z-index: 10;
+    width: 100%;
+    max-width: 1880px;
+    margin: 0 auto;
+    padding: 0 1rem 7rem;
+  }
+  .pied-de-page-ligne {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.35rem;
+    padding-top: 1.1rem;
+    border-top: 1px solid rgb(255 255 255 / 0.1);
+    color: var(--muted);
+    font-size: 0.875rem;
+    text-align: center;
+  }
+  .pied-de-page-ligne strong {
+    color: var(--ink);
+    font-weight: 700;
+  }
+  .pied-de-page-credit {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .pied-de-page-claude {
+    width: 1.05rem;
+    height: 1.05rem;
+    flex: 0 0 auto;
+    color: var(--claude);
+  }
+  @media (min-width: 640px) {
+    .pied-de-page {
+      padding-inline: 1.5rem;
+    }
+    .pied-de-page-ligne {
+      flex-direction: row;
+      justify-content: space-between;
+      text-align: left;
+    }
+  }
+  @media (min-width: 1024px) {
+    .pied-de-page {
+      padding: 0 2rem 1.5rem;
+    }
+  }
+  @media (min-width: 1536px) {
+    .pied-de-page {
+      padding-inline: 2.5rem;
+    }
   }
 
   /* --------------------------------------------------------------------------

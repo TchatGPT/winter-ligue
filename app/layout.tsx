@@ -6,6 +6,7 @@ import { FondHiver } from '@/components/FondHiver';
 import { Sidebar, SIDEBAR_WIDTH } from '@/components/Sidebar';
 import { getSession } from '@/lib/auth/session';
 import './globals.css';
+import { PiedDePage } from '@/components/PiedDePage';
 
 const barlow = Barlow({
   subsets: ['latin'],
@@ -89,14 +90,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           style={{ ['--sidebar' as string]: connecte ? `${SIDEBAR_WIDTH}px` : '0px' }}
         >
           <div className="flex flex-1 flex-col lg:pl-[var(--sidebar)]">
-            {/* La réserve du bas doit dégager la barre de navigation flottante,
-                qui fait 78 px du bord de l'écran. Elle était à 64 : le bouton
-                d'ouverture et le solde passaient dessous, en bas de la page des
-                boosters. Sur grand écran la barre n'existe pas, et la réserve
-                redevient une simple marge. */}
-            <main className="relative z-10 mx-auto w-full max-w-[1880px] flex-1 px-4 pt-6 pb-28 sm:px-6 sm:pt-8 lg:px-8 lg:pt-6 lg:pb-16 2xl:px-10">
+            {/* La réserve du bas, qui dégage la barre de navigation flottante
+                des téléphones, est passée au pied de page : c'est lui qui
+                termine la page. */}
+            <main className="relative z-10 mx-auto w-full max-w-[1880px] flex-1 px-4 pt-6 pb-10 sm:px-6 sm:pt-8 lg:px-8 lg:pt-6 lg:pb-12 2xl:px-10">
               {children}
             </main>
+            <PiedDePage />
 
           </div>
         </div>
