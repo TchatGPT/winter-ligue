@@ -231,7 +231,7 @@ export function EcranSaison({
           </div>
 
           {dernierVersement && (
-            <p className="mt-3 rounded-lg border border-aurora/40 bg-aurora/5 px-3 py-2 text-xs text-aurora">
+            <p className="mt-3 rounded-lg border border-aurora/40 bg-aurora/5 px-3 py-2 text-[13px] text-aurora">
               {dernierVersement}
             </p>
           )}

@@ -88,7 +88,7 @@
 
   /* -- Texte ------------------------------------------------------------- */
   --ink: #eaf3fc;
-  --ink-2: #dce8f4;
+  --ink-2: #e6eef7;
   /* Le gris secondaire et le gris tertiaire ont ete remontes.
 
      Ils etaient deja limites avant le decor : mesures sur la page, les
@@ -98,10 +98,10 @@
   /* Sur du verre transparent, il n'y a plus de fond sombre garanti sous
      les gris : les libellés secondaires et tertiaires passent donc presque
      au blanc, et c'est la graisse et la taille qui font la hiérarchie. */
-  --muted: #cfdceb;
+  --muted: #dde7f2;
   /* Relevé avec le verre liquide : sur une plaque plus claire, l'ancien
      gris des petits textes passait sous 3:1. */
-  --faint: #c9d6e5;
+  --faint: #d4dfeb;
 
   /* -- Raretés : froid pour le banal, chaud pour le convoité ------------- */
   --r-c: #9fb4c9;
@@ -1405,7 +1405,7 @@
   .rail-allure button {
     padding: 2px 9px;
     border-radius: 999px;
-    font-size: 0.7rem;
+    font-size: 0.8125rem;
     line-height: 1.4;
     color: var(--faint);
     transition:
@@ -1731,12 +1731,23 @@
      viennent des règles communes. Ce bloc ne pose que la mise en page, les
      états des liens, le reflet qui glisse et le scintillement de la crête.
      -------------------------------------------------------------------------- */
+  /* Collée au bord gauche, de haut en bas : ni arrondi, ni reflet, ni
+     lumière qui la traverse — une teinte unie, et un filet à droite. */
   .menu-verre {
     --menu-r-lien: 12px;
-    --menu-lien-h: 46px;
-    --menu-pad-x: 24px;
+    --menu-lien-h: 48px;
+    --menu-pad-x: 20px;
     flex-direction: column;
     overflow: hidden;
+    border: 0;
+    border-radius: 0;
+    background: var(--glass-3);
+    backdrop-filter: none;
+    box-shadow: inset -1px 0 0 rgb(255 255 255 / 0.12);
+  }
+  .menu-verre::before,
+  .menu-verre::after {
+    display: none;
   }
   .menu-colonne {
     position: relative;
@@ -1846,11 +1857,11 @@
     padding: 0 16px;
     border: 1px solid transparent;
     border-radius: var(--menu-r-lien);
-    color: rgb(255 255 255 / 0.78);
+    color: var(--ink);
     font-family: var(--font-display);
-    font-size: 13px;
+    font-size: 15px;
     font-weight: 700;
-    letter-spacing: 0.18em;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
     text-decoration: none;
     transition:
@@ -1861,7 +1872,7 @@
   }
   .menu-lien svg {
     flex: 0 0 auto;
-    stroke: rgb(255 255 255 / 0.6);
+    stroke: rgb(255 255 255 / 0.85);
     stroke-width: 1.5;
     transition: stroke 0.2s ease;
   }
@@ -1902,7 +1913,7 @@
     border-top: 1px solid rgb(255 255 255 / 0.1);
   }
   .menu-lien[data-reserve] {
-    color: #9fdcf5;
+    color: var(--ice);
   }
   .menu-lien[data-reserve]:hover,
   .menu-lien[data-reserve][aria-current='page'] {
@@ -1918,7 +1929,7 @@
     width: 100%;
     min-height: 42px;
     gap: 10px;
-    font-size: 0.8125rem;
+    font-size: 0.875rem;
   }
   .menu-avatar {
     display: grid;
@@ -1969,9 +1980,9 @@
 
   .eyebrow {
     font-family: var(--font-display);
-    font-size: 0.8125rem;
+    font-size: 0.875rem;
     font-weight: 700;
-    letter-spacing: 0.24em;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
     /* Le vert de l'aurore, comme les gains de flocons : le cyan se perdait
        sur le verre. */
@@ -1995,7 +2006,7 @@
     display: block;
     margin-bottom: 0.4rem;
     font-family: var(--font-display);
-    font-size: 0.8125rem;
+    font-size: 0.875rem;
     font-weight: 700;
     letter-spacing: 0.12em;
     text-transform: uppercase;
@@ -2100,7 +2111,7 @@
     border-radius: var(--r-pilule);
     background: rgb(255 255 255 / 0.1);
     box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.14);
-    font-size: 0.8125rem;
+    font-size: 0.875rem;
     font-weight: 600;
     color: var(--ink-2);
     transition: background 0.18s ease;
@@ -2137,9 +2148,9 @@
   }
   .fiche-chiffres dt {
     font-family: var(--font-display);
-    font-size: 0.6875rem;
+    font-size: 0.8125rem;
     font-weight: 700;
-    letter-spacing: 0.18em;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
     color: var(--faint);
   }
@@ -2176,9 +2187,9 @@
   }
   .fiche-stat > span {
     font-family: var(--font-display);
-    font-size: 0.6875rem;
+    font-size: 0.8125rem;
     font-weight: 700;
-    letter-spacing: 0.18em;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
     color: var(--faint);
   }
@@ -2194,7 +2205,7 @@
     color: var(--muted);
   }
   .fiche-stat > em {
-    font-size: 0.8125rem;
+    font-size: 0.875rem;
     font-style: normal;
     color: var(--muted);
   }
@@ -2231,7 +2242,7 @@
   .fiche-podiums .medaille {
     width: 26px;
     height: 26px;
-    font-size: 0.8rem;
+    font-size: 0.875rem;
   }
 
   .fiche-titre {
@@ -2251,7 +2262,7 @@
      cases vides en pointillés. */
   .cases-legende {
     margin: 0.5rem 0 0.9rem;
-    font-size: 0.8125rem;
+    font-size: 0.875rem;
     color: var(--muted);
   }
   .cases-grille {
@@ -2327,7 +2338,7 @@
   .case-numero {
     padding-left: 0.15rem;
     font-family: var(--font-display);
-    font-size: 0.6875rem;
+    font-size: 0.8125rem;
     font-weight: 800;
     color: var(--ink-2);
     text-shadow: 0 1px 2px rgb(0 8 24 / 0.7);
@@ -2336,7 +2347,7 @@
   .case-tete .case-medaille {
     width: 18px;
     height: 18px;
-    font-size: 0.625rem;
+    font-size: 0.75rem;
   }
   .case-score {
     position: relative;
@@ -2354,7 +2365,7 @@
   .case-pied {
     position: relative;
     z-index: 1;
-    font-size: 0.6875rem;
+    font-size: 0.8125rem;
     font-weight: 600;
     text-align: center;
     color: var(--ink);
@@ -2436,7 +2447,7 @@
   .fiche-top .medaille {
     width: 22px;
     height: 22px;
-    font-size: 0.7rem;
+    font-size: 0.8125rem;
   }
   .fiche-top-aucun {
     color: var(--faint);
@@ -2445,7 +2456,7 @@
     padding: 0.05rem 0.5rem;
     border-radius: var(--r-pilule);
     background: rgb(255 255 255 / 0.1);
-    font-size: 0.6875rem;
+    font-size: 0.8125rem;
     font-weight: 700;
     letter-spacing: 0.06em;
     text-transform: uppercase;
@@ -2453,7 +2464,7 @@
   }
   .fiche-game-date {
     margin-top: 0.15rem;
-    font-size: 0.75rem;
+    font-size: 0.8125rem;
     color: var(--faint);
   }
   .fiche-game-cartes {
@@ -2466,7 +2477,7 @@
     padding: 0.12rem 0.55rem;
     border-radius: var(--r-pilule);
     background: rgb(255 255 255 / 0.08);
-    font-size: 0.75rem;
+    font-size: 0.8125rem;
     color: var(--ink-2);
   }
   .fiche-game-cartes b {
@@ -2490,9 +2501,9 @@
   }
   .fiche-game-score small {
     font-family: var(--font-display);
-    font-size: 0.6875rem;
+    font-size: 0.8125rem;
     font-weight: 700;
-    letter-spacing: 0.16em;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
     color: var(--faint);
   }
@@ -2568,12 +2579,12 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-size: 0.8125rem;
+    font-size: 0.875rem;
     font-weight: 700;
     color: var(--ink);
   }
   .fiche-cartes small {
-    font-size: 0.71875rem;
+    font-size: 0.8125rem;
     line-height: 1.3;
     color: var(--muted);
   }
@@ -2593,9 +2604,9 @@
   }
   .fiche-duels-chiffres dt {
     font-family: var(--font-display);
-    font-size: 0.6875rem;
+    font-size: 0.8125rem;
     font-weight: 700;
-    letter-spacing: 0.16em;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
     color: var(--faint);
   }
@@ -2638,7 +2649,7 @@
   }
   .fiche-duels > li small {
     grid-column: 1 / -1;
-    font-size: 0.75rem;
+    font-size: 0.8125rem;
     color: var(--faint);
   }
 
@@ -2672,13 +2683,13 @@
     padding: 0.15rem 0.6rem;
     border-radius: var(--r-pilule);
     background: rgb(255 255 255 / 0.1);
-    font-size: 0.75rem;
+    font-size: 0.8125rem;
     font-weight: 700;
     color: var(--ink-2);
   }
   .rarete-impact {
     margin-left: auto;
-    font-size: 0.8125rem;
+    font-size: 0.875rem;
     color: var(--muted);
   }
   .actions-grille {
@@ -2737,7 +2748,7 @@
     align-items: center;
     gap: 0.35rem;
     margin-top: 0.2rem;
-    font-size: 0.8125rem;
+    font-size: 0.875rem;
     font-weight: 700;
     color: var(--r, var(--ink-2));
   }
@@ -2764,7 +2775,7 @@
     padding: 0.1rem 0.5rem;
     border-radius: var(--r-pilule);
     background: rgb(255 255 255 / 0.08);
-    font-size: 0.6875rem;
+    font-size: 0.8125rem;
     font-weight: 600;
     letter-spacing: 0.03em;
     color: var(--muted);
@@ -2777,7 +2788,7 @@
     background: color-mix(in srgb, var(--aurora) 18%, transparent);
     box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--aurora) 55%, transparent);
     font-family: var(--font-display);
-    font-size: 0.6875rem;
+    font-size: 0.8125rem;
     font-weight: 800;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -2918,7 +2929,7 @@
     text-transform: uppercase;
   }
   .tuile-choix small {
-    font-size: 0.75rem;
+    font-size: 0.8125rem;
     opacity: 0.82;
   }
 
@@ -2946,7 +2957,7 @@
     padding: 0 0.95rem;
     border-radius: var(--r-pilule);
     font-family: var(--font-display);
-    font-size: 0.8125rem;
+    font-size: 0.875rem;
     font-weight: 800;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -2971,7 +2982,7 @@
     padding: 0 0.3rem;
     border-radius: var(--r-pilule);
     background: rgb(255 255 255 / 0.12);
-    font-size: 0.6875rem;
+    font-size: 0.8125rem;
     text-align: center;
   }
   .segment > button[aria-pressed='true'] .compte {
@@ -3068,7 +3079,7 @@
   }
   .defi-libre small {
     max-width: 18rem;
-    font-size: 0.8125rem;
+    font-size: 0.875rem;
     line-height: 1.4;
     color: var(--faint);
   }
@@ -3115,7 +3126,7 @@
     color: var(--ink);
   }
   .defi-qui small {
-    font-size: 0.8125rem;
+    font-size: 0.875rem;
     color: var(--muted);
   }
   .defi-mise {
@@ -3123,14 +3134,14 @@
     gap: 0.1rem;
   }
   .defi-mise small {
-    font-size: 0.75rem;
+    font-size: 0.8125rem;
     letter-spacing: 0.06em;
     color: var(--muted);
   }
   .defi-mise small:first-child {
     font-family: var(--font-display);
     font-weight: 700;
-    letter-spacing: 0.18em;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
     color: var(--faint);
   }
@@ -3175,9 +3186,9 @@
   }
   .ring-solde span {
     font-family: var(--font-display);
-    font-size: 0.6875rem;
+    font-size: 0.8125rem;
     font-weight: 700;
-    letter-spacing: 0.18em;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
     color: var(--faint);
   }
@@ -3279,7 +3290,7 @@
   }
   .ring-camp small {
     margin-top: -0.35rem;
-    font-size: 0.75rem;
+    font-size: 0.8125rem;
     color: var(--faint);
   }
   .ring-pot {
@@ -3301,9 +3312,9 @@
   }
   .ring-pot small {
     font-family: var(--font-display);
-    font-size: 0.75rem;
+    font-size: 0.8125rem;
     font-weight: 700;
-    letter-spacing: 0.16em;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
     color: var(--muted);
   }
@@ -3401,7 +3412,7 @@
     margin-top: 0.4rem;
     padding-top: 0.35rem;
     border-top: 1px solid rgb(255 255 255 / 0.1);
-    font-size: 0.8125rem;
+    font-size: 0.875rem;
     font-style: normal;
     font-weight: 700;
     color: var(--ink-2);
@@ -3421,16 +3432,16 @@
   .ring-bilan span {
     display: block;
     font-family: var(--font-display);
-    font-size: 0.6875rem;
+    font-size: 0.8125rem;
     font-weight: 700;
-    letter-spacing: 0.16em;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
     color: var(--faint);
   }
   .ring-bilan small {
     display: block;
     margin-top: 0.15rem;
-    font-size: 0.8125rem;
+    font-size: 0.875rem;
     line-height: 1.3;
     color: var(--muted);
   }
@@ -3451,7 +3462,7 @@
   }
   .ring-actions p {
     margin-top: 0.45rem;
-    font-size: 0.8125rem;
+    font-size: 0.875rem;
     line-height: 1.4;
     text-align: center;
     color: var(--faint);
@@ -3589,7 +3600,7 @@
     color: var(--aurora);
   }
   .resultat > em {
-    font-size: 0.8125rem;
+    font-size: 0.875rem;
     font-style: normal;
     color: var(--faint);
   }
@@ -3654,7 +3665,7 @@
       font-size: 0.9rem;
     }
     .regles-grille .duel-etape > p {
-      font-size: 0.8125rem;
+      font-size: 0.875rem;
       line-height: 1.35;
     }
   }
@@ -3785,8 +3796,8 @@
     justify-content: center;
     gap: 0.45rem;
     padding: 0.2rem 0.5rem;
-    font-size: 11px;
-    letter-spacing: 0.18em;
+    font-size: 13px;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
     color: var(--faint);
     transition: color 0.2s ease;
@@ -3854,8 +3865,8 @@
   .a-ouvrir-total {
     margin-bottom: 0.6rem;
     text-align: center;
-    font-size: 0.8125rem;
-    letter-spacing: 0.16em;
+    font-size: 0.875rem;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
     color: var(--faint);
   }
@@ -3903,7 +3914,7 @@
   .a-ouvrir-joueurs {
     margin-top: 0.3rem;
     padding: 0 0.6rem;
-    font-size: 0.75rem;
+    font-size: 0.8125rem;
     line-height: 1.35;
     color: var(--muted);
   }
@@ -4018,7 +4029,7 @@
     color: var(--ink);
   }
   .couloir-nom span {
-    font-size: 0.75rem;
+    font-size: 0.8125rem;
     font-weight: 700;
     color: var(--muted);
   }
@@ -4657,7 +4668,7 @@
   .btn-sm {
     min-height: 38px;
     padding: 0.4rem 0.85rem;
-    font-size: 0.8125rem;
+    font-size: 0.875rem;
   }
 
   .btn-lg {
@@ -4834,9 +4845,9 @@
   z-index: 1;
   padding: 0.85rem 1.15rem;
   font-family: var(--font-display);
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   font-weight: 700;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.12em;
   text-align: left;
   text-transform: uppercase;
   color: var(--faint);
@@ -5147,7 +5158,7 @@
     backdrop-filter: blur(12px);
     box-shadow: inset 0 1px 0 var(--glass-hi-soft);
     font-family: var(--font-display);
-    font-size: 0.75rem;
+    font-size: 0.8125rem;
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -5307,7 +5318,7 @@
     background: var(--r, #6f8db0);
     color: #0b1420;
     font-family: var(--font-display);
-    font-size: 0.6875rem;
+    font-size: 0.8125rem;
     font-weight: 900;
     letter-spacing: 0.06em;
     line-height: 1.5;
@@ -5326,7 +5337,7 @@
     background: rgb(255 122 122 / 0.94);
     color: #1c0505;
     font-family: var(--font-display);
-    font-size: 0.6875rem;
+    font-size: 0.8125rem;
     font-weight: 900;
     letter-spacing: 0.06em;
     text-transform: uppercase;
@@ -5375,7 +5386,7 @@
   }
 
   .tcg-sub {
-    font-size: 0.8125rem;
+    font-size: 0.875rem;
     line-height: 1.35;
     color: rgb(11 24 38 / 0.76);
     overflow: hidden;
@@ -5403,7 +5414,7 @@
     border-radius: 5px;
     background: rgb(5 18 30 / 0.85);
     font-family: var(--font-display);
-    font-size: 0.6875rem;
+    font-size: 0.8125rem;
     font-weight: 900;
     letter-spacing: 0.09em;
     text-transform: uppercase;
@@ -5457,7 +5468,7 @@
   .tcg-foot {
     padding: 0.6rem 0.85rem 0.7rem;
     background: #060d19;
-    font-size: 0.8125rem;
+    font-size: 0.875rem;
     line-height: 1.45;
   }
 
@@ -5622,7 +5633,7 @@
     font-family: var(--font-display);
     font-size: 3.4cqw;
     font-weight: 900;
-    letter-spacing: 0.2em;
+    letter-spacing: 0.12em;
     line-height: 1;
     text-align: center;
     text-transform: uppercase;
@@ -6015,7 +6026,7 @@
   }
 
   .tab-count {
-    font-size: 0.8125rem;
+    font-size: 0.875rem;
     font-weight: 600;
     color: var(--faint);
   }
@@ -6037,7 +6048,7 @@
     padding: 0.85rem 0.9rem;
     border-bottom: 1px solid rgb(255 255 255 / 0.09);
     font-family: var(--font-display);
-    font-size: 0.8125rem;
+    font-size: 0.875rem;
     font-weight: 700;
     letter-spacing: 0.11em;
     text-transform: uppercase;
@@ -7885,9 +7896,9 @@
     padding: 0.3rem 0.85rem;
     border-radius: var(--r-pilule);
     font-family: var(--font-display);
-    font-size: 0.75rem;
+    font-size: 0.8125rem;
     font-weight: 800;
-    letter-spacing: 0.16em;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
     color: var(--ice);
     background: rgb(143 220 255 / 0.12);
@@ -8152,7 +8163,7 @@
     border-bottom: 0;
   }
   .admin-journal time {
-    font-size: 0.8125rem;
+    font-size: 0.875rem;
     color: var(--faint);
     white-space: nowrap;
   }
@@ -8161,7 +8172,7 @@
     color: var(--ink);
   }
   .admin-journal-acteur {
-    font-size: 0.8125rem;
+    font-size: 0.875rem;
     color: var(--ice);
     white-space: nowrap;
   }
@@ -8252,7 +8263,7 @@
     min-width: 0;
     flex: 1 1 16rem;
     overflow: hidden;
-    font-size: 0.8125rem;
+    font-size: 0.875rem;
     color: var(--ink-2);
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -8333,7 +8344,7 @@
     gap: 0.4rem;
     padding: 0.2rem 0.7rem 0.22rem;
     border-radius: var(--r-pilule);
-    font-size: 0.8125rem;
+    font-size: 0.875rem;
     font-weight: 800;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -8354,7 +8365,7 @@
       0 6px 12px -8px rgb(0 8 24 / 0.85);
   }
   .course3d-nom > span {
-    font-size: 0.6875rem;
+    font-size: 0.8125rem;
     color: var(--aurora);
   }
 }

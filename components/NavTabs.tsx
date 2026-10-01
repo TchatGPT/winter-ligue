@@ -190,7 +190,7 @@ export function BottomNav({ isAdmin, isPlayer }: { isAdmin: boolean; isPlayer: b
                     le nom reste lu par les lecteurs d'écran, qui n'ont que lui —
                     l'icône, elle, est décorative.
                   */}
-                  <span className="w-full truncate text-center font-display text-[11px] leading-tight font-bold tracking-wide uppercase max-[359px]:sr-only">
+                  <span className="w-full truncate text-center font-display text-[13px] leading-tight font-bold tracking-wide uppercase max-[359px]:sr-only">
                     {tab.short}
                   </span>
                 </Link>
@@ -208,7 +208,7 @@ export function BottomNav({ isAdmin, isPlayer }: { isAdmin: boolean; isPlayer: b
                 className={`w-full ${classeOnglet(tiroir || dansLeTiroir)}`}
               >
                 <NAV_ICONS.plus className="h-[21px] w-[21px]" />
-                <span className="w-full truncate text-center font-display text-[11px] leading-tight font-bold tracking-wide uppercase max-[359px]:sr-only">
+                <span className="w-full truncate text-center font-display text-[13px] leading-tight font-bold tracking-wide uppercase max-[359px]:sr-only">
                   Plus
                 </span>
               </button>

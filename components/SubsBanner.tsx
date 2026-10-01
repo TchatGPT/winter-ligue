@@ -48,7 +48,7 @@ export function SubsBanner({
 
       <div className="relative mx-auto flex h-full max-w-4xl flex-col items-center justify-center text-center">
         {/* 1. Le nombre. */}
-        <p className="font-display text-[12px] font-bold tracking-[0.22em] text-aurora uppercase">
+        <p className="font-display text-[13px] font-bold tracking-[0.12em] text-aurora uppercase">
           Subs de la saison
         </p>
         <p className="num mt-1 font-display text-[64px] leading-none font-black text-ink sm:text-[80px]">
@@ -78,7 +78,7 @@ export function SubsBanner({
               >
                 <span className="evenement-pastille" aria-hidden="true" />
                 <span className="min-w-0 flex-1 leading-tight">
-                  <span className="block text-[11px] tracking-[0.18em] text-aurora uppercase">
+                  <span className="block text-[13px] tracking-[0.12em] text-aurora uppercase">
                     En cours
                   </span>
                   <span className="block text-[15px] font-bold text-ink">
@@ -101,7 +101,7 @@ export function SubsBanner({
         )}
 
         {/* 4. Ce que les subs déclenchent. */}
-        <p className="mt-7 text-[11px] tracking-[0.22em] text-faint uppercase">
+        <p className="mt-7 text-[13px] tracking-[0.12em] text-faint uppercase">
           Les évènements déclenchés par les subs
         </p>
         <ul className="mt-3 grid w-full grid-cols-1 gap-2.5 @2xl:grid-cols-3">
@@ -115,18 +115,18 @@ export function SubsBanner({
                   estProchain ? 'evenement-prochain' : ''
                 }`}
               >
-                <span className="text-[11px] tracking-[0.18em] text-faint uppercase">
+                <span className="text-[13px] tracking-[0.12em] text-faint uppercase">
                   Tous les {e.every} subs
                 </span>
                 <span className="mt-1.5 font-display text-[22px] leading-none font-black text-ink">
                   {e.label}
                 </span>
                 <span className="mt-2 text-[14px] font-semibold text-aurora">{e.resume}</span>
-                <span className="mt-0.5 text-[12px] text-muted">
+                <span className="mt-0.5 text-[13px] text-muted">
                   pendant {heures} heure{heures > 1 ? 's' : ''}
                 </span>
                 {estProchain && (
-                  <span className="mt-2.5 rounded-full bg-aurora/15 px-2.5 py-0.5 text-[11px] font-bold text-aurora">
+                  <span className="mt-2.5 rounded-full bg-aurora/15 px-2.5 py-0.5 text-[13px] font-bold text-aurora">
                     dans {prochain.remaining} sub{prochain.remaining > 1 ? 's' : ''}
                   </span>
                 )}

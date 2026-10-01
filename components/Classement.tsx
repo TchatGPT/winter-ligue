@@ -279,7 +279,7 @@ export function Classement({ rows, outils }: { rows: RankingRow[]; outils?: Reac
                   <span className="num block font-display text-[26px] leading-none font-black text-ink">
                     {row.totals.totalScore}
                   </span>
-                  <span className="block text-[10px] tracking-[0.2em] text-faint uppercase">points</span>
+                  <span className="block text-[13px] tracking-[0.12em] text-faint uppercase">points</span>
                 </span>
               </summary>
               <dl className="tableau-verre-detail grid grid-cols-3 gap-x-3 gap-y-2 px-4 pt-2.5 pb-3.5 text-[13px]">
@@ -369,9 +369,9 @@ function CarteActive({ row, onOuvrir }: { row: RankingRow; onOuvrir: () => void 
       <span className="min-w-0 leading-tight">
         <span className="block truncate text-[14px] font-bold text-ink">{c.nom}</span>
         <span className="block truncate text-[13px] text-ink-2">{c.action}</span>
-        <span className="block text-[12px] text-muted">{c.resume}</span>
+        <span className="block text-[13px] text-muted">{c.resume}</span>
         {row.enReserve > 0 && (
-          <span className="block text-[11px] tracking-wider text-faint uppercase">
+          <span className="block text-[13px] tracking-wider text-faint uppercase">
             +{row.enReserve} en réserve
           </span>
         )}
@@ -395,7 +395,7 @@ function Podiums({ totals }: { totals: RankingRow['totals'] }) {
 function Detail({ label, valeur }: { label: string; valeur: React.ReactNode }) {
   return (
     <div>
-      <dt className="text-[10px] tracking-[0.18em] text-faint uppercase">{label}</dt>
+      <dt className="text-[13px] tracking-[0.12em] text-faint uppercase">{label}</dt>
       <dd className="num mt-0.5 text-[14px] text-ink-2">{valeur}</dd>
     </div>
   );

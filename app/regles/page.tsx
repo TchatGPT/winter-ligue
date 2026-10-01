@@ -39,7 +39,7 @@ function Rule({
   return (
     <section className="glass p-5 2xl:mb-5 2xl:break-inside-avoid">
       <TitreGlace taille="petit">{title}</TitreGlace>
-      {lead && <p className="mt-0.5 text-xs text-faint">{lead}</p>}
+      {lead && <p className="mt-0.5 text-[13px] text-faint">{lead}</p>}
       <div className="mt-3 space-y-2.5 text-sm leading-relaxed text-muted">{children}</div>
     </section>
   );
@@ -97,7 +97,7 @@ export default async function ReglesPage(){
               {CRENEAUX_BONUS.max} au plus par saison.
             </li>
           </ul>
-          <p className="text-xs text-faint">
+          <p className="text-[13px] text-faint">
             Les games sont saisies par la modération d’après le stream. Le score est recalculé par
             le serveur à chaque modification : personne ne peut en imposer un.
           </p>
@@ -111,13 +111,13 @@ export default async function ReglesPage(){
                   <h3 className="font-display text-sm font-bold tracking-wide text-ink uppercase">
                     {pack.glyph} {pack.name}
                   </h3>
-                  <span className="text-xs text-faint">{cartesDuPack(pack.id).length} cartes</span>
+                  <span className="text-[13px] text-faint">{cartesDuPack(pack.id).length} cartes</span>
                 </div>
-                <p className="mt-1 text-xs">{pack.declencheur}</p>
-                <p className="mt-0.5 text-xs text-aurora">
+                <p className="mt-1 text-[13px]">{pack.declencheur}</p>
+                <p className="mt-0.5 text-[13px] text-aurora">
                   Pour {pack.pourQui}.{pack.portee === 'JOUEUR' ? ' Uniquement des bonus.' : ''}
                 </p>
-                <p className="num mt-1.5 text-xs text-faint">
+                <p className="num mt-1.5 text-[13px] text-faint">
                   {LADDER.filter((r) => pack.weights[r] > 0)
                     .map(
                       (r) =>
@@ -134,7 +134,7 @@ export default async function ReglesPage(){
             même joueur, ajouté par la modération ; il peut l’offrir à un autre joueur. Les boosters de la ligue tombent aux paliers de subs. La streameuse les ouvre
             depuis la file, un par un.
           </p>
-          <p className="text-xs text-faint">
+          <p className="text-[13px] text-faint">
             La chance vient des flocons : le multiplicateur monte de ×1 à ×2 avec le solde, et
             atteint ×2 au plafond de {CHANCE.floconsPourPlein.toLocaleString('fr-FR')} flocons. À
             ×2, les raretés hautes sont deux fois plus probables, pas davantage — une rare n’est
@@ -156,7 +156,7 @@ export default async function ReglesPage(){
             {LADDER.map((r) => (
               <li
                 key={r}
-                className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs"
+                className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-[13px]"
               >
                 <RarityChip rarity={r} />
                 <span className="min-w-0 flex-1 truncate text-ink">{RARITY_META[r].label}</span>
@@ -164,7 +164,7 @@ export default async function ReglesPage(){
               </li>
             ))}
           </ul>
-          <p className="text-xs text-faint">
+          <p className="text-[13px] text-faint">
             Ce qu’une carte peut faire bouger sur une game, au plus. Les flocons, la game
             supplémentaire et l’immunité ne touchent pas au score.
           </p>
@@ -233,7 +233,7 @@ export default async function ReglesPage(){
               <h3 className="font-display text-sm font-bold tracking-wide text-ink uppercase">
                 1. Le jeu — ce qui crée l’écart
               </h3>
-              <ul className="mt-1.5 list-inside list-disc space-y-0.5 text-xs">
+              <ul className="mt-1.5 list-inside list-disc space-y-0.5 text-[13px]">
                 <li>{ECONOMY.perKill} ❄ par kill</li>
                 <li>
                   {ECONOMY.perPlacement['1']} ❄ pour un Top 1, {ECONOMY.perPlacement['2']} ❄ pour
@@ -247,7 +247,7 @@ export default async function ReglesPage(){
               <h3 className="font-display text-sm font-bold tracking-wide text-ink uppercase">
                 2. Les subs Twitch — pour tout le monde
               </h3>
-              <ul className="mt-1.5 space-y-1 text-xs">
+              <ul className="mt-1.5 space-y-1 text-[13px]">
                 {SUB_MILESTONES.map((m) => (
                   <li key={m.every}>
                     <strong className="text-ink">Tous les {m.every} subs</strong> — {m.label} :{' '}
@@ -266,7 +266,7 @@ export default async function ReglesPage(){
         </Rule>
 
         <Rule title="Les évènements" lead="Aux paliers de subs, les règles changent une heure ou deux.">
-          <ul className="space-y-1 text-xs">
+          <ul className="space-y-1 text-[13px]">
             {EVENEMENTS_SUBS.map((e) => (
               <li key={`${e.every}-${e.kind}`}>
                 <strong className="text-ink">Tous les {e.every} subs</strong> — {e.label} :{' '}
@@ -274,7 +274,7 @@ export default async function ReglesPage(){
               </li>
             ))}
           </ul>
-          <p className="text-xs text-faint">
+          <p className="text-[13px] text-faint">
             Tout le monde en profite, et personne plus qu’un autre. Deux évènements du même genre ne
             se cumulent pas.
           </p>
@@ -303,7 +303,7 @@ export default async function ReglesPage(){
         <Rule title="Les raretés" lead="Six paliers, du banal au convoité.">
           <ul className="space-y-1">
             {LADDER.map((r) => (
-              <li key={r} className="flex items-center gap-2 text-xs">
+              <li key={r} className="flex items-center gap-2 text-[13px]">
                 <RarityChip rarity={r} />
                 <span className="text-ink">{RARITY_META[r].label}</span>
                 <span className="num ml-auto text-faint">

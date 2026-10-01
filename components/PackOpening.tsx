@@ -235,7 +235,7 @@ export function PackOpening({
         <div className="relative flex min-h-[400px] flex-col items-center justify-center gap-6 px-4 py-10 sm:min-h-[460px]">
           {phase === 'tirage' && gagnante ? (
             <div className="w-full">
-              <p className="mb-4 text-center font-display text-[13px] tracking-[0.2em] text-faint uppercase">
+              <p className="mb-4 text-center font-display text-[13px] tracking-[0.12em] text-faint uppercase">
                 {packOuvert.name}
                 {ouverture?.pseudo ? ` — pour ${ouverture.pseudo}` : ` — pour ${packOuvert.pourQui}`}
                 {ouverture && ouverture.joueurId && (
@@ -353,7 +353,7 @@ export function PackOpening({
 
                   {dus.length > 0 && (
                     <div className="w-full">
-                      <p className="mb-1.5 text-center text-[11px] tracking-[0.18em] text-faint uppercase">
+                      <p className="mb-1.5 text-center text-[13px] tracking-[0.12em] text-faint uppercase">
                         Dus — {dus.length}
                       </p>
                       <ul className="space-y-1.5">
@@ -518,19 +518,19 @@ export function PackOpening({
             <p className="mt-1 text-[16px] text-ink-2">{pack.tagline}</p>
             <dl className="mt-4 grid grid-cols-2 gap-x-3 gap-y-3 text-[16px]">
               <div>
-                <dt className="text-[12px] tracking-[0.16em] text-faint uppercase">Contenu</dt>
+                <dt className="text-[13px] tracking-[0.12em] text-faint uppercase">Contenu</dt>
                 <dd className="mt-0.5 font-display text-[22px] leading-none font-black text-ink">
                   1 carte
                 </dd>
               </div>
               <div>
-                <dt className="text-[12px] tracking-[0.16em] text-faint uppercase">Pour qui</dt>
+                <dt className="text-[13px] tracking-[0.12em] text-faint uppercase">Pour qui</dt>
                 <dd className="mt-0.5 font-display text-[20px] leading-none font-black text-ink">
                   {pack.pourQui}
                 </dd>
               </div>
               <div className="col-span-2">
-                <dt className="text-[12px] tracking-[0.16em] text-faint uppercase">Déclencheur</dt>
+                <dt className="text-[13px] tracking-[0.12em] text-faint uppercase">Déclencheur</dt>
                 <dd className="mt-1 text-[16px] text-ink">{pack.declencheur}</dd>
               </div>
             </dl>

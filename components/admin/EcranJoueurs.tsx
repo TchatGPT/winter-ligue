@@ -231,7 +231,7 @@ export function EcranJoueurs({
                         >
                           {c.code}
                         </button>
-                        <div className="text-[12px] text-muted">{shortDateTime(c.creeLe)}</div>
+                        <div className="text-[13px] text-muted">{shortDateTime(c.creeLe)}</div>
                       </td>
                       <td className="num text-right text-ice">❄ {flakes(c.montant)}</td>
                       <td className="num text-right text-muted">

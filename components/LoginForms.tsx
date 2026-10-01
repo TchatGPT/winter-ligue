@@ -95,7 +95,7 @@ export function LoginForms({
               </button>
             ))}
           </div>
-          <p className="mt-2 text-xs text-faint">Uniquement hors production, avec ALLOW_DEV_LOGIN=true.</p>
+          <p className="mt-2 text-[13px] text-faint">Uniquement hors production, avec ALLOW_DEV_LOGIN=true.</p>
         </div>
       )}
     </section>

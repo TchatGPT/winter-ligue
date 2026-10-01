@@ -73,14 +73,14 @@ export function SessionBadge({
               </span>
               {num(balance)}
             </span>
-            <span className="mt-1.5 block text-[11px] tracking-[0.2em] text-faint uppercase">
+            <span className="mt-1.5 block text-[13px] tracking-[0.12em] text-faint uppercase">
               Flocons
             </span>
           </div>
         )}
         <div className="space-y-1">
           {balance !== null && <CodeCadeau variante="lien" />}
-          <div className="truncate text-center text-[11px] tracking-[0.18em] text-white/80 uppercase">
+          <div className="truncate text-center text-[13px] tracking-[0.12em] text-white/90 uppercase">
             {role === 'admin' ? 'Modération' : pseudo}
           </div>
         </div>

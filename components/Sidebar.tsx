@@ -3,12 +3,10 @@ import { getSession, playerIdOf } from '@/lib/auth/session';
 import { getStore } from '@/lib/db/store';
 import { BottomNav, SidebarNav } from './NavTabs';
 import { SessionBadge } from './SessionBadge';
-import { SnowCap } from './SnowCap';
 import { IconSnowflake } from './icons';
 
 /** Largeur de la plaque, et la marge qui la décolle des bords de l'écran. */
 export const SIDEBAR_WIDTH = 270;
-export const SIDEBAR_MARGE = 16;
 
 /**
  * La colonne de navigation : une plaque de verre dépoli, la même que les
@@ -39,19 +37,10 @@ export async function Sidebar() {
     <>
       {/* ---------------- La plaque, à partir de lg ---------------- */}
       <aside
-        className="menu-verre glass glass-reflet fixed z-30 hidden lg:flex"
-        style={{ width: SIDEBAR_WIDTH, left: SIDEBAR_MARGE, top: SIDEBAR_MARGE, bottom: SIDEBAR_MARGE }}
+        className="menu-verre glass fixed z-30 hidden lg:flex"
+        style={{ width: SIDEBAR_WIDTH, left: 0, top: 0, bottom: 0 }}
         aria-label="Navigation principale"
       >
-        <SnowCap radius="var(--r-lg)" seed="menu" epaisseur={18} />
-        {/* Trois points qui scintillent sur la crête. */}
-        <span className="menu-scintille" aria-hidden="true">
-          <i />
-          <i />
-          <i />
-        </span>
-        {/* Le reflet qui glisse lentement sur toute la plaque. */}
-
         <div className="menu-colonne">
           {/* ---- L'entête ---- */}
           <Link href="/" className="menu-entete no-underline">
@@ -62,7 +51,7 @@ export async function Sidebar() {
               <span className="block font-display text-[22px] font-black tracking-tight">
                 <span className="givre-texte">WINTER</span> <em className="menu-titre-ligue">LIGUE</em>
               </span>
-              <span className="mt-1.5 block text-[10px] tracking-[0.2em] whitespace-nowrap text-white/80 uppercase">
+              <span className="mt-1.5 block text-[13px] tracking-[0.1em] whitespace-nowrap text-white/90 uppercase">
                 Call of Duty Warzone
               </span>
             </span>

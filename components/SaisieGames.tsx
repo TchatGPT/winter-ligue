@@ -148,7 +148,7 @@ function ChoixTop({ valeur, onChange, disabled }: { valeur: Placement; onChange:
             }`}
           >
             <span className="block font-display text-[15px] font-black tracking-wide uppercase">{t.libelle}</span>
-            <span className={`mt-0.5 block text-[12px] ${actif ? 'text-[#06284a]/80' : 'text-muted'}`}>
+            <span className={`mt-0.5 block text-[13px] ${actif ? 'text-[#06284a]/80' : 'text-muted'}`}>
               +{placementPoints(t.valeur)} pts
             </span>
           </button>
@@ -456,7 +456,7 @@ function FenetreIA({ joueurs, active, ferme }: { joueurs: Joueur[]; active: bool
                       <tr key={`${l.lu}-${i}`} style={{ opacity: 0.6 }}>
                         <td className="hidden text-sm text-muted sm:table-cell">{l.lu}</td>
                         <td colSpan={3} className="text-sm text-muted">
-                          <span className="mb-1 block text-[11px] text-faint sm:hidden">{l.lu}</span>
+                          <span className="mb-1 block text-[13px] text-faint sm:hidden">{l.lu}</span>
                           Streameuse — hors ligue, aucune game
                         </td>
                       </tr>
@@ -466,7 +466,7 @@ function FenetreIA({ joueurs, active, ferme }: { joueurs: Joueur[]; active: bool
                     <tr key={`${l.lu}-${i}`} style={l.joueurId ? undefined : { opacity: 0.5 }}>
                       <td className="hidden text-sm text-muted sm:table-cell">{l.lu}</td>
                       <td>
-                        <span className="mb-1 block text-[11px] text-faint sm:hidden">{l.lu}</span>
+                        <span className="mb-1 block text-[13px] text-faint sm:hidden">{l.lu}</span>
                         <select
                           className="field !py-1 text-sm"
                           style={{ maxWidth: 170 }}
@@ -481,7 +481,7 @@ function FenetreIA({ joueurs, active, ferme }: { joueurs: Joueur[]; active: bool
                             </option>
                           ))}
                         </select>
-                        {l.joueurId && <span className={`mt-0.5 block text-[11px] ${couleur}`}>{Math.round(l.confiance * 100)} %</span>}
+                        {l.joueurId && <span className={`mt-0.5 block text-[13px] ${couleur}`}>{Math.round(l.confiance * 100)} %</span>}
                       </td>
                       <td className="text-center">
                         <div className="inline-flex items-center gap-1.5">
@@ -508,7 +508,7 @@ function FenetreIA({ joueurs, active, ferme }: { joueurs: Joueur[]; active: bool
                         <span className="num font-display text-lg font-bold text-gold">{score === null ? '—' : `${score} pts`}</span>
                         {apercu?.carte && (
                           <span
-                            className={`block text-[11px] leading-tight ${apercu.carte.points < 0 ? 'text-danger' : apercu.carte.points > 0 ? 'text-aurora' : 'text-faint'}`}
+                            className={`block text-[13px] leading-tight ${apercu.carte.points < 0 ? 'text-danger' : apercu.carte.points > 0 ? 'text-aurora' : 'text-faint'}`}
                             title={apercu.carte.resultat}
                           >
                             🃏 {apercu.carte.nom} · {apercu.carte.resultat}
@@ -535,7 +535,7 @@ function FenetreIA({ joueurs, active, ferme }: { joueurs: Joueur[]; active: bool
           >
             {busy === 'validation' ? 'Enregistrement…' : '✓ Valider toute l’équipe'}
           </button>
-          <p className="mt-2 text-center text-[12px] text-faint">
+          <p className="mt-2 text-center text-[13px] text-faint">
             La carte active d’un joueur est comptée dans son score et sera consommée par cette game.
           </p>
         </div>

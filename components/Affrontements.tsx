@@ -871,13 +871,13 @@ export function Affrontements({
                           <em>a battu</em>
                           <b>{perdant?.pseudo ?? '?'}</b>
                         </p>
-                        <p className="mt-1 text-[12px] text-faint">{shortDateTime(b.resolueA ?? b.creeeA)}</p>
+                        <p className="mt-1 text-[13px] text-faint">{shortDateTime(b.resolueA ?? b.creeeA)}</p>
                       </div>
                       <div className="shrink-0 text-right">
                         <p className="font-display text-xl leading-none font-black text-ink tabular-nums">
                           {flakes(b.mise)} <span className="text-ice">❄</span>
                         </p>
-                        <p className="mt-0.5 text-[11px] font-bold tracking-[0.14em] text-faint uppercase">
+                        <p className="mt-0.5 text-[13px] font-bold tracking-[0.14em] text-faint uppercase">
                           mise
                         </p>
                       </div>

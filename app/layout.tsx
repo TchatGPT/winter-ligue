@@ -3,7 +3,7 @@ import { Barlow, Barlow_Condensed } from 'next/font/google';
 import { headers } from 'next/headers';
 import { Analytics } from '@vercel/analytics/next';
 import { FondHiver } from '@/components/FondHiver';
-import { Sidebar, SIDEBAR_MARGE, SIDEBAR_WIDTH } from '@/components/Sidebar';
+import { Sidebar, SIDEBAR_WIDTH } from '@/components/Sidebar';
 import { getSession } from '@/lib/auth/session';
 import './globals.css';
 
@@ -86,7 +86,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             prennent le relais. */}
         <div
           className="flex min-h-dvh flex-1 flex-col"
-          style={{ ['--sidebar' as string]: connecte ? `${SIDEBAR_WIDTH + SIDEBAR_MARGE * 2}px` : '0px' }}
+          style={{ ['--sidebar' as string]: connecte ? `${SIDEBAR_WIDTH}px` : '0px' }}
         >
           <div className="flex flex-1 flex-col lg:pl-[var(--sidebar)]">
             {/* La réserve du bas doit dégager la barre de navigation flottante,

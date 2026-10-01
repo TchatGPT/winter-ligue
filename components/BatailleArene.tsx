@@ -324,7 +324,7 @@ function Enjeu({ mise }: { mise: number }) {
       <p className="arene-pot">
         {flakes(mise * 2)} <span className="text-ice">❄</span>
       </p>
-      <p className="mt-1 font-display text-[12px] font-bold tracking-[0.2em] text-muted uppercase">
+      <p className="mt-1 font-display text-[13px] font-bold tracking-[0.12em] text-muted uppercase">
         Pour le gagnant · {flakes(mise)} ❄ misés chacun
       </p>
     </header>

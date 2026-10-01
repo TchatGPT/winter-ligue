@@ -86,7 +86,7 @@ export function Hero({
             >
               <CouronneGlace className="h-12 w-12 shrink-0 sm:h-14 sm:w-14" id="couronne-hero" />
               <span className="min-w-0 flex-1">
-                <span className="block text-[11px] tracking-[0.2em] text-faint uppercase">
+                <span className="block text-[13px] tracking-[0.12em] text-faint uppercase">
                   En tête du classement
                 </span>
                 <span className="givre-texte block truncate pb-0.5 font-display text-[30px] leading-tight font-black sm:text-[36px]">
@@ -97,7 +97,7 @@ export function Hero({
                 <span className="num block font-display text-[30px] leading-none font-black text-ink sm:text-[34px]">
                   {flakes(leader.score)}
                 </span>
-                <span className="block text-[11px] tracking-[0.18em] text-faint uppercase">
+                <span className="block text-[13px] tracking-[0.12em] text-faint uppercase">
                   points
                 </span>
               </span>
@@ -117,7 +117,7 @@ export function Hero({
                 <span className="num block font-display text-[32px] leading-none font-black text-ink sm:text-[38px]">
                   {flakes(Number(valeur))}
                 </span>
-                <span className="mt-1.5 block text-[11px] tracking-[0.2em] text-faint uppercase">
+                <span className="mt-1.5 block text-[13px] tracking-[0.12em] text-faint uppercase">
                   {label}
                 </span>
               </div>
