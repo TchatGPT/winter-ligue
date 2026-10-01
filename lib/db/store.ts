@@ -94,16 +94,25 @@ export interface FluxOverlay {
     openedAt: string;
     /** Pour qui le booster s'ouvre, s'il s'ouvre pour quelqu'un. */
     joueur: string | null;
-    /** Sur qui la carte est tombée : six pseudos au plus. */
+    /** Sur qui la carte est tombée, dans l'ordre du tirage : six pseudos au plus. */
     beneficiaires: string[];
     nbBeneficiaires: number;
   }[];
+  /**
+   * Les joueurs actifs, pour le second tirage d'un booster de la ligue — ceux
+   * qui défilent devant le repère. Lus seulement s'il y a une ouverture à
+   * jouer : le reste du temps, la liste est vide.
+   */
+  joueurs: { pseudo: string; slug: string; twitchLogin: string | null }[];
   duels: { id: string; hote: string; mise: number; creeA: string }[];
   evenements: { label: string; endsAt: string }[];
 }
 
 /** Ce qu'un overlay remonte au plus par lecture : il les joue l'un après l'autre. */
 const OVERLAY_LOT = 5;
+
+/** Ce qui défile au second tirage : soixante pseudos suffisent à une bande. */
+const JOUEURS_OVERLAY = 60;
 
 export interface Store {
   /** Lecture seule. Retourne une copie défensive : muter le résultat ne change rien. */
@@ -217,23 +226,30 @@ class JsonFileStore implements Store {
     const db = await this.load();
     const pseudo = (id: string) => db.players.find((p) => p.id === id)?.pseudo ?? 'Joueur inconnu';
     const maintenant = new Date().toISOString();
+    const ouvertures = db.ouvertures
+      .filter((o) => o.openedAt > depuis)
+      .sort((a, b) => a.openedAt.localeCompare(b.openedAt))
+      .slice(0, OVERLAY_LOT);
     return {
       maintenant,
       generation: db.config.overlayGeneration ?? 1,
       totalSubs: db.config.totalSubs,
-      ouvertures: db.ouvertures
-        .filter((o) => o.openedAt > depuis)
-        .sort((a, b) => a.openedAt.localeCompare(b.openedAt))
-        .slice(0, OVERLAY_LOT)
-        .map((o) => ({
-          id: o.id,
-          packId: o.packId,
-          cardId: o.cardId,
-          openedAt: o.openedAt,
-          joueur: o.joueurId ? pseudo(o.joueurId) : null,
-          beneficiaires: o.beneficiaires.slice(0, 6).map(pseudo),
-          nbBeneficiaires: o.beneficiaires.length,
-        })),
+      ouvertures: ouvertures.map((o) => ({
+        id: o.id,
+        packId: o.packId,
+        cardId: o.cardId,
+        openedAt: o.openedAt,
+        joueur: o.joueurId ? pseudo(o.joueurId) : null,
+        beneficiaires: o.beneficiaires.slice(0, 6).map(pseudo),
+        nbBeneficiaires: o.beneficiaires.length,
+      })),
+      joueurs: ouvertures.length
+        ? db.players
+            .filter((p) => p.active)
+            .sort((a, b) => a.pseudo.localeCompare(b.pseudo))
+            .slice(0, JOUEURS_OVERLAY)
+            .map((p) => ({ pseudo: p.pseudo, slug: p.slug, twitchLogin: p.twitchLogin }))
+        : [],
       duels: db.batailles
         .filter((b) => b.creeeA > depuis && b.statut === 'ATTENTE' && !b.adversaireId)
         .sort((a, b) => a.creeeA.localeCompare(b.creeeA))
@@ -309,6 +325,7 @@ interface DocOverlay {
     beneficiaires: string[];
     nb: number;
   }[];
+  joueurs: { pseudo: string; slug: string; twitch_login: string | null }[];
   duels: { id: string; mise: number; le: string; hote: string }[];
   evenements: { label: string; fin: string }[];
 }
@@ -527,15 +544,25 @@ class PostgresStore implements Store {
             select json_agg(x order by x.le) from (
               select o.id, o.booster_id, o.carte_id, o.ouvert_le as le,
                      (select j.pseudo from joueurs j where j.id = o.joueur_id) as joueur,
-                     coalesce((select json_agg(b.pseudo) from (
-                        select j.pseudo from joueurs j
-                         where j.id in (select jsonb_array_elements_text(o.beneficiaires))
+                     coalesce((select json_agg(b.pseudo order by b.n) from (
+                        select j.pseudo, e.n
+                          from jsonb_array_elements_text(o.beneficiaires) with ordinality e(id, n)
+                          join joueurs j on j.id = e.id
+                         order by e.n
                          limit 6) b), '[]'::json) as beneficiaires,
                      jsonb_array_length(o.beneficiaires) as nb
                 from ouvertures o
                where o.ouvert_le > ${depuis}::timestamptz
                order by o.ouvert_le
                limit ${OVERLAY_LOT}) x), '[]'::json),
+          'joueurs', case when exists (select 1 from ouvertures where ouvert_le > ${depuis}::timestamptz)
+            then coalesce((
+              select json_agg(x) from (
+                select pseudo, slug, twitch_login from joueurs
+                 where actif
+                 order by pseudo
+                 limit ${JOUEURS_OVERLAY}) x), '[]'::json)
+            else '[]'::json end,
           'duels', coalesce((
             select json_agg(x order by x.le) from (
               select d.id, d.mise, d.cree_le as le, j.pseudo as hote
@@ -562,6 +589,7 @@ class PostgresStore implements Store {
           beneficiaires: o.beneficiaires,
           nbBeneficiaires: o.nb,
         })),
+        joueurs: (doc.joueurs ?? []).map((j) => ({ pseudo: j.pseudo, slug: j.slug, twitchLogin: j.twitch_login })),
         duels: doc.duels.map((d) => ({ id: d.id, hote: d.hote, mise: d.mise, creeA: iso(d.le) })),
         evenements: doc.evenements.map((e) => ({ label: e.label, endsAt: iso(e.fin) })),
       };

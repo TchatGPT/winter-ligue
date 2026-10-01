@@ -1,4 +1,4 @@
-import { CARDS, GEMME_DU_PACK, getPack, packArt } from '@/lib/domain/catalog';
+import { CARDS, GEMME_DU_PACK, getPack, joueursTires, packArt } from '@/lib/domain/catalog';
 import { nextMilestone, prochainEvenement } from '@/lib/domain/rules';
 import type { PackId } from '@/lib/domain/types';
 import type { BoosterOverlay, DuelOverlay, SubsOverlay } from '@/lib/services/overlay';
@@ -22,6 +22,9 @@ export function boosterDemo(n: number): BoosterOverlay {
   const cartes = CARDS.filter((c) => c.packs.includes(packId));
   const carte = auHasard(cartes.length ? cartes : CARDS);
   const joueur = pack.portee === 'JOUEUR' ? auHasard(PSEUDOS) : null;
+  // Le second tirage, comme le serveur le ferait : des joueurs distincts.
+  const melange = [...PSEUDOS].sort(() => Math.random() - 0.5);
+  const gagnants = joueur ? [] : melange.slice(0, joueursTires(carte.cible));
   return {
     id: `demo-booster-${n}-${Date.now()}`,
     at: new Date().toISOString(),
@@ -34,7 +37,9 @@ export function boosterDemo(n: number): BoosterOverlay {
       weights: pack.weights,
     },
     pour: joueur ?? (packId === 'folie' ? 'toute la ligue' : 'la communauté'),
-    tombeSur: joueur ?? (carte.cible === 'TOUS' ? 'toute la ligue' : `${auHasard(PSEUDOS)} et ${auHasard(PSEUDOS)}`),
+    tombeSur:
+      joueur ?? (carte.cible === 'TOUS' ? 'toute la ligue' : gagnants.length ? gagnants.join(' et ') : melange[0]),
+    tirage: gagnants.length ? { gagnants, joueurs: PSEUDOS } : null,
     carte: {
       cardId: carte.id,
       name: carte.name,

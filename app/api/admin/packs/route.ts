@@ -5,7 +5,7 @@ import { ouvrirPackSchema } from '@/lib/api/schemas';
 import { getStore } from '@/lib/db/store';
 import type { PackId } from '@/lib/domain/types';
 import { LIMITS } from '@/lib/security/ratelimit';
-import { ouvrePack, ouvreProchainDu, vueOuverture } from '@/lib/services/packs';
+import { ouvrePack, ouvreProchainDu, tirageDe, vueOuverture } from '@/lib/services/packs';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -47,7 +47,9 @@ export async function POST(request: Request): Promise<NextResponse> {
             { packId: g.body.packId as PackId, joueurId: g.body.joueurId, idempotencyKey: g.body.idempotencyKey },
             par,
           );
-      return vueOuverture(db, ouverture);
+      // Le second tirage — sur qui la carte tombe, quand elle tombe sur des
+      // joueurs tirés au sort — part avec elle : l'écran le déroule après.
+      return { ...vueOuverture(db, ouverture), tirage: tirageDe(db, ouverture) };
     });
     return ok(vue);
   } catch (error) {

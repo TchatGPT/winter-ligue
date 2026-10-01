@@ -11,6 +11,7 @@ import { GAME_LIMITS, PLACEMENT_POINTS, RARITY_ORDER, RARITY_WEIGHTS_BASE } from
 import type {
   CardDefinition,
   CardEffect,
+  CibleCarte,
   MomentCarte,
   PackDefinition,
   PackId,
@@ -610,6 +611,19 @@ export const CARDS: readonly CardDefinition[] = [
 ];
 
 const CARD_INDEX = new Map(CARDS.map((c) => [c.id, c]));
+
+/**
+ * Combien de joueurs une carte d'un booster de la ligue fait tirer au sort :
+ * un (`HASARD`), deux (`DEUX`), ou aucun — tout le monde, la tête et la queue
+ * du classement ne se tirent pas. C'est le second tirage d'une ouverture,
+ * après celui de la carte : le serveur le fait dans la même transaction, et
+ * l'écran le déroule ensuite sur un rail de joueurs.
+ */
+export function joueursTires(cible: CibleCarte): number {
+  if (cible === 'HASARD') return 1;
+  if (cible === 'DEUX') return 2;
+  return 0;
+}
 
 /** Quand une carte se joue : à la prochaine game, sur une game jouée, ou tout de suite. */
 export function momentDe(effect: CardEffect): MomentCarte {

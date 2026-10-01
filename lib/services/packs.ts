@@ -27,7 +27,7 @@ import 'server-only';
 import { chaineDeLaLigue } from '@/lib/auth/twitch';
 import type { Database, OuverturePack, PackDu, Player } from '@/lib/db/entities';
 import { newId } from '@/lib/db/store';
-import { getCard, getPack, momentDe, PACKS } from '@/lib/domain/catalog';
+import { getCard, getPack, joueursTires, momentDe, PACKS } from '@/lib/domain/catalog';
 import { pick, tirePack } from '@/lib/domain/rng';
 import {
   chanceDe,
@@ -491,6 +491,37 @@ export function ouvrePack(db: Database, demande: DemandeOuverture, ouvertPar: st
   );
 
   return ouverture;
+}
+
+/* --------------------------- Le tirage des joueurs ----------------------- */
+
+/**
+ * Le second tirage d'une ouverture, tel que l'écran le rejoue : qui a été tiré,
+ * et parmi qui.
+ *
+ * Il n'existe que pour un booster de la ligue dont la carte tombe sur des
+ * joueurs tirés au sort (`joueursTires`) : tout le monde, la tête ou la queue
+ * du classement ne se tirent pas, et un booster ouvert pour un joueur va à ce
+ * joueur. Le serveur a tiré dans la transaction de l'ouverture
+ * (`beneficiairesDe`) ; l'écran ne fait que dérouler ce tirage, comme le rail
+ * déroule la carte.
+ */
+export interface TirageJoueurs {
+  /** Les joueurs tirés, dans l'ordre du tirage. */
+  gagnants: string[];
+  /** Ceux qui défilent devant le repère : les joueurs en lice. */
+  joueurs: string[];
+}
+
+export function tirageDe(db: Database, o: OuverturePack): TirageJoueurs | null {
+  if (o.joueurId !== null) return null;
+  const card = getCard(o.cardId);
+  if (!card || joueursTires(card.cible) === 0 || o.beneficiaires.length === 0) return null;
+  const pseudoDe = (id: string) => db.players.find((p) => p.id === id)?.pseudo ?? 'Joueur inconnu';
+  return {
+    gagnants: o.beneficiaires.map(pseudoDe),
+    joueurs: joueursEnLice(db).map((p) => p.pseudo),
+  };
 }
 
 /* ------------------------------- Les vues -------------------------------- */

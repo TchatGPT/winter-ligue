@@ -156,6 +156,37 @@ export function construitBande<T extends TuileRail>(
 }
 
 /**
+ * La bande du second tirage : des pseudos, le joueur tiré au rang
+ * `RANG_GAGNANT`.
+ *
+ * Même règle que pour les cartes : c'est de l'affichage, le serveur a tiré
+ * avant. Les leurres sont les autres joueurs en lice, à parts égales — le
+ * tirage d'un joueur est uniforme, la bande l'est aussi. Le joueur tiré ne sert
+ * jamais de leurre, sauf s'il est seul : le voir passer juste avant de s'arrêter
+ * sur lui ferait croire à un raté. Jamais deux fois le même pseudo de suite,
+ * quand on a le choix.
+ */
+export function construitBandeJoueurs(
+  joueurs: readonly string[],
+  gagnant: string,
+  hasard: () => number = Math.random,
+): string[] {
+  const autres = [...new Set(joueurs)].filter((j) => j !== gagnant);
+  const leurres = autres.length ? autres : [gagnant];
+  const bande: string[] = [];
+  for (let i = 0; i < TUILES; i += 1) {
+    if (i === RANG_GAGNANT) {
+      bande.push(gagnant);
+      continue;
+    }
+    const libres = leurres.filter((j) => j !== bande[i - 1]);
+    const source = libres.length ? libres : leurres;
+    bande.push(source[Math.floor(hasard() * source.length)]);
+  }
+  return bande;
+}
+
+/**
  * L'identifiant du jeton Winter Spin dans une bande.
  *
  * Ce n'est pas une carte : il n'est pas au catalogue, ne se collectionne pas, ne

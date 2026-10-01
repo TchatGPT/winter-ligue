@@ -3,8 +3,10 @@ import 'server-only';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { cleDerivee } from '@/lib/auth/session';
 import { getStore, type FluxOverlay } from '@/lib/db/store';
-import { GEMME_DU_PACK, getCard, getPack, packArt } from '@/lib/domain/catalog';
+import { chaineDeLaLigue } from '@/lib/auth/twitch';
+import { GEMME_DU_PACK, getCard, getPack, joueursTires, packArt } from '@/lib/domain/catalog';
 import { nextMilestone, prochainEvenement } from '@/lib/domain/rules';
+import { estLaStreameuse } from '@/lib/domain/streameuse';
 import type { PackId, Rarity } from '@/lib/domain/types';
 
 /**
@@ -73,6 +75,13 @@ export interface BoosterOverlay {
   /** Sur qui la carte est tombée, dit après la révélation. */
   tombeSur: string;
   carte: CarteOverlay;
+  /**
+   * Le second tirage, quand la carte tombe sur des joueurs tirés au sort : qui
+   * a été tiré, dans l'ordre, et les joueurs qui défilent devant le repère.
+   * Null sinon — tout le monde, la tête ou la queue du classement ne se
+   * tirent pas, et un booster ouvert pour un joueur va à ce joueur.
+   */
+  tirage: { gagnants: string[]; joueurs: string[] } | null;
 }
 
 export interface DuelOverlay {
@@ -112,12 +121,18 @@ export function vueCarte(cardId: string): CarteOverlay | null {
 
 export function vueBoosters(flux: FluxOverlay): BoosterOverlay[] {
   const vues: BoosterOverlay[] = [];
+  // Ceux qui défilent au second tirage : les joueurs actifs, sans la
+  // streameuse — elle n'est jamais tirée.
+  const chaine = chaineDeLaLigue();
+  const enLice = flux.joueurs.filter((j) => !estLaStreameuse(j, chaine)).map((j) => j.pseudo);
   for (const o of flux.ouvertures) {
     const pack = getPack(o.packId);
     const carte = vueCarte(o.cardId);
-    if (!pack || !carte) continue;
-    const touteLaLigue = !o.joueur && getCard(o.cardId)?.cible === 'TOUS';
+    const card = getCard(o.cardId);
+    if (!pack || !carte || !card) continue;
+    const touteLaLigue = !o.joueur && card.cible === 'TOUS';
     const autres = o.nbBeneficiaires - o.beneficiaires.length;
+    const tire = !o.joueur && joueursTires(card.cible) > 0 && o.beneficiaires.length > 0;
     vues.push({
       id: o.id,
       at: o.openedAt,
@@ -136,6 +151,7 @@ export function vueBoosters(flux: FluxOverlay): BoosterOverlay[] {
           ? `${o.beneficiaires.join(', ')} et ${autres} autre${autres > 1 ? 's' : ''}`
           : liste(o.beneficiaires),
       carte,
+      tirage: tire ? { gagnants: o.beneficiaires, joueurs: enLice.length ? enLice : o.beneficiaires } : null,
     });
   }
   return vues;
@@ -200,6 +216,7 @@ const FLUX_VIDE: FluxOverlay = {
   generation: 0,
   totalSubs: 0,
   ouvertures: [],
+  joueurs: [],
   duels: [],
   evenements: [],
 };

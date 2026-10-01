@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { BoosterPack3D } from '@/components/BoosterPack3D';
 import { CardFrame } from '@/components/CardFrame';
+import { RailJoueurs } from '@/components/RailJoueurs';
 import { RailPack, type CarteRailPack } from '@/components/RailPack';
 import { Scene } from '@/components/overlay/Scene';
 import { boosterDemo } from '@/components/overlay/demo';
@@ -17,16 +18,22 @@ import { COURBE_MESUREE } from '@/lib/spin/courbe';
  *
  * Le booster surgit en trois dimensions, avec pour qui il s'ouvre ; il se
  * charge, son haut se déchire et s'envole, la lumière sort de l'ouverture, il
- * éclate, et le rail du site se lance — le même, avec les mêmes cartes. Il s'arrête sur la carte tirée par le serveur, qui reste à l'écran
- * quelques secondes, grande, avec son nom, son effet et sur qui elle tombe.
+ * éclate, et le rail du site se lance — le même, avec les mêmes cartes. Il
+ * s'arrête sur la carte tirée par le serveur. Si elle tombe sur des joueurs
+ * tirés au sort, le second tirage suit : un rail de joueurs par joueur tiré.
+ * Puis la carte reste à l'écran quelques secondes, grande, avec son nom, son
+ * effet et sur qui elle tombe.
  *
  * Deux ouvertures rapprochées se jouent l'une après l'autre, jamais l'une
  * sur l'autre : la file est le seul état, et sa tête est ce qui se joue.
  */
 
-type Phase = 'surgit' | 'charge' | 'dechire' | 'eclate' | 'rail' | 'carte' | 'sort';
+type Phase = 'surgit' | 'charge' | 'dechire' | 'eclate' | 'rail' | 'joueurs' | 'carte' | 'sort';
 
-const DUREES: Record<Exclude<Phase, 'rail'>, number> = {
+/** Les phases qui finissent d'elles-mêmes : les deux rails disent quand ils ont fini. */
+type PhaseMinutee = Exclude<Phase, 'rail' | 'joueurs'>;
+
+const DUREES: Record<PhaseMinutee, number> = {
   surgit: 1400,
   charge: 1300,
   dechire: 1000,
@@ -35,7 +42,7 @@ const DUREES: Record<Exclude<Phase, 'rail'>, number> = {
   sort: 900,
 };
 
-const SUITE: Record<Exclude<Phase, 'rail'>, Phase | null> = {
+const SUITE: Record<PhaseMinutee, Phase | null> = {
   surgit: 'charge',
   charge: 'dechire',
   dechire: 'eclate',
@@ -111,7 +118,7 @@ function Ouverture({ booster, son, onFini }: { booster: BoosterOverlay; son: boo
 
   // Le temps de chaque phase ; le rail, lui, dit quand il a fini.
   useEffect(() => {
-    if (phase === 'rail') return;
+    if (phase === 'rail' || phase === 'joueurs') return;
     const t = setTimeout(() => {
       const suite = SUITE[phase];
       if (suite) setPhase(suite);
@@ -215,12 +222,55 @@ function Ouverture({ booster, son, onFini }: { booster: BoosterOverlay; son: boo
             }}
             duree={COURBE_MESUREE.duree}
             sourdine={!son}
-            onFini={() => setPhase('carte')}
+            onFini={() => setPhase(booster.tirage?.gagnants.length ? 'joueurs' : 'carte')}
           />
         </div>
       )}
 
+      {phase === 'joueurs' && booster.tirage && (
+        <TirageJoueurs booster={booster} tirage={booster.tirage} son={son} onFini={() => setPhase('carte')} />
+      )}
+
       {(phase === 'carte' || phase === 'sort') && <Revelation booster={booster} />}
+    </div>
+  );
+}
+
+/**
+ * Le second tirage : sur qui tombe la carte, quand elle tombe sur des joueurs
+ * tirés au sort. Un rail par joueur tiré, l'un après l'autre.
+ */
+function TirageJoueurs({
+  booster,
+  tirage,
+  son,
+  onFini,
+}: {
+  booster: BoosterOverlay;
+  tirage: NonNullable<BoosterOverlay['tirage']>;
+  son: boolean;
+  onFini: () => void;
+}) {
+  const [rang, setRang] = useState(0);
+  const meta = RARITY_META[booster.carte.rarity] ?? RARITY_META.C;
+  const n = tirage.gagnants.length;
+  return (
+    <div className="ov-rail rail-dans-scene">
+      <div className="ov-tirage-titre">
+        <span className="ov-tirage-carte" style={{ color: meta.color }}>
+          {booster.carte.name}
+        </span>
+        <span className="ov-tirage-question">
+          {n > 1 ? (rang === 0 ? 'Premier joueur' : 'Second joueur') : 'Sur qui tombe-t-elle ?'}
+        </span>
+      </div>
+      <RailJoueurs
+        key={rang}
+        joueurs={tirage.joueurs}
+        gagnant={tirage.gagnants[rang]}
+        sourdine={!son}
+        onFini={() => (rang + 1 < n ? setRang(rang + 1) : onFini())}
+      />
     </div>
   );
 }

@@ -1379,6 +1379,69 @@
     box-shadow: none;
   }
 
+  /*
+   * Le rail des joueurs : le second tirage d'un booster de la ligue, quand la
+   * carte tombe sur un joueur tiré au sort — voir `RailJoueurs`. Même moteur,
+   * même géométrie mesurée ; des plaques de nom au lieu de cartes, plus larges
+   * que hautes. Le joueur tiré s'allume de glace à l'arrêt, les autres
+   * s'éteignent, comme pour une carte.
+   */
+  .rail-dans-scene .rail-x.rail-joueurs {
+    --carte-l: clamp(150px, 26cqw, 360px);
+    --carte-h: calc(var(--carte-l) * 0.42);
+    --pas: calc(var(--carte-l) + 22px);
+    --rail-h: calc(var(--carte-h) + 56px);
+  }
+
+  .rail-joueurs .rail-carte {
+    aspect-ratio: auto;
+    height: var(--carte-h);
+  }
+
+  .rail-joueur {
+    display: flex;
+    align-items: center;
+    gap: calc(var(--carte-h) * 0.16);
+    padding-inline: calc(var(--carte-h) * 0.18);
+    border: 1px solid color-mix(in srgb, var(--ice) 32%, transparent);
+    border-radius: calc(var(--carte-h) * 0.24);
+    background: linear-gradient(160deg, color-mix(in srgb, var(--ice) 18%, var(--fond)) 0%, var(--fond) 100%);
+    box-shadow: inset 0 1px 0 color-mix(in srgb, var(--ink) 28%, transparent);
+  }
+
+  .rail-fenetre[data-arrete='true'] .rail-joueur.rail-carte-gagnante {
+    border-color: var(--ice);
+  }
+
+  .rail-joueur-pastille {
+    display: grid;
+    width: calc(var(--carte-h) * 0.58);
+    flex: none;
+    place-items: center;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: linear-gradient(150deg, var(--ice), color-mix(in srgb, var(--ice) 45%, var(--fond)));
+    box-shadow: inset 0 1px 0 color-mix(in srgb, var(--ink) 45%, transparent);
+    font-family: var(--font-display);
+    font-size: calc(var(--carte-h) * 0.3);
+    font-weight: 900;
+    color: var(--fond);
+  }
+
+  .rail-joueur-nom {
+    min-width: 0;
+    overflow: hidden;
+    font-family: var(--font-display);
+    font-size: calc(var(--carte-h) * 0.27);
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: 0.02em;
+    text-overflow: ellipsis;
+    text-transform: uppercase;
+    white-space: nowrap;
+    color: var(--ink);
+  }
+
   /* -- L'arrêt ------------------------------------------------------------- */
 
   .rail-fenetre[data-arrete='true'] .rail-carte:not(.rail-carte-gagnante) {
@@ -8315,6 +8378,41 @@
   }
   .ov-rail .rail-x {
     --carte-l: 420px;
+  }
+  /* Le rail des joueurs, au second tirage : des plaques de 380 px. */
+  .ov-rail .rail-x.rail-joueurs {
+    --carte-l: 380px;
+  }
+  /* Ce que le second tirage désigne : la carte tirée, et la question. */
+  .ov-tirage-titre {
+    display: flex;
+    width: fit-content;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    margin: 0 auto 26px;
+    padding: 16px 44px 18px;
+    border-radius: 24px;
+    background: linear-gradient(160deg, color-mix(in srgb, var(--ice) 14%, var(--fond)) 0%, var(--fond) 100%);
+    box-shadow:
+      inset 0 1px 0 color-mix(in srgb, var(--ink) 40%, transparent),
+      inset 0 0 0 1px color-mix(in srgb, var(--ink) 12%, transparent),
+      0 22px 30px -18px color-mix(in srgb, var(--fond) 90%, transparent);
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    animation: ov-apparait 0.35s ease-out both;
+  }
+  .ov-tirage-carte {
+    font-size: 26px;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+  }
+  .ov-tirage-question {
+    font-size: 36px;
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: 0.03em;
+    color: var(--ink);
   }
   @keyframes ov-apparait {
     from {

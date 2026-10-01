@@ -62,6 +62,10 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   chaque ouverture de booster et après chaque saisie de game.
 - La streameuse n'est jamais bénéficiaire d'une carte : les tirages passent par
   `joueursEnLice()`.
+- Une ouverture d'un booster de la ligue a **deux tirages** : la carte, puis — selon sa
+  cible (`joueursTires`) — le ou les joueurs sur qui elle tombe. Le serveur fait les deux
+  dans la même transaction ; l'écran et l'overlay ne font que les dérouler (`tirageDe`,
+  `RailJoueurs`). Jamais de joueur choisi côté client.
 - Les paliers de subs versent à **tous les joueurs actifs**. Ne jamais ajouter de
   récompense individuelle : c'est l'invariant anti-pay-to-win, et il est testé.
 - **Aucun avantage permanent ne se gagne en ouvrant des cartes.** Il n'y a ni familles,
