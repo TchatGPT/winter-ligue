@@ -41,7 +41,7 @@ export function SubsBanner({
   const plusProche = Math.min(...paliers.map((p) => p.remaining));
 
   return (
-    <section className="subs-route glass @container relative px-5 pt-10 pb-6 sm:px-8 sm:pt-11 4xl:pt-9 4xl:pb-5">
+    <section className="subs-route glass relative px-5 pt-10 pb-6 sm:px-8 sm:pt-11 4xl:pt-9 4xl:pb-5">
       <SnowCap radius="var(--r-lg)" seed="subs" />
       <div className="subs-route-lueur" aria-hidden="true" />
 
@@ -52,7 +52,7 @@ export function SubsBanner({
             <p className="font-display text-[13px] font-bold tracking-[0.12em] text-aurora uppercase">
               Subs de la saison
             </p>
-            <p className="num mt-1 font-display text-[64px] leading-none font-black text-ink sm:text-[76px] 4xl:text-[64px]">
+            <p className="num mt-1 font-display text-[64px] leading-none font-black text-ink sm:text-[76px] 4xl:text-[56px]">
               {flakes(totalSubs)}
             </p>
           </div>
@@ -62,7 +62,7 @@ export function SubsBanner({
         </div>
 
         {/* 3. Les paliers. */}
-        <div>
+        <div className="subs-route-paliers">
           <p className="text-[13px] tracking-[0.12em] text-faint uppercase">Ce que les subs font tomber</p>
           <ul className="subs-route-liste">
             {paliers.map((p) => {
@@ -80,6 +80,7 @@ export function SubsBanner({
                     <div className="palier-tete">
                       <span className="palier-nom">{p.label}</span>
                       <span className="palier-tous">tous les {p.every}</span>
+                      {p.accelere && <span className="palier-badge">Tempête de neige</span>}
                       <span className="palier-dans num">
                         dans <strong>{p.remaining}</strong>
                       </span>

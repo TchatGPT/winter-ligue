@@ -358,9 +358,7 @@ export function paliersDuCompteur(totalSubs: number, commuDepuis: number | null 
         packId: m.packId,
         label: m.label,
         every,
-        explication: accelere
-          ? `Tempête de neige en cours : il tombe tous les ${COMMU_ACCELERE_TOUS_LES} subs au lieu de ${m.every}.`
-          : null,
+        explication: null,
         accelere,
         ...position(every, accelere ? (commuDepuis ?? 0) : 0),
       };

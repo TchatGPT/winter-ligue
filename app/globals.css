@@ -5203,19 +5203,19 @@
   --teinte: var(--aurora);
   display: inline-flex;
   align-items: center;
-  gap: 9px;
-  padding: 6px 14px 6px 12px;
-  border: 1px solid color-mix(in srgb, var(--teinte) 38%, transparent);
+  gap: 11px;
+  padding: 9px 20px 9px 16px;
+  border: 1px solid color-mix(in srgb, var(--teinte) 55%, transparent);
   border-radius: 999px;
-  background: color-mix(in srgb, var(--fond) 58%, transparent);
+  background: color-mix(in srgb, var(--fond) 82%, transparent);
   box-shadow:
     inset 0 1px 0 color-mix(in srgb, var(--ink) 14%, transparent),
     0 10px 22px -12px color-mix(in srgb, var(--fond) 95%, transparent);
   backdrop-filter: blur(12px) saturate(1.2);
   -webkit-backdrop-filter: blur(12px) saturate(1.2);
-  font-size: 0.8125rem;
+  font-size: 0.9375rem;
   white-space: nowrap;
-  color: var(--ink-2);
+  color: var(--ink);
   pointer-events: auto;
 }
 .evt-flottant[data-genre='COMMU_ACCELERE'] {
@@ -5227,7 +5227,7 @@
 }
 .evt-flottant-nom {
   font-family: var(--font-display);
-  font-size: 0.875rem;
+  font-size: 1.0625rem;
   font-weight: 900;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -5239,10 +5239,10 @@
   color: var(--faint);
 }
 .evt-flottant-temps {
-  padding-left: 9px;
-  border-left: 1px solid color-mix(in srgb, var(--ink) 16%, transparent);
+  padding-left: 11px;
+  border-left: 1px solid color-mix(in srgb, var(--ink) 20%, transparent);
   font-family: var(--font-display);
-  font-size: 0.9375rem;
+  font-size: 1.125rem;
   font-weight: 900;
   color: var(--ink);
 }
@@ -5942,6 +5942,12 @@
  * (flocons en aurore, booster en glace, évènement en or), la jauge dit où en
  * est le cycle. Le plus proche est marqué.
  */
+/* Un conteneur de requête : déclaré ici et non par la classe `@container`, qui
+   vit dans la couche des utilitaires et l'emporterait sur le conteneur de taille
+   de l'accueil sur très grand écran, plus bas. */
+.subs-route {
+  container-type: inline-size;
+}
 .subs-route-lueur {
   position: absolute;
   inset: 0;
@@ -6076,6 +6082,71 @@
   text-transform: uppercase;
   white-space: nowrap;
   color: var(--muted);
+}
+/* Le Booster Commu accéléré : une étiquette, pas une ligne de plus. */
+.palier-badge {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ice) 18%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ice) 45%, transparent);
+  font-family: var(--font-display);
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--ice);
+}
+/*
+ * L'accueil sur très grand écran : il tient dans la fenêtre, pied de page
+ * compris, quel que soit ce qui tourne. La grille prend la hauteur de la
+ * fenêtre, moins la marge du haut (24 px), celle du bas (40 px) et ce qu'on voit
+ * du pied de page (123 px) ; le hero garde la sienne, et le bloc des subs prend
+ * le reste. Il devient un conteneur de taille : s'il manque de place, il range
+ * ses explications au lieu de faire défiler la page. Sous 46 rem de haut, la
+ * page défile, comme ailleurs.
+ */
+@media (min-width: 150rem) {
+  .grille-classement {
+    height: max(calc(100dvh - 187px), 46rem);
+  }
+  .grille-classement > :first-child {
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+  .grille-classement .subs-route {
+    min-height: 0;
+    container-type: size;
+    overflow: hidden;
+  }
+  .grille-classement .subs-route-paliers {
+    display: flex;
+    min-height: 0;
+    flex: 1;
+    flex-direction: column;
+  }
+  .grille-classement .subs-route-liste {
+    min-height: 0;
+    flex: 1;
+    grid-auto-rows: minmax(0, 1fr);
+    gap: 6px;
+  }
+  .grille-classement .palier {
+    min-height: 0;
+    padding-block: 5px;
+  }
+  .grille-classement .palier-corps {
+    gap: 4px;
+  }
+}
+@container (max-height: 27rem) {
+  .palier-explication {
+    display: none;
+  }
+}
+@container (max-height: 25rem) {
+  .subs-route-regle {
+    display: none;
+  }
 }
 /* Ce que fait un évènement, en une phrase, sous son nom. */
 .palier-explication {
