@@ -2,6 +2,7 @@
 
 import { type RefObject, useEffect, useLayoutEffect, useRef } from 'react';
 import {
+  appatPour,
   arreteTout,
   horlogeAudio,
   programme,
@@ -26,6 +27,7 @@ import {
   MARGE,
   PARCOURS,
 } from '@/lib/spin/courbe';
+import { RARITY_ORDER } from '@/lib/domain/rules';
 
 /**
  * Le moteur du rail : mesurer, animer, caler le son. Rien d'autre.
@@ -69,19 +71,6 @@ import {
  */
 const AMORCE = 140;
 
-/**
- * L'appât se joue-t-il à chaque ouverture, ou seulement sur une rareté haute ?
- *
- * **Toujours.** Le réserver aux hautes raretés donnerait au joueur une certitude
- * une seconde avant la fin de l'animation : il saurait avant de voir. C'est
- * échanger la surprise contre de l'anticipation, et l'anticipation, l'appât la
- * fabrique déjà tout seul en montant sur une carte dont personne ne sait rien.
- *
- * Passer à `false` rétablit le déclenchement conditionnel décrit dans le conseil
- * d'origine ; c'est la seule ligne à changer.
- */
-const APPAT_TOUJOURS = true;
-
 /** Le temps qu'on laisse sur la carte posée avant de passer à la révélation. */
 const REPOS = 1400;
 const REPOS_IMMEDIAT = 600;
@@ -107,11 +96,12 @@ const FLOU_JUSQU_A = 0.7;
 /**
  * À partir de quel rang une carte qui passe allume la colonne.
  *
- * Deux, donc rare et au-dessus. En dessous il ne se passe rien, et c'est le
- * but : un halo qui s'allume à chaque commune n'est plus un signal, c'est un
- * clignotant.
+ * La rare et au-dessus. En dessous il ne se passe rien, et c'est le but : un
+ * halo qui s'allume à chaque commune n'est plus un signal, c'est un clignotant.
+ * Le seuil se lit dans `RARITY_ORDER` : écrit en chiffre pour six raretés, il
+ * avait glissé jusqu'à l'ultra rare quand elles n'ont plus été que quatre.
  */
-const HALO_RANG = 2;
+const HALO_RANG = RARITY_ORDER.R;
 
 /**
  * Sous cet écart entre deux franchissements, le halo ne s'allume pas.
@@ -597,9 +587,10 @@ export function useSpinAnimation({
         // qu'on voit, et c'est lui qui fait des cinq arrêts cinq moments.
         for (let i = 0; i < courses.length; i += 1) programme('commun', arretDe(i));
 
-        // L'appât est calé sur sa fin : ses 5,747 s doivent résoudre pile au
-        // dernier claquement, sinon la montée retombe dans le vide.
-        if (APPAT_TOUJOURS) programmeFin('appat', arretDe(dernier));
+        // L'appât, sur une rare ou mieux seulement, est calé sur sa fin : ses
+        // 5,747 s doivent résoudre pile au dernier claquement, sinon la montée
+        // retombe dans le vide.
+        if (appatPour(rang)) programmeFin('appat', arretDe(dernier));
       }
 
       if (fete) programme(fete, arretDe(bandeMeilleure));

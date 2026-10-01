@@ -412,9 +412,11 @@ export function PackOpening({
             )}
           </div>
 
+          {/* Le tirage, d'un bord à l'autre de la scène : il déborde de la marge
+              de la grille, et le verre de la scène lui sert de fond. */}
           {surScene === 'tirage' && gagnante && (
-            <div className="col-start-1 row-start-1 w-full self-center">
-              <p className="mb-4 text-center font-display text-[13px] tracking-[0.12em] text-faint uppercase">
+            <div className="rail-dans-scene col-start-1 row-start-1 -mx-4 self-center">
+              <p className="mb-5 px-4 text-center font-display text-[15px] tracking-[0.12em] text-faint uppercase">
                 {packOuvert.name}
                 {ouverture?.pseudo ? ` — pour ${ouverture.pseudo}` : ` — pour ${packOuvert.pourQui}`}
                 {ouverture && ouverture.joueurId && (
@@ -438,7 +440,7 @@ export function PackOpening({
             <div className="col-start-1 row-start-1 w-full self-center">
               <div className="mb-5 flex flex-wrap items-center justify-center gap-3 text-center">
                 <span
-                  className="font-display text-xl font-black tracking-wide uppercase"
+                  className="font-display text-xl font-black tracking-wide uppercase xl:text-2xl"
                   style={{ color: rarityMeta(ouverture.rarity).color }}
                 >
                   {ouverture.rarity === 'L'
@@ -451,8 +453,8 @@ export function PackOpening({
                 </span>
               </div>
 
-              <div className="mx-auto flex max-w-3xl flex-col items-center gap-5 sm:flex-row sm:items-start sm:justify-center">
-                <div className="reveal relative w-[220px] shrink-0">
+              <div className="mx-auto flex max-w-3xl flex-col items-center gap-5 sm:flex-row sm:items-start sm:justify-center xl:max-w-4xl xl:gap-8 3xl:max-w-5xl">
+                <div className="reveal relative w-[220px] shrink-0 sm:w-[250px] xl:w-[280px] 3xl:w-[340px]">
                   {rarityMeta(ouverture.rarity).holo && (
                     <span
                       className="reveal-halo"
@@ -470,10 +472,10 @@ export function PackOpening({
                     nature={ouverture.nature}
                   />
                 </div>
-                <div className="max-w-sm text-center sm:text-left">
+                <div className="max-w-sm text-center sm:text-left xl:max-w-md">
                   <RarityChip rarity={ouverture.rarity} />
                   <h3
-                    className="mt-2 font-display text-[28px] leading-none font-black"
+                    className="mt-2 font-display text-[28px] leading-none font-black 3xl:text-[36px]"
                     style={{ color: rarityMeta(ouverture.rarity).color }}
                   >
                     {ouverture.nom}

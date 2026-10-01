@@ -927,10 +927,10 @@
 
   /* Ultra rare et légendaire : à peine plus, et cela suffit à faire tourner la
      tête — c'est la seule différence qu'on ait besoin de sentir. */
-  .rail-fenetre[data-passe='4']::before,
-  .rail-fenetre[data-passe='4']::after,
-  .rail-fenetre[data-passe='5']::before,
-  .rail-fenetre[data-passe='5']::after {
+  .rail-fenetre[data-passe='2']::before,
+  .rail-fenetre[data-passe='2']::after,
+  .rail-fenetre[data-passe='3']::before,
+  .rail-fenetre[data-passe='3']::after {
     opacity: 0.46;
   }
 
@@ -943,14 +943,14 @@
    * celle-ci reprend depuis `--gagne`, la couleur de la carte réellement
    * obtenue, lue sur la colonne et non sur la dernière tuile croisée.
    */
-  .rail-fenetre[data-arrete='true']:is([data-rang='2'], [data-rang='3'])::before,
-  .rail-fenetre[data-arrete='true']:is([data-rang='2'], [data-rang='3'])::after {
+  .rail-fenetre[data-arrete='true'][data-rang='1']::before,
+  .rail-fenetre[data-arrete='true'][data-rang='1']::after {
     --passe: var(--gagne);
     opacity: 0.34;
   }
 
-  .rail-fenetre[data-arrete='true']:is([data-rang='4'], [data-rang='5'])::before,
-  .rail-fenetre[data-arrete='true']:is([data-rang='4'], [data-rang='5'])::after {
+  .rail-fenetre[data-arrete='true']:is([data-rang='2'], [data-rang='3'])::before,
+  .rail-fenetre[data-arrete='true']:is([data-rang='2'], [data-rang='3'])::after {
     --passe: var(--gagne);
     opacity: 0.52;
   }
@@ -1184,9 +1184,8 @@
    * légendaire qui approche avant de pouvoir lire quoi que ce soit d'autre. Et
    * il ne touche qu'une poignée de cartes, ce qui est toute la différence.
    */
-  .rail-carte[data-rang='3'],
-  .rail-carte[data-rang='4'],
-  .rail-carte[data-rang='5'] {
+  .rail-carte[data-rang='2'],
+  .rail-carte[data-rang='3'] {
     filter: drop-shadow(0 0 10px color-mix(in srgb, var(--r) 60%, transparent));
   }
 
@@ -1341,6 +1340,45 @@
     background: linear-gradient(270deg, var(--rail-fond, #060d18) 14%, transparent);
   }
 
+  /*
+   * Le rail de la page des boosters : fondu dans la scène, d'un bord à l'autre.
+   *
+   * Ni bandeau sombre, ni bord, ni coins : les cartes défilent sur le verre de
+   * la scène elle-même, et s'effacent sur les côtés par un masque — un voile de
+   * couleur ne se fond que sur un fond uni, et la scène est du verre. Elles y
+   * sont deux fois plus grandes : leur largeur suit la scène (30 % de sa
+   * largeur), bornée par la hauteur de l'écran pour que le rail tienne dans la
+   * scène sans la faire grandir, et à 420 px. Même à pleine largeur, il reste
+   * moins de trois cartes de chaque côté du repère : la bande en a trois de
+   * marge, on ne voit jamais son bout.
+   *
+   * L'overlay du stream garde son bandeau : sur l'image d'un jeu, il en a besoin.
+   */
+  .rail-dans-scene .rail-scene-x {
+    max-width: none;
+  }
+
+  .rail-dans-scene .rail-x {
+    --carte-l: clamp(118px, min(30cqw, 34svh), 420px);
+    --pas: calc(var(--carte-l) + 28px);
+    --rail-h: calc(var(--carte-h) + 64px);
+    border: 0;
+    border-radius: 0;
+    background: none;
+    mask-image: linear-gradient(90deg, transparent, #000 14%, #000 86%, transparent);
+  }
+
+  .rail-dans-scene .rail-voile {
+    display: none;
+  }
+
+  /* À l'arrêt, pas d'éclat intérieur : sur toute la largeur de la scène, il
+     redessinait le rectangle du bandeau qu'on vient de retirer. La gagnante
+     brille de son propre néon, gradué par rareté. */
+  .rail-dans-scene .rail-x .rail-fenetre[data-arrete] {
+    box-shadow: none;
+  }
+
   /* -- L'arrêt ------------------------------------------------------------- */
 
   .rail-fenetre[data-arrete='true'] .rail-carte:not(.rail-carte-gagnante) {
@@ -1362,8 +1400,8 @@
 
   /* Les hautes raretés se posent plus lentement : un dixième de seconde de plus
      suffit à faire la différence entre « encore une » et « oh ». */
-  .rail-fenetre[data-arrete='true'][data-rang='4'] .rail-carte-gagnante,
-  .rail-fenetre[data-arrete='true'][data-rang='5'] .rail-carte-gagnante {
+  .rail-fenetre[data-arrete='true'][data-rang='2'] .rail-carte-gagnante,
+  .rail-fenetre[data-arrete='true'][data-rang='3'] .rail-carte-gagnante {
     animation-duration: 820ms;
   }
 
@@ -1383,8 +1421,8 @@
     filter: drop-shadow(0 0 16px color-mix(in srgb, var(--r) 70%, transparent));
   }
 
-  .rail-fenetre[data-arrete='true'] .rail-carte-gagnante[data-rang='4'],
-  .rail-fenetre[data-arrete='true'] .rail-carte-gagnante[data-rang='5'] {
+  .rail-fenetre[data-arrete='true'] .rail-carte-gagnante[data-rang='2'],
+  .rail-fenetre[data-arrete='true'] .rail-carte-gagnante[data-rang='3'] {
     filter:
       drop-shadow(0 0 10px var(--r))
       drop-shadow(0 0 34px color-mix(in srgb, var(--r) 80%, transparent));
@@ -1411,13 +1449,12 @@
     box-shadow: inset 0 0 36px -12px color-mix(in srgb, var(--gagne) 45%, transparent);
   }
 
-  .rail-fenetre[data-arrete='true'][data-rang='2'],
-  .rail-fenetre[data-arrete='true'][data-rang='3'] {
+  .rail-fenetre[data-arrete='true'][data-rang='1'] {
     box-shadow: inset 0 0 52px -10px color-mix(in srgb, var(--gagne) 60%, transparent);
   }
 
-  .rail-fenetre[data-arrete='true'][data-rang='4'],
-  .rail-fenetre[data-arrete='true'][data-rang='5'] {
+  .rail-fenetre[data-arrete='true'][data-rang='2'],
+  .rail-fenetre[data-arrete='true'][data-rang='3'] {
     box-shadow: inset 0 0 84px -12px color-mix(in srgb, var(--gagne) 85%, transparent);
   }
 

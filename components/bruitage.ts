@@ -27,8 +27,8 @@
  * | --------------------------- | ------- | --------- | ------------------------ |
  * | `box-opening-spin-tick`     | 0,132 s | **40 ms** | une dent du cliquet      |
  * | `common`                    | 0,784 s |           | le claquement d'un arrêt |
- * | `spin-bait`                 | 5,747 s |           | la montée du défilement  |
- * | `rare`                      | 5,642 s |           | la fête, rare et +       |
+ * | `spin-bait`                 | 5,747 s |           | la montée, rare et +     |
+ * | `rare`                      | 5,642 s |           | la fête, rare            |
  * | `ultra_rare`                | 3,762 s |           | la fête, ultra rare      |
  * | `legendary`                 | 3,762 s |           | la fête, légendaire      |
  *
@@ -37,6 +37,8 @@
  * quelle cadence les dents se recouvrent, et à soixante items par seconde elles
  * se recouvrent — d'où le grondement du départ.
  */
+
+import { RARITY_ORDER } from '@/lib/domain/rules';
 
 const SONS = {
   cran: '/sons/box-opening-spin-tick.mp3',
@@ -345,16 +347,35 @@ export function arreteTout(): void {
 }
 
 /**
- * Le son de fête qui convient à un palier, ou rien.
+ * Le son de fête qui convient à une rareté, ou rien.
  *
- * Quatre fichiers pour six raretés, et la coupure suit exactement leurs noms :
- * `legendary` pour la légendaire, `ultra_rare` pour l'ultra rare, `rare` pour la
- * rare et la super rare. En dessous, `null` — le claquement d'arrêt suffit.
- * Fêter une peu commune dévaluerait la fête pour les paliers qu'on attend.
+ * Une fanfare par rareté au-dessus de la commune, et la coupure suit leurs
+ * noms : `rare`, `ultra_rare`, `legendary`. Pour la commune, `null` — le
+ * claquement d'arrêt suffit.
+ *
+ * Les seuils se lisent dans `RARITY_ORDER`, jamais en chiffres : ils étaient
+ * écrits pour six raretés (rare à 2, ultra rare à 4, légendaire à 5), et depuis
+ * qu'il n'en reste que quatre, une rare se posait sans un bruit tandis que
+ * l'ultra rare et la légendaire jouaient toutes deux la fanfare de la rare.
  */
 export function sonDeFete(rang: number): NomSon | null {
-  if (rang >= 5) return 'legendaire';
-  if (rang >= 4) return 'ultra';
-  if (rang >= 2) return 'rare';
+  if (rang >= RARITY_ORDER.L) return 'legendaire';
+  if (rang >= RARITY_ORDER.UR) return 'ultra';
+  if (rang >= RARITY_ORDER.R) return 'rare';
   return null;
+}
+
+/**
+ * L'appât — la montée de cinq secondes qui résout à l'arrêt — se joue-t-il
+ * pour cette rareté ? Pour une rare ou mieux seulement.
+ *
+ * Il se jouait à chaque ouverture, pour ne rien laisser deviner avant l'arrêt.
+ * Mais cette montée se lit comme le son d'une rareté, et une commune en avait
+ * donc un : on l'entendait à chaque booster, sur des cartes qui n'avaient rien
+ * à fêter. Elle annonce désormais une rare ou mieux, dans les dernières
+ * secondes de la course, et la fanfare de la rareté la résout. Une commune
+ * s'ouvre au cliquet et au claquement d'arrêt, sans plus.
+ */
+export function appatPour(rang: number): boolean {
+  return rang >= RARITY_ORDER.R;
 }
