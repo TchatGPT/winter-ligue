@@ -8280,21 +8280,24 @@
     }
   }
 
-  /* Le rail du site, au milieu de l'écran. */
+  /*
+   * Le rail du site, en travers de tout l'écran, comme sur la page des
+   * boosters (`.rail-dans-scene`) : ni plaque ni bandeau, les cartes défilent
+   * sur l'image du jeu et s'effacent sur les côtés. La carte a une largeur
+   * fixe, en pixels de la scène : la scène se met tout entière à l'échelle de
+   * la source OBS, et une taille tirée de la fenêtre (`svh`) la fausserait. À
+   * 420 px sur 1 920, il reste un peu plus de deux cartes de chaque côté du
+   * repère — la bande en a trois de marge.
+   */
   .ov-rail {
     position: absolute;
-    top: 330px;
-    left: 50%;
-    width: 1100px;
-    margin-left: -550px;
-    padding: 26px 0;
-    border-radius: 30px;
-    background: linear-gradient(160deg, rgb(24 58 96 / 0.78) 0%, rgb(7 24 48 / 0.86) 100%);
-    box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / 0.35),
-      inset 0 0 0 1px rgb(255 255 255 / 0.1),
-      0 24px 34px -20px rgb(0 8 24 / 0.9);
+    top: 290px;
+    right: 0;
+    left: 0;
     animation: ov-apparait 0.35s ease-out both;
+  }
+  .ov-rail .rail-x {
+    --carte-l: 420px;
   }
   @keyframes ov-apparait {
     from {
@@ -8313,10 +8316,12 @@
     gap: 56px;
     transform: translateX(-50%);
   }
+  /* Un peu plus grande que dans le rail (420 px) : la carte gagnée grandit en
+     se révélant, elle ne rapetisse pas. */
   .ov-carte {
     position: relative;
     z-index: 1;
-    width: 390px;
+    width: 440px;
     flex: none;
     perspective: 1400px;
     animation: ov-carte-entre 0.9s cubic-bezier(0.2, 1.25, 0.4, 1) both;
@@ -8337,7 +8342,7 @@
   .ov-anneau {
     position: absolute;
     top: 50%;
-    left: 195px;
+    left: 220px;
     width: 300px;
     height: 300px;
     margin: -150px;

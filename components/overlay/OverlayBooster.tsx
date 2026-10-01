@@ -200,7 +200,7 @@ function Ouverture({ booster, son, onFini }: { booster: BoosterOverlay; son: boo
       )}
 
       {phase === 'rail' && (
-        <div className="ov-rail">
+        <div className="ov-rail rail-dans-scene">
           <RailPack
             pool={pool}
             poids={booster.pack.weights}
