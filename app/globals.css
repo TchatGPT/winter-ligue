@@ -7009,11 +7009,15 @@
      sauter d'un palier à l'autre, et le plancher de 104 px les fait passer au
      défilement sur un téléphone plutôt que de les y rendre illisibles. Les
      bornes se lisent en hauteur : de 194 à 494 px, celle des sachets depuis
-     qu'ils existent (planches au rapport 1:1,865). */
+     qu'ils existent (planches au rapport 1:1,865).
+
+     L'écart grandit avec le cadre, lui aussi : 14 px sur un téléphone, jusqu'à
+     56 sur un grand écran. Fixé à 12 px, il collait les sachets les uns aux
+     autres dès que la place ne manquait plus. */
   .rangee-piste {
-    --ecart: 12px;
+    --ecart: clamp(14px, 3.2cqw, 56px);
     --marge: 16px;
-    --l-sachet: clamp(104px, calc((100cqw - 78px) / 4), 265px);
+    --l-sachet: clamp(104px, calc((100cqw - 3 * var(--ecart) - 2 * var(--marge) - 10px) / 4), 265px);
     gap: var(--ecart);
     padding: 44px var(--marge) 48px;
   }
