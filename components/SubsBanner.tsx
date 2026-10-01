@@ -1,31 +1,33 @@
-import Link from 'next/link';
 import { Countdown } from '@/components/Countdown';
+import { EmblemePalier, type GlyphePalier } from '@/components/EmblemePalier';
 import { SnowCap } from '@/components/SnowCap';
-import { IconImpact, IconPack, IconSnowflake } from '@/components/icons';
 import { flakes } from '@/components/ui';
 import type { EvenementActif } from '@/lib/db/entities';
-import { EVENEMENTS_SUBS, prochainsPaliers, type PalierAVenir } from '@/lib/domain/rules';
+import { GEMME_DU_PACK, RARITY_META } from '@/lib/domain/catalog';
+import { departAccelere, EVENEMENTS_SUBS, paliersDuCompteur, type PalierAVenir } from '@/lib/domain/rules';
 
 /**
- * Le compteur de subs de la saison, et la route des paliers.
+ * Le compteur de subs de la saison, et ce que les subs font tomber.
  *
  *  1. le nombre, en très grand — c'est lui qu'on vient voir ;
  *  2. ce qui tourne maintenant, s'il y a quelque chose, avec son compte à
  *     rebours ;
- *  3. la route : les quatre prochains paliers, tous genres confondus — des
- *     flocons, un booster, un évènement —, chacun avec sa jauge et ce qu'il
- *     reste à faire. Le genre se lit à la pastille avant le nom.
+ *  3. les paliers, à la manière des taux de rareté : les boosters de la ligue
+ *     et les évènements, chacun sa médaille, sa teinte, sa jauge creusée et ce
+ *     qu'il reste à faire. Le plus proche est marqué. Pendant une Tempête, le
+ *     Booster Commu suit son palier accéléré.
  *
  * Tout tombe pour **tous** les joueurs actifs ; le classement, lui, ne se
  * gagne qu'en jouant. C'est l'invariant anti-pay-to-win, et il est écrit là où
  * on regarde le nombre.
  */
 
-const GENRES: Record<PalierAVenir['genre'], { nom: string; Icone: typeof IconSnowflake }> = {
-  FLOCONS: { nom: 'Flocons', Icone: IconSnowflake },
-  PACK: { nom: 'Booster', Icone: IconPack },
-  EVENEMENT: { nom: 'Évènement', Icone: IconImpact },
-};
+/** La médaille et la teinte d'un palier : celles du booster, ou de l'évènement. */
+function blason(p: PalierAVenir): { glyphe: GlyphePalier; teinte: string } {
+  if (p.genre === 'PACK' && p.packId) return { glyphe: 'booster', teinte: RARITY_META[GEMME_DU_PACK[p.packId]].color };
+  if (p.kind === 'COMMU_ACCELERE') return { glyphe: 'tempete', teinte: 'var(--ice)' };
+  return { glyphe: 'flocons', teinte: 'var(--aurora)' };
+}
 
 export function SubsBanner({
   totalSubs,
@@ -35,21 +37,23 @@ export function SubsBanner({
   /** Les évènements en cours, du plus récent au plus ancien. */
   evenements?: EvenementActif[];
 }) {
-  const route = prochainsPaliers(totalSubs);
+  const tempete = evenements.find((e) => e.kind === 'COMMU_ACCELERE');
+  const paliers = paliersDuCompteur(totalSubs, tempete ? departAccelere(tempete.declencheA) : null);
+  const plusProche = Math.min(...paliers.map((p) => p.remaining));
 
   return (
-    <section className="subs-route glass @container relative px-5 py-6 sm:px-8 sm:py-6">
+    <section className="subs-route glass @container relative px-5 pt-10 pb-6 sm:px-8 sm:pt-11">
       <SnowCap radius="var(--r-lg)" seed="subs" />
       <div className="subs-route-lueur" aria-hidden="true" />
 
-      <div className="relative flex h-full flex-col gap-4">
+      <div className="relative flex h-full flex-col gap-5">
         {/* 1. Le nombre. */}
         <div className="subs-route-tete">
           <div>
             <p className="font-display text-[13px] font-bold tracking-[0.12em] text-aurora uppercase">
               Subs de la saison
             </p>
-            <p className="num font-display text-[64px] leading-none font-black text-ink sm:text-[76px]">
+            <p className="num mt-1 font-display text-[64px] leading-none font-black text-ink sm:text-[76px]">
               {flakes(totalSubs)}
             </p>
           </div>
@@ -85,43 +89,40 @@ export function SubsBanner({
           </ul>
         )}
 
-        {/* 3. La route des paliers. */}
+        {/* 3. Les paliers. */}
         <div>
-          <div className="flex items-baseline justify-between gap-3">
-            <p className="text-[13px] tracking-[0.12em] text-faint uppercase">Les prochains paliers</p>
-            <Link href="/regles" className="text-[13px] text-ice no-underline hover:underline">
-              Tous les paliers →
-            </Link>
-          </div>
-          <ol className="subs-route-liste">
-            {route.map((p, i) => {
-              const { nom, Icone } = GENRES[p.genre];
+          <p className="text-[13px] tracking-[0.12em] text-faint uppercase">Ce que les subs font tomber</p>
+          <ul className="subs-route-liste">
+            {paliers.map((p) => {
+              const { glyphe, teinte } = blason(p);
+              const cle = `${p.genre}-${p.packId ?? p.kind}`;
               return (
-                <li key={`${p.genre}-${p.every}`} className="palier" data-genre={p.genre} data-premier={i === 0 ? '' : undefined}>
-                  <span className="palier-pastille" aria-hidden="true">
-                    <Icone className="h-[18px] w-[18px]" />
-                  </span>
-                  <span className="min-w-0">
-                    <span className="palier-nom">
-                      {p.label}
-                      <span className="palier-genre">
-                        {nom} · tous les {p.every}
+                <li
+                  key={cle}
+                  className="palier"
+                  style={{ ['--teinte' as string]: teinte }}
+                  data-premier={p.remaining === plusProche ? '' : undefined}
+                >
+                  <EmblemePalier glyphe={glyphe} teinte={teinte} id={cle} className="palier-embleme" />
+                  <div className="palier-corps">
+                    <div className="palier-tete">
+                      <span className="palier-nom">{p.label}</span>
+                      <span className="palier-tous">tous les {p.every}</span>
+                      <span className="palier-dans num">
+                        dans <strong>{p.remaining}</strong>
                       </span>
-                    </span>
-                    <span className="palier-resume">{p.resume}</span>
-                  </span>
-                  <span className="palier-reste">
-                    <span className="palier-jauge" aria-hidden="true">
-                      <i style={{ width: `${Math.max(4, Math.round(p.progress * 100))}%` }} />
-                    </span>
-                    <span className="num">
-                      dans <strong>{p.remaining}</strong> sub{p.remaining > 1 ? 's' : ''}
-                    </span>
-                  </span>
+                    </div>
+                    <div className="palier-pied">
+                      <span className="palier-jauge" aria-hidden="true">
+                        <span style={{ width: `${Math.round(p.progress * 100)}%` }} />
+                      </span>
+                      <span className="palier-resume">{p.resume}</span>
+                    </div>
+                  </div>
                 </li>
               );
             })}
-          </ol>
+          </ul>
         </div>
       </div>
     </section>

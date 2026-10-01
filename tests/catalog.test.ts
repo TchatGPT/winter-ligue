@@ -19,7 +19,9 @@ import {
   multiplicateurChance,
   nextMilestone,
   packsPersoAcquis,
-  prochainsPaliers,
+  paliersDuCompteur,
+  departAccelere,
+  COMMU_ACCELERE_TOUS_LES,
   PACKS_REGLES,
   poidsAvecChance,
   rarityPercent,
@@ -322,20 +324,34 @@ describe('le jeton Winter Spin', () => {
   });
 });
 
-describe('la route des paliers', () => {
-  it('montre les prochains paliers de tous genres, du plus proche au plus lointain', () => {
-    const route = prochainsPaliers(36);
-    expect(route.map((p) => [p.label, p.remaining])).toEqual([
-      ['Bourrasque', 4],
-      ['Booster Commu', 14],
-      ['Rafale', 14],
-      ['Avalanche', 64],
+describe('les paliers du compteur de subs', () => {
+  it('montre les boosters de la ligue et les évènements, du plus petit palier au plus grand', () => {
+    expect(paliersDuCompteur(36).map((p) => [p.label, p.every, p.remaining])).toEqual([
+      ['Booster Commu', 50, 14],
+      ['Avalanche', 100, 64],
+      ['Booster Folie', 200, 164],
+      ['Tempête', 500, 464],
     ]);
-    expect(route[3].genre).toBe('EVENEMENT');
   });
 
-  it('à égalité, met le palier le plus rare en tête', () => {
-    expect(prochainsPaliers(0, 3).map((p) => p.label)).toEqual(['Bourrasque', 'Rafale', 'Booster Commu']);
-    expect(prochainsPaliers(199, 2).map((p) => p.every)).toEqual([200, 200]);
+  it('pendant une Tempête, fait tomber le Booster Commu tous les 20 subs, comptés depuis elle', () => {
+    const commu = paliersDuCompteur(507, 500).find((p) => p.packId === 'commu')!;
+    expect(commu).toMatchObject({ every: COMMU_ACCELERE_TOUS_LES, remaining: 13, accelere: true });
+    expect(departAccelere(505)).toBe(500);
+  });
+});
+
+describe('la Tempête et le Booster Commu', () => {
+  const commus = (from: number, to: number, depuis: number | null) =>
+    crossedMilestones(from, to, depuis).filter((m) => m.packId === 'commu').length;
+
+  it('compte tous les 50 sans Tempête, tous les 20 pendant', () => {
+    expect(commus(500, 600, null)).toBe(2);
+    expect(commus(500, 600, 500)).toBe(5);
+  });
+
+  it('garde le palier de 50 jusqu’à la Tempête, et passe à 20 après, dans la même saisie', () => {
+    // 495 → 545 : le 500 tombe par la règle habituelle, puis 520 et 540.
+    expect(commus(495, 545, 500)).toBe(3);
   });
 });

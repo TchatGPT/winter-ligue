@@ -22,7 +22,7 @@ import { cache } from 'react';
 import { synchroniseCatalogue } from './lecture';
 import { chargeBase, empreintes, enregistreBase, lisJournal, lisSubsTwitch, SCHEMA_SQL, TABLES } from './tables';
 import { dirname, join } from 'node:path';
-import { DEFAULT_MAX_GAMES_PER_PLAYER, ECONOMY, SEASON } from '@/lib/domain/rules';
+import { DEFAULT_MAX_GAMES_PER_PLAYER, ECONOMY, EVENEMENT_KINDS, SEASON } from '@/lib/domain/rules';
 import type { AuditEntry, Database, PlayerRole, SubTwitch } from './entities';
 import type { Rarity } from '@/lib/domain/types';
 
@@ -679,9 +679,7 @@ function migrate(db: Partial<Database>): Database {
       const { boosterIds: _ids, ...bataille } = ancien;
       return { ...bataille, manches: bataille.manches ?? 1, echanges: bataille.echanges ?? [] };
     }),
-    evenements: (db.evenements ?? []).filter(
-      (e) => e.kind === 'FLOCONS_DOUBLES' || e.kind === 'CARTES_RENFORCEES',
-    ),
+    evenements: (db.evenements ?? []).filter((e) => EVENEMENT_KINDS.includes(e.kind)),
     codesCadeaux: db.codesCadeaux ?? [],
     subsTwitch: db.subsTwitch ?? [],
   };

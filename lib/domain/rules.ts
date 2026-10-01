@@ -190,9 +190,15 @@ export function packsPersoAcquis(offerts: number, niveau3 = 0): number {
  * Ce qu'un évènement change, le temps qu'il dure.
  *
  *  - `FLOCONS_DOUBLES`   — les gains de game doublés ;
- *  - `CARTES_RENFORCEES` — les points des cartes majorés de moitié.
+ *  - `CARTES_RENFORCEES` — les points des cartes majorés de moitié (plus aucun
+ *    palier ne le déclenche, mais d'anciens évènements le portent) ;
+ *  - `COMMU_ACCELERE`    — le Booster Commu tombe tous les
+ *    `COMMU_ACCELERE_TOUS_LES` subs au lieu de son palier habituel.
  */
-export type EvenementKind = 'FLOCONS_DOUBLES' | 'CARTES_RENFORCEES';
+export type EvenementKind = 'FLOCONS_DOUBLES' | 'CARTES_RENFORCEES' | 'COMMU_ACCELERE';
+
+/** Les genres d'évènement que le site sait lire, pour écarter le reste au chargement. */
+export const EVENEMENT_KINDS: readonly EvenementKind[] = ['FLOCONS_DOUBLES', 'CARTES_RENFORCEES', 'COMMU_ACCELERE'];
 
 export interface EvenementSubs {
   /** Tous les N subs cumulés. */
@@ -206,13 +212,16 @@ export interface EvenementSubs {
   resume: string;
 }
 
+/** Pendant une Tempête, le Booster Commu tombe tous les N subs. */
+export const COMMU_ACCELERE_TOUS_LES = 20;
+
 /**
  * Les paliers qui déclenchent un évènement, et ce qu'ils déclenchent.
  *
  * Ils s'ajoutent aux paliers de flocons et de packs, ils ne les remplacent
- * pas : un palier de flocons donne quelque chose à garder, un évènement donne
- * quelque chose à **faire maintenant**. C'est pour ça que les fenêtres sont
- * courtes — une ou deux heures, le temps d'un live.
+ * pas : un palier de flocons donne quelque chose à garder, un évènement change
+ * les règles le temps de sa fenêtre — une heure pour l'Avalanche, quatre jours
+ * pour la Tempête, qui fait tomber le Booster Commu bien plus souvent.
  *
  * Tous s'appliquent à tout le monde. Ils ne versent rien à personne, ils
  * changent les règles pendant leur fenêtre.
@@ -227,20 +236,12 @@ export const EVENEMENTS_SUBS: readonly EvenementSubs[] = [
     resume: 'Flocons ×2',
   },
   {
-    every: 200,
-    kind: 'CARTES_RENFORCEES',
-    dureeMinutes: 60,
-    label: 'Blizzard',
-    description: 'Les cartes de booster valent une fois et demie leurs points pendant une heure.',
-    resume: 'Cartes ×1,5',
-  },
-  {
     every: 500,
-    kind: 'FLOCONS_DOUBLES',
-    dureeMinutes: 120,
+    kind: 'COMMU_ACCELERE',
+    dureeMinutes: 4 * 24 * 60,
     label: 'Tempête',
-    description: 'Les flocons de chaque game sont doublés pendant deux heures.',
-    resume: 'Flocons ×2',
+    description: `Le Booster Commu tombe tous les ${COMMU_ACCELERE_TOUS_LES} subs au lieu de 50, pendant quatre jours.`,
+    resume: `Commu tous les ${COMMU_ACCELERE_TOUS_LES} subs`,
   },
 ];
 
@@ -248,7 +249,18 @@ export const EVENEMENTS_SUBS: readonly EvenementSubs[] = [
 export const FACTEURS_EVENEMENTS: Record<EvenementKind, number> = {
   FLOCONS_DOUBLES: 2,
   CARTES_RENFORCEES: 1.5,
+  // Il ne multiplie rien : il change le palier du Booster Commu.
+  COMMU_ACCELERE: 1,
 };
+
+/** Une durée d'évènement, lisible : « 1 h », « 2 h », « 4 jours ». */
+export function dureeLisible(minutes: number): string {
+  if (minutes >= 24 * 60) {
+    const jours = Math.round(minutes / (24 * 60));
+    return `${jours} jour${jours > 1 ? 's' : ''}`;
+  }
+  return `${Math.round(minutes / 60)} h`;
+}
 
 /** Les évènements dont un palier a été franchi entre deux totaux de subs. */
 export function evenementsDeclenches(from: number, to: number): EvenementSubs[] {
@@ -297,46 +309,71 @@ export function prochainEvenement(totalSubs: number): {
   return meilleur;
 }
 
-/** Un palier à venir, quel que soit son genre : flocons, booster ou évènement. */
+/**
+ * D'où compte le Booster Commu accéléré : le palier de Tempête qui a ouvert la
+ * fenêtre, retrouvé d'après le total qui l'a déclenchée.
+ */
+export function departAccelere(declencheA: number): number {
+  const tempete = EVENEMENTS_SUBS.find((e) => e.kind === 'COMMU_ACCELERE')!;
+  return Math.floor(declencheA / tempete.every) * tempete.every;
+}
+
+/** Un palier du compteur de subs : un booster ou un évènement. */
 export interface PalierAVenir {
-  genre: 'FLOCONS' | 'PACK' | 'EVENEMENT';
+  genre: 'PACK' | 'EVENEMENT';
+  /** Le booster, pour un palier de booster. */
+  packId?: PackId;
+  /** Le genre d'évènement, pour un palier d'évènement. */
+  kind?: EvenementKind;
   label: string;
   every: number;
-  /** Ce qu'il donne, en quelques mots : « +40 ❄ pour chacun », « Flocons ×2 · 1 h ». */
+  /** Ce qu'il donne, en quelques mots : « Flocons ×2 · 1 h ». */
   resume: string;
   /** Combien de subs il manque. */
   remaining: number;
   /** Où l'on en est du cycle, de 0 à 1. */
   progress: number;
+  /** Le Booster Commu tombe plus souvent : une Tempête court. */
+  accelere?: boolean;
 }
 
 /**
- * Les prochains paliers de la saison, tous genres confondus, du plus proche au
- * plus lointain — à égalité, le plus rare d'abord. C'est la route que montre
- * le compteur de subs.
+ * Les paliers que montre le compteur de subs : les boosters de la ligue et les
+ * évènements, du plus petit palier au plus grand. Pendant une Tempête
+ * (`commuDepuis`, le total d'où elle compte), le Booster Commu suit son palier
+ * accéléré.
  */
-export function prochainsPaliers(totalSubs: number, combien = 4): PalierAVenir[] {
-  const position = (every: number) => ({
-    remaining: every - (totalSubs % every),
-    progress: (totalSubs % every) / every,
-  });
+export function paliersDuCompteur(totalSubs: number, commuDepuis: number | null = null): PalierAVenir[] {
+  const position = (every: number, origine = 0) => {
+    const fait = (totalSubs - origine) % every;
+    return { remaining: every - fait, progress: fait / every };
+  };
   const paliers: PalierAVenir[] = [
-    ...SUB_MILESTONES.map((m) => ({
-      genre: m.kind,
-      label: m.label,
-      every: m.every,
-      resume: m.kind === 'FLOCONS' ? `+${m.amount} ❄ pour chacun` : 'À ouvrir à l’antenne',
-      ...position(m.every),
-    })),
-    ...EVENEMENTS_SUBS.map((e) => ({
-      genre: 'EVENEMENT' as const,
-      label: e.label,
-      every: e.every,
-      resume: `${e.resume} · ${e.dureeMinutes / 60} h`,
-      ...position(e.every),
-    })),
+    ...SUB_MILESTONES.filter((m) => m.kind === 'PACK').map((m): PalierAVenir => {
+      const accelere = m.packId === 'commu' && commuDepuis !== null && totalSubs >= commuDepuis;
+      const every = accelere ? COMMU_ACCELERE_TOUS_LES : m.every;
+      return {
+        genre: 'PACK',
+        packId: m.packId,
+        label: m.label,
+        every,
+        resume: accelere ? 'Accéléré par la Tempête' : 'À ouvrir à l’antenne',
+        accelere,
+        ...position(every, accelere ? (commuDepuis ?? 0) : 0),
+      };
+    }),
+    ...EVENEMENTS_SUBS.map(
+      (e): PalierAVenir => ({
+        genre: 'EVENEMENT',
+        kind: e.kind,
+        label: e.label,
+        every: e.every,
+        resume: `${e.resume} · ${dureeLisible(e.dureeMinutes)}`,
+        ...position(e.every),
+      }),
+    ),
   ];
-  return paliers.sort((a, b) => a.remaining - b.remaining || b.every - a.every).slice(0, combien);
+  return paliers.sort((a, b) => a.every - b.every);
 }
 
 /** Prochain palier atteint pour chaque type, à partir d'un total de subs. */
@@ -355,13 +392,27 @@ export function nextMilestone(
 /**
  * Paliers franchis en passant de `from` à `to` subs. Retourne une entrée par
  * franchissement — passer de 0 à 12 déclenche donc deux Bourrasques.
+ *
+ * Pendant une Tempête — `commuDepuis`, le total d'où elle compte —, le Booster
+ * Commu ne suit plus ses multiples de 50 : il tombe tous les
+ * `COMMU_ACCELERE_TOUS_LES` subs comptés depuis ce total. Avant lui, la règle
+ * habituelle.
  */
-export function crossedMilestones(from: number, to: number): SubMilestone[] {
+export function crossedMilestones(from: number, to: number, commuDepuis: number | null = null): SubMilestone[] {
   const crossed: SubMilestone[] = [];
+  const franchis = (a: number, b: number, every: number, origine = 0) =>
+    b > a ? Math.floor((b - origine) / every) - Math.floor((a - origine) / every) : 0;
   for (const milestone of SUB_MILESTONES) {
-    const before = Math.floor(from / milestone.every);
-    const after = Math.floor(to / milestone.every);
-    for (let i = 0; i < after - before; i += 1) crossed.push(milestone);
+    let n: number;
+    if (milestone.packId === 'commu' && commuDepuis !== null) {
+      const bascule = Math.max(from, Math.min(to, commuDepuis));
+      n =
+        franchis(from, bascule, milestone.every) +
+        franchis(Math.max(from, commuDepuis), to, COMMU_ACCELERE_TOUS_LES, commuDepuis);
+    } else {
+      n = franchis(from, to, milestone.every);
+    }
+    for (let i = 0; i < n; i += 1) crossed.push(milestone);
   }
   return crossed;
 }

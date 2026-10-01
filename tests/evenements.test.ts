@@ -34,7 +34,7 @@ const T0 = new Date('2027-01-10T20:00:00.000Z');
 const minutes = (n: number) => new Date(T0.getTime() + n * 60_000);
 
 const avalanche = EVENEMENTS_SUBS.find((e) => e.label === 'Avalanche')!;
-const blizzard = EVENEMENTS_SUBS.find((e) => e.label === 'Blizzard')!;
+const tempete = EVENEMENTS_SUBS.find((e) => e.label === 'Tempête')!;
 
 function joueur(id: string): Player {
   return {
@@ -62,8 +62,8 @@ describe('la table des évènements', () => {
     for (const e of EVENEMENTS_SUBS) {
       expect(e.every).toBeGreaterThan(0);
       expect(e.dureeMinutes).toBeGreaterThan(0);
-      // Un évènement de plus de quatre heures serait un réglage, pas un évènement.
-      expect(e.dureeMinutes).toBeLessThanOrEqual(240);
+      // Une semaine au plus : au-delà, ce serait un réglage, pas un évènement.
+      expect(e.dureeMinutes).toBeLessThanOrEqual(7 * 24 * 60);
       expect(e.label.length).toBeGreaterThan(0);
       expect(e.resume.length).toBeGreaterThan(0);
     }
@@ -72,7 +72,7 @@ describe('la table des évènements', () => {
   it('a un facteur qui va dans le sens annoncé pour chaque genre', () => {
     expect(FACTEURS_EVENEMENTS.FLOCONS_DOUBLES).toBe(2);
     expect(FACTEURS_EVENEMENTS.CARTES_RENFORCEES).toBeGreaterThan(1);
-    for (const e of EVENEMENTS_SUBS) expect(FACTEURS_EVENEMENTS[e.kind]).toBeGreaterThan(1);
+    for (const e of EVENEMENTS_SUBS) expect(FACTEURS_EVENEMENTS[e.kind]).toBeGreaterThanOrEqual(1);
   });
 
   it('ne change que les règles : aucun évènement ne verse ni ne désigne', () => {
@@ -299,7 +299,7 @@ describe('addSubs déclenche les évènements', () => {
   it('ne verse rien de plus à personne — les évènements ne sont pas des crédits', () => {
     const db = emptyDatabase();
     db.players.push(joueur('a'), joueur('b'));
-    const r = addSubs(db, blizzard.every, 'test');
+    const r = addSubs(db, tempete.every, 'test');
     const a = db.players.find((p) => p.id === 'a')!.snowflakes;
     const b = db.players.find((p) => p.id === 'b')!.snowflakes;
     expect(a).toBe(b);

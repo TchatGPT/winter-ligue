@@ -5879,94 +5879,112 @@
 }
 .subs-route-liste {
   display: grid;
-  gap: 6px;
+  gap: 8px;
   margin-top: 10px;
 }
+/* Une ligne par palier, comme une tuile de rareté : la médaille, le nom dans
+   sa teinte, « tous les N », le décompte à droite, et dessous la jauge creusée
+   avec ce que le palier fait tomber. */
 .palier {
   --teinte: var(--aurora);
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 8px 14px;
-  border: 1px solid color-mix(in srgb, var(--ink) 10%, transparent);
-  border-radius: 16px;
-  background: color-mix(in srgb, var(--fond) 35%, transparent);
-}
-.palier[data-genre='PACK'] {
-  --teinte: var(--ice);
-}
-.palier[data-genre='EVENEMENT'] {
-  --teinte: var(--gold);
+  gap: 12px;
+  padding: 8px 14px 8px 9px;
+  border: 1px solid color-mix(in srgb, var(--teinte) 28%, transparent);
+  border-radius: var(--r-md);
+  background:
+    linear-gradient(100deg, color-mix(in srgb, var(--teinte) 16%, transparent) 0%, transparent 58%),
+    color-mix(in srgb, var(--fond) 30%, transparent);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--ink) 8%, transparent);
 }
 .palier[data-premier] {
-  border-color: color-mix(in srgb, var(--teinte) 45%, transparent);
-  background: linear-gradient(110deg, color-mix(in srgb, var(--teinte) 14%, transparent), color-mix(in srgb, var(--fond) 35%, transparent) 70%);
+  border-color: color-mix(in srgb, var(--teinte) 55%, transparent);
+  background:
+    linear-gradient(100deg, color-mix(in srgb, var(--teinte) 26%, transparent) 0%, transparent 70%),
+    color-mix(in srgb, var(--fond) 30%, transparent);
 }
-.palier-pastille {
+.palier-embleme {
+  width: 42px;
+  height: 42px;
+  flex: none;
+  /* L'ombre de contact de la médaille, pas une lueur. */
+  filter: drop-shadow(0 3px 3px color-mix(in srgb, var(--fond) 80%, transparent));
+}
+.palier-corps {
   display: grid;
-  width: 38px;
-  height: 38px;
-  place-items: center;
-  border-radius: 50%;
-  background: color-mix(in srgb, var(--teinte) 16%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--teinte) 40%, transparent);
-  color: var(--teinte);
+  min-width: 0;
+  flex: 1;
+  gap: 6px;
+}
+.palier-tete {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
 }
 .palier-nom {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  column-gap: 10px;
   font-family: var(--font-display);
-  font-size: 1.125rem;
+  font-size: 1.05rem;
   font-weight: 900;
-  line-height: 1.15;
-  color: var(--ink);
+  letter-spacing: 0.05em;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: color-mix(in srgb, var(--teinte) 55%, var(--ink));
 }
-.palier-genre {
+.palier-tous {
   font-family: var(--font-display);
   font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: color-mix(in srgb, var(--teinte) 75%, var(--ink));
-}
-.palier-resume {
-  display: block;
-  margin-top: 2px;
-  font-size: 0.875rem;
-  color: var(--ink-2);
-}
-.palier-reste {
-  display: grid;
-  justify-items: end;
-  gap: 6px;
-  font-size: 0.8125rem;
-  color: var(--muted);
   white-space: nowrap;
+  color: var(--faint);
 }
-.palier-reste strong {
-  font-size: 1rem;
-  color: var(--teinte);
+.palier-dans {
+  margin-left: auto;
+  font-size: 0.8125rem;
+  white-space: nowrap;
+  color: var(--muted);
+}
+.palier-dans strong {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 900;
+  line-height: 1;
+  color: var(--ink);
+}
+.palier-pied {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 .palier-jauge {
-  display: block;
-  width: 96px;
-  height: 5px;
+  position: relative;
+  height: 6px;
+  flex: 1;
   overflow: hidden;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--ink) 10%, transparent);
+  background: color-mix(in srgb, var(--fond) 70%, transparent);
+  box-shadow: inset 0 1px 2px color-mix(in srgb, var(--fond) 90%, transparent);
 }
-.palier-jauge > i {
+.palier-jauge > span {
   display: block;
+  min-width: 4px;
   height: 100%;
   border-radius: inherit;
-  background: var(--teinte);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--teinte) 45%, transparent), var(--teinte));
+}
+.palier-resume {
+  flex: none;
+  font-size: 0.8125rem;
+  line-height: 1;
+  white-space: nowrap;
+  color: var(--ink-2);
 }
 @container (max-width: 26rem) {
-  .palier-jauge {
-    width: 64px;
+  .palier-tous {
+    display: none;
   }
 }
 

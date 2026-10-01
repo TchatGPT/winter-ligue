@@ -32,6 +32,7 @@ import 'server-only';
 import type { Database, EvenementActif } from '@/lib/db/entities';
 import { newId } from '@/lib/db/store';
 import {
+  departAccelere,
   type EvenementKind,
   EVENEMENTS_SUBS,
   evenementsDeclenches,
@@ -104,6 +105,15 @@ export const facteurGain = (db: Database, now = new Date()) => facteur(db, 'FLOC
 /** Points d'une carte : 1,5 pendant un blizzard, 1 sinon. */
 export const facteurCartes = (db: Database, now = new Date()) =>
   facteur(db, 'CARTES_RENFORCEES', now);
+
+/**
+ * Pendant une Tempête, le total d'où le Booster Commu accéléré compte — le
+ * palier de 500 qui l'a ouverte. Null s'il n'y a pas de Tempête en cours.
+ */
+export function commuAccelereDepuis(db: Database, now = new Date()): number | null {
+  const tempete = evenementsActifs(db, now).find((e) => e.kind === 'COMMU_ACCELERE');
+  return tempete ? departAccelere(tempete.declencheA) : null;
+}
 
 /** Ce que le bandeau affiche : les évènements en cours et la table des paliers. */
 export function evenementsOverview(db: Database, now = new Date()) {
