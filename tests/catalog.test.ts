@@ -19,6 +19,7 @@ import {
   multiplicateurChance,
   nextMilestone,
   packsPersoAcquis,
+  prochainsPaliers,
   PACKS_REGLES,
   poidsAvecChance,
   rarityPercent,
@@ -318,5 +319,23 @@ describe('le jeton Winter Spin', () => {
     // elles ne verrouillent qu'un ordre de grandeur.
     expect(WINTER_SPIN.chance).toBeGreaterThan(0);
     expect(WINTER_SPIN.chance / WEIGHT_TOTAL).toBeLessThan(0.005);
+  });
+});
+
+describe('la route des paliers', () => {
+  it('montre les prochains paliers de tous genres, du plus proche au plus lointain', () => {
+    const route = prochainsPaliers(36);
+    expect(route.map((p) => [p.label, p.remaining])).toEqual([
+      ['Bourrasque', 4],
+      ['Booster Commu', 14],
+      ['Rafale', 14],
+      ['Avalanche', 64],
+    ]);
+    expect(route[3].genre).toBe('EVENEMENT');
+  });
+
+  it('à égalité, met le palier le plus rare en tête', () => {
+    expect(prochainsPaliers(0, 3).map((p) => p.label)).toEqual(['Bourrasque', 'Rafale', 'Booster Commu']);
+    expect(prochainsPaliers(199, 2).map((p) => p.every)).toEqual([200, 200]);
   });
 });

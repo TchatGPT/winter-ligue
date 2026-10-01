@@ -297,6 +297,48 @@ export function prochainEvenement(totalSubs: number): {
   return meilleur;
 }
 
+/** Un palier à venir, quel que soit son genre : flocons, booster ou évènement. */
+export interface PalierAVenir {
+  genre: 'FLOCONS' | 'PACK' | 'EVENEMENT';
+  label: string;
+  every: number;
+  /** Ce qu'il donne, en quelques mots : « +40 ❄ pour chacun », « Flocons ×2 · 1 h ». */
+  resume: string;
+  /** Combien de subs il manque. */
+  remaining: number;
+  /** Où l'on en est du cycle, de 0 à 1. */
+  progress: number;
+}
+
+/**
+ * Les prochains paliers de la saison, tous genres confondus, du plus proche au
+ * plus lointain — à égalité, le plus rare d'abord. C'est la route que montre
+ * le compteur de subs.
+ */
+export function prochainsPaliers(totalSubs: number, combien = 4): PalierAVenir[] {
+  const position = (every: number) => ({
+    remaining: every - (totalSubs % every),
+    progress: (totalSubs % every) / every,
+  });
+  const paliers: PalierAVenir[] = [
+    ...SUB_MILESTONES.map((m) => ({
+      genre: m.kind,
+      label: m.label,
+      every: m.every,
+      resume: m.kind === 'FLOCONS' ? `+${m.amount} ❄ pour chacun` : 'À ouvrir à l’antenne',
+      ...position(m.every),
+    })),
+    ...EVENEMENTS_SUBS.map((e) => ({
+      genre: 'EVENEMENT' as const,
+      label: e.label,
+      every: e.every,
+      resume: `${e.resume} · ${e.dureeMinutes / 60} h`,
+      ...position(e.every),
+    })),
+  ];
+  return paliers.sort((a, b) => a.remaining - b.remaining || b.every - a.every).slice(0, combien);
+}
+
 /** Prochain palier atteint pour chaque type, à partir d'un total de subs. */
 export function nextMilestone(
   totalSubs: number,

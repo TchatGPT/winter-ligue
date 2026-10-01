@@ -1,26 +1,32 @@
+import Link from 'next/link';
 import { Countdown } from '@/components/Countdown';
 import { SnowCap } from '@/components/SnowCap';
-import { Meter, flakes } from '@/components/ui';
+import { IconImpact, IconPack, IconSnowflake } from '@/components/icons';
+import { flakes } from '@/components/ui';
 import type { EvenementActif } from '@/lib/db/entities';
-import { EVENEMENTS_SUBS, nextMilestone, prochainEvenement } from '@/lib/domain/rules';
+import { EVENEMENTS_SUBS, prochainsPaliers, type PalierAVenir } from '@/lib/domain/rules';
 
 /**
- * Le compteur de subs de la saison.
- *
- * Une seule colonne, centrée, et rien qui ne se lise en une seconde :
+ * Le compteur de subs de la saison, et la route des paliers.
  *
  *  1. le nombre, en très grand — c'est lui qu'on vient voir ;
- *  2. la jauge jusqu'aux prochains flocons, avec ce qu'ils rapportent ;
- *  3. ce qui tourne maintenant, s'il y a quelque chose, avec son compte à
+ *  2. ce qui tourne maintenant, s'il y a quelque chose, avec son compte à
  *     rebours ;
- *  4. les évènements que les subs déclenchent, en cartes
- *     identiques : le palier, le nom, l'effet en trois mots, la durée. Celle du
- *     prochain à tomber est marquée.
+ *  3. la route : les quatre prochains paliers, tous genres confondus — des
+ *     flocons, un booster, un évènement —, chacun avec sa jauge et ce qu'il
+ *     reste à faire. Le genre se lit à la pastille avant le nom.
  *
  * Tout tombe pour **tous** les joueurs actifs ; le classement, lui, ne se
  * gagne qu'en jouant. C'est l'invariant anti-pay-to-win, et il est écrit là où
  * on regarde le nombre.
  */
+
+const GENRES: Record<PalierAVenir['genre'], { nom: string; Icone: typeof IconSnowflake }> = {
+  FLOCONS: { nom: 'Flocons', Icone: IconSnowflake },
+  PACK: { nom: 'Booster', Icone: IconPack },
+  EVENEMENT: { nom: 'Évènement', Icone: IconImpact },
+};
+
 export function SubsBanner({
   totalSubs,
   evenements = [],
@@ -29,66 +35,45 @@ export function SubsBanner({
   /** Les évènements en cours, du plus récent au plus ancien. */
   evenements?: EvenementActif[];
 }) {
-  const next = nextMilestone(totalSubs);
-  const prochain = prochainEvenement(totalSubs);
-  if (!next || !prochain) return null;
+  const route = prochainsPaliers(totalSubs);
 
   return (
-    <section className="glass @container relative px-4 py-6 sm:px-8 sm:py-8">
+    <section className="subs-route glass @container relative px-5 py-6 sm:px-8 sm:py-6">
       <SnowCap radius="var(--r-lg)" seed="subs" />
-      {/* La teinte violette, découpée par le rayon de la plaque. */}
-      <div
-        className="pointer-events-none absolute inset-0 rounded-[inherit]"
-        style={{
-          background:
-            'radial-gradient(ellipse 70% 120% at 50% -20%, rgba(99,238,196,0.14) 0%, transparent 60%)',
-        }}
-        aria-hidden="true"
-      />
+      <div className="subs-route-lueur" aria-hidden="true" />
 
-      <div className="relative mx-auto flex h-full max-w-4xl flex-col items-center justify-center text-center">
+      <div className="relative flex h-full flex-col gap-4">
         {/* 1. Le nombre. */}
-        <p className="font-display text-[13px] font-bold tracking-[0.12em] text-aurora uppercase">
-          Subs de la saison
-        </p>
-        <p className="num mt-1 font-display text-[64px] leading-none font-black text-ink sm:text-[80px]">
-          {flakes(totalSubs)}
-        </p>
-
-        {/* 2. Les prochains flocons. */}
-        <div className="mt-5 w-full max-w-md">
-          <Meter ratio={next.progress} color="#63eec4" />
-          <p className="mt-2.5 text-[15px] text-ink-2">
-            <strong className="text-ink">{next.milestone.label}</strong> dans{' '}
-            <strong className="text-aurora">{next.remaining}</strong> sub
-            {next.remaining > 1 ? 's' : ''} · {next.milestone.description}
-          </p>
-          <p className="mt-1 text-[13px] text-muted">
-            Pour tous les joueurs actifs, à parts égales. Le classement ne se gagne qu’en jouant.
+        <div className="subs-route-tete">
+          <div>
+            <p className="font-display text-[13px] font-bold tracking-[0.12em] text-aurora uppercase">
+              Subs de la saison
+            </p>
+            <p className="num font-display text-[64px] leading-none font-black text-ink sm:text-[76px]">
+              {flakes(totalSubs)}
+            </p>
+          </div>
+          <p className="subs-route-regle">
+            Tout tombe pour tous les joueurs actifs, à parts égales. Le classement ne se gagne qu’en jouant.
           </p>
         </div>
 
-        {/* 3. En cours. */}
+        {/* 2. En cours. */}
         {evenements.length > 0 && (
-          <ul className="mt-6 grid w-full gap-2.5 @3xl:grid-cols-2">
+          <ul className="grid w-full gap-2.5 @3xl:grid-cols-2">
             {evenements.map((e) => (
-              <li
-                key={e.id}
-                className="glass glass-soft evenement flex items-center gap-3 px-4 py-3 text-left"
-              >
+              <li key={e.id} className="glass glass-soft evenement flex items-center gap-3 px-4 py-3 text-left">
                 <span className="evenement-pastille" aria-hidden="true" />
                 <span className="min-w-0 flex-1 leading-tight">
-                  <span className="block text-[13px] tracking-[0.12em] text-aurora uppercase">
-                    En cours
-                  </span>
+                  <span className="block text-[13px] tracking-[0.12em] text-aurora uppercase">En cours</span>
                   <span className="block text-[15px] font-bold text-ink">
                     {e.label} ·{' '}
                     <span className="font-medium text-ink-2">
                       {/* Le texte vient de la table, pas de l'enregistrement :
                           un évènement ouvert avant une reformulation garde
                           sinon l'ancienne phrase jusqu'à sa fin. */}
-                      {EVENEMENTS_SUBS.find((r) => r.kind === e.kind && r.label === e.label)
-                        ?.description ?? e.description}
+                      {EVENEMENTS_SUBS.find((r) => r.kind === e.kind && r.label === e.label)?.description ??
+                        e.description}
                     </span>
                   </span>
                 </span>
@@ -100,40 +85,44 @@ export function SubsBanner({
           </ul>
         )}
 
-        {/* 4. Ce que les subs déclenchent. */}
-        <p className="mt-7 text-[13px] tracking-[0.12em] text-faint uppercase">
-          Les évènements déclenchés par les subs
-        </p>
-        <ul className="mt-3 grid w-full grid-cols-1 gap-2.5 @2xl:grid-cols-3">
-          {EVENEMENTS_SUBS.map((e) => {
-            const estProchain = e === prochain.evenement;
-            const heures = e.dureeMinutes / 60;
-            return (
-              <li
-                key={e.every}
-                className={`glass glass-soft flex flex-col items-center px-3 py-4 ${
-                  estProchain ? 'evenement-prochain' : ''
-                }`}
-              >
-                <span className="text-[13px] tracking-[0.12em] text-faint uppercase">
-                  Tous les {e.every} subs
-                </span>
-                <span className="mt-1.5 font-display text-[22px] leading-none font-black text-ink">
-                  {e.label}
-                </span>
-                <span className="mt-2 text-[14px] font-semibold text-aurora">{e.resume}</span>
-                <span className="mt-0.5 text-[13px] text-muted">
-                  pendant {heures} heure{heures > 1 ? 's' : ''}
-                </span>
-                {estProchain && (
-                  <span className="mt-2.5 rounded-full bg-aurora/15 px-2.5 py-0.5 text-[13px] font-bold text-aurora">
-                    dans {prochain.remaining} sub{prochain.remaining > 1 ? 's' : ''}
+        {/* 3. La route des paliers. */}
+        <div>
+          <div className="flex items-baseline justify-between gap-3">
+            <p className="text-[13px] tracking-[0.12em] text-faint uppercase">Les prochains paliers</p>
+            <Link href="/regles" className="text-[13px] text-ice no-underline hover:underline">
+              Tous les paliers →
+            </Link>
+          </div>
+          <ol className="subs-route-liste">
+            {route.map((p, i) => {
+              const { nom, Icone } = GENRES[p.genre];
+              return (
+                <li key={`${p.genre}-${p.every}`} className="palier" data-genre={p.genre} data-premier={i === 0 ? '' : undefined}>
+                  <span className="palier-pastille" aria-hidden="true">
+                    <Icone className="h-[18px] w-[18px]" />
                   </span>
-                )}
-              </li>
-            );
-          })}
-        </ul>
+                  <span className="min-w-0">
+                    <span className="palier-nom">
+                      {p.label}
+                      <span className="palier-genre">
+                        {nom} · tous les {p.every}
+                      </span>
+                    </span>
+                    <span className="palier-resume">{p.resume}</span>
+                  </span>
+                  <span className="palier-reste">
+                    <span className="palier-jauge" aria-hidden="true">
+                      <i style={{ width: `${Math.max(4, Math.round(p.progress * 100))}%` }} />
+                    </span>
+                    <span className="num">
+                      dans <strong>{p.remaining}</strong> sub{p.remaining > 1 ? 's' : ''}
+                    </span>
+                  </span>
+                </li>
+              );
+            })}
+          </ol>
+        </div>
       </div>
     </section>
   );

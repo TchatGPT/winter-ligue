@@ -511,6 +511,13 @@
       padding-inline: 2.5rem;
     }
   }
+  /* Sur un très grand écran, l'accueil tient sans défiler, pied de page compris :
+     la neige y est un peu moins haute. */
+  @media (min-width: 150rem) {
+    .pied-de-neige {
+      height: 64px;
+    }
+  }
 
   /* --------------------------------------------------------------------------
      LE VERRE
@@ -5838,10 +5845,129 @@
   }
 }
 
-/* Le prochain évènement : une carte teintée aurore, à côté du compteur. */
-.evenement-prochain {
-  border-color: rgb(120 235 200 / 0.2);
-  background-image: linear-gradient(160deg, rgb(120 235 200 / 0.09), transparent 65%);
+/*
+ * Le compteur de subs et la route des paliers — voir `SubsBanner`. Le nombre
+ * à gauche, la règle anti-pay-to-win à côté quand il y a la place ; dessous,
+ * les quatre prochains paliers, un par ligne : la pastille dit le genre
+ * (flocons en aurore, booster en glace, évènement en or), la jauge dit où en
+ * est le cycle. Le plus proche est marqué.
+ */
+.subs-route-lueur {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(ellipse 70% 120% at 15% -20%, color-mix(in srgb, var(--aurora) 14%, transparent) 0%, transparent 60%);
+}
+.subs-route-tete {
+  display: grid;
+  gap: 10px;
+}
+@container (min-width: 32rem) {
+  .subs-route-tete {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: end;
+    gap: 28px;
+  }
+}
+.subs-route-regle {
+  max-width: 26rem;
+  padding-bottom: 6px;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: var(--muted);
+}
+.subs-route-liste {
+  display: grid;
+  gap: 6px;
+  margin-top: 10px;
+}
+.palier {
+  --teinte: var(--aurora);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 8px 14px;
+  border: 1px solid color-mix(in srgb, var(--ink) 10%, transparent);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--fond) 35%, transparent);
+}
+.palier[data-genre='PACK'] {
+  --teinte: var(--ice);
+}
+.palier[data-genre='EVENEMENT'] {
+  --teinte: var(--gold);
+}
+.palier[data-premier] {
+  border-color: color-mix(in srgb, var(--teinte) 45%, transparent);
+  background: linear-gradient(110deg, color-mix(in srgb, var(--teinte) 14%, transparent), color-mix(in srgb, var(--fond) 35%, transparent) 70%);
+}
+.palier-pastille {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--teinte) 16%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--teinte) 40%, transparent);
+  color: var(--teinte);
+}
+.palier-nom {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 10px;
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  font-weight: 900;
+  line-height: 1.15;
+  color: var(--ink);
+}
+.palier-genre {
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--teinte) 75%, var(--ink));
+}
+.palier-resume {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.875rem;
+  color: var(--ink-2);
+}
+.palier-reste {
+  display: grid;
+  justify-items: end;
+  gap: 6px;
+  font-size: 0.8125rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.palier-reste strong {
+  font-size: 1rem;
+  color: var(--teinte);
+}
+.palier-jauge {
+  display: block;
+  width: 96px;
+  height: 5px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ink) 10%, transparent);
+}
+.palier-jauge > i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--teinte);
+}
+@container (max-width: 26rem) {
+  .palier-jauge {
+    width: 64px;
+  }
 }
 
 .btn-ouvrir-prix {

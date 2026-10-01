@@ -44,7 +44,7 @@ export function Hero({
     <section className="hero glass glass-reflet @container relative">
       <SnowCap radius="var(--r-xl)" seed="hero" epaisseur={26} />
 
-      <div className="relative flex h-full flex-col gap-7 px-6 py-9 sm:px-10 sm:py-12 @4xl:flex-row @4xl:items-center @4xl:justify-between @4xl:gap-10">
+      <div className="relative flex h-full flex-col gap-7 px-6 py-9 sm:px-10 sm:py-12 4xl:gap-5 4xl:py-8 @4xl:flex-row @4xl:items-center @4xl:justify-between @4xl:gap-10">
         <div className="min-w-0">
           <p className="eyebrow">
             {SEASON.edition} · du {debut.getDate()} {mois(debut)} au {fin.getDate()} {mois(fin)}
@@ -65,7 +65,7 @@ export function Hero({
             grâce aux subs, et leur carte joue sur la prochaine game.
           </p>
 
-          <div className="mt-7 flex flex-wrap gap-3">
+          <div className="mt-7 flex flex-wrap gap-3 4xl:mt-5">
             <Link href="/duels" className="btn btn-ice btn-lg no-underline">
               Lancer un duel
             </Link>
@@ -113,7 +113,7 @@ export function Hero({
             ].map(([label, valeur]) => (
               <div
                 key={String(label)}
-                className="glass glass-soft flex flex-col items-center px-2 py-4 text-center sm:py-5"
+                className="glass glass-soft flex flex-col items-center px-2 py-4 text-center sm:py-5 4xl:py-3.5"
               >
                 <span className="num block font-display text-[32px] leading-none font-black text-ink sm:text-[38px]">
                   {flakes(Number(valeur))}
