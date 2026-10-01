@@ -333,7 +333,7 @@ export default async function FicheJoueurPage({ params }: { params: Promise<{ sl
                 <span style={{ width: `${p.chance * 100}%` }} />
               </div>
               <p className="mt-1.5 text-[12.5px] text-muted">
-                Son solde pousse les raretés des boosters ouverts pour lui, jusqu’à ×2,00 à{' '}
+                Son solde pousse les raretés des boosters ouverts pour lui, jusqu’à ×1,50 à{' '}
                 {flakes(ECONOMY.soldeMax)} ❄.
               </p>
             </div>

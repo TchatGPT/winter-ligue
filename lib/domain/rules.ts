@@ -334,14 +334,20 @@ export const RARITY_ORDER: Record<Rarity, number> = {
  * et la somme se vérifie exactement (un test échoue si elle ne fait pas
  * 100 000).
  *
- * Un pack ne donne qu'**une** carte. Les taux sont donc plus généreux qu'à
- * l'époque des sachets de trois : une légendaire sur cinq cents packs Perso,
- * et bien plus dans les packs Folie.
+ * Un pack ne donne qu'**une** carte. Le Perso tire à ces taux : une
+ * légendaire sur cinq cents, une ultra rare sur soixante-dix-sept.
+ *
+ * Le calibrage, sur une saison de l'ordre de 4 000 subs (la Summer Ligue) :
+ * environ 300 Perso, 80 Commu, 15 Finisseur et 7 Folie, soit une ou deux
+ * légendaires et une dizaine d'ultra rares sur toute la saison. La légendaire
+ * reste un évènement, et personne ne l'a pour une poignée de subs. Le Perso,
+ * le seul qui s'obtient en offrant des subs, est volontairement le plus sobre
+ * en légendaires : offrir davantage ne doit pas faire tirer mieux que jouer.
  */
 export const RARITY_WEIGHTS_BASE: Record<Rarity, number> = {
-  C: 85_000, // 85 %
-  R: 14_000, // 14 %
-  UR: 800, // 0,8 %
+  C: 83_000, // 83 %
+  R: 15_500, // 15,5 %
+  UR: 1_300, // 1,3 %
   L: 200, // 0,2 %
 };
 
@@ -353,14 +359,15 @@ export const WEIGHT_TOTAL = 100_000;
  *
  * Quand un booster s'ouvre **pour un joueur**, son solde de flocons pousse les
  * raretés vers le haut. Le poids de chaque rareté au-dessus de la commune est
- * multiplié par `1 + chance` — le **multiplicateur**, de ×1 à ×2 —, la commune
- * absorbe la différence, et la somme reste exactement `WEIGHT_TOTAL`.
+ * multiplié par `1 + chance` — le **multiplicateur**, de ×1 à ×1,5 —, la
+ * commune absorbe la différence, et la somme reste exactement `WEIGHT_TOTAL`.
  *
- * Le multiplicateur monte linéairement avec le solde, et plafonne à ×2 au
- * solde maximum. Pas plus, et ×2 ne veut pas dire « une rare à coup sûr » :
- * au Booster Perso, ×2 fait passer la commune de 58 % à 16 %, et la
- * légendaire de 0,2 % à 0,4 %. Un joueur riche tire mieux, il ne tire pas à
- * coup sûr — et les flocons ne s'achètent pas, ils se gagnent en jouant.
+ * Le multiplicateur monte linéairement avec le solde, et plafonne à ×1,5 au
+ * solde maximum. Il a plafonné à ×2 : un compte plein doublait ses
+ * légendaires, ce qui pesait trop pour une saison qui n'en voit qu'une ou
+ * deux. Au Booster Perso, ×1,5 fait passer la légendaire de 0,2 % à 0,3 %. Un
+ * joueur riche tire mieux, il ne tire pas à coup sûr — et les flocons ne
+ * s'achètent pas, ils se gagnent en jouant.
  *
  * Les flocons ne sont **pas dépensés** : les mêmes servent à miser dans les
  * affrontements. Tenir son solde pour tirer mieux, ou le risquer pour le
@@ -372,8 +379,8 @@ export const WEIGHT_TOTAL = 100_000;
 export const CHANCE = {
   /** Le solde auquel le multiplicateur est plein : le plafond de flocons. */
   floconsPourPlein: ECONOMY.soldeMax,
-  /** La chance maximale : ×2. */
-  max: 1,
+  /** La chance maximale : ×1,5. */
+  max: 0.5,
 } as const;
 
 /** La chance d'un joueur, entre 0 et `CHANCE.max`, d'après son solde. */
@@ -382,7 +389,7 @@ export function chanceDe(solde: number): number {
   return Math.min(CHANCE.max, (solde / CHANCE.floconsPourPlein) * CHANCE.max);
 }
 
-/** Le multiplicateur de chance, de 1 à 2, tel qu'on l'affiche : « ×1,45 ». */
+/** Le multiplicateur de chance, de 1 à 1,5, tel qu'on l'affiche : « ×1,25 ». */
 export function multiplicateurChance(solde: number): number {
   return 1 + chanceDe(solde);
 }

@@ -142,10 +142,17 @@ describe('tables de raretés', () => {
     // Une sur cinq cents au Booster Perso, sans chance.
     expect(rarityPercent(RARITY_WEIGHTS_BASE, 'L')).toBeCloseTo(0.2, 5);
   });
+
+  it('ne fait jamais du Perso, le booster qu’on obtient en offrant des subs, le meilleur en légendaires', () => {
+    for (const pack of PACKS) {
+      if (pack.id === 'perso') continue;
+      expect(pack.weights.L).toBeGreaterThan(RARITY_WEIGHTS_BASE.L);
+    }
+  });
 });
 
 describe('la chance', () => {
-  it('monte avec le solde, de ×1 à ×2, et s’arrête au plafond', () => {
+  it('monte avec le solde, de ×1 à ×1,5, et s’arrête au plafond', () => {
     expect(chanceDe(0)).toBe(0);
     expect(chanceDe(-500)).toBe(0);
     expect(chanceDe(Number.NaN)).toBe(0);
@@ -153,7 +160,7 @@ describe('la chance', () => {
     expect(chanceDe(ECONOMY.soldeMax)).toBe(CHANCE.max);
     expect(chanceDe(ECONOMY.soldeMax * 10)).toBe(CHANCE.max);
     expect(multiplicateurChance(0)).toBe(1);
-    expect(multiplicateurChance(ECONOMY.soldeMax)).toBe(2);
+    expect(multiplicateurChance(ECONOMY.soldeMax)).toBe(1.5);
   });
 
   it('garde la somme exacte, quelle que soit la chance', () => {
@@ -171,13 +178,13 @@ describe('la chance', () => {
     }
   });
 
-  it('double les raretés hautes au maximum, pas davantage', () => {
+  it('multiplie les raretés hautes par 1,5 au maximum, pas davantage', () => {
     const plein = poidsAvecChance(RARITY_WEIGHTS_BASE, CHANCE.max);
     for (const rarity of ['R', 'UR', 'L'] as Rarity[]) {
-      expect(plein[rarity]).toBe(RARITY_WEIGHTS_BASE[rarity] * 2);
+      expect(plein[rarity]).toBe(RARITY_WEIGHTS_BASE[rarity] * 1.5);
     }
     // La commune absorbe la différence, et il en reste.
-    expect(plein.C).toBe(70_000);
+    expect(plein.C).toBe(74_500);
   });
 
   it('ne change rien sans flocons', () => {

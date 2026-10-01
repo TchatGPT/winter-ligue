@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Database, Player } from '@/lib/db/entities';
 import { emptyDatabase } from '@/lib/db/store';
 import { cartesDuPack, getCard, momentDe, PACKS } from '@/lib/domain/catalog';
-import { ECONOMY, RARITY_WEIGHTS_BASE, WEIGHT_TOTAL } from '@/lib/domain/rules';
+import { CHANCE, ECONOMY, RARITY_WEIGHTS_BASE, WEIGHT_TOTAL } from '@/lib/domain/rules';
 import { RARITIES, type Rarity } from '@/lib/domain/types';
 import {
   ajusteBoostersPerso,
@@ -63,9 +63,11 @@ describe('réglages de booster', () => {
 
   it('applique une table, et seulement au booster réglé', () => {
     const db = base();
-    reglagePack(db, premier.id, { ...RARITY_WEIGHTS_BASE, C: 84_000, R: 15_000 });
+    // On déplace mille points de la commune vers la rare : la somme ne bouge pas.
+    const table = { ...RARITY_WEIGHTS_BASE, C: RARITY_WEIGHTS_BASE.C - 1_000, R: RARITY_WEIGHTS_BASE.R + 1_000 };
+    reglagePack(db, premier.id, table);
     const resolu = resolvedPack(db, premier.id)!;
-    expect(resolu.weights.C).toBe(84_000);
+    expect(resolu.weights.C).toBe(table.C);
     expect(resolu.name).toBe(premier.name);
     for (const autre of PACKS.slice(1)) {
       expect(resolvedPack(db, autre.id)!.weights).toEqual(autre.weights);
@@ -211,7 +213,7 @@ describe('ouvrir un booster', () => {
     db.players.push(joueur('riche', ECONOMY.soldeMax), joueur('pauvre', 0));
     const riche = ouvrePack(db, { packId: 'perso', joueurId: 'riche', idempotencyKey: 'r' }, 'modo');
     const pauvre = ouvrePack(db, { packId: 'perso', joueurId: 'pauvre', idempotencyKey: 'p' }, 'modo');
-    expect(riche.chance).toBe(1);
+    expect(riche.chance).toBe(CHANCE.max);
     expect(pauvre.chance).toBe(0);
     expect(db.ledger.every((l) => l.delta >= 0)).toBe(true);
   });

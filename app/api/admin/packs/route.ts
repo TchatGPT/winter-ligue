@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server';
 import { toResponse } from '@/lib/api/errors';
-import { fail, guard, ok } from '@/lib/api/respond';
+import { guard, ok } from '@/lib/api/respond';
 import { ouvrirPackSchema } from '@/lib/api/schemas';
-import { playerIdOf } from '@/lib/auth/session';
 import { getStore } from '@/lib/db/store';
 import type { PackId } from '@/lib/domain/types';
 import { LIMITS } from '@/lib/security/ratelimit';
@@ -18,8 +17,10 @@ export const dynamic = 'force-dynamic';
  * lieu ici, dans la transaction ; le rail ne fait que révéler la carte qu'on
  * lui renvoie. Relancer la même requête — même clé — rend la même ouverture.
  *
- * Personne n'ouvre un booster qui lui revient : un autre membre de la
- * modération l'ouvre pour lui.
+ * Un membre de la modération peut ouvrir un booster qui lui revient : le
+ * tirage se fait ici, côté serveur, et l'ouverture est au journal — il n'a
+ * rien à y gagner qu'il n'aurait eu si un autre l'avait ouvert. Ce qu'il ne
+ * fait pas, c'est régler son propre compteur de Boosters Perso.
  *
  * Les taux ne se règlent plus d'ici : ce sont ceux du catalogue.
  */
@@ -32,14 +33,8 @@ export async function POST(request: Request): Promise<NextResponse> {
   });
   if (!g.ok) return g.response;
 
-  const moi = playerIdOf(g.session);
-
   try {
     const vue = await getStore().transaction((db) => {
-      if (moi) {
-        const du = g.body.packDuId ? db.packsDus.find((p) => p.id === g.body.packDuId) : null;
-        if ((du?.joueurId ?? g.body.joueurId) === moi) return null;
-      }
       const ouverture = ouvrePack(
         db,
         {
@@ -52,7 +47,6 @@ export async function POST(request: Request): Promise<NextResponse> {
       );
       return vueOuverture(db, ouverture);
     });
-    if (!vue) return fail('NON_AUTORISE', 'Ce booster te revient : un autre membre de la modération l’ouvre pour toi.');
     return ok(vue);
   } catch (error) {
     return toResponse(error);

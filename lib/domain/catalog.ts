@@ -795,7 +795,8 @@ export const PACKS: readonly PackDefinition[] = [
     gradient: ['#2f6f8f', '#10283a'],
     portee: 'TOUS',
     pourQui: 'ceux que le sort désigne',
-    weights: { C: 70_000, R: 27_000, UR: 2_400, L: 600 },
+    // Une légendaire sur deux cents, une ultra rare sur quarante.
+    weights: { C: 75_000, R: 22_000, UR: 2_500, L: 500 },
   },
   {
     id: 'folie',
@@ -806,7 +807,8 @@ export const PACKS: readonly PackDefinition[] = [
     gradient: ['#6b4bab', '#241540'],
     portee: 'TOUS',
     pourQui: 'toute la ligue, le plus souvent',
-    weights: { C: 0, R: 75_000, UR: 20_000, L: 5_000 },
+    // Rien sous rare ; une légendaire sur dix-sept : c'est là qu'elle se voit.
+    weights: { C: 0, R: 72_000, UR: 22_000, L: 6_000 },
   },
   {
     id: 'finisseur',
@@ -817,7 +819,8 @@ export const PACKS: readonly PackDefinition[] = [
     gradient: ['#b07a2a', '#3d2708'],
     portee: 'JOUEUR',
     pourQui: 'un joueur',
-    weights: { C: 50_000, R: 43_000, UR: 5_500, L: 1_500 },
+    // Une légendaire sur cinquante : jouer toute sa saison vaut mieux qu'offrir.
+    weights: { C: 45_000, R: 45_000, UR: 8_000, L: 2_000 },
   },
 ];
 

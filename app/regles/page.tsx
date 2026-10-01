@@ -135,9 +135,9 @@ export default async function ReglesPage(){
             depuis la file, un par un.
           </p>
           <p className="text-[13px] text-faint">
-            La chance vient des flocons : le multiplicateur monte de ×1 à ×2 avec le solde, et
-            atteint ×2 au plafond de {CHANCE.floconsPourPlein.toLocaleString('fr-FR')} flocons. À
-            ×2, les raretés hautes sont deux fois plus probables, pas davantage — une rare n’est
+            La chance vient des flocons : le multiplicateur monte de ×1 à ×1,5 avec le solde, et
+            atteint ×1,5 au plafond de {CHANCE.floconsPourPlein.toLocaleString('fr-FR')} flocons. À
+            ×1,5, les raretés hautes sont une fois et demie plus probables, pas davantage — une rare n’est
             jamais garantie. Les flocons ne sont pas dépensés, et la chance ne s’applique jamais à un
             booster collectif.
           </p>
