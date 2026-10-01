@@ -5242,47 +5242,64 @@
  * Sous l'étape 1 : ce qui compte pour un sub, et ce qui ne compte pas. Deux
  * rangées de pastilles, la première teintée d'aurore, la seconde éteinte : la
  * couleur dit oui ou non avant qu'on lise.
+ *
+ * Tout y est gravé dans la carte, pas posé dessus. Les pastilles sont des
+ * creux : plus sombres que le verre, une ombre intérieure qui tombe du haut, et
+ * un rebord bas qui accroche la lumière — c'est lui qui dit « enfoncé ». Le
+ * texte suit la même lumière : une ombre d'un pixel au-dessus de la lettre, là
+ * où la paroi du creux lui fait de l'ombre.
  */
 .etape-subs {
+  --grave: 0 -1px 0 color-mix(in srgb, var(--fond) 85%, transparent),
+    0 1px 0 color-mix(in srgb, var(--ink) 10%, transparent);
   display: grid;
-  gap: 12px;
+  gap: 14px;
   margin-top: 14px;
   padding-top: 14px;
   border-top: 1px solid color-mix(in srgb, var(--ice) 20%, transparent);
 }
+/* Les titres, plus lisibles : un corps plus grand, moins d'interlettrage —
+   le condensé espacé se lisait mal en petit —, et le rouge comme le vert
+   éclaircis vers l'encre, sans perdre leur couleur. */
 .etape-subs-titre {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
   font-family: var(--font-display);
-  font-size: 0.875rem;
+  font-size: 1rem;
   font-weight: 800;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: color-mix(in srgb, var(--danger) 78%, var(--ink));
+  color: color-mix(in srgb, var(--danger) 70%, var(--ink));
+  text-shadow: var(--grave);
 }
 .etape-subs-ligne[data-compte] .etape-subs-titre {
-  color: var(--aurora);
+  color: color-mix(in srgb, var(--aurora) 80%, var(--ink));
 }
 .etape-subs-puces {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 8px;
+  gap: 7px;
+  margin-top: 9px;
 }
 .etape-subs-puces li {
-  padding: 4px 11px;
-  border: 1px solid color-mix(in srgb, var(--ink) 16%, transparent);
+  padding: 5px 13px 4px;
+  border: 1px solid color-mix(in srgb, var(--fond) 70%, transparent);
+  border-bottom-color: color-mix(in srgb, var(--ink) 16%, transparent);
   border-radius: 999px;
-  background: color-mix(in srgb, var(--ink) 5%, transparent);
-  font-size: 0.8125rem;
+  background: color-mix(in srgb, var(--fond) 55%, transparent);
+  box-shadow:
+    inset 0 2px 5px color-mix(in srgb, var(--fond) 90%, transparent),
+    inset 0 -1px 0 color-mix(in srgb, var(--ink) 6%, transparent);
+  font-size: 0.875rem;
   line-height: 1.4;
   color: var(--muted);
+  text-shadow: var(--grave);
 }
 .etape-subs-ligne[data-compte] .etape-subs-puces li {
-  border-color: color-mix(in srgb, var(--aurora) 40%, transparent);
-  background: color-mix(in srgb, var(--aurora) 13%, transparent);
-  color: var(--ink);
+  border-bottom-color: color-mix(in srgb, var(--aurora) 34%, transparent);
+  background: color-mix(in srgb, var(--aurora) 10%, color-mix(in srgb, var(--fond) 55%, transparent));
+  color: color-mix(in srgb, var(--aurora) 35%, var(--ink));
 }
 /* Sur un très grand écran, la bande a la place d'être lue de loin. */
 @media (min-width: 120rem) {
@@ -5301,7 +5318,7 @@
     font-size: 1.0625rem;
   }
   .etape-subs-titre {
-    font-size: 0.9375rem;
+    font-size: 1.0625rem;
   }
   .etape-subs-puces li {
     font-size: 0.9375rem;

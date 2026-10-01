@@ -57,7 +57,7 @@ function CeQuiCompte() {
     <div className="etape-subs">
       <div className="etape-subs-ligne" data-compte="">
         <span className="etape-subs-titre">
-          <IconCoche className="h-[18px] w-[18px]" />
+          <IconCoche className="h-5 w-5" />
           Compte, un sub chacun
         </span>
         <ul className="etape-subs-puces">
@@ -68,7 +68,7 @@ function CeQuiCompte() {
       </div>
       <div className="etape-subs-ligne">
         <span className="etape-subs-titre">
-          <IconCroix className="h-[18px] w-[18px]" />
+          <IconCroix className="h-5 w-5" />
           Ne compte pas
         </span>
         <ul className="etape-subs-puces">
