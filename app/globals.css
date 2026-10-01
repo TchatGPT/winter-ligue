@@ -5082,6 +5082,134 @@
     font-size: 1.0625rem;
   }
 }
+/*
+ * Les taux de rareté : une tuile par rareté, de la commune à la légendaire,
+ * teintée de sa couleur (`--rarete`, posée par la ligne). L'emblème dit le rang
+ * par la coupe de sa gemme, les losanges par leur nombre ; la jauge montre en
+ * longueur vraie ce que pèse chaque rareté ; « 1 sur N » le dit en clair. Sur
+ * grand écran, les quatre tuiles se partagent la hauteur du bloc.
+ */
+.taux-liste {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+}
+@media (min-width: 80rem) {
+  .taux-liste {
+    flex: 1 1 auto;
+    grid-auto-rows: minmax(0, 1fr);
+  }
+}
+.taux-ligne {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 14px 8px 9px;
+  border: 1px solid color-mix(in srgb, var(--rarete) 28%, transparent);
+  border-radius: var(--r-md);
+  background:
+    linear-gradient(100deg, color-mix(in srgb, var(--rarete) 16%, transparent) 0%, transparent 58%),
+    rgb(0 10 30 / 0.24);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.08);
+}
+/* Une rareté que ce booster ne donne jamais : la tuile reste, éteinte. */
+.taux-ligne[data-vide] {
+  opacity: 0.42;
+}
+.taux-embleme {
+  width: 42px;
+  height: 42px;
+  flex: none;
+  /* L'ombre de contact de la médaille, pas une lueur. */
+  filter: drop-shadow(0 3px 3px rgb(0 8 24 / 0.55));
+}
+.taux-corps {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+  gap: 6px;
+}
+.taux-tete {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.taux-nom {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: color-mix(in srgb, var(--rarete) 55%, white);
+}
+.taux-rang {
+  display: inline-flex;
+  gap: 4px;
+}
+.taux-rang i {
+  width: 6px;
+  height: 6px;
+  border-radius: 1px;
+  background: rgb(255 255 255 / 0.16);
+  transform: rotate(45deg);
+}
+.taux-rang i[data-on] {
+  background: var(--rarete);
+}
+.taux-pct {
+  margin-left: auto;
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
+  color: var(--ink);
+}
+.taux-pied {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.taux-jauge {
+  position: relative;
+  height: 6px;
+  flex: 1;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgb(0 10 30 / 0.45);
+  box-shadow: inset 0 1px 2px rgb(0 8 24 / 0.6);
+}
+.taux-jauge > span {
+  display: block;
+  /* Une légendaire à 0,20 % ferait un trait invisible : quatre pixels au moins. */
+  min-width: 4px;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--rarete) 45%, transparent), var(--rarete));
+}
+.taux-chance {
+  flex: none;
+  font-size: 0.8125rem;
+  line-height: 1;
+  white-space: nowrap;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+@media (min-width: 120rem) {
+  .taux-embleme {
+    width: 50px;
+    height: 50px;
+  }
+  .taux-nom {
+    font-size: 1.15rem;
+  }
+  .taux-pct {
+    font-size: 1.85rem;
+  }
+}
+
 /* Le classement, en grand : corps de 17 px, lignes plus hautes, et une
    plaque qui défile au-delà de 68 % de l'écran avec son en-tête collé. */
 .grid-table-grand th {

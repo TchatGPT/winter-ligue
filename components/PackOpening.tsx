@@ -15,20 +15,30 @@ import type { OuvertureVue, PackDuVue } from '@/lib/services/packs';
 import { COURBE_MESUREE } from '@/lib/spin/courbe';
 import { TitreGlace } from '@/components/TitreGlace';
 import { GlaceCartes, GlaceEpees, GlaceSachet } from '@/components/DessinsGlace';
+import { EmblemeRarete } from '@/components/EmblemeRarete';
 
 const RARITY_LADDER: Rarity[] = ['C', 'R', 'UR', 'L'];
 
+/** Un taux en pourcentage, à la française : « 83,0 % », « 0,20 % ». */
+function pourcent(v: number): string {
+  const decimales = v === 0 ? 0 : v < 0.1 ? 3 : v < 1 ? 2 : 1;
+  return `${v.toLocaleString('fr-FR', { minimumFractionDigits: decimales, maximumFractionDigits: decimales })} %`;
+}
+
 /**
- * Les taux, du blanc de la commune au vert des évènements pour la
- * légendaire, en passant par le bleu ciel : une seule échelle de froid, qui
- * monte avec la rareté.
+ * Le même taux, en chances : « 1 sur 500 » parle mieux que « 0,20 % ». Au-delà
+ * d'une sur cinq, on compte sur dix. Approché, il porte un « ≈ ».
  */
-const COULEURS_TAUX: Record<Rarity, string> = {
-  C: '#ffffff',
-  R: '#bfe6ff',
-  UR: '#7cefe2',
-  L: '#63eec4',
-};
+function chances(v: number): string {
+  if (v <= 0) return 'jamais';
+  if (v >= 20) {
+    const sur10 = Math.round(v / 10);
+    return `${sur10 * 10 === v ? '' : '≈ '}${sur10} sur 10`;
+  }
+  const n = 100 / v;
+  const arrondi = Math.round(n);
+  return `${Math.abs(n - arrondi) < 1e-9 ? '' : '≈ '}1 sur ${arrondi.toLocaleString('fr-FR')}`;
+}
 
 export interface PackVitrine extends PackDefinition {
   /** Les cartes que ce pack peut donner : le pool des leurres du rail. */
@@ -235,7 +245,7 @@ export function PackOpening({
       </section>
 
       {/* ------------------------------ La scène ---------------------------- */}
-      <div className="glass glass-reflet glass-vitre relative overflow-hidden">
+      <div className="glass glass-reflet glass-vitre relative overflow-hidden xl:self-stretch">
         <SnowCap radius="var(--r-lg)" seed="packs" />
         <div
           className="pointer-events-none absolute inset-0 opacity-60"
@@ -250,7 +260,7 @@ export function PackOpening({
             qui se posent par-dessus dans la même case. Changer de booster,
             choisir un joueur ou ouvrir ne fait donc rien bouger autour, ni la
             scène ni la colonne des taux, qui suit sa hauteur. */}
-        <div className="relative grid min-h-[400px] px-4 py-10 sm:min-h-[460px]">
+        <div className="relative grid min-h-[400px] px-4 py-10 sm:min-h-[460px] xl:h-full">
           <div
             className={`col-start-1 row-start-1 flex flex-col items-center justify-center gap-6 ${
               surScene ? 'invisible' : ''
@@ -523,21 +533,38 @@ export function PackOpening({
               Taux de rareté
             </TitreGlace>
           </div>
-          <ul className="divide-y divide-white/10 xl:flex xl:flex-1 xl:flex-col xl:justify-around">
-            {RARITY_LADDER.map((rarity) => {
+          {/* Une tuile par rareté : l'emblème, le rang en losanges, le taux, la
+              jauge en longueur vraie — la légendaire n'y est qu'un éclat — et
+              les chances en clair. */}
+          <ul className="taux-liste">
+            {RARITY_LADDER.map((rarity, rang) => {
               const meta = rarityMeta(rarity);
               const per = rarityPercent(pack.weights, rarity);
-              const fmt = (v: number) => (v < 0.1 ? v.toFixed(3) : v < 1 ? v.toFixed(2) : v.toFixed(1));
               return (
-                <li key={rarity} className="flex items-center gap-3 px-4 py-2.5">
-                  <RarityChip rarity={rarity} taille={26} />
-                  <span className="min-w-0 flex-1 text-[15px] font-semibold text-ink">{meta.label}</span>
-                  <span
-                    className="num shrink-0 font-display text-[24px] leading-none font-black"
-                    style={{ color: per > 0 ? COULEURS_TAUX[rarity] : 'var(--faint)' }}
-                  >
-                    {fmt(per)} %
-                  </span>
+                <li
+                  key={rarity}
+                  className="taux-ligne"
+                  data-vide={per === 0 ? '' : undefined}
+                  style={{ ['--rarete' as string]: meta.color }}
+                >
+                  <EmblemeRarete rarity={rarity} className="taux-embleme" />
+                  <div className="taux-corps">
+                    <div className="taux-tete">
+                      <span className="taux-nom">{meta.label}</span>
+                      <span className="taux-rang" aria-hidden="true">
+                        {RARITY_LADDER.map((r, i) => (
+                          <i key={r} data-on={i <= rang ? '' : undefined} />
+                        ))}
+                      </span>
+                      <span className="taux-pct num">{pourcent(per)}</span>
+                    </div>
+                    <div className="taux-pied">
+                      <span className="taux-jauge" aria-hidden="true">
+                        {per > 0 && <span style={{ width: `${per}%` }} />}
+                      </span>
+                      <span className="taux-chance">{chances(per)}</span>
+                    </div>
+                  </div>
                 </li>
               );
             })}
