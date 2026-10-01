@@ -21,11 +21,8 @@
   --bg: #030711;
   --bg-deep: #010409;
 
-  /* Le ciel du décor, du zénith à l'horizon — voir « LE DÉCOR ». */
-  --ciel-zenith: #02050e;
-  --ciel-haut: #061130;
-  --ciel-milieu: #0c1d4a;
-  --ciel-horizon: #1c2a6e;
+  /* Le fond du site : un bleu nuit uni — voir « LE DÉCOR ». */
+  --fond: #0b1631;
 
   /* Teintes du verre.
 
@@ -58,9 +55,12 @@
      texte blanc, c'est la lentille de .glass — le flou, et une luminance
      abaissée d'un cinquième sur ce qu'elle traverse — pas une nappe sombre :
      le décor garde ses couleurs derrière la plaque. */
-  --glass-1: rgb(6 22 46 / 0.06);
-  --glass-2: rgb(8 26 52 / 0.1);
-  --glass-3: rgb(6 22 46 / 0.16);
+  /* Sur le fond uni, il n'y a plus de paysage à laisser voir : la plaque
+     reprend une teinte, plus claire que le fond, et c'est elle qui découpe
+     les blocs et porte le texte. */
+  --glass-1: rgb(26 48 90 / 0.5);
+  --glass-2: rgb(28 52 96 / 0.56);
+  --glass-3: rgb(22 42 80 / 0.64);
   --glass-hi: rgb(255 255 255 / 0.42);
   --glass-hi-soft: rgb(255 255 255 / 0.16);
   --glass-edge: rgb(190 225 255 / 0.4);
@@ -342,82 +342,17 @@
   }
 
   /* --------------------------------------------------------------------------
-     LE DÉCOR — une nuit d'hiver. Voir components/FondHiver.
-     Du haut vers le bas : le dégradé du ciel et ses étoiles, l'aurore boréale,
-     les montagnes, puis la neige. Les trois images sortent de
-     scripts/paysage.mjs. Rien n'y bouge : un décor animé obligeait à refaire
-     chaque flou de verre à chaque image.
-     Le conteneur n'a pas de z-index : la colonne de navigation, en z 30, et le
-     contenu passent au-dessus.
+     LE DÉCOR — un fond uni, bleu nuit. Voir components/FondHiver.
+     Il y a eu des facettes de glace, puis un paysage d'hiver : derrière des
+     plaques transparentes, ils gênaient la lecture, celle de l'administration
+     surtout. Le conteneur reste, fixe, sans z-index : la colonne de
+     navigation, en z 30, et le contenu passent au-dessus.
      -------------------------------------------------------------------------- */
   .fond-hiver {
     position: fixed;
     inset: 0;
-    /* La hauteur du grand viewport : sur téléphone, la barre d'adresse qui
-       paraît et disparaît en plein défilement ne redimensionne pas le décor,
-       ce qui ferait redessiner l'aurore et les montagnes. */
-    height: 100vh;
-    height: 100lvh;
-    overflow: hidden;
     pointer-events: none;
-    background-color: var(--bg);
-    background-image:
-      /* la lueur de l'aurore, diffuse dans le ciel */
-      radial-gradient(80% 36% at 50% 22%, color-mix(in srgb, var(--aurora) 13%, transparent) 0%, transparent 70%),
-      /* l'horizon qui s'embrase de violet derrière les montagnes */
-      radial-gradient(110% 30% at 50% 56%, color-mix(in srgb, var(--violet) 36%, transparent) 0%, transparent 70%),
-      radial-gradient(50% 22% at 78% 52%, color-mix(in srgb, var(--twitch) 22%, transparent) 0%, transparent 70%),
-      /* le dégradé de la nuit, du zénith vers l'horizon */
-      linear-gradient(
-        180deg,
-        var(--ciel-zenith) 0%,
-        var(--ciel-haut) 26%,
-        var(--ciel-milieu) 44%,
-        var(--ciel-horizon) 58%,
-        var(--ciel-horizon) 100%
-      );
-  }
-  .fond-hiver > * {
-    position: absolute;
-    inset: 0;
-  }
-  /* Les étoiles : une tuile qui se répète à sa taille réelle, pour rester
-     nette, et qui s'éteint en approchant de l'horizon. Le masque ne lit que
-     l'opacité : --bg n'y sert que de couleur pleine. */
-  .fh-etoiles {
-    background: url('/fond/etoiles.svg') 0 0 / 1600px 900px repeat;
-    mask-image: linear-gradient(180deg, var(--bg) 0%, var(--bg) 32%, transparent 60%);
-  }
-  /* L'aurore : les trois quarts hauts de l'écran, en éclaircissement — ses
-     rais s'ajoutent au ciel au lieu de le recouvrir. */
-  .fh-aurore {
-    bottom: auto;
-    height: 72%;
-    background: url('/fond/aurore.svg') center top / cover no-repeat;
-    mix-blend-mode: screen;
-  }
-  /* Les montagnes et la neige, posées au pied de l'écran sur 60 % de sa
-     hauteur. L'image se raccorde bord à bord : sur un écran plus large
-     qu'elle, elle se répète sans couture. */
-  .fh-montagnes {
-    top: auto;
-    height: 60%;
-    background: url('/fond/montagnes.svg') center bottom / auto 100% repeat-x;
-  }
-  /* Le grain de pellicule : il casse les aplats des dégradés. */
-  .fh-grain {
-    background: url('/fond/grain.png') repeat;
-    background-size: 200px 200px;
-    mix-blend-mode: overlay;
-    opacity: 0.16;
-  }
-  /* Le voile : un vignettage qui tient les bords dans l'ombre, et une nappe
-     légère qui garde le texte blanc lisible sur le verre. */
-  .fh-voile {
-    z-index: 6;
-    background:
-      radial-gradient(125% 100% at 50% 40%, transparent 55%, color-mix(in srgb, var(--bg-deep) 62%, transparent) 100%),
-      linear-gradient(180deg, color-mix(in srgb, var(--bg) 8%, transparent) 0%, color-mix(in srgb, var(--bg) 22%, transparent) 100%);
+    background-color: var(--fond);
   }
 
   /* --------------------------------------------------------------------------
@@ -444,7 +379,7 @@
     /* La lentille. Le flou efface le détail du décor, la saturation en garde
        les couleurs, et la luminance baisse d'un cinquième : le texte blanc reste
        lisible sans qu'aucune nappe ne bouche la vue. */
-    backdrop-filter: blur(18px) saturate(170%) brightness(0.88);
+    backdrop-filter: blur(18px) saturate(140%);
     /* Transparente : le biseau conique de `::after` tient lieu de contour, et
        deux contours superposés se lisent comme un trait épais. La bordure reste
        pour que rien ne bouge d'un pixel dans la page. */
@@ -550,7 +485,7 @@
     --biseau-retour: rgb(255 255 255 / 0.18);
     --biseau-flanc: rgb(255 255 255 / 0.04);
     background: linear-gradient(160deg, var(--glass-1) 0%, var(--glass-2) 100%);
-    backdrop-filter: blur(12px) saturate(165%) brightness(0.82);
+    backdrop-filter: blur(12px) saturate(140%);
     box-shadow:
       inset 0 1px 0 rgb(255 255 255 / 0.5),
       inset 0 10px 20px -18px rgb(255 255 255 / 0.25),
@@ -3053,7 +2988,7 @@
     padding: 1.4rem 1.5rem 1.5rem;
     border-radius: var(--r-lg);
     background: linear-gradient(160deg, var(--glass-2) 0%, var(--glass-3) 100%);
-    backdrop-filter: blur(18px) saturate(170%) brightness(0.88);
+    backdrop-filter: blur(18px) saturate(140%);
     box-shadow:
       inset 0 0 0 1px color-mix(in srgb, var(--aurora) 55%, transparent),
       inset 0 1px 0 rgb(255 255 255 / 0.3),
@@ -8119,11 +8054,11 @@
   }
   .admin-chiffre > span {
     font-family: var(--font-display);
-    font-size: 0.75rem;
+    font-size: 0.875rem;
     font-weight: 800;
-    letter-spacing: 0.18em;
+    letter-spacing: 0.14em;
     text-transform: uppercase;
-    color: var(--faint);
+    color: var(--ink-2);
   }
   .admin-chiffre > strong {
     font-family: var(--font-display);
@@ -8140,7 +8075,7 @@
     color: var(--aurora);
   }
   .admin-chiffre > em {
-    font-size: 0.8125rem;
+    font-size: 0.875rem;
     font-style: normal;
     color: var(--muted);
   }
@@ -8185,8 +8120,8 @@
     grid-row: 1 / span 2;
     grid-column: 2;
     align-self: center;
-    font-size: 0.8125rem;
-    color: var(--faint);
+    font-size: 0.875rem;
+    color: var(--muted);
     white-space: nowrap;
   }
   .admin-liste-plus {

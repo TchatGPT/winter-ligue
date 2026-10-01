@@ -116,7 +116,7 @@ export default async function AdminAccueilPage() {
                   <span className="admin-liste-titre">
                     {s.pseudo}
                     {s.twitchId && !inscrits.has(s.twitchId) && (
-                      <span className="ml-2 text-[11px] font-normal tracking-[0.12em] text-gold uppercase">
+                      <span className="ml-2 text-[12px] font-normal tracking-[0.12em] text-gold uppercase">
                         pas inscrit
                       </span>
                     )}

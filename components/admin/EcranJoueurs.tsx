@@ -186,7 +186,7 @@ export function EcranJoueurs({
           {dernierCode && (
             <div className="mt-4 flex items-center justify-between gap-3 rounded-lg border border-aurora/40 px-3 py-2.5">
               <div className="min-w-0">
-                <p className="text-[12px] text-faint">
+                <p className="text-[13px] text-muted">
                   {dernierCode.annonce ? 'Code créé — annoncé dans le tchat' : 'Code créé — à annoncer sur le stream'}
                 </p>
                 <p className="truncate font-display text-2xl font-black tracking-[0.14em] text-ink">
@@ -231,7 +231,7 @@ export function EcranJoueurs({
                         >
                           {c.code}
                         </button>
-                        <div className="text-[11px] text-faint">{shortDateTime(c.creeLe)}</div>
+                        <div className="text-[12px] text-muted">{shortDateTime(c.creeLe)}</div>
                       </td>
                       <td className="num text-right text-ice">❄ {flakes(c.montant)}</td>
                       <td className="num text-right text-muted">
