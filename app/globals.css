@@ -6022,6 +6022,40 @@
 .tableau-verre-carte:has(details[open]) {
   background: linear-gradient(180deg, rgb(226 242 255 / 0.06), rgb(226 242 255 / 0.02));
 }
+/* Le rang, serti dans un disque gravé : la couronne et les médailles sont de
+   la glace transparente, il leur faut un fond plus sombre pour se détacher.
+   Le podium teinte le disque — or, argent, cuivre — d'un fond et d'un liseré,
+   jamais d'un halo. */
+.rang-socle {
+  --socle-teinte: var(--glass-edge);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 46px;
+  height: 46px;
+  border-radius: var(--r-pilule);
+  background:
+    radial-gradient(circle at 50% 35%, color-mix(in oklab, var(--socle-teinte) 30%, transparent), transparent 70%),
+    color-mix(in oklab, var(--bg-deep) 55%, transparent);
+  box-shadow:
+    inset 0 2px 4px color-mix(in oklab, var(--bg-deep) 60%, transparent),
+    inset 0 0 0 1.5px color-mix(in oklab, var(--socle-teinte) 70%, transparent),
+    0 1px 0 var(--glass-hi-soft);
+}
+.rang-socle[data-podium='1'] {
+  --socle-teinte: var(--gold);
+}
+.rang-socle[data-podium='2'] {
+  --socle-teinte: var(--frost);
+}
+.rang-socle[data-podium='3'] {
+  --socle-teinte: var(--r-ur);
+}
+.rang-socle svg {
+  /* La couronne a ses glaçons en dessous : on la remonte un peu au centre. */
+  transform: translateY(-1px);
+}
+
 .tableau-verre-carte summary::-webkit-details-marker {
   display: none;
 }

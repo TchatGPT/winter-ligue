@@ -278,8 +278,8 @@ export function Classement({ rows, outils }: { rows: RankingRow[]; outils?: Reac
           <li key={row.id} className="tableau-verre-carte">
             <details>
               <summary className="flex cursor-pointer items-center gap-3 px-4 py-3 select-none">
-                <span className="flex w-9 shrink-0 justify-center">
-                  <Rang rang={row.rank} />
+                <span className="rang-socle" data-podium={row.rank <= 3 ? row.rank : undefined}>
+                  <Rang rang={row.rank} taille="h-8 w-8" ou="liste" />
                 </span>
                 <span className="min-w-0 flex-1">
                   <Pseudo row={row} />
@@ -325,10 +325,23 @@ export function Classement({ rows, outils }: { rows: RankingRow[]; outils?: Reac
  * Le rang : la couronne gelée du leader pour le premier — la même que dans le
  * hero —, une médaille gelée pour le deuxième et le troisième, un chiffre
  * pour les autres. Le podium se lit avant même qu'on lise les points.
+ *
+ * Sur mobile, le rang est serti dans un disque gravé (`.rang-socle`), teinté
+ * or, argent ou cuivre pour le podium : la glace, transparente, se perdait
+ * dans le bleu de la plaque.
  */
-function Rang({ rang }: { rang: number }) {
-  if (rang === 1) return <CouronneGlace className="mx-auto h-8 w-8 @min-[100rem]:h-10 @min-[100rem]:w-10" id="couronne-classement" />;
-  if (rang === 2 || rang === 3) return <MedailleGlace rang={rang} className="mx-auto h-8 w-8 @min-[100rem]:h-10 @min-[100rem]:w-10" />;
+function Rang({
+  rang,
+  taille = 'h-8 w-8 @min-[100rem]:h-10 @min-[100rem]:w-10',
+  ou = 'table',
+}: {
+  rang: number;
+  taille?: string;
+  /** Le tableau et la liste coexistent dans la page : un `id` de dégradés chacun. */
+  ou?: 'table' | 'liste';
+}) {
+  if (rang === 1) return <CouronneGlace className={`mx-auto ${taille}`} id={`couronne-classement-${ou}`} />;
+  if (rang === 2 || rang === 3) return <MedailleGlace rang={rang} className={`mx-auto ${taille}`} id={`medaille-${rang}-${ou}`} />;
   return <span className="num font-display text-[20px] font-black text-muted @min-[100rem]:text-[24px]">{rang}</span>;
 }
 
