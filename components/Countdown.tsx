@@ -3,11 +3,10 @@
 import { useEffect, useState } from 'react';
 
 /**
- * Compte à rebours d'une vente.
+ * Compte à rebours d'un événement de la saison.
  *
- * Purement cosmétique : quand il atteint zéro, la vente n'est pas close pour
- * autant — c'est le serveur qui tranche, à la première lecture du marché ou au
- * passage du cron. Une horloge client avancée ne donne donc aucun avantage.
+ * Purement cosmétique : quand il atteint zéro, c'est le serveur qui tranche.
+ * Une horloge client avancée ne donne donc aucun avantage.
  */
 export function Countdown({
   endsAt,

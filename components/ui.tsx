@@ -43,8 +43,8 @@ export function StatTile({
   return (
     <div className="glass flex flex-col px-4 py-3.5 sm:px-5 sm:py-4">
       {/* Le libellé passe à la ligne au lieu d'être tronqué : sur une grille à
-          deux colonnes de téléphone, « Ventes en cours » ne tient pas, et
-          « Ventes en cou… » ne veut plus rien dire. */}
+          deux colonnes de téléphone, « Cadeaux en attente » ne tient pas, et
+          « Cadeaux en att… » ne veut plus rien dire. */}
       <div className="text-[12.5px] leading-tight font-semibold tracking-[0.1em] text-faint uppercase">
         {label}
       </div>

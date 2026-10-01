@@ -136,12 +136,6 @@ export function Classement({ rows, outils }: { rows: RankingRow[]; outils?: Reac
             <>
               Carte active de <strong className="text-ink">{fiche.pseudo}</strong> : elle tombera
               sur sa prochaine game.
-              {fiche.enReserve > 0 && (
-                <>
-                  {' '}
-                  {fiche.enReserve} autre{fiche.enReserve > 1 ? 's' : ''} en réserve derrière.
-                </>
-              )}
             </>
           }
           onClose={() => setFiche(null)}
@@ -341,8 +335,7 @@ function Pseudo({ row }: { row: RankingRow }) {
  *
  * La carte elle-même, en vignette, dans son cadre peint — on la reconnaît à
  * sa silhouette et à sa couleur avant de lire quoi que ce soit. À côté, le nom
- * et l'effet en clair. Un clic l'ouvre en grand. Une seule carte : les
- * suivantes attendent leur tour, et on le dit d'un chiffre.
+ * et l'effet en clair. Un clic l'ouvre en grand.
  */
 function CarteActive({ row, onOuvrir }: { row: RankingRow; onOuvrir: () => void }) {
   if (!row.carte) return <span className="text-[13px] text-faint">—</span>;
@@ -370,11 +363,6 @@ function CarteActive({ row, onOuvrir }: { row: RankingRow; onOuvrir: () => void 
         <span className="block truncate text-[14px] font-bold text-ink">{c.nom}</span>
         <span className="block truncate text-[13px] text-ink-2">{c.action}</span>
         <span className="block text-[13px] text-muted">{c.resume}</span>
-        {row.enReserve > 0 && (
-          <span className="block text-[13px] tracking-wider text-faint uppercase">
-            +{row.enReserve} en réserve
-          </span>
-        )}
       </span>
     </button>
   );

@@ -103,8 +103,6 @@ export interface RankingRow {
     nature: 'bonus' | 'malus';
     power: number;
   } | null;
-  /** Les cartes qui attendent derrière elle, une par game suivante. */
-  enReserve: number;
   /** Vrai pour les places qualificatives pour la finale. */
   finalist: boolean;
 }
@@ -140,13 +138,13 @@ export async function getRanking(): Promise<RankingRow[]> {
 }
 
 /**
- * La carte active d'un joueur et ce qui attend derrière.
+ * La carte active d'un joueur : celle qui tombera sur sa prochaine game.
  *
  * La carte active est la plus ancienne de celles qui attendent **la prochaine
  * game**. Une carte qui relève une game déjà jouée n'attend pas la suivante :
  * elle se règle dès qu'elle le peut, et ne passe devant personne.
  */
-function carteActive(db: Database, playerId: string): Pick<RankingRow, 'carte' | 'enReserve'> {
+function carteActive(db: Database, playerId: string): Pick<RankingRow, 'carte'> {
   const attente = db.cartesEnAttente
     .filter((c) => c.joueurId === playerId && c.consommeeA === null)
     .sort((a, b) => a.creeA.localeCompare(b.creeA));
@@ -171,7 +169,6 @@ function carteActive(db: Database, playerId: string): Pick<RankingRow, 'carte' |
             power: card.power,
           }
         : null,
-    enReserve: Math.max(0, attente.length - 1),
   };
 }
 

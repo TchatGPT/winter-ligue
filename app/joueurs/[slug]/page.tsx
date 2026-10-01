@@ -375,44 +375,7 @@ export default async function FicheJoueurPage({ params }: { params: Promise<{ sl
               </h2>
             </header>
 
-            <h3 className="fiche-bloc-titre mt-4">En attente</h3>
-            {p.cartesEnAttente.length === 0 ? (
-              <p className="mt-1.5 text-[13.5px] text-muted">
-                Aucune. Un Booster Perso tous les {PACKS_REGLES.persoTousLes} subs offerts, et les boosters de
-                la ligue.
-              </p>
-            ) : (
-              <ul className="fiche-cartes">
-                {p.cartesEnAttente.map((c) => {
-                  // Le tour d'une carte se compte parmi celles qui attendent une
-                  // prochaine game : les autres ne passent devant personne.
-                  const tour =
-                    c.moment === 'PROCHAINE'
-                      ? p.cartesEnAttente.filter((x) => x.moment === 'PROCHAINE').findIndex((x) => x.id === c.id)
-                      : -1;
-                  return (
-                    <li key={c.id}>
-                      <span className="fiche-carte">
-                        <CardFrame
-                          cardId={c.cardId}
-                          name={c.nom}
-                          rarity={c.rarity}
-                          glyph={c.glyph}
-                          nature={c.nature}
-                          dimmed={tour > 0}
-                        />
-                      </span>
-                      <b>{c.action}</b>
-                      <small>
-                        {tour === 0 ? 'Active' : tour > 0 ? `En réserve, game +${tour + 1}` : 'Relève une game jouée'}
-                      </small>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-
-            <h3 className="fiche-bloc-titre mt-5">Dernières reçues</h3>
+            <h3 className="fiche-bloc-titre mt-4">Dernières reçues</h3>
             {p.ouvertures.length === 0 ? (
               <p className="mt-1.5 text-[13.5px] text-muted">Aucune carte reçue pour l’instant.</p>
             ) : (

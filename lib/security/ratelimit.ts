@@ -3,8 +3,8 @@ import 'server-only';
 /**
  * Limitation de débit par seau à jetons, en mémoire.
  *
- * Elle protège contre les connexions en rafale, le spam d'enchères et
- * l'ouverture en boucle de boosters. Sur un déploiement multi-instances il
+ * Elle protège contre les connexions en rafale, les codes cadeaux tentés à
+ * la chaîne et l'ouverture en boucle de boosters. Sur un déploiement multi-instances il
  * faudra la déporter (Redis/Upstash) : le contrat de `consume()` est fait pour
  * que ce remplacement soit local. Voir `docs/SECURITE.md`.
  */
@@ -89,8 +89,6 @@ export const LIMITS = {
   login: { limit: 5, windowMs: 15 * 60_000 },
   /** Écritures de jeu (cartes, boosters). */
   mutation: { limit: 30, windowMs: 60_000 },
-  /** Enchères : plus permissif, une fin de vente est nerveuse. */
-  bid: { limit: 60, windowMs: 60_000 },
   /** Lectures d'API. */
   read: { limit: 240, windowMs: 60_000 },
   /** Codes cadeaux : dix essais par dix minutes, pour qu'on ne trouve pas un code en les enchaînant. */

@@ -1,10 +1,15 @@
 /**
- * Jeu d'icônes tracées, en SVG inline.
+ * Jeu d'icônes, en SVG inline.
  *
- * Aucune police d'icônes ni bibliothèque : sept tracés pèsent moins qu'une
+ * Aucune police d'icônes ni bibliothèque : quelques tracés pèsent moins qu'une
  * requête réseau, prennent la couleur du texte par `currentColor`, et restent
  * nets à toutes les tailles. Les emojis, eux, imposent leur propre palette et
  * font « jouet » dans une navigation.
+ *
+ * Un seul style pour toutes : un trait franc et arrondi, et un aplat
+ * translucide dans la forme principale (`Fond`) — le « duotone ». Le trait fin
+ * d'autrefois, sans aplat, se perdait à 18 px. Pour que trait et aplat restent
+ * de la même couleur, on colore une icône par `color`, jamais par `stroke`.
  */
 
 type IconProps = { className?: string };
@@ -13,7 +18,7 @@ const BASE = {
   viewBox: '0 0 24 24',
   fill: 'none',
   stroke: 'currentColor',
-  strokeWidth: 1.6,
+  strokeWidth: 1.9,
   strokeLinecap: 'round' as const,
   strokeLinejoin: 'round' as const,
   'aria-hidden': true,
@@ -27,53 +32,54 @@ function Svg({ className, children }: IconProps & { children: React.ReactNode })
   );
 }
 
-/** Classement — un trophée. */
+/** L'aplat translucide d'une forme : la seconde teinte du duotone. */
+function Fond({ d }: { d: string }) {
+  return <path d={d} fill="currentColor" fillOpacity={0.24} stroke="none" />;
+}
+
+/** Classement — une coupe. */
 export function IconTrophy(props: IconProps) {
+  const coupe = 'M7 3.5h10V9a5 5 0 0 1-10 0V3.5Z';
   return (
     <Svg {...props}>
-      <path d="M7 4h10v5a5 5 0 0 1-10 0V4Z" />
-      <path d="M7 6H4.5A1.5 1.5 0 0 0 3 7.5C3 9.4 4.6 11 6.5 11H7" />
-      <path d="M17 6h2.5A1.5 1.5 0 0 1 21 7.5C21 9.4 19.4 11 17.5 11H17" />
-      <path d="M12 14v4" />
-      <path d="M8.5 21h7l-.8-3h-5.4l-.8 3Z" />
+      <Fond d={coupe} />
+      <path d={coupe} />
+      <path d="M7 5.5H4.8a1.3 1.3 0 0 0-1.3 1.4C3.7 9 5.2 10.6 7.2 10.8" />
+      <path d="M17 5.5h2.2a1.3 1.3 0 0 1 1.3 1.4c-.2 2.1-1.7 3.7-3.7 3.9" />
+      <path d="M12 14v3.5" />
+      <path d="M8 20.5h8M9.5 17.5h5" />
     </Svg>
   );
 }
 
-/** Boosters — un sachet scellé. */
+/** Boosters — un paquet de cartes, une étoile sur celle du dessus. */
 export function IconPack(props: IconProps) {
+  const carte = 'M9 3h9a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z';
   return (
     <Svg {...props}>
-      <path d="M6 6.5h12a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V7.5a1 1 0 0 1 1-1Z" />
-      <path d="M5 4.2c1 .9 2 .9 3 0s2-.9 3 0 2 .9 3 0 2-.9 3 0 2 .9 2 0" />
-      <path d="M12 10.5v6" />
-      <path d="m9.5 13 2.5-2.5 2.5 2.5" />
+      <Fond d={carte} />
+      <path d={carte} />
+      <path d="M4 7v12a2 2 0 0 0 2 2h9" />
+      <path
+        d="m13.5 7.2.9 2.4 2.4.9-2.4.9-.9 2.4-.9-2.4-2.4-.9 2.4-.9.9-2.4Z"
+        fill="currentColor"
+        strokeWidth={1.2}
+      />
     </Svg>
   );
 }
 
-/** Hôtel des ventes — un marteau de commissaire-priseur. */
-export function IconGavel(props: IconProps) {
-  return (
-    <Svg {...props}>
-      <path d="m14.5 3.5 6 6" />
-      <path d="m17.5 2.5-2 2 5 5 2-2-5-5Z" />
-      <path d="m12.5 8.5 3 3" />
-      <path d="M13 10 4 19l1.5 1.5 9-9" />
-      <path d="M3 21.5h8" />
-    </Svg>
-  );
-}
+/** Boosters, dans la navigation : le même paquet de cartes. */
+export const IconRocket = IconPack;
 
-/** Batailles — deux lames croisées. */
+/** Duels — deux épées croisées. */
 export function IconSwords(props: IconProps) {
   return (
     <Svg {...props}>
-      <path d="M14.5 3.5H20v5.5l-8.5 8.5-5.5-5.5 8.5-8.5Z" />
-      <path d="m3.5 20.5 3-3" />
-      <path d="M9.5 3.5H4v5.5l3.2 3.2" />
-      <path d="m20.5 20.5-3-3" />
-      <path d="m12.3 12.3 3.2 3.2" />
+      <path d="M14.5 17.5 3 6V3h3l11.5 11.5" />
+      <path d="m13 19 6-6M16 16l4 4M19 21l2-2" />
+      <path d="M14.5 6.5 18 3h3v3l-3.5 3.5" />
+      <path d="m5 14 4 4M7 17l-3 3M3 19l2 2" />
     </Svg>
   );
 }
@@ -82,64 +88,75 @@ export function IconSwords(props: IconProps) {
 export function IconPlus(props: IconProps) {
   return (
     <Svg {...props}>
-      <circle cx="5.5" cy="12" r="1.4" fill="currentColor" stroke="none" />
-      <circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none" />
-      <circle cx="18.5" cy="12" r="1.4" fill="currentColor" stroke="none" />
+      <circle cx="5.5" cy="12" r="1.6" fill="currentColor" stroke="none" />
+      <circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none" />
+      <circle cx="18.5" cy="12" r="1.6" fill="currentColor" stroke="none" />
     </Svg>
   );
 }
 
 /** Collection — des cartes empilées. */
 export function IconLayers(props: IconProps) {
+  const dessus = 'm12 2.5 9 4.6-9 4.6-9-4.6 9-4.6Z';
   return (
     <Svg {...props}>
-      <path d="m12 2.5 9 4.6-9 4.6-9-4.6 9-4.6Z" />
+      <Fond d={dessus} />
+      <path d={dessus} />
       <path d="m3 12.2 9 4.6 9-4.6" />
       <path d="m3 16.9 9 4.6 9-4.6" />
     </Svg>
   );
 }
 
-/** Règles — un livre ouvert. */
+/** Règles, journal — un livre ouvert. */
 export function IconBook(props: IconProps) {
+  const gauche = 'M2.5 4h5.5a4 4 0 0 1 4 4v12.5a3 3 0 0 0-3-3H2.5V4Z';
+  const droite = 'M21.5 4H16a4 4 0 0 0-4 4v12.5a3 3 0 0 1 3-3h6.5V4Z';
   return (
     <Svg {...props}>
-      <path d="M12 6.5C10.5 5 8.5 4.3 6 4.3c-1 0-1.8.1-2.5.3v14c.7-.2 1.5-.3 2.5-.3 2.5 0 4.5.7 6 2.2" />
-      <path d="M12 6.5c1.5-1.5 3.5-2.2 6-2.2 1 0 1.8.1 2.5.3v14c-.7-.2-1.5-.3-2.5-.3-2.5 0-4.5.7-6 2.2" />
-      <path d="M12 6.5v14" />
+      <Fond d={gauche} />
+      <Fond d={droite} />
+      <path d={gauche} />
+      <path d={droite} />
     </Svg>
   );
 }
 
-/** Modération — un engrenage. */
+/** Réglages — un engrenage. */
 export function IconGear(props: IconProps) {
+  const roue =
+    'M10.3 3.3a1.7 1.7 0 0 1 3.4 0l.2 1.2a7.6 7.6 0 0 1 1.9 1.1l1.1-.4a1.7 1.7 0 0 1 2.1.8l.1.2a1.7 1.7 0 0 1-.4 2.1l-.9.8a7.6 7.6 0 0 1 0 2.2l.9.8a1.7 1.7 0 0 1 .4 2.1l-.1.2a1.7 1.7 0 0 1-2.1.8l-1.1-.4a7.6 7.6 0 0 1-1.9 1.1l-.2 1.2a1.7 1.7 0 0 1-3.4 0l-.2-1.2a7.6 7.6 0 0 1-1.9-1.1l-1.1.4a1.7 1.7 0 0 1-2.1-.8l-.1-.2a1.7 1.7 0 0 1 .4-2.1l.9-.8a7.6 7.6 0 0 1 0-2.2l-.9-.8a1.7 1.7 0 0 1-.4-2.1l.1-.2a1.7 1.7 0 0 1 2.1-.8l1.1.4a7.6 7.6 0 0 1 1.9-1.1l.2-1.2Z';
   return (
     <Svg {...props}>
-      <circle cx="12" cy="12" r="3" />
-      <path d="M12 2.5v2.2M12 19.3v2.2M21.5 12h-2.2M4.7 12H2.5M18.7 5.3l-1.6 1.6M6.9 17.1l-1.6 1.6M18.7 18.7l-1.6-1.6M6.9 6.9 5.3 5.3" />
+      <g transform="translate(0 1.7)">
+        <Fond d={roue} />
+        <path d={roue} />
+      </g>
+      <circle cx="12" cy="12" r="2.6" />
     </Svg>
   );
 }
 
-/** Profil — une silhouette. */
+/** Profil, joueurs — une silhouette. */
 export function IconUser(props: IconProps) {
   return (
     <Svg {...props}>
-      <circle cx="12" cy="8" r="3.6" />
-      <path d="M4.5 20.5a7.5 7.5 0 0 1 15 0" />
+      <circle cx="12" cy="8" r="4" fill="currentColor" fillOpacity={0.24} />
+      <path d="M4 21a8 8 0 0 1 16 0" />
     </Svg>
   );
 }
 
-/** Flocon, pour les touches de marque. */
+/** Une branche de flocon : un axe, une paire de barbes. */
+const BRANCHE = 'M12 12V2.5M9.2 4.6 12 7.2l2.8-2.6';
+
+/** Flocon, pour les touches de marque et la saison — six branches barbelées. */
 export function IconSnowflake(props: IconProps) {
   return (
     <Svg {...props}>
-      <path d="M12 2.5v19" />
-      <path d="m3.8 7.2 16.4 9.6" />
-      <path d="m20.2 7.2-16.4 9.6" />
-      <path d="m9.2 4.4 2.8 2.4 2.8-2.4" />
-      <path d="m9.2 19.6 2.8-2.4 2.8 2.4" />
+      {[0, 60, 120, 180, 240, 300].map((angle) => (
+        <path key={angle} d={BRANCHE} transform={`rotate(${angle} 12 12)`} />
+      ))}
     </Svg>
   );
 }
@@ -156,41 +173,31 @@ export function IconImpact(props: IconProps) {
     <Svg {...props}>
       <path d="M12 3v4.2M12 16.8V21M3 12h4.2M16.8 12H21" />
       <path d="M6 6l2.8 2.8M15.2 15.2 18 18M18 6l-2.8 2.8M8.8 15.2 6 18" />
-      <circle cx="12" cy="12" r="3.1" />
+      <circle cx="12" cy="12" r="3.1" fill="currentColor" fillOpacity={0.24} />
     </Svg>
   );
 }
 
-/** Administration — un bouclier, avec un flocon en son cœur. */
+/** Modération — un bouclier, coché. */
 export function IconShield(props: IconProps) {
+  const ecu = 'M12 2.8 4.5 5.7v5.6c0 4.6 3.2 8.3 7.5 9.9 4.3-1.6 7.5-5.3 7.5-9.9V5.7L12 2.8Z';
   return (
     <Svg {...props}>
-      <path d="M12 3 4.5 6v5c0 4.6 3.1 8 7.5 10 4.4-2 7.5-5.4 7.5-10V6L12 3Z" />
-      <path d="M12 8v8M8.6 10l6.8 4M8.6 14l6.8-4" />
+      <Fond d={ecu} />
+      <path d={ecu} />
+      <path d="m8.7 12 2.3 2.3 4.4-4.6" />
     </Svg>
   );
 }
 
-/** Boosters — une fusée, dans la colonne. */
-export function IconRocket(props: IconProps) {
-  return (
-    <Svg {...props}>
-      <path d="M14.5 3.5c2.6-.6 5 .2 6 1.2-.2 3-1.6 6.2-4.2 8.8l-3.6 3.6-4.8-4.8 3.6-3.6c.9-.9 1.9-1.6 3-2.1Z" />
-      <path d="M8.6 12.3 5.4 12l-2 2 3.6 1.2M11.7 15.4l.3 3.2-2 2-1.2-3.6" />
-      <circle cx="15.6" cy="8.4" r="1.4" />
-      <path d="M6.2 17.8c-1 1-1.5 3-1.5 3s2-.5 3-1.5" />
-    </Svg>
-  );
-}
-
-/** Vue d'ensemble — un cadran, son aiguille levée. */
+/** Vue d'ensemble — un tableau de bord en quatre tuiles. */
 export function IconJauge(props: IconProps) {
   return (
     <Svg {...props}>
-      <path d="M4 17a8 8 0 1 1 16 0" />
-      <path d="M12 17l3.6-5.2" />
-      <circle cx="12" cy="17" r="1.3" />
-      <path d="M6.3 12.2l1.2.7M12 9v1.3M17.7 12.2l-1.2.7" />
+      <rect x="3" y="3" width="7.5" height="9" rx="1.6" fill="currentColor" fillOpacity={0.24} />
+      <rect x="13.5" y="3" width="7.5" height="5" rx="1.6" />
+      <rect x="13.5" y="11" width="7.5" height="10" rx="1.6" fill="currentColor" fillOpacity={0.24} />
+      <rect x="3" y="15" width="7.5" height="6" rx="1.6" />
     </Svg>
   );
 }
@@ -199,10 +206,9 @@ export function IconJauge(props: IconProps) {
 export function IconAntenne(props: IconProps) {
   return (
     <Svg {...props}>
-      <circle cx="12" cy="10" r="1.6" />
-      <path d="M12 11.6 9 21M12 11.6 15 21M10 18h4" />
-      <path d="M8.2 6.2a5.4 5.4 0 0 0 0 7.6M15.8 6.2a5.4 5.4 0 0 1 0 7.6" />
-      <path d="M5.4 3.4a9.4 9.4 0 0 0 0 13.2M18.6 3.4a9.4 9.4 0 0 1 0 13.2" />
+      <circle cx="12" cy="12" r="2.2" fill="currentColor" />
+      <path d="M16.2 7.8a6 6 0 0 1 0 8.4M7.8 16.2a6 6 0 0 1 0-8.4" />
+      <path d="M19.1 4.9a10 10 0 0 1 0 14.2M4.9 19.1a10 10 0 0 1 0-14.2" />
     </Svg>
   );
 }
@@ -211,9 +217,9 @@ export function IconAntenne(props: IconProps) {
 export function IconCadeau(props: IconProps) {
   return (
     <Svg {...props}>
-      <rect x="3.5" y="8.5" width="17" height="4" rx="1" />
-      <path d="M5 12.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-7.5M12 8.5V21" />
-      <path d="M12 8.5c-1.4-2.9-4.9-4-5.9-2.4-.9 1.5.9 2.4 5.9 2.4Zm0 0c1.4-2.9 4.9-4 5.9-2.4.9 1.5-.9 2.4-5.9 2.4Z" />
+      <rect x="3" y="8" width="18" height="4" rx="1" fill="currentColor" fillOpacity={0.24} />
+      <path d="M12 8v13M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7" />
+      <path d="M7.5 8a2.5 2.5 0 0 1 0-5C10 3 12 8 12 8s2-5 4.5-5a2.5 2.5 0 0 1 0 5" />
     </Svg>
   );
 }
@@ -231,7 +237,6 @@ export const NAV_ICONS = {
   trophy: IconTrophy,
   pack: IconPack,
   rocket: IconRocket,
-  gavel: IconGavel,
   swords: IconSwords,
   plus: IconPlus,
   layers: IconLayers,

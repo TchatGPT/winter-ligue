@@ -44,7 +44,7 @@ export async function Sidebar() {
         <div className="menu-colonne">
           {/* ---- L'entête ---- */}
           <Link href="/" className="menu-entete no-underline">
-            <span className="menu-logo grid h-11 w-11 shrink-0 place-items-center rounded-full">
+            <span className="menu-logo grid h-11 w-11 shrink-0 place-items-center">
               <IconSnowflake className="h-6 w-6" />
             </span>
             <span className="min-w-0 leading-none">
@@ -77,7 +77,7 @@ export async function Sidebar() {
       <header className="sticky top-0 z-30 px-3 pt-3 sm:px-5 sm:pt-4 lg:hidden">
         <div className="glass flex items-center gap-3 px-4 py-3">
           <Link href="/" className="flex min-w-0 items-center gap-2.5 no-underline">
-            <span className="menu-logo grid h-10 w-10 place-items-center rounded-full">
+            <span className="menu-logo grid h-10 w-10 place-items-center">
               <IconSnowflake className="h-5 w-5" />
             </span>
             <span className="truncate font-display text-xl font-black tracking-tight max-[379px]:sr-only">

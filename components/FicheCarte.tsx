@@ -25,8 +25,8 @@ const rienAEcouter = () => () => {};
 /**
  * La fiche d'une carte, en grand, par-dessus la page.
  *
- * Rien d'autre que la carte et ce qu'elle fait : pas de marché, pas de
- * défausse, pas d'action. On l'ouvre depuis une vignette — le classement, un
+ * Rien d'autre que la carte et ce qu'elle fait : pas de défausse, pas
+ * d'action. On l'ouvre depuis une vignette — le classement, un
  * profil — pour lire la carte à sa taille, et on la referme d'un clic à côté
  * ou d'Échap.
  *

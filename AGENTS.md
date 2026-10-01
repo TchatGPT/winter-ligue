@@ -15,8 +15,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 ## Invariants à ne jamais casser
 
 1. **Aucune valeur qui compte ne vient du client.** Le navigateur envoie des kills, un
-   placement, un identifiant de carte ou de booster, un montant d'enchère. Le score,
-   l'effet d'une carte, le contenu d'un booster et la recevabilité d'une enchère sont
+   placement, un identifiant de carte ou de booster, une mise de duel. Le score,
+   l'effet d'une carte, le contenu d'un booster et la recevabilité d'une mise sont
    toujours décidés côté serveur.
 2. **`lib/domain/` ne fait aucune entrée-sortie.** Pas de `fetch`, pas de cookie, pas
    d'accès base. Ce sont des fonctions pures, couvertes par `tests/`.
@@ -110,6 +110,6 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 ## Contexte
 
 Le détail des protections et la liste de ce qui reste à faire avant la production sont
-dans `docs/SECURITE.md`. Le lire avant de toucher à l'authentification, au stockage ou au
-marché.
+dans `docs/SECURITE.md`. Le lire avant de toucher à l'authentification, au stockage ou aux
+flocons.
 <!-- END:winter-ligue -->

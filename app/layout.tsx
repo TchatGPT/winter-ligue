@@ -27,11 +27,11 @@ export const metadata: Metadata = {
     template: '%s · Winter Ligue',
   },
   description:
-    'La ligue hivernale Warzone : classement, boosters, cartes bonus et malus, et hôtel des ventes en flocons.',
+    'La ligue hivernale Warzone : classement, boosters, cartes bonus et malus, et duels en flocons.',
   applicationName: 'Winter Ligue',
   openGraph: {
     title: 'Winter Ligue — Call of Duty Warzone',
-    description: 'Classement, boosters, cartes et hôtel des ventes. Saison hivernale.',
+    description: 'Classement, boosters, cartes et duels. Saison hivernale.',
     type: 'website',
     locale: 'fr_FR',
   },

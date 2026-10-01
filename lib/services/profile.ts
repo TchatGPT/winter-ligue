@@ -14,8 +14,6 @@ import { chanceDe, SEASON } from '@/lib/domain/rules';
 import { estLaStreameuse } from '@/lib/domain/streameuse';
 import { classementDe, gamesOf, totalsOf } from './league';
 import {
-  cartesEnAttenteDe,
-  type CarteEnAttenteVue,
   type OuvertureVue,
   vueOuverture,
 } from './packs';
@@ -31,7 +29,6 @@ export interface ProfileView {
   chance: number;
   /** Packs en file pour ce joueur, pas encore ouverts. */
   packsDus: { id: string; pack: string; raison: string; creeA: string }[];
-  cartesEnAttente: CarteEnAttenteVue[];
   /** Les dernières ouvertures qui l'ont concerné. */
   ouvertures: OuvertureVue[];
   totals: ReturnType<typeof totalsOf>;
@@ -64,7 +61,6 @@ function buildProfile(db: Database, playerId: string): ProfileView | null {
     packsDus: db.packsDus
       .filter((p) => p.joueurId === playerId && p.ouvertureId === null)
       .map((p) => ({ id: p.id, pack: p.packId, raison: p.raison, creeA: p.creeA })),
-    cartesEnAttente: cartesEnAttenteDe(db, playerId),
     ouvertures: [...db.ouvertures]
       .filter((o) => o.joueurId === playerId || o.beneficiaires.includes(playerId))
       .sort((a, b) => b.openedAt.localeCompare(a.openedAt))

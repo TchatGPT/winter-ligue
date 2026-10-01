@@ -10,10 +10,10 @@
  *     chaînes différentes pour le même nombre.
  *   — Les dates : sans fuseau explicite, chaque environnement rend l'heure
  *     dans le sien. Un serveur en UTC et un visiteur à Paris n'affichent pas
- *     la même heure pour la même vente.
+ *     la même heure pour la même game.
  *
  * Ces fonctions produisent donc la même sortie partout, ce qui supprime toute
- * une classe de bugs d'hydratation — et accessoirement fige l'heure des ventes
+ * une classe de bugs d'hydratation — et accessoirement fige l'heure des games
  * sur le fuseau de la ligue, ce qui est de toute façon ce qu'on veut.
  */
 

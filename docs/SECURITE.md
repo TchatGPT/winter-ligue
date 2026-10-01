@@ -13,7 +13,7 @@ Trois attaquants à considérer, par ordre de probabilité :
 1. **Un joueur qui veut gonfler son score.** Il a un compte légitime, un navigateur, et
    les outils de développement ouverts. C'est la menace principale.
 2. **Un joueur qui veut fabriquer des flocons.** Achats concurrents, double clic,
-   requêtes rejouées, enchères simultanées.
+   requêtes rejouées, duels simultanés.
 3. **Un tiers qui veut casser ou défigurer le site.** XSS via un pseudo, CSRF, vol de
    session, déni de service applicatif.
 
@@ -30,7 +30,7 @@ Le navigateur envoie **des identifiants et des faits bruts**, jamais des résult
 | kills, placement | le score, avec `scoreGame()` |
 | un identifiant de copie de carte | l'effet, relu dans le catalogue serveur |
 | un identifiant de booster | le contenu, tiré par `rollBooster()` |
-| un montant d'enchère | s'il est recevable, avec `checkBid()` |
+| une mise de duel | si elle est recevable, contre son solde |
 
 Le champ `score` stocké en base n'est **qu'un cache** : `recomputeGame()` le réécrit à
 partir des kills, du placement, du multiplicateur et des bonus. Une écriture directe en
@@ -67,22 +67,11 @@ d'état à moitié écrit.
 `debit()` lève sur solde insuffisant. Combiné au rollback, c'est ce qui garantit
 qu'aucune séquence de requêtes concurrentes ne peut créer des flocons.
 
-### 4. Les enchères sont sous séquestre
+### 4. Plus de marché
 
-Enchérir **débite immédiatement**. L'enchérisseur précédent est remboursé dans la même
-transaction. À aucun instant la somme des soldes et des séquestres ne change — c'est
-vérifié par les tests (`sellerPayout(p) + marketFee(p) === p`).
-
-Conséquences directes :
-
-- impossible de miser sur dix ventes avec le même solde ;
-- impossible de gagner une enchère qu'on ne peut pas payer ;
-- une carte mise en vente porte un `listingId` qui la rend **injouable** : on ne peut pas
-  la vendre et la consommer en même temps.
-
-L'anti-snipe (une mise dans la dernière minute repousse la clôture d'une minute) rend
-inutile toute course à l'horloge — et le compte à rebours affiché est purement cosmétique,
-c'est le serveur qui tranche.
+Il n'y a plus ni hôtel des ventes, ni enchères, ni vente de cartes : rien ne s'échange
+entre joueurs que les flocons d'un duel. Les tables du marché ont été retirées de la base
+(voir la migration de `lib/db/store.ts`), et aucune route n'en reste.
 
 ### 5. Idempotence
 
@@ -122,8 +111,7 @@ Rien de la ligue ne se lit sans compte : le classement (`GET /api/players`), les
 (`GET /api/affrontements`) et le compteur de subs (`GET /api/admin/subs`) exigent une
 session, comme les pages.
 
-Le profil public (`getPublicProfile`) retire la main, le grand livre et les enchères en
-cours **avant** l'envoi : ces informations ne transitent jamais, elles ne sont pas
+Le profil public (`getPublicProfile`) retire le grand livre **avant** l'envoi : ces informations ne transitent jamais, elles ne sont pas
 seulement masquées à l'affichage.
 
 ### 8. Validation des entrées
@@ -145,7 +133,7 @@ balise HTML ne peut y entrer, avant même l'échappement de React.
 | En-tête | Ce qu'il empêche |
 |---|---|
 | `Content-Security-Policy` avec nonce | l'exécution de tout script injecté |
-| `frame-ancestors 'none'` + `X-Frame-Options: DENY` | le détournement de clic sur les boutons d'enchère |
+| `frame-ancestors 'none'` + `X-Frame-Options: DENY` | le détournement de clic sur les boutons du site |
 | `X-Content-Type-Options: nosniff` | l'interprétation d'un fichier comme script |
 | `Referrer-Policy: strict-origin-when-cross-origin` | la fuite d'URL vers des tiers |
 | `Permissions-Policy` | l'accès caméra/micro/position, le suivi publicitaire (`browsing-topics`) |
@@ -181,7 +169,6 @@ juste après la remise à zéro d'une fenêtre :
 |---|---|
 | Export de sauvegarde, connexion de développement | 5 / 15 min / IP |
 | Écritures de jeu | 30 / min / IP |
-| Enchères | 60 / min / IP |
 | Lectures d'API | 240 / min / IP |
 | Messages de Twitch (EventSub) | 1 200 / min / IP |
 | Codes cadeaux | 10 / 10 min / IP |
