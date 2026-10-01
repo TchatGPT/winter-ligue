@@ -4,11 +4,14 @@ import { emptyDatabase } from '@/lib/db/store';
 import { cartesDuPack, getCard, momentDe, PACKS } from '@/lib/domain/catalog';
 import { CHANCE, ECONOMY, RARITY_WEIGHTS_BASE, WEIGHT_TOTAL } from '@/lib/domain/rules';
 import { RARITIES, type Rarity } from '@/lib/domain/types';
+import { addSubs } from '@/lib/services/subs';
 import {
+  ajoutePackDu,
   ajusteBoostersPerso,
   cartesEnAttenteDe,
   fileDesPacks,
   ouvrePack,
+  ouvreProchainDu,
   PackError,
   reglagePack,
   resolvedPack,
@@ -347,5 +350,50 @@ describe('la file des boosters', () => {
     expect(verifieFinisseur(db, 'a')?.packId).toBe('finisseur');
     expect(verifieFinisseur(db, 'a')).toBeNull();
     expect(db.packsDus).toHaveLength(1);
+  });
+});
+
+describe('on n’ouvre que ce qui est dû', () => {
+  it('refuse un booster collectif tant que son palier n’est pas atteint', () => {
+    const db = ligue('a', 'b');
+    expect(() => ouvreProchainDu(db, { packId: 'commu', idempotencyKey: 'k1' }, 'modo')).toThrow(PackError);
+    expect(() => ouvreProchainDu(db, { packId: 'folie', idempotencyKey: 'k2' }, 'modo')).toThrow(PackError);
+    expect(db.ouvertures).toHaveLength(0);
+  });
+
+  it('met un Booster Folie en file tous les deux cents subs', () => {
+    const db = ligue('a', 'b');
+    addSubs(db, 199, 'modo');
+    expect(fileDesPacks(db).filter((d) => d.packId === 'folie')).toHaveLength(0);
+    addSubs(db, 1, 'modo');
+    expect(fileDesPacks(db).filter((d) => d.packId === 'folie')).toHaveLength(1);
+    const o = ouvreProchainDu(db, { packId: 'folie', idempotencyKey: 'f1' }, 'modo');
+    expect(o.packId).toBe('folie');
+    expect(fileDesPacks(db).filter((d) => d.packId === 'folie')).toHaveLength(0);
+  });
+
+  it('n’ouvre un Booster Perso que pour un joueur qui en a un, et consomme le plus ancien', () => {
+    const db = ligue('a', 'b');
+    expect(() =>
+      ouvreProchainDu(db, { packId: 'perso', joueurId: 'a', idempotencyKey: 'p0' }, 'modo'),
+    ).toThrow(PackError);
+    const premierDu = ajoutePackDu(db, 'perso', 'a', 'ajouté par la modération');
+    ajoutePackDu(db, 'perso', 'a', 'ajouté par la modération');
+    ajoutePackDu(db, 'perso', 'b', 'ajouté par la modération');
+    ouvreProchainDu(db, { packId: 'perso', joueurId: 'a', idempotencyKey: 'p1' }, 'modo');
+    expect(premierDu.ouvertureId).not.toBeNull();
+    const restants = fileDesPacks(db).filter((d) => d.packId === 'perso');
+    expect(restants.filter((d) => d.joueurId === 'a')).toHaveLength(1);
+    expect(restants.filter((d) => d.joueurId === 'b')).toHaveLength(1);
+  });
+
+  it('rend la même ouverture à la même clé, même une fois la file vidée', () => {
+    const db = ligue('a', 'b');
+    ajoutePackDu(db, 'perso', 'a', 'ajouté par la modération');
+    const demande = { packId: 'perso' as const, joueurId: 'a', idempotencyKey: 'meme' };
+    const une = ouvreProchainDu(db, demande, 'modo');
+    const deux = ouvreProchainDu(db, demande, 'modo');
+    expect(deux.id).toBe(une.id);
+    expect(db.ouvertures).toHaveLength(1);
   });
 });

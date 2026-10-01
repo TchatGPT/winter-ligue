@@ -60,6 +60,7 @@ export class PackError extends Error {
       | 'JOUEUR_REQUIS'
       | 'JOUEUR_INTROUVABLE'
       | 'STREAMEUSE'
+      | 'AUCUN_DU'
       | 'AUCUN_BENEFICIAIRE',
   ) {
     super(message);
@@ -243,6 +244,46 @@ export function fileDesPacks(db: Database): PackDuVue[] {
 }
 
 /* ------------------------------- L'ouverture ----------------------------- */
+
+/**
+ * Ouvre le plus ancien booster dû de ce type — pour ce joueur, si le booster
+ * va à quelqu'un. C'est la seule porte de l'écran Boosters : on n'ouvre que
+ * ce qui est dû. Un Commu ou un Folie attend son palier de subs, un Perso que
+ * la modération l'ait ajouté au compteur du joueur, un Finisseur que le joueur
+ * ait joué toutes ses games. Rien ne s'ouvre « de rien ».
+ *
+ * Rejouer la même clé rend la même ouverture, même une fois la file vidée.
+ */
+export function ouvreProchainDu(
+  db: Database,
+  demande: { packId: PackId; joueurId?: string; idempotencyKey: string },
+  ouvertPar: string,
+): OuverturePack {
+  const deja = db.ouvertures.find((o) => o.idempotencyKey === demande.idempotencyKey);
+  if (deja) return deja;
+  const pack = getPack(demande.packId);
+  if (!pack) throw new PackError('Pack inconnu.', 'PACK_INCONNU');
+  if (pack.portee === 'JOUEUR' && !demande.joueurId) {
+    throw new PackError('Ce pack s’ouvre pour un joueur.', 'JOUEUR_REQUIS');
+  }
+  const du = db.packsDus
+    .filter(
+      (p) =>
+        p.packId === pack.id &&
+        p.ouvertureId === null &&
+        (pack.portee !== 'JOUEUR' || p.joueurId === demande.joueurId),
+    )
+    .sort((a, b) => a.creeA.localeCompare(b.creeA))[0];
+  if (!du) {
+    throw new PackError(
+      pack.portee === 'JOUEUR'
+        ? `Aucun ${pack.name} à ouvrir pour ce joueur.`
+        : `Aucun ${pack.name} à ouvrir : le palier de subs n’est pas encore atteint.`,
+      'AUCUN_DU',
+    );
+  }
+  return ouvrePack(db, { packDuId: du.id, idempotencyKey: demande.idempotencyKey }, ouvertPar);
+}
 
 /**
  * Les joueurs en lice : actifs, et la streameuse n'en est pas. Elle administre

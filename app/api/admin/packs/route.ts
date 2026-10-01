@@ -5,7 +5,7 @@ import { ouvrirPackSchema } from '@/lib/api/schemas';
 import { getStore } from '@/lib/db/store';
 import type { PackId } from '@/lib/domain/types';
 import { LIMITS } from '@/lib/security/ratelimit';
-import { ouvrePack, vueOuverture } from '@/lib/services/packs';
+import { ouvrePack, ouvreProchainDu, vueOuverture } from '@/lib/services/packs';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -22,7 +22,11 @@ export const dynamic = 'force-dynamic';
  * rien à y gagner qu'il n'aurait eu si un autre l'avait ouvert. Ce qu'il ne
  * fait pas, c'est régler son propre compteur de Boosters Perso.
  *
- * Les taux ne se règlent plus d'ici : ce sont ceux du catalogue.
+ * On n'ouvre que ce qui est dû : un booster de la file, désigné, ou à défaut
+ * le plus ancien du type demandé (pour ce joueur, si le booster va à
+ * quelqu'un). Un Commu ou un Folie attend son palier de subs, un Perso le
+ * compteur du joueur. Les taux ne se règlent plus d'ici : ce sont ceux du
+ * catalogue.
  */
 export async function POST(request: Request): Promise<NextResponse> {
   const g = await guard(request, {
@@ -35,16 +39,14 @@ export async function POST(request: Request): Promise<NextResponse> {
 
   try {
     const vue = await getStore().transaction((db) => {
-      const ouverture = ouvrePack(
-        db,
-        {
-          packDuId: g.body.packDuId,
-          packId: g.body.packId as PackId | undefined,
-          joueurId: g.body.joueurId,
-          idempotencyKey: g.body.idempotencyKey,
-        },
-        g.session?.sub ?? 'admin',
-      );
+      const par = g.session?.sub ?? 'admin';
+      const ouverture = g.body.packDuId
+        ? ouvrePack(db, { packDuId: g.body.packDuId, idempotencyKey: g.body.idempotencyKey }, par)
+        : ouvreProchainDu(
+            db,
+            { packId: g.body.packId as PackId, joueurId: g.body.joueurId, idempotencyKey: g.body.idempotencyKey },
+            par,
+          );
       return vueOuverture(db, ouverture);
     });
     return ok(vue);

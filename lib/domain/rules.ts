@@ -143,7 +143,7 @@ export const SUB_MILESTONES: readonly SubMilestone[] = [
     description: 'Un Booster Commu à ouvrir à l’antenne : sa carte tombe sur ceux que le sort désigne.',
   },
   {
-    every: 500,
+    every: 200,
     kind: 'PACK',
     packId: 'folie',
     label: 'Booster Folie',

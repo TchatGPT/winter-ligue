@@ -16,7 +16,7 @@ export const RARITIES: readonly Rarity[] = ['C', 'R', 'UR', 'L'];
  *
  *  - **perso** : pour le joueur qui a offert cinq subs. Ouvert pour lui.
  *  - **commu** : tous les cinquante subs. La carte tombe sur tout le monde.
- *  - **folie** : tous les cinq cents subs. Plus fort, toujours pour tout le monde.
+ *  - **folie** : tous les deux cents subs. Plus fort, toujours pour tout le monde.
  *  - **finisseur** : pour le joueur qui a joué toutes ses games.
  */
 export type PackId = 'perso' | 'commu' | 'folie' | 'finisseur';

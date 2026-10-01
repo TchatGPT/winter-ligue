@@ -1,5 +1,5 @@
 import { PackOpening, type JoueurOuverture, type PackVitrine } from '@/components/PackOpening';
-import { getSession, playerIdOf } from '@/lib/auth/session';
+import { getSession } from '@/lib/auth/session';
 import { exigeSession } from '@/lib/auth/acces';
 import { getStore } from '@/lib/db/store';
 import { CARDS, cartesDuPack, impactMax, momentDe } from '@/lib/domain/catalog';
@@ -20,11 +20,11 @@ export default async function PacksPage(){
   await exigeSession();
   const session = await getSession();
   const moderateur = session?.role === 'admin';
-  // Ouvrir hors de la file crée un booster de rien : c'est l'affaire d'un
-  // administrateur. La route le revérifie.
+  // Le choix du joueur et le bouton d'ouverture : la modération seule. On
+  // n'ouvre que ce qui est dû, et la route le revérifie.
   const aLaMain = session?.role === 'admin';
 
-  const { packs, file, joueurs } = await getStore().read((db) => ({
+  const { packs, file, joueurs, totalSubs } = await getStore().read((db) => ({
     // Les taux réglés par l'administration, pas ceux du catalogue : la page
     // doit annoncer ce que le serveur appliquera.
     packs: resolvedPacks(db).map(
@@ -42,6 +42,8 @@ export default async function PacksPage(){
       }),
     ),
     file: fileDesPacks(db),
+    // Pour dire à la modération quand tombe le prochain Commu ou Folie.
+    totalSubs: db.config.totalSubs,
     // La liste des joueurs ne quitte le serveur que pour qui peut ouvrir à la main.
     joueurs: aLaMain
       ? db.players
@@ -90,7 +92,7 @@ export default async function PacksPage(){
         joueurs={joueurs}
         moderateur={moderateur}
         aLaMain={aLaMain}
-        moiId={playerIdOf(session)}
+        totalSubs={totalSubs}
       />
     </div>
   );

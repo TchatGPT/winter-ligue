@@ -802,7 +802,7 @@ export const PACKS: readonly PackDefinition[] = [
     id: 'folie',
     name: 'Booster Folie',
     tagline: 'Rien en dessous de rare',
-    declencheur: 'Tous les cinq cents subs de la saison.',
+    declencheur: 'Tous les deux cents subs de la saison.',
     glyph: '🌪',
     gradient: ['#6b4bab', '#241540'],
     portee: 'TOUS',
