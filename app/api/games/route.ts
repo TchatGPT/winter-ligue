@@ -3,7 +3,6 @@ import { chaineDeLaLigue } from '@/lib/auth/twitch';
 import { estLaStreameuse } from '@/lib/domain/streameuse';
 import { toResponse } from '@/lib/api/errors';
 import { fail, guard, ok } from '@/lib/api/respond';
-import { playerIdOf } from '@/lib/auth/session';
 import { deleteGameSchema, gameSchema, updateGameSchema } from '@/lib/api/schemas';
 import type { Game } from '@/lib/db/entities';
 import { getStore, newId } from '@/lib/db/store';
@@ -30,8 +29,8 @@ export const dynamic = 'force-dynamic';
  * La limite de games est celle de la saison, plus les créneaux qu'une carte
  * « Game supplémentaire » a donnés à ce joueur.
  *
- * Un membre de la modération qui joue ne saisit jamais ses propres games : un
- * autre le fait, sur la capture.
+ * Un membre de la modération qui joue peut saisir ses propres games : la
+ * capture fait foi, le score se calcule ici, et le journal garde qui a saisi.
  */
 export async function POST(request: Request): Promise<NextResponse> {
   const g = await guard(request, {
@@ -41,10 +40,6 @@ export async function POST(request: Request): Promise<NextResponse> {
     schema: gameSchema,
   });
   if (!g.ok) return g.response;
-
-  if (g.body.playerId === playerIdOf(g.session)) {
-    return fail('NON_AUTORISE', 'On ne saisit pas ses propres games : un autre membre de la modération le fait.');
-  }
 
   try {
     const result = await getStore().transaction((db) => {
@@ -134,12 +129,9 @@ export async function PATCH(request: Request): Promise<NextResponse> {
   });
   if (!g.ok) return g.response;
 
-  const moi = playerIdOf(g.session);
-
   const updated = await getStore().transaction((db) => {
     const game = db.games.find((x) => x.id === g.body.gameId);
     if (!game) return null;
-    if (game.playerId === moi) return 'SIENNE' as const;
     if (g.body.skipped === false && game.skipped) {
       const joueur = db.players.find((p) => p.id === game.playerId);
       if (joueur && gamesComptees(db, joueur.id) >= limiteDe(db, joueur)) return 'LIMITE' as const;
@@ -152,7 +144,6 @@ export async function PATCH(request: Request): Promise<NextResponse> {
   });
 
   if (!updated) return fail('INTROUVABLE', 'Game introuvable.');
-  if (updated === 'SIENNE') return fail('NON_AUTORISE', 'On ne modifie pas ses propres games.');
   if (updated === 'LIMITE') return fail('CONFLIT', 'Ce joueur a déjà toutes ses games : celle-ci ne peut pas compter.');
   return ok(updated);
 }

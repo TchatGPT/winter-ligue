@@ -208,10 +208,12 @@ passé admin au démarrage (`SCHEMA_SQL`).
 
 Parce que les modérateurs jouent peut-être dans la ligue, **aucun admin n'agit sur son
 propre compte de joueur** : il ne se crédite pas de flocons, ne s'inscrit pas de subs
-offerts, ne saisit ni ne modifie ses games, ne règle pas son compteur de Boosters Perso.
-Un autre membre de la modération le fait, et le journal le trace. Ouvrir un booster qui
-lui revient, en revanche, lui est permis : le tirage se fait côté serveur et l'ouverture
-est au journal, il n'y gagne rien.
+offerts, ne règle pas son compteur de Boosters Perso. Un autre membre de la modération
+le fait, et le journal le trace. Ouvrir un booster qui lui revient, en revanche, lui est
+permis : le tirage se fait côté serveur et l'ouverture est au journal, il n'y gagne rien.
+Saisir ou modifier ses propres games aussi, par décision de l'organisation : le score et
+les flocons se calculent côté serveur, la capture fait foi, et le journal garde qui a
+saisi chaque game — c'est là qu'un abus se verrait.
 
 Les taux de rareté ne se règlent plus depuis le site : ce sont ceux du catalogue. Un
 compte administrateur compromis ne peut pas rendre les légendaires certaines.
