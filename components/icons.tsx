@@ -250,6 +250,16 @@ export function IconCorbeille(props: IconProps) {
   );
 }
 
+/** Se déconnecter — le symbole marche-arrêt. */
+export function IconQuitter(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M7.1 6.7a7.5 7.5 0 1 0 9.8 0" />
+      <path d="M12 3.5V11" />
+    </Svg>
+  );
+}
+
 /** Le glyphe de Twitch, en aplat : c'est un logo, pas un pictogramme au trait. */
 export function IconTwitch(props: IconProps) {
   return (

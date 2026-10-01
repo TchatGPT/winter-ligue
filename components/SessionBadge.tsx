@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { CodeCadeau } from '@/components/CodeCadeau';
+import { IconQuitter } from '@/components/icons';
 import { num } from '@/lib/format';
 
 /**
@@ -78,16 +79,25 @@ export function SessionBadge({
             </span>
           </div>
         )}
-        <div className="space-y-1">
-          {balance !== null && <CodeCadeau variante="lien" />}
-          <div className="truncate text-center text-[13px] tracking-[0.12em] text-white/90 uppercase">
-            {role === 'admin' ? 'Modération' : pseudo}
-          </div>
-        </div>
-        <button className="btn menu-bouton" onClick={logout} disabled={busy || pending}>
+        {balance !== null && <CodeCadeau variante="tuile" />}
+        {/* Le compte : qui est connecté, et de quoi se déconnecter. Il disait
+            « Modération » pour un modérateur, qu'on prenait pour un lien. */}
+        <div className="menu-compte-ligne">
           {avatar}
-          <span>Se déconnecter</span>
-        </button>
+          <span className="menu-compte-pseudo" title={pseudo ?? undefined}>
+            {pseudo ?? 'Mon compte'}
+          </span>
+          <button
+            type="button"
+            className="menu-quitter"
+            onClick={logout}
+            disabled={busy || pending}
+            title="Se déconnecter"
+            aria-label="Se déconnecter"
+          >
+            <IconQuitter className="h-[18px] w-[18px]" />
+          </button>
+        </div>
       </div>
     );
   }

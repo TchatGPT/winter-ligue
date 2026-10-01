@@ -9,10 +9,11 @@ import { num } from '@/lib/format';
 const rienAEcouter = () => () => {};
 
 /**
- * Le code cadeau, près du solde — un lien sous la capsule des flocons dans le
- * menu, une pastille dans le solde de l'en-tête mobile : on y tape un code
- * donné par la modération —
- * lu sur le stream, dans le tchat — et ses flocons tombent aussitôt.
+ * Le code cadeau, près du solde — une tuile sous la capsule des flocons dans
+ * le menu, une pastille dans le solde de l'en-tête mobile : on y tape un code
+ * donné par la modération — lu sur le stream, dans le tchat — et ses flocons
+ * tombent aussitôt. Dans le menu, c'était un lien en petites capitales : on
+ * ne voyait pas où saisir son code.
  *
  * Le navigateur n'envoie que le code. Le montant, les utilisations et le droit
  * de s'en servir se décident sur le serveur (`lib/services/codes.ts`).
@@ -21,7 +22,7 @@ const rienAEcouter = () => () => {};
  * plaques de verre du menu portent un backdrop-filter, qui couperait un
  * panneau accroché au bouton.
  */
-export function CodeCadeau({ variante }: { variante: 'lien' | 'pastille' }) {
+export function CodeCadeau({ variante }: { variante: 'tuile' | 'pastille' }) {
   const router = useRouter();
   const navigateur = useSyncExternalStore(
     rienAEcouter,
@@ -79,17 +80,25 @@ export function CodeCadeau({ variante }: { variante: 'lien' | 'pastille' }) {
 
   return (
     <>
-      {variante === 'lien' ? (
+      {variante === 'tuile' ? (
         <button
           type="button"
-          className="code-cadeau-lien"
+          className="code-cadeau-tuile"
           onClick={() => {
             setMessage(null);
             setOuvert(true);
           }}
         >
-          <IconCadeau className="h-[14px] w-[14px]" />
-          Code cadeau
+          <span className="code-cadeau-medaillon" aria-hidden="true">
+            <IconCadeau className="h-[18px] w-[18px]" />
+          </span>
+          <span className="min-w-0 flex-1 text-left">
+            <span className="code-cadeau-titre">Code cadeau</span>
+            <span className="code-cadeau-aide">Entrer un code du stream</span>
+          </span>
+          <span className="code-cadeau-fleche" aria-hidden="true">
+            ›
+          </span>
         </button>
       ) : (
         <button

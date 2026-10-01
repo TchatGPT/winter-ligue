@@ -87,6 +87,8 @@
   /* L'orange de Claude, pour sa signature dans le pied de page et elle seule. */
   --claude: #d97757;
   --twitch-clair: #a970ff;
+  /* Le rouge d'un live en cours. */
+  --live: #ff5468;
 
   /* -- Texte ------------------------------------------------------------- */
   --ink: #eaf3fc;
@@ -149,6 +151,9 @@
   --neige-1: #ffffff;
   --neige-2: #f1f9ff;
   --neige-3: #cfe7f7;
+  /* La neige au sol, au loin et dans l'ombre : plus bleue, plus sombre. */
+  --neige-loin: #d4e3f3;
+  --neige-ombre: #9fb8d8;
   --nuit: #06284a;
 
   /* Le duel : les pères Noël, et ce qui se met en travers de leur boule. */
@@ -366,107 +371,33 @@
 
   /* --------------------------------------------------------------------------
      LE PIED DE PAGE — voir components/PiedDePage.
-     Une bande sur toute la largeur, collée au bas de la page comme le menu
-     l'est au bord gauche : le cadre du site, plat, sans neige ni reflet — la
-     même matière que le menu, et la même arête claire, en haut cette fois.
-     La marque et les droits à gauche, la signature à droite ; empilés et
-     centrés sur téléphone. Connecté, la barre de navigation des téléphones
-     flotte par-dessus (78 px du bord de l'écran) : la bande se prolonge
-     dessous, et son contenu reste au-dessus.
+     De la neige au sol, sur toute la largeur : ni bloc ni texte, la matière
+     seule la distingue des plaques de verre. Ses congères les plus hautes
+     remontent un peu dans la marge basse du contenu, jamais sur lui.
+     Connecté sur téléphone, la barre de navigation flotte par-dessus.
      -------------------------------------------------------------------------- */
-  .pied-de-page {
+  .pied-de-neige {
     position: relative;
     z-index: 10;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 1rem;
+    height: 110px;
+    margin-top: -18px;
+    pointer-events: none;
+  }
+  /* Sous la barre de navigation des téléphones, assez haute pour qu'on la
+     voie dépasser au-dessus. */
+  .pied-de-neige[data-barre] {
+    height: calc(150px + env(safe-area-inset-bottom, 0px));
+  }
+  .pied-de-neige svg {
+    display: block;
     width: 100%;
-    padding: 1.4rem 1rem 1.5rem;
-    text-align: center;
-    background: var(--glass-3);
-    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.12);
+    height: 100%;
   }
-  .pied-de-page[data-barre] {
-    padding-bottom: calc(1.5rem + 78px + env(safe-area-inset-bottom, 0px));
-  }
-  .pied-de-page-marque {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.7rem;
-  }
-  .pied-de-page-nom {
-    display: block;
-    font-family: var(--font-display);
-    font-size: 1.25rem;
-    font-weight: 900;
-    line-height: 1;
-    letter-spacing: 0.01em;
-    text-transform: uppercase;
-  }
-  .pied-de-page-droits {
-    display: block;
-    margin-top: 0.35rem;
-    font-size: 0.875rem;
-    color: var(--muted);
-  }
-  /* La signature, dans sa capsule. */
-  .pied-de-page-credit {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.55rem;
-    padding: 0.5rem 0.65rem 0.5rem 1rem;
-    border: 1px solid rgb(255 255 255 / 0.12);
-    border-radius: 999px;
-    background: rgb(255 255 255 / 0.05);
-    font-size: 0.875rem;
-    color: var(--ink-2);
-  }
-  .pied-de-page-credit strong {
-    color: var(--ink);
-    font-weight: 700;
-  }
-  .pied-de-page-claude {
-    display: grid;
-    place-items: center;
-    width: 1.9rem;
-    height: 1.9rem;
-    flex: 0 0 auto;
-    border-radius: 999px;
-    background: color-mix(in srgb, var(--claude) 16%, transparent);
-    color: var(--claude);
-  }
-  .pied-de-page-claude svg {
-    width: 1.1rem;
-    height: 1.1rem;
-  }
-  /* Le contenu s'aligne sur celui des pages : mêmes marges que le <main>. */
-  @media (min-width: 640px) {
-    .pied-de-page {
-      flex-direction: row;
-      justify-content: space-between;
-      padding: 1.1rem 1.5rem;
-      text-align: left;
-    }
-    .pied-de-page[data-barre] {
-      padding-bottom: calc(1.1rem + 78px + env(safe-area-inset-bottom, 0px));
-    }
-    .pied-de-page-marque {
-      flex-direction: row;
-    }
-  }
-  /* La barre flottante n'existe plus à partir de 1024 px : le menu la remplace. */
   @media (min-width: 1024px) {
-    .pied-de-page,
-    .pied-de-page[data-barre] {
-      padding: 1.1rem 2rem;
-    }
-  }
-  @media (min-width: 1536px) {
-    .pied-de-page,
-    .pied-de-page[data-barre] {
-      padding-inline: 2.5rem;
+    .pied-de-neige,
+    .pied-de-neige[data-barre] {
+      height: 170px;
+      margin-top: -30px;
     }
   }
 
@@ -2061,6 +1992,48 @@
   .menu-avatar svg {
     width: 14px;
     height: 14px;
+  }
+  /* Le compte : l'avatar, le pseudo, et la déconnexion au bout. */
+  .menu-compte-ligne {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 6px 6px 8px;
+    border: 1px solid rgb(255 255 255 / 0.12);
+    border-radius: var(--r-md);
+    background: rgb(255 255 255 / 0.04);
+  }
+  .menu-compte-pseudo {
+    min-width: 0;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: var(--font-display);
+    font-size: 0.9375rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    color: var(--ink);
+  }
+  .menu-quitter {
+    display: grid;
+    width: 34px;
+    height: 34px;
+    flex: none;
+    place-items: center;
+    border-radius: 0.6rem;
+    color: var(--muted);
+    transition:
+      background-color 0.18s ease,
+      color 0.18s ease;
+  }
+  .menu-quitter:hover:not(:disabled),
+  .menu-quitter:focus-visible {
+    background: color-mix(in srgb, var(--ice) 14%, transparent);
+    color: var(--ice);
+  }
+  .menu-quitter:disabled {
+    opacity: 0.45;
   }
 
   /* Mouvement réduit : le reflet et le scintillement s'arrêtent. */
@@ -3963,22 +3936,58 @@
   }
 
   /* ---- Le code cadeau : un lien discret sous le solde, ou une pastille dedans ---- */
-  .code-cadeau-lien {
+  /* Le code cadeau dans le menu : une tuile qu'on voit, teintée de l'aurore
+     des gains, avec ce qu'elle fait en clair. */
+  .code-cadeau-tuile {
     display: flex;
     width: 100%;
     align-items: center;
-    justify-content: center;
-    gap: 0.45rem;
-    padding: 0.2rem 0.5rem;
-    font-size: 13px;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--faint);
-    transition: color 0.2s ease;
+    gap: 0.65rem;
+    padding: 0.6rem 0.75rem 0.6rem 0.6rem;
+    border: 1px solid color-mix(in srgb, var(--aurora) 42%, transparent);
+    border-radius: var(--r-md);
+    background: linear-gradient(135deg, color-mix(in srgb, var(--aurora) 14%, transparent), transparent 75%);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.1);
+    transition:
+      background-color 0.2s ease,
+      border-color 0.2s ease;
   }
-  .code-cadeau-lien:hover,
-  .code-cadeau-lien:focus-visible {
-    color: var(--ice);
+  .code-cadeau-tuile:hover,
+  .code-cadeau-tuile:focus-visible {
+    border-color: color-mix(in srgb, var(--aurora) 70%, transparent);
+    background-color: color-mix(in srgb, var(--aurora) 10%, transparent);
+  }
+  .code-cadeau-medaillon {
+    display: grid;
+    width: 2.1rem;
+    height: 2.1rem;
+    flex: none;
+    place-items: center;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--aurora) 18%, transparent);
+    color: var(--aurora);
+  }
+  .code-cadeau-titre {
+    display: block;
+    font-family: var(--font-display);
+    font-size: 0.9375rem;
+    font-weight: 900;
+    letter-spacing: 0.06em;
+    line-height: 1.1;
+    text-transform: uppercase;
+    color: var(--ink);
+  }
+  .code-cadeau-aide {
+    display: block;
+    margin-top: 0.15rem;
+    font-size: 0.8125rem;
+    line-height: 1.2;
+    color: var(--muted);
+  }
+  .code-cadeau-fleche {
+    font-size: 1.4rem;
+    line-height: 1;
+    color: var(--aurora);
   }
   .code-cadeau-pastille {
     display: inline-grid;
@@ -5207,6 +5216,112 @@
   }
   .taux-pct {
     font-size: 1.85rem;
+  }
+}
+
+/*
+ * Le live de la streameuse, dans le hero : le glyphe de Twitch dans un
+ * médaillon, un point rouge qui bat quand elle est en direct, gris sinon. Toute
+ * la tuile mène à sa chaîne.
+ */
+.hero-direct {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px 12px 12px;
+  color: inherit;
+  text-decoration: none;
+}
+.hero-direct[data-statut='direct'] {
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--live) 45%, transparent),
+    inset 0 1px 0 rgb(255 255 255 / 0.2);
+}
+.hero-direct-medaillon {
+  position: relative;
+  display: grid;
+  width: 46px;
+  height: 46px;
+  flex: none;
+  place-items: center;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--twitch) 24%, transparent);
+  color: var(--twitch-clair);
+}
+.hero-direct-point {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: var(--faint);
+  /* Un anneau de la couleur du fond : le point se détache du médaillon. */
+  box-shadow: 0 0 0 2.5px var(--fond);
+}
+.hero-direct[data-statut='direct'] .hero-direct-point {
+  background: var(--live);
+  animation: direct-pouls 1.6s ease-in-out infinite;
+}
+.hero-direct[data-statut='inconnu'] .hero-direct-point {
+  display: none;
+}
+@keyframes direct-pouls {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(0.78);
+    opacity: 0.6;
+  }
+}
+.hero-direct-statut {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 0.8125rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  line-height: 1.2;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+.hero-direct[data-statut='direct'] .hero-direct-statut {
+  color: var(--live);
+}
+.hero-direct-nom {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 900;
+  line-height: 1.2;
+  color: var(--ink);
+}
+.hero-direct-detail {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+.hero-direct-fleche {
+  font-size: 1.6rem;
+  line-height: 1;
+  color: var(--twitch-clair);
+  transition: transform 0.18s ease;
+}
+.hero-direct:hover .hero-direct-fleche,
+.hero-direct:focus-visible .hero-direct-fleche {
+  transform: translateX(3px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-direct[data-statut='direct'] .hero-direct-point {
+    animation: none;
   }
 }
 

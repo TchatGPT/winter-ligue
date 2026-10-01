@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { CouronneGlace } from '@/components/CouronneGlace';
+import { DirectTwitch } from '@/components/DirectTwitch';
 import { flakes } from '@/components/ui';
 import { SEASON } from '@/lib/domain/rules';
 import { SnowCap } from '@/components/SnowCap';
@@ -74,11 +75,11 @@ export function Hero({
           </div>
         </div>
 
-        {/* Le leader et les trois nombres qui disent l'échelle de la saison.
-            Une colonne pleine à droite sur grand écran : le leader en grand,
-            les trois nombres en dessous sur une ligne, en gros. Sous le texte
-            sur petit écran, même hiérarchie. */}
+        {/* Le live de la streameuse, le leader, et les trois nombres qui disent
+            l'échelle de la saison. Une colonne pleine à droite sur grand
+            écran ; sous le texte sur petit écran, même hiérarchie. */}
         <div className="flex w-full shrink-0 flex-col gap-3 @4xl:w-[400px]">
+          <DirectTwitch />
           {leader && (
             <Link
               href={`/joueurs/${leader.slug}`}
