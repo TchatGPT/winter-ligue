@@ -68,9 +68,11 @@ export function Accueil({ twitchEnabled, devLogin }: { twitchEnabled: boolean; d
   ];
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6 lg:space-y-8 3xl:max-w-[1500px] 4xl:max-w-[1760px]">
+    // Une colonne centrée jusqu'au très grand écran ; là, toute la largeur : le
+    // hero à gauche, les étapes à droite, et les six cartes en dessous.
+    <div className="mx-auto max-w-6xl space-y-6 lg:space-y-8 3xl:grid 3xl:max-w-none 3xl:grid-cols-2 3xl:gap-8 3xl:space-y-0">
       {/* ---- Le hero ---- */}
-      <section className="glass glass-reflet relative overflow-hidden px-6 py-10 text-center sm:px-10 sm:py-14 lg:py-16">
+      <section className="glass glass-reflet relative overflow-hidden px-6 py-10 text-center sm:px-10 sm:py-14 lg:py-16 3xl:col-start-1 3xl:row-start-1 3xl:flex 3xl:flex-col 3xl:justify-center">
         <SnowCap radius="var(--r-lg)" seed="accueil" epaisseur={22} />
         <p className="eyebrow">
           {SEASON.edition} · du {debut} au {fin}
@@ -97,11 +99,11 @@ export function Accueil({ twitchEnabled, devLogin }: { twitchEnabled: boolean; d
       </section>
 
       {/* ---- Ce qu'on y fait ---- */}
-      <section className="space-y-4">
+      <section className="space-y-4 3xl:col-span-2 3xl:row-start-2">
         <TitreGlace taille="bloc" eyebrow="La ligue" align="center">
           Ce qui t’attend
         </TitreGlace>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 4xl:grid-cols-6">
           {FONCTIONS.map((f, i) => {
             const Icone = f.icone;
             return (
@@ -119,12 +121,12 @@ export function Accueil({ twitchEnabled, devLogin }: { twitchEnabled: boolean; d
       </section>
 
       {/* ---- Comment on entre ---- */}
-      <section className="glass relative overflow-hidden p-6 sm:p-8">
+      <section className="glass relative overflow-hidden p-6 sm:p-8 3xl:col-start-2 3xl:row-start-1">
         <SnowCap radius="var(--r-lg)" seed="accueil-etapes" epaisseur={16} />
         <TitreGlace taille="bloc" eyebrow="En quatre étapes">
           Comment ça marche
         </TitreGlace>
-        <ol className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <ol className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4 3xl:grid-cols-2 4xl:grid-cols-4">
           {ETAPES.map((e) => (
             <li key={e.n} className="glass glass-soft p-4">
               <span className="font-display text-4xl font-black text-ice">{e.n}</span>
