@@ -236,6 +236,30 @@ export function IconInterdit(props: IconProps) {
   );
 }
 
+/** Ça compte — un cercle coché. */
+export function IconCoche(props: IconProps) {
+  const cercle = 'M12 3.5a8.5 8.5 0 1 1 0 17 8.5 8.5 0 0 1 0-17Z';
+  return (
+    <Svg {...props}>
+      <Fond d={cercle} />
+      <path d={cercle} />
+      <path d="M8.2 12.4l2.6 2.6 5-5.4" />
+    </Svg>
+  );
+}
+
+/** Ça ne compte pas — un cercle marqué d'une croix. */
+export function IconCroix(props: IconProps) {
+  const cercle = 'M12 3.5a8.5 8.5 0 1 1 0 17 8.5 8.5 0 0 1 0-17Z';
+  return (
+    <Svg {...props}>
+      <Fond d={cercle} />
+      <path d={cercle} />
+      <path d="M9.2 9.2l5.6 5.6M14.8 9.2l-5.6 5.6" />
+    </Svg>
+  );
+}
+
 /** Supprimer — une corbeille, son couvercle posé. */
 export function IconCorbeille(props: IconProps) {
   const cuve = 'M6 7h12l-.9 12.2a1.8 1.8 0 0 1-1.8 1.7H8.7a1.8 1.8 0 0 1-1.8-1.7L6 7Z';

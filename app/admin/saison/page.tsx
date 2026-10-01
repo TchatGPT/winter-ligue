@@ -11,11 +11,11 @@ export const metadata = { title: 'Saison — Modération' };
 const RETOURS: Record<string, RetourSubs> = {
   branche: {
     kind: 'success',
-    text: 'Twitch branché : chaque sub s’ajoute tout seul au compteur, et les codes cadeaux s’annoncent dans le tchat.',
+    text: 'Twitch branché : chaque sub payé s’ajoute tout seul au compteur, sans les Prime, et les codes cadeaux s’annoncent dans le tchat.',
   },
   refuse: {
     kind: 'error',
-    text: 'Seule la streameuse peut brancher Twitch : il doit être ouvert sur son compte, et elle doit accepter que la ligue voie ses subs et écrive dans son tchat.',
+    text: 'Seule la streameuse peut brancher Twitch : il doit être ouvert sur son compte, et elle doit accepter que la ligue lise et écrive dans son tchat.',
   },
   erreur: {
     kind: 'error',

@@ -161,7 +161,8 @@ export const SUBS = {
 
 export const PACKS_REGLES = {
   /**
-   * Un pack Perso tous les N subs offerts par un même joueur.
+   * Un pack Perso tous les N subs offerts par un même joueur, de niveau 1 ou
+   * 2 — et un par sub de niveau 3, voir `packsPersoAcquis`.
    *
    * C'est la seule chose qu'un sub achète à quelqu'un en particulier, et elle
    * est bornée deux fois : le pack ne contient que des bonus, et chacun est
@@ -170,9 +171,17 @@ export const PACKS_REGLES = {
   persoTousLes: 5,
 } as const;
 
-/** Un joueur qui a offert `subsOfferts` subs a droit à autant de packs Perso. */
-export function packsPersoAcquis(subsOfferts: number): number {
-  return Math.floor(Math.max(0, subsOfferts) / PACKS_REGLES.persoTousLes);
+/**
+ * Les packs Perso que valent les subs payés par un même joueur : un tous les
+ * `persoTousLes` subs offerts de niveau 1 ou 2, et un par sub de niveau 3 —
+ * pris pour soi ou offert, nouveau ou resub. Un sub de niveau 3 coûte à peu
+ * près cinq subs simples : il vaut ce que valent cinq subs offerts. Il compte
+ * pour un au compteur de la saison, comme les autres.
+ *
+ * La modération les ajoute à la main ; ceci ne fait que dire combien.
+ */
+export function packsPersoAcquis(offerts: number, niveau3 = 0): number {
+  return Math.floor(Math.max(0, offerts) / PACKS_REGLES.persoTousLes) + Math.max(0, Math.floor(niveau3));
 }
 
 /* ----------------------- Évènements de subs ------------------------------ */

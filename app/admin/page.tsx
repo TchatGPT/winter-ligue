@@ -6,7 +6,7 @@ import { chaineDeLaLigue } from '@/lib/auth/twitch';
 import { getStore } from '@/lib/db/store';
 import { nextMilestone, PACKS_REGLES } from '@/lib/domain/rules';
 import { estLaStreameuse } from '@/lib/domain/streameuse';
-import { cadeauxEnAttente } from '@/lib/domain/twitchSubs';
+import { boostersDuGeste, persoEnAttente } from '@/lib/domain/twitchSubs';
 import { shortDateTime } from '@/lib/format';
 
 export const dynamic = 'force-dynamic';
@@ -16,10 +16,12 @@ export const metadata = { title: 'Vue d’ensemble — Modération' };
 const REGISTRE = 2000;
 const SUBS_AFFICHES = 40;
 
+const pluriel = (n: number, mot: string) => `${n} ${mot}${n > 1 ? 's' : ''}`;
+
 /**
  * La vue d'ensemble : les joueurs inscrits, et les subs — qui, combien, quand,
- * et qui a offert des subs sans être inscrit à la ligue, ses Boosters Perso en
- * attente de son inscription.
+ * à quel niveau, et qui a payé des subs sans être inscrit à la ligue, ses
+ * Boosters Perso en attente de son inscription.
  */
 export default async function AdminAccueilPage() {
   await exigeRole('admin');
@@ -46,8 +48,8 @@ export default async function AdminAccueilPage() {
   ]);
 
   const inscrits = new Set(ligue.joueurs.map((j) => j.twitchId).filter((id): id is string => Boolean(id)));
-  const enAttente = cadeauxEnAttente(registre, inscrits);
-  const subsEnAttente = enAttente.reduce((n, c) => n + c.subs, 0);
+  const enAttente = persoEnAttente(registre, inscrits);
+  const boostersEnAttente = enAttente.reduce((n, c) => n + c.boosters, 0);
   const dernier = ligue.joueurs[0] ?? null;
   const prochain = nextMilestone(ligue.subs);
 
@@ -68,9 +70,9 @@ export default async function AdminAccueilPage() {
           accent="aurora"
         />
         <Chiffre
-          label="Cadeaux en attente"
-          valeur={enAttente.length}
-          note={enAttente.length ? `${subsEnAttente} subs offerts par des non-inscrits` : 'aucun donateur non inscrit'}
+          label="Boosters Perso en attente"
+          valeur={boostersEnAttente}
+          note={enAttente.length ? `pour ${pluriel(enAttente.length, 'non-inscrit')}` : 'personne en attente'}
           accent="gold"
         />
       </section>
@@ -80,31 +82,32 @@ export default async function AdminAccueilPage() {
           grand écran, les trois côte à côte. */}
       <div className="grid gap-5 xl:grid-cols-2 3xl:grid-cols-3">
         <Bloc
-          titre="Subs cadeaux en attente"
+          titre="Boosters Perso en attente"
           icone="snowflake"
           neige="admin-attente"
-          aide={`Ils ont offert des subs sans être inscrits à la ligue. Un Booster Perso tous les ${PACKS_REGLES.persoTousLes} subs offerts : dès qu’ils s’inscrivent, ajoute-les dans Joueurs.`}
+          aide={`Ils ont payé des subs sans être inscrits à la ligue. Un Booster Perso par sub T3, pris ou offert, et un tous les ${PACKS_REGLES.persoTousLes} subs offerts : dès qu’ils s’inscrivent, ajoute-les dans Joueurs.`}
         >
           {enAttente.length === 0 ? (
-            <EmptyState title="Personne en attente" hint="Un donateur non inscrit apparaîtra ici." />
+            <EmptyState title="Personne en attente" hint="Un abonné T3 ou un donateur non inscrit apparaîtra ici." />
           ) : (
             <ul className="admin-liste">
-              {enAttente.map((c) => {
-                const boosters = Math.floor(c.subs / PACKS_REGLES.persoTousLes);
-                return (
-                  <li key={c.twitchId}>
-                    <span className="admin-liste-titre">{c.pseudo}</span>
-                    <span className="admin-liste-detail">
-                      {c.subs} sub{c.subs > 1 ? 's' : ''} offert{c.subs > 1 ? 's' : ''} ·{' '}
-                      <strong className="text-aurora">
-                        {boosters} Booster{boosters > 1 ? 's' : ''} Perso
-                      </strong>{' '}
-                      à son inscription
-                    </span>
-                    <time className="admin-liste-date">{shortDateTime(c.dernier)}</time>
-                  </li>
-                );
-              })}
+              {enAttente.map((c) => (
+                <li key={c.twitchId}>
+                  <span className="admin-liste-titre">{c.pseudo}</span>
+                  <span className="admin-liste-detail">
+                    {[
+                      c.niveau3 > 0 ? `${pluriel(c.niveau3, 'sub')} T3` : null,
+                      c.offerts > 0 ? `${pluriel(c.offerts, 'sub')} offert${c.offerts > 1 ? 's' : ''}` : null,
+                    ]
+                      .filter(Boolean)
+                      .join(' · ')}{' '}
+                    ·{' '}
+                    <strong className="text-aurora">{pluriel(c.boosters, 'Booster')} Perso</strong> à son
+                    inscription
+                  </span>
+                  <time className="admin-liste-date">{shortDateTime(c.dernier)}</time>
+                </li>
+              ))}
             </ul>
           )}
         </Bloc>
@@ -112,32 +115,41 @@ export default async function AdminAccueilPage() {
         <Bloc
           titre="Les subs"
           icone="antenne"
-          aide="Chaque sub compté depuis Twitch, le plus récent en tête."
+          aide="Chaque sub compté depuis Twitch, le plus récent en tête. Un sub T3 vaut un Booster Perso à qui l’a payé : à ajouter dans Joueurs."
           className="xl:row-span-2 3xl:row-span-1"
         >
           {registre.length === 0 ? (
-            <EmptyState title="Aucun sub encore" hint="Chaque sub et chaque cadeau arrivé par Twitch s’inscrit ici." />
+            <EmptyState title="Aucun sub encore" hint="Chaque sub, resub et cadeau arrivé par Twitch s’inscrit ici." />
           ) : (
             <ul className="admin-liste">
-              {registre.slice(0, SUBS_AFFICHES).map((s) => (
-                <li key={s.id}>
-                  <span className="admin-liste-titre">
-                    {s.pseudo}
-                    {s.twitchId && !inscrits.has(s.twitchId) && (
-                      <span className="ml-2 text-[13px] font-normal tracking-[0.12em] text-gold uppercase">
-                        pas inscrit
-                      </span>
-                    )}
-                  </span>
-                  <span className="admin-liste-detail">
-                    {s.genre === 'cadeau'
-                      ? `${s.nombre} sub${s.nombre > 1 ? 's' : ''} offert${s.nombre > 1 ? 's' : ''}`
-                      : 'sub'}{' '}
-                    · niveau {s.niveau}
-                  </span>
-                  <time className="admin-liste-date">{shortDateTime(s.le)}</time>
-                </li>
-              ))}
+              {registre.slice(0, SUBS_AFFICHES).map((s) => {
+                const boosters = boostersDuGeste({ niveau: s.niveau, nombre: s.nombre, anonyme: s.twitchId === null });
+                return (
+                  <li key={s.id}>
+                    <span className="admin-liste-titre">
+                      {s.pseudo}
+                      {s.twitchId && !inscrits.has(s.twitchId) && (
+                        <span className="ml-2 text-[13px] font-normal tracking-[0.12em] text-gold uppercase">
+                          pas inscrit
+                        </span>
+                      )}
+                    </span>
+                    <span className="admin-liste-detail">
+                      {s.genre === 'cadeau'
+                        ? `${pluriel(s.nombre, 'sub')} offert${s.nombre > 1 ? 's' : ''}`
+                        : s.genre}{' '}
+                      · T{s.niveau}
+                      {boosters > 0 && (
+                        <>
+                          {' '}
+                          · <strong className="text-aurora">{pluriel(boosters, 'Booster')} Perso</strong>
+                        </>
+                      )}
+                    </span>
+                    <time className="admin-liste-date">{shortDateTime(s.le)}</time>
+                  </li>
+                );
+              })}
               {registre.length > SUBS_AFFICHES && (
                 <li className="admin-liste-plus">…et {registre.length - SUBS_AFFICHES} plus anciens.</li>
               )}

@@ -31,11 +31,16 @@ const DUREE_STATE_S = 10 * 60;
 
 /** Ce que toute connexion demande : la liste des chaînes que la personne modère. */
 const PORTEE_BASE = 'user:read:moderated_channels';
-/** Lire les subs de sa chaîne : demandé à la streameuse, pour brancher les subs. */
-export const PORTEE_SUBS = 'channel:read:subscriptions';
+/**
+ * Lire les annonces de son tchat — subs, resubs et cadeaux, les seules à dire
+ * si un sub est Prime — : demandé à la streameuse, pour brancher les subs. Avec
+ * le jeton de l'application, elles demandent aussi `user:bot` et `channel:bot`.
+ */
+export const PORTEE_SUBS = 'user:read:chat';
 /**
  * Écrire dans son tchat, au nom de sa chaîne, avec le jeton de l'application :
- * demandé au même branchement, pour annoncer les codes cadeaux.
+ * demandé au même branchement, pour annoncer les codes cadeaux. `user:bot` et
+ * `channel:bot` servent aussi à lire ses annonces de subs.
  */
 export const PORTEES_TCHAT = ['user:write:chat', 'user:bot', 'channel:bot'] as const;
 /**

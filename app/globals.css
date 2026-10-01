@@ -4989,30 +4989,46 @@
 
 /*
  * Les trois étapes des boosters, en cartes : le dessin en glace, « Étape 1 »,
- * un titre, deux phrases. Empilées quand leur bloc est étroit ; côte à côte
- * dès qu'il s'élargit, reliées par une flèche qui dit dans quel ordre les lire.
+ * un titre, deux phrases — et sous la première, ce qui compte pour un sub.
+ * Empilées quand leur bloc est étroit. Dès qu'il s'élargit, la première, qui
+ * pèse deux fois les autres, prend la gauche sur toute la hauteur, et les deux
+ * suivantes s'empilent à droite : trois cartes en ligne laissaient les deux
+ * dernières à moitié vides, ou trop étroites pour leur texte. Deux chevrons de
+ * glace disent dans quel ordre les lire.
  */
 .etapes-cartes {
   display: grid;
   gap: 12px;
 }
-@container (min-width: 44rem) {
+@container (min-width: 52rem) {
   .etapes-cartes {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 40px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 28px 40px;
   }
-  /* La flèche, dans l'espace entre deux cartes : un chevron de glace. */
-  .etape-case:not(:last-child)::after {
+  .etape-case:first-child {
+    grid-row: span 2;
+  }
+  .etape-case:first-child::after,
+  .etape-case:nth-child(2)::after {
     content: '';
     position: absolute;
-    top: 50%;
-    right: -20px;
     width: 13px;
     height: 13px;
     border-top: 3px solid color-mix(in srgb, var(--ice) 75%, transparent);
     border-right: 3px solid color-mix(in srgb, var(--ice) 75%, transparent);
     border-radius: 2px;
+  }
+  /* De la première à la deuxième : vers la droite, à hauteur de la deuxième. */
+  .etape-case:first-child::after {
+    top: 25%;
+    right: -20px;
     transform: translate(calc(50% - 3px), -50%) rotate(45deg);
+  }
+  /* De la deuxième à la troisième : vers le bas, entre les deux. */
+  .etape-case:nth-child(2)::after {
+    top: calc(100% + 14px);
+    left: 50%;
+    transform: translate(-50%, calc(-50% - 3px)) rotate(135deg);
   }
 }
 .etape-case {
@@ -5074,6 +5090,52 @@
   line-height: 1.6;
   color: var(--ink-2);
 }
+/*
+ * Sous l'étape 1 : ce qui compte pour un sub, et ce qui ne compte pas. Deux
+ * rangées de pastilles, la première teintée d'aurore, la seconde éteinte : la
+ * couleur dit oui ou non avant qu'on lise.
+ */
+.etape-subs {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid color-mix(in srgb, var(--ice) 20%, transparent);
+}
+.etape-subs-titre {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-display);
+  font-size: 0.875rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--danger) 78%, var(--ink));
+}
+.etape-subs-ligne[data-compte] .etape-subs-titre {
+  color: var(--aurora);
+}
+.etape-subs-puces {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.etape-subs-puces li {
+  padding: 4px 11px;
+  border: 1px solid color-mix(in srgb, var(--ink) 16%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ink) 5%, transparent);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: var(--muted);
+}
+.etape-subs-ligne[data-compte] .etape-subs-puces li {
+  border-color: color-mix(in srgb, var(--aurora) 40%, transparent);
+  background: color-mix(in srgb, var(--aurora) 13%, transparent);
+  color: var(--ink);
+}
 /* Sur un très grand écran, la bande a la place d'être lue de loin. */
 @media (min-width: 120rem) {
   .etape-carte {
@@ -5089,6 +5151,12 @@
   }
   .etape-texte {
     font-size: 1.0625rem;
+  }
+  .etape-subs-titre {
+    font-size: 0.9375rem;
+  }
+  .etape-subs-puces li {
+    font-size: 0.9375rem;
   }
 }
 /*

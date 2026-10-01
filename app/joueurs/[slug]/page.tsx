@@ -348,8 +348,8 @@ export default async function FicheJoueurPage({ params }: { params: Promise<{ sl
                 </strong>
               </div>
               <p className="mt-1.5 text-[12.5px] text-muted">
-                Un Booster Perso tous les {PACKS_REGLES.persoTousLes} subs offerts, ajouté par la modération.
-                La streameuse l’ouvre à l’antenne.
+                Un Booster Perso par sub T3, pris ou offert, et un tous les {PACKS_REGLES.persoTousLes} subs
+                offerts, ajouté par la modération. La streameuse l’ouvre à l’antenne.
               </p>
             </div>
 

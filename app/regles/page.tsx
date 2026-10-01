@@ -19,6 +19,7 @@ import {
   SEASON,
   SUB_MILESTONES,
 } from '@/lib/domain/rules';
+import { CE_QUI_COMPTE, CE_QUI_NE_COMPTE_PAS } from '@/lib/domain/twitchSubs';
 import type { Rarity } from '@/lib/domain/types';
 import { resolvedPacks } from '@/lib/services/packs';
 import { TitreGlace } from '@/components/TitreGlace';
@@ -129,10 +130,12 @@ export default async function ReglesPage(){
             ))}
           </ul>
           <p>
-            Un Booster Perso est dû tous les{' '}
+            Un Booster Perso est dû pour <strong className="text-ink">chaque sub T3</strong>, pris
+            pour soi ou offert, et tous les{' '}
             <strong className="text-ink">{PACKS_REGLES.persoTousLes} subs offerts</strong> par un
-            même joueur, ajouté par la modération ; il peut l’offrir à un autre joueur. Les boosters de la ligue tombent aux paliers de subs. La streameuse les ouvre
-            depuis la file, un par un.
+            même joueur. La modération l’ajoute à la main ; il peut l’offrir à un autre joueur. Les
+            boosters de la ligue tombent aux paliers de subs. La streameuse les ouvre depuis la file,
+            un par un.
           </p>
           <p className="text-[13px] text-faint">
             La chance vient des flocons : le multiplicateur monte de ×1 à ×1,5 avec le solde, et
@@ -247,7 +250,14 @@ export default async function ReglesPage(){
               <h3 className="font-display text-sm font-bold tracking-wide text-ink uppercase">
                 2. Les subs Twitch — pour tout le monde
               </h3>
-              <ul className="mt-1.5 space-y-1 text-[13px]">
+              <p className="mt-1.5 text-[13px]">
+                <strong className="text-aurora">Compte, un sub chacun :</strong>{' '}
+                {CE_QUI_COMPTE.join(' · ')}. Un T3 compte pour un, comme les autres.
+              </p>
+              <p className="mt-1 text-[13px]">
+                <strong className="text-ink">Ne compte pas :</strong> {CE_QUI_NE_COMPTE_PAS.join(' · ')}.
+              </p>
+              <ul className="mt-2 space-y-1 text-[13px]">
                 {SUB_MILESTONES.map((m) => (
                   <li key={m.every}>
                     <strong className="text-ink">Tous les {m.every} subs</strong> — {m.label} :{' '}

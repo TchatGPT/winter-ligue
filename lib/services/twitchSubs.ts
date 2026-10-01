@@ -5,14 +5,15 @@ import 'server-only';
  *
  * ## Le branchement
  *
- * La streameuse autorise une fois l'application à lire ses subs
- * (`channel:read:subscriptions`), en passant par la connexion Twitch avec
- * `subs=1`. Le site crée alors, avec le jeton de l'application, ses
- * abonnements EventSub en webhook vers `/api/twitch/eventsub` : nouveaux subs,
- * subs offerts, et modérateurs ajoutés ou retirés (`moderation:read`), pour que
- * les rôles suivent la chaîne en direct. Rien n'est stocké ici : Twitch garde
- * l'autorisation et les abonnements, et l'administration relit leur état chez
- * lui.
+ * La streameuse autorise une fois l'application à lire son tchat
+ * (`user:read:chat`, avec `user:bot` et `channel:bot`), en passant par la
+ * connexion Twitch avec `subs=1`. Le site crée alors, avec le jeton de
+ * l'application, ses abonnements EventSub en webhook vers
+ * `/api/twitch/eventsub` : les annonces du tchat — subs, resubs et cadeaux, les
+ * seules à dire si un sub est Prime —, et les modérateurs ajoutés ou retirés
+ * (`moderation:read`), pour que les rôles suivent la chaîne en direct. Rien
+ * n'est stocké ici : Twitch garde l'autorisation et les abonnements, et
+ * l'administration relit leur état chez lui.
  *
  * ## La signature
  *
@@ -25,7 +26,7 @@ import 'server-only';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { cleDerivee } from '@/lib/auth/session';
 import { baseDuSite } from '@/lib/auth/twitch';
-import { TYPES_EVENTSUB } from '@/lib/domain/twitchSubs';
+import { TYPE_TCHAT, TYPES_EVENTSUB } from '@/lib/domain/twitchSubs';
 import { entetes, jetonApplication, oublieJeton } from './twitchApp';
 
 const EVENTSUB_URL = 'https://api.twitch.tv/helix/eventsub/subscriptions';
@@ -82,25 +83,46 @@ export interface BranchementSubs {
 }
 
 /**
+ * La condition d'un abonnement. Les annonces du tchat se lisent au nom d'un
+ * compte : celui de la streameuse, qui a autorisé `user:read:chat` et
+ * `user:bot`, et `channel:bot` pour sa chaîne.
+ */
+function conditionDe(type: string, broadcasterId: string): Record<string, string> {
+  return type === TYPE_TCHAT
+    ? { broadcaster_user_id: broadcasterId, user_id: broadcasterId }
+    : { broadcaster_user_id: broadcasterId };
+}
+
+/**
  * Branche les subs de la chaîne sur le site.
  *
  * Les abonnements qui existaient sont d'abord retirés, puis recréés : leur
  * secret suit `AUTH_SECRET`, et un branchement relancé répare toujours. Twitch
  * vérifie aussitôt l'adresse, en y envoyant un défi auquel la route répond.
  *
- * La streameuse doit avoir autorisé l'application à lire ses subs : sans cela,
- * Twitch refuse chaque abonnement (403).
+ * Le retrait est vérifié avant de rien créer : un ancien abonnement resté actif
+ * à côté des annonces du tchat compterait chaque sub deux fois. Au moindre
+ * doute, rien n'est créé, et le branchement échoue en le disant.
+ *
+ * La streameuse doit avoir autorisé l'application à lire son tchat : sans cela,
+ * Twitch refuse l'abonnement (403).
  */
 export async function brancheSubs(broadcasterId: string, origine: string): Promise<BranchementSubs> {
   const jeton = await jetonApplication();
   if (!jeton) return { ok: false, details: [] };
 
-  for (const a of (await nosAbonnements(jeton)) ?? []) {
-    await fetch(`${EVENTSUB_URL}?id=${encodeURIComponent(a.id)}`, {
+  const existants = await nosAbonnements(jeton);
+  if (!existants) return { ok: false, details: [{ type: 'lecture des abonnements', ok: false, statut: 0 }] };
+  for (const a of existants) {
+    const retrait = await fetch(`${EVENTSUB_URL}?id=${encodeURIComponent(a.id)}`, {
       method: 'DELETE',
       headers: entetes(jeton),
       cache: 'no-store',
     });
+    // 404 : déjà parti.
+    if (!retrait.ok && retrait.status !== 404) {
+      return { ok: false, details: [{ type: `retrait de ${a.type}`, ok: false, statut: retrait.status }] };
+    }
   }
 
   const callback = `${baseDuSite(origine)}${CHEMIN_EVENTSUB}`;
@@ -112,12 +134,12 @@ export async function brancheSubs(broadcasterId: string, origine: string): Promi
       body: JSON.stringify({
         type,
         version: '1',
-        condition: { broadcaster_user_id: broadcasterId },
+        condition: conditionDe(type, broadcasterId),
         transport: { method: 'webhook', callback, secret: secret() },
       }),
       cache: 'no-store',
     });
-    // 409 : il existe déjà — un retrait qui aurait échoué, sans conséquence.
+    // 409 : il existe déjà — créé entre-temps, avec le même secret.
     details.push({ type, ok: reponse.ok || reponse.status === 409, statut: reponse.status });
   }
   return { ok: details.every((d) => d.ok), details };

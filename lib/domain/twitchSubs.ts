@@ -1,27 +1,43 @@
 /**
- * Les subs Twitch, tels qu'EventSub les annonce au site.
+ * Les subs Twitch, tels que le tchat de la chaîne les annonce au site.
  *
  * Fonctions pures : ce que vaut un message, s'il est encore frais, et la
  * mémoire des messages déjà comptés. La signature, le réseau et la base vivent
  * ailleurs (`lib/services/twitchSubs.ts`, `app/api/twitch/eventsub/route.ts`).
  *
+ * ## D'où viennent les subs
+ *
+ * Des annonces du tchat (`channel.chat.notification`) : ce sont les seuls
+ * messages de Twitch qui disent si un sub est Prime. `channel.subscribe`
+ * annonce un sub Prime comme un sub de niveau 1, et ignore les resubs.
+ *
  * ## Ce qui compte pour un sub
  *
- * Un nouvel abonnement, et chaque sub offert. Les réabonnements ne comptent
- * pas : le site ne les demande même pas à Twitch. Twitch annonce un cadeau deux fois — un message pour celui qui offre,
- * avec le nombre, puis un message par destinataire : il n'est compté qu'une
- * fois, par le premier. Le palier du sub (1, 2 ou 3) ne change rien : un sub
- * est un sub.
+ * Un sub payé, un pour un, quel que soit son niveau : un nouveau sub, un resub
+ * — Twitch ne l'annonce que si l'abonné le partage dans le tchat —, et chaque
+ * sub offert, même anonyme. Les subs Prime ne comptent pas, ni nouveaux ni
+ * renouvelés ; les bits, les follows et les raids non plus.
  *
- * Aucun message ne vaut quoi que ce soit à un joueur en particulier : les
- * Boosters Perso se règlent à la main, par la modération.
+ * Un cadeau de masse s'annonce deux fois : une annonce pour celui qui offre,
+ * avec le nombre, puis une par destinataire. Il n'est compté qu'une fois, par
+ * la première. Un resub né d'un cadeau — son destinataire qui partage ses mois
+ * — a été compté quand il a été offert.
+ *
+ * ## Le niveau 3
+ *
+ * Un sub de niveau 3 compte pour un, comme les autres, et vaut en plus un
+ * Booster Perso à qui le paie : l'abonné, ou celui qui l'offre. Le site ne le
+ * donne pas lui-même — la modération règle les Boosters Perso à la main — : il
+ * le dit au journal et au registre, et compte ce qui attend les non-inscrits.
  */
 
-/** Les abonnements EventSub que le site demande à Twitch. */
-export const TYPES_SUBS = [
-  'channel.subscribe',
-  'channel.subscription.gift',
-] as const;
+import { packsPersoAcquis } from './rules';
+
+/** Les annonces du tchat : subs, resubs et cadeaux, avec les Prime à part. */
+export const TYPE_TCHAT = 'channel.chat.notification';
+
+/** Les abonnements EventSub que le site demande à Twitch pour les subs. */
+export const TYPES_SUBS = [TYPE_TCHAT] as const;
 
 /**
  * Les modérateurs de la chaîne, en direct. Un modérateur ajouté sur Twitch
@@ -41,6 +57,13 @@ export function roleDuMessage(type: string): 'admin' | 'joueur' | null {
   if (type === 'channel.moderator.remove') return 'joueur';
   return null;
 }
+
+/**
+ * Ce qui compte pour un sub, et ce qui ne compte pas, tel que les joueurs le
+ * lisent — sur la page des boosters et dans les règles.
+ */
+export const CE_QUI_COMPTE = ['Sub T1, T2 ou T3', 'Resub partagé dans le tchat', 'Chaque sub offert'] as const;
+export const CE_QUI_NE_COMPTE_PAS = ['Sub Prime, nouveau ou resub', 'Resub non partagé', 'Bits, follows et raids'] as const;
 
 /** Le plus qu'un seul message peut ajouter : un cadeau de masse, borné. */
 export const SUBS_PAR_MESSAGE_MAX = 1000;
@@ -63,38 +86,145 @@ export interface MessageVu {
 
 type Evenement = Record<string, unknown> | undefined;
 
-/** Combien de subs ce message ajoute au compteur de la saison. */
-export function subsDuMessage(type: string, evenement: Evenement): number {
-  const e = evenement ?? {};
-  switch (type) {
-    case 'channel.subscribe':
-      // Le destinataire d'un sub offert : déjà compté par le message du cadeau.
-      return e.is_gift === true ? 0 : 1;
-    case 'channel.subscription.gift': {
-      const total = e.total;
-      if (typeof total !== 'number' || !Number.isInteger(total) || total < 1) return 0;
-      return Math.min(total, SUBS_PAR_MESSAGE_MAX);
-    }
-    default:
-      // Les réabonnements (`channel.subscription.message`) ne comptent pas.
-      return 0;
-  }
+/** Un sub payé, tel qu'il compte : au compteur de la saison, et au registre. */
+export interface GesteSub {
+  genre: 'sub' | 'resub' | 'cadeau';
+  /** Combien de subs il ajoute au compteur : un, ou le nombre offert. */
+  nombre: number;
+  /** Le niveau du sub : 1, 2 ou 3. */
+  niveau: number;
+  /** Qui a payé — l'abonné, ou celui qui offre ; null pour un cadeau anonyme. */
+  twitchId: string | null;
+  pseudo: string;
+  anonyme: boolean;
 }
 
-/** Le nom affiché d'un abonné, borné : il finit dans le journal. */
-function nomDe(e: Record<string, unknown>): string {
-  const nom = typeof e.user_name === 'string' && e.user_name.trim() ? e.user_name.trim() : 'quelqu’un';
+/** Le niveau d'un sub, tel que Twitch l'écrit (`1000`, `2000`, `3000`). */
+export function niveauDe(tier: unknown): number {
+  return tier === '3000' ? 3 : tier === '2000' ? 2 : 1;
+}
+
+/** Une partie de l'annonce, ou null : Twitch met à null ce qui ne la concerne pas. */
+function partie(v: unknown): Record<string, unknown> | null {
+  return v !== null && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, unknown>) : null;
+}
+
+/** Un nom affiché, borné : il finit dans le journal. */
+function nomDe(v: unknown): string {
+  const nom = typeof v === 'string' && v.trim() ? v.trim() : 'quelqu’un';
   return nom.slice(0, 40);
 }
 
-/** Ce que le journal dit d'un message compté. */
-export function recitDuMessage(type: string, evenement: Evenement, subs: number): string {
+/** Un identifiant Twitch, ou null. */
+function idDe(v: unknown): string | null {
+  return typeof v === 'string' && v.length > 0 && v.length <= 64 ? v : null;
+}
+
+/** Un nombre de subs offerts : un entier positif, borné ; zéro s'il est farfelu. */
+function totalDe(v: unknown): number {
+  return typeof v === 'number' && Number.isInteger(v) && v >= 1 ? Math.min(v, SUBS_PAR_MESSAGE_MAX) : 0;
+}
+
+/**
+ * Ce que vaut un message de Twitch : le sub payé qu'il annonce, ou null s'il ne
+ * compte pas — un sub Prime, un resub né d'un cadeau, le destinataire d'un
+ * cadeau, un raid, une annonce, un message de modération…
+ */
+export function gesteDuMessage(type: string, evenement: Evenement): GesteSub | null {
   const e = evenement ?? {};
-  if (type === 'channel.subscription.gift') {
-    const qui = e.is_anonymous === true ? 'un anonyme' : nomDe(e);
-    return `${subs} sub${subs > 1 ? 's' : ''} offert${subs > 1 ? 's' : ''} par ${qui}`;
+  if (type === TYPE_TCHAT) return gesteDuTchat(e);
+
+  // L'ancien branchement, d'avant les annonces du tchat : ses messages arrivent
+  // tant que la streameuse n'a pas rebranché, et comptent comme avant — un
+  // nouveau sub, Prime compris, et chaque sub offert. Rebrancher les retire.
+  if (type === 'channel.subscribe') {
+    // Le destinataire d'un sub offert : déjà compté par le message du cadeau.
+    if (e.is_gift === true) return null;
+    return {
+      genre: 'sub',
+      nombre: 1,
+      niveau: niveauDe(e.tier),
+      twitchId: idDe(e.user_id),
+      pseudo: nomDe(e.user_name),
+      anonyme: false,
+    };
   }
-  return `sub de ${nomDe(e)}`;
+  if (type === 'channel.subscription.gift') {
+    const nombre = totalDe(e.total);
+    if (nombre === 0) return null;
+    const anonyme = e.is_anonymous === true;
+    return {
+      genre: 'cadeau',
+      nombre,
+      niveau: niveauDe(e.tier),
+      twitchId: anonyme ? null : idDe(e.user_id),
+      pseudo: anonyme ? 'Anonyme' : nomDe(e.user_name),
+      anonyme,
+    };
+  }
+  return null;
+}
+
+/** Une annonce du tchat : un sub, un resub, un cadeau — ou rien qui compte. */
+function gesteDuTchat(e: Record<string, unknown>): GesteSub | null {
+  // En tchat partagé, une annonce peut venir d'une autre chaîne : ses subs ne
+  // sont pas les nôtres.
+  const source = e.source_broadcaster_user_id;
+  if (source !== undefined && source !== null && source !== e.broadcaster_user_id) return null;
+
+  const anonyme = e.chatter_is_anonymous === true;
+  const qui = {
+    twitchId: anonyme ? null : idDe(e.chatter_user_id),
+    pseudo: anonyme ? 'Anonyme' : nomDe(e.chatter_user_name),
+    anonyme,
+  };
+
+  switch (e.notice_type) {
+    case 'sub': {
+      const sub = partie(e.sub);
+      if (!sub || sub.is_prime === true) return null;
+      return { genre: 'sub', nombre: 1, niveau: niveauDe(sub.sub_tier), ...qui };
+    }
+    case 'resub': {
+      const resub = partie(e.resub);
+      if (!resub || resub.is_prime === true || resub.is_gift === true) return null;
+      return { genre: 'resub', nombre: 1, niveau: niveauDe(resub.sub_tier), ...qui };
+    }
+    case 'sub_gift': {
+      const cadeau = partie(e.sub_gift);
+      const masse = cadeau?.community_gift_id;
+      // Un sub d'un cadeau de masse : compté par l'annonce du cadeau entier.
+      if (!cadeau || (masse !== undefined && masse !== null && masse !== '')) return null;
+      return { genre: 'cadeau', nombre: 1, niveau: niveauDe(cadeau.sub_tier), ...qui };
+    }
+    case 'community_sub_gift': {
+      const cadeau = partie(e.community_sub_gift);
+      const nombre = totalDe(cadeau?.total);
+      if (!cadeau || nombre === 0) return null;
+      return { genre: 'cadeau', nombre, niveau: niveauDe(cadeau.sub_tier), ...qui };
+    }
+    default:
+      // Un sub offert ou Prime qui passe à un sub payé ne compte pas de
+      // lui-même : ses mois payés comptent par leurs resubs. Ni les raids, ni
+      // les annonces, ni les bits, ni ce que Twitch ajoutera demain.
+      return null;
+  }
+}
+
+/** Les Boosters Perso qu'un sub vaut d'emblée à qui l'a payé : un par sub de niveau 3. */
+export function boostersDuGeste(g: Pick<GesteSub, 'niveau' | 'nombre' | 'anonyme'>): number {
+  return g.niveau === 3 && !g.anonyme ? g.nombre : 0;
+}
+
+/** Ce que le journal dit d'un sub compté. */
+export function recitDuGeste(g: GesteSub): string {
+  const niveau = `T${g.niveau}`;
+  const recit =
+    g.genre === 'cadeau'
+      ? `${g.nombre} sub${g.nombre > 1 ? 's' : ''} ${niveau} offert${g.nombre > 1 ? 's' : ''} par ${g.anonyme ? 'un anonyme' : g.pseudo}`
+      : `${g.genre} ${niveau} de ${g.pseudo}`;
+  const boosters = boostersDuGeste(g);
+  return boosters > 0 ? `${recit} · vaut ${boosters} Booster${boosters > 1 ? 's' : ''} Perso` : recit;
 }
 
 /**
@@ -122,63 +252,68 @@ export function retiens(vus: readonly MessageVu[], id: string, maintenant: numbe
 export interface LigneSub {
   id: string;
   le: string;
-  genre: 'sub' | 'cadeau';
+  genre: 'sub' | 'resub' | 'cadeau';
   twitchId: string | null;
   pseudo: string;
   nombre: number;
   niveau: number;
 }
 
-/** Le niveau d'un sub, tel que Twitch l'écrit (`1000`, `2000`, `3000`). */
-export function niveauDe(tier: unknown): number {
-  return tier === '3000' ? 3 : tier === '2000' ? 2 : 1;
-}
-
 /** La ligne du registre pour un message compté. */
-export function ligneDuSub(
-  message: { id: string; type: string; evenement: Record<string, unknown> | undefined; maintenant: number },
-  nombre: number,
-): LigneSub {
-  const e = message.evenement ?? {};
-  const cadeau = message.type === 'channel.subscription.gift';
-  const anonyme = cadeau && e.is_anonymous === true;
+export function ligneDuGeste(message: { id: string; maintenant: number }, g: GesteSub): LigneSub {
   return {
     id: message.id,
     le: new Date(message.maintenant).toISOString(),
-    genre: cadeau ? 'cadeau' : 'sub',
-    twitchId: !anonyme && typeof e.user_id === 'string' && e.user_id ? e.user_id : null,
-    pseudo: anonyme ? 'Anonyme' : nomDe(e),
-    nombre,
-    niveau: niveauDe(e.tier),
+    genre: g.genre,
+    twitchId: g.twitchId,
+    pseudo: g.pseudo,
+    nombre: g.nombre,
+    niveau: g.niveau,
   };
 }
 
-export interface CadeauEnAttente {
+export interface PersoEnAttente {
   twitchId: string;
   pseudo: string;
-  /** Tous les subs qu'il a offerts. */
-  subs: number;
+  /** Ses subs offerts de niveau 1 ou 2 : un Booster Perso tous les cinq. */
+  offerts: number;
+  /** Ses subs de niveau 3, pris ou offerts : un Booster Perso chacun. */
+  niveau3: number;
+  /** Les Boosters Perso qu'ils valent. */
+  boosters: number;
   dernier: string;
 }
 
 /**
- * Qui a offert des subs sans être inscrit à la ligue : ses Boosters Perso
- * l'attendent. Les cadeaux anonymes n'y figurent pas — on ne sait pas de qui.
+ * Qui a payé des subs qui valent un Booster Perso — des subs offerts, des subs
+ * de niveau 3 — sans être inscrit à la ligue : ses Boosters Perso l'attendent.
+ * Les cadeaux anonymes n'y figurent pas — on ne sait pas de qui.
  */
-export function cadeauxEnAttente(registre: readonly LigneSub[], inscrits: ReadonlySet<string>): CadeauEnAttente[] {
-  const parDonateur = new Map<string, CadeauEnAttente>();
+export function persoEnAttente(registre: readonly LigneSub[], inscrits: ReadonlySet<string>): PersoEnAttente[] {
+  const parPersonne = new Map<string, PersoEnAttente>();
   for (const l of registre) {
-    if (l.genre !== 'cadeau' || !l.twitchId || inscrits.has(l.twitchId)) continue;
-    const deja = parDonateur.get(l.twitchId);
+    if (!l.twitchId || inscrits.has(l.twitchId)) continue;
+    const niveau3 = l.niveau === 3 ? l.nombre : 0;
+    const offerts = l.niveau !== 3 && l.genre === 'cadeau' ? l.nombre : 0;
+    if (niveau3 === 0 && offerts === 0) continue;
+    const deja = parPersonne.get(l.twitchId);
     if (deja) {
-      deja.subs += l.nombre;
+      deja.niveau3 += niveau3;
+      deja.offerts += offerts;
       if (l.le > deja.dernier) {
         deja.dernier = l.le;
         deja.pseudo = l.pseudo;
       }
     } else {
-      parDonateur.set(l.twitchId, { twitchId: l.twitchId, pseudo: l.pseudo, subs: l.nombre, dernier: l.le });
+      parPersonne.set(l.twitchId, { twitchId: l.twitchId, pseudo: l.pseudo, offerts, niveau3, boosters: 0, dernier: l.le });
     }
   }
-  return [...parDonateur.values()].sort((a, b) => b.subs - a.subs || b.dernier.localeCompare(a.dernier));
+  return [...parPersonne.values()]
+    .map((p) => ({ ...p, boosters: packsPersoAcquis(p.offerts, p.niveau3) }))
+    .sort(
+      (a, b) =>
+        b.boosters - a.boosters ||
+        b.offerts + b.niveau3 - (a.offerts + a.niveau3) ||
+        b.dernier.localeCompare(a.dernier),
+    );
 }

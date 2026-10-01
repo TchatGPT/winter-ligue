@@ -331,13 +331,13 @@ export interface SubTwitch {
   /** L'identifiant du message Twitch : un geste, une ligne. */
   id: string;
   le: string;
-  genre: 'sub' | 'cadeau';
+  genre: 'sub' | 'resub' | 'cadeau';
   /** L'identifiant Twitch de qui a sub ou offert ; nul pour un cadeau anonyme. */
   twitchId: string | null;
   pseudo: string;
-  /** Un pour un sub, le nombre offert pour un cadeau. */
+  /** Un pour un sub ou un resub, le nombre offert pour un cadeau. */
   nombre: number;
-  /** Le niveau du sub : 1, 2 ou 3. */
+  /** Le niveau du sub : 1, 2 ou 3. Un sub de niveau 3 vaut un Booster Perso à qui l'a payé. */
   niveau: number;
 }
 

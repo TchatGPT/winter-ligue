@@ -778,8 +778,8 @@ export const PACKS: readonly PackDefinition[] = [
   {
     id: 'perso',
     name: 'Booster Perso',
-    tagline: 'Cinq subs, une carte pour toi',
-    declencheur: 'Chaque fois qu’un joueur offre cinq subs.',
+    tagline: 'Un T3 ou cinq subs offerts, une carte pour toi',
+    declencheur: 'Pour chaque sub T3 d’un joueur, pris ou offert, et chaque fois qu’il offre cinq subs.',
     glyph: '🎁',
     gradient: ['#2b4a63', '#0e1c2a'],
     portee: 'JOUEUR',

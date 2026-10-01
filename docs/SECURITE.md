@@ -335,24 +335,28 @@ le texte vient d'une table fixe. L'adresse de retour à déclarer chez Twitch es
 
 **Les subs viennent de Twitch** (EventSub, en webhook : `POST /api/twitch/eventsub`).
 La streameuse branche une fois, depuis Admin → Saison : la connexion Twitch repart
-avec `subs=1`, signé dans le `state`, et demande en plus `channel:read:subscriptions`,
-ainsi que `user:write:chat`, `user:bot` et `channel:bot` pour annoncer les codes cadeaux dans le tchat.
-Au retour, le site vérifie que c'est bien la chaîne de la ligue et que la portée est
-accordée, puis crée, avec le jeton de l'application, deux abonnements : nouveaux subs
-et subs offerts — les réabonnements ne comptent pas. Tout autre compte est connecté, sans rien
-brancher. À la réception : signature HMAC-SHA256 vérifiée **avant** de lire le corps
-(secret tiré d'`AUTH_SECRET`, jamais écrit), message de plus de dix minutes ignoré,
-chaîne de la ligue seulement, corps de 64 Kio au plus. Chaque message ne compte
-qu'une fois : sa trace (`saison.twitch_vus`, une heure) s'écrit dans la **même
-transaction** que le compteur, et un échec répond 500 pour que Twitch réessaie. Le
-compteur avance par `addSubs()`, comme la saisie de la modération. Un sub offert
-compte par le message du cadeau, jamais par ceux de ses destinataires. Deux gestes
-valent en plus un Booster Perso à un joueur qui a un compte : un cadeau groupé d'au
-moins cinq subs, fait à visage découvert (ses subs offerts montent d'autant), et un
-sub de niveau 3 pris pour soi. Rien pour un sub simple, un réabonnement, un petit
-cadeau ou un cadeau anonyme, ni pour la streameuse. Un admin peut remettre le
-compteur à zéro avant le départ de la saison : rien de ce qui a été versé n'est
-repris, et le journal le note.
+avec `subs=1`, signé dans le `state`, et demande en plus `user:read:chat`, `user:write:chat`,
+`user:bot` et `channel:bot` — lire les annonces de subs de son tchat, y annoncer les codes
+cadeaux — et `moderation:read`. Au retour, le site vérifie que c'est bien la chaîne de la
+ligue et que la portée est accordée, puis retire ses anciens abonnements — en s'assurant
+qu'ils sont partis : un ancien resté actif compterait chaque sub deux fois — et crée, avec
+le jeton de l'application, les annonces du tchat (`channel.chat.notification`, lues au nom
+de la streameuse) et les modérateurs ajoutés ou retirés. Tout autre compte est connecté,
+sans rien brancher. À la réception : signature HMAC-SHA256 vérifiée **avant** de lire le
+corps (secret tiré d'`AUTH_SECRET`, jamais écrit), message de plus de dix minutes ignoré,
+chaîne de la ligue seulement, corps de 64 Kio au plus ; une annonce qui ne compte pas — un
+raid, un sub Prime, le destinataire d'un cadeau de masse — s'arrête là, sans transaction.
+Chaque message ne compte qu'une fois : sa trace (`saison.twitch_vus`, une heure) s'écrit
+dans la **même transaction** que le compteur, et un échec répond 500 pour que Twitch
+réessaie. Le compteur avance par `addSubs()`, comme la saisie de la modération : un sub
+payé compte pour un, quel que soit son niveau — nouveau sub, resub partagé dans le tchat,
+sub offert, même anonyme — ; un sub Prime ne compte pas, ni un resub né d'un cadeau (le
+cadeau a compté), ni ce qui vient d'une autre chaîne en tchat partagé. Un sub offert
+compte par l'annonce du cadeau, jamais par celles de ses destinataires. Twitch ne donne
+de Booster Perso à personne : un sub T3 en vaut un à qui le paie, et cinq subs offerts
+aussi, mais la modération les ajoute à la main ; le journal et le registre le lui
+disent. Un admin peut remettre le compteur à zéro avant le départ de la saison : rien de
+ce qui a été versé n'est repris, et le journal le note.
 
 **Tant que Twitch n'est pas branché, la connexion Twitch est fermée.** Une
 connexion *simulée* a existé : un clic sur le bouton faisait entrer n'importe quel

@@ -25,8 +25,7 @@ export interface TwitchSubs {
 }
 
 const NOMS_ABONNEMENTS: Record<string, string> = {
-  'channel.subscribe': 'Nouveaux subs',
-  'channel.subscription.gift': 'Subs offerts',
+  'channel.chat.notification': 'Subs, resubs et cadeaux (annonces du tchat)',
   'channel.moderator.add': 'Modos ajoutés',
   'channel.moderator.remove': 'Modos retirés',
 };
@@ -117,8 +116,8 @@ export function EcranSaison({
           neige="admin-twitch"
           aide={
             branche
-              ? 'Branchés : chaque nouveau sub et chaque sub offert s’ajoute tout seul au compteur — les réabonnements ne comptent pas, avec ses paliers. Le même branchement autorise la ligue à annoncer les codes cadeaux dans le tchat, et fait suivre la modération : un modo ajouté ou retiré sur Twitch l’est aussitôt ici.'
-              : 'Une fois branchés, les subs de la chaîne s’ajoutent tout seuls au compteur, les codes cadeaux s’annoncent dans le tchat, et les modos ajoutés ou retirés sur Twitch le sont aussitôt ici. Le branchement se fait une fois, par la streameuse elle-même : Twitch lui demande d’autoriser la ligue à voir ses subs et ses modos, et à écrire dans son tchat.'
+              ? 'Branchés : chaque sub payé — nouveau sub, resub partagé dans le tchat, sub offert — s’ajoute tout seul au compteur, avec ses paliers ; les subs Prime ne comptent pas. Le même branchement autorise la ligue à annoncer les codes cadeaux dans le tchat, et fait suivre la modération : un modo ajouté ou retiré sur Twitch l’est aussitôt ici.'
+              : 'Une fois branchés, les subs de la chaîne s’ajoutent tout seuls au compteur — sauf les Prime —, les codes cadeaux s’annoncent dans le tchat, et les modos ajoutés ou retirés sur Twitch le sont aussitôt ici. Le branchement se fait une fois, par la streameuse elle-même : Twitch lui demande d’autoriser la ligue à lire et à écrire dans son tchat — c’est là qu’il annonce les subs, et lui seul dit lesquels sont Prime — et à voir ses modos.'
           }
           actions={
             estAdmin ? (

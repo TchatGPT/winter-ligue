@@ -9,9 +9,10 @@ import 'server-only';
  * actifs, à parts égales**, et met en file les packs collectifs. Personne ne
  * peut désigner le bénéficiaire d'un versement.
  *
- * Les subs qu'un joueur offre lui-même se comptent à part, par
- * `attribueSubsJoueur` dans `packs.ts` : ils lui valent des packs Perso, et
- * c'est la seule chose qu'un sub achète à quelqu'un en particulier.
+ * Les Boosters Perso — un par sub de niveau 3, un tous les cinq subs offerts —
+ * sont la seule chose qu'un sub vaut à quelqu'un en particulier. Ils ne
+ * passent pas par ici : la modération les règle à la main, joueur par joueur
+ * (`ajusteBoostersPerso` dans `packs.ts`).
  */
 
 import type { Database } from '@/lib/db/entities';
@@ -21,13 +22,7 @@ import type { PackId } from '@/lib/domain/types';
 import { audit, credit } from './ledger';
 import { ajoutePackDu } from './packs';
 import { declencheEvenements } from '@/lib/services/evenements';
-import {
-  dejaVu,
-  ligneDuSub,
-  recitDuMessage,
-  retiens,
-  subsDuMessage,
-} from '@/lib/domain/twitchSubs';
+import { dejaVu, gesteDuMessage, ligneDuGeste, recitDuGeste, retiens } from '@/lib/domain/twitchSubs';
 
 export class SubError extends Error {
   constructor(
@@ -131,15 +126,17 @@ export function addSubs(db: Database, delta: number, actor: string, precision?: 
 }
 
 /**
- * Un message de Twitch : un sub, ou des subs offerts. Un réabonnement ne compte pas.
+ * Un message de Twitch : un sub, un resub, des subs offerts — ce que
+ * `gesteDuMessage` dit qu'il vaut. Un sub Prime ne compte pas.
  *
  * Compté une seule fois : Twitch renvoie un message qu'il croit perdu, et la
  * mémoire des messages comptés vit dans la même transaction que le compteur —
  * les deux réussissent ou échouent ensemble. Un message qui n'ajoute rien (le
  * destinataire d'un sub offert, déjà compté par le cadeau) n'est pas retenu.
  *
- * Twitch ne donne de Booster Perso à personne : la modération les règle à la
- * main, joueur par joueur (`ajusteBoostersPerso`).
+ * Twitch ne donne de Booster Perso à personne : un sub de niveau 3 en vaut un,
+ * le journal et le registre le disent, et la modération l'ajoute à la main
+ * (`ajusteBoostersPerso`).
  *
  * À appeler dans une transaction. Renvoie null si le message ne change rien.
  */
@@ -148,12 +145,12 @@ export function ajouteSubsTwitch(
   message: { id: string; type: string; evenement: Record<string, unknown>; maintenant: number },
 ): AddSubsResult | null {
   if (dejaVu(db.config.twitchVus, message.id)) return null;
-  const subs = subsDuMessage(message.type, message.evenement);
-  if (subs === 0) return null;
+  const geste = gesteDuMessage(message.type, message.evenement);
+  if (!geste) return null;
   db.config.twitchVus = retiens(db.config.twitchVus, message.id, message.maintenant);
-  const resultat = addSubs(db, subs, 'twitch', recitDuMessage(message.type, message.evenement, subs));
-  // Au registre, que lit la modération : qui, combien, quand.
-  db.subsTwitch.push(ligneDuSub(message, subs));
+  const resultat = addSubs(db, geste.nombre, 'twitch', recitDuGeste(geste));
+  // Au registre, que lit la modération : qui, combien, quand, à quel niveau.
+  db.subsTwitch.push(ligneDuGeste(message, geste));
   return resultat;
 }
 

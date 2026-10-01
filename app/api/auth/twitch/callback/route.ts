@@ -79,7 +79,7 @@ export async function GET(request: Request): Promise<NextResponse> {
           branchement.ok ? 'SUBS_TWITCH_BRANCHES' : 'SUBS_TWITCH_REFUSES',
           null,
           branchement.ok
-            ? `Twitch branché : nouveaux subs, subs offerts${
+            ? `Twitch branché : subs, resubs et subs offerts, sans les Prime${
                 tchat ? ', et annonces des codes cadeaux dans le tchat' : ' (sans le tchat)'
               }.`
             : `Twitch a refusé le branchement (${

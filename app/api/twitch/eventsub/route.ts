@@ -3,7 +3,7 @@ import { guard } from '@/lib/api/respond';
 import { eventSubSchema } from '@/lib/api/schemas';
 import { chaineDeLaLigue, isTwitchEnabled } from '@/lib/auth/twitch';
 import { getStore } from '@/lib/db/store';
-import { messageFrais, roleDuMessage } from '@/lib/domain/twitchSubs';
+import { gesteDuMessage, messageFrais, roleDuMessage } from '@/lib/domain/twitchSubs';
 import { LIMITS } from '@/lib/security/ratelimit';
 import { suisModerationTwitch } from '@/lib/services/comptes';
 import { audit } from '@/lib/services/ledger';
@@ -19,9 +19,10 @@ const CORPS_MAX = 64 * 1024;
 const reponse = (status: number) => new NextResponse(null, { status, headers: { 'cache-control': 'no-store' } });
 
 /**
- * Les messages de Twitch : chaque sub de la chaîne, et chaque modérateur
- * ajouté ou retiré, en direct (EventSub, en webhook). Branchement :
- * `lib/services/twitchSubs.ts`.
+ * Les messages de Twitch : chaque annonce du tchat de la chaîne — dont les
+ * subs, les resubs et les cadeaux —, et chaque modérateur ajouté ou retiré, en
+ * direct (EventSub, en webhook). Branchement : `lib/services/twitchSubs.ts`.
+ * Ce qui compte pour un sub : `gesteDuMessage`, dans `lib/domain/twitchSubs.ts`.
  *
  * Personne d'autre que Twitch ne fait rien compter ici. La signature — un
  * HMAC-SHA256 dont le secret, tiré d'`AUTH_SECRET`, n'est connu que du site et
@@ -108,6 +109,11 @@ export async function POST(request: Request): Promise<NextResponse> {
     }
     return reponse(204);
   }
+
+  // Le tchat annonce bien plus que des subs : un raid, une annonce, un sub
+  // Prime, chaque destinataire d'un cadeau de masse. Ce qui ne compte pas
+  // s'arrête ici, sans ouvrir de transaction.
+  if (!gesteDuMessage(subscription.type, event)) return reponse(204);
 
   try {
     await getStore().transaction((db) =>

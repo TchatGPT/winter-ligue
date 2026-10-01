@@ -113,6 +113,14 @@ describe('les boosters', () => {
     expect(packsPersoAcquis(n * 3 + 1)).toBe(3);
     expect(packsPersoAcquis(-4)).toBe(0);
   });
+
+  it('doivent en plus un Booster Perso par sub T3, pris ou offert', () => {
+    const n = PACKS_REGLES.persoTousLes;
+    expect(packsPersoAcquis(0, 1)).toBe(1);
+    expect(packsPersoAcquis(n - 1, 2)).toBe(2);
+    expect(packsPersoAcquis(n * 2, 3)).toBe(5);
+    expect(packsPersoAcquis(0, -1)).toBe(0);
+  });
 });
 
 describe('tables de raretés', () => {

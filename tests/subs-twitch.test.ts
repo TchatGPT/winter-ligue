@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Database } from '@/lib/db/entities';
 import { emptyDatabase } from '@/lib/db/store';
+import { TYPE_TCHAT } from '@/lib/domain/twitchSubs';
 import { rattacheCompteTwitch } from '@/lib/services/comptes';
 import { ajouteSubsTwitch, remetSubsAZero } from '@/lib/services/subs';
 
@@ -23,14 +24,27 @@ function base(): Database {
   return db;
 }
 
-function message(type: string, evenement: Record<string, unknown>, id = `m${++numero}`) {
+/** Une annonce du tchat de la chaîne, par `qui`. */
+function annonce(notice: string, partie: Record<string, unknown>, qui = 'tw-joueur', id = `m${++numero}`) {
   return {
     id,
-    type,
-    evenement: { broadcaster_user_id: 'tw-chaine', broadcaster_user_login: 'lriaa', ...evenement },
+    type: TYPE_TCHAT,
+    evenement: {
+      broadcaster_user_id: 'tw-chaine',
+      broadcaster_user_login: 'lriaa',
+      chatter_user_id: qui,
+      chatter_user_name: qui === 'tw-joueur' ? 'Généreux' : 'X',
+      chatter_is_anonymous: false,
+      notice_type: notice,
+      source_broadcaster_user_id: null,
+      [notice]: partie,
+    },
     maintenant: MAINTENANT,
   };
 }
+
+const sub = (tier: string, prime = false) => ({ sub_tier: tier, is_prime: prime, duration_months: 1 });
+const resub = (tier: string, prime = false) => ({ sub_tier: tier, is_prime: prime, is_gift: false, cumulative_months: 3 });
 
 const joueur = (db: Database) => db.players.find((p) => p.twitchId === 'tw-joueur')!;
 const boostersPerso = (db: Database) => db.packsDus.filter((p) => p.packId === 'perso' && p.joueurId !== null);
@@ -38,37 +52,56 @@ const boostersPerso = (db: Database) => db.packsDus.filter((p) => p.packId === '
 describe('les subs de Twitch, au compteur de la saison', () => {
   it('s’inscrivent au registre des subs, un par message compté', () => {
     const db = base();
-    ajouteSubsTwitch(db, message('channel.subscription.gift', { user_id: 'tw-x', user_name: 'X', total: 5, tier: '1000' }));
-    ajouteSubsTwitch(db, message('channel.subscribe', { user_id: 'tw-x', is_gift: true }));
+    ajouteSubsTwitch(db, annonce('community_sub_gift', { id: 'cg', total: 5, sub_tier: '1000' }, 'tw-x'));
+    ajouteSubsTwitch(db, annonce('sub_gift', { sub_tier: '1000', recipient_user_id: 'r', community_gift_id: 'cg' }, 'tw-x'));
+    expect(db.config.totalSubs).toBe(5);
     expect(db.subsTwitch).toHaveLength(1);
-    expect(db.subsTwitch[0]).toMatchObject({ genre: 'cadeau', twitchId: 'tw-x', pseudo: 'X', nombre: 5 });
+    expect(db.subsTwitch[0]).toMatchObject({ genre: 'cadeau', twitchId: 'tw-x', pseudo: 'X', nombre: 5, niveau: 1 });
   });
 
-  it('comptent chacun une seule fois, sans les réabonnements', () => {
+  it('comptent chacun une seule fois, resubs compris, sans les Prime', () => {
     const db = base();
-    const sub = message('channel.subscribe', { user_id: 'x', tier: '1000', is_gift: false });
-    ajouteSubsTwitch(db, sub);
-    ajouteSubsTwitch(db, sub); // renvoyé par Twitch
-    ajouteSubsTwitch(db, message('channel.subscription.message', { user_id: 'x', tier: '1000' }));
+    const nouveau = annonce('sub', sub('1000'), 'tw-x');
+    ajouteSubsTwitch(db, nouveau);
+    ajouteSubsTwitch(db, nouveau); // renvoyé par Twitch
+    ajouteSubsTwitch(db, annonce('resub', resub('2000'), 'tw-x'));
+    ajouteSubsTwitch(db, annonce('sub', sub('1000', true), 'tw-x'));
+    ajouteSubsTwitch(db, annonce('resub', resub('1000', true), 'tw-x'));
+    expect(db.config.totalSubs).toBe(2);
+    expect(db.subsTwitch.map((l) => l.genre)).toEqual(['sub', 'resub']);
+  });
+
+  it('comptent encore par l’ancien branchement, tant que la streameuse n’a pas rebranché', () => {
+    const db = base();
+    ajouteSubsTwitch(db, {
+      id: 'ancien',
+      type: 'channel.subscribe',
+      evenement: { user_id: 'tw-x', user_name: 'X', tier: '1000', is_gift: false },
+      maintenant: MAINTENANT,
+    });
     expect(db.config.totalSubs).toBe(1);
   });
 });
 
 describe('ce qu’un sub vaut à un joueur', () => {
-  it('rien : les Boosters Perso se règlent à la main, quel que soit le sub', () => {
+  it('un T3 compte pour un et vaut un Booster Perso — que la modération ajoute à la main', () => {
     const db = base();
-    ajouteSubsTwitch(db, message('channel.subscription.gift', { user_id: 'tw-joueur', total: 10, tier: '1000' }));
-    ajouteSubsTwitch(db, message('channel.subscribe', { user_id: 'tw-joueur', tier: '3000', is_gift: false }));
+    ajouteSubsTwitch(db, annonce('community_sub_gift', { id: 'cg', total: 10, sub_tier: '1000' }));
+    ajouteSubsTwitch(db, annonce('sub', sub('3000')));
     expect(db.config.totalSubs).toBe(11);
+    // Rien d'automatique : ni subs offerts, ni Booster Perso en file.
     expect(joueur(db).subsOfferts).toBe(0);
     expect(boostersPerso(db)).toHaveLength(0);
+    // Mais le registre et le journal disent ce qui est dû.
+    expect(db.subsTwitch.at(-1)).toMatchObject({ genre: 'sub', twitchId: 'tw-joueur', niveau: 3 });
+    expect(db.audit.at(-1)?.detail).toContain('sub T3 de Généreux · vaut 1 Booster Perso');
   });
 });
 
 describe('la remise à zéro du compteur', () => {
   it('repart de zéro sans rien reprendre de ce qui a été versé', () => {
     const db = base();
-    ajouteSubsTwitch(db, message('channel.subscription.gift', { user_id: 'tw-joueur', total: 10, tier: '1000' }));
+    ajouteSubsTwitch(db, annonce('community_sub_gift', { id: 'cg', total: 10, sub_tier: '1000' }));
     const solde = joueur(db).snowflakes;
 
     expect(remetSubsAZero(db, 'un-admin')).toEqual({ avant: 10 });

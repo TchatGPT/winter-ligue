@@ -165,8 +165,9 @@ export function ajoutePackDu(
  * Le compteur de Boosters Perso d'un joueur, réglé à la main par la
  * modération — comme les roues perso de la Summer Ligue.
  *
- * Un Booster Perso se donne pour des subs offerts (un tous les
- * `PACKS_REGLES.persoTousLes`), et peut passer d'un joueur à un autre quand
+ * Un Booster Perso se donne pour chaque sub T3, pris ou offert, et pour des
+ * subs offerts (un tous les `PACKS_REGLES.persoTousLes`) — voir
+ * `packsPersoAcquis` —, et peut passer d'un joueur à un autre quand
  * celui qui l'a gagné l'offre : un − chez l'un, un + chez l'autre. Le compteur,
  * c'est le nombre de Boosters Perso en file pour ce joueur, pas encore ouverts :
  * `+` en met un en file, `−` retire le plus récent. La streameuse n'en reçoit

@@ -331,7 +331,10 @@ export function EcranJoueurs({
                 <th className="text-right">Games</th>
                 <th className="text-right">Points</th>
                 <th className="text-right">Flocons</th>
-                <th className="text-right" title={`Un Booster Perso tous les ${PACKS_REGLES.persoTousLes} subs offerts`}>
+                <th
+                  className="text-right"
+                  title={`Un Booster Perso par sub T3, pris ou offert, et un tous les ${PACKS_REGLES.persoTousLes} subs offerts`}
+                >
                   Boosters Perso
                 </th>
               </tr>

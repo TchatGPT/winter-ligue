@@ -9,7 +9,9 @@ import { CartesParRarete, type CarteSaison } from '@/components/CartesParRarete'
 import { DestinCarte } from '@/components/DestinCarte';
 import { CardTile, Notice, RarityChip, flakes, rarityMeta } from '@/components/ui';
 import { packArt } from '@/lib/domain/catalog';
-import { ECONOMY, libelleMultiplicateur, rarityPercent, SUB_MILESTONES } from '@/lib/domain/rules';
+import { ECONOMY, libelleMultiplicateur, PACKS_REGLES, rarityPercent, SUB_MILESTONES } from '@/lib/domain/rules';
+import { CE_QUI_COMPTE, CE_QUI_NE_COMPTE_PAS } from '@/lib/domain/twitchSubs';
+import { IconCoche, IconCroix } from '@/components/icons';
 import type { PackDefinition, PackId, Rarity } from '@/lib/domain/types';
 import type { OuvertureVue, PackDuVue } from '@/lib/services/packs';
 import { COURBE_MESUREE } from '@/lib/spin/courbe';
@@ -38,6 +40,45 @@ function chances(v: number): string {
   const n = 100 / v;
   const arrondi = Math.round(n);
   return `${Math.abs(n - arrondi) < 1e-9 ? '' : '≈ '}1 sur ${arrondi.toLocaleString('fr-FR')}`;
+}
+
+/** Tous les combien de subs de la saison un booster de la ligue tombe. */
+function palierDe(pack: PackId): number | undefined {
+  return SUB_MILESTONES.find((m) => m.kind === 'PACK' && m.packId === pack)?.every;
+}
+
+/**
+ * Sous l'étape 1 : ce qui compte pour un sub, et ce qui ne compte pas, en
+ * pastilles qu'on lit d'un coup d'œil. Les listes viennent de
+ * `lib/domain/twitchSubs.ts`, comme la règle qu'elles disent.
+ */
+function CeQuiCompte() {
+  return (
+    <div className="etape-subs">
+      <div className="etape-subs-ligne" data-compte="">
+        <span className="etape-subs-titre">
+          <IconCoche className="h-[18px] w-[18px]" />
+          Compte, un sub chacun
+        </span>
+        <ul className="etape-subs-puces">
+          {CE_QUI_COMPTE.map((t) => (
+            <li key={t}>{t}</li>
+          ))}
+        </ul>
+      </div>
+      <div className="etape-subs-ligne">
+        <span className="etape-subs-titre">
+          <IconCroix className="h-[18px] w-[18px]" />
+          Ne compte pas
+        </span>
+        <ul className="etape-subs-puces">
+          {CE_QUI_NE_COMPTE_PAS.map((t) => (
+            <li key={t}>{t}</li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
 }
 
 export interface PackVitrine extends PackDefinition {
@@ -211,8 +252,8 @@ export function PackOpening({
           {[
             {
               titre: 'Un booster t’est dû',
-              texte:
-                'Cinq subs offerts, c’est un Booster Perso pour toi. Cinquante subs de la saison, c’est un Booster Commu pour ceux que le sort désigne. Ta dernière game de la saison, c’est le Booster Finisseur.',
+              texte: `Un sub T3, ou ${PACKS_REGLES.persoTousLes} subs offerts : un Booster Perso pour toi. Tous les ${palierDe('commu')} subs de la saison, un Booster Commu pour ceux que le sort désigne ; tous les ${palierDe('folie')}, un Booster Folie. Ta dernière game de la saison : le Booster Finisseur.`,
+              detail: <CeQuiCompte />,
               icone: <GlaceSachet className="h-full w-full" />,
             },
             {
@@ -227,17 +268,18 @@ export function PackOpening({
                 'Le plus souvent sur ta prochaine game : elle s’y applique, puis disparaît. Certaines relèvent une game déjà jouée, ou donnent tout de suite des flocons, une game de plus, une immunité. Jamais plus de 25 points sur une game.',
               icone: <GlaceEpees className="h-full w-full" />,
             },
-          ].map((etape, i) => (
+          ].map((etape: { titre: string; texte: string; detail?: React.ReactNode; icone: React.ReactNode }, i) => (
             <li key={etape.titre} className="etape-case">
               <div className="etape-carte glass glass-soft">
                 <span className="etape-icone" aria-hidden="true">
                   {etape.icone}
                 </span>
-                <span className="min-w-0">
+                <div className="min-w-0">
                   <span className="etape-numero">Étape {i + 1}</span>
                   <span className="etape-titre">{etape.titre}</span>
                   <span className="etape-texte">{etape.texte}</span>
-                </span>
+                  {etape.detail}
+                </div>
               </div>
             </li>
           ))}

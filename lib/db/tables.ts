@@ -394,7 +394,7 @@ create table if not exists evenements (
 create table if not exists subs_twitch (
   id text primary key,
   le timestamptz not null,
-  genre text not null check (genre in ('sub', 'cadeau')),
+  genre text not null check (genre in ('sub', 'resub', 'cadeau')),
   twitch_id text,
   pseudo text not null,
   nombre integer not null check (nombre > 0),
@@ -436,6 +436,10 @@ alter table saison add column if not exists overlay_generation integer not null 
 
 -- Les messages de Twitch déjà comptés : un message renvoyé ne compte qu'une fois.
 alter table saison add column if not exists twitch_vus jsonb not null default '[]';
+
+-- Les resubs comptent : le registre les inscrit à part.
+alter table subs_twitch drop constraint if exists subs_twitch_genre_check;
+alter table subs_twitch add constraint subs_twitch_genre_check check (genre in ('sub', 'resub', 'cadeau'));
 
 -- Le journal ne s'écrit qu'en ajout : ni modification, ni suppression, ni
 -- vidage. Une ligne effacée par erreur de code — ou par qui aurait pris la

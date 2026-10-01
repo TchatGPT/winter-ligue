@@ -96,11 +96,16 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   qui compte les utilisations. Plus d'attribution de flocons à la main.
 - Les taux de rareté ne se règlent plus depuis le site : ce sont ceux du catalogue, et
   les réglages déjà en base restent lus par `resolvedBooster()`.
-- **Les subs de Twitch** arrivent par EventSub (`/api/twitch/eventsub`) et passent par
-  `addSubs()`, comme la saisie de la modération. Un message ne compte qu'une fois : sa
-  trace (`config.twitchVus`) s'écrit dans la même transaction que le compteur. Les
-  réabonnements ne comptent pas. Twitch ne donne de Booster Perso à personne : la
-  modération règle à la main le compteur de chaque joueur (`ajusteBoostersPerso`).
+- **Les subs de Twitch** arrivent par EventSub (`/api/twitch/eventsub`), par les annonces
+  du tchat (`channel.chat.notification`) — les seules qui disent si un sub est Prime —,
+  et passent par `addSubs()`, comme la saisie de la modération. Un message ne compte
+  qu'une fois : sa trace (`config.twitchVus`) s'écrit dans la même transaction que le
+  compteur. **Ce qui compte se décide dans `gesteDuMessage()`, nulle part ailleurs** : un
+  sub payé compte pour un, quel que soit son niveau — nouveau sub, resub partagé, sub
+  offert — ; les subs Prime ne comptent pas. Un T3 vaut en plus un Booster Perso à qui
+  le paie, mais Twitch ne donne de Booster Perso à personne : la modération règle à la
+  main le compteur de chaque joueur (`ajusteBoostersPerso`), le registre et le journal
+  lui disent ce qui est dû.
 - Les duels se jouent entre joueurs : il n'y a plus de bot. `CAMP_BOT` ne sert plus
   qu'à afficher les anciens duels.
 - Les overlays OBS (`/overlay/…`) lisent par `Store.fluxOverlay`, jamais par `read()` :
