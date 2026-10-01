@@ -7,6 +7,9 @@ import { Sidebar, SIDEBAR_WIDTH } from '@/components/Sidebar';
 import { getSession } from '@/lib/auth/session';
 import './globals.css';
 import { PiedDePage } from '@/components/PiedDePage';
+import { EvenementsFlottants } from '@/components/EvenementsFlottants';
+import { getStore } from '@/lib/db/store';
+import { evenementsActifs } from '@/lib/services/evenements';
 
 const barlow = Barlow({
   subsets: ['latin'],
@@ -75,6 +78,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   }
 
   const connecte = (await getSession()) !== null;
+  // Les évènements de subs en cours, pour la mini-bannière du haut. La base est
+  // déjà chargée pour la page : la lecture est gardée le temps du rendu.
+  const enCours = connecte ? await getStore().read((db) => evenementsActifs(db)) : [];
   return (
     <html lang="fr" className={`${barlow.variable} ${barlowCondensed.variable}`}>
       <body className="flex min-h-dvh flex-col">
@@ -89,6 +95,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           className="flex min-h-dvh flex-1 flex-col"
           style={{ ['--sidebar' as string]: connecte ? `${SIDEBAR_WIDTH}px` : '0px' }}
         >
+          <EvenementsFlottants evenements={enCours} />
           <div className="flex flex-1 flex-col lg:pl-[var(--sidebar)]">
             {/* Toute la largeur, sans plafond : sur un grand écran, ce sont les
                 grilles des pages qui gagnent des colonnes (paliers 3xl et 4xl),

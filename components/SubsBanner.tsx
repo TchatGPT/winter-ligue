@@ -1,17 +1,16 @@
-import { Countdown } from '@/components/Countdown';
 import { EmblemePalier, type GlyphePalier } from '@/components/EmblemePalier';
 import { SnowCap } from '@/components/SnowCap';
 import { flakes } from '@/components/ui';
 import type { EvenementActif } from '@/lib/db/entities';
 import { GEMME_DU_PACK, RARITY_META } from '@/lib/domain/catalog';
-import { departAccelere, EVENEMENTS_SUBS, paliersDuCompteur, type PalierAVenir } from '@/lib/domain/rules';
+import { departAccelere, paliersDuCompteur, type PalierAVenir } from '@/lib/domain/rules';
 
 /**
  * Le compteur de subs de la saison, et ce que les subs font tomber.
  *
  *  1. le nombre, en très grand — c'est lui qu'on vient voir ;
- *  2. ce qui tourne maintenant, s'il y a quelque chose, avec son compte à
- *     rebours ;
+ *  2. (ce qui tourne maintenant n'est plus ici : c'est la mini-bannière du
+ *     haut du site, `EvenementsFlottants`) ;
  *  3. les paliers, à la manière des taux de rareté : les boosters de la ligue
  *     et les évènements, chacun sa médaille, sa teinte, sa jauge creusée et ce
  *     qu'il reste à faire. Le plus proche est marqué. Pendant une Tempête, le
@@ -34,7 +33,7 @@ export function SubsBanner({
   evenements = [],
 }: {
   totalSubs: number;
-  /** Les évènements en cours, du plus récent au plus ancien. */
+  /** Les évènements en cours : une Tempête de neige accélère le Booster Commu. */
   evenements?: EvenementActif[];
 }) {
   const tempete = evenements.find((e) => e.kind === 'COMMU_ACCELERE');
@@ -61,33 +60,6 @@ export function SubsBanner({
             Tout tombe pour tous les joueurs actifs, à parts égales. Le classement ne se gagne qu’en jouant.
           </p>
         </div>
-
-        {/* 2. En cours. */}
-        {evenements.length > 0 && (
-          <ul className="grid w-full gap-2.5 @3xl:grid-cols-2">
-            {evenements.map((e) => (
-              <li key={e.id} className="glass glass-soft evenement flex items-center gap-3 px-4 py-3 text-left">
-                <span className="evenement-pastille" aria-hidden="true" />
-                <span className="min-w-0 flex-1 leading-tight">
-                  <span className="block text-[13px] tracking-[0.12em] text-aurora uppercase">En cours</span>
-                  <span className="block text-[15px] font-bold text-ink">
-                    {e.label} ·{' '}
-                    <span className="font-medium text-ink-2">
-                      {/* Le texte vient de la table, pas de l'enregistrement :
-                          un évènement ouvert avant une reformulation garde
-                          sinon l'ancienne phrase jusqu'à sa fin. */}
-                      {EVENEMENTS_SUBS.find((r) => r.kind === e.kind && r.label === e.label)?.description ??
-                        e.description}
-                    </span>
-                  </span>
-                </span>
-                <span className="num ml-2 font-display text-[20px] leading-none font-black whitespace-nowrap text-ink tabular-nums">
-                  <Countdown endsAt={e.endsAt} />
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
 
         {/* 3. Les paliers. */}
         <div>
