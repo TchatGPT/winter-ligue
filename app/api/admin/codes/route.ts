@@ -6,7 +6,7 @@ import { baseDuSite, isTwitchEnabled } from '@/lib/auth/twitch';
 import { getStore } from '@/lib/db/store';
 import { annonceDuCode } from '@/lib/domain/codes';
 import { LIMITS } from '@/lib/security/ratelimit';
-import { creeCode, desactiveCode, supprimeCode } from '@/lib/services/codes';
+import { createurDuCode, creeCode, desactiveCode, supprimeCode } from '@/lib/services/codes';
 import { audit } from '@/lib/services/ledger';
 import { annonceDansLeTchat, type AnnonceTchat } from '@/lib/services/twitchChat';
 
@@ -40,7 +40,13 @@ export async function POST(request: Request): Promise<NextResponse> {
     if (!tchat.envoye) {
       // Le refus de Twitch, mot pour mot, au journal : c'est ce qui dit quoi réparer.
       await getStore().transaction((db) => {
-        audit(db, g.session?.sub ?? 'admin', 'CODE_NON_ANNONCE', null, `${code.code} : ${tchat.detail}`);
+        audit(
+          db,
+          g.session?.sub ?? 'admin',
+          'CODE_NON_ANNONCE',
+          null,
+          `${code.code} : ${tchat.detail} · créé par ${createurDuCode(db, code)}`,
+        );
       });
     }
     return ok({ id: code.id, code: code.code, montant: code.montant, utilisationsMax: code.utilisationsMax, tchat });

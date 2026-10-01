@@ -224,6 +224,32 @@ export function IconCadeau(props: IconProps) {
   );
 }
 
+/** Désactiver — un cercle barré : la chose reste, elle ne sert plus. */
+export function IconInterdit(props: IconProps) {
+  const cercle = 'M12 3.5a8.5 8.5 0 1 1 0 17 8.5 8.5 0 0 1 0-17Z';
+  return (
+    <Svg {...props}>
+      <Fond d={cercle} />
+      <path d={cercle} />
+      <path d="M6 6l12 12" />
+    </Svg>
+  );
+}
+
+/** Supprimer — une corbeille, son couvercle posé. */
+export function IconCorbeille(props: IconProps) {
+  const cuve = 'M6 7h12l-.9 12.2a1.8 1.8 0 0 1-1.8 1.7H8.7a1.8 1.8 0 0 1-1.8-1.7L6 7Z';
+  return (
+    <Svg {...props}>
+      <Fond d={cuve} />
+      <path d={cuve} />
+      <path d="M4 7h16" />
+      <path d="M9.5 7V5.2a1.6 1.6 0 0 1 1.6-1.6h1.8a1.6 1.6 0 0 1 1.6 1.6V7" />
+      <path d="M10.2 11v6M13.8 11v6" />
+    </Svg>
+  );
+}
+
 /** Le glyphe de Twitch, en aplat : c'est un logo, pas un pictogramme au trait. */
 export function IconTwitch(props: IconProps) {
   return (

@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import { useAction } from '@/components/admin/action';
 import { Bloc, Ecran } from '@/components/admin/Cadre';
+import { IconCorbeille, IconInterdit } from '@/components/icons';
 import { flakes } from '@/components/ui';
 import { UTILISATIONS_MAX } from '@/lib/domain/codes';
 import { ECONOMY, PACKS_REGLES } from '@/lib/domain/rules';
@@ -36,6 +37,8 @@ export interface LigneCode {
   utilisationsMax: number;
   etat: 'actif' | 'epuise' | 'desactive';
   creeLe: string;
+  /** Le pseudo de qui l'a créé. */
+  createur: string;
 }
 
 const LIBELLE_ETAT: Record<LigneCode['etat'], string> = {
@@ -231,7 +234,10 @@ export function EcranJoueurs({
                         >
                           {c.code}
                         </button>
-                        <div className="text-[13px] text-muted">{shortDateTime(c.creeLe)}</div>
+                        <div className="text-[13px] text-muted">
+                          par <span className="font-semibold text-ink-2">{c.createur}</span> ·{' '}
+                          {shortDateTime(c.creeLe)}
+                        </div>
                       </td>
                       <td className="num text-right text-ice">❄ {flakes(c.montant)}</td>
                       <td className="num text-right text-muted">
@@ -246,21 +252,27 @@ export function EcranJoueurs({
                         </span>
                       </td>
                       <td className="text-right">
+                        {/* La suppression se confirme sur place : la ligne propose
+                            « Supprimer ? Oui / Non » à la place des deux boutons. */}
                         {aSupprimer === c.id ? (
-                          <div className="inline-flex gap-1.5">
-                            <button className="btn btn-sm btn-danger" disabled={busy !== null} onClick={() => supprime(c)}>
-                              Supprimer {c.code}
+                          <div className="code-confirme" role="group" aria-label={`Supprimer ${c.code} pour de bon ?`}>
+                            <span>Supprimer ?</span>
+                            <button type="button" data-oui="" disabled={busy !== null} onClick={() => supprime(c)}>
+                              Oui
                             </button>
-                            <button className="btn btn-sm btn-ghost" disabled={busy !== null} onClick={() => setASupprimer(null)}>
-                              Annuler
+                            <button type="button" data-non="" disabled={busy !== null} onClick={() => setASupprimer(null)}>
+                              Non
                             </button>
                           </div>
                         ) : (
-                          <div className="inline-flex gap-1.5">
+                          <div className="code-actions">
                             {c.etat === 'actif' && (
                               <button
-                                className="btn btn-sm btn-ghost"
+                                type="button"
+                                className="code-action"
                                 disabled={busy !== null}
+                                title="Désactiver : le code ne sert plus, ce qu’il a versé reste versé"
+                                aria-label={`Désactiver ${c.code}`}
                                 onClick={() =>
                                   envoie(
                                     '/api/admin/codes',
@@ -269,16 +281,19 @@ export function EcranJoueurs({
                                   )
                                 }
                               >
-                                Désactiver
+                                <IconInterdit className="h-[18px] w-[18px]" />
                               </button>
                             )}
                             <button
-                              className="btn btn-sm btn-ghost"
+                              type="button"
+                              className="code-action"
+                              data-danger=""
                               disabled={busy !== null}
                               title="Supprimer ce code pour de bon"
+                              aria-label={`Supprimer ${c.code}`}
                               onClick={() => setASupprimer(c.id)}
                             >
-                              Supprimer
+                              <IconCorbeille className="h-[18px] w-[18px]" />
                             </button>
                           </div>
                         )}

@@ -11,7 +11,8 @@ import 'server-only';
  *
  * Chaque utilisation est un crédit au grand livre, avec le code en référence :
  * c'est le grand livre qui compte les utilisations et qui sait qui a déjà pris
- * le code. Le code, lui, ne garde que ses réglages.
+ * le code. Le code, lui, ne garde que ses réglages — et qui l'a créé, que
+ * chaque ligne du journal le concernant nomme.
  *
  * À appeler dans une transaction : deux joueurs qui visent la dernière
  * utilisation passent l'un après l'autre, et le second trouve le code épuisé.
@@ -27,6 +28,7 @@ import {
   UTILISATIONS_MAX,
   type EtatCode,
 } from '@/lib/domain/codes';
+import { ACTEURS_SYSTEME } from '@/lib/domain/acteurs';
 import { secureInt } from '@/lib/domain/rng';
 import { ECONOMY } from '@/lib/domain/rules';
 import { estLaStreameuse } from '@/lib/domain/streameuse';
@@ -52,6 +54,15 @@ export class CodeError extends Error {
 /** Les crédits versés par ce code : autant d'utilisations. */
 function utilisations(db: Database, codeId: string) {
   return db.ledger.filter((l) => l.reason === 'CODE_CADEAU' && l.refId === codeId);
+}
+
+/**
+ * Qui a créé le code, en clair : son pseudo. Il est nommé dans chaque ligne du
+ * journal qui touche le code — sa création, chaque utilisation, sa
+ * désactivation, sa suppression —, et il y reste quand le code a disparu.
+ */
+export function createurDuCode(db: Readonly<Database>, code: Pick<CodeCadeau, 'creePar'>): string {
+  return db.players.find((p) => p.id === code.creePar)?.pseudo ?? ACTEURS_SYSTEME[code.creePar] ?? code.creePar;
 }
 
 /** Un code tiré au sort, qui n'existe pas encore. */
@@ -94,7 +105,13 @@ export function creeCode(
     creePar: auteur,
   };
   db.codesCadeaux.push(code);
-  audit(db, auteur, 'CODE_CREE', null, `${texte} : ${montant} ❄, ${utilisationsMax} utilisation(s) au plus`);
+  audit(
+    db,
+    auteur,
+    'CODE_CREE',
+    null,
+    `${texte} : ${montant} ❄, ${utilisationsMax} utilisation(s) au plus · créé par ${createurDuCode(db, code)}`,
+  );
   return code;
 }
 
@@ -104,7 +121,7 @@ export function desactiveCode(db: Database, id: string, auteur: string): CodeCad
   if (!code) throw new CodeError('Code introuvable.', 'CODE_INCONNU');
   if (code.actif) {
     code.actif = false;
-    audit(db, auteur, 'CODE_DESACTIVE', null, code.code);
+    audit(db, auteur, 'CODE_DESACTIVE', null, `${code.code} · créé par ${createurDuCode(db, code)}`);
   }
   return code;
 }
@@ -125,7 +142,7 @@ export function supprimeCode(db: Database, id: string, auteur: string): { code: 
     auteur,
     'CODE_SUPPRIME',
     null,
-    `${code.code} : ${code.montant} ❄, ${n} utilisation(s) sur ${code.utilisationsMax}`,
+    `${code.code} : ${code.montant} ❄, ${n} utilisation(s) sur ${code.utilisationsMax} · créé par ${createurDuCode(db, code)}`,
   );
   return { code: code.code, utilisations: n };
 }
@@ -159,7 +176,13 @@ export function utiliseCode(
 
   const avant = joueur.snowflakes;
   const solde = credit(db, joueurId, code.montant, 'CODE_CADEAU', code.id);
-  audit(db, joueurId, 'CODE_UTILISE', joueurId, `${code.code} : +${solde - avant} ❄`);
+  audit(
+    db,
+    joueurId,
+    'CODE_UTILISE',
+    joueurId,
+    `${code.code} : +${solde - avant} ❄ · créé par ${createurDuCode(db, code)}`,
+  );
   return { code: code.code, montant: code.montant, recu: solde - avant, solde };
 }
 
@@ -171,6 +194,8 @@ export interface VueCode {
   utilisationsMax: number;
   etat: EtatCode;
   creeLe: string;
+  /** Le pseudo de qui l'a créé. */
+  createur: string;
 }
 
 /** Les codes, le plus récent en tête, avec leurs utilisations. */
@@ -187,6 +212,7 @@ export function vueCodes(db: Readonly<Database>): VueCode[] {
         utilisationsMax: c.utilisationsMax,
         etat: etatDuCode(c, n),
         creeLe: c.creeLe,
+        createur: createurDuCode(db, c),
       };
     });
 }

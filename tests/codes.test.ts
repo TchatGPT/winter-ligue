@@ -151,3 +151,23 @@ describe('supprimer un code', () => {
     refuse(() => supprimeCode(db, 'inconnu', modo), 'CODE_INCONNU');
   });
 });
+
+describe('qui a créé un code', () => {
+  it('est nommé à chaque ligne du journal qui le touche, jusqu’à sa suppression', () => {
+    const { db, modo, a } = base();
+    const cree = creeCode(db, { montant: 100, utilisationsMax: 5 }, modo);
+    utiliseCode(db, a, cree.code, CHAINE);
+    desactiveCode(db, cree.id, modo);
+    supprimeCode(db, cree.id, modo);
+
+    const lignes = db.audit.filter((e) => e.action.startsWith('CODE_'));
+    expect(lignes.map((e) => e.action)).toEqual(['CODE_CREE', 'CODE_UTILISE', 'CODE_DESACTIVE', 'CODE_SUPPRIME']);
+    for (const e of lignes) expect(e.detail).toContain('créé par modo');
+  });
+
+  it('se lit dans la liste des codes', () => {
+    const { db, modo } = base();
+    creeCode(db, { montant: 100, utilisationsMax: 5 }, modo);
+    expect(vueCodes(db)[0]?.createur).toBe('modo');
+  });
+});

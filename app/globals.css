@@ -4031,6 +4031,95 @@
   .compteur-perso button:disabled {
     opacity: 0.35;
   }
+
+  /*
+   * ---- Les gestes sur un code cadeau ----
+   * Deux boutons-icônes, discrets au repos et de la même hauteur qu'une ligne
+   * de tableau : désactiver (un cercle barré) et supprimer (une corbeille). Au
+   * survol, la glace pour l'un, le rouge pour l'autre. Il y avait deux
+   * pastilles de verre en toutes lettres par ligne : la colonne pesait plus
+   * lourd que les codes. La suppression se confirme sur place.
+   */
+  .code-actions {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.4rem;
+  }
+  .code-action {
+    display: grid;
+    width: 2.25rem;
+    height: 2.25rem;
+    place-items: center;
+    border: 1px solid rgb(255 255 255 / 0.14);
+    border-radius: 0.65rem;
+    background: rgb(255 255 255 / 0.05);
+    color: var(--muted);
+    transition:
+      background-color 0.18s ease,
+      border-color 0.18s ease,
+      color 0.18s ease;
+  }
+  .code-action:hover:not(:disabled),
+  .code-action:focus-visible {
+    border-color: color-mix(in srgb, var(--ice) 50%, transparent);
+    background: color-mix(in srgb, var(--ice) 14%, transparent);
+    color: var(--ice);
+  }
+  .code-action[data-danger]:hover:not(:disabled),
+  .code-action[data-danger]:focus-visible {
+    border-color: color-mix(in srgb, var(--danger) 55%, transparent);
+    background: color-mix(in srgb, var(--danger) 16%, transparent);
+    color: var(--danger);
+  }
+  .code-action:disabled {
+    opacity: 0.4;
+  }
+
+  /* La confirmation, à la place des deux boutons : une pastille rouge. */
+  .code-confirme {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.2rem 0.2rem 0.2rem 0.8rem;
+    border: 1px solid color-mix(in srgb, var(--danger) 45%, transparent);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--danger) 9%, transparent);
+    font-size: 0.875rem;
+    font-weight: 700;
+    white-space: nowrap;
+    color: var(--danger);
+  }
+  .code-confirme button {
+    min-height: 1.85rem;
+    padding: 0 0.75rem;
+    border-radius: 999px;
+    font-family: var(--font-display);
+    font-size: 0.8125rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    transition:
+      background-color 0.18s ease,
+      color 0.18s ease;
+  }
+  .code-confirme button[data-oui] {
+    background: var(--danger);
+    color: var(--nuit);
+  }
+  .code-confirme button[data-oui]:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--danger) 82%, white);
+  }
+  .code-confirme button[data-non] {
+    color: var(--ink-2);
+  }
+  .code-confirme button[data-non]:hover:not(:disabled) {
+    background: rgb(255 255 255 / 0.08);
+    color: var(--ink);
+  }
+  .code-confirme button:disabled {
+    opacity: 0.5;
+  }
   .cadeau-carte {
     max-width: 26rem;
   }
