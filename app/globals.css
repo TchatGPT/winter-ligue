@@ -5163,93 +5163,114 @@
   animation: evenement-pulse 1.8s ease-in-out infinite;
 }
 /*
- * Les évènements en cours, en haut du site — voir `EvenementsFlottants`. Une
- * mini-bannière posée par-dessus les pages, centrée sur la zone de contenu (la
- * colonne du menu déduite), en verre transparent : une pastille par
- * évènement. Sur téléphone, où elle couvrirait le texte, elle se range sous
- * l'entête, dans le cours de la page.
+ * Les évènements en cours, en tête des pages — voir `EvenementsFlottants`. Un
+ * bandeau dans le cours de la page : un segment par évènement, teinté de sa
+ * couleur, la médaille du bloc des subs, le nom, la phrase, et le temps qui
+ * reste en grand. Côte à côte dès qu'il y a la place.
  */
-.evts-flottants {
-  position: relative;
-  z-index: 20;
+.bandeau-evts {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+@media (min-width: 64rem) {
+  .bandeau-evts {
+    grid-auto-columns: minmax(0, 1fr);
+    grid-auto-flow: column;
+  }
+}
+.bandeau-evt {
+  --teinte: var(--aurora);
+  display: flex;
+  min-height: 64px;
+  align-items: center;
+  gap: 14px;
+  padding: 8px 18px 8px 10px;
+  border: 1px solid color-mix(in srgb, var(--teinte) 50%, transparent);
+  border-radius: var(--r-md);
+  background:
+    linear-gradient(100deg, color-mix(in srgb, var(--teinte) 26%, transparent) 0%, color-mix(in srgb, var(--teinte) 6%, transparent) 70%),
+    color-mix(in srgb, var(--fond) 70%, transparent);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--ink) 16%, transparent),
+    0 12px 24px -16px color-mix(in srgb, var(--teinte) 60%, transparent);
+}
+.bandeau-evt-embleme {
+  width: 46px;
+  height: 46px;
+  flex: none;
+  filter: drop-shadow(0 3px 3px color-mix(in srgb, var(--fond) 80%, transparent));
+}
+.bandeau-evt-texte {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+  gap: 3px;
+}
+.bandeau-evt-tete {
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
-  gap: 6px;
-  margin: 12px 12px 0;
-}
-@media (min-width: 1024px) {
-  .evts-flottants {
-    position: fixed;
-    top: 10px;
-    left: calc(var(--sidebar, 0px) + (100vw - var(--sidebar, 0px)) / 2);
-    z-index: 40;
-    width: max-content;
-    max-width: calc(100vw - var(--sidebar, 0px) - 48px);
-    gap: 8px;
-    margin: 0;
-    pointer-events: none;
-    transform: translateX(-50%);
-    animation: evts-entrent 0.5s cubic-bezier(0.2, 1.2, 0.4, 1) both;
-  }
-}
-@keyframes evts-entrent {
-  from {
-    opacity: 0;
-    transform: translate(-50%, -14px);
-  }
-}
-.evt-flottant {
-  --teinte: var(--aurora);
-  display: inline-flex;
   align-items: center;
-  gap: 11px;
-  padding: 9px 20px 9px 16px;
-  border: 1px solid color-mix(in srgb, var(--teinte) 55%, transparent);
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--fond) 82%, transparent);
-  box-shadow:
-    inset 0 1px 0 color-mix(in srgb, var(--ink) 14%, transparent),
-    0 10px 22px -12px color-mix(in srgb, var(--fond) 95%, transparent);
-  backdrop-filter: blur(12px) saturate(1.2);
-  -webkit-backdrop-filter: blur(12px) saturate(1.2);
-  font-size: 0.9375rem;
+  gap: 4px 8px;
+}
+.bandeau-evt-statut,
+.bandeau-evt-nom {
   white-space: nowrap;
-  color: var(--ink);
-  pointer-events: auto;
 }
-.evt-flottant[data-genre='COMMU_ACCELERE'] {
-  --teinte: var(--ice);
-}
-.evt-flottant .evenement-pastille {
+.bandeau-evt .evenement-pastille {
   background: var(--teinte);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--teinte) 18%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--teinte) 22%, transparent);
 }
-.evt-flottant-nom {
+.bandeau-evt-statut {
   font-family: var(--font-display);
-  font-size: 1.0625rem;
-  font-weight: 900;
-  letter-spacing: 0.06em;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: color-mix(in srgb, var(--teinte) 60%, var(--ink));
+  color: var(--teinte);
 }
-.evt-flottant-effet::before {
-  content: '·';
-  margin-right: 9px;
-  color: var(--faint);
-}
-.evt-flottant-temps {
-  padding-left: 11px;
-  border-left: 1px solid color-mix(in srgb, var(--ink) 20%, transparent);
+.bandeau-evt-nom {
   font-family: var(--font-display);
-  font-size: 1.125rem;
+  font-size: 1.25rem;
   font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
   color: var(--ink);
 }
-/* Un téléphone étroit garde le nom et le temps. */
-@media (max-width: 26rem) {
-  .evt-flottant-effet {
-    display: none;
+.bandeau-evt-description {
+  overflow: hidden;
+  font-size: 0.9375rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink-2);
+}
+.bandeau-evt-temps {
+  display: grid;
+  flex: none;
+  justify-items: end;
+  padding-left: 16px;
+  border-left: 1px solid color-mix(in srgb, var(--ink) 18%, transparent);
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  font-weight: 900;
+  line-height: 1;
+  color: var(--ink);
+}
+.bandeau-evt-reste {
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+/* Sur téléphone, la phrase passe à la ligne au lieu d'être coupée. */
+@media (max-width: 40rem) {
+  .bandeau-evt-description {
+    white-space: normal;
+  }
+  .bandeau-evt-temps {
+    font-size: 1.375rem;
   }
 }
 @keyframes evenement-pulse {
@@ -6108,7 +6129,7 @@
  */
 @media (min-width: 150rem) {
   .grille-classement {
-    height: max(calc(100dvh - 187px), 46rem);
+    height: max(calc(100dvh - 187px - var(--bandeau-evts, 0px)), 46rem);
   }
   .grille-classement > :first-child {
     grid-template-rows: auto minmax(0, 1fr);

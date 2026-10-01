@@ -7,7 +7,7 @@ import { Sidebar, SIDEBAR_WIDTH } from '@/components/Sidebar';
 import { getSession } from '@/lib/auth/session';
 import './globals.css';
 import { PiedDePage } from '@/components/PiedDePage';
-import { EvenementsFlottants } from '@/components/EvenementsFlottants';
+import { EvenementsFlottants, HAUTEUR_BANDEAU_EVENEMENTS } from '@/components/EvenementsFlottants';
 import { getStore } from '@/lib/db/store';
 import { evenementsActifs } from '@/lib/services/evenements';
 
@@ -95,14 +95,17 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           className="flex min-h-dvh flex-1 flex-col"
           style={{ ['--sidebar' as string]: connecte ? `${SIDEBAR_WIDTH}px` : '0px' }}
         >
-          <EvenementsFlottants evenements={enCours} />
           <div className="flex flex-1 flex-col lg:pl-[var(--sidebar)]">
             {/* Toute la largeur, sans plafond : sur un grand écran, ce sont les
                 grilles des pages qui gagnent des colonnes (paliers 3xl et 4xl),
                 pas des marges vides. La réserve du bas, qui dégage la barre de
                 navigation flottante des téléphones, est au pied de page : il
                 n'y a de barre que pour un visiteur connecté. */}
-            <main className="relative z-10 w-full flex-1 px-4 pt-6 pb-8 sm:px-6 sm:pt-8 lg:px-8 lg:pt-6 lg:pb-10 2xl:px-10">
+            <main
+              className="relative z-10 w-full flex-1 px-4 pt-6 pb-8 sm:px-6 sm:pt-8 lg:px-8 lg:pt-6 lg:pb-10 2xl:px-10"
+              style={enCours.length ? { ['--bandeau-evts' as string]: HAUTEUR_BANDEAU_EVENEMENTS } : undefined}
+            >
+              <EvenementsFlottants evenements={enCours} />
               {children}
             </main>
             <PiedDePage barreMobile={connecte} />
