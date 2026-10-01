@@ -38,6 +38,11 @@ export const PORTEE_SUBS = 'channel:read:subscriptions';
  * demandé au même branchement, pour annoncer les codes cadeaux.
  */
 export const PORTEES_TCHAT = ['user:write:chat', 'user:bot', 'channel:bot'] as const;
+/**
+ * Savoir qui devient modérateur de sa chaîne, et qui cesse de l'être :
+ * demandé au même branchement, pour que les rôles suivent la chaîne en direct.
+ */
+export const PORTEE_MODERATION = 'moderation:read';
 
 export function isTwitchEnabled(): boolean {
   return Boolean(process.env.TWITCH_CLIENT_ID && process.env.TWITCH_CLIENT_SECRET);
@@ -163,7 +168,7 @@ export function authorizeUrl(state: string, origine: string, subs = false): stri
     // publique vient sans portée ; l'adresse e-mail n'est jamais demandée.
     // Le branchement demande en plus de lire les subs de la chaîne, et
     // d'écrire dans son tchat pour y annoncer les codes cadeaux.
-    scope: subs ? [PORTEE_BASE, PORTEE_SUBS, ...PORTEES_TCHAT].join(' ') : PORTEE_BASE,
+    scope: subs ? [PORTEE_BASE, PORTEE_SUBS, ...PORTEES_TCHAT, PORTEE_MODERATION].join(' ') : PORTEE_BASE,
     state,
     force_verify: 'true',
   });

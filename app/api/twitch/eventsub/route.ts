@@ -3,8 +3,9 @@ import { guard } from '@/lib/api/respond';
 import { eventSubSchema } from '@/lib/api/schemas';
 import { chaineDeLaLigue, isTwitchEnabled } from '@/lib/auth/twitch';
 import { getStore } from '@/lib/db/store';
-import { messageFrais } from '@/lib/domain/twitchSubs';
+import { messageFrais, roleDuMessage } from '@/lib/domain/twitchSubs';
 import { LIMITS } from '@/lib/security/ratelimit';
+import { suisModerationTwitch } from '@/lib/services/comptes';
 import { audit } from '@/lib/services/ledger';
 import { ajouteSubsTwitch } from '@/lib/services/subs';
 import { signatureValide } from '@/lib/services/twitchSubs';
@@ -18,8 +19,9 @@ const CORPS_MAX = 64 * 1024;
 const reponse = (status: number) => new NextResponse(null, { status, headers: { 'cache-control': 'no-store' } });
 
 /**
- * Les messages de Twitch : chaque sub de la chaîne, en direct (EventSub, en
- * webhook). Branchement : `lib/services/twitchSubs.ts`.
+ * Les messages de Twitch : chaque sub de la chaîne, et chaque modérateur
+ * ajouté ou retiré, en direct (EventSub, en webhook). Branchement :
+ * `lib/services/twitchSubs.ts`.
  *
  * Personne d'autre que Twitch ne fait rien compter ici. La signature — un
  * HMAC-SHA256 dont le secret, tiré d'`AUTH_SECRET`, n'est connu que du site et
@@ -93,6 +95,19 @@ export async function POST(request: Request): Promise<NextResponse> {
   // La chaîne de la ligue, et aucune autre.
   const chaine = typeof event.broadcaster_user_login === 'string' ? event.broadcaster_user_login.toLowerCase() : '';
   if (chaine !== chaineDeLaLigue()) return reponse(204);
+
+  // Un modérateur ajouté ou retiré : son rôle suit, tout de suite.
+  const role = roleDuMessage(subscription.type);
+  if (role) {
+    const twitchId = typeof event.user_id === 'string' ? event.user_id : '';
+    if (!twitchId || twitchId.length > 64 || twitchId === event.broadcaster_user_id) return reponse(204);
+    try {
+      await getStore().transaction((db) => suisModerationTwitch(db, { twitchId, role, chaine }));
+    } catch {
+      return reponse(500);
+    }
+    return reponse(204);
+  }
 
   try {
     await getStore().transaction((db) =>

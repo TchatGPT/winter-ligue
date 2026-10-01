@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Database } from '@/lib/db/entities';
 import { emptyDatabase } from '@/lib/db/store';
-import { rattacheCompteTwitch, type ProfilTwitch } from '@/lib/services/comptes';
+import { rattacheCompteTwitch, suisModerationTwitch, type ProfilTwitch } from '@/lib/services/comptes';
 
 /**
  * Le rôle suit la chaîne Twitch à chaque connexion : la streameuse et ses
@@ -66,5 +66,29 @@ describe('le rôle choisi à la main', () => {
     modo.roleManuel = true;
     connecte(db, 't1', 'modo', 'admin');
     expect(modo.role).toBe('joueur');
+  });
+});
+
+describe('les modérateurs suivis en direct', () => {
+  it('donne et retire l’administration quand Twitch l’annonce, sans reconnexion', () => {
+    const db = emptyDatabase();
+    const joueur = connecte(db, 't1', 'nouveau', 'joueur');
+    suisModerationTwitch(db, { twitchId: 't1', role: 'admin', chaine: 'lriaa' });
+    expect(joueur.role).toBe('admin');
+    suisModerationTwitch(db, { twitchId: 't1', role: 'joueur', chaine: 'lriaa' });
+    expect(joueur.role).toBe('joueur');
+  });
+
+  it('ne touche ni la streameuse, ni un rôle choisi à la main, ni personne d’inconnu', () => {
+    const db = emptyDatabase();
+    const streameuse = connecte(db, 't0', 'Lriaa', 'admin');
+    const manuel = connecte(db, 't2', 'manuel', 'admin');
+    manuel.roleManuel = true;
+    expect(suisModerationTwitch(db, { twitchId: 't0', role: 'joueur', chaine: 'lriaa' })).toBeNull();
+    expect(suisModerationTwitch(db, { twitchId: 't2', role: 'joueur', chaine: 'lriaa' })).toBeNull();
+    expect(suisModerationTwitch(db, { twitchId: 'inconnu', role: 'admin', chaine: 'lriaa' })).toBeNull();
+    expect(streameuse.role).toBe('admin');
+    expect(manuel.role).toBe('admin');
+    expect(db.players).toHaveLength(2);
   });
 });

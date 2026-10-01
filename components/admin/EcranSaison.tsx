@@ -27,6 +27,8 @@ export interface TwitchSubs {
 const NOMS_ABONNEMENTS: Record<string, string> = {
   'channel.subscribe': 'Nouveaux subs',
   'channel.subscription.gift': 'Subs offerts',
+  'channel.moderator.add': 'Modos ajoutés',
+  'channel.moderator.remove': 'Modos retirés',
 };
 
 function libelleStatut(statut: string | null): string {
@@ -107,13 +109,13 @@ export function EcranSaison({
     >
       {twitch.configure && (
         <Bloc
-          titre="Twitch : subs et tchat"
+          titre="Twitch : subs, tchat et modos"
           icone="antenne"
           neige="admin-twitch"
           aide={
             branche
-              ? 'Branchés : chaque nouveau sub et chaque sub offert s’ajoute tout seul au compteur — les réabonnements ne comptent pas, avec ses paliers. Le même branchement autorise la ligue à annoncer les codes cadeaux dans le tchat — s’il a été fait avant, rebranchez une fois.'
-              : 'Une fois branchés, les subs de la chaîne s’ajoutent tout seuls au compteur, et les codes cadeaux s’annoncent dans le tchat. Le branchement se fait une fois, par la streameuse elle-même : Twitch lui demande d’autoriser la ligue à voir ses subs et à écrire dans son tchat.'
+              ? 'Branchés : chaque nouveau sub et chaque sub offert s’ajoute tout seul au compteur — les réabonnements ne comptent pas, avec ses paliers. Le même branchement autorise la ligue à annoncer les codes cadeaux dans le tchat, et fait suivre la modération : un modo ajouté ou retiré sur Twitch l’est aussitôt ici.'
+              : 'Une fois branchés, les subs de la chaîne s’ajoutent tout seuls au compteur, les codes cadeaux s’annoncent dans le tchat, et les modos ajoutés ou retirés sur Twitch le sont aussitôt ici. Le branchement se fait une fois, par la streameuse elle-même : Twitch lui demande d’autoriser la ligue à voir ses subs et ses modos, et à écrire dans son tchat.'
           }
           actions={
             estAdmin ? (

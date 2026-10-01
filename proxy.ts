@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { COOKIE_OPTIONS, prolonge, SESSION_COOKIE } from '@/lib/auth/jeton';
 
 /**
  * En-têtes de sécurité appliqués à chaque réponse.
@@ -69,6 +70,18 @@ export function proxy(request: NextRequest): NextResponse {
       'Strict-Transport-Security',
       'max-age=63072000; includeSubDomains; preload',
     );
+  }
+
+  // La session se prolonge à chaque visite, une fois par jour au plus : trente
+  // jours depuis la dernière, six mois depuis la connexion. Seule la signature
+  // est vérifiée ici ; un jeton révoqué ou un compte désactivé, prolongés,
+  // restent refusés par `getSession()`, qui confronte chaque jeton à la base.
+  // Jamais sur un overlay : son lien ne porte pas de session.
+  if (!overlay) {
+    const prolongee = prolonge(request.cookies.get(SESSION_COOKIE)?.value);
+    if (prolongee) {
+      response.cookies.set(SESSION_COOKIE, prolongee.jeton, { ...COOKIE_OPTIONS, maxAge: prolongee.maxAge });
+    }
   }
 
   return response;

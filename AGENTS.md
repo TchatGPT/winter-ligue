@@ -82,6 +82,9 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   compare les rangs, donc une route `joueur` accepte un admin. **Aucun admin n'agit sur
   son propre compte de joueur** (flocons, subs offerts, games, boosters) : les
   modérateurs jouent peut-être, et c'est vérifié route par route.
+- **Une session dure trente jours**, prolongée par le proxy à chaque visite
+  (`lib/auth/jeton.ts`), six mois au plus. La prolongation ne touche jamais `iat` :
+  c'est lui que confronte la révocation.
 - **Twitch est la seule porte d'entrée**, et le rôle suit la chaîne à chaque connexion :
   la streameuse et ses modérateurs sont admin, les autres joueurs. Les rôles ne se
   choisissent pas à la main, et un joueur ne s'inscrit que par Twitch. Il n'y a ni mot

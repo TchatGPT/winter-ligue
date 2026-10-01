@@ -7,9 +7,10 @@ import 'server-only';
  *
  * La streameuse autorise une fois l'application à lire ses subs
  * (`channel:read:subscriptions`), en passant par la connexion Twitch avec
- * `subs=1`. Le site crée alors, avec le jeton de l'application, trois
+ * `subs=1`. Le site crée alors, avec le jeton de l'application, ses
  * abonnements EventSub en webhook vers `/api/twitch/eventsub` : nouveaux subs,
- * subs offerts. Rien n'est stocké ici : Twitch garde
+ * subs offerts, et modérateurs ajoutés ou retirés (`moderation:read`), pour que
+ * les rôles suivent la chaîne en direct. Rien n'est stocké ici : Twitch garde
  * l'autorisation et les abonnements, et l'administration relit leur état chez
  * lui.
  *
@@ -24,7 +25,7 @@ import 'server-only';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { cleDerivee } from '@/lib/auth/session';
 import { baseDuSite } from '@/lib/auth/twitch';
-import { TYPES_SUBS } from '@/lib/domain/twitchSubs';
+import { TYPES_EVENTSUB } from '@/lib/domain/twitchSubs';
 import { entetes, jetonApplication, oublieJeton } from './twitchApp';
 
 const EVENTSUB_URL = 'https://api.twitch.tv/helix/eventsub/subscriptions';
@@ -104,7 +105,7 @@ export async function brancheSubs(broadcasterId: string, origine: string): Promi
 
   const callback = `${baseDuSite(origine)}${CHEMIN_EVENTSUB}`;
   const details: BranchementSubs['details'] = [];
-  for (const type of TYPES_SUBS) {
+  for (const type of TYPES_EVENTSUB) {
     const reponse = await fetch(EVENTSUB_URL, {
       method: 'POST',
       headers: { ...entetes(jeton), 'content-type': 'application/json' },
@@ -134,7 +135,7 @@ export async function etatSubsTwitch(): Promise<EtatSubsTwitch | null> {
   if (!jeton) return null;
   const nos = await nosAbonnements(jeton);
   if (!nos) return null;
-  const types = TYPES_SUBS.map((type) => {
+  const types = TYPES_EVENTSUB.map((type) => {
     const siens = nos.filter((a) => a.type === type);
     const actif = siens.find((a) => a.status === 'enabled');
     return { type, statut: actif?.status ?? siens[0]?.status ?? null };

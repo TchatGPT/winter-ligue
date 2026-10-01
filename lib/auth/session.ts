@@ -15,109 +15,16 @@ import 'server-only';
  * révoque tous les jetons déjà émis — pas seulement le cookie de ce navigateur.
  */
 
-import { createHmac, randomUUID, timingSafeEqual } from 'node:crypto';
 import { cookies } from 'next/headers';
 import { cache } from 'react';
 import { getStore } from '@/lib/db/store';
 import { roleConfirme } from '@/lib/domain/revocation';
+import { COOKIE_OPTIONS, SESSION_COOKIE, SESSION_TTL_SECONDS, verifyToken, type Role, type SessionPayload } from './jeton';
 
-export const SESSION_COOKIE = 'wl_session';
-const SESSION_TTL_SECONDS = 60 * 60 * 12; // 12 h
-
-/**
- * Le rôle porté par une session : celui du joueur en base (`PlayerRole`), relu
- * à chaque requête. Le jeton en garde une copie, qui ne décide de rien.
- */
-export type Role = 'joueur' | 'admin';
-
-export interface SessionPayload {
-  /** Identifiant du joueur. */
-  sub: string;
-  role: Role;
-  /** Identifiant unique de session, utile pour tracer une révocation. */
-  sid: string;
-  /** Timestamps Unix en secondes. */
-  iat: number;
-  exp: number;
-}
-
-function secret(): string {
-  const value = process.env.AUTH_SECRET;
-  if (!value || value.length < 32) {
-    if (process.env.NODE_ENV === 'production') {
-      // En production, un secret faible casse toute la chaîne : on refuse net.
-      throw new Error('AUTH_SECRET manquant ou trop court (32 caractères minimum).');
-    }
-    return 'dev-secret-non-securise-uniquement-pour-le-developpement-local';
-  }
-  return value;
-}
-
-/**
- * Une clé propre à un usage, tirée de `AUTH_SECRET`.
- *
- * Le `state` de la connexion Twitch ne se signe pas avec la clé des sessions :
- * une signature valable pour l'un ne doit jamais l'être pour l'autre. Et en
- * production, pas de secret faible de repli — `secret()` refuse net.
- */
-export function cleDerivee(usage: string): Buffer {
-  return createHmac('sha256', secret()).update(`winter-ligue:${usage}`).digest();
-}
-
-function b64url(input: Buffer | string): string {
-  return Buffer.from(input)
-    .toString('base64')
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=+$/, '');
-}
-
-function fromB64url(input: string): Buffer {
-  return Buffer.from(input.replace(/-/g, '+').replace(/_/g, '/'), 'base64');
-}
-
-function sign(payload: string): string {
-  return b64url(createHmac('sha256', secret()).update(payload).digest());
-}
-
-export function createToken(sub: string, role: Role, ttlSeconds = SESSION_TTL_SECONDS): string {
-  const now = Math.floor(Date.now() / 1000);
-  const payload: SessionPayload = {
-    sub,
-    role,
-    sid: randomUUID(),
-    iat: now,
-    exp: now + ttlSeconds,
-  };
-  const encoded = b64url(JSON.stringify(payload));
-  return `${encoded}.${sign(encoded)}`;
-}
-
-/** Vérifie signature puis expiration. Retourne null au moindre doute. */
-export function verifyToken(token: string | undefined | null): SessionPayload | null {
-  if (!token) return null;
-  const dot = token.lastIndexOf('.');
-  if (dot <= 0) return null;
-
-  const encoded = token.slice(0, dot);
-  const provided = token.slice(dot + 1);
-  const expected = sign(encoded);
-
-  // Comparaison à temps constant : pas de fuite d'information par la durée.
-  const a = Buffer.from(provided);
-  const b = Buffer.from(expected);
-  if (a.length !== b.length || !timingSafeEqual(a, b)) return null;
-
-  try {
-    const payload = JSON.parse(fromB64url(encoded).toString('utf8')) as SessionPayload;
-    if (typeof payload.exp !== 'number' || payload.exp * 1000 <= Date.now()) return null;
-    if (!['admin', 'joueur'].includes(payload.role)) return null;
-    if (typeof payload.sub !== 'string' || payload.sub.length === 0) return null;
-    return payload;
-  } catch {
-    return null;
-  }
-}
+// La fabrication des jetons vit dans `jeton.ts`, sans accès à la base : le
+// proxy s'en sert pour prolonger les sessions.
+export { cleDerivee, createToken, SESSION_COOKIE, verifyToken } from './jeton';
+export type { Role, SessionPayload } from './jeton';
 
 /**
  * Session courante : le cookie de la requête, vérifié, puis confronté à la base.
@@ -175,13 +82,6 @@ export function playerIdOf(session: SessionPayload | null): string | null {
 export async function isAdmin(): Promise<boolean> {
   return (await getSession())?.role === 'admin';
 }
-
-const COOKIE_OPTIONS = {
-  httpOnly: true,
-  sameSite: 'lax' as const,
-  secure: process.env.NODE_ENV === 'production',
-  path: '/',
-};
 
 export async function setSessionCookie(token: string, maxAge = SESSION_TTL_SECONDS): Promise<void> {
   const jar = await cookies();

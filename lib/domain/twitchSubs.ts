@@ -23,6 +23,25 @@ export const TYPES_SUBS = [
   'channel.subscription.gift',
 ] as const;
 
+/**
+ * Les modérateurs de la chaîne, en direct. Un modérateur ajouté sur Twitch
+ * administre la ligue, un modérateur retiré redevient joueur — à la requête
+ * suivante, puisque le rôle d'une session se relit en base. Sans cela, le rôle
+ * ne suivait la chaîne qu'à la connexion, et c'est pour cela qu'une session ne
+ * durait que douze heures.
+ */
+export const TYPES_MODERATION = ['channel.moderator.add', 'channel.moderator.remove'] as const;
+
+/** Tout ce que le site demande à Twitch, en un seul branchement. */
+export const TYPES_EVENTSUB = [...TYPES_SUBS, ...TYPES_MODERATION] as const;
+
+/** Le rôle que donne un message de modération, ou null si ce n'en est pas un. */
+export function roleDuMessage(type: string): 'admin' | 'joueur' | null {
+  if (type === 'channel.moderator.add') return 'admin';
+  if (type === 'channel.moderator.remove') return 'joueur';
+  return null;
+}
+
 /** Le plus qu'un seul message peut ajouter : un cadeau de masse, borné. */
 export const SUBS_PAR_MESSAGE_MAX = 1000;
 

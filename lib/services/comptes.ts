@@ -24,8 +24,8 @@ export interface ProfilTwitch {
  * d'un autre en prenant son ancien pseudo.
  *
  * Le rôle suit la chaîne à chaque connexion : la streameuse et ses modérateurs
- * administrent, les autres jouent, et un modérateur retiré sur Twitch perd son
- * accès ici à sa connexion suivante. Un rôle marqué `roleManuel` n'est pas
+ * administrent, les autres jouent. Entre deux connexions, Twitch prévient le
+ * site des modérateurs ajoutés ou retirés (`suisModerationTwitch`). Un rôle marqué `roleManuel` n'est pas
  * touché ; plus aucun écran ne le pose.
  *
  * Un compte désactivé le reste : se reconnecter ne le rouvre pas, c'est à la
@@ -72,4 +72,27 @@ export function rattacheCompteTwitch(db: Database, profil: ProfilTwitch): Player
     audit(db, 'twitch', 'ROLE_CHAINE', cree.id, `${cree.pseudo} : ${cree.role}`);
   }
   return cree;
+}
+
+/**
+ * Twitch annonce qu'une personne devient modératrice de la chaîne, ou cesse de
+ * l'être : son compte, s'il existe, prend le rôle qui va avec. Il vaut dès la
+ * requête suivante, sans attendre qu'elle se reconnecte.
+ *
+ * La streameuse n'est jamais touchée — sa chaîne la fait admin —, ni un rôle
+ * marqué `roleManuel`. Quelqu'un qui n'a pas encore de compte recevra son rôle
+ * à sa première connexion. Rejouer le même message ne change rien.
+ *
+ * À appeler dans une transaction. Retourne le joueur modifié, ou null.
+ */
+export function suisModerationTwitch(
+  db: Database,
+  changement: { twitchId: string; role: PlayerRole; chaine: string },
+): Player | null {
+  const joueur = db.players.find((p) => p.twitchId === changement.twitchId);
+  if (!joueur || joueur.roleManuel || joueur.role === changement.role) return null;
+  if (joueur.twitchLogin?.toLowerCase() === changement.chaine) return null;
+  audit(db, 'twitch', 'ROLE_CHAINE', joueur.id, `${joueur.pseudo} : ${joueur.role} → ${changement.role}`);
+  joueur.role = changement.role;
+  return joueur;
 }

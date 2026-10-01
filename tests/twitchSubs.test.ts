@@ -9,6 +9,7 @@ import {
   messageFrais,
   recitDuMessage,
   retiens,
+  roleDuMessage,
   SUBS_PAR_MESSAGE_MAX,
   subsDuMessage,
 } from '@/lib/domain/twitchSubs';
@@ -125,5 +126,17 @@ describe('le registre des subs', () => {
     expect(cadeauxEnAttente(registre, new Set(['i']))).toEqual([
       { twitchId: 'x', pseudo: 'Xavier_', subs: 15, dernier: '2026-12-02T20:00:00.000Z' },
     ]);
+  });
+});
+
+describe('les messages de modération', () => {
+  it('fait administrer un modérateur ajouté et jouer un modérateur retiré', () => {
+    expect(roleDuMessage('channel.moderator.add')).toBe('admin');
+    expect(roleDuMessage('channel.moderator.remove')).toBe('joueur');
+    expect(roleDuMessage('channel.subscribe')).toBeNull();
+  });
+
+  it('ne compte jamais un message de modération comme un sub', () => {
+    expect(subsDuMessage('channel.moderator.add', { user_name: 'A' })).toBe(0);
   });
 });

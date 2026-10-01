@@ -228,8 +228,12 @@ Les taux de rareté ne se règlent plus depuis le site : ce sont ceux du catalog
 compte administrateur compromis ne peut pas rendre les légendaires certaines.
 
 Les rôles ne se changent pas à la main : ils suivent la chaîne Twitch à chaque
-connexion. Pour retirer la modération à quelqu'un, on lui retire son rôle de modérateur
-sur Twitch ; il la perd à sa connexion suivante, douze heures au plus tard.
+connexion, et entre deux connexions par EventSub (`channel.moderator.add/remove`, portée
+`moderation:read` demandée au branchement de la streameuse). Pour retirer la modération
+à quelqu'un, on lui retire son rôle de modérateur sur Twitch ; il la perd aussitôt, à sa
+requête suivante. Tant que la streameuse n'a pas rebranché depuis l'ajout de cette
+portée, il ne la perd qu'à sa connexion suivante — or une session dure désormais trente
+jours.
 
 Les réglages de taux enregistrés avant ce retrait restent lus par `resolvedBooster()` et
 vérifiés par `verifieTable()` : somme exacte de 100 000, faute de quoi `pickWeighted`
@@ -298,8 +302,16 @@ attente : chacun est annoncé sur le stream.
 l'écran. À chaque connexion, le retour OAuth lit, avec le jeton de la personne
 (portée `user:read:moderated_channels`), si elle modère la chaîne
 `TWITCH_BROADCASTER_LOGIN` (par défaut `lriaa`) : la streameuse et ses
-modérateurs sont `admin`, les autres `joueur`. Un modérateur retiré sur Twitch
-perd son accès à sa connexion suivante — une session dure douze heures au plus.
+modérateurs sont `admin`, les autres `joueur`. Entre deux connexions, EventSub
+prévient le site d'un modérateur ajouté ou retiré, et son rôle change en base :
+il vaut à la requête suivante.
+
+**Les sessions** durent trente jours depuis la dernière visite, six mois au plus
+depuis la connexion : le proxy prolonge le cookie une fois par jour au plus
+(`lib/auth/jeton.ts`), en vérifiant la signature seule. La prolongation garde la
+date d'émission du jeton, si bien que « Se déconnecter » révoque aussi les jetons
+prolongés ; compte désactivé, rôle et révocation restent décidés par
+`getSession()`, contre la base, à chaque requête.
 En cas d'échec de l'appel, le rôle accordé est `joueur` : rien ne s'accorde par
 défaut. Les rôles ne se choisissent plus à la main, et plus personne ne
 s'inscrit autrement que par Twitch.
