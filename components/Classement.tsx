@@ -35,9 +35,10 @@ import type { RankingRow } from '@/lib/services/league';
  *
  * Le tableau se règle sur sa propre largeur, pas sur celle de la fenêtre :
  * sous 1 200 px, la moyenne et la meilleure game s'effacent et les cellules se
- * resserrent ; sous 896 px, chaque ligne devient une tuile `.glass
- * .glass-soft`, celle des stats du hero — rang, pseudo et points visibles, le
- * reste derrière un dépli. Au-delà de 1 600 px, les lignes s'agrandissent.
+ * resserrent ; sous 896 px, chaque joueur devient une ligne de liste, dans la
+ * plaque, séparée de la suivante par l'arête du tableau — rang, pseudo et
+ * points visibles, le reste derrière un dépli. Pas de tuile par joueur : une
+ * liste, pas une pile de cartes. Au-delà de 1 600 px, les lignes s'agrandissent.
  */
 
 type Cle =
@@ -272,9 +273,9 @@ export function Classement({ rows, outils }: { rows: RankingRow[]; outils?: Reac
       </div>
 
       {/* ---------------- Étroit : une tuile par joueur ---------------- */}
-      <ol className="relative space-y-2.5 px-3 pb-5 @min-[56rem]:hidden">
+      <ol className="tableau-verre-liste relative px-1 pb-3 @min-[56rem]:hidden">
         {visibles.map((row) => (
-          <li key={row.id} className="glass glass-soft tableau-verre-carte">
+          <li key={row.id} className="tableau-verre-carte">
             <details>
               <summary className="flex cursor-pointer items-center gap-3 px-4 py-3 select-none">
                 <span className="flex w-9 shrink-0 justify-center">
