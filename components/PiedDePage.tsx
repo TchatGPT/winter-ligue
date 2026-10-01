@@ -1,23 +1,25 @@
+import { IconClaude, IconSnowflake } from './icons';
+
 /**
- * Le pied de page : de la neige au sol, sur toute la largeur, sous chaque page
- * — jamais sur un overlay du stream, que la mise en page rend à part.
+ * Le pied de page, sous chaque page du site — jamais sur un overlay du stream,
+ * que la mise en page rend à part. Une bande sur toute la largeur, collée au
+ * bas de la page comme le menu l'est au bord gauche : c'est le cadre du site,
+ * pas un bloc de plus. La marque et les droits de la saison, et la signature
+ * de ceux qui ont fait le site, avec le symbole de Claude.
  *
- * Ni bloc ni texte : c'est le sol de la page, pas un container de plus, et il
- * se distingue des plaques de verre par sa matière. Trois rangs de congères,
- * du fond au premier plan : plus loin, la neige est plus bleue et plus haute ;
- * devant, presque blanche, et la plus épaisse. Rien ne brille, et aucun trait
- * ne la cerne — une ligne de crête la faisait lire comme des vagues : la
- * profondeur vient seulement de l'étagement, chaque rang plus clair en haut
- * qu'en bas.
- *
- * Tout est tiré d'une graine : la silhouette ne change pas d'un rendu à
- * l'autre. Composant serveur, sans état — un SVG et rien d'autre.
+ * Sur la bande, de la neige : trois rangs de congères posés sur son arête
+ * haute, du fond au premier plan — plus loin, la neige est plus bleue et plus
+ * haute ; devant, presque blanche. Rien ne brille, et aucun trait ne la cerne
+ * — une ligne de crête la faisait lire comme des vagues : la profondeur vient
+ * de l'étagement, chaque rang plus clair en haut qu'en bas, et de l'ombre de
+ * contact là où elle touche la bande. Tout est tiré d'une graine : la
+ * silhouette ne change pas d'un rendu à l'autre.
  *
  * `barreMobile` : connecté, une barre de navigation flotte en bas de l'écran
- * des téléphones ; la neige passe dessous.
+ * des téléphones. La bande se prolonge dessous, et son contenu reste au-dessus.
  */
 
-/** Largeur et hauteur de dessin. Étiré en largeur, jamais en hauteur. */
+/** Largeur et hauteur de dessin de la neige. Étirée en largeur, jamais en hauteur. */
 const LARGEUR = 1000;
 const HAUTEUR = 160;
 
@@ -77,20 +79,43 @@ const RANGS = [
 
 export function PiedDePage({ barreMobile = false }: { barreMobile?: boolean }) {
   return (
-    <div className="pied-de-neige" data-barre={barreMobile ? '' : undefined} aria-hidden="true">
-      <svg viewBox={`0 0 ${LARGEUR} ${HAUTEUR}`} preserveAspectRatio="none">
-        <defs>
+    <footer className="pied-de-page" data-barre={barreMobile ? '' : undefined}>
+      <div className="pied-de-neige" aria-hidden="true">
+        <svg viewBox={`0 0 ${LARGEUR} ${HAUTEUR}`} preserveAspectRatio="none">
+          <defs>
+            {RANGS.map((r) => (
+              <linearGradient key={r.nom} id={`neige-sol-${r.nom}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" style={{ stopColor: r.haut }} />
+                <stop offset="1" style={{ stopColor: r.bas }} />
+              </linearGradient>
+            ))}
+          </defs>
           {RANGS.map((r) => (
-            <linearGradient key={r.nom} id={`neige-sol-${r.nom}`} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" style={{ stopColor: r.haut }} />
-              <stop offset="1" style={{ stopColor: r.bas }} />
-            </linearGradient>
+            <path key={r.nom} d={r.forme} fill={`url(#neige-sol-${r.nom})`} />
           ))}
-        </defs>
-        {RANGS.map((r) => (
-          <path key={r.nom} d={r.forme} fill={`url(#neige-sol-${r.nom})`} />
-        ))}
-      </svg>
-    </div>
+        </svg>
+      </div>
+      <div className="pied-de-page-bande">
+        <div className="pied-de-page-marque">
+          <span className="menu-logo grid h-10 w-10 shrink-0 place-items-center" aria-hidden="true">
+            <IconSnowflake className="h-5 w-5" />
+          </span>
+          <span>
+            <span className="pied-de-page-nom">
+              <span className="givre-texte">Winter</span> <em className="menu-titre-ligue">Ligue</em>
+            </span>
+            <span className="pied-de-page-droits">© 2026-2027 · Tous droits réservés</span>
+          </span>
+        </div>
+        <p className="pied-de-page-credit">
+          <span>
+            Développé par <strong>Jeex3</strong> &amp; <strong>Claude</strong>
+          </span>
+          <span className="pied-de-page-claude" aria-hidden="true">
+            <IconClaude />
+          </span>
+        </p>
+      </div>
+    </footer>
   );
 }

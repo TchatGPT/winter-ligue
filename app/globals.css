@@ -371,33 +371,144 @@
 
   /* --------------------------------------------------------------------------
      LE PIED DE PAGE — voir components/PiedDePage.
-     De la neige au sol, sur toute la largeur : ni bloc ni texte, la matière
-     seule la distingue des plaques de verre. Ses congères les plus hautes
-     remontent un peu dans la marge basse du contenu, jamais sur lui.
-     Connecté sur téléphone, la barre de navigation flotte par-dessus.
+     Une bande sur toute la largeur, collée au bas de la page comme le menu
+     l'est au bord gauche : le cadre du site, la même matière que le menu. La
+     marque et les droits à gauche, la signature à droite ; empilés et centrés
+     sur téléphone.
+     Sur la bande, de la neige : trois rangs de congères posés sur son arête
+     haute. Les plus hautes remontent un peu dans la marge basse du contenu,
+     jamais sur lui. Là où la neige touche la bande, une ombre de contact de
+     quelques pixels : sans elle, la neige flotte.
+     Connecté, la barre de navigation des téléphones flotte par-dessus (78 px
+     du bord de l'écran) : la bande se prolonge dessous, et son contenu reste
+     au-dessus.
      -------------------------------------------------------------------------- */
-  .pied-de-neige {
+  .pied-de-page {
     position: relative;
     z-index: 10;
-    height: 110px;
-    margin-top: -18px;
-    pointer-events: none;
+    margin-top: -14px;
   }
-  /* Sous la barre de navigation des téléphones, assez haute pour qu'on la
-     voie dépasser au-dessus. */
-  .pied-de-neige[data-barre] {
-    height: calc(150px + env(safe-area-inset-bottom, 0px));
+  .pied-de-neige {
+    position: relative;
+    z-index: 1;
+    height: 64px;
+    /* Un pixel sur la bande : pas de jour entre la neige et son arête. */
+    margin-bottom: -1px;
+    pointer-events: none;
   }
   .pied-de-neige svg {
     display: block;
     width: 100%;
     height: 100%;
   }
+  .pied-de-page-bande {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    width: 100%;
+    padding: 1.4rem 1rem 1.5rem;
+    text-align: center;
+    background: var(--glass-3);
+  }
+  /* L'ombre de contact, juste sous la ligne où la neige touche la bande. */
+  .pied-de-page-bande::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
+    height: 5px;
+    pointer-events: none;
+    background: linear-gradient(color-mix(in srgb, var(--fond) 75%, transparent), transparent);
+  }
+  .pied-de-page[data-barre] .pied-de-page-bande {
+    padding-bottom: calc(1.5rem + 78px + env(safe-area-inset-bottom, 0px));
+  }
+  .pied-de-page-marque {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.7rem;
+  }
+  .pied-de-page-nom {
+    display: block;
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: 0.01em;
+    text-transform: uppercase;
+  }
+  .pied-de-page-droits {
+    display: block;
+    margin-top: 0.35rem;
+    font-size: 0.875rem;
+    color: var(--muted);
+  }
+  /* La signature, dans sa capsule. */
+  .pied-de-page-credit {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.5rem 0.65rem 0.5rem 1rem;
+    border: 1px solid color-mix(in srgb, var(--ink) 12%, transparent);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--ink) 5%, transparent);
+    font-size: 0.875rem;
+    color: var(--ink-2);
+  }
+  .pied-de-page-credit strong {
+    color: var(--ink);
+    font-weight: 700;
+  }
+  .pied-de-page-claude {
+    display: grid;
+    place-items: center;
+    width: 1.9rem;
+    height: 1.9rem;
+    flex: 0 0 auto;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--claude) 16%, transparent);
+    color: var(--claude);
+  }
+  .pied-de-page-claude svg {
+    width: 1.1rem;
+    height: 1.1rem;
+  }
+  /* Le contenu s'aligne sur celui des pages : mêmes marges que le <main>. */
+  @media (min-width: 640px) {
+    .pied-de-page-bande {
+      flex-direction: row;
+      justify-content: space-between;
+      padding: 1.1rem 1.5rem;
+      text-align: left;
+    }
+    .pied-de-page[data-barre] .pied-de-page-bande {
+      padding-bottom: calc(1.1rem + 78px + env(safe-area-inset-bottom, 0px));
+    }
+    .pied-de-page-marque {
+      flex-direction: row;
+    }
+  }
+  /* La barre flottante n'existe plus à partir de 1024 px : le menu la remplace. */
   @media (min-width: 1024px) {
-    .pied-de-neige,
-    .pied-de-neige[data-barre] {
-      height: 170px;
-      margin-top: -30px;
+    .pied-de-page {
+      margin-top: -24px;
+    }
+    .pied-de-neige {
+      height: 96px;
+    }
+    .pied-de-page-bande,
+    .pied-de-page[data-barre] .pied-de-page-bande {
+      padding: 1.1rem 2rem;
+    }
+  }
+  @media (min-width: 1536px) {
+    .pied-de-page-bande,
+    .pied-de-page[data-barre] .pied-de-page-bande {
+      padding-inline: 2.5rem;
     }
   }
 
