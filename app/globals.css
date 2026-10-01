@@ -7803,12 +7803,16 @@
     perspective: 1400px;
   }
   .ov-sachet-corps {
+    position: relative;
     transform-style: preserve-3d;
     animation: ov-surgit 1.35s cubic-bezier(0.18, 1.2, 0.35, 1) both;
     filter: drop-shadow(0 26px 18px rgb(0 8 24 / 0.55));
   }
   .ov-booster[data-phase='charge'] .ov-sachet-corps {
     animation: ov-charge 1.3s ease-in both;
+  }
+  .ov-booster[data-phase='dechire'] .ov-sachet-corps {
+    animation: ov-tient 1s linear both;
   }
   .ov-booster[data-phase='eclate'] .ov-sachet-corps {
     animation: ov-eclate 0.55s cubic-bezier(0.5, 0, 0.9, 0.4) both;
@@ -7879,6 +7883,110 @@
       opacity: 0;
       transform: scale(1.6);
       filter: brightness(3) drop-shadow(0 26px 18px rgb(0 8 24 / 0));
+    }
+  }
+
+  /*
+   * La déchirure. Le sachet garde la pose où la charge l'a laissé ; son haut,
+   * découpé en dents de scie sous le sertissage (voir OverlayBooster), pivote
+   * sur son coin gauche comme sous des doigts qui tirent, puis s'arrache et
+   * s'envole. Le corps encaisse la secousse, et la lumière de la rareté sort
+   * de l'ouverture. Le reflet qui balaie la planche s'éteint le temps de la
+   * déchirure : sur deux morceaux, il ne tomberait plus en face.
+   */
+  @keyframes ov-tient {
+    from,
+    to {
+      transform: scale(1.1);
+    }
+  }
+  /* Le sachet et sa copie gardent la troisième dimension de la scène, tant
+     qu'aucune découpe ne les aplatit. */
+  .ov-morceau {
+    transform-style: preserve-3d;
+  }
+  /* Le haut pivote sur son bout droit — on le tire par le coin gauche —, puis
+     s'envole sur le côté, par-dessus le bandeau plutôt que dessous. */
+  .ov-morceau-haut {
+    position: absolute;
+    inset: 0;
+    transform-origin: 96% 9%;
+    animation: ov-arrache 1s cubic-bezier(0.45, 0, 0.6, 1) both;
+  }
+  .ov-booster[data-phase='dechire'] .ov-sachet {
+    z-index: 4;
+  }
+  .ov-booster[data-phase='dechire'] .ov-morceau:not(.ov-morceau-haut) {
+    animation: ov-secousse 0.45s ease-out 0.18s both;
+  }
+  .ov-booster[data-phase='dechire'] .ov-morceau .sachet-eclat,
+  .ov-booster[data-phase='eclate'] .ov-morceau .sachet-eclat {
+    display: none;
+  }
+  @keyframes ov-arrache {
+    0% {
+      opacity: 1;
+      transform: none;
+    }
+    20% {
+      transform: rotate(-6deg);
+    }
+    40% {
+      opacity: 1;
+      transform: translate(34px, -26px) rotate(-12deg);
+    }
+    100% {
+      opacity: 0;
+      transform: translate(470px, -70px) rotate(18deg);
+    }
+  }
+  @keyframes ov-secousse {
+    0% {
+      transform: translateY(0);
+    }
+    35% {
+      transform: translateY(7px) scale(0.99);
+    }
+    100% {
+      transform: translateY(0);
+    }
+  }
+  /* La lumière qui sort de l'ouverture : une nappe de la couleur de la rareté
+     promise, posée sur la ligne de déchirure et plus large que le sachet —
+     haute, elle filait sous le bandeau, qui la cachait. */
+  .ov-faisceau {
+    position: absolute;
+    top: -12%;
+    right: -14%;
+    left: -14%;
+    height: 30%;
+    pointer-events: none;
+    background: radial-gradient(
+      ellipse 50% 46% at 50% 62%,
+      color-mix(in srgb, var(--lueur) 35%, white) 0%,
+      color-mix(in srgb, var(--lueur) 80%, transparent) 30%,
+      color-mix(in srgb, var(--lueur) 30%, transparent) 55%,
+      transparent 75%
+    );
+    filter: blur(8px);
+    mix-blend-mode: screen;
+    opacity: 0;
+    transform-origin: 50% 100%;
+    animation: ov-faisceau 1s ease-out both;
+  }
+  @keyframes ov-faisceau {
+    0%,
+    22% {
+      opacity: 0;
+      transform: scaleY(0.3);
+    }
+    55% {
+      opacity: 1;
+      transform: scaleY(1);
+    }
+    100% {
+      opacity: 0.9;
+      transform: scaleY(1.15);
     }
   }
 

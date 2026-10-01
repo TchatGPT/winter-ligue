@@ -16,19 +16,20 @@ import { COURBE_MESUREE } from '@/lib/spin/courbe';
  * un.
  *
  * Le booster surgit en trois dimensions, avec pour qui il s'ouvre ; il se
- * charge, éclate, et le rail du site se lance — le même, avec les mêmes
- * cartes. Il s'arrête sur la carte tirée par le serveur, qui reste à l'écran
+ * charge, son haut se déchire et s'envole, la lumière sort de l'ouverture, il
+ * éclate, et le rail du site se lance — le même, avec les mêmes cartes. Il s'arrête sur la carte tirée par le serveur, qui reste à l'écran
  * quelques secondes, grande, avec son nom, son effet et sur qui elle tombe.
  *
  * Deux ouvertures rapprochées se jouent l'une après l'autre, jamais l'une
  * sur l'autre : la file est le seul état, et sa tête est ce qui se joue.
  */
 
-type Phase = 'surgit' | 'charge' | 'eclate' | 'rail' | 'carte' | 'sort';
+type Phase = 'surgit' | 'charge' | 'dechire' | 'eclate' | 'rail' | 'carte' | 'sort';
 
 const DUREES: Record<Exclude<Phase, 'rail'>, number> = {
   surgit: 1400,
   charge: 1300,
+  dechire: 1000,
   eclate: 550,
   carte: 7000,
   sort: 900,
@@ -36,11 +37,26 @@ const DUREES: Record<Exclude<Phase, 'rail'>, number> = {
 
 const SUITE: Record<Exclude<Phase, 'rail'>, Phase | null> = {
   surgit: 'charge',
-  charge: 'eclate',
+  charge: 'dechire',
+  dechire: 'eclate',
   eclate: 'rail',
   carte: 'sort',
   sort: null,
 };
+
+/**
+ * La ligne de déchirure, en pourcentages de la planche : juste sous le
+ * sertissage du haut, en dents de scie, et penchée comme lui — la planche est
+ * peinte de trois quarts, son bord haut monte vers la droite (de 10,8 % à
+ * 7,6 % de la hauteur). Le haut et le corps en sont les deux côtés.
+ */
+const DENTS = Array.from({ length: 27 }, (_, i) => {
+  const x = (i / 26) * 100;
+  const y = 10.8 - 3.2 * (x / 100) + (i % 2 ? 0.9 : -0.6);
+  return `${x.toFixed(1)}% ${y.toFixed(2)}%`;
+});
+const DECOUPE_HAUT = `polygon(0% 0%, 100% 0%, ${[...DENTS].reverse().join(', ')})`;
+const DECOUPE_CORPS = `polygon(${DENTS.join(', ')}, 100% 100%, 0% 100%)`;
 
 /** Les éclats de neige de l'apparition : un angle, une portée, un retard. */
 const ECLATS = Array.from({ length: 16 }, (_, i) => ({
@@ -104,6 +120,9 @@ function Ouverture({ booster, son, onFini }: { booster: BoosterOverlay; son: boo
     return () => clearTimeout(t);
   }, [phase, onFini]);
 
+  /** Le haut du sachet est arraché : il le reste jusqu'à l'éclat. */
+  const dechire = phase === 'dechire' || phase === 'eclate';
+
   const pool = useMemo<CarteRailPack[]>(
     () =>
       CARDS.filter((c) => c.packs.includes(booster.pack.id)).map((c) => ({
@@ -127,17 +146,41 @@ function Ouverture({ booster, son, onFini }: { booster: BoosterOverlay; son: boo
         </span>
       </header>
 
-      {(phase === 'surgit' || phase === 'charge' || phase === 'eclate') && (
+      {(phase === 'surgit' || phase === 'charge' || phase === 'dechire' || phase === 'eclate') && (
         <div className="ov-sachet">
           <div className="ov-sachet-corps">
-            <BoosterPack3D
-              name={booster.pack.nom}
-              cardCount={1}
-              gradient={booster.pack.gradient}
-              art={booster.pack.art}
-              rarete={booster.pack.gemme}
-              frozen={phase !== 'surgit'}
-            />
+            {/* Le sachet reste le même élément du début à la fin ; à la
+                déchirure, il perd son haut, et une copie découpée de ce haut
+                s'en arrache par-dessus. */}
+            <div className="ov-morceau" style={dechire ? { clipPath: DECOUPE_CORPS } : undefined}>
+              <BoosterPack3D
+                name={booster.pack.nom}
+                cardCount={1}
+                gradient={booster.pack.gradient}
+                art={booster.pack.art}
+                rarete={booster.pack.gemme}
+                frozen={phase !== 'surgit'}
+              />
+            </div>
+            {dechire && (
+              <>
+                <span
+                  className="ov-faisceau"
+                  style={{ ['--lueur' as string]: (RARITY_META[booster.pack.gemme] ?? RARITY_META.C).color }}
+                  aria-hidden="true"
+                />
+                <div className="ov-morceau ov-morceau-haut" style={{ clipPath: DECOUPE_HAUT }} aria-hidden="true">
+                  <BoosterPack3D
+                    name={booster.pack.nom}
+                    cardCount={1}
+                    gradient={booster.pack.gradient}
+                    art={booster.pack.art}
+                    rarete={booster.pack.gemme}
+                    frozen
+                  />
+                </div>
+              </>
+            )}
           </div>
           <div className="ov-eclats" aria-hidden="true">
             {ECLATS.map((e, i) => (
