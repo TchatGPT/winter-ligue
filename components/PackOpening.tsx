@@ -413,7 +413,7 @@ export function PackOpening({
                               : 'Ouvrir'}
                     </span>
                     {!busy && (
-                      <span className="btn-ouvrir-prix">
+                      <span className="btn-ouvrir-compte">
                         {pourUnJoueur && !choisi
                           ? `${dus.length} à ouvrir`
                           : restants > 0

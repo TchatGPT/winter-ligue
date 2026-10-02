@@ -74,6 +74,9 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - Les paliers de subs profitent à **tous les joueurs actifs** (boosters de la ligue,
   évènements) ; ils ne versent plus de flocons. Ne jamais ajouter de
   récompense individuelle : c'est l'invariant anti-pay-to-win, et il est testé.
+- **Une carte n'a aucune valeur en flocons** : elle ne s'achète, ne s'échange ni ne se
+  revend — ni cote, ni marché, ni collection, ni exemplaires en réserve. Elle se joue sur
+  une game, puis disparaît.
 - **Aucun avantage permanent ne se gagne en ouvrant des cartes.** Il n'y a ni familles,
   ni bonus de collection, ni plafond de réserve, ni taxe de vente : tout cela existait et
   a été retiré parce que cela faisait marquer davantage celui qui dépensait davantage.

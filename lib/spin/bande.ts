@@ -189,8 +189,8 @@ export function construitBandeJoueurs(
 /**
  * L'identifiant du jeton Winter Spin dans une bande.
  *
- * Ce n'est pas une carte : il n'est pas au catalogue, ne se collectionne pas, ne
- * se revend pas et n'a aucun effet en jeu. C'est un rang de bande, que le rendu
- * reconnaît pour y peindre le logo au lieu d'un cadre.
+ * Ce n'est pas une carte : il n'est pas au catalogue et n'a aucun effet en
+ * jeu. C'est un rang de bande, que le rendu reconnaît pour y peindre le logo au
+ * lieu d'un cadre.
  */
 export const JETON_ID = 'winter-spin';

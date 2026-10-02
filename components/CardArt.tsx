@@ -10,13 +10,13 @@ import type { Rarity } from '@/lib/domain/types';
  * pas à la même chose sur Windows, sur macOS et sur Android ; la couleur venait
  * de la police et non de la direction artistique, si bien qu'un emoji orange
  * atterrissait dans un cadre bleu nuit ; et la vignette n'était qu'un pictogramme
- * centré, là où une carte à collectionner demande une **scène**.
+ * centré, là où une carte de jeu demande une **scène**.
  *
  * Ce sont donc des vecteurs, et non des fichiers dans `public/cartes/`. Les
  * raisons sont les mêmes que pour les emblèmes de rareté (`EmblemeRarete`) :
  *
  * - le cadre est en `cqw`, l'illustration suit la carte de la vignette de
- *   collection au plein écran de l'ouverture, sans jamais crêper ;
+ *   la liste au plein écran de l'ouverture, sans jamais crêper ;
  * - la couleur sort de la rareté — `RARITY_META[…]` — donc changer une teinte de
  *   saison repeint d'un coup les quatre cartes concernées ;
  * - 24 images de bonne facture pèseraient plusieurs centaines de kilooctets et

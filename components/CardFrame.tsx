@@ -1,7 +1,5 @@
 import { aUneIllustration, CardArt } from '@/components/CardArt';
-import { IconSnowflake } from '@/components/icons';
 import { getCard, RARITY_META } from '@/lib/domain/catalog';
-import { compact } from '@/lib/format';
 import type { Rarity } from '@/lib/domain/types';
 
 /**
@@ -38,16 +36,7 @@ export interface CardFrameProps {
   description?: string;
   rarity: string;
   glyph: string;
-  quote?: number | null;
   nature?: 'bonus' | 'malus';
-  /**
-   * Exemplaires détenus. Au-delà de 1, la carte porte un compteur.
-   *
-   * La collection affichait autrefois une vignette par exemplaire : trois
-   * Congères occupaient trois cases identiques, et on ne voyait plus le
-   * catalogue derrière les doublons. Une seule carte, avec son compte.
-   */
-  copies?: number;
   dimmed?: boolean;
   /** Marque libre, posée en haut à droite de la fenêtre. */
   corner?: React.ReactNode;
@@ -59,9 +48,7 @@ export function CardFrame({
   description,
   rarity,
   glyph,
-  quote,
   nature,
-  copies,
   dimmed,
   corner,
 }: CardFrameProps) {
@@ -100,11 +87,6 @@ export function CardFrame({
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img className="cadre-planche" src="/cadres/glace.webp" alt="" aria-hidden="true" />
 
-      {copies !== undefined && copies > 1 && (
-        <span className="cadre-copies" title={`${copies} exemplaires en réserve`}>
-          ×{copies}
-        </span>
-      )}
       {nature === 'malus' && <span className="cadre-malus">Malus</span>}
       {corner && <span className="cadre-coin">{corner}</span>}
 
@@ -113,20 +95,12 @@ export function CardFrame({
           ne vient que sur une grande carte (voir `.cadre-desc`) : partout
           ailleurs, elle est écrite à côté de la carte, en grand. La rareté est
           au bas de l'illustration. La puissance n'est plus affichée : un chiffre
-          sur cent, sans unité, qui ne disait rien de ce que fait la carte. */}
+          sur cent, sans unité, qui ne disait rien de ce que fait la carte. Une
+          carte n'a pas de valeur en flocons : elle ne s'échange ni ne se revend,
+          elle se joue. */}
       <div className="cadre-texte">
         <h3 className="cadre-nom">{name}</h3>
-        <div className="cadre-ligne">
-          {action && <p className="cadre-action">{action}</p>}
-          {quote !== undefined && (
-            <span className="cadre-chiffres">
-              <span className="cadre-stat cadre-stat-cote" title="Cote : dernier prix constaté">
-                <IconSnowflake className="h-[1em] w-[1em]" />
-                <span className="num">{quote === null ? '—' : compact(quote)}</span>
-              </span>
-            </span>
-          )}
-        </div>
+        {action && <p className="cadre-action">{action}</p>}
         {description && <p className="cadre-desc">{description}</p>}
       </div>
     </div>

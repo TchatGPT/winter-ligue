@@ -5316,14 +5316,14 @@
    *
    * Il portait « Ouvrir — ❄ 150 » sur une ligne, en capitales, comme les
    * quarante autres boutons. C'est pourtant le geste qui fait exister le site :
-   * celui qu'on vient chercher, celui qui coûte, celui qu'on répète. Un libellé
+   * celui qu'on vient chercher, celui qu'on attend, celui qu'on répète. Un libellé
    * de plus au milieu d'une phrase ne lui donne aucune de ces trois qualités.
    *
-   * Deux registres au lieu d'un seul : le verbe en grand, et le prix dans sa
-   * propre pastille. C'est la mise en page d'une étiquette, et elle dit d'un
-   * coup d'œil ce que la ligne unique obligeait à lire — ce qu'on fait, et ce
-   * que ça coûte. Le prix cesse au passage d'être une note de bas de ligne : il
-   * a un cadre, un fond, et se lit à un mètre.
+   * Deux registres au lieu d'un seul : le verbe en grand, et le compte dans sa
+   * propre pastille — combien il en reste à ouvrir, ou à quel palier de subs
+   * tombe le prochain. Elle dit d'un coup d'œil ce que la ligne unique
+   * obligeait à lire : ce qu'on fait, et ce qui reste. Le compte a un cadre, un
+   * fond, et se lit à un mètre.
    */
   .btn-ouvrir {
     min-height: 62px;
@@ -5345,26 +5345,18 @@
       letter-spacing: 0.06em;
       white-space: normal;
     }
-    .btn-ouvrir .btn-ouvrir-prix {
+    .btn-ouvrir .btn-ouvrir-compte {
       white-space: nowrap;
     }
   }
 
   /*
-   * La pastille de prix, creusée dans le bouton.
+   * La pastille du compte, creusée dans le bouton.
    *
    * Elle s'enfonce là où le bouton sort — l'arête vive en bas, l'ombre en haut,
    * la même inversion que pour les champs. Posée en relief, elle aurait fait un
    * second bouton dans le premier, et l'on aurait cherché lequel cliquer.
    */
-  /* Prix barré pendant une braderie : lisible, mais visiblement l'ancien. */
-.prix-barre {
-  margin-right: 0.35em;
-  font-size: 0.78em;
-  font-weight: 600;
-  color: var(--faint);
-  text-decoration-thickness: 1.5px;
-}
 
 /* Un évènement en cours dans le bandeau des subs. */
 .evenement {
@@ -6768,17 +6760,17 @@
   }
 }
 
-.btn-ouvrir-prix {
+.btn-ouvrir-compte {
     display: inline-flex;
     align-items: center;
     gap: 0.35rem;
     padding: 0.42rem 0.95rem;
     border-radius: var(--r-pilule);
     /*
-     * Franchement sombre, et le prix en clair dessus.
+     * Franchement sombre, et le compte en clair dessus.
      *
      * Un premier essai laissait la pastille à peine teintée et gardait l'encre
-     * sombre du bouton : le prix tombait alors à 3,4:1 sur le bleu pâle, soit
+     * sombre du bouton : le compte tombait alors à 3,4:1 sur le bleu pâle, soit
      * la valeur la moins lisible de tout le bouton pour l'information qui décide
      * du clic. Creusée pour de bon, elle inverse le contraste au lieu de le
      * diluer — et l'on y lit un afficheur, ce qui est exactement le rôle.
@@ -6793,20 +6785,15 @@
     text-shadow: none;
     font-size: 1.0625rem;
     letter-spacing: 0.02em;
-    /* Tabulaire : le prix change de sachet en sachet, et un chiffre qui saute
-       d'un pixel à chaque flèche du carrousel se remarque plus que le prix. */
+    /* Tabulaire : le compte change de booster en booster, et un chiffre qui
+       saute d'un pixel à chaque flèche du carrousel se remarque plus que lui. */
     font-variant-numeric: tabular-nums;
   }
 
-  .btn-ouvrir:disabled .btn-ouvrir-prix {
+  .btn-ouvrir:disabled .btn-ouvrir-compte {
     background: rgb(2 26 42 / 0.5);
   }
 
-  /* Le flocon du prix reprend la teinte de la glace : c'est la monnaie, et elle
-     a une couleur dans tout le reste du site. */
-  .btn-ouvrir-prix > span:first-child {
-    color: var(--ice);
-  }
 
   /* --------------------------------------------------------------------------
      Le solde
@@ -6975,7 +6962,7 @@
   }
 
   /* --------------------------------------------------------------------------
-     CARTE À COLLECTIONNER
+     LA CARTE
      La couleur de rareté arrive par --r, posée en style inline.
      -------------------------------------------------------------------------- */
 
@@ -7378,7 +7365,6 @@
 
   /* -- Les marques posées sur la fenêtre ---------------------------------- */
 
-  .cadre-copies,
   .cadre-malus,
   .cadre-coin {
     position: absolute;
@@ -7462,24 +7448,6 @@
   }
 
   /*
-   * Le compteur d'exemplaires.
-   *
-   * Sombre et non teinté par la rareté, contrairement à la pastille : les deux
-   * marques sont voisines, et deux pastilles de la même couleur se liraient
-   * comme une seule étiquette coupée en deux.
-   */
-  .cadre-copies {
-    left: 10.5%;
-    top: 15.5%;
-    padding: 0.2cqw 1.4cqw;
-    border-radius: 1.4cqw;
-    background: rgb(4 10 20 / 0.88);
-    color: var(--frost);
-    font-size: 4cqw;
-    box-shadow: 0 0.4cqw 1.2cqw rgb(0 0 0 / 0.6);
-  }
-
-  /*
    * La marque « Malus » est remontée en haut de la fenêtre.
    *
    * Elle était posée en bas à droite de l'illustration, c'est-à-dire à
@@ -7541,16 +7509,7 @@
     -webkit-box-orient: vertical;
   }
 
-  /* L'action, et la cote quand une vignette en porte une. */
-  .cadre-ligne {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 2cqw;
-    font-family: var(--font-display);
-    font-size: 4.8cqw;
-    font-weight: 900;
-  }
+
 
   /*
    * La description ne s'affiche qu'à partir de 400 px de carte.
@@ -7597,6 +7556,7 @@
     min-width: 0;
     overflow: hidden;
     font-family: var(--font-display);
+    font-size: 4.8cqw;
     font-weight: 800;
     letter-spacing: 0.03em;
     line-height: 1.15;
@@ -7609,25 +7569,6 @@
   }
 
 
-
-  .cadre-chiffres {
-    display: inline-flex;
-    flex-shrink: 0;
-    gap: 2.4cqw;
-    margin-left: auto;
-  }
-
-  .cadre-stat {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.8cqw;
-  }
-
-  /* Mesurée sur le panneau, qui reste au-dessus de 230 de clarté quelle que
-     soit la rotation de teinte : 9:1. */
-  .cadre-stat-cote {
-    color: #0d3f74;
-  }
 
   .cadre-eteint {
     filter: grayscale(0.9) brightness(0.55);

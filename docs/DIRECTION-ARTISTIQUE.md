@@ -17,10 +17,10 @@ Trois raisons, et elles sont décisives :
    arrondi, position du bandeau varient. Sur 24 cartes côte à côte, ça se voit.
 3. **Ce qui fait qu'un set est beau, c'est justement sa constance.** Regarde une planche
    Pokémon : le cadre est rigoureusement identique d'une carte à l'autre, seule
-   l'illustration change. C'est cette répétition qui donne l'impression de collection.
+   l'illustration change. C'est cette répétition qui donne l'impression d'un jeu de cartes.
 
-Ici, le cadre est en code — `components/TradingCard.tsx` plus la section « carte de
-collection » de `app/globals.css`. Il est vectoriel, identique partout, et se décline
+Ici, le cadre est en code — `components/CardFrame.tsx` plus la section « La carte »
+de `app/globals.css`. Il est vectoriel, identique partout, et se décline
 gratuitement sur les 24 cartes. Tu n'as qu'à fournir les images.
 
 ---
@@ -146,7 +146,7 @@ filet compris. Ce n'est pas une incohérence, c'est la même logique appliquée 
 différent.
 
 Une carte est un gabarit répété 24 fois : son cadre doit être en code pour rester
-rigoureusement identique, sinon la planche de collection part en morceaux. Un sachet
+rigoureusement identique, sinon la planche des cartes part en morceaux. Un sachet
 n'existe qu'en **quatre** exemplaires, jamais côte à côte, et son décor est solidaire de
 sa découpe — le sceau de rareté se pose dans un creux de l'illustration, le filet suit le
 bord du film. Découper ça en deux couches coûterait plus que ça ne rapporte.

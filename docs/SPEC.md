@@ -193,8 +193,8 @@ carte à chaque image en JavaScript, ce qui interdit le compositeur.
 
 ### Ce qui défile est le cadre peint — et une estimation à corriger
 
-Les rouleaux portent `CardFrame`, le même objet que la collection et la fiche :
-fleuron, volutes, fenêtre d'illustration, bandeau de texte, rareté, puissance.
+Les rouleaux portent `CardFrame`, le même objet que la liste des cartes et la fiche :
+fleuron, volutes, fenêtre d'illustration, bandeau de texte, rareté.
 Une carte simplifiée ne ressemblait à rien de ce que le joueur connaît.
 
 Deux versions antérieures de ce fichier l'avaient écarté, au motif que `CardArt`
@@ -315,8 +315,7 @@ puis repart.
 
 ### Ce n'est pas une carte
 
-Le joueur ne le garde pas, il n'entre pas dans la collection, il ne se revend pas,
-il n'a pas d'effet en jeu. C'est un résultat d'emplacement, consommé dans
+Le joueur ne le garde pas, il n'a pas d'effet en jeu. C'est un résultat d'emplacement, consommé dans
 l'instant. D'où son absence du catalogue et de `applyEffect()` : ajouter une
 entrée là-bas aurait cassé les quatre cartes par palier, et surtout aurait laissé
 croire qu'on peut le posséder.

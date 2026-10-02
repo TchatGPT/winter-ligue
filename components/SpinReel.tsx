@@ -28,7 +28,7 @@ import { COURBE_MESUREE, type Courbe, RANG_GAGNANT, RANG_RELANCE } from '@/lib/s
  * Sa rareté est celle d'une légendaire, et ce n'est pas un abus : c'est le
  * **rang** qui commande le halo quand une tuile passe sous le repère, et le
  * jeton mérite ce signal-là. Il n'entre pour autant dans aucun tirage de rareté
- * — il n'existe que dans la bande, jamais dans une collection.
+ * — il n'existe que dans la bande.
  */
 export const JETON: CarteRail = {
   cardId: JETON_ID,
@@ -253,7 +253,7 @@ export function SpinReel({
                       }}
                       aria-hidden="true"
                     >
-                      {/* Le cadre peint, celui de la collection et de la fiche.
+                      {/* Le cadre peint, celui de la liste des cartes et de la fiche.
                           Une carte simplifiée ne ressemblait à rien de ce que le
                           joueur connaît — le fleuron, les volutes et le bandeau
                           de texte **sont** la carte.

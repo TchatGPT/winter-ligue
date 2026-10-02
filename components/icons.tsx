@@ -95,7 +95,7 @@ export function IconPlus(props: IconProps) {
   );
 }
 
-/** Collection — des cartes empilées. */
+/** Des cartes empilées. */
 export function IconLayers(props: IconProps) {
   const dessus = 'm12 2.5 9 4.6-9 4.6-9-4.6 9-4.6Z';
   return (

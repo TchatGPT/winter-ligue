@@ -118,10 +118,7 @@ export interface CardTileProps {
   description?: string;
   rarity: string;
   glyph: string;
-  quote?: number | null;
   nature?: 'bonus' | 'malus';
-  /** Exemplaires détenus : au-delà de 1, la carte porte un compteur. */
-  copies?: number;
   dimmed?: boolean;
   footer?: React.ReactNode;
   corner?: React.ReactNode;
@@ -130,7 +127,7 @@ export interface CardTileProps {
 }
 
 /**
- * Vignette de carte à collectionner.
+ * Vignette de carte : le cadre peint, et un pied facultatif.
  *
  * La couleur de rareté est injectée en variable CSS `--r` : la feuille de style
  * en tire la bordure, la pastille, le halo au survol et surtout le **bandeau**.
@@ -156,9 +153,7 @@ export function CardTile({
   description,
   rarity,
   glyph,
-  quote,
   nature,
-  copies,
   dimmed,
   footer,
   corner,
@@ -174,9 +169,7 @@ export function CardTile({
           description={description ?? subtitle}
           rarity={rarity}
           glyph={glyph}
-          quote={quote}
           nature={nature}
-          copies={copies}
           dimmed={dimmed}
           corner={corner}
         />

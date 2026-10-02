@@ -26,7 +26,7 @@ import type {
 export const RARITY_META: Record<
   Rarity,
   {
-    /** Sigle affiché sur la vignette, comme sur une carte à collectionner. */
+    /** Le sigle de la rareté : C, R, UR, L. */
     code: string;
     label: string;
     short: string;
@@ -288,16 +288,6 @@ export function resumeEffet(effect: CardEffect): string {
     case 'immunite':
       return `immunité ${effect.heures} h`;
   }
-}
-
-/** Numéro de collection, à la façon du « 12/36 » au dos des cartes. */
-const CARD_NUMBERS = new Map(CARDS.map((c, i) => [c.id, i + 1]));
-
-export const TOTAL_CARDS = CARDS.length;
-
-export function cardNumber(id: string): string {
-  const n = CARD_NUMBERS.get(id);
-  return n ? `${String(n).padStart(2, '0')}/${TOTAL_CARDS}` : `--/${TOTAL_CARDS}`;
 }
 
 /**

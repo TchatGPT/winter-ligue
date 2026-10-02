@@ -7,7 +7,6 @@ import {
   PACKS,
   poolDuPack,
   RARITY_META,
-  TOTAL_CARDS,
 } from '@/lib/domain/catalog';
 import { rewardForGame } from '@/lib/domain/economy';
 import {
@@ -43,7 +42,6 @@ describe('cohérence du catalogue', () => {
     for (const rarity of LADDER) {
       expect(cardsOfRarity(rarity).length).toBeGreaterThanOrEqual(1);
     }
-    expect(TOTAL_CARDS).toBe(CARDS.length);
   });
 
   it('n’a aucun identifiant en double', () => {
