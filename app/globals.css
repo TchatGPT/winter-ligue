@@ -11268,3 +11268,1522 @@
     animation: none;
   }
 }
+
+/* ==========================================================================
+   LE CIEL DES BOOSTERS — l'accueil déconnecté, voir components/FondAurores.
+   ==========================================================================
+   La nuit des planches : les rideaux d'aurore du Finisseur et du Folie, le
+   bleu du tourbillon du Commu, la brume de glace du Perso, et des étoiles.
+   Il se pose sur le bleu nuit du site, pour qui n'est pas connecté.
+
+   Un rideau : le ruban — une courbe floue, nette en bas, qui s'éteint en
+   montant, comme les aurores des planches — découpe les rayons, des stries
+   verticales tirées d'un bruit fractal très étiré. Les couleurs suivent la
+   hauteur : le vert en bas, le violet et le rose en haut. Pas de halo ni de
+   mode de fusion : des calques translucides, peints une fois.
+
+   Ce qui bouge, lentement : le ruban ondule, les rayons glissent le long du
+   ruban, les étoiles scintillent par groupes, les volutes dérivent. Que des
+   transformations et des opacités. Sur un téléphone, le ciel est immobile. */
+.fond-aurores {
+  --amp: 1;
+  --bruit-rayons: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='900' height='600'%3E %3Cfilter id='r' x='0' y='0' width='100%25' height='100%25'%3E %3CfeTurbulence type='fractalNoise' baseFrequency='0.0085 0.0007' numOctaves='2' seed='7' stitchTiles='stitch'/%3E %3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 2.7 -0.72'/%3E %3C/filter%3E %3Crect width='100%25' height='100%25' filter='url(%23r)'/%3E%3C/svg%3E");
+  --bruit-volutes: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='640'%3E %3Cfilter id='v' x='0' y='0' width='100%25' height='100%25'%3E %3CfeTurbulence type='fractalNoise' baseFrequency='0.005 0.009' numOctaves='3' seed='23' stitchTiles='stitch'/%3E %3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 2.2 -0.62'/%3E %3C/filter%3E %3Crect width='100%25' height='100%25' filter='url(%23v)'/%3E%3C/svg%3E");
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  /* La grande hauteur de la fenêtre : sur un téléphone, la barre d'adresse
+     qui se replie ne redimensionne pas le ciel — ce serait le repeindre. */
+  height: 100lvh;
+  overflow: hidden;
+  pointer-events: none;
+  contain: strict;
+  background:
+    radial-gradient(130% 70% at 50% -12%, color-mix(in srgb, var(--violet) 15%, transparent), transparent 70%),
+    radial-gradient(110% 55% at 50% 110%, color-mix(in srgb, var(--ice-3) 30%, transparent), transparent 72%),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--bg-deep) 60%, var(--fond)) 0%,
+      var(--fond) 58%,
+      color-mix(in srgb, var(--ice-3) 14%, var(--fond)) 100%
+    );
+}
+
+/* -- Les étoiles : trois tuiles, trois rythmes. Elles s'éteignent vers le
+      bas, là où montent les volutes. -- */
+.fa-etoiles {
+  position: absolute;
+  inset: 0 0 22% 0;
+  -webkit-mask-image: linear-gradient(180deg, #000 30%, transparent);
+  mask-image: linear-gradient(180deg, #000 30%, transparent);
+  animation: fa-scintille var(--duree) ease-in-out var(--retard) infinite alternate;
+}
+.fa-etoiles-1 {
+  --duree: 4.6s;
+  --retard: -1.2s;
+  background-image:
+    radial-gradient(circle at 125px 155px, color-mix(in srgb, var(--frost) 90%, transparent) 0 0.8px, transparent 1.5px),
+    radial-gradient(circle at 246px 164px, rgb(255 255 255 / 0.95) 0 0.8px, transparent 1.5px),
+    radial-gradient(circle at 244px 70px, rgb(255 255 255 / 0.95) 0 0.8px, transparent 1.5px),
+    radial-gradient(circle at 244px 142px, color-mix(in srgb, var(--ice) 90%, transparent) 0 0.9px, transparent 1.6px),
+    radial-gradient(circle at 207px 167px, rgb(255 255 255 / 0.95) 0 0.9px, transparent 1.6px),
+    radial-gradient(circle at 81px 226px, color-mix(in srgb, var(--ice) 90%, transparent) 0 1.0px, transparent 1.7px),
+    radial-gradient(circle at 11px 175px, rgb(255 255 255 / 0.95) 0 0.9px, transparent 1.6px),
+    radial-gradient(circle at 25px 81px, color-mix(in srgb, var(--frost) 90%, transparent) 0 0.9px, transparent 1.6px),
+    radial-gradient(circle at 246px 156px, color-mix(in srgb, var(--ice) 90%, transparent) 0 0.9px, transparent 1.6px);
+  background-size: 270px 230px;
+}
+.fa-etoiles-2 {
+  --duree: 6.4s;
+  --retard: -3.9s;
+  background-image:
+    radial-gradient(circle at 235px 290px, color-mix(in srgb, var(--gold) 80%, var(--frost)) 0 1.2px, transparent 1.9px),
+    radial-gradient(circle at 235px 264px, color-mix(in srgb, var(--ice) 90%, transparent) 0 1.2px, transparent 1.9px),
+    radial-gradient(circle at 98px 266px, color-mix(in srgb, var(--ice) 90%, transparent) 0 1.0px, transparent 1.7px),
+    radial-gradient(circle at 52px 232px, rgb(255 255 255 / 0.95) 0 0.9px, transparent 1.6px),
+    radial-gradient(circle at 279px 328px, color-mix(in srgb, var(--gold) 80%, var(--frost)) 0 0.8px, transparent 1.5px),
+    radial-gradient(circle at 235px 338px, color-mix(in srgb, var(--ice) 90%, transparent) 0 1.1px, transparent 1.8px),
+    radial-gradient(circle at 323px 11px, rgb(255 255 255 / 0.95) 0 1.2px, transparent 1.9px);
+  background-size: 410px 350px;
+}
+.fa-etoiles-3 {
+  --duree: 8.2s;
+  --retard: -5.1s;
+  background-image:
+    radial-gradient(circle at 81px 181px, color-mix(in srgb, var(--gold) 80%, var(--frost)) 0 1.3px, transparent 2.0px),
+    radial-gradient(circle at 92px 265px, color-mix(in srgb, var(--violet) 85%, var(--frost)) 0 1.5px, transparent 2.2px),
+    radial-gradient(circle at 429px 13px, rgb(255 255 255 / 0.95) 0 1.5px, transparent 2.2px),
+    radial-gradient(circle at 459px 337px, color-mix(in srgb, var(--gold) 80%, var(--frost)) 0 1.1px, transparent 1.8px),
+    radial-gradient(circle at 91px 258px, color-mix(in srgb, var(--violet) 85%, var(--frost)) 0 1.2px, transparent 1.9px),
+    radial-gradient(circle at 208px 232px, color-mix(in srgb, var(--frost) 90%, transparent) 0 1.5px, transparent 2.2px);
+  background-size: 560px 470px;
+}
+@keyframes fa-scintille {
+  from {
+    opacity: calc(1 - 0.6 * var(--amp));
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* -- Les rideaux -- */
+/* Le ruban est croisé avec une ellipse qui s'éteint avant les bords de la
+   boîte : sans elle, un ruban qui touche un bord y était tranché net, et la
+   boîte se voyait — un rectangle dans le ciel. */
+.fa-rideau {
+  position: absolute;
+  opacity: var(--force);
+  transform-origin: 50% 100%;
+  -webkit-mask-image: var(--ruban), radial-gradient(closest-side, #000 58%, transparent);
+  mask-image: var(--ruban), radial-gradient(closest-side, #000 58%, transparent);
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
+  animation: fa-ondule var(--duree) ease-in-out var(--retard) infinite alternate;
+  will-change: transform, opacity;
+}
+.fa-rayons {
+  position: absolute;
+  inset: 0 -12%;
+  background: var(--teintes);
+  -webkit-mask-image: var(--bruit-rayons);
+  mask-image: var(--bruit-rayons);
+  -webkit-mask-size: var(--grain) 100%;
+  mask-size: var(--grain) 100%;
+  -webkit-mask-repeat: repeat-x;
+  mask-repeat: repeat-x;
+  animation: fa-glisse var(--duree-rayons) ease-in-out var(--retard) infinite alternate;
+  will-change: transform;
+}
+/* Le Finisseur : le grand arc vert, qui vire au violet en montant. */
+.fa-rideau-1 {
+  --force: 0.62;
+  --ruban: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1000 500' preserveAspectRatio='none'%3E %3Cfilter id='a' x='-30%25' y='-60%25' width='160%25' height='220%25'%3E%3CfeGaussianBlur stdDeviation='10'/%3E%3C/filter%3E %3Cfilter id='b' x='-30%25' y='-60%25' width='160%25' height='220%25'%3E%3CfeGaussianBlur stdDeviation='34'/%3E%3C/filter%3E %3Cfilter id='c' x='-30%25' y='-60%25' width='160%25' height='220%25'%3E%3CfeGaussianBlur stdDeviation='52'/%3E%3C/filter%3E %3Cg fill='none' stroke='white' stroke-linecap='round'%3E %3Cpath d='M-80 380 C 120 330 230 210 400 236 S 650 372 800 300 S 980 150 1090 170' stroke-width='52' stroke-opacity='0.95' filter='url(%23a)'/%3E %3Cpath d='M-80 380 C 120 330 230 210 400 236 S 650 372 800 300 S 980 150 1090 170' transform='translate(0 -88)' stroke-width='170' stroke-opacity='0.60' filter='url(%23b)'/%3E %3Cpath d='M-80 380 C 120 330 230 210 400 236 S 650 372 800 300 S 980 150 1090 170' transform='translate(0 -190)' stroke-width='170' stroke-opacity='0.26' filter='url(%23c)'/%3E %3C/g%3E%3C/svg%3E");
+  --teintes: linear-gradient(
+    0deg,
+    transparent 6%,
+    color-mix(in srgb, var(--aurora) 92%, transparent) 26%,
+    color-mix(in srgb, var(--aurora) 55%, var(--ice-2)) 44%,
+    color-mix(in srgb, var(--violet) 80%, transparent) 70%,
+    transparent 95%
+  );
+  --grain: 640px;
+  --duree: 34s;
+  --duree-rayons: 23s;
+  --retard: -9s;
+  top: -3%;
+  left: -12%;
+  width: 82%;
+  height: 66%;
+}
+/* Le Folie : à droite, le turquoise qui monte au rose. */
+.fa-rideau-2 {
+  --force: 0.5;
+  --ruban: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1000 500' preserveAspectRatio='none'%3E %3Cfilter id='a' x='-30%25' y='-60%25' width='160%25' height='220%25'%3E%3CfeGaussianBlur stdDeviation='10'/%3E%3C/filter%3E %3Cfilter id='b' x='-30%25' y='-60%25' width='160%25' height='220%25'%3E%3CfeGaussianBlur stdDeviation='34'/%3E%3C/filter%3E %3Cfilter id='c' x='-30%25' y='-60%25' width='160%25' height='220%25'%3E%3CfeGaussianBlur stdDeviation='52'/%3E%3C/filter%3E %3Cg fill='none' stroke='white' stroke-linecap='round'%3E %3Cpath d='M-80 250 C 90 200 250 330 430 330 S 700 190 860 240 S 1010 330 1090 300' stroke-width='52' stroke-opacity='0.90' filter='url(%23a)'/%3E %3Cpath d='M-80 250 C 90 200 250 330 430 330 S 700 190 860 240 S 1010 330 1090 300' transform='translate(0 -88)' stroke-width='170' stroke-opacity='0.57' filter='url(%23b)'/%3E %3Cpath d='M-80 250 C 90 200 250 330 430 330 S 700 190 860 240 S 1010 330 1090 300' transform='translate(0 -190)' stroke-width='170' stroke-opacity='0.25' filter='url(%23c)'/%3E %3C/g%3E%3C/svg%3E");
+  --teintes: linear-gradient(
+    0deg,
+    transparent 8%,
+    color-mix(in srgb, var(--aurora) 70%, var(--ice-2)) 28%,
+    color-mix(in srgb, var(--live) 45%, var(--violet)) 62%,
+    color-mix(in srgb, var(--violet) 70%, transparent) 80%,
+    transparent 96%
+  );
+  --grain: 560px;
+  --duree: 41s;
+  --duree-rayons: 29s;
+  --retard: -21s;
+  top: -8%;
+  left: 40%;
+  width: 72%;
+  height: 60%;
+}
+/* Le Commu : un voile de glace, plus loin, plus pâle. */
+.fa-rideau-3 {
+  --force: 0.3;
+  --ruban: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1000 500' preserveAspectRatio='none'%3E %3Cfilter id='a' x='-30%25' y='-60%25' width='160%25' height='220%25'%3E%3CfeGaussianBlur stdDeviation='10'/%3E%3C/filter%3E %3Cfilter id='b' x='-30%25' y='-60%25' width='160%25' height='220%25'%3E%3CfeGaussianBlur stdDeviation='34'/%3E%3C/filter%3E %3Cfilter id='c' x='-30%25' y='-60%25' width='160%25' height='220%25'%3E%3CfeGaussianBlur stdDeviation='52'/%3E%3C/filter%3E %3Cg fill='none' stroke='white' stroke-linecap='round'%3E %3Cpath d='M-80 320 C 160 270 330 300 520 270 S 820 200 1090 250' stroke-width='52' stroke-opacity='0.81' filter='url(%23a)'/%3E %3Cpath d='M-80 320 C 160 270 330 300 520 270 S 820 200 1090 250' transform='translate(0 -88)' stroke-width='170' stroke-opacity='0.51' filter='url(%23b)'/%3E %3Cpath d='M-80 320 C 160 270 330 300 520 270 S 820 200 1090 250' transform='translate(0 -190)' stroke-width='170' stroke-opacity='0.22' filter='url(%23c)'/%3E %3C/g%3E%3C/svg%3E");
+  --teintes: linear-gradient(
+    0deg,
+    transparent 10%,
+    color-mix(in srgb, var(--ice) 90%, transparent) 34%,
+    color-mix(in srgb, var(--violet) 60%, var(--ice)) 66%,
+    transparent 94%
+  );
+  --grain: 820px;
+  --duree: 47s;
+  --duree-rayons: 33s;
+  --retard: -30s;
+  top: 6%;
+  left: 6%;
+  width: 94%;
+  height: 50%;
+}
+/* Le ruban ondule et respire depuis son pied ; les rayons glissent dedans. */
+@keyframes fa-ondule {
+  from {
+    opacity: calc(var(--force) * (1 - 0.32 * var(--amp)));
+    transform: translateX(calc(-2.5% * var(--amp))) scaleY(calc(1 - 0.07 * var(--amp)))
+      skewX(calc(-3deg * var(--amp)));
+  }
+  to {
+    opacity: var(--force);
+    transform: translateX(calc(2.5% * var(--amp))) scaleY(calc(1 + 0.05 * var(--amp)))
+      skewX(calc(3deg * var(--amp)));
+  }
+}
+@keyframes fa-glisse {
+  from {
+    transform: translateX(calc(-7% * var(--amp)));
+  }
+  to {
+    transform: translateX(calc(7% * var(--amp)));
+  }
+}
+
+/* -- Les volutes, au ras du bas -- */
+.fa-volute {
+  position: absolute;
+  opacity: var(--force);
+  background: radial-gradient(closest-side, var(--c) 30%, transparent);
+  -webkit-mask-image: radial-gradient(closest-side, #000 40%, transparent), var(--bruit-volutes);
+  -webkit-mask-size: 100% 100%, var(--grain) var(--grain);
+  -webkit-mask-repeat: no-repeat, repeat;
+  -webkit-mask-composite: source-in;
+  mask-image: radial-gradient(closest-side, #000 40%, transparent), var(--bruit-volutes);
+  mask-size: 100% 100%, var(--grain) var(--grain);
+  mask-repeat: no-repeat, repeat;
+  mask-composite: intersect;
+  animation: fa-derive var(--duree) ease-in-out var(--retard) infinite alternate;
+  will-change: transform;
+}
+/* Le Commu : le bleu du tourbillon, en bas à gauche. */
+.fa-volute-1 {
+  --c: color-mix(in srgb, var(--ice-2) 80%, transparent);
+  --force: 0.34;
+  --grain: 820px;
+  --duree: 52s;
+  --retard: -12s;
+  --sens: 1;
+  bottom: -16%;
+  left: -18%;
+  width: 78%;
+  height: 50%;
+}
+/* Le Perso : la brume de glace, en bas à droite. */
+.fa-volute-2 {
+  --c: color-mix(in srgb, var(--ice) 55%, var(--frost));
+  --force: 0.2;
+  --grain: 700px;
+  --duree: 61s;
+  --retard: -37s;
+  --sens: -1;
+  right: -16%;
+  bottom: -18%;
+  width: 72%;
+  height: 46%;
+}
+/* Le Folie : un voile violet, au milieu, plus haut. */
+.fa-volute-3 {
+  --c: color-mix(in srgb, var(--violet) 85%, transparent);
+  --force: 0.15;
+  --grain: 960px;
+  --duree: 70s;
+  --retard: -50s;
+  --sens: 1;
+  bottom: 2%;
+  left: 22%;
+  width: 58%;
+  height: 36%;
+}
+@keyframes fa-derive {
+  from {
+    transform: translateX(calc(-4% * var(--sens) * var(--amp))) scale(1);
+  }
+  to {
+    transform: translateX(calc(4% * var(--sens) * var(--amp))) scale(calc(1 + 0.06 * var(--amp)));
+  }
+}
+
+/* Sur un téléphone : un ciel immobile, et allégé. Le verre le floute de toute
+   façon, et chaque image animée derrière lui se paierait en fluidité. Les
+   rideaux s'élargissent : sur un écran en hauteur, ils restent en arcs. */
+@media (max-width: 40rem), (hover: none) and (pointer: coarse) {
+  .fa-etoiles,
+  .fa-rideau,
+  .fa-rayons,
+  .fa-volute {
+    animation: none;
+    will-change: auto;
+  }
+  .fa-etoiles-3,
+  .fa-rideau-3,
+  .fa-volute-3 {
+    display: none;
+  }
+  .fa-rideau-1 {
+    top: -2%;
+    left: -40%;
+    width: 150%;
+    height: 50%;
+    --grain: 400px;
+  }
+  .fa-rideau-2 {
+    top: -4%;
+    left: 12%;
+    width: 130%;
+    height: 42%;
+    --grain: 360px;
+  }
+  .fa-volute-1,
+  .fa-volute-2 {
+    width: 120%;
+    height: 34%;
+  }
+}
+
+/* Moins d'animations demandées : le ciel bouge encore, moins loin. Windows le
+   demande dès que ses effets sont coupés, et un ciel figé y perdait sa vie. */
+@media (prefers-reduced-motion: reduce) {
+  .fond-aurores {
+    --amp: 0.6;
+  }
+}
+
+/* ==========================================================================
+   L'ACCUEIL DÉCONNECTÉ — voir components/Accueil.
+   ==========================================================================
+   Le hero à même le ciel : le nom, l'idée, l'entrée, quatre nombres, et les
+   quatre boosters en éventail dans leur fumée. Puis, sur le verre, les quatre
+   étapes, et une grille qui explique tout : le classement, les flocons, les
+   duels, les boosters, la chance, les subs. Une colonne sur un téléphone,
+   deux sur une tablette, trois sur un ordinateur, quatre sur un très grand
+   écran — chaque bloc à la place que son contenu demande. */
+.accueil {
+  --amp-acc: 1;
+  display: grid;
+  gap: 1.5rem;
+}
+@media (min-width: 1024px) {
+  .accueil {
+    gap: 2rem;
+  }
+}
+
+/* -- Le hero --
+   Sur un téléphone, les boosters ouvrent la page, au-dessus du nom : c'est
+   eux qu'on voit d'abord. Sur un ordinateur, le texte et l'éventail côte à
+   côte, les étapes en bande dessous. Sur un très grand écran, les trois de
+   front — le texte, l'éventail, les étapes —, et la grille remonte. */
+.acc-hero {
+  display: grid;
+  grid-template-areas: 'fan' 'texte' 'etapes';
+  align-items: center;
+  gap: 1.25rem;
+  padding-top: clamp(0.5rem, 3vh, 2.5rem);
+}
+.acc-hero-texte {
+  grid-area: texte;
+}
+.acc-eventail {
+  grid-area: fan;
+}
+.acc-etapes {
+  grid-area: etapes;
+}
+@media (min-width: 1024px) {
+  .acc-hero {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    grid-template-rows: minmax(clamp(28rem, 56vh, 44rem), auto) auto;
+    grid-template-areas:
+      'texte fan'
+      'etapes etapes';
+    gap: 2rem 2.5rem;
+  }
+}
+@media (min-width: 150rem) {
+  .acc-hero {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 44rem) minmax(0, 1fr);
+    grid-template-rows: minmax(clamp(30rem, 50vh, 42rem), auto);
+    grid-template-areas: 'texte fan etapes';
+    gap: 3rem;
+  }
+}
+.acc-hero-texte {
+  container-type: inline-size;
+  text-align: center;
+}
+@media (min-width: 1024px) {
+  .acc-hero-texte {
+    text-align: left;
+  }
+}
+/* Le nom en grand : il se mesure à sa colonne, sur une ligne. */
+.hero-titre.acc-titre {
+  margin-top: 0.75rem;
+  font-size: clamp(2.6rem, 14cqw, 7.5rem);
+}
+@container (min-width: 56rem) {
+  .hero-titre.acc-titre {
+    font-size: clamp(2.6rem, 11cqw, 7.5rem);
+  }
+}
+/* À même le ciel, la phrase porte l'ombre du texte du verre, plus large. */
+.acc-hero-lead {
+  max-width: 40rem;
+  margin: 1.25rem auto 0;
+  font-size: clamp(1.0625rem, 0.98rem + 0.3vw, 1.25rem);
+  line-height: 1.6;
+  color: var(--ink-2);
+  text-shadow:
+    0 1px 2px rgb(0 8 24 / 0.85),
+    0 0 18px rgb(0 8 24 / 0.65);
+}
+.acc-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 1.75rem;
+}
+.acc-hero-note {
+  margin-top: 0.9rem;
+  font-size: 0.8125rem;
+  color: var(--faint);
+}
+@media (min-width: 1024px) {
+  .acc-hero-lead {
+    margin-left: 0;
+  }
+  .acc-hero-actions {
+    justify-content: flex-start;
+  }
+}
+/* Quatre nombres, séparés d'un filet : deux par deux sur un téléphone. */
+.acc-chiffres {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem 0;
+  max-width: 40rem;
+  margin: 2rem auto 0;
+  padding-top: 1.25rem;
+  border-top: 1px solid rgb(255 255 255 / 0.16);
+}
+.acc-chiffres li {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding-inline: 0.75rem;
+}
+.acc-chiffres li:nth-child(even) {
+  border-left: 1px solid rgb(255 255 255 / 0.12);
+}
+.acc-chiffres b {
+  font-family: var(--font-display);
+  font-size: clamp(1.9rem, 1.4rem + 1.2vw, 2.6rem);
+  font-weight: 900;
+  line-height: 1;
+  color: var(--frost);
+  text-shadow: 0 2px 4px rgb(0 8 24 / 0.6);
+}
+.acc-chiffres span {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--faint);
+  text-shadow: 0 1px 2px rgb(0 8 24 / 0.8);
+}
+@container (min-width: 34rem) {
+  .acc-chiffres {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .acc-chiffres li + li {
+    border-left: 1px solid rgb(255 255 255 / 0.12);
+  }
+}
+/* Aligné à gauche : la première colonne colle au bord du texte — les rangs 1
+   et 3 en deux colonnes, le premier seul en quatre. */
+@media (min-width: 1024px) {
+  .acc-chiffres {
+    margin-left: 0;
+  }
+  .acc-chiffres li:nth-child(odd) {
+    padding-left: 0;
+  }
+  @container (min-width: 34rem) {
+    .acc-chiffres li:nth-child(odd) {
+      padding-left: 0.75rem;
+    }
+    .acc-chiffres li:first-child {
+      padding-left: 0;
+    }
+  }
+}
+
+/* L'éventail : les quatre boosters, du plus courant au plus rare, en arc,
+   chacun dans sa lévitation, et la fumée multicolore derrière eux. */
+.acc-eventail {
+  position: relative;
+  width: min(100%, 44rem);
+  margin-inline: auto;
+  aspect-ratio: 1.42;
+  pointer-events: none;
+}
+@media (max-width: 1023px) {
+  .acc-eventail {
+    width: min(100%, 26rem);
+  }
+}
+.acc-eventail-sachet {
+  position: absolute;
+  bottom: 4%;
+  left: calc(50% + var(--o) * 20.5%);
+  width: 29%;
+  transform-origin: 50% 100%;
+  transform: translate(-50%, calc(var(--o-abs) * 9%)) rotate(calc(var(--o) * 6.5deg));
+}
+.acc-eventail .sachet-lueur,
+.acc-pack .sachet-lueur {
+  display: none;
+}
+.acc-eventail .sachet-scene,
+.acc-pack .sachet-scene {
+  touch-action: auto;
+}
+/* La fumée des boosters (voir `.fumee`), posée une fois pour toutes, centrée
+   sur l'éventail. Son cadre la fond sur les côtés et la retient dans
+   l'éventail : débordant, elle élargissait la page. */
+.acc-eventail-cadre {
+  position: absolute;
+  inset: -8% 0 -4%;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 14%, #000 86%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 14%, #000 86%, transparent);
+}
+.fumee.acc-eventail-fumee {
+  --fumee-l: clamp(7rem, 30vw, 15rem);
+  top: 4%;
+  bottom: 4%;
+  left: 50%;
+  width: 92%;
+  opacity: 1;
+}
+
+/* -- Les quatre étapes -- */
+.acc-etapes {
+  padding: 1.5rem 1.25rem;
+}
+.acc-etapes-liste {
+  display: grid;
+  gap: 1.1rem;
+  margin-top: 1.25rem;
+}
+.acc-etapes-liste li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.9rem;
+}
+/* Le numéro : une bille de glace, comme le médaillon des en-têtes. */
+.acc-etape-n {
+  display: grid;
+  width: 2.75rem;
+  height: 2.75rem;
+  flex: none;
+  place-items: center;
+  border-radius: var(--r-pilule);
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 900;
+  color: var(--frost);
+  background: radial-gradient(
+    circle at 34% 28%,
+    rgb(255 255 255 / 0.4) 0%,
+    rgb(143 220 255 / 0.16) 46%,
+    rgb(8 30 60 / 0.34) 100%
+  );
+  box-shadow:
+    inset 0 1.5px 0 rgb(255 255 255 / 0.75),
+    inset 0 -6px 12px -6px rgb(0 16 40 / 0.6),
+    0 6px 10px -6px rgb(0 8 24 / 0.75);
+}
+.acc-etapes-liste h3 {
+  font-family: var(--font-display);
+  font-size: 1.0625rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.acc-etapes-liste p {
+  margin-top: 0.25rem;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+@media (min-width: 640px) {
+  .acc-etapes {
+    padding: 1.75rem 2rem;
+  }
+  .acc-etapes-liste {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.25rem 2rem;
+  }
+}
+@media (min-width: 1280px) {
+  .acc-etapes-liste {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+/* Sur un grand écran, le titre à gauche des étapes : une seule bande. Au-delà,
+   elles passent à droite de l'éventail, l'une sous l'autre. */
+@media (min-width: 120rem) and (max-width: 149.99rem) {
+  .acc-etapes {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 3rem;
+    padding: 1.75rem 2.5rem;
+  }
+  .acc-etapes-liste {
+    margin-top: 0;
+  }
+}
+@media (min-width: 150rem) {
+  .acc-etapes {
+    align-self: center;
+    padding: 1.75rem 2.25rem 2rem;
+  }
+  .acc-etapes-liste {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1.15rem;
+  }
+}
+
+/* -- La grille des explications -- */
+.acc-grille {
+  display: grid;
+  gap: 1.25rem;
+}
+.acc-classement {
+  grid-area: classement;
+}
+.acc-flocons {
+  grid-area: flocons;
+}
+.acc-duels {
+  grid-area: duels;
+}
+.acc-boosters {
+  grid-area: boosters;
+}
+.acc-chance {
+  grid-area: chance;
+}
+.acc-subs {
+  grid-area: subs;
+}
+.acc-grille {
+  grid-template-areas: 'classement' 'flocons' 'duels' 'boosters' 'chance' 'subs';
+}
+@media (min-width: 768px) {
+  .acc-grille {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas:
+      'classement flocons'
+      'duels chance'
+      'boosters boosters'
+      'subs subs';
+    gap: 1.5rem;
+  }
+}
+@media (min-width: 1280px) {
+  .acc-grille {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-areas:
+      'classement flocons duels'
+      'boosters boosters chance'
+      'subs subs subs';
+  }
+}
+@media (min-width: 150rem) {
+  .acc-grille {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-areas:
+      'classement flocons duels chance'
+      'boosters boosters boosters subs';
+  }
+  .acc-subs .acc-paliers {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Un bloc : sa tête, puis ce qu'il montre, puis ses précisions. Il se mesure
+   à sa propre largeur. */
+.acc-bloc {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 1.4rem 1.25rem 1.5rem;
+  container-type: inline-size;
+}
+@media (min-width: 640px) {
+  .acc-bloc {
+    padding: 1.75rem 1.9rem 1.9rem;
+  }
+}
+.acc-bloc-tete .titre-glace {
+  margin-top: 0.25rem;
+}
+.acc-bloc-lead {
+  max-width: 46rem;
+  margin-top: 0.6rem;
+  font-size: 0.9875rem;
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+
+/* Les précisions : un intitulé en capitales, sa phrase, et un filet à gauche. */
+.acc-points {
+  display: grid;
+  gap: 0.65rem;
+}
+.acc-points li {
+  display: grid;
+  gap: 0.1rem;
+  padding-left: 0.9rem;
+  border-left: 2px solid color-mix(in srgb, var(--ice) 45%, transparent);
+}
+.acc-points b,
+.acc-duel-etapes b {
+  font-family: var(--font-display);
+  font-size: 0.9375rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.acc-points span,
+.acc-duel-etapes span {
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+/* Le classement : la formule, puis ce que vaut chaque chose. */
+.acc-formule {
+  align-self: flex-start;
+  padding: 0.55rem 1.1rem;
+  border-radius: var(--r-pilule);
+  background: rgb(0 10 30 / 0.3);
+  box-shadow:
+    inset 0 1px 2px rgb(0 8 24 / 0.5),
+    inset 0 -1px 0 rgb(255 255 255 / 0.12);
+  font-family: var(--font-display);
+  font-size: 1.0625rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+.acc-formule span {
+  color: var(--ice);
+  text-transform: uppercase;
+}
+.acc-formule b {
+  font-weight: 900;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.acc-podium {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+.acc-podium li {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.85rem 0.3rem 0.75rem;
+  border-radius: var(--r-md);
+  background: rgb(255 255 255 / 0.05);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.16);
+  text-align: center;
+}
+.acc-podium-icone {
+  width: 2.6rem;
+  height: 2.6rem;
+}
+.acc-podium-kill {
+  display: grid;
+  width: 2.6rem;
+  height: 2.6rem;
+  place-items: center;
+  border-radius: var(--r-pilule);
+  color: var(--frost);
+  background: radial-gradient(
+    circle at 34% 28%,
+    rgb(255 255 255 / 0.36) 0%,
+    rgb(143 220 255 / 0.14) 46%,
+    rgb(8 30 60 / 0.34) 100%
+  );
+  box-shadow:
+    inset 0 1.5px 0 rgb(255 255 255 / 0.7),
+    inset 0 -6px 12px -6px rgb(0 16 40 / 0.6);
+}
+.acc-podium b {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 900;
+  line-height: 1;
+  color: var(--frost);
+}
+.acc-podium li[data-rang='1'] b {
+  color: var(--gold);
+}
+.acc-podium span:last-child {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+/* La ligne de qualification : les premiers rangs, ceux de la finale en vert
+   d'aurore sous leur accolade, les suivants éteints. */
+.acc-finale ol {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(var(--rangs), minmax(0, 1fr));
+  gap: 0.35rem;
+  padding-top: 1.65rem;
+}
+.acc-finale ol::before {
+  content: 'Finale';
+  position: absolute;
+  top: 0;
+  left: 0;
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  line-height: 1;
+  text-transform: uppercase;
+  color: var(--aurora);
+}
+/* L'accolade : de bord à bord des rangs qualifiés (`--finale` sur `--rangs`). */
+.acc-finale ol::after {
+  content: '';
+  position: absolute;
+  top: 1rem;
+  left: 0;
+  width: calc((100% - (var(--rangs) - 1) * 0.35rem) * var(--finale) / var(--rangs) + (var(--finale) - 1) * 0.35rem);
+  height: 0.45rem;
+  border: 2px solid color-mix(in srgb, var(--aurora) 65%, transparent);
+  border-bottom: 0;
+  border-radius: 6px 6px 0 0;
+}
+.acc-finale li {
+  display: grid;
+  height: 2.1rem;
+  place-items: center;
+  border-radius: 10px;
+  background: rgb(255 255 255 / 0.04);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.1);
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 900;
+  color: var(--faint);
+  opacity: 0.6;
+}
+.acc-finale li[data-qualifie] {
+  background: color-mix(in srgb, var(--aurora) 14%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--aurora) 45%, transparent);
+  color: var(--frost);
+  opacity: 1;
+}
+.acc-finale p {
+  margin-top: 0.6rem;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+.acc-finale b {
+  color: var(--ink);
+}
+
+/* Les flocons : ce que rapporte chaque chose, le nombre en grand. */
+.acc-gains {
+  display: grid;
+  gap: 0.45rem;
+}
+.acc-gains li {
+  display: grid;
+  grid-template-columns: 5.25rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.6rem 0.9rem;
+  border-radius: var(--r-sm);
+  background: rgb(255 255 255 / 0.05);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.14);
+}
+.acc-gains b {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 900;
+  line-height: 1;
+  text-align: right;
+  white-space: nowrap;
+  color: var(--frost);
+}
+.acc-gains b small {
+  margin-left: 0.15em;
+  font-size: 0.7em;
+  color: var(--ice);
+}
+.acc-gains span {
+  font-size: 0.9375rem;
+  line-height: 1.4;
+  color: var(--ink-2);
+}
+/* Le cadeau du jour : une semaine, le septième jour en or. Elle s'allume jour
+   après jour, en vague, puis recommence. */
+.acc-cadeau-titre {
+  font-family: var(--font-display);
+  font-size: 0.8125rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+.acc-cadeau-titre span {
+  font-family: var(--font-sans);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+.acc-cadeau ol {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.35rem;
+  margin-top: 0.55rem;
+}
+.acc-cadeau li {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.45rem 0.1rem 0.55rem;
+  overflow: hidden;
+  border-radius: 10px;
+  background: rgb(255 255 255 / 0.05);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.14);
+}
+.acc-cadeau li span {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--faint);
+}
+.acc-cadeau li b {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 900;
+  line-height: 1;
+  color: var(--frost);
+}
+.acc-cadeau li[data-septieme] {
+  background: color-mix(in srgb, var(--gold) 13%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gold) 45%, transparent);
+}
+.acc-cadeau li[data-septieme] b {
+  color: var(--gold);
+}
+.acc-cadeau li::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: color-mix(in srgb, var(--ice) 18%, transparent);
+  opacity: 0;
+  animation: acc-jour 7s ease-in-out infinite;
+  animation-delay: calc(var(--j) * 0.55s);
+}
+.acc-cadeau li[data-septieme]::after {
+  background: color-mix(in srgb, var(--gold) 22%, transparent);
+}
+@keyframes acc-jour {
+  0%,
+  34%,
+  100% {
+    opacity: 0;
+  }
+  8% {
+    opacity: calc(0.4 + 0.6 * var(--amp-acc));
+  }
+}
+
+/* Les duels : l'affiche, et une boule de neige qui passe d'un camp à l'autre. */
+.acc-affiche {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: end;
+  gap: 0.75rem;
+  padding: 2.4rem 0.25rem 0.9rem;
+  border-radius: var(--r-md);
+  background: radial-gradient(
+    ellipse 60% 70% at 50% 60%,
+    color-mix(in srgb, var(--ice) 9%, transparent),
+    transparent
+  );
+}
+.acc-camp {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+}
+.acc-camp .orbe {
+  --taille: 4rem;
+  animation: acc-flotte 3.4s ease-in-out infinite alternate;
+}
+.acc-camp + .acc-pot + .acc-camp .orbe {
+  animation-delay: -1.7s;
+}
+.acc-camp b {
+  font-family: var(--font-display);
+  font-size: 0.875rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--ink);
+}
+.acc-pot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  padding-bottom: 0.35rem;
+  text-align: center;
+}
+.acc-pot small {
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--faint);
+}
+.acc-pot strong {
+  font-family: var(--font-display);
+  font-size: clamp(1.75rem, 9cqw, 2.5rem);
+  font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
+  color: var(--ink);
+}
+/* La boule : une piste entre les deux camps, au-dessus de l'affiche. Elle va
+   et vient sur la piste (la largeur de la piste, en translation : elle la
+   parcourt d'un bord à l'autre — `cqw`, la largeur de la piste : sa propre
+   boîte ne fait que sa taille, et ne déborde jamais), et monte puis redescend, deux fois plus
+   vite : un lancer en cloche, d'un joueur à l'autre. */
+.acc-boule {
+  position: absolute;
+  top: 2.6rem;
+  right: calc(16.5% + 1rem);
+  left: calc(16.5% + 1rem);
+  height: 0;
+  container-type: inline-size;
+}
+.acc-boule-x {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 14px;
+  height: 0;
+  animation: acc-boule-x 2.6s ease-in-out infinite alternate;
+}
+.acc-boule-y {
+  position: absolute;
+  top: -7px;
+  left: 0;
+  width: 14px;
+  height: 14px;
+  border-radius: var(--r-pilule);
+  background: radial-gradient(circle at 35% 30%, var(--neige-1) 0%, var(--neige-3) 58%, var(--neige-ombre) 100%);
+  box-shadow: 0 3px 4px -2px rgb(0 8 24 / 0.6);
+  animation: acc-boule-y 1.3s ease-in-out infinite alternate;
+}
+@keyframes acc-boule-x {
+  to {
+    transform: translateX(calc(100cqw - 14px));
+  }
+}
+@keyframes acc-boule-y {
+  from {
+    transform: translateY(0) rotate(0deg);
+  }
+  to {
+    transform: translateY(-2.1rem) rotate(160deg);
+  }
+}
+@keyframes acc-flotte {
+  from {
+    transform: translateY(calc(-3px * var(--amp-acc)));
+  }
+  to {
+    transform: translateY(calc(3px * var(--amp-acc)));
+  }
+}
+/* Les étapes du duel : numérotées, le numéro dans une bille. */
+.acc-duel-etapes {
+  display: grid;
+  gap: 0.7rem;
+  counter-reset: etape;
+}
+.acc-duel-etapes li {
+  display: grid;
+  grid-template-columns: 1.9rem minmax(0, 1fr);
+  column-gap: 0.75rem;
+  counter-increment: etape;
+}
+.acc-duel-etapes li::before {
+  content: counter(etape);
+  display: grid;
+  width: 1.9rem;
+  height: 1.9rem;
+  grid-row: span 2;
+  place-items: center;
+  border-radius: var(--r-pilule);
+  background: color-mix(in srgb, var(--ice) 14%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ice) 40%, transparent);
+  font-family: var(--font-display);
+  font-size: 0.9375rem;
+  font-weight: 900;
+  color: var(--ice);
+}
+
+/* Les boosters : quatre fiches alignées, ligne à ligne (`subgrid`). */
+.acc-packs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+.acc-pack {
+  display: grid;
+  grid-row: span 6;
+  grid-template-rows: subgrid;
+  justify-items: center;
+  row-gap: 0.45rem;
+  padding: 1rem 0.75rem 1.1rem;
+  border-radius: var(--r-md);
+  background: rgb(255 255 255 / 0.05);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.16);
+  text-align: center;
+}
+.acc-pack-texte {
+  display: contents;
+}
+.acc-pack-sachet {
+  width: min(7rem, 62%);
+  margin-bottom: 0.4rem;
+  pointer-events: none;
+}
+.acc-pack h3 {
+  font-family: var(--font-display);
+  font-size: 1.0625rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.acc-pack-quand {
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+.acc-pack-qui {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--aurora);
+}
+.acc-pack-qui::first-letter {
+  text-transform: uppercase;
+}
+/* Les taux, en une barre : chaque rareté à sa part, un filet entre elles. */
+.acc-taux {
+  display: flex;
+  width: 100%;
+  height: 8px;
+  gap: 2px;
+  align-self: end;
+  overflow: hidden;
+  border-radius: var(--r-pilule);
+}
+.acc-taux span {
+  min-width: 3px;
+  flex-shrink: 0;
+  flex-basis: 0;
+}
+.acc-taux span[data-r='C'] {
+  background: var(--r-c);
+}
+.acc-taux span[data-r='R'] {
+  background: var(--r-r);
+}
+.acc-taux span[data-r='UR'] {
+  background: var(--r-ur);
+}
+.acc-taux span[data-r='L'] {
+  background: var(--r-l);
+}
+.acc-pack-legendaire {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8125rem;
+  color: var(--faint);
+}
+.acc-pack-legendaire b {
+  color: var(--r-l);
+}
+@container (min-width: 44rem) {
+  .acc-packs {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+/* Ce que pèse une carte, rareté par rareté. */
+.acc-raretes {
+  padding-top: 1.1rem;
+  border-top: 1px solid rgb(255 255 255 / 0.14);
+}
+.acc-raretes-titre,
+.acc-taux-chance caption {
+  font-family: var(--font-display);
+  font-size: 0.8125rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+.acc-raretes ul {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.7rem;
+}
+.acc-raretes li {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.4rem 0.85rem 0.4rem 0.45rem;
+  border-radius: var(--r-pilule);
+  background: rgb(255 255 255 / 0.05);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.14);
+}
+.acc-raretes-embleme {
+  width: 2rem;
+  height: 2rem;
+  flex: none;
+}
+.acc-raretes li span {
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  font-size: 0.9375rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink);
+}
+.acc-raretes li b {
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  font-weight: 900;
+  white-space: nowrap;
+  color: var(--frost);
+}
+.acc-raretes-note {
+  margin-top: 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--faint);
+}
+@container (min-width: 28rem) {
+  .acc-raretes ul {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@container (min-width: 44rem) {
+  .acc-raretes ul {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* La chance : l'escalier des paliers, puis ce qu'il change aux taux. */
+.acc-escalier {
+  width: 100%;
+  max-width: 30rem;
+  align-self: center;
+}
+.acc-escalier svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+.acc-escalier-grille {
+  stroke: rgb(255 255 255 / 0.1);
+  stroke-width: 1;
+}
+.acc-escalier-y,
+.acc-escalier-x {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  fill: var(--faint);
+}
+.acc-escalier-y {
+  text-anchor: end;
+}
+.acc-escalier-x {
+  text-anchor: middle;
+}
+.acc-escalier-ligne {
+  fill: none;
+  stroke: var(--ice);
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+.acc-escalier-bille {
+  fill: var(--frost);
+  stroke: var(--fond);
+  stroke-width: 2;
+}
+.acc-escalier figcaption {
+  margin-top: 0.4rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--faint);
+}
+.acc-taux-chance {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+.acc-taux-chance caption {
+  margin-bottom: 0.45rem;
+  text-align: left;
+}
+.acc-taux-chance th,
+.acc-taux-chance td {
+  padding: 0.45rem 0.55rem;
+}
+.acc-taux-chance thead th {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 900;
+  text-align: right;
+  color: var(--ice);
+}
+.acc-taux-chance tbody th {
+  padding-left: 0;
+  text-align: left;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--ink);
+}
+.acc-rarete {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+.acc-taux-chance td {
+  font-family: var(--font-display);
+  font-size: 1.0625rem;
+  font-weight: 800;
+  text-align: right;
+  white-space: nowrap;
+  color: var(--ink-2);
+}
+.acc-taux-chance td:last-child {
+  color: var(--aurora);
+}
+.acc-taux-chance tbody tr > * {
+  border-top: 1px solid rgb(255 255 255 / 0.08);
+}
+.acc-chance-note {
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--faint);
+}
+
+/* Les subs : les paliers, du plus fréquent au plus rare, chacun à sa teinte. */
+.acc-paliers {
+  display: grid;
+  gap: 0.65rem;
+}
+.acc-paliers li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  padding: 0.85rem 1rem;
+  border-radius: var(--r-md);
+  background: color-mix(in srgb, var(--teinte) 8%, transparent);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.14),
+    inset 0 0 0 1px color-mix(in srgb, var(--teinte) 22%, transparent);
+}
+.acc-palier-embleme {
+  width: 2.9rem;
+  height: 2.9rem;
+  flex: none;
+}
+.acc-palier-tous {
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--teinte) 70%, var(--frost));
+}
+.acc-paliers h3 {
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.acc-paliers h3 + p {
+  margin-top: 0.2rem;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+@container (min-width: 36rem) {
+  .acc-paliers {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@container (min-width: 72rem) {
+  .acc-paliers {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+@container (min-width: 50rem) {
+  .acc-subs-compte {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* -- L'entrée, en bas -- */
+.acc-fin {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 1.75rem 1.25rem;
+  text-align: center;
+}
+.acc-fin-texte p:last-child {
+  max-width: 44rem;
+  margin-top: 0.5rem;
+  font-size: 0.9875rem;
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+.acc-fin-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.9rem;
+}
+.acc-fin-actions .hero-direct {
+  min-width: min(100%, 19rem);
+  text-align: left;
+}
+@media (min-width: 1024px) {
+  .acc-fin {
+    flex-direction: row;
+    justify-content: space-between;
+    padding: 2rem 2.25rem;
+    text-align: left;
+  }
+  .acc-fin-actions {
+    flex-wrap: nowrap;
+    justify-content: flex-end;
+  }
+}
+
+/* Les blocs entrent quand on les atteint : un fondu, une montée de quelques
+   pixels. Seulement là où le navigateur lie une animation au défilement —
+   ailleurs, ils sont là, simplement. */
+@supports (animation-timeline: view()) {
+  .acc-etapes,
+  .acc-bloc,
+  .acc-fin {
+    animation: acc-entre linear both;
+    animation-timeline: view();
+    animation-range: entry 0% entry 9rem;
+  }
+}
+@keyframes acc-entre {
+  from {
+    opacity: 0;
+    transform: translateY(calc(26px * var(--amp-acc)));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .accueil {
+    --amp-acc: 0.5;
+  }
+}

@@ -105,7 +105,7 @@ utilise Postgres. La connexion passe par Twitch : il faut une application Twitch
 
 ```
 app/
-├─ page.tsx              Accueil : classement, subs de la saison
+├─ page.tsx              Accueil : classement, subs de la saison ; déconnecté, la ligue expliquée
 ├─ boosters/             Ouverture des boosters, cartes de la saison
 ├─ duels/                Duels de flocons entre joueurs
 ├─ joueurs/[slug]/       Profil public
