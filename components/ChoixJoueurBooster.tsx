@@ -228,8 +228,8 @@ export function ChoixJoueurBooster({
           <>
             <Avatar c={courant} />
             <span className="choix-joueur-pseudo">{courant.pseudo}</span>
-            <span className="choix-joueur-nombre num" aria-label={`${courant.n} à ouvrir`}>
-              {courant.n}
+            <span className="choix-joueur-nombre">
+              <strong>{courant.n}</strong> à ouvrir
             </span>
           </>
         ) : (
@@ -285,8 +285,8 @@ export function ChoixJoueurBooster({
                   <Avatar c={c} />
                   <span className="choix-joueur-pseudo">{c.pseudo}</span>
                   <span className="choix-joueur-chance num">chance {libelleMultiplicateur(c.chance)}</span>
-                  <span className="choix-joueur-nombre num" aria-label={`${c.n} à ouvrir`}>
-                    {c.n}
+                  <span className="choix-joueur-nombre">
+                    <strong>{c.n}</strong> à ouvrir
                   </span>
                 </li>
               ))}
