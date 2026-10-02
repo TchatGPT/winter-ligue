@@ -6595,7 +6595,8 @@
   padding: 0.55rem;
   border: 1px solid color-mix(in srgb, var(--ice) 32%, transparent);
   border-radius: var(--r-sm);
-  background: color-mix(in srgb, var(--fond) 97%, transparent);
+  /* Opaque : à 97 %, le bouton blanc d'ouverture se devinait sous la liste. */
+  background: linear-gradient(180deg, color-mix(in srgb, var(--ice) 5%, var(--fond)), var(--fond));
   box-shadow: var(--lift-2);
   color-scheme: dark;
 }
@@ -6675,9 +6676,9 @@
   color: var(--aurora);
 }
 /*
- * Combien l'attendent : une pastille de glace, celle des badges du site (la
- * « Tempête de neige » des subs) — un voile de glace, un liseré de glace, le
- * mot en glace et le chiffre en givre. Chiffres proportionnels : un « 1 »
+ * Combien l'attendent : une pastille aurore, la forme des badges du site (la
+ * « Tempête de neige » des subs) dans le vert de ses textes d'appel — un voile
+ * et un liseré aurore, le mot en aurore et le chiffre en givre. Chiffres proportionnels : un « 1 »
  * tabulaire garde la chasse d'un « 0 » et se décale dans la pastille.
  */
 .choix-joueur-nombre {
@@ -6689,9 +6690,9 @@
      des lettres laisse un blanc après la dernière, qu'on reprend à droite. */
   padding: 0.29rem calc(0.7rem - 0.06em) 0.335rem 0.7rem;
   border-radius: var(--r-pilule);
-  background: color-mix(in srgb, var(--ice) 14%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ice) 42%, transparent);
-  color: var(--ice);
+  background: color-mix(in srgb, var(--aurora) 14%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--aurora) 45%, transparent);
+  color: var(--aurora);
   font-family: var(--font-display);
   font-size: 0.8125rem;
   font-weight: 800;
