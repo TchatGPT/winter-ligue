@@ -120,7 +120,7 @@ describe('le suspense', () => {
   it('tire toutes les façons de perdre, et toutes les fêtes', () => {
     const courses = graines.map((g) => ecritCourse(g, 'hote'));
     expect([...new Set(courses.map((c) => c.chute.type))].sort()).toEqual(
-      ['boule', 'eclate', 'ecrase', 'essouffle', 'glisse', 'rocher'],
+      ['boule', 'eclate', 'essouffle', 'glisse', 'rocher'],
     );
     expect([...new Set(courses.map((c) => c.fete))].sort()).toEqual(['danse', 'grimpe', 'saute']);
   });

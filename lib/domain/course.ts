@@ -22,8 +22,7 @@
  * ## Pas toujours la même fin
  *
  * La façon de perdre est tirée, elle aussi : percuter un obstacle, glisser sur
- * la glace, voir sa boule éclater, se faire écraser par sa propre boule, s'asseoir
- * à bout de souffle — ou aller jusqu'au bout et, battu d'un rien, se prendre la
+ * la glace, voir sa boule éclater, s'asseoir à bout de souffle — ou aller jusqu'au bout et, battu d'un rien, se prendre la
  * boule de neige du vainqueur en pleine face. Et le vainqueur ne fête pas
  * toujours de la même façon : il saute, il danse, ou il grimpe sur sa boule. Le vainqueur, lui, ne change pas : c'est le serveur qui l'a tiré.
  */
@@ -36,23 +35,25 @@ import type { Camp } from './bataille';
  *  - `rocher` : il percute une souche ou un rocher ;
  *  - `glisse` : il glisse sur une plaque de glace ;
  *  - `eclate` : sa boule éclate toute seule ;
- *  - `ecrase` : sa boule, trop grosse, lui roule dessus ;
  *  - `essouffle` : il s'assoit dans la neige, à bout de souffle ;
  *  - `boule` : il va jusqu'au bout, battu d'un rien, et le vainqueur, la ligne
  *    passée, se retourne et lui envoie une boule de neige en pleine face.
  */
-export type Chute = 'rocher' | 'glisse' | 'eclate' | 'ecrase' | 'essouffle' | 'boule';
+export type Chute = 'rocher' | 'glisse' | 'eclate' | 'essouffle' | 'boule';
 
 /** Comment le vainqueur fête sa victoire, la ligne passée : il saute, il danse, ou il grimpe sur sa boule. */
 export type Fete = 'saute' | 'danse' | 'grimpe';
 
-/** Les issues et leur poids : la boule de neige en pleine face, une fois sur quatre. */
+/**
+ * Les issues et leur poids : la boule de neige en pleine face, une fois sur
+ * quatre. (Se faire écraser par sa propre boule a été retiré : on ne
+ * l'aimait pas.)
+ */
 const ISSUES: readonly [Chute, number][] = [
-  ['rocher', 16],
-  ['glisse', 15],
-  ['eclate', 14],
-  ['ecrase', 15],
-  ['essouffle', 15],
+  ['rocher', 19],
+  ['glisse', 19],
+  ['eclate', 18],
+  ['essouffle', 19],
   ['boule', 25],
 ];
 

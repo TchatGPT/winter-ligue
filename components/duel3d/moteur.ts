@@ -65,8 +65,6 @@ interface Coureur {
   roule: number;
   vitesse: number;
   x: number;
-  /** La boule qui revient écraser son pousseur : d'où elle part. */
-  retourDepuis: number | null;
   /** Le prochain souffle, pour celui qui s'assoit à bout de souffle. */
   souffle: number;
 }
@@ -193,7 +191,6 @@ export function creeMoteur(toile: HTMLCanvasElement, donnees: Donnees3D, options
       roule: 0,
       vitesse: 0,
       x: 0,
-      retourDepuis: null,
       souffle: 0,
     };
   }
@@ -298,14 +295,6 @@ export function creeMoteur(toile: HTMLCanvasElement, donnees: Donnees3D, options
       c.boule.scale.setScalar(r);
       c.boule.position.set(bouleX, r + hausse, c.z);
       c.boule.rotation.z = -c.roule;
-      if (c.retourDepuis !== null) {
-        // Trop grosse, elle repart en arrière, saute, et lui retombe dessus.
-        const k = Math.min(1, c.depuis / 0.45);
-        const l = k * k * (3 - 2 * k);
-        c.boule.position.x = THREE.MathUtils.lerp(c.retourDepuis, c.x + 0.1, l);
-        c.boule.position.y = r + Math.sin(Math.PI * k) * 0.7 + 0.22 * l;
-        c.boule.rotation.z = -c.roule + l * 2.5;
-      }
       c.ombreBoule.visible = c.boule.visible;
       c.ombreBoule.position.set(bouleX, 0.012, c.z);
       c.ombreBoule.scale.setScalar(r * (2.5 - c.saut * 0.6));
@@ -494,12 +483,9 @@ export function creeMoteur(toile: HTMLCanvasElement, donnees: Donnees3D, options
       if (eclateALaChute) {
         c.boule.visible = false;
         eclate(c.boule.position.x, c.boule.position.y, c.z, r, 16, 3.2);
-      } else if (mode === 'ecrase') {
-        c.retourDepuis = c.boule.position.x;
       }
     } else {
       c.boule.visible = true;
-      c.retourDepuis = null;
     }
     if (nouveau === 'lancer') {
       lance = false;

@@ -325,7 +325,6 @@ export function creePereNoel(tenue: Tenue): PereNoel3D {
     let tourne = 0;
     let jambe = 0;
     let jambesEnsemble = false;
-    let ecarteJambes = 0;
     let flotte = 0.85;
     let visees = true;
     // Les bras, quand ils ne visent pas la boule : [lanceur, autre], et leur écart.
@@ -397,16 +396,6 @@ export function creePereNoel(tenue: Tenue): PereNoel3D {
         brasX = 0.5;
         etoilesX = -1.0;
         etoilesY = 0.48;
-      } else if (mode === 'ecrase') {
-        // Sa boule lui retombe dessus : il s'aplatit, bras et jambes en croix.
-        const kk = rebond(borne((depuis - 0.35) / 0.35));
-        corps.scale.set(1 + 0.35 * kk, 1 - 0.62 * kk, 1 + 0.35 * kk);
-        ecarteJambes = 0.9 * kk;
-        brasZ = [0.9, 0.9];
-        brasX = 0.3 + 1.0 * kk;
-        penche = 0;
-        etoilesX = 0.1;
-        etoilesY = 1.35;
       } else {
         // À bout de souffle : il s'assoit dans la neige, la tête basse, et souffle.
         const kk = lisse(borne(depuis / 0.5));
@@ -459,8 +448,8 @@ export function creePereNoel(tenue: Tenue): PereNoel3D {
     bascule.rotation.z = rotation;
     bascule.position.set(avance, hauteur, 0);
     corps.rotation.z = penche;
-    jambes[0].rotation.set(-ecarteJambes, 0, jambe);
-    jambes[1].rotation.set(ecarteJambes, 0, etat === 'course' && !jambesEnsemble ? -jambe : jambe);
+    jambes[0].rotation.set(0, 0, jambe);
+    jambes[1].rotation.set(0, 0, etat === 'course' && !jambesEnsemble ? -jambe : jambe);
     pointe.rotation.z = flotte;
 
     if (visees) {

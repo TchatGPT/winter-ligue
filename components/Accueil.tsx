@@ -42,6 +42,11 @@ const MOIS = [
   'décembre',
 ];
 
+/** Vrai tant que la date n'est pas atteinte. La page est rendue à chaque visite. */
+function avantLe(iso: string): boolean {
+  return Date.now() < Date.parse(iso);
+}
+
 /** « 1er décembre », « 15 mars ». Les bornes de la saison sont à minuit UTC. */
 function jourDe(iso: string): string {
   const d = new Date(iso);
@@ -116,7 +121,7 @@ function Dalle({
 export function Accueil({ twitchEnabled, devLogin }: { twitchEnabled: boolean; devLogin: boolean }) {
   const debut = jourDe(SEASON.startsAt);
   const fin = jourDe(SEASON.endsAt);
-  const avantLaSaison = Date.now() < Date.parse(SEASON.startsAt);
+  const avantLaSaison = avantLe(SEASON.startsAt);
 
   // Twitch branché, on part chez lui ; sinon la page de connexion dit que la
   // connexion ouvre bientôt, et garde l'entrée de l'administration.

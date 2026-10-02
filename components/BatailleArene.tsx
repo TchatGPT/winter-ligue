@@ -407,7 +407,6 @@ type Phase = 'course' | 'lancer' | 'chute' | 'fini';
 /** Ce que dit la chute, selon ce qui l'a causée. */
 function recitChute(course: Course, nom: string): string {
   if (course.chute.type === 'boule') return `${nom} se prend une boule de neige en pleine face !`;
-  if (course.chute.type === 'ecrase') return `${nom} se fait écraser par sa propre boule !`;
   if (course.chute.type === 'essouffle') return `${nom} s’écroule, à bout de souffle !`;
   if (course.chute.type === 'eclate') return `La boule de ${nom} éclate !`;
   if (course.chute.type === 'glisse') return `${nom} glisse sur la glace !`;
