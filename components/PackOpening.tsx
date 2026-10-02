@@ -348,7 +348,7 @@ export function PackOpening({
             qui se posent par-dessus dans la même case. Changer de booster,
             choisir un joueur ou ouvrir ne fait donc rien bouger autour, ni la
             scène ni la colonne des taux, qui suit sa hauteur. */}
-        <div className="relative grid min-h-[400px] px-4 py-10 sm:min-h-[460px] xl:h-full">
+        <div className="relative grid min-h-[400px] grid-cols-[minmax(0,1fr)] px-4 py-10 sm:min-h-[460px] xl:h-full">
           <div
             className={`col-start-1 row-start-1 flex flex-col items-center justify-center gap-6 ${
               surScene ? 'invisible' : ''
@@ -363,7 +363,7 @@ export function PackOpening({
             <RangeePacks packs={packs} selection={pack.id} onSelection={choisir} fige={busy || surScene !== null} />
 
             {moderateur ? (
-              <div className="flex w-full max-w-md flex-col items-center gap-3 4xl:max-w-2xl">
+              <div className="flex w-full max-w-md flex-col items-center gap-3 4xl:max-w-xl">
                 {/* Le choix garde sa place pour les boosters collectifs, où il n'y
                     a personne à choisir : sans lui, la scène raccourcissait. */}
                 {aLaMain && (
