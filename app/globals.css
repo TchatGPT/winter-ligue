@@ -5723,6 +5723,46 @@
   }
 }
 /*
+ * Très large (la bande dépasse 125 rem, un écran de 2 400 px et plus) : les
+ * trois étapes sur une ligne, la première deux fois plus large, et chaque
+ * titre de « ce qui compte » sur la même ligne que ses pastilles. Empilées,
+ * les étapes 2 et 3 donnaient à la bande la hauteur de l'étape 1 tout entière,
+ * et la scène des boosters passait sous le bas de l'écran. Les chevrons
+ * pointent tous deux à droite, à mi-hauteur.
+ */
+@container (min-width: 125rem) {
+  .etapes-cartes {
+    grid-template-columns: minmax(0, 2fr) repeat(2, minmax(0, 1fr));
+    gap: 40px;
+  }
+  .etape-case:first-child {
+    grid-row: auto;
+  }
+  .etape-case:first-child::after,
+  .etape-case:nth-child(2)::after {
+    top: 50%;
+    right: -20px;
+    left: auto;
+    transform: translate(calc(50% - 3px), -50%) rotate(45deg);
+  }
+  .etape-subs {
+    gap: 10px;
+    margin-top: 12px;
+    padding-top: 12px;
+  }
+  .etape-subs-ligne {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .etape-subs-titre {
+    flex: none;
+  }
+  .etape-subs-puces {
+    margin-top: 0;
+  }
+}
+/*
  * Les taux de rareté : une tuile par rareté, de la commune à la légendaire,
  * teintée de sa couleur (`--rarete`, posée par la ligne). L'emblème dit le rang
  * par la coupe de sa gemme, les losanges par leur nombre ; la jauge montre en
@@ -8532,6 +8572,25 @@
     --l-sachet: clamp(104px, calc((100cqw - 3 * var(--ecart) - 2 * var(--marge) - 10px) / 4), 265px);
     gap: var(--ecart);
     padding: 44px var(--marge) 48px;
+  }
+  /* À partir de 2 400 px de large, la page des boosters tient dans la fenêtre :
+     les étapes sur une ligne, la scène dessous, sans défiler jusqu'aux taux.
+     Sur un écran moins haut (2560 × 1305, celui d'un 1440p), les sachets se
+     règlent aussi sur la hauteur : 913 px, c'est tout ce qui n'est pas eux, du
+     haut de la page au bas de la scène, mesuré sur la maquette — et le bandeau
+     des évènements quand il est là. Jamais sous 180 px de large : plus bas, la
+     page défile plutôt que de rendre les sachets illisibles. */
+  @media (min-width: 150rem) {
+    .rangee-piste {
+      --l-sachet: clamp(
+        180px,
+        min(
+          calc((100cqw - 3 * var(--ecart) - 2 * var(--marge) - 10px) / 4),
+          calc((100svh - 913px - var(--bandeau-evts, 0px)) / 1.865)
+        ),
+        265px
+      );
+    }
   }
 
   .rangee-case {
