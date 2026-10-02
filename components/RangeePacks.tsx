@@ -10,6 +10,19 @@ import { BoosterPack3D } from '@/components/BoosterPack3D';
 import { GEMME_DU_PACK, packArt } from '@/lib/domain/catalog';
 import type { PackDefinition } from '@/lib/domain/types';
 
+/**
+ * L'aurore derrière le sachet retenu, de la plus discrète à la plus riche :
+ * le Perso, qu'on ouvre le plus souvent, n'a qu'une brume et un voile ; le
+ * Finisseur, une fois par joueur et par saison, trois voiles et des paillettes
+ * d'or. Les couleurs de chacun vivent dans `app/globals.css` (`.aurore`).
+ */
+const NIVEAU_AURORE: Record<string, 1 | 2 | 3 | 4> = {
+  perso: 1,
+  commu: 2,
+  folie: 3,
+  finisseur: 4,
+};
+
 export function RangeePacks({
   packs: boosters,
   selection,
@@ -27,6 +40,7 @@ export function RangeePacks({
   onOuvrir?: () => void;
   ouvrable?: boolean;
 }) {
+  const cadre = useRef<HTMLDivElement>(null);
   const rangee = useRef<HTMLDivElement>(null);
   const cases = useRef<(HTMLDivElement | null)[]>([]);
 
@@ -34,6 +48,37 @@ export function RangeePacks({
     0,
     boosters.findIndex((b) => b.id === selection),
   );
+
+  /**
+   * Pose l'aurore derrière le sachet retenu : le centre de sa case et sa
+   * largeur, écrits en variables sur le cadre. Elle vit hors de la rangée, qui
+   * défile et rogne donc tout ce qui dépasse : dans le cadre, elle peut monter
+   * au-dessus des sachets et s'étendre entre eux. La largeur est celle de la
+   * mise en page, pas celle de l'écran : le sachet retenu grandit de 7 % en
+   * transition, l'aurore ne doit pas le suivre à la trace.
+   *
+   * La première pose se fait sans glisser : le cadre ne reçoit `data-aurore`
+   * qu'à l'image suivante, et c'est lui qui allume la transition.
+   */
+  const placeAurore = useCallback(() => {
+    const k = cadre.current;
+    const c = cases.current[rang];
+    if (!k || !c) return;
+    const rk = k.getBoundingClientRect();
+    const rc = c.getBoundingClientRect();
+    k.style.setProperty('--aurore-x', `${rc.left - rk.left + rc.width / 2}px`);
+    k.style.setProperty('--aurore-l', `${c.offsetWidth}px`);
+    if (!k.dataset.aurore) requestAnimationFrame(() => (k.dataset.aurore = 'pret'));
+  }, [rang]);
+
+  useEffect(() => {
+    placeAurore();
+    const el = rangee.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const observateur = new ResizeObserver(placeAurore);
+    observateur.observe(el);
+    return () => observateur.disconnect();
+  }, [placeAurore]);
 
   /**
    * La rangée déborde-t-elle de sa boîte ?
@@ -48,7 +93,17 @@ export function RangeePacks({
   useEffect(() => {
     const el = rangee.current;
     if (!el || typeof ResizeObserver === 'undefined') return;
-    const mesure = () => setDeborde(el.scrollWidth > el.clientWidth + 4);
+    // Mesuré sans le rembourrage qui amène les sachets des bouts au centre
+    // (voir `.rangee[data-defile]`) : posé parce que la rangée déborde, il la
+    // ferait déborder à jamais, même une fois l'écran élargi.
+    const mesure = () => {
+      const piste = el.firstElementChild as HTMLElement | null;
+      if (!piste) return;
+      const st = getComputedStyle(piste);
+      const marge = parseFloat(st.getPropertyValue('--marge')) || 16;
+      const contenu = piste.offsetWidth - parseFloat(st.paddingLeft) - parseFloat(st.paddingRight) + 2 * marge;
+      setDeborde(contenu > el.clientWidth + 4);
+    };
     mesure();
     const observateur = new ResizeObserver(mesure);
     observateur.observe(el);
@@ -74,6 +129,7 @@ export function RangeePacks({
    * large la rangée ne défile pas, et ce gestionnaire ne se déclenche jamais.
    */
   const onScroll = () => {
+    placeAurore();
     if (fige) return;
     const el = rangee.current;
     if (!el) return;
@@ -114,7 +170,18 @@ export function RangeePacks({
   };
 
   return (
-    <div className="rangee-cadre">
+    <div className="rangee-cadre" ref={cadre}>
+      <div className="aurore-cadre" aria-hidden="true">
+        <div className="aurore" data-pack={selection} data-niveau={NIVEAU_AURORE[selection] ?? 1}>
+          <span className="aurore-brume" />
+          <span className="aurore-voile aurore-voile-1" />
+          <span className="aurore-voile aurore-voile-2" />
+          <span className="aurore-voile aurore-voile-3" />
+          <span className="aurore-voile aurore-voile-4" />
+          <span className="aurore-paillettes" />
+        </div>
+      </div>
+
       {deborde && (
         <button
           type="button"
@@ -130,6 +197,7 @@ export function RangeePacks({
       <div
         ref={rangee}
         className={`rangee ${fige ? 'rangee-gros-plan' : ''}`}
+        data-defile={deborde ? '' : undefined}
         onScroll={onScroll}
         onKeyDown={onKeyDown}
         role="listbox"

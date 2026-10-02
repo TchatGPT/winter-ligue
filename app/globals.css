@@ -8580,6 +8580,14 @@
      haut de la page au bas de la scène, mesuré sur la maquette — et le bandeau
      des évènements quand il est là. Jamais sous 180 px de large : plus bas, la
      page défile plutôt que de rendre les sachets illisibles. */
+  /* Quand la rangée défile (un téléphone), le premier et le dernier sachet
+     doivent pouvoir venir au centre : c'est le sachet du centre qui est
+     retenu. Sans ce rembourrage, le dernier n'y arrivait jamais, et son
+     voisin reprenait la main dès la rangée arrêtée — on ne pouvait pas
+     choisir le Finisseur sur un téléphone. */
+  .rangee[data-defile] .rangee-piste {
+    padding-inline: calc(50cqw - var(--l-sachet) / 2);
+  }
   @media (min-width: 150rem) {
     .rangee-piste {
       --l-sachet: clamp(
@@ -10341,5 +10349,343 @@
   .course3d-nom > span {
     font-size: 0.8125rem;
     color: var(--aurora);
+  }
+}
+
+/* ==========================================================================
+   L'AURORE DERRIÈRE LE SACHET RETENU — voir `RangeePacks`.
+   ==========================================================================
+   Une aurore, pas un halo : des voiles de lumière qui ondulent derrière le
+   booster choisi, une brume à sa base, et, pour le Finisseur, des paillettes
+   d'or qui montent. Elle remplace la lueur floue qui épousait la planche, la
+   même sur les quatre boosters.
+
+   Le sachet en cache le milieu : l'aurore est donc trois fois plus large que
+   lui, monte derrière le titre, et ses voiles brillent au tiers de leur
+   hauteur — ce qui se voit, ce sont les rideaux entre les sachets et au-dessus,
+   et la brume qui déborde à leur pied.
+
+   Du plus courant au plus rare, elle s'étoffe : trois voiles pour le Perso
+   et le Commu, le second plus vif, un quatrième pour la Folie, et l'or en plus
+   pour le Finisseur — chaque booster a les couleurs de sa planche. Changer de booster fait
+   glisser l'aurore jusqu'au nouveau sachet et fondre ses couleurs : `@property`
+   rend les teintes et les intensités interpolables.
+
+   Légère : aucun flou, seulement des dégradés à bord doux, et l'on n'anime
+   que la transformation et l'opacité. Les voiles se fondent en `screen`, comme
+   de la lumière : deux voiles qui se croisent s'éclaircissent au lieu de se
+   salir. Moins d'animations demandées (ce que Windows annonce dès que ses
+   effets sont coupés) : les voiles ondulent toujours, mais de moins loin.
+   ========================================================================== */
+@property --a1 {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: transparent;
+}
+@property --a2 {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: transparent;
+}
+@property --a3 {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: transparent;
+}
+@property --aurore-force {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0.5;
+}
+@property --v3 {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
+}
+@property --v4 {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
+}
+@property --vor {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
+}
+
+/* La rangée passe devant l'aurore ; la lueur floue des sachets s'y efface. */
+.rangee-cadre > .rangee {
+  position: relative;
+  z-index: 1;
+}
+.rangee .sachet-lueur {
+  display: none;
+}
+
+/* Le cadre de l'aurore : la largeur de la rangée, et plus haut qu'elle. Il
+   fond l'aurore à ses bords — tranchée par le bord du panneau, la lumière du
+   premier et du dernier sachet y faisait une bande claire — et en haut, sous
+   le titre. Les voiles s'y fondent entre eux en `screen`, puis le tout se
+   pose sur la scène. */
+.aurore-cadre {
+  position: absolute;
+  z-index: 0;
+  inset: -40% 0 -10%;
+  overflow: hidden;
+  pointer-events: none;
+  -webkit-mask-image:
+    linear-gradient(90deg, transparent, #000 5%, #000 95%, transparent),
+    linear-gradient(to bottom, transparent, #000 18%);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(90deg, transparent, #000 5%, #000 95%, transparent),
+    linear-gradient(to bottom, transparent, #000 18%);
+  mask-composite: intersect;
+}
+
+/* Dans le cadre, qui déborde de 40 % au-dessus de la rangée et de 10 % en
+   dessous : l'aurore monte à 30 % au-dessus d'elle et descend à 6 % sous elle. */
+.aurore {
+  --amp: 1;
+  position: absolute;
+  top: calc(10% / 1.5);
+  bottom: calc(4% / 1.5);
+  left: var(--aurore-x, 50%);
+  width: calc(var(--aurore-l, 240px) * 3);
+  transform: translateX(-50%);
+  pointer-events: none;
+  opacity: 0;
+  transition:
+    opacity 0.8s ease,
+    --a1 0.9s ease,
+    --a2 0.9s ease,
+    --a3 0.9s ease,
+    --aurore-force 0.9s ease,
+    --v3 0.9s ease,
+    --v4 0.9s ease,
+    --vor 0.9s ease;
+}
+/* Posée une première fois, elle s'allume, et ne glisse qu'ensuite. */
+.rangee-cadre[data-aurore='pret'] .aurore {
+  opacity: 1;
+  transition:
+    left 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.8s ease,
+    --a1 0.9s ease,
+    --a2 0.9s ease,
+    --a3 0.9s ease,
+    --aurore-force 0.9s ease,
+    --v3 0.9s ease,
+    --v4 0.9s ease,
+    --vor 0.9s ease;
+}
+
+/* Les couleurs de chaque planche. */
+.aurore[data-pack='perso'] {
+  --a1: var(--ice);
+  --a2: var(--frost);
+  --a3: var(--ice-2);
+}
+.aurore[data-pack='commu'] {
+  --a1: var(--ice-2);
+  --a2: var(--aurora);
+  --a3: var(--ice);
+}
+.aurore[data-pack='folie'] {
+  --a1: var(--violet);
+  --a2: var(--aurora);
+  --a3: color-mix(in srgb, var(--live) 55%, var(--violet));
+}
+.aurore[data-pack='finisseur'] {
+  --a1: var(--aurora);
+  --a2: var(--violet);
+  --a3: var(--gold);
+}
+
+/* L'intensité, du plus courant au plus rare. */
+.aurore[data-niveau='1'] {
+  --aurore-force: 0.62;
+  --v3: 1;
+  --v4: 0;
+  --vor: 0;
+}
+.aurore[data-niveau='2'] {
+  --aurore-force: 0.78;
+  --v3: 1;
+  --v4: 0;
+  --vor: 0;
+}
+.aurore[data-niveau='3'] {
+  --aurore-force: 0.9;
+  --v3: 1;
+  --v4: 1;
+  --vor: 0;
+}
+.aurore[data-niveau='4'] {
+  --aurore-force: 1;
+  --v3: 1;
+  --v4: 1;
+  --vor: 1;
+}
+
+/* Un voile : un rideau de lumière, vif vers le bas, qui s'efface en montant.
+   Sa forme est une bande verticale aux flancs fondus — une ellipse en faisait
+   une tache ronde —, striée de rayons fins comme une vraie aurore : un second
+   masque, en rayures douces, croisé avec le premier. Il ondule depuis sa base,
+   et ses rayons avec lui. */
+.aurore-voile {
+  position: absolute;
+  bottom: 12%;
+  width: 30%;
+  height: 86%;
+  background: linear-gradient(
+    to top,
+    transparent 0%,
+    color-mix(in srgb, var(--c) 55%, transparent) 10%,
+    color-mix(in srgb, var(--c) 78%, transparent) 24%,
+    color-mix(in srgb, var(--c) 38%, transparent) 52%,
+    color-mix(in srgb, var(--c) 10%, transparent) 80%,
+    transparent 97%
+  );
+  -webkit-mask-image:
+    linear-gradient(90deg, transparent 0%, #000 24%, #000 76%, transparent 100%),
+    repeating-linear-gradient(90deg, #000 0 2px, rgb(0 0 0 / 0.45) 9px, #000 16px),
+    repeating-linear-gradient(90deg, #000 0 4px, rgb(0 0 0 / 0.62) 14px, #000 23px);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(90deg, transparent 0%, #000 24%, #000 76%, transparent 100%),
+    repeating-linear-gradient(90deg, #000 0 2px, rgb(0 0 0 / 0.45) 9px, #000 16px),
+    repeating-linear-gradient(90deg, #000 0 4px, rgb(0 0 0 / 0.62) 14px, #000 23px);
+  mask-composite: intersect;
+  mix-blend-mode: screen;
+  transform-origin: 50% 100%;
+  animation: aurore-onde var(--duree) ease-in-out var(--retard) infinite alternate;
+}
+/* Les deux rideaux des côtés, centrés au quart et aux trois quarts : sur les
+   intervalles entre le sachet retenu et ses voisins. */
+.aurore-voile-1 {
+  --c: var(--a1);
+  --vis: 1;
+  --duree: 14s;
+  --retard: -3s;
+  left: 11%;
+}
+.aurore-voile-2 {
+  --c: var(--a2);
+  --vis: 1;
+  --duree: 17s;
+  --retard: -9s;
+  left: 59%;
+}
+/* La couronne : sa bande vive au ras du haut du sachet, qui s'efface en
+   montant derrière le titre. Plus bas, le sachet la cacherait. */
+.aurore-voile-3 {
+  --c: var(--a3);
+  --vis: var(--v3);
+  --duree: 19s;
+  --retard: -12s;
+  bottom: 58%;
+  left: 24%;
+  width: 52%;
+  height: 42%;
+}
+/* Le quatrième, pour les deux plus rares : une seconde couronne, décalée,
+   d'une autre couleur. */
+.aurore-voile-4 {
+  --c: var(--a1);
+  --vis: var(--v4);
+  --duree: 23s;
+  --retard: -6s;
+  bottom: 52%;
+  left: 40%;
+  width: 40%;
+  height: 46%;
+}
+@keyframes aurore-onde {
+  0% {
+    opacity: calc(var(--aurore-force) * var(--vis) * 0.6);
+    transform: translateX(calc(-12% * var(--amp))) skewX(calc(-8deg * var(--amp))) scaleY(0.92);
+  }
+  50% {
+    opacity: calc(var(--aurore-force) * var(--vis));
+    transform: translateX(calc(3% * var(--amp))) skewX(calc(5deg * var(--amp))) scaleY(1.04);
+  }
+  100% {
+    opacity: calc(var(--aurore-force) * var(--vis) * 0.78);
+    transform: translateX(calc(12% * var(--amp))) skewX(calc(-4deg * var(--amp))) scaleY(0.97);
+  }
+}
+
+/* La brume, au pied du sachet, plus large que lui : trois nappes des
+   couleurs du booster, qui débordent de part et d'autre. */
+.aurore-brume {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 38%;
+  /* Chaque nappe s'éteint avant le bord de la boîte : un dégradé qui le
+     dépasse y est tranché net, et l'on voyait une ligne droite sous les
+     sachets. */
+  background:
+    radial-gradient(40% 50% at 50% 50%, color-mix(in srgb, var(--a1) 55%, transparent), transparent),
+    radial-gradient(24% 44% at 26% 52%, color-mix(in srgb, var(--a2) 40%, transparent), transparent),
+    radial-gradient(24% 42% at 74% 50%, color-mix(in srgb, var(--a3) 36%, transparent), transparent);
+  mix-blend-mode: screen;
+  animation: aurore-brume 17s ease-in-out -5s infinite alternate;
+}
+@keyframes aurore-brume {
+  0% {
+    opacity: calc(var(--aurore-force) * 0.7);
+    transform: translateX(calc(-4% * var(--amp))) scale(1);
+  }
+  100% {
+    opacity: var(--aurore-force);
+    transform: translateX(calc(4% * var(--amp))) scale(1.06);
+  }
+}
+
+/* Les paillettes d'or du Finisseur : des points qui montent et s'éteignent,
+   en deux nappes décalées — la seconde en miroir, pour ne pas répéter les
+   mêmes points. */
+.aurore-paillettes,
+.aurore-paillettes::after {
+  position: absolute;
+  inset: 4% 6% 14%;
+  background:
+    radial-gradient(circle 2.2px at 8% 72%, var(--gold) 55%, transparent),
+    radial-gradient(circle 1.6px at 16% 34%, var(--frost) 55%, transparent),
+    radial-gradient(circle 2.6px at 24% 58%, var(--gold) 55%, transparent),
+    radial-gradient(circle 1.8px at 37% 18%, var(--gold) 55%, transparent),
+    radial-gradient(circle 2px at 63% 22%, var(--frost) 55%, transparent),
+    radial-gradient(circle 2.4px at 74% 52%, var(--gold) 55%, transparent),
+    radial-gradient(circle 1.6px at 84% 30%, var(--gold) 55%, transparent),
+    radial-gradient(circle 2.2px at 93% 68%, var(--gold) 55%, transparent);
+  mix-blend-mode: screen;
+  animation: aurore-paillettes 7s ease-in-out infinite;
+}
+.aurore-paillettes::after {
+  content: '';
+  inset: 0;
+  scale: -1 1;
+  animation-delay: -3.5s;
+}
+@keyframes aurore-paillettes {
+  0% {
+    opacity: 0;
+    transform: translateY(6%);
+  }
+  35% {
+    opacity: calc(var(--vor) * 0.95);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-14%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aurore {
+    --amp: 0.35;
   }
 }
