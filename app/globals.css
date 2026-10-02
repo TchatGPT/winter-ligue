@@ -10371,7 +10371,7 @@
    une fois, puis qui sert de masque ; on n'anime que la transformation et
    l'opacité des nappes. Elles se fondent en `screen`, comme de la lumière.
    Moins d'animations demandées (ce que Windows annonce dès que ses effets
-   sont coupés) : la fumée dérive toujours, mais de moins loin.
+   sont coupés) : la fumée dérive toujours, un peu moins loin.
    ========================================================================== */
 @property --f1 {
   syntax: '<color>';
@@ -10413,37 +10413,34 @@
   display: none;
 }
 
-/* Le cadre de la fumée : la largeur de la rangée, et plus haut qu'elle. Il la
-   fond à ses bords — tranchée par le bord du panneau, la fumée du premier et
-   du dernier sachet y ferait une bande — et en haut, sous le titre. */
+/* Le cadre de la fumée : la largeur de la rangée, et 30 % plus haut et plus
+   bas qu'elle. Il la fond aux bords du panneau — tranchée net, la fumée du
+   premier et du dernier sachet y ferait une bande. En hauteur, la fumée
+   s'éteint d'elle-même avant ses bords. */
 .fumee-cadre {
   position: absolute;
   z-index: 0;
-  inset: -40% 0 -10%;
+  inset: -30% 0;
   overflow: hidden;
   pointer-events: none;
-  -webkit-mask-image:
-    linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent),
-    linear-gradient(to bottom, transparent, #000 22%, #000 88%, transparent);
-  -webkit-mask-composite: source-in;
-  mask-image:
-    linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent),
-    linear-gradient(to bottom, transparent, #000 22%, #000 88%, transparent);
-  mask-composite: intersect;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
 }
 
-/* Dans le cadre, qui déborde de 40 % au-dessus de la rangée et de 10 % en
-   dessous : la fumée monte à 28 % au-dessus d'elle et descend à 4 % sous elle. */
+/* Centrée sur le sachet, dans les deux sens : deux fois sa largeur, et une
+   hauteur qui le déborde d'autant en haut qu'en bas — de 11 % au-dessus de la
+   rangée à 11 % en dessous, le sachet étant au milieu de la rangée. Le cadre
+   mesure 160 % de la rangée, d'où la division. */
 .fumee {
   --amp: 1;
   /* Le grain : un bruit fractal, dont l'alpha seul compte, contrasté pour que
      la fumée s'effiloche en mèches plutôt que de faire des taches rondes. */
   --bruit-fumee: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='480' height='480'%3E%3Cfilter id='b' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.007 0.012' numOctaves='3' seed='11' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 2.4 -0.75'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23b)'/%3E%3C/svg%3E");
   position: absolute;
-  top: calc(12% / 1.5);
-  bottom: calc(6% / 1.5);
+  top: calc(19% / 1.6);
+  bottom: calc(19% / 1.6);
   left: var(--fumee-x, 50%);
-  width: calc(var(--fumee-l, 240px) * 2.6);
+  width: calc(var(--fumee-l, 240px) * 2);
   transform: translateX(-50%);
   opacity: 0;
   transition:
@@ -10514,21 +10511,23 @@
   --n3: 1;
 }
 
-/* Une nappe : trois volutes de couleur, effilochées par le grain, dans une
-   ellipse aux bords fondus. Elles montent et tournent un peu, lentement. */
+/* Une nappe : trois volutes de couleur réparties autour du centre — une au
+   milieu, une en haut à gauche, une en bas à droite —, effilochées par le
+   grain, dans une ellipse aux bords fondus. Le sachet en cache le cœur : ce
+   qu'on voit, c'est la couronne de fumée qui le déborde tout autour. */
 .fumee-nappe {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(34% 30% at 38% 66%, color-mix(in srgb, var(--c1) 80%, transparent), transparent),
-    radial-gradient(30% 28% at 64% 50%, color-mix(in srgb, var(--c2) 75%, transparent), transparent),
-    radial-gradient(28% 26% at 47% 30%, color-mix(in srgb, var(--c3) 70%, transparent), transparent);
-  -webkit-mask-image: radial-gradient(closest-side, #000 30%, transparent), var(--bruit-fumee);
+    radial-gradient(44% 34% at 50% 52%, color-mix(in srgb, var(--c1) 80%, transparent), transparent),
+    radial-gradient(34% 28% at 36% 34%, color-mix(in srgb, var(--c2) 75%, transparent), transparent),
+    radial-gradient(34% 28% at 64% 70%, color-mix(in srgb, var(--c3) 70%, transparent), transparent);
+  -webkit-mask-image: radial-gradient(closest-side, #000 45%, transparent), var(--bruit-fumee);
   -webkit-mask-size: 100% 100%, var(--grain) var(--grain);
   -webkit-mask-repeat: no-repeat, repeat;
   -webkit-mask-position: 0 0, var(--grain-x) var(--grain-y);
   -webkit-mask-composite: source-in;
-  mask-image: radial-gradient(closest-side, #000 30%, transparent), var(--bruit-fumee);
+  mask-image: radial-gradient(closest-side, #000 45%, transparent), var(--bruit-fumee);
   mask-size: 100% 100%, var(--grain) var(--grain);
   mask-repeat: no-repeat, repeat;
   mask-position: 0 0, var(--grain-x) var(--grain-y);
@@ -10536,16 +10535,19 @@
   mix-blend-mode: screen;
   animation: fumee-derive var(--duree) ease-in-out var(--retard) infinite alternate;
 }
+/* Le grain se mesure au sachet, pas en pixels : sur un téléphone, où le
+   sachet fait 104 px de large, un grain de 500 px ne faisait plus des mèches
+   mais une tache. */
 .fumee-nappe-1 {
   --c1: var(--f1);
   --c2: var(--f2);
   --c3: var(--f3);
   --vis: 1;
   --sens: 1;
-  --grain: 520px;
+  --grain: calc(var(--fumee-l, 240px) * 2);
   --grain-x: 0px;
   --grain-y: 0px;
-  --duree: 26s;
+  --duree: 15s;
   --retard: -4s;
 }
 .fumee-nappe-2 {
@@ -10554,11 +10556,11 @@
   --c3: var(--f4);
   --vis: 1;
   --sens: -1;
-  --grain: 680px;
-  --grain-x: 210px;
-  --grain-y: 140px;
-  --duree: 32s;
-  --retard: -13s;
+  --grain: calc(var(--fumee-l, 240px) * 2.6);
+  --grain-x: calc(var(--fumee-l, 240px) * 0.8);
+  --grain-y: calc(var(--fumee-l, 240px) * 0.53);
+  --duree: 19s;
+  --retard: -11s;
 }
 .fumee-nappe-3 {
   --c1: var(--f3);
@@ -10566,32 +10568,43 @@
   --c3: var(--f1);
   --vis: var(--n3);
   --sens: 1;
-  --grain: 420px;
-  --grain-x: 120px;
-  --grain-y: 330px;
-  --duree: 38s;
-  --retard: -21s;
+  --grain: calc(var(--fumee-l, 240px) * 1.6);
+  --grain-x: calc(var(--fumee-l, 240px) * 0.45);
+  --grain-y: calc(var(--fumee-l, 240px) * 1.25);
+  --duree: 23s;
+  --retard: -17s;
 }
+/* La dérive tourne autour du centre au lieu de monter : la fumée reste
+   centrée sur le sachet. Elle est assez ample pour se voir — immobile à
+   l'œil, la fumée se lisait comme une tache —, les nappes se relaient en
+   respirant, et leurs teintes glissent de quelques degrés : `hue-rotate` est
+   un filtre de couleur, que la carte graphique applique sans repeindre. */
 @keyframes fumee-derive {
   0% {
-    opacity: calc(var(--fumee-force) * var(--vis) * 0.7);
-    transform: translate(calc(-4% * var(--sens) * var(--amp)), calc(5% * var(--amp)))
-      rotate(calc(-4deg * var(--sens) * var(--amp))) scale(1);
+    opacity: calc(var(--fumee-force) * var(--vis) * 0.45);
+    transform: translate(calc(-6% * var(--sens) * var(--amp)), calc(4% * var(--amp)))
+      rotate(calc(-7deg * var(--sens) * var(--amp))) scale(0.94);
+    filter: hue-rotate(calc(-12deg * var(--amp)));
   }
   50% {
     opacity: calc(var(--fumee-force) * var(--vis));
     transform: translate(calc(2% * var(--sens) * var(--amp)), calc(-2% * var(--amp)))
-      rotate(calc(2deg * var(--sens) * var(--amp))) scale(1.06);
+      rotate(calc(3deg * var(--sens) * var(--amp))) scale(1.04);
+    filter: hue-rotate(0deg);
   }
   100% {
-    opacity: calc(var(--fumee-force) * var(--vis) * 0.8);
-    transform: translate(calc(5% * var(--sens) * var(--amp)), calc(-7% * var(--amp)))
-      rotate(calc(5deg * var(--sens) * var(--amp))) scale(1.12);
+    opacity: calc(var(--fumee-force) * var(--vis) * 0.6);
+    transform: translate(calc(6% * var(--sens) * var(--amp)), calc(-5% * var(--amp)))
+      rotate(calc(7deg * var(--sens) * var(--amp))) scale(1.08);
+    filter: hue-rotate(calc(12deg * var(--amp)));
   }
 }
 
+/* Moins d'animations demandées : la dérive est lente et ne déplace rien dans
+   la page ; elle reste, à peine moins ample. Au tiers, on ne la voyait plus
+   bouger — et Windows le demande dès que ses effets sont coupés. */
 @media (prefers-reduced-motion: reduce) {
   .fumee {
-    --amp: 0.35;
+    --amp: 0.8;
   }
 }
