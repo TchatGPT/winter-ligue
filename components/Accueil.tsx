@@ -2,9 +2,10 @@ import type { CSSProperties, ReactNode } from 'react';
 import { BoosterPack3D } from '@/components/BoosterPack3D';
 import { CouronneGlace } from '@/components/CouronneGlace';
 import { Diaporama, type Diapositive } from '@/components/Diaporama';
+import { EventailBoosters } from '@/components/EventailBoosters';
 import { MedailleGlace } from '@/components/MedailleGlace';
 import { SnowCap } from '@/components/SnowCap';
-import { IconTwitch } from '@/components/icons';
+import { IconJauge, IconPack, IconSnowflake, IconSwords, IconTrophy, IconTwitch } from '@/components/icons';
 import { GEMME_DU_PACK, PACKS, packArt } from '@/lib/domain/catalog';
 import {
   CADEAU_DU_JOUR,
@@ -21,18 +22,18 @@ import { num } from '@/lib/format';
  * L'accueil, quand on n'est pas connecté.
  *
  * Rien de la ligue n'est visible sans compte : ni classement, ni joueurs, ni
- * duels en cours. La page dit l'essentiel, et rien de plus : le nom, une
- * phrase, l'entrée par Twitch, les quatre boosters en éventail — puis un
- * diaporama de six plaques de verre, une idée chacune : le classement, les
- * flocons, les boosters, la chance, les duels, et comment entrer. Une image,
- * un titre, une ou deux phrases. Le détail est dans les règles, une fois
- * connecté.
+ * duels en cours. La page dit l'essentiel, et le montre :
  *
- * Toutes les valeurs viennent de `lib/domain/rules` et du catalogue : la page
- * ne peut pas dire autre chose que ce que le serveur applique.
+ *  - le hero, à même le ciel des boosters : le nom, une phrase, l'entrée par
+ *    Twitch, et les quatre boosters distribués en éventail à l'arrivée, qui
+ *    suivent la souris ;
+ *  - puis la ligue en six cartes de verre (`Diaporama`), qu'on tire du doigt
+ *    ou à la souris : le classement, les flocons, les boosters, la chance,
+ *    les duels, et comment entrer. Une image, un titre, une phrase.
  *
- * Elle se pose sur le ciel des boosters (`FondAurores`) : le hero à même le
- * ciel, les diapositives sur le verre.
+ * Le détail est dans les règles, une fois connecté. Toutes les valeurs
+ * viennent de `lib/domain/rules` et du catalogue : la page ne peut pas dire
+ * autre chose que ce que le serveur applique.
  */
 
 const MOIS = [
@@ -58,21 +59,28 @@ function jourDe(iso: string): string {
 }
 
 /**
- * Une diapositive : sa neige, son image, son titre, sa phrase. Le texte vient
- * d'abord dans le document — c'est lui qu'on lit —, l'image se place devant
- * à l'écran.
+ * Une carte de la ligue : son numéro, son thème et son médaillon, puis la
+ * fenêtre où vit son image — teintée à la couleur de la carte —, le titre et
+ * la phrase.
  */
-function Diapo({
-  graine,
+function Carte({
+  numero,
+  total,
   eyebrow,
+  icone,
+  teinte,
   titre,
   visuel,
   visuelLu = false,
   action,
   children,
 }: {
-  graine: string;
+  numero: number;
+  total: number;
   eyebrow: string;
+  icone: ReactNode;
+  /** La couleur de la fenêtre : une variable du thème. */
+  teinte: string;
   titre: string;
   visuel: ReactNode;
   /** L'image dit quelque chose qu'un lecteur d'écran doit entendre. */
@@ -80,49 +88,52 @@ function Diapo({
   action?: ReactNode;
   children: ReactNode;
 }) {
+  const deux = (x: number) => String(x).padStart(2, '0');
   return (
-    <article className="glass acc-diapo">
-      <SnowCap radius="var(--r-lg)" seed={`diapo-${graine}`} epaisseur={16} />
-      <div className="acc-diapo-texte">
+    <article className="carte-ligue" style={{ ['--teinte' as string]: teinte } as CSSProperties}>
+      <SnowCap radius="30px" seed={`carte-ligue-${numero}`} epaisseur={14} />
+      <header className="carte-ligue-tete">
+        <span className="carte-ligue-num">
+          {deux(numero)}
+          <small>/{deux(total)}</small>
+        </span>
         <p className="eyebrow">{eyebrow}</p>
-        <h2>{titre}</h2>
-        <p>{children}</p>
-        {action && <div className="acc-diapo-action">{action}</div>}
-      </div>
-      <div className="acc-diapo-visuel" aria-hidden={visuelLu ? undefined : true}>
+        <span className="carte-ligue-icone" aria-hidden="true">
+          {icone}
+        </span>
+      </header>
+      <div className="carte-ligue-visuel" aria-hidden={visuelLu ? undefined : true}>
         {visuel}
       </div>
+      <h3>{titre}</h3>
+      <p className="carte-ligue-texte">{children}</p>
+      {action && <div className="carte-ligue-action">{action}</div>}
     </article>
   );
 }
 
-/** Le podium : la couronne et les médailles sur leurs marches, et le kill. */
+/** Le podium : la couronne et les médailles sur leurs marches de glace. */
 function Podium() {
   return (
-    <div className="acc-v-podium">
-      <ol>
-        {([2, 1, 3] as const).map((rang) => (
-          <li key={rang} data-rang={rang}>
-            {rang === 1 ? (
-              <CouronneGlace className="acc-v-podium-icone" id="couronne-diapo" />
-            ) : (
-              <MedailleGlace rang={rang} className="acc-v-podium-icone" id={`medaille-${rang}-diapo`} />
-            )}
-            <span className="acc-v-marche">
-              <b>+{PLACEMENT_POINTS[String(rang) as '1' | '2' | '3']}</b>
-              <small>Top {rang}</small>
-            </span>
-          </li>
-        ))}
-      </ol>
-      <p className="acc-v-kill">
-        <b>+1</b> par kill
-      </p>
-    </div>
+    <ol className="acc-v-podium">
+      {([2, 1, 3] as const).map((rang) => (
+        <li key={rang} data-rang={rang}>
+          {rang === 1 ? (
+            <CouronneGlace className="acc-v-podium-icone" id="couronne-carte" />
+          ) : (
+            <MedailleGlace rang={rang} className="acc-v-podium-icone" id={`medaille-${rang}-carte`} />
+          )}
+          <span className="acc-v-marche">
+            <b>+{PLACEMENT_POINTS[String(rang) as '1' | '2' | '3']}</b>
+            <small>Top {rang}</small>
+          </span>
+        </li>
+      ))}
+    </ol>
   );
 }
 
-/** Ce que rapportent les flocons, en trois pastilles qui flottent. */
+/** Ce que rapportent les flocons, en trois pastilles en quinconce. */
 function Gains() {
   const GAINS = [
     { n: ECONOMY.perKill, quoi: 'par kill' },
@@ -131,8 +142,8 @@ function Gains() {
   ];
   return (
     <ul className="acc-v-gains">
-      {GAINS.map((g, k) => (
-        <li key={g.quoi} style={{ ['--k' as string]: k } as CSSProperties}>
+      {GAINS.map((g) => (
+        <li key={g.quoi}>
           <b>+{num(g.n)}</b>
           <i>❄</i>
           <span>{g.quoi}</span>
@@ -142,12 +153,16 @@ function Gains() {
   );
 }
 
-/** Les quatre boosters, côte à côte. */
+/** Les quatre boosters, en petit éventail. */
 function Sachets() {
   return (
     <div className="acc-v-sachets">
-      {PACKS.map((p) => (
-        <div key={p.id} className="acc-v-sachet">
+      {PACKS.map((p, i) => (
+        <div
+          key={p.id}
+          className="acc-v-sachet"
+          style={{ ['--o' as string]: i - 1.5, ['--o-abs' as string]: Math.abs(i - 1.5) } as CSSProperties}
+        >
           <BoosterPack3D
             name={p.name}
             cardCount={1}
@@ -163,73 +178,55 @@ function Sachets() {
 }
 
 /**
- * L'escalier de la chance : les flocons en abscisse (0 → plafond), le
- * multiplicateur en ordonnée (×1 → ×4), dans une boîte de 300 × 120. Une
- * bille grimpe les paliers, s'attarde au plafond, s'efface et repart.
+ * La chance : le multiplicateur maximal en grand, et l'escalier des paliers
+ * dessous — les flocons en abscisse, le multiplicateur en ordonnée.
  */
-function Escalier() {
+function Chance() {
   const X = (des: number) => (des / CHANCE.floconsPourPlein) * 300;
-  const Y = (m: number) => 112 - ((m - 1) / CHANCE.max) * 100;
+  const Y = (m: number) => 100 - ((m - 1) / CHANCE.max) * 92;
   const marches = PALIERS_CHANCE.map((p, i) => {
     const suivant = PALIERS_CHANCE[i + 1]?.des ?? CHANCE.floconsPourPlein;
     return `${i === 0 ? 'M' : 'L'}${X(p.des).toFixed(1)} ${Y(p.multiplicateur).toFixed(1)}H${X(suivant).toFixed(1)}`;
   }).join('');
   return (
-    <svg className="acc-v-escalier" viewBox="-30 -8 340 142">
-      <defs>
-        <linearGradient id="escalier-aire" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0" style={{ stopColor: 'var(--ice-3)', stopOpacity: 0.35 }} />
-          <stop offset="0.6" style={{ stopColor: 'var(--ice)', stopOpacity: 0.4 }} />
-          <stop offset="1" style={{ stopColor: 'var(--aurora)', stopOpacity: 0.5 }} />
-        </linearGradient>
-      </defs>
-      {[1, 1 + CHANCE.max].map((m) => (
-        <g key={m}>
-          <line x1="0" x2="300" y1={Y(m)} y2={Y(m)} className="acc-v-escalier-grille" />
-          <text x="-8" y={Y(m) + 5} className="acc-v-escalier-y">
-            ×{m}
-          </text>
-        </g>
-      ))}
-      <path d={`${marches}V112H0Z`} fill="url(#escalier-aire)" />
-      <path id="escalier-marches" d={marches} className="acc-v-escalier-ligne" />
-      <circle r="6" className="acc-v-escalier-bille">
-        <animateMotion dur="9s" repeatCount="indefinite" calcMode="linear" keyPoints="0;1;1" keyTimes="0;0.82;1">
-          <mpath href="#escalier-marches" />
-        </animateMotion>
-        <animate attributeName="opacity" dur="9s" repeatCount="indefinite" values="0;1;1;0" keyTimes="0;0.05;0.92;1" />
-      </circle>
-      <text x="0" y="132" className="acc-v-escalier-x">
-        0 ❄
-      </text>
-      <text x="300" y="132" className="acc-v-escalier-x" textAnchor="end">
-        {num(CHANCE.floconsPourPlein)} ❄
-      </text>
-    </svg>
+    <div className="acc-v-chance">
+      <p className="acc-v-chance-max">
+        <span>jusqu’à</span>
+        <b className="glace" data-text={`×${1 + CHANCE.max}`}>
+          ×{1 + CHANCE.max}
+        </b>
+      </p>
+      <svg className="acc-v-escalier" viewBox="0 0 300 100" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="escalier-aire" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" style={{ stopColor: 'var(--ice-3)', stopOpacity: 0.25 }} />
+            <stop offset="0.6" style={{ stopColor: 'var(--ice)', stopOpacity: 0.4 }} />
+            <stop offset="1" style={{ stopColor: 'var(--aurora)', stopOpacity: 0.6 }} />
+          </linearGradient>
+        </defs>
+        <path d={`${marches}V100H0Z`} fill="url(#escalier-aire)" />
+        <path d={marches} className="acc-v-escalier-ligne" vectorEffect="non-scaling-stroke" />
+      </svg>
+    </div>
   );
 }
 
-/** Le duel : toi, un joueur, le pot — et une boule de neige qui passe de l'un à l'autre. */
+/** Le duel : toi contre un joueur, et le pot entre les deux. */
 function Duel() {
   return (
-    <div className="acc-affiche">
-      <span className="acc-boule">
-        <span className="acc-boule-x">
-          <span className="acc-boule-y" />
-        </span>
-      </span>
-      <div className="acc-camp">
+    <div className="acc-v-duel">
+      <div className="acc-v-camp">
         <span className="orbe">T</span>
         <b>Toi</b>
       </div>
-      <div className="acc-pot">
-        <small>Le gagnant rafle</small>
+      <div className="acc-v-pot">
+        <span className="acc-v-vs">VS</span>
         <strong>
-          {num(2 * 1_000)} <span className="text-ice">❄</span>
+          {num(2 * 1_000)} <i>❄</i>
         </strong>
-        <small>pour {num(1_000)} misés</small>
+        <small>au gagnant</small>
       </div>
-      <div className="acc-camp">
+      <div className="acc-v-camp">
         <span className="orbe" data-inconnu="">
           ?
         </span>
@@ -241,7 +238,7 @@ function Duel() {
 
 /** Les trois gestes pour entrer. */
 function Etapes() {
-  const ETAPES = ['Connecte-toi avec Twitch', 'Donne ton pseudo Activision', 'Joue, la modération saisit tes games'];
+  const ETAPES = ['Connecte-toi avec Twitch', 'Donne ton pseudo Activision', 'Joue tes games'];
   return (
     <ol className="acc-v-etapes">
       {ETAPES.map((e, i) => (
@@ -269,78 +266,93 @@ export function Accueil({ twitchEnabled, devLogin }: { twitchEnabled: boolean; d
     </a>
   );
 
-  const DIAPOS: Diapositive[] = [
+  const CARTES: { cle: string; titre: string; carte: Omit<Parameters<typeof Carte>[0], 'numero' | 'total'> }[] = [
     {
       cle: 'classement',
       titre: 'Le classement',
-      contenu: (
-        <Diapo graine="classement" eyebrow="Le classement" titre="Chaque kill compte" visuel={<Podium />}>
-          Un kill vaut un point, et un Top 1 en ajoute {PLACEMENT_POINTS['1']}. À la fin de la saison, les{' '}
-          {SEASON.finalistCount} premiers jouent la finale.
-        </Diapo>
-      ),
+      carte: {
+        eyebrow: 'Le classement',
+        icone: <IconTrophy className="h-5 w-5" />,
+        teinte: 'var(--gold)',
+        titre: 'Chaque kill compte',
+        visuel: <Podium />,
+        children: `Un kill vaut un point, un Top 1 en ajoute ${PLACEMENT_POINTS['1']}. En fin de saison, les ${SEASON.finalistCount} premiers jouent la finale.`,
+      },
     },
     {
       cle: 'flocons',
       titre: 'Les flocons',
-      contenu: (
-        <Diapo graine="flocons" eyebrow="Les flocons" titre="Tes games te rapportent des flocons" visuel={<Gains />}>
-          Ils ne s’achètent pas : tu les gagnes en jouant, et un cadeau t’attend chaque jour.
-        </Diapo>
-      ),
+      carte: {
+        eyebrow: 'Les flocons',
+        icone: <IconSnowflake className="h-5 w-5" />,
+        teinte: 'var(--ice)',
+        titre: 'Tes games rapportent des flocons',
+        visuel: <Gains />,
+        children: 'Ils ne s’achètent pas : tu les gagnes en jouant, et un cadeau t’attend chaque jour.',
+      },
     },
     {
       cle: 'boosters',
       titre: 'Les boosters',
-      contenu: (
-        <Diapo graine="boosters" eyebrow="Les boosters" titre="Les subs font tomber des boosters" visuel={<Sachets />}>
-          Ouverts en live, chacun donne une carte qui change une game : jusqu’à {CARD_IMPACT_CAP} points, en bonus ou en
-          malus.
-        </Diapo>
-      ),
+      carte: {
+        eyebrow: 'Les boosters',
+        icone: <IconPack className="h-5 w-5" />,
+        teinte: 'var(--violet)',
+        titre: 'Les subs font tomber des boosters',
+        visuel: <Sachets />,
+        children: `Ouverts en live, chacun donne une carte qui change une game : jusqu’à ${CARD_IMPACT_CAP} points, bonus ou malus.`,
+      },
     },
     {
       cle: 'chance',
       titre: 'La chance',
-      contenu: (
-        <Diapo graine="chance" eyebrow="La chance" titre="Garde tes flocons, tire plus haut" visuel={<Escalier />}>
-          Plus ta réserve est grosse, plus tes boosters sortent des cartes rares : jusqu’à ×{1 + CHANCE.max} de chance.
-        </Diapo>
-      ),
+      carte: {
+        eyebrow: 'La chance',
+        icone: <IconJauge className="h-5 w-5" />,
+        teinte: 'var(--aurora)',
+        titre: 'Garde tes flocons, tire plus haut',
+        visuel: <Chance />,
+        children: 'Plus ta réserve est grosse, plus tes boosters sortent des cartes rares.',
+      },
     },
     {
       cle: 'duels',
       titre: 'Les duels',
-      contenu: (
-        <Diapo graine="duels" eyebrow="Les duels" titre="Mise tes flocons en duel" visuel={<Duel />}>
-          Un joueur contre un autre, la même mise des deux côtés. Une chance sur deux : le gagnant rafle tout.
-        </Diapo>
-      ),
+      carte: {
+        eyebrow: 'Les duels',
+        icone: <IconSwords className="h-5 w-5" />,
+        teinte: 'var(--ice-2)',
+        titre: 'Mise tes flocons en duel',
+        visuel: <Duel />,
+        children: 'La même mise des deux côtés, une chance sur deux : le gagnant rafle tout.',
+      },
     },
     {
       cle: 'entrer',
       titre: 'Pour entrer',
-      contenu: (
-        <Diapo
-          graine="entrer"
-          eyebrow="Pour entrer"
-          titre="À toi de jouer"
-          visuel={<Etapes />}
-          visuelLu
-          action={rejoindre}
-        >
-          {avantLaSaison
-            ? `La saison commence le ${debut}. Connecte-toi dès maintenant : ton nom t’attend dans la ligue.`
-            : `La saison court jusqu’au ${fin}. Connecte-toi : la prochaine game est pour toi.`}
-        </Diapo>
-      ),
+      carte: {
+        eyebrow: 'Pour entrer',
+        icone: <IconTwitch className="h-5 w-5" />,
+        teinte: 'var(--twitch-clair)',
+        titre: 'À toi de jouer',
+        visuel: <Etapes />,
+        visuelLu: true,
+        action: rejoindre,
+        children: avantLaSaison ? `Coup d’envoi le ${debut}.` : `En jeu jusqu’au ${fin}.`,
+      },
     },
   ];
+
+  const DIAPOS: Diapositive[] = CARTES.map(({ cle, titre, carte }, i) => ({
+    cle,
+    titre,
+    contenu: <Carte numero={i + 1} total={CARTES.length} {...carte} />,
+  }));
 
   return (
     <div className="accueil">
       {/* ---- Le hero, à même le ciel : le nom, une phrase, l'entrée, et les
-              quatre boosters en éventail dans leur fumée. ---- */}
+              quatre boosters distribués en éventail dans leur fumée. ---- */}
       <section className="acc-hero" aria-labelledby="accueil-titre">
         <div className="acc-hero-texte">
           <p className="eyebrow">
@@ -372,7 +384,7 @@ export function Accueil({ twitchEnabled, devLogin }: { twitchEnabled: boolean; d
           )}
         </div>
 
-        <div className="acc-eventail" aria-hidden="true">
+        <EventailBoosters>
           <div className="acc-eventail-cadre">
             <div className="acc-eventail-fumee fumee" data-pack="finisseur" data-niveau="4">
               <span className="fumee-nappe fumee-nappe-1" />
@@ -384,24 +396,49 @@ export function Accueil({ twitchEnabled, devLogin }: { twitchEnabled: boolean; d
             <div
               key={p.id}
               className="acc-eventail-sachet"
-              // La place dans l'arc : -1,5 à gauche, +1,5 à droite.
-              style={{ ['--o' as string]: i - 1.5, ['--o-abs' as string]: Math.abs(i - 1.5) } as CSSProperties}
+              // La place dans l'arc (-1,5 à gauche, +1,5 à droite) et le rang
+              // de distribution, du premier au dernier.
+              style={
+                {
+                  ['--o' as string]: i - 1.5,
+                  ['--o-abs' as string]: Math.abs(i - 1.5),
+                  ['--rang' as string]: i,
+                } as CSSProperties
+              }
             >
-              <BoosterPack3D
-                name={p.name}
-                cardCount={1}
-                gradient={p.gradient}
-                art={packArt(p.id)}
-                rarete={GEMME_DU_PACK[p.id]}
-                vignette
-              />
+              <div className="acc-eventail-parallaxe">
+                <BoosterPack3D
+                  name={p.name}
+                  cardCount={1}
+                  gradient={p.gradient}
+                  art={packArt(p.id)}
+                  rarete={GEMME_DU_PACK[p.id]}
+                  vignette
+                />
+              </div>
             </div>
           ))}
-        </div>
+        </EventailBoosters>
       </section>
 
-      {/* ---- La ligue, en six plaques de verre ---- */}
-      <Diaporama id="ligue" label="La ligue en six diapositives" diapositives={DIAPOS} />
+      {/* ---- La ligue, en six cartes de verre ---- */}
+      <section id="ligue" className="acc-ligue" aria-labelledby="ligue-titre">
+        <header className="acc-ligue-tete">
+          <p className="eyebrow">Comment ça marche</p>
+          <h2 id="ligue-titre" className="titre-glace titre-glace-page">
+            <span className="glace" data-text="La ligue en six cartes">
+              La ligue en six cartes
+            </span>
+          </h2>
+          <p className="acc-ligue-indice">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M8 9 5 12l3 3M16 9l3 3-3 3M5 12h14" />
+            </svg>
+            Fais glisser les cartes
+          </p>
+        </header>
+        <Diaporama label="La ligue en six cartes" diapositives={DIAPOS} />
+      </section>
     </div>
   );
 }

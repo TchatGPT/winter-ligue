@@ -11597,26 +11597,24 @@
 /* ==========================================================================
    L'ACCUEIL DÉCONNECTÉ — voir components/Accueil.
    ==========================================================================
-   L'essentiel, et rien de plus. Le hero à même le ciel : le nom, une phrase,
-   l'entrée par Twitch, et les quatre boosters en éventail dans leur fumée.
-   Puis un diaporama de six plaques de verre, une idée chacune, qu'on fait
-   glisser du doigt (voir `.diaporama`). */
+   Le hero à même le ciel : le nom, une phrase, l'entrée par Twitch, et les
+   quatre boosters distribués en éventail à l'arrivée, qui suivent la souris.
+   Puis la ligue en six cartes de verre, qu'on tire (voir `.deck`). */
 .accueil {
   --amp-acc: 1;
   display: grid;
-  gap: 1rem;
+  gap: 1.5rem;
 }
 @media (min-width: 1024px) {
   .accueil {
-    gap: 1.5rem;
+    gap: 2rem;
   }
 }
 
 /* -- Le hero --
    Sur un téléphone, les boosters ouvrent la page, au-dessus du nom : c'est
    eux qu'on voit d'abord. Sur un ordinateur, le texte et l'éventail côte à
-   côte, au centre : sur un très grand écran, la composition reste groupée et
-   le ciel l'entoure, plutôt qu'un trou entre les deux. */
+   côte, groupés au centre, et le ciel autour. */
 .acc-hero {
   display: grid;
   grid-template-areas: 'fan' 'texte';
@@ -11635,7 +11633,7 @@
 @media (min-width: 1024px) {
   .acc-hero {
     grid-template-columns: minmax(0, 42rem) minmax(0, 52rem);
-    grid-template-rows: minmax(clamp(24rem, 46vh, 38rem), auto);
+    grid-template-rows: minmax(clamp(24rem, 52vh, 40rem), auto);
     grid-template-areas: 'texte fan';
     justify-content: center;
     column-gap: clamp(2rem, 5vw, 7rem);
@@ -11685,10 +11683,31 @@
     justify-content: flex-start;
   }
 }
+/* L'arrivée : le texte monte, ligne après ligne. */
+.acc-hero-texte > * {
+  animation: acc-monte 0.9s cubic-bezier(0.2, 0.9, 0.25, 1) both;
+}
+.acc-hero-texte > :nth-child(2) {
+  animation-delay: 0.08s;
+}
+.acc-hero-texte > :nth-child(3) {
+  animation-delay: 0.18s;
+}
+.acc-hero-texte > :nth-child(n + 4) {
+  animation-delay: 0.28s;
+}
+@keyframes acc-monte {
+  from {
+    opacity: 0;
+    transform: translateY(calc(22px * var(--amp-acc)));
+  }
+}
 
 /* L'éventail : les quatre boosters, du plus courant au plus rare, en arc,
    chacun dans sa lévitation, et la fumée multicolore derrière eux. */
 .acc-eventail {
+  --px: 0;
+  --py: 0;
   position: relative;
   width: min(100%, 52rem);
   margin-inline: auto;
@@ -11700,41 +11719,66 @@
     width: min(100%, 26rem);
   }
 }
-/* Sur un écran bas, il se règle aussi sur la hauteur : le diaporama doit
-   rester en vue sous le hero. */
 @media (min-width: 1024px) {
   .acc-eventail {
-    width: min(100%, 52rem, calc((100dvh - 30rem) * 1.42));
+    width: min(100%, 52rem, calc((100dvh - 14rem) * 1.42));
   }
 }
+/* Les sachets sont distribués à l'arrivée, l'un après l'autre : partis du
+   centre, à plat, ils glissent à leur place dans l'arc. */
 .acc-eventail-sachet {
   position: absolute;
-  /* Assez haut pour que les sachets des bords, plus bas et penchés, restent
-     dans la boîte : ils mordaient sur la diapositive du dessous. */
   bottom: 14%;
   left: calc(50% + var(--o) * 20.5%);
   width: 29%;
   transform-origin: 50% 100%;
   transform: translate(-50%, calc(var(--o-abs) * 9%)) rotate(calc(var(--o) * 6.5deg));
+  animation: acc-donne 1.1s cubic-bezier(0.2, 0.9, 0.25, 1) both;
+  animation-delay: calc(0.2s + var(--rang) * 0.13s);
+}
+@keyframes acc-donne {
+  from {
+    left: 50%;
+    opacity: 0;
+    transform: translate(-50%, 16%) rotate(0deg) scale(0.82);
+  }
+  35% {
+    opacity: 1;
+  }
+}
+/* La parallaxe : plus un sachet est au centre de l'arc, plus il est près, et
+   plus il suit la souris. */
+.acc-eventail-parallaxe {
+  --prof: calc(1.6 - var(--o-abs) * 0.55);
+  transform: translate(calc(var(--px) * var(--prof) * 2.2rem), calc(var(--py) * var(--prof) * 1.3rem));
+  transition: transform 0.7s cubic-bezier(0.2, 0.8, 0.3, 1);
 }
 .acc-eventail .sachet-lueur,
 .acc-v-sachets .sachet-lueur {
   display: none;
 }
-/* Décoratifs : un doigt qui s'y pose fait défiler la page ou la piste. */
+/* Décoratifs : un doigt qui s'y pose fait défiler la page ou le paquet. */
 .acc-eventail .sachet-scene,
 .acc-v-sachets .sachet-scene {
   touch-action: auto;
 }
 /* La fumée des boosters (voir `.fumee`), posée une fois pour toutes, centrée
-   sur l'éventail. Son cadre la fond sur les côtés et la retient dans
-   l'éventail : débordant, elle élargissait la page. */
+   sur l'éventail, et qui glisse à contre-sens de la souris. Son cadre la fond
+   sur les côtés et la retient dans l'éventail. */
 .acc-eventail-cadre {
   position: absolute;
   inset: -8% 0 -4%;
   overflow: hidden;
+  transform: translate(calc(var(--px) * -1.2rem), calc(var(--py) * -0.8rem));
+  transition: transform 0.9s cubic-bezier(0.2, 0.8, 0.3, 1);
   -webkit-mask-image: linear-gradient(90deg, transparent, #000 14%, #000 86%, transparent);
   mask-image: linear-gradient(90deg, transparent, #000 14%, #000 86%, transparent);
+  animation: acc-apparait 1.6s ease both 0.4s;
+}
+@keyframes acc-apparait {
+  from {
+    opacity: 0;
+  }
 }
 .fumee.acc-eventail-fumee {
   --fumee-l: clamp(7rem, 30vw, 17rem);
@@ -11745,83 +11789,301 @@
   opacity: 1;
 }
 
+/* -- La ligue en six cartes : un titre, une indication, le paquet -- */
+.acc-ligue {
+  scroll-margin-top: 1rem;
+}
+.acc-ligue-tete {
+  text-align: center;
+}
+.acc-ligue-tete .titre-glace {
+  margin-top: 0.35rem;
+  font-size: clamp(1.9rem, 1.2rem + 2.6vw, 3.4rem);
+}
+.acc-ligue-indice {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.7rem;
+  padding: 0.35rem 0.9rem 0.35rem 0.7rem;
+  border-radius: var(--r-pilule);
+  background: color-mix(in srgb, var(--fond) 45%, transparent);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.25),
+    inset 0 0 0 1px rgb(255 255 255 / 0.1);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+.acc-ligue-indice svg {
+  width: 1.1rem;
+  height: 1.1rem;
+  fill: none;
+  stroke: var(--ice);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  animation: acc-indice 2.4s ease-in-out infinite;
+}
+@keyframes acc-indice {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(3px);
+  }
+}
+
 /* ==========================================================================
-   LE DIAPORAMA — voir components/Diaporama.
+   LE PAQUET — voir components/Diaporama.
    ==========================================================================
-   Une piste qui défile pour de vrai, aimantée au centre : la diapositive au
-   centre en pleine lumière, ses voisines plus petites et estompées sur les
-   côtés. Les bords de la piste se fondent dans le ciel. Sous elle, les
-   flèches, les points — celui de la diapositive au centre s'allonge, et sa
-   jauge se remplit tant que le diaporama avance seul — et la pause. */
-.diaporama {
-  --l-diapo: 84cqw;
-  --recul: 0.95;
-  --duree-diapo: 7s;
+   Des cartes de verre en éventail dans l'espace. Chacune reçoit sa distance
+   au centre (`--d`, et sa valeur absolue `--ad`), et tout le reste en
+   découle : son écart, son pivot vers le centre, son recul, son voile. La
+   scène porte la perspective : les cartes de côté fuient vers le milieu.
+
+   Le verre : un flou franc et saturé de ce qu'il y a derrière, un lustre en
+   haut, une arête claire, et un liseré holographique — les couleurs de
+   l'aurore, qui tournent lentement autour de la carte au centre, comme le
+   métal d'un booster. La lumière suit la souris sur la carte au centre, qui
+   s'incline vers elle ; un reflet la traverse de temps en temps. */
+@property --mx {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0.5;
+}
+@property --my {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0.5;
+}
+@property --incl {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
+}
+@property --angle-holo {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+.deck {
+  --l-carte: min(76vw, 20rem);
+  --h-carte: calc(var(--l-carte) * 1.46);
+  --ecart: 1.02;
+  --duree-carte: 7s;
   position: relative;
-  container-type: inline-size;
 }
 @media (min-width: 640px) {
-  .diaporama {
-    --l-diapo: min(74cqw, 50rem);
-    --recul: 0.92;
+  .deck {
+    --l-carte: 20.5rem;
+    --h-carte: calc(var(--l-carte) * 1.4);
+    --ecart: 1.04;
   }
 }
 @media (min-width: 1280px) {
-  .diaporama {
-    --l-diapo: min(62cqw, 64rem);
+  .deck {
+    --l-carte: clamp(20rem, 17vw, 27rem);
+    --h-carte: calc(var(--l-carte) * 1.38);
+    --ecart: 1.1;
   }
 }
-.diaporama-piste {
+
+.deck-scene {
   position: relative;
-  display: flex;
-  gap: clamp(0.75rem, 2cqw, 1.75rem);
-  /* De quoi centrer la première et la dernière ; en haut et en bas, de quoi
-     laisser respirer l'ombre des plaques. */
-  padding: 1rem calc((100% - var(--l-diapo)) / 2) 2.25rem;
-  overflow-x: auto;
-  overscroll-behavior-x: contain;
-  scroll-snap-type: x mandatory;
-  scrollbar-width: none;
-  -webkit-mask-image: linear-gradient(90deg, transparent, #000 2.5%, #000 97.5%, transparent);
-  mask-image: linear-gradient(90deg, transparent, #000 2.5%, #000 97.5%, transparent);
+  height: calc(var(--h-carte) + 4.5rem);
+  /* Coupé sur les côtés seulement : les ombres respirent en haut et en bas,
+     et les cartes lointaines ne font jamais déborder la page. */
+  overflow-x: clip;
+  perspective: 1700px;
+  perspective-origin: 50% 45%;
+  touch-action: pan-y;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  outline: none;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
 }
-.diaporama-piste::-webkit-scrollbar {
-  display: none;
+.deck-scene[data-glisse] {
+  cursor: grabbing;
 }
-.diaporama-piste:focus-visible {
+.deck-scene:focus-visible .deck-carte[data-actif] {
   outline: 2px solid var(--ice);
-  outline-offset: -2px;
-  border-radius: var(--r-lg);
+  outline-offset: 5px;
 }
-.diaporama-diapo {
-  display: flex;
-  flex: 0 0 var(--l-diapo);
-  scroll-snap-align: center;
+/* Le sol : l'ombre de contact sous la carte au centre. */
+.deck-sol {
+  position: absolute;
+  bottom: 0.9rem;
+  left: 50%;
+  width: calc(var(--l-carte) * 1.25);
+  height: 2.6rem;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgb(0 6 20 / 0.6), rgb(0 6 20 / 0.25) 55%, transparent);
+  pointer-events: none;
+}
+
+.deck-carte {
+  --incl: 0;
+  position: absolute;
+  top: 1.5rem;
+  left: 50%;
+  width: var(--l-carte);
+  height: var(--h-carte);
+  margin-left: calc(var(--l-carte) / -2);
   container-type: inline-size;
-  opacity: 0.45;
-  transform: scale(var(--recul));
-  transition:
-    opacity 0.55s ease,
-    transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: 30px;
+  transform:
+    translateX(calc(var(--d) * var(--l-carte) * (var(--ecart) - var(--ad) * 0.12)))
+    translateZ(calc(var(--ad) * -7.5rem)) rotateY(clamp(-40deg, calc(var(--d) * -26deg), 40deg))
+    rotateX(calc((0.5 - var(--my)) * var(--incl) * 1deg)) rotateY(calc((var(--mx) - 0.5) * var(--incl) * 1deg));
+  opacity: clamp(0, calc(1.32 - var(--ad) * 0.44), 1);
+  will-change: transform, opacity;
+  transition: --incl 0.45s ease-out;
+  /* La matière : la lumière qui suit la souris, le lustre du haut, puis la
+     teinte du verre, plus claire en haut. */
+  background:
+    radial-gradient(
+      55% 42% at calc(var(--mx) * 100%) calc(var(--my) * 100%),
+      rgb(255 255 255 / calc(0.04 + var(--incl) * 0.011)),
+      transparent 70%
+    ),
+    linear-gradient(168deg, rgb(255 255 255 / 0.16) 0%, rgb(255 255 255 / 0.04) 30%, transparent 52%),
+    linear-gradient(
+      165deg,
+      color-mix(in srgb, var(--glass-2) 78%, transparent) 0%,
+      color-mix(in srgb, var(--glass-3) 92%, transparent) 100%
+    );
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.8),
+    inset 1px 0 0 rgb(255 255 255 / 0.24),
+    inset -1px 0 0 rgb(255 255 255 / 0.14),
+    inset 0 -1px 0 rgb(255 255 255 / 0.22),
+    inset 0 24px 36px -28px rgb(255 255 255 / 0.45),
+    inset 0 -30px 40px -34px rgb(143 220 255 / 0.3),
+    0 46px 70px -34px rgb(0 6 20 / 0.8),
+    0 16px 26px -16px rgb(0 6 20 / 0.6);
+  text-shadow: 0 1px 2px rgb(0 8 24 / 0.7);
 }
-.diaporama-diapo[data-actif] {
+/* Le vrai verre — le flou de ce qu'il y a derrière — sur les cartes proches
+   du centre seulement : les autres sont loin et voilées, et chaque flou se
+   recalcule à chaque image du geste. */
+.deck-carte[data-proche] {
+  -webkit-backdrop-filter: blur(22px) saturate(170%);
+  backdrop-filter: blur(22px) saturate(170%);
+}
+.deck-carte[data-loin] {
+  visibility: hidden;
+}
+.deck-carte[data-actif][data-survol] {
+  --incl: 11;
+}
+/* Le liseré holographique. */
+.deck-carte::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  padding: 1.5px;
+  border-radius: inherit;
+  background: conic-gradient(
+    from var(--angle-holo),
+    var(--aurora),
+    var(--ice),
+    var(--violet),
+    color-mix(in srgb, var(--live) 55%, var(--violet)),
+    var(--gold),
+    var(--aurora)
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  opacity: 0.3;
+  pointer-events: none;
+  transition: opacity 0.5s ease;
+}
+.deck-carte[data-actif]::before {
+  opacity: 0.9;
+  animation: deck-holo 10s linear infinite;
+}
+@keyframes deck-holo {
+  to {
+    --angle-holo: 360deg;
+  }
+}
+/* Le reflet qui traverse la carte au centre, puis attend. */
+.deck-carte::after {
+  content: '';
+  position: absolute;
+  inset: -10% -80%;
+  z-index: 3;
+  background: linear-gradient(
+    105deg,
+    transparent 42%,
+    rgb(255 255 255 / 0.07) 47%,
+    rgb(255 255 255 / 0.16) 50%,
+    rgb(255 255 255 / 0.07) 53%,
+    transparent 58%
+  );
+  transform: translateX(-60%);
+  opacity: 0;
+  pointer-events: none;
+}
+.deck-carte[data-actif]::after {
   opacity: 1;
-  transform: none;
+  animation: deck-reflet 8s cubic-bezier(0.45, 0, 0.25, 1) 0.8s infinite;
 }
-.diaporama-diapo > * {
-  flex: 1 1 auto;
+@keyframes deck-reflet {
+  0% {
+    transform: translateX(-60%);
+  }
+  32%,
+  100% {
+    transform: translateX(60%);
+  }
+}
+/* Le voile : plus une carte est loin du centre, plus elle s'assombrit. */
+.deck-carte-voile {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  border-radius: inherit;
+  background: var(--bg-deep);
+  opacity: calc(min(var(--ad), 2.4) * 0.34);
+  pointer-events: none;
+}
+/* Sur un téléphone : le flou sur la carte au centre seulement, et une teinte
+   un peu plus dense pour les autres. */
+@media (hover: none) and (pointer: coarse) {
+  .deck-carte[data-proche]:not([data-actif]) {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background-color: color-mix(in srgb, var(--fond) 70%, transparent);
+  }
 }
 
 /* La navigation : flèche, points, flèche, pause. Des cibles de 44 px. */
-.diaporama-nav {
+.deck-nav {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  margin-top: -1rem;
+  margin-top: 0.25rem;
 }
-.diaporama-fleche,
-.diaporama-pause {
+.deck-fleche,
+.deck-pause {
   display: grid;
   width: 2.75rem;
   height: 2.75rem;
@@ -11829,25 +12091,27 @@
   place-items: center;
   border-radius: var(--r-pilule);
   color: var(--frost);
-  background: color-mix(in srgb, var(--fond) 55%, transparent);
+  background: color-mix(in srgb, var(--fond) 50%, transparent);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.4),
-    inset 0 0 0 1px rgb(255 255 255 / 0.16),
+    inset 0 1px 0 rgb(255 255 255 / 0.45),
+    inset 0 0 0 1px rgb(255 255 255 / 0.14),
     0 6px 14px -8px rgb(0 8 24 / 0.7);
   cursor: pointer;
   transition:
     background-color 0.15s ease,
     transform 0.15s ease;
 }
-.diaporama-fleche:hover,
-.diaporama-pause:hover {
+.deck-fleche:hover,
+.deck-pause:hover {
   background: color-mix(in srgb, var(--ice) 22%, var(--fond));
 }
-.diaporama-fleche:active {
+.deck-fleche:active {
   transform: scale(0.94);
 }
-.diaporama-fleche svg,
-.diaporama-pause svg {
+.deck-fleche svg,
+.deck-pause svg {
   width: 1.35rem;
   height: 1.35rem;
   fill: none;
@@ -11856,28 +12120,28 @@
   stroke-linecap: round;
   stroke-linejoin: round;
 }
-.diaporama-pause {
+.deck-pause {
   width: 2.25rem;
   height: 2.25rem;
   margin-left: 0.25rem;
   color: var(--muted);
 }
-.diaporama-pause svg {
+.deck-pause svg {
   width: 1rem;
   height: 1rem;
 }
-.diaporama-points {
+.deck-points {
   display: flex;
   align-items: center;
 }
-.diaporama-points button {
+.deck-points button {
   display: grid;
   height: 2.75rem;
   min-width: 1.5rem;
   place-items: center;
   cursor: pointer;
 }
-.diaporama-point {
+.deck-point {
   position: relative;
   display: block;
   width: 0.6rem;
@@ -11889,30 +12153,30 @@
     width 0.35s cubic-bezier(0.22, 1, 0.36, 1),
     background-color 0.2s ease;
 }
-.diaporama-points button:hover .diaporama-point {
+.deck-points button:hover .deck-point {
   background: rgb(255 255 255 / 0.55);
 }
-.diaporama-points button[aria-current] .diaporama-point {
+.deck-points button[aria-current] .deck-point {
   width: 2.4rem;
   background: var(--ice);
 }
-/* Tant que le diaporama avance seul, le point allumé est une jauge : vide,
-   puis pleine en `--duree-diapo`, et la suivante arrive. */
-.diaporama-points button[aria-current]:has(.diaporama-jauge) .diaporama-point {
+/* Tant que le paquet tourne seul, le point allumé est une jauge : vide, puis
+   pleine en `--duree-carte`, et la carte suivante arrive. */
+.deck-points button[aria-current]:has(.deck-jauge) .deck-point {
   background: rgb(255 255 255 / 0.22);
 }
-.diaporama-jauge {
+.deck-jauge {
   position: absolute;
   inset: 0;
   border-radius: inherit;
   background: var(--ice);
   transform-origin: 0 50%;
-  animation: diaporama-jauge var(--duree-diapo) linear both paused;
+  animation: deck-jauge var(--duree-carte) linear both paused;
 }
-.diaporama[data-defile] .diaporama-jauge {
+.deck[data-defile] .deck-jauge {
   animation-play-state: running;
 }
-@keyframes diaporama-jauge {
+@keyframes deck-jauge {
   from {
     transform: scaleX(0);
   }
@@ -11921,88 +12185,117 @@
   }
 }
 
-/* -- Une diapositive : l'image, puis le texte ; côte à côte dès qu'elle a
-      la largeur. -- */
-.acc-diapo {
-  display: grid;
-  grid-template-areas: 'visuel' 'texte';
-  /* Toutes ont la hauteur de la plus haute : empilée, une diapositive centre
-     son contenu au lieu de laisser un vide en bas. Les rangées sont écrites :
-     nées des seules zones, la seconde s'étirait malgré le centrage. */
-  grid-template-rows: auto auto;
-  align-content: center;
-  gap: 1rem;
-  padding: 1.4rem 1.25rem 1.5rem;
-}
-.acc-diapo-visuel {
+/* -- Une carte de la ligue : son en-tête, sa fenêtre, son titre, sa phrase -- */
+.carte-ligue {
   position: relative;
-  display: grid;
-  height: 10.5rem;
-  grid-area: visuel;
-  place-items: center;
-  container-type: size;
+  z-index: 1;
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+  padding: 1.35rem 1.3rem 1.4rem;
 }
-.acc-diapo-texte {
-  grid-area: texte;
-  text-align: center;
+.carte-ligue-tete {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
 }
-.acc-diapo-texte h2 {
-  margin-top: 0.3rem;
+.carte-ligue-num {
   font-family: var(--font-display);
-  font-size: clamp(1.45rem, 1.05rem + 2.4cqw, 2.6rem);
+  font-size: 1.25rem;
   font-weight: 900;
-  line-height: 1.02;
-  letter-spacing: 0.005em;
-  text-transform: uppercase;
+  line-height: 1;
   color: var(--frost);
 }
-.acc-diapo-texte > p:not(.eyebrow) {
-  max-width: 34rem;
-  margin: 0.7rem auto 0;
-  font-size: clamp(1rem, 0.9rem + 0.6cqw, 1.1875rem);
-  line-height: 1.55;
+.carte-ligue-num small {
+  font-size: 0.7em;
+  font-weight: 700;
+  color: var(--faint);
+}
+.carte-ligue-tete .eyebrow {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Le médaillon : une bille de glace, l'icône gravée dedans. */
+.carte-ligue-icone {
+  display: grid;
+  width: 2.4rem;
+  height: 2.4rem;
+  flex: none;
+  place-items: center;
+  margin-left: auto;
+  border-radius: var(--r-pilule);
+  color: var(--frost);
+  background: radial-gradient(
+    circle at 34% 28%,
+    rgb(255 255 255 / 0.42) 0%,
+    color-mix(in srgb, var(--teinte) 28%, transparent) 46%,
+    rgb(8 30 60 / 0.4) 100%
+  );
+  box-shadow:
+    inset 0 1.5px 0 rgb(255 255 255 / 0.75),
+    inset 0 -6px 12px -6px rgb(0 16 40 / 0.6),
+    0 6px 10px -6px rgb(0 8 24 / 0.75);
+}
+/* La fenêtre : creusée dans le verre, éclairée d'en haut à la couleur de la
+   carte — comme l'illustration d'une carte à collectionner. */
+.carte-ligue-visuel {
+  position: relative;
+  display: grid;
+  min-height: 7.5rem;
+  flex: 1 1 auto;
+  place-items: center;
+  margin-top: 0.9rem;
+  padding: 0.9rem;
+  overflow: hidden;
+  border-radius: 22px;
+  container-type: size;
+  background:
+    radial-gradient(110% 80% at 50% -5%, color-mix(in srgb, var(--teinte) 38%, transparent), transparent 72%),
+    radial-gradient(90% 60% at 50% 110%, color-mix(in srgb, var(--teinte) 14%, transparent), transparent 70%),
+    linear-gradient(180deg, rgb(0 10 30 / 0.22), rgb(0 10 30 / 0.5));
+  box-shadow:
+    inset 0 3px 8px rgb(0 8 24 / 0.55),
+    inset 0 0 0 1px rgb(255 255 255 / 0.09),
+    inset 0 -1px 0 rgb(255 255 255 / 0.2);
+}
+.carte-ligue h3 {
+  margin-top: 1rem;
+  font-family: var(--font-display);
+  font-size: clamp(1.4rem, 8cqw, 2rem);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0.005em;
+  text-transform: uppercase;
+  text-wrap: balance;
+  color: var(--frost);
+}
+.carte-ligue-texte {
+  margin-top: 0.5rem;
+  font-size: clamp(0.9375rem, 4.6cqw, 1.0625rem);
+  line-height: 1.45;
+  text-wrap: pretty;
   color: var(--ink-2);
 }
-.acc-diapo-action {
-  margin-top: 1.1rem;
+.carte-ligue-action {
+  margin-top: 0.9rem;
 }
-@container (min-width: 40rem) {
-  .acc-diapo {
-    grid-template-areas: 'visuel texte';
-    grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
-    grid-template-rows: minmax(0, 1fr);
-    align-content: stretch;
-    align-items: center;
-    gap: clamp(1.5rem, 4cqw, 3rem);
-    padding: 2rem clamp(1.75rem, 4cqw, 3rem);
-    min-height: 19rem;
-  }
-  .acc-diapo-visuel {
-    height: 15rem;
-  }
-  .acc-diapo-texte {
-    text-align: left;
-  }
-  .acc-diapo-texte > p:not(.eyebrow) {
-    margin-left: 0;
-  }
+.carte-ligue-action .btn {
+  width: 100%;
 }
 
-/* -- Les images des diapositives. Chacune se mesure à sa case (`cq*`). -- */
+/* -- Les images des cartes. Chacune se mesure à sa fenêtre (`cq*`). -- */
 
 /* Le podium : trois marches de glace, la couronne et les médailles dessus. */
 .acc-v-podium {
-  position: relative;
+  display: grid;
   width: 100%;
   height: 100%;
-}
-.acc-v-podium ol {
-  display: grid;
-  height: 100%;
-  grid-template-columns: repeat(3, minmax(0, min(7rem, 27cqw)));
+  grid-template-columns: repeat(3, minmax(0, 27cqw));
   align-items: end;
   justify-content: center;
-  gap: clamp(0.4rem, 3cqw, 0.9rem);
+  gap: 4cqw;
 }
 .acc-v-podium li {
   display: flex;
@@ -12011,8 +12304,8 @@
   gap: 0.35rem;
 }
 .acc-v-podium-icone {
-  width: clamp(1.9rem, 22cqh, 3.4rem);
-  height: clamp(1.9rem, 22cqh, 3.4rem);
+  width: clamp(1.8rem, 24cqh, 3.4rem);
+  height: clamp(1.8rem, 24cqh, 3.4rem);
 }
 .acc-v-marche {
   display: flex;
@@ -12024,7 +12317,7 @@
   border-radius: 14px 14px 6px 6px;
   background: linear-gradient(
     180deg,
-    rgb(255 255 255 / 0.24) 0%,
+    rgb(255 255 255 / 0.26) 0%,
     rgb(143 220 255 / 0.1) 55%,
     rgb(143 220 255 / 0.04) 100%
   );
@@ -12034,17 +12327,17 @@
     0 8px 14px -10px rgb(0 8 24 / 0.7);
 }
 .acc-v-podium li[data-rang='1'] .acc-v-marche {
-  height: 50cqh;
+  height: 52cqh;
 }
 .acc-v-podium li[data-rang='2'] .acc-v-marche {
-  height: 37cqh;
+  height: 38cqh;
 }
 .acc-v-podium li[data-rang='3'] .acc-v-marche {
-  height: 27cqh;
+  height: 28cqh;
 }
 .acc-v-marche b {
   font-family: var(--font-display);
-  font-size: clamp(1.2rem, 13cqh, 2.2rem);
+  font-size: clamp(1.15rem, 14cqh, 2.2rem);
   font-weight: 900;
   line-height: 1;
   color: var(--frost);
@@ -12053,252 +12346,188 @@
   color: var(--gold);
 }
 .acc-v-marche small {
-  font-size: clamp(0.625rem, 5cqh, 0.8125rem);
+  font-size: clamp(0.625rem, 5.5cqh, 0.8125rem);
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--faint);
 }
-.acc-v-kill {
-  position: absolute;
-  top: 0;
-  left: 0;
-  padding: 0.3rem 0.8rem;
-  border-radius: var(--r-pilule);
-  background: color-mix(in srgb, var(--ice) 14%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ice) 40%, transparent);
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: var(--ink-2);
-}
-.acc-v-kill b {
-  font-family: var(--font-display);
-  font-size: 1.05rem;
-  font-weight: 900;
-  color: var(--frost);
-}
 
-/* Les flocons : trois pastilles en quinconce, qui flottent à tour de rôle. */
+/* Les flocons : trois pastilles en quinconce. */
 .acc-v-gains {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: clamp(0.45rem, 5cqh, 0.9rem);
+  gap: 6cqh;
 }
 .acc-v-gains li {
   display: inline-flex;
   align-items: baseline;
   gap: 0.35rem;
-  padding: 0.45rem 1.15rem 0.5rem;
+  padding: 0.4rem 1.05rem 0.45rem;
   border-radius: var(--r-pilule);
-  background: rgb(255 255 255 / 0.07);
+  background: rgb(255 255 255 / 0.08);
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.32),
+    inset 0 1px 0 rgb(255 255 255 / 0.36),
     inset 0 0 0 1px rgb(255 255 255 / 0.08),
     0 8px 14px -10px rgb(0 8 24 / 0.7);
-  translate: -9% 0;
-  animation: acc-flotte 3.4s ease-in-out infinite alternate;
-  animation-delay: calc(var(--k) * -1.1s);
+  translate: -8% 0;
 }
 .acc-v-gains li:nth-child(2) {
-  translate: 11% 0;
+  translate: 10% 0;
 }
 .acc-v-gains li:nth-child(3) {
   translate: -3% 0;
 }
 .acc-v-gains b {
   font-family: var(--font-display);
-  font-size: clamp(1.35rem, 14cqh, 2.3rem);
+  font-size: clamp(1.3rem, 15cqh, 2.2rem);
   font-weight: 900;
   line-height: 1;
   color: var(--frost);
 }
 .acc-v-gains i {
   font-style: normal;
-  font-size: clamp(0.9rem, 9cqh, 1.4rem);
+  font-size: clamp(0.9rem, 9cqh, 1.35rem);
   color: var(--ice);
 }
 .acc-v-gains span {
-  font-size: clamp(0.8125rem, 6cqh, 1rem);
+  font-size: clamp(0.8125rem, 6.5cqh, 1rem);
   color: var(--ink-2);
 }
 
-/* Les boosters : côte à côte, chacun dans sa lévitation. */
+/* Les boosters : un petit éventail, chacun dans sa lévitation. */
 .acc-v-sachets {
-  display: flex;
+  position: relative;
+  width: 100%;
   height: 100%;
-  align-items: center;
-  justify-content: center;
-  gap: clamp(0.3rem, 2.5cqw, 0.9rem);
   pointer-events: none;
 }
 .acc-v-sachet {
-  width: min(21cqw, calc(88cqh / 1.865));
+  position: absolute;
+  bottom: 6%;
+  left: calc(50% + var(--o) * 19%);
+  width: min(27%, calc(80cqh / 1.865));
+  transform-origin: 50% 100%;
+  transform: translate(-50%, calc(var(--o-abs) * 7%)) rotate(calc(var(--o) * 7deg));
 }
 
-/* La chance : l'escalier des paliers. */
+/* La chance : « jusqu'à ×4 » en grand, en glace, et l'escalier des paliers. */
+.acc-v-chance {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.acc-v-chance-max {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.5rem;
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--faint);
+  font-size: clamp(0.75rem, 6cqh, 0.9375rem);
+}
+.acc-v-chance-max b {
+  font-size: clamp(2.6rem, 34cqh, 4.6rem);
+  font-weight: 900;
+  line-height: 0.95;
+  letter-spacing: -0.01em;
+  --glace-haut: var(--frost);
+  --glace-mi: var(--aurora);
+  --glace-bas: var(--ice-2);
+}
 .acc-v-escalier {
   display: block;
   width: 100%;
-  height: 100%;
-  overflow: visible;
-}
-.acc-v-escalier-grille {
-  stroke: rgb(255 255 255 / 0.12);
-  stroke-width: 1;
-}
-.acc-v-escalier-y,
-.acc-v-escalier-x {
-  font-family: var(--font-display);
-  font-size: 12px;
-  font-weight: 800;
-  fill: var(--faint);
-}
-.acc-v-escalier-y {
-  text-anchor: end;
+  height: 42cqh;
 }
 .acc-v-escalier-ligne {
   fill: none;
   stroke: var(--ice);
-  stroke-width: 2.2;
+  stroke-width: 2;
   stroke-linejoin: round;
 }
-.acc-v-escalier-bille {
-  fill: var(--frost);
-  stroke: var(--fond);
-  stroke-width: 2;
-}
 
-/* Les duels : l'affiche, et une boule de neige qui passe d'un camp à l'autre. */
-.acc-affiche {
-  position: relative;
+/* Le duel : deux orbes face à face, le pot entre elles. */
+.acc-v-duel {
   display: grid;
   width: 100%;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  align-items: end;
-  gap: 0.75rem;
-  padding: 2.4rem 0.25rem 0.9rem;
-  border-radius: var(--r-md);
-  background: radial-gradient(
-    ellipse 60% 70% at 50% 60%,
-    color-mix(in srgb, var(--ice) 9%, transparent),
-    transparent
-  );
+  align-items: center;
+  gap: 0.5rem;
 }
-.acc-camp {
+.acc-v-camp {
   display: flex;
   min-width: 0;
   flex-direction: column;
   align-items: center;
   gap: 0.45rem;
 }
-.acc-camp .orbe {
-  --taille: clamp(3rem, 30cqh, 4.5rem);
-  animation: acc-flotte 3.4s ease-in-out infinite alternate;
+.acc-v-camp .orbe {
+  --taille: clamp(2.9rem, 40cqh, 4.6rem);
 }
-.acc-camp + .acc-pot + .acc-camp .orbe {
-  animation-delay: -1.7s;
-}
-.acc-camp b {
+.acc-v-camp b {
   font-family: var(--font-display);
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   font-weight: 900;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   white-space: nowrap;
   color: var(--ink);
 }
-.acc-pot {
+.acc-v-pot {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.2rem;
-  padding-bottom: 0.35rem;
+  gap: 0.15rem;
   text-align: center;
 }
-.acc-pot small {
+.acc-v-vs {
   font-family: var(--font-display);
-  font-size: 0.75rem;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  white-space: nowrap;
-  color: var(--faint);
+  font-size: 0.875rem;
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: 0.08em;
+  color: var(--ice);
 }
-.acc-pot strong {
+.acc-v-pot strong {
   font-family: var(--font-display);
-  font-size: clamp(1.75rem, 10cqw, 2.6rem);
+  font-size: clamp(1.5rem, 12cqw, 2.3rem);
   font-weight: 900;
   line-height: 1;
   white-space: nowrap;
-  color: var(--ink);
+  color: var(--frost);
 }
-/* La boule : une piste entre les deux camps, au-dessus de l'affiche. Elle va
-   et vient sur la piste (`cqw`, la largeur de la piste : sa propre boîte ne
-   fait que sa taille, et ne déborde jamais), et monte puis redescend, deux
-   fois plus vite : un lancer en cloche, d'un joueur à l'autre. */
-.acc-boule {
-  position: absolute;
-  top: 2.6rem;
-  right: calc(16.5% + 1rem);
-  left: calc(16.5% + 1rem);
-  height: 0;
-  container-type: inline-size;
+.acc-v-pot strong i {
+  font-style: normal;
+  color: var(--ice);
 }
-.acc-boule-x {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 14px;
-  height: 0;
-  animation: acc-boule-x 2.6s ease-in-out infinite alternate;
-}
-.acc-boule-y {
-  position: absolute;
-  top: -7px;
-  left: 0;
-  width: 14px;
-  height: 14px;
-  border-radius: var(--r-pilule);
-  background: radial-gradient(circle at 35% 30%, var(--neige-1) 0%, var(--neige-3) 58%, var(--neige-ombre) 100%);
-  box-shadow: 0 3px 4px -2px rgb(0 8 24 / 0.6);
-  animation: acc-boule-y 1.3s ease-in-out infinite alternate;
-}
-@keyframes acc-boule-x {
-  to {
-    transform: translateX(calc(100cqw - 14px));
-  }
-}
-@keyframes acc-boule-y {
-  from {
-    transform: translateY(0) rotate(0deg);
-  }
-  to {
-    transform: translateY(-2.1rem) rotate(160deg);
-  }
-}
-@keyframes acc-flotte {
-  from {
-    transform: translateY(calc(-3px * var(--amp-acc)));
-  }
-  to {
-    transform: translateY(calc(3px * var(--amp-acc)));
-  }
+.acc-v-pot small {
+  font-family: var(--font-display);
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--faint);
 }
 
 /* Pour entrer : trois gestes, numérotés dans des billes de glace. */
 .acc-v-etapes {
   display: grid;
   width: 100%;
-  max-width: 24rem;
-  gap: clamp(0.5rem, 5cqh, 1rem);
+  gap: 7cqh;
 }
 .acc-v-etapes li {
   display: flex;
   align-items: center;
-  gap: 0.8rem;
+  gap: 0.75rem;
   font-family: var(--font-display);
-  font-size: clamp(0.9375rem, 7.5cqh, 1.2rem);
+  font-size: clamp(0.875rem, 11cqh, 1.1rem);
   font-weight: 800;
   letter-spacing: 0.03em;
   text-align: left;
@@ -12307,18 +12536,18 @@
 }
 .acc-v-etapes span {
   display: grid;
-  width: clamp(2rem, 18cqh, 2.75rem);
-  height: clamp(2rem, 18cqh, 2.75rem);
+  width: clamp(1.8rem, 22cqh, 2.5rem);
+  height: clamp(1.8rem, 22cqh, 2.5rem);
   flex: none;
   place-items: center;
   border-radius: var(--r-pilule);
-  font-size: 1.2em;
+  font-size: 1.15em;
   font-weight: 900;
   color: var(--frost);
   background: radial-gradient(
     circle at 34% 28%,
     rgb(255 255 255 / 0.4) 0%,
-    rgb(143 220 255 / 0.16) 46%,
+    color-mix(in srgb, var(--twitch-clair) 30%, transparent) 46%,
     rgb(8 30 60 / 0.34) 100%
   );
   box-shadow:
