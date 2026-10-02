@@ -3298,435 +3298,948 @@
   }
 
   /*
-   * ---- Le salon : trois blocs ----
-   * Empilés sur téléphone : les défis ouverts, le ring, les résultats. À
-   * partir de 1 280 px, les défis forment une bande au-dessus du ring et des
-   * résultats ; à partir de 1 920 px, trois colonnes, le ring au milieu.
-   * C'est le ring qui fixe la hauteur de la rangée : les deux listes n'y
-   * comptent pas leur contenu (`contain: size`) et défilent au-delà.
+   * ==== La page des duels — voir `Affrontements` ====
+   *
+   * En tête, le titre et les règles sur une ligne. Dessous, le salon : à
+   * gauche « jouer » — les défis ouverts, puis le panneau pour lancer le sien —,
+   * à droite les résultats. Sur un ordinateur (1 280 px et plus), la page
+   * remplit l'écran : la colonne « jouer » s'étire, l'affiche du duel prend la
+   * hauteur en trop et grandit avec elle, et les résultats défilent à sa
+   * hauteur. Si la colonne ne tient pas — un écran bas, des défis nombreux —,
+   * la page défile plutôt que de la rogner. Plus étroit, tout s'empile dans le
+   * cours de la page.
    */
-  .duels-salon {
+  .duels-page {
     display: grid;
     gap: 1.25rem;
-    grid-template-columns: minmax(0, 1fr);
   }
-  @media (min-width: 1280px) {
-    .duels-salon {
-      grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
-      grid-template-areas:
-        'rejoindre rejoindre'
-        'ring resultats';
-    }
-    .duels-salon > .rejoindre {
-      grid-area: rejoindre;
-    }
-    .duels-salon > .ring {
-      grid-area: ring;
-    }
-    .duels-salon > .resultats {
-      grid-area: resultats;
+
+  /* Les règles, dans l'en-tête : quatre mots en gras, une précision dessous.
+     Chacune porte son filet ; celui du chapeau de l'en-tête ferait doublon. */
+  .entete-page-lead:has(> .duels-regles) {
+    padding-left: 0;
+    border-left: 0;
+  }
+  .duels-regles {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem 1.5rem;
+  }
+  @media (min-width: 1024px) {
+    .duels-regles {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
     }
   }
-  @media (min-width: 1920px) {
-    .duels-salon {
-      grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr) minmax(0, 1fr);
-      grid-template-areas: 'rejoindre ring resultats';
+  .duels-regles li {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 0.15rem;
+    padding-left: 0.8rem;
+    border-left: 2px solid color-mix(in srgb, var(--ice) 45%, transparent);
+  }
+  .duels-regles b {
+    font-family: var(--font-display);
+    font-size: 0.9375rem;
+    font-weight: 900;
+    letter-spacing: 0.05em;
+    line-height: 1.15;
+    text-transform: uppercase;
+    color: var(--ink);
+  }
+  .duels-regles span {
+    font-size: 0.875rem;
+    line-height: 1.35;
+    color: var(--ink-2);
+  }
+  @media (min-width: 150rem) {
+    .duels-regles b {
+      font-size: 1.0625rem;
+    }
+    .duels-regles span {
+      font-size: 1rem;
     }
   }
 
-  /*
-   * ---- Les duels à rejoindre ----
-   * Les défis ouverts sont des cartes ; les places libres complètent la
-   * liste, pour qu'on voie où un défi viendra se poser. Dès qu'un défi
-   * attend, le compteur passe à l'aurore.
-   */
-  .rejoindre {
-    padding: 1.4rem 1.1rem 1.25rem;
-    border-radius: var(--r-lg);
-    background: linear-gradient(160deg, var(--glass-2) 0%, var(--glass-3) 100%);
-    backdrop-filter: blur(18px) saturate(140%);
-    box-shadow:
-      inset 0 0 0 1px color-mix(in srgb, var(--aurora) 55%, transparent),
-      inset 0 1px 0 rgb(255 255 255 / 0.3),
-      var(--lift-2);
+  /* ---- Le salon ---- */
+  .duels-salon {
+    display: grid;
+    gap: 1.25rem;
   }
-  .rejoindre[data-vide] {
-    box-shadow:
-      inset 0 0 0 1px rgb(255 255 255 / 0.16),
-      inset 0 1px 0 rgb(255 255 255 / 0.3),
-      var(--lift-2);
+  .duels-jouer {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 1.25rem;
   }
-  .rejoindre-tete {
+  .duels-messages {
+    display: grid;
+    gap: 0.6rem;
+  }
+  @media (min-width: 1280px) {
+    /* La hauteur de l'écran, moins le rembourrage du contenu (4 rem) et le
+       bandeau des évènements quand il est là. Un minimum, pas une hauteur :
+       la rangée du salon grandit avec la colonne « jouer » si elle dépasse. */
+    .duels-page {
+      grid-template-rows: auto 1fr;
+      min-height: calc(100dvh - 4rem - var(--bandeau-evts, 0px));
+    }
+    .duels-salon {
+      grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+    }
+    /* Le panneau de lancement prend la hauteur que les défis laissent. */
+    .duels-lancer {
+      display: flex;
+      flex: 1 0 auto;
+      flex-direction: column;
+    }
+    /* La liste des défis défile au-delà de quatre — moins sur un écran plus
+       bas : sa hauteur, moins ce que le reste de la page occupe (57 rem),
+       pour que le panneau de lancement et son bouton restent à l'écran.
+       Jamais moins de deux défis entiers ; le suivant dépasse, pour qu'on
+       voie qu'il y en a d'autres. */
+    .duels-defis-liste {
+      max-height: clamp(10.5rem, calc(100dvh - 57rem - var(--bandeau-evts, 0px)), 20rem);
+      overflow-y: auto;
+    }
+    /* Les résultats ne comptent pas leur contenu dans la hauteur de la
+       rangée (`contain: size`) : la colonne « jouer » la fixe, et ils
+       défilent dedans. */
+    .duels-resultats {
+      display: flex;
+      min-height: 26rem;
+      flex-direction: column;
+      contain: size;
+    }
+    .duels-resultats-liste {
+      min-height: 0;
+      flex: 1 1 0;
+      overflow-y: auto;
+    }
+  }
+
+  /* ---- Les plaques ---- */
+  .duels-panneau {
+    position: relative;
+    container-type: inline-size;
+    padding: 1.35rem 1.1rem 1.2rem;
+  }
+  @media (min-width: 640px) {
+    .duels-panneau {
+      padding: 1.4rem 1.6rem 1.3rem;
+    }
+  }
+  .duels-panneau-tete {
+    position: relative;
     display: flex;
     flex-wrap: wrap;
     align-items: flex-end;
-    gap: 0.6rem 1.5rem;
+    justify-content: space-between;
+    gap: 0.75rem 1.25rem;
   }
-  .rejoindre-titre {
+  .duels-panneau-tete h2 {
     display: flex;
     align-items: center;
     gap: 0.6rem;
-    margin-top: 0.25rem;
-  }
-  .rejoindre-titre h2 {
+    margin-top: 0.3rem;
     font-family: var(--font-display);
-    font-size: 1.75rem;
+    font-size: 1.6rem;
     font-weight: 900;
-    letter-spacing: 0.025em;
+    letter-spacing: 0.04em;
     line-height: 1;
     text-transform: uppercase;
     color: var(--ink);
   }
-  .rejoindre-compte {
+  @container (min-width: 30rem) {
+    .duels-panneau-tete h2 {
+      font-size: 1.75rem;
+    }
+  }
+  @container (min-width: 56rem) {
+    .duels-panneau-tete h2 {
+      font-size: 2.1rem;
+    }
+  }
+  .duels-defis-liste,
+  .duels-resultats-liste {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--ice) 35%, transparent) transparent;
+  }
+
+  /* Le compte des défis : allumé quand il y en a. */
+  .duels-compte {
+    display: inline-grid;
+    min-width: 1.85rem;
+    height: 1.85rem;
+    place-items: center;
+    padding-inline: 0.45rem;
+    border-radius: var(--r-pilule);
+    background: color-mix(in srgb, var(--ink) 12%, transparent);
+    font-size: 1rem;
+    letter-spacing: 0;
+    color: var(--muted);
+  }
+  .duels-compte[data-actif] {
+    background: color-mix(in srgb, var(--aurora) 16%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--aurora) 45%, transparent);
+    color: var(--aurora);
+  }
+  .duels-quota {
+    font-size: 0.875rem;
+    color: var(--muted);
+  }
+  .duels-quota b {
+    color: var(--ink);
+  }
+
+  /* ---- Les défis ouverts ---- */
+  .duels-vide {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 1rem;
+    padding: 1rem 1.15rem;
+    border-radius: var(--r-md);
+    background: color-mix(in srgb, var(--bg-deep) 32%, transparent);
+    box-shadow:
+      inset 0 1px 3px color-mix(in srgb, var(--bg-deep) 70%, transparent),
+      inset 0 -1px 0 color-mix(in srgb, var(--ink) 8%, transparent);
+  }
+  .duels-vide-icone {
     display: grid;
-    min-width: 1.75rem;
-    height: 1.75rem;
-    padding: 0 0.45rem;
+    width: 2.75rem;
+    height: 2.75rem;
+    flex: none;
     place-items: center;
     border-radius: var(--r-pilule);
-    background: rgb(0 10 30 / 0.35);
-    font-family: var(--font-display);
-    font-size: 1rem;
-    font-weight: 900;
-    color: var(--muted);
-    font-variant-numeric: tabular-nums;
+    background: color-mix(in srgb, var(--ice) 12%, transparent);
+    color: var(--ice);
   }
-  .rejoindre-compte[data-actif] {
-    background: var(--aurora);
-    color: var(--nuit);
-  }
-  .rejoindre-aide {
-    min-width: 0;
-    flex: 1 1 20rem;
+  .duels-vide p {
     font-size: 0.9375rem;
     line-height: 1.45;
     color: var(--ink-2);
   }
-  .rejoindre-grille {
+  .duels-vide b {
+    color: var(--ink);
+  }
+
+  .duels-defis-liste {
+    position: relative;
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
-    gap: 0.75rem;
+    align-content: start;
+    gap: 0.6rem;
     margin-top: 1rem;
+    padding: 2px;
   }
-
-  /* Une case de la liste : le défi s'y règle sur sa propre largeur. */
-  .defi-case {
-    display: flex;
-    container-type: inline-size;
-  }
-
-  /* Un défi : qui et combien sur une ligne, le bouton dessous — ou les trois
-     sur une seule ligne, quand la case est large. */
-  .defi {
+  /* Un défi : l'avatar, qui, combien, et son bouton. Étroit — un téléphone —,
+     le bouton passe dessous, sur toute la largeur : le pouce le trouve, et le
+     pseudo garde sa place. Dès qu'il y a la place, tout tient sur une ligne. */
+  .duels-defi {
     display: grid;
-    flex: 1;
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: auto minmax(0, 1fr) auto;
     grid-template-areas:
-      'qui mise'
-      'actions actions';
+      'avatar qui mise'
+      'action action action';
     align-items: center;
-    gap: 0.75rem 1rem;
-    padding: 0.8rem 0.9rem 0.85rem;
+    gap: 0.75rem 0.85rem;
+    padding: 0.85rem 0.9rem;
     border-radius: var(--r-md);
-    background: rgb(0 10 30 / 0.3);
-    box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / 0.16),
-      inset 0 0 0 1px rgb(255 255 255 / 0.08);
+    background: color-mix(in srgb, var(--fond) 60%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 10%, transparent);
   }
-  @container (min-width: 34rem) {
-    .defi {
-      grid-template-columns: minmax(0, 1fr) auto auto;
-      grid-template-areas: 'qui mise actions';
+  .duels-defi-action > .btn {
+    width: 100%;
+  }
+  @container (min-width: 32rem) {
+    .duels-defi {
+      grid-template-columns: auto minmax(0, 1fr) auto auto;
+      grid-template-areas: 'avatar qui mise action';
+      gap: 1.1rem;
+      padding: 0.8rem 1rem;
+    }
+    .duels-defi-action > .btn {
+      width: auto;
+      min-width: 10.5rem;
     }
   }
-  .defi[data-mien] {
-    box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / 0.16),
-      inset 0 0 0 1px color-mix(in srgb, var(--ice) 45%, transparent);
+  /* Le sien : en pointillés, il attend. */
+  .duels-defi[data-mien] {
+    background: transparent;
+    box-shadow: none;
+    outline: 1px dashed color-mix(in srgb, var(--ice) 45%, transparent);
+    outline-offset: -1px;
   }
-  .defi-qui {
+  .duels-defi > .orbe {
+    grid-area: avatar;
+  }
+  .duels-defi-qui {
     display: flex;
-    grid-area: qui;
     min-width: 0;
-    align-items: center;
-    gap: 0.7rem;
+    grid-area: qui;
+    flex-direction: column;
+    gap: 0.1rem;
   }
-  .defi-qui b {
-    display: block;
+  .duels-defi-qui b {
     overflow: hidden;
+    font-family: var(--font-display);
+    font-size: 1.0625rem;
+    font-weight: 900;
+    letter-spacing: 0.02em;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-family: var(--font-display);
-    font-size: 1.1rem;
-    font-weight: 900;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
     color: var(--ink);
   }
-  .defi-qui small {
-    display: block;
+  .duels-defi-qui small,
+  .duels-defi-mise small {
     font-size: 0.8125rem;
-    color: var(--muted);
-  }
-  .defi-mise {
-    display: grid;
-    grid-area: mise;
-    justify-items: end;
-    gap: 0.2rem;
-    text-align: right;
-  }
-  .defi-mise strong {
-    font-family: var(--font-display);
-    font-size: 1.6rem;
-    font-weight: 900;
-    line-height: 1;
     white-space: nowrap;
-    color: var(--ink);
-    font-variant-numeric: tabular-nums;
-  }
-  /* Étroit, le pot passe sur deux lignes plutôt que de rogner le pseudo. */
-  .defi-mise small {
-    max-width: 9.5rem;
-    font-size: 0.8125rem;
-    line-height: 1.35;
-    color: var(--muted);
-  }
-  .defi-actions {
-    display: flex;
-    grid-area: actions;
-    gap: 0.5rem;
-  }
-  .defi-actions > .btn {
-    flex: 1;
-  }
-  @container (min-width: 34rem) {
-    .defi-actions > .btn {
-      flex: none;
-    }
-  }
-
-  /* Une place libre : le creux où un défi viendra se poser. */
-  .defi-libre {
-    display: flex;
-    align-items: center;
-    gap: 0.8rem;
-    background: rgb(0 10 30 / 0.16);
-    box-shadow: none;
-    outline: 1.5px dashed rgb(255 255 255 / 0.22);
-    outline-offset: -1.5px;
-  }
-  .defi-libre b {
-    display: block;
-    font-family: var(--font-display);
-    font-size: 1rem;
-    font-weight: 900;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--muted);
-  }
-  .defi-libre small {
-    display: block;
-    font-size: 0.875rem;
-    line-height: 1.4;
     color: var(--faint);
   }
-  /* Sur un téléphone, une seule place libre : trois creux empilés feraient
-     un écran vide. */
-  @media (max-width: 639px) {
-    .defi-case-libre ~ .defi-case-libre {
-      display: none;
+  .duels-defi-qui small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  /* « te défie » : seulement quand la ligne a la place. */
+  .duels-defi-verbe {
+    display: none;
+  }
+  @container (min-width: 26rem) {
+    .duels-defi-verbe {
+      display: inline;
     }
   }
-  /* En colonne : la liste défile dans la hauteur du ring, et une seule place
-     libre prend le reste, le creux au centre. */
-  @media (min-width: 1920px) {
-    .duels-salon > .rejoindre {
-      display: flex;
-      flex-direction: column;
-      contain: size;
-    }
-    .duels-salon > .rejoindre > .rejoindre-grille {
-      display: flex;
-      flex: 1 1 0;
-      min-height: 0;
-      flex-direction: column;
-      overflow-y: auto;
-    }
-    .defi-case-libre ~ .defi-case-libre {
-      display: none;
-    }
-    .defi-case-libre {
-      flex: 1 0 6rem;
-    }
-    .defi-libre {
-      flex-direction: column;
-      justify-content: center;
-      gap: 0.55rem;
-      text-align: center;
-    }
-  }
-
-  /* ---- Le ring : là où l'on monte son duel ---- */
-  .ring {
-    container-type: inline-size;
-    padding: 1.4rem 1.1rem 1.25rem;
-  }
-  @media (min-width: 640px) {
-    .ring {
-      padding: 1.6rem 1.5rem 1.4rem;
-    }
-  }
-
-  .ring-solde {
+  .duels-defi-mise {
     display: flex;
+    grid-area: mise;
     flex-direction: column;
     align-items: flex-end;
     gap: 0.15rem;
-    padding: 0.45rem 0.95rem;
-    border-radius: var(--r-sm);
-    background: rgb(0 10 30 / 0.24);
-    box-shadow:
-      inset 0 1px 2px rgb(0 8 24 / 0.5),
-      inset 0 -1px 0 rgb(255 255 255 / 0.1);
   }
-  .ring-solde span {
-    font-family: var(--font-display);
-    font-size: 0.8125rem;
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--faint);
-  }
-  .ring-solde strong {
+  .duels-defi-mise strong {
     font-family: var(--font-display);
     font-size: 1.25rem;
     font-weight: 900;
     line-height: 1;
+    white-space: nowrap;
     color: var(--ink);
     font-variant-numeric: tabular-nums;
   }
+  .duels-defi-action {
+    grid-area: action;
+  }
 
-  /* La session perdue : un encart franc, avec de quoi repartir. */
-  .ring-reconnexion {
+  /* ---- Lancer son défi ---- */
+  .duels-solde {
+    display: grid;
+    min-width: 0;
+    max-width: 22rem;
+    flex: 1 1 14rem;
+    gap: 0.4rem;
+  }
+  .duels-solde p {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
+  .duels-solde span {
+    font-family: var(--font-display);
+    font-size: 0.8125rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--faint);
+  }
+  .duels-solde strong {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 900;
+    line-height: 1;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+  .duels-solde small {
+    font-size: 0.8125rem;
+    line-height: 1.35;
+    color: var(--muted);
+  }
+  .duels-solde small b {
+    color: var(--ice);
+  }
+  .duels-solde .jauge-chance {
+    height: 8px;
+  }
+
+  /* Un avis qui bloque : la session perdue, ou plus assez de flocons. */
+  .duels-avis {
+    position: relative;
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
-    gap: 0.9rem;
-    margin-top: 1.1rem;
-    padding: 0.9rem 1.1rem;
+    gap: 0.75rem 1rem;
+    margin-top: 1rem;
+    padding: 0.85rem 1rem;
     border-radius: var(--r-md);
-    background: rgb(0 10 30 / 0.3);
-    box-shadow:
-      inset 0 0 0 1px color-mix(in srgb, var(--gold) 45%, transparent),
-      inset 0 1px 3px rgb(0 8 24 / 0.5);
+    background: color-mix(in srgb, var(--gold) 9%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gold) 35%, transparent);
   }
-  .ring-reconnexion p {
+  .duels-avis p {
     min-width: 0;
-    flex: 1 1 16rem;
+    flex: 1 1 18rem;
     font-size: 0.9375rem;
     line-height: 1.45;
     color: var(--ink-2);
   }
-  .ring-reconnexion strong {
-    color: var(--gold);
+  .duels-avis strong {
+    color: var(--ink);
   }
 
-  /*
-   * L'affiche : les deux camps face à face, et le pot au milieu. Creusée dans
-   * la plaque plutôt que posée dessus — c'est l'emplacement du duel, pas un
-   * objet de plus.
-   */
-  .ring-affiche {
+  /* L'affiche : toi, l'adversaire, et le pot entre les deux. */
+  .duels-affiche {
+    position: relative;
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
     align-items: center;
     gap: 0.5rem;
-    margin-top: 1rem;
-    padding: 1rem 0.75rem 0.9rem;
-    border-radius: calc(var(--r-lg) - 0.6rem);
-    background: rgb(0 10 30 / 0.22);
-    box-shadow:
-      inset 0 2px 4px rgb(0 8 24 / 0.5),
-      inset 0 -1px 0 rgb(255 255 255 / 0.12);
+    margin-top: 1.2rem;
+    padding: 1rem 0.25rem;
+    border-radius: var(--r-md);
+    background: radial-gradient(
+      ellipse 60% 70% at 50% 50%,
+      color-mix(in srgb, var(--ice) 9%, transparent),
+      transparent
+    );
   }
-  /* Étroite, l'affiche passe sur deux rangs : les deux camps côte à côte, le
-     pot dessous. Sur trois colonnes, un téléphone coupait les noms. */
-  @container (max-width: 399px) {
-    .ring-affiche {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      grid-template-areas:
-        'moi adverse'
-        'pot pot';
-      row-gap: 1.1rem;
-    }
-    .ring-affiche > :nth-child(1) {
-      grid-area: moi;
-    }
-    .ring-affiche > :nth-child(2) {
-      grid-area: pot;
-    }
-    .ring-affiche > :nth-child(3) {
-      grid-area: adverse;
-    }
-  }
-  .ring-camp {
+  .duels-camp {
     display: flex;
     min-width: 0;
     flex-direction: column;
     align-items: center;
-    gap: 0.55rem;
+    gap: 0.5rem;
     text-align: center;
   }
-  .ring-camp .orbe {
-    --taille: clamp(52px, 11cqi, 76px);
+  .duels-camp .orbe {
+    --taille: 3.75rem;
   }
-  .ring-camp b {
+  .duels-camp b {
     max-width: 100%;
     overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
     font-family: var(--font-display);
-    font-size: 1.05rem;
+    font-size: 0.875rem;
     font-weight: 900;
     letter-spacing: 0.04em;
+    text-overflow: ellipsis;
     text-transform: uppercase;
+    white-space: nowrap;
     color: var(--ink);
   }
-  .ring-camp small {
-    margin-top: -0.35rem;
-    font-size: 0.8125rem;
-    color: var(--faint);
-  }
-  .ring-pot {
+  .duels-pot {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 0.25rem;
-    padding: 0 0.25rem;
     text-align: center;
   }
-  .ring-pot strong {
+  .duels-pot small {
     font-family: var(--font-display);
-    font-size: clamp(1.9rem, 6.5cqi, 2.8rem);
-    font-weight: 900;
-    line-height: 0.95;
-    color: var(--ink);
-    font-variant-numeric: tabular-nums;
-    white-space: nowrap;
-  }
-  .ring-pot small {
-    font-family: var(--font-display);
-    font-size: 0.8125rem;
-    font-weight: 700;
+    font-size: 0.75rem;
+    font-weight: 800;
     letter-spacing: 0.12em;
     text-transform: uppercase;
+    white-space: nowrap;
+    color: var(--faint);
+  }
+  .duels-pot strong {
+    font-family: var(--font-display);
+    font-size: clamp(1.75rem, 7cqw, 2.6rem);
+    font-weight: 900;
+    line-height: 1;
+    white-space: nowrap;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+  @container (min-width: 30rem) {
+    .duels-affiche {
+      gap: 1rem;
+      padding: 1rem 0.75rem;
+    }
+    .duels-camp .orbe {
+      --taille: 4.75rem;
+    }
+    .duels-camp b {
+      font-size: 1rem;
+      letter-spacing: 0.06em;
+    }
+  }
+  @media (min-width: 1280px) {
+    /* L'affiche prend la hauteur que le panneau a en trop, et grandit avec
+       elle : c'est un conteneur en hauteur, et les avatars, les noms et le pot
+       se mesurent à elle (`cqh`). Sur un grand écran, le duel s'affiche en
+       grand ; sur un portable, il se contente du minimum. */
+    .duels-affiche {
+      container-type: size;
+      min-height: 9rem;
+      flex: 1 1 0;
+      align-content: center;
+    }
+    .duels-camp .orbe {
+      --taille: clamp(3.5rem, 48cqh, 12rem);
+    }
+    .duels-camp b {
+      font-size: clamp(0.875rem, 6cqh, 1.6rem);
+    }
+    .duels-pot strong {
+      font-size: clamp(1.9rem, min(24cqh, 7cqw), 6rem);
+    }
+    .duels-pot small {
+      font-size: clamp(0.6875rem, 3.2cqh, 1rem);
+    }
+  }
+
+  /* Le réglage de la mise : les mises rapides, puis le montant exact entre −
+     et +, puis ce qu'il rapporte ou coûte. Dès que le panneau a la place, le
+     montant et ses deux issues tiennent sur une même ligne, à la même
+     hauteur. */
+  .duels-reglage {
+    position: relative;
+    display: grid;
+    grid-template-areas:
+      'titre'
+      'rapide'
+      'champ'
+      'issues';
+    gap: 0.6rem;
+    margin-top: 1.1rem;
+  }
+  .duels-reglage[data-inactif] {
+    opacity: 0.55;
+  }
+  .duels-reglage-titre {
+    grid-area: titre;
+  }
+  .duels-mise-rapide {
+    display: grid;
+    grid-area: rapide;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.4rem;
+  }
+  @container (min-width: 28rem) {
+    .duels-mise-rapide {
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+  }
+  @container (min-width: 31rem) {
+    .duels-reglage {
+      grid-template-columns: minmax(11rem, 0.8fr) minmax(0, 1.7fr);
+      grid-template-areas:
+        'titre titre'
+        'rapide rapide'
+        'champ issues';
+    }
+  }
+  @container (min-width: 56rem) {
+    .duels-reglage {
+      grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+      grid-template-areas:
+        'titre titre'
+        'rapide issues'
+        'champ issues';
+      column-gap: 1rem;
+    }
+  }
+  .duels-mise-rapide button {
+    min-height: 2.5rem;
+    padding: 0 0.4rem;
+    border-radius: var(--r-pilule);
+    background: color-mix(in srgb, var(--ink) 7%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 16%, transparent);
+    font-family: var(--font-display);
+    font-size: 0.9375rem;
+    font-weight: 800;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+    color: var(--ink-2);
+    font-variant-numeric: tabular-nums;
+    cursor: pointer;
+    transition:
+      background-color 0.15s ease,
+      box-shadow 0.15s ease;
+  }
+  .duels-mise-rapide button:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--ice) 12%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ice) 45%, transparent);
+  }
+  /* La mise choisie : la neige, comme l'onglet actif. */
+  .duels-mise-rapide button[aria-pressed='true'] {
+    background: linear-gradient(178deg, var(--neige-1) 0%, var(--neige-2) 55%, var(--neige-3) 100%);
+    box-shadow: inset 0 1px 0 var(--neige-1);
+    color: var(--nuit);
+  }
+  .duels-mise-rapide button:disabled {
+    cursor: default;
+    opacity: 0.4;
+  }
+  .duels-reglage[data-inactif] .duels-mise-rapide button:disabled {
+    opacity: 1;
+  }
+  /* Le montant entre − et + ; à côté des issues, où le champ est étroit, les
+     deux boutons s'empilent à sa droite et le montant garde la largeur. */
+  .duels-mise-champ {
+    display: grid;
+    min-height: 3rem;
+    grid-area: champ;
+    grid-template-columns: 2.9rem minmax(0, 1fr) 2.9rem;
+    grid-template-areas: 'moins valeur plus';
+    gap: 0.4rem;
+  }
+  .duels-mise-champ > [data-sens='moins'] {
+    grid-area: moins;
+  }
+  .duels-mise-champ > label {
+    grid-area: valeur;
+  }
+  .duels-mise-champ > [data-sens='plus'] {
+    grid-area: plus;
+  }
+  @container (min-width: 31rem) {
+    .duels-mise-champ {
+      grid-template-columns: minmax(0, 1fr) 2.6rem;
+      grid-template-rows: 1fr 1fr;
+      grid-template-areas:
+        'valeur plus'
+        'valeur moins';
+      gap: 0.3rem;
+    }
+  }
+  @container (min-width: 56rem) {
+    .duels-mise-champ {
+      grid-template-columns: 2.9rem minmax(0, 1fr) 2.9rem;
+      grid-template-rows: none;
+      grid-template-areas: 'moins valeur plus';
+      gap: 0.4rem;
+    }
+  }
+  .duels-mise-champ > button {
+    display: grid;
+    place-items: center;
+    border-radius: var(--r-sm);
+    background: color-mix(in srgb, var(--ink) 7%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 16%, transparent);
+    font-size: 1.4rem;
+    line-height: 1;
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .duels-mise-champ > button:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--ice) 12%, transparent);
+  }
+  .duels-mise-champ > button:disabled {
+    cursor: default;
+    opacity: 0.4;
+  }
+  /* Le champ : creusé comme ceux du site, le chiffre au centre, en grand. */
+  .duels-mise-champ label {
+    display: flex;
+    min-width: 0;
+    flex: 1 1 auto;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    padding: 0 0.6rem;
+    border: 1px solid var(--glass-edge);
+    border-radius: var(--r-sm);
+    background: color-mix(in srgb, var(--bg) 40%, transparent);
+    box-shadow: inset 0 1px 2px color-mix(in srgb, var(--bg-deep) 60%, transparent);
+    color: var(--ice);
+  }
+  .duels-mise-champ label:focus-within {
+    border-color: color-mix(in srgb, var(--ice) 60%, transparent);
+  }
+  .duels-mise-champ input {
+    width: 100%;
+    min-width: 0;
+    max-width: 8ch;
+    border: 0;
+    background: transparent;
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 900;
+    text-align: right;
+    color: var(--ink);
+    outline: none;
+    -moz-appearance: textfield;
+  }
+  .duels-mise-champ input::-webkit-outer-spin-button,
+  .duels-mise-champ input::-webkit-inner-spin-button {
+    margin: 0;
+    -webkit-appearance: none;
+  }
+
+  /* Ce que la mise rapporte, ce qu'elle coûte, et le solde après. */
+  .duels-issues {
+    display: grid;
+    grid-area: issues;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.6rem;
+  }
+  .duels-issues > div {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.2rem;
+    padding: 0.7rem 0.9rem;
+    border-radius: var(--r-md);
+    background: color-mix(in srgb, var(--bg-deep) 26%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 9%, transparent);
+  }
+  .duels-issues > [data-issue='gain'] {
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--aurora) 35%, transparent);
+  }
+  .duels-issues span {
+    font-family: var(--font-display);
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    color: var(--faint);
+  }
+  .duels-issues strong {
+    font-family: var(--font-display);
+    font-size: 1.4rem;
+    font-weight: 900;
+    line-height: 1.05;
+    white-space: nowrap;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+  .duels-issues > [data-issue='gain'] strong {
+    color: var(--aurora);
+  }
+  .duels-issues small {
+    font-size: 0.8125rem;
+    white-space: nowrap;
     color: var(--muted);
   }
 
-  .ring-mise {
-    min-width: 0;
+  .duels-alerte {
+    position: relative;
+    margin-top: 0.8rem;
+    font-size: 0.875rem;
+    line-height: 1.4;
+    color: var(--gold);
+  }
+
+  .duels-lancer-pied {
+    position: relative;
+    margin-top: 1.1rem;
+  }
+  .duels-lancer-pied p {
+    margin-top: 0.6rem;
+    font-size: 0.8125rem;
+    line-height: 1.4;
+    text-align: center;
+    color: var(--faint);
+  }
+
+  /* ---- Les résultats ---- */
+  /* Les onglets : toute la largeur et sans leur compte dans une plaque
+     étroite, où ils ne tenaient pas ; à leur taille, compte compris, dès
+     qu'il y a la place. */
+  .duels-resultats .segment {
+    width: 100%;
+  }
+  .duels-resultats .segment > button {
+    flex: 1 1 0;
+    padding-inline: 0.5rem;
+  }
+  .duels-resultats .segment .compte {
+    display: none;
+  }
+  @container (min-width: 30rem) {
+    .duels-resultats .segment {
+      width: auto;
+    }
+    .duels-resultats .segment > button {
+      flex: 1 0 auto;
+      padding-inline: 0.95rem;
+    }
+    .duels-resultats .segment .compte {
+      display: inline-block;
+    }
+  }
+  .duels-resultats-note {
+    position: relative;
+    margin-top: 0.75rem;
+    font-size: 0.875rem;
+    color: var(--muted);
+  }
+  .duels-resultats-liste {
+    position: relative;
+    display: grid;
+    align-content: start;
+    gap: 0.5rem;
     margin-top: 1rem;
+  }
+  /* Sous la colonne « jouer » (téléphone, tablette), cinq résultats ; le
+     reste se déplie (`RESULTATS_REPLIES`). Sur un ordinateur, la liste défile
+     dans sa plaque. */
+  .duels-resultats-plus {
+    position: relative;
+    width: 100%;
+    margin-top: 0.75rem;
+  }
+  @media (max-width: 1279px) {
+    .duels-resultats-liste:not([data-tout]) > li:nth-child(n + 6) {
+      display: none;
+    }
+  }
+  @media (min-width: 1280px) {
+    .btn.duels-resultats-plus {
+      display: none;
+    }
+  }
+  /* Un résultat : une phrase, le vainqueur d'abord ; à droite la mise — et,
+     pour un duel qu'on a joué, ce qu'il a rapporté ou coûté, sur un filet à
+     sa couleur. */
+  .duels-resultat {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    padding: 0.75rem 0.95rem;
+    border-radius: var(--r-md);
+    background: color-mix(in srgb, var(--fond) 55%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 8%, transparent);
+  }
+  .duels-resultat[data-issue='gain'] {
+    box-shadow:
+      inset 3px 0 0 var(--aurora),
+      inset 0 0 0 1px color-mix(in srgb, var(--aurora) 22%, transparent);
+  }
+  .duels-resultat[data-issue='perte'] {
+    box-shadow:
+      inset 3px 0 0 color-mix(in srgb, var(--danger) 75%, transparent),
+      inset 0 0 0 1px color-mix(in srgb, var(--danger) 18%, transparent);
+  }
+  .duels-resultat-phrase {
+    display: flex;
+    min-width: 0;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.2rem 0.4rem;
+  }
+  .duels-resultat-phrase b {
+    font-family: var(--font-display);
+    font-size: 1.0625rem;
+    font-weight: 900;
+    letter-spacing: 0.02em;
+    color: var(--ink);
+  }
+  .duels-resultat-phrase b[data-gagne] {
+    color: var(--aurora);
+  }
+  .duels-resultat-phrase em {
+    font-size: 0.875rem;
+    font-style: normal;
+    color: var(--faint);
+  }
+  .duels-resultat small {
+    font-size: 0.8125rem;
+    color: var(--faint);
+  }
+  .duels-resultat-mise {
+    display: flex;
+    flex: none;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.1rem;
+  }
+  .duels-resultat-mise strong {
+    font-family: var(--font-display);
+    font-size: 1.125rem;
+    font-weight: 900;
+    line-height: 1;
+    white-space: nowrap;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+  .duels-resultat[data-issue='gain'] .duels-resultat-mise strong {
+    color: var(--aurora);
+  }
+  .duels-resultat[data-issue='perte'] .duels-resultat-mise strong {
+    color: color-mix(in srgb, var(--danger) 70%, var(--ink));
+  }
+  .duels-resultat-mise small {
+    font-family: var(--font-display);
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  /* Une plaque large : des lignes plus hautes, des chiffres plus grands. */
+  @container (min-width: 60rem) {
+    .duels-defi-qui b,
+    .duels-resultat-phrase b {
+      font-size: 1.25rem;
+    }
+    .duels-defi-mise strong,
+    .duels-resultat-mise strong {
+      font-size: 1.4rem;
+    }
+    .duels-resultat {
+      padding: 0.9rem 1.1rem;
+    }
+    .duels-issues strong {
+      font-size: 1.75rem;
+    }
+    .duels-mise-rapide button {
+      min-height: 2.9rem;
+      font-size: 1.0625rem;
+    }
+  }
+
+  /* Un écran d'ordinateur bas — un portable, 960 px de haut et moins : tout
+     se resserre pour que le bouton reste à l'écran. L'en-tête maigrit, les
+     sur-titres des plaques s'effacent (le titre dit déjà la même chose), deux
+     défis se voient avant de défiler, l'affiche se contente du minimum, et la
+     ligne sous le bouton s'efface. */
+  @media (min-width: 1280px) and (max-height: 960px) {
+    .duels-page > .entete-page {
+      padding-block: 0.85rem;
+    }
+    .duels-defis .duels-panneau-tete .eyebrow,
+    .duels-lancer .duels-panneau-tete .eyebrow {
+      display: none;
+    }
+    .duels-panneau-tete h2 {
+      margin-top: 0;
+    }
+    .duels-panneau {
+      padding-top: 1.15rem;
+      padding-bottom: 1.1rem;
+    }
+    .duels-defis-liste {
+      margin-top: 0.75rem;
+    }
+    .duels-affiche {
+      min-height: 6.5rem;
+      margin-top: 0.6rem;
+      padding-block: 0.5rem;
+    }
+    .duels-reglage {
+      margin-top: 0.75rem;
+    }
+    .duels-lancer-pied {
+      margin-top: 0.8rem;
+    }
+    .duels-lancer-pied p {
+      display: none;
+    }
   }
 
   /*
@@ -3793,143 +4306,6 @@
     border-radius: var(--r-pilule);
   }
 
-  /* Le bilan : ce qu'on mise, ce qu'on gagne, ce qu'on perd, sur la même
-     ligne des yeux. Étroit, il s'empile. */
-  .ring-bilan {
-    display: grid;
-    gap: 0.6rem;
-    margin-top: 1rem;
-  }
-  @container (min-width: 26rem) {
-    .ring-bilan {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-  }
-  .ring-bilan em {
-    display: block;
-    margin-top: 0.4rem;
-    padding-top: 0.35rem;
-    border-top: 1px solid rgb(255 255 255 / 0.1);
-    font-size: 0.875rem;
-    font-style: normal;
-    font-weight: 700;
-    color: var(--ink-2);
-    font-variant-numeric: tabular-nums;
-  }
-  .ring-bilan > [data-issue='gain'] {
-    box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / 0.08),
-      inset 0 0 0 1px color-mix(in srgb, var(--aurora) 30%, transparent);
-  }
-  .ring-bilan > div {
-    padding: 0.6rem 0.8rem;
-    border-radius: var(--r-sm);
-    background: rgb(0 10 30 / 0.2);
-    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.08);
-  }
-  .ring-bilan span {
-    display: block;
-    font-family: var(--font-display);
-    font-size: 0.8125rem;
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--faint);
-  }
-  .ring-bilan small {
-    display: block;
-    margin-top: 0.15rem;
-    font-size: 0.8125rem;
-    line-height: 1.3;
-    color: var(--muted);
-  }
-  .ring-bilan strong {
-    display: block;
-    margin-top: 0.1rem;
-    font-family: var(--font-display);
-    font-size: 1.3rem;
-    font-weight: 900;
-    line-height: 1.05;
-    font-variant-numeric: tabular-nums;
-  }
-
-  .ring-actions {
-    display: grid;
-    gap: 0.5rem;
-    margin-top: 1rem;
-  }
-  .ring-actions > .btn {
-    min-height: 50px;
-    font-size: 1rem;
-  }
-  .ring-actions p {
-    font-size: 0.8125rem;
-    line-height: 1.4;
-    text-align: center;
-    color: var(--faint);
-  }
-
-  /* ---- Le fil : les duels ouverts, et ceux qui viennent de se jouer ---- */
-  .fil-ligne {
-    display: flex;
-    width: 100%;
-    align-items: center;
-    gap: 0.8rem;
-    padding: 0.7rem 0.85rem;
-    border-radius: var(--r-md);
-    background: rgb(0 10 30 / 0.22);
-    box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / 0.12),
-      inset 0 0 0 1px rgb(255 255 255 / 0.05);
-    text-align: left;
-    transition: background 0.18s ease;
-  }
-  button.fil-ligne:hover,
-  .fil-ligne[data-mien] {
-    background: rgb(255 255 255 / 0.08);
-  }
-  .fil-ligne[data-mien] {
-    box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / 0.16),
-      inset 0 0 0 1px rgb(143 220 255 / 0.3);
-  }
-  .fil-liste {
-    display: grid;
-    align-content: start;
-    gap: 0.5rem;
-    max-height: 34rem;
-    overflow-y: auto;
-    padding-right: 0.15rem;
-  }
-
-  /*
-   * Les résultats, aussi hauts que le ring sur grand écran. La section ne
-   * compte pas son contenu dans la hauteur de la rangée (`contain: size`) :
-   * c'est le ring qui la fixe, et la liste remplit ce qui reste, en
-   * défilant au-delà.
-   */
-  .resultats {
-    display: flex;
-    flex-direction: column;
-    padding: 1.4rem 1.1rem 1.25rem;
-  }
-  @media (min-width: 640px) {
-    .rejoindre,
-    .resultats {
-      padding: 1.6rem 1.5rem 1.4rem;
-    }
-  }
-  @media (min-width: 1280px) {
-    .resultats {
-      contain: size;
-    }
-    .resultats > .fil-liste {
-      min-height: 0;
-      flex: 1;
-      max-height: none;
-    }
-  }
-
   /* Une liste vide : un creux dans la plaque, qui dit quoi faire. */
   .fil-vide {
     display: flex;
@@ -3941,33 +4317,6 @@
     box-shadow:
       inset 0 1px 3px rgb(0 8 24 / 0.45),
       inset 0 -1px 0 rgb(255 255 255 / 0.08);
-  }
-
-  /* Un résultat : une phrase, le vainqueur d'abord et en aurore. */
-  .resultat {
-    display: flex;
-    min-width: 0;
-    flex-wrap: wrap;
-    align-items: baseline;
-    gap: 0.1rem 0.45rem;
-  }
-  .resultat > b {
-    overflow: hidden;
-    max-width: 100%;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-family: var(--font-display);
-    font-size: 1.05rem;
-    font-weight: 800;
-    color: var(--muted);
-  }
-  .resultat > b[data-gagne] {
-    color: var(--aurora);
-  }
-  .resultat > em {
-    font-size: 0.875rem;
-    font-style: normal;
-    color: var(--faint);
   }
 
   /* Les médailles du top de la semaine. */
@@ -3998,112 +4347,7 @@
     color: #1c1006;
   }
 
-  /*
-   * ---- Les règles, en tête de page ----
-   * Une seule bande : quatre étapes en ligne, puis la chance aux boosters. On
-   * la lit d'un regard avant de miser, et elle ne pousse pas le ring hors de
-   * l'écran.
-   */
-  .regles-duel {
-    container-type: inline-size;
-    padding: 1rem 1.1rem;
-  }
-  .regles-grille {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.5rem;
-  }
-  .regles-chance {
-    grid-column: 1 / -1;
-  }
-  /* Étroite, la bande reste sur deux colonnes : le numéro passe au-dessus du
-     titre, et les quatre étapes tiennent dans un demi-écran de téléphone. */
-  @container (max-width: 619px) {
-    .regles-grille .duel-etape {
-      padding: 0.6rem 0.7rem 0.65rem;
-    }
-    .regles-grille .duel-etape > i {
-      position: static;
-      margin-bottom: 0.35rem;
-    }
-    .regles-grille .duel-etape > b {
-      font-size: 0.9rem;
-    }
-    .regles-grille .duel-etape > p {
-      font-size: 0.875rem;
-      line-height: 1.35;
-    }
-  }
-  @container (min-width: 620px) {
-    .regles-grille {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-  }
-  @container (min-width: 1180px) {
-    .regles-grille {
-      grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(0, 1.35fr);
-    }
-  }
-  .regles-grille .duel-etape {
-    padding-top: 0.7rem;
-    padding-bottom: 0.75rem;
-  }
-  .regles-chance {
-    padding: 0.7rem 1rem 0.75rem;
-    border-radius: var(--r-md);
-    background: rgb(0 10 30 / 0.2);
-    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ice) 30%, transparent);
-  }
-  @container (min-width: 1180px) {
-    .regles-chance {
-      grid-column: auto;
-    }
-  }
-
-  /* ---- Le guide : les étapes numérotées (hors de la frise .etape, plus bas) ---- */
-  .duel-etape {
-    position: relative;
-    padding: 0.85rem 1rem 0.9rem 3.35rem;
-    border-radius: var(--r-md);
-    background: rgb(0 10 30 / 0.2);
-    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.1);
-  }
-  .duel-etape > i {
-    position: absolute;
-    top: 0.85rem;
-    left: 0.9rem;
-    display: grid;
-    width: 1.75rem;
-    height: 1.75rem;
-    place-items: center;
-    border-radius: 999px;
-    background: linear-gradient(178deg, var(--neige-1) 0%, var(--neige-2) 55%, var(--neige-3) 100%);
-    box-shadow:
-      inset 0 -3px 5px rgb(110 170 215 / 0.5),
-      0 2px 4px rgb(0 8 24 / 0.5);
-    font-family: var(--font-display);
-    font-size: 0.9rem;
-    font-style: normal;
-    font-weight: 900;
-    color: var(--nuit);
-  }
-  .duel-etape > b {
-    display: block;
-    font-family: var(--font-display);
-    font-size: 1rem;
-    font-weight: 900;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    color: var(--ink);
-  }
-  .duel-etape > p {
-    margin-top: 0.2rem;
-    font-size: 0.875rem;
-    line-height: 1.45;
-    color: var(--ink-2);
-  }
-
-  /* La chance aux boosters, de ×1 à ×1,5 : une rainure, et la glace jusqu'au solde. */
+  /* La chance aux boosters, de ×1 à ×4 : une rainure, et la glace jusqu'au solde. */
   .jauge-chance {
     position: relative;
     height: 12px;

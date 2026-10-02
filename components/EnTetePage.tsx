@@ -19,6 +19,7 @@ export function EnTetePage({
   lead,
   icone,
   droite,
+  children,
 }: {
   titre: string;
   eyebrow?: string;
@@ -28,6 +29,8 @@ export function EnTetePage({
   icone?: NavIconName;
   /** Ce qui se range à droite : un lien, un bouton, un chiffre. */
   droite?: ReactNode;
+  /** Un contenu riche à la place du chapeau — une liste, par exemple : même place, même filet. */
+  children?: ReactNode;
 }) {
   const Icone = icone ? NAV_ICONS[icone] : null;
   return (
@@ -48,6 +51,7 @@ export function EnTetePage({
         </div>
       </div>
       {lead && <p className="entete-page-lead">{lead}</p>}
+      {children && <div className="entete-page-lead">{children}</div>}
       {droite && <div className="entete-page-droite">{droite}</div>}
     </header>
   );

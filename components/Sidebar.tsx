@@ -76,14 +76,16 @@ export async function Sidebar() {
         </div>
       </aside>
 
-      {/* ---------------- Entête, sous lg ---------------- */}
+      {/* ---------------- Entête, sous lg ----------------
+          Sous 520 px, le logo seul : le solde, ses deux pastilles et la
+          déconnexion ne laissaient au nom que « WINTE… ». */}
       <header className="sticky top-0 z-30 px-3 pt-3 sm:px-5 sm:pt-4 lg:hidden">
         <div className="glass flex items-center gap-3 px-4 py-3">
           <Link href="/" className="flex min-w-0 items-center gap-2.5 no-underline">
             <span className="menu-logo grid h-10 w-10 place-items-center">
               <IconSnowflake className="h-5 w-5" />
             </span>
-            <span className="truncate font-display text-xl font-black tracking-tight max-[379px]:sr-only">
+            <span className="truncate font-display text-xl font-black tracking-tight max-[519px]:sr-only">
               <span className="givre-texte">WINTER</span> <em className="menu-titre-ligue">LIGUE</em>
             </span>
           </Link>

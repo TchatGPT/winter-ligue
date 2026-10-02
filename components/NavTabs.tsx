@@ -186,11 +186,12 @@ export function BottomNav({ isAdmin, isPlayer }: { isAdmin: boolean; isPlayer: b
                 >
                   <Icon className="h-[21px] w-[21px]" />
                   {/*
-                    Sous 380 px, l'icône reste seule. `sr-only` et non `hidden` :
+                    Sous 360 px, l'icône reste seule. `sr-only` et non `hidden` :
                     le nom reste lu par les lecteurs d'écran, qui n'ont que lui —
-                    l'icône, elle, est décorative.
+                    l'icône, elle, est décorative. Sous 420 px, le nom se resserre :
+                    à 13 px, « Classement » ne tenait pas.
                   */}
-                  <span className="w-full truncate text-center font-display text-[13px] leading-tight font-bold tracking-wide uppercase max-[359px]:sr-only">
+                  <span className="w-full truncate text-center font-display text-[13px] leading-tight font-bold tracking-wide uppercase max-[419px]:text-[11px] max-[419px]:tracking-[0.02em] max-[359px]:sr-only">
                     {tab.short}
                   </span>
                 </Link>
@@ -208,7 +209,7 @@ export function BottomNav({ isAdmin, isPlayer }: { isAdmin: boolean; isPlayer: b
                 className={`w-full ${classeOnglet(tiroir || dansLeTiroir)}`}
               >
                 <NAV_ICONS.plus className="h-[21px] w-[21px]" />
-                <span className="w-full truncate text-center font-display text-[13px] leading-tight font-bold tracking-wide uppercase max-[359px]:sr-only">
+                <span className="w-full truncate text-center font-display text-[13px] leading-tight font-bold tracking-wide uppercase max-[419px]:text-[11px] max-[419px]:tracking-[0.02em] max-[359px]:sr-only">
                   Plus
                 </span>
               </button>

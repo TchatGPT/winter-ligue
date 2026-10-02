@@ -5,7 +5,7 @@ import { exigeSession } from '@/lib/auth/acces';
 import { getSession, playerIdOf } from '@/lib/auth/session';
 import { getStore } from '@/lib/db/store';
 import { MANCHES_MAX, MANCHES_MIN } from '@/lib/domain/bataille';
-import { CHANCE, DUEL, ECONOMY, libelleMultiplicateur, chanceDe } from '@/lib/domain/rules';
+import { DUEL, ECONOMY } from '@/lib/domain/rules';
 import { tableauBatailles, topSemaine } from '@/lib/services/batailles';
 
 export const dynamic = 'force-dynamic';
@@ -20,9 +20,10 @@ export const metadata = { title: 'Duels' };
  * serveur dans une seule transaction — la page ne fait que rejouer un
  * résultat déjà acquis.
  *
- * De haut en bas : les règles, en une bande qu'on lit d'un regard ; puis le
- * salon — les duels à rejoindre, le ring et les résultats, côte à côte sur un
- * grand écran (voir Affrontements).
+ * En tête, le titre et les règles sur une ligne : quatre mots qu'on lit d'un
+ * regard. Dessous, le salon (voir `Affrontements`) : à gauche ce qui sert à
+ * jouer — les défis à relever, puis le sien à lancer —, à droite les
+ * résultats. Sur un ordinateur, la page tient dans l'écran.
  */
 export default async function DuelsPage() {
   await exigeSession();
@@ -39,67 +40,30 @@ export default async function DuelsPage() {
     };
   });
 
-  const chance = balance !== null ? chanceDe(balance) : null;
-
   return (
-    <div className="space-y-5">
-      <EnTetePage
-        icone="swords"
-        eyebrow="Duel de flocons"
-        titre="Les duels"
-        lead="Deux pères Noël, deux boules de neige. Le premier qui tombe a perdu, et le gagnant rafle tout."
-      />
-
-      {/* ---- Les règles : une bande, en tête ---- */}
-      <section className="glass regles-duel" aria-label="Les règles du duel">
-        <ol className="regles-grille">
-          <li className="duel-etape">
-            <i>1</i>
+    <div className="duels-page">
+      <EnTetePage icone="swords" eyebrow="Duel de flocons" titre="Les duels">
+        <ul className="duels-regles" aria-label="Les règles du duel">
+          <li>
             <b>Même mise</b>
-            <p>
-              De {flakes(DUEL.miseMin)} à {flakes(DUEL.miseMax)} ❄, et ton adversaire mise autant.
-            </p>
+            <span>
+              de {flakes(DUEL.miseMin)} à {flakes(DUEL.miseMax)} ❄, des deux côtés
+            </span>
           </li>
-          <li className="duel-etape">
-            <i>2</i>
-            <b>Une seule manche</b>
-            <p>Chacun pousse sa boule de neige, qui grossit en roulant.</p>
+          <li>
+            <b>Une manche</b>
+            <span>chacun pousse sa boule de neige</span>
           </li>
-          <li className="duel-etape">
-            <i>3</i>
+          <li>
             <b>Le premier qui tombe</b>
-            <p>Une chute, une boule qui éclate, une boule de neige en pleine face : il a perdu. Une chance sur deux pour chacun.</p>
+            <span>a perdu — une chance sur deux</span>
           </li>
-          <li className="duel-etape">
-            <i>4</i>
+          <li>
             <b>Tout ou rien</b>
-            <p>
-              Le gagnant rafle <strong className="text-aurora">les deux mises</strong>. Le perdant perd{' '}
-              <strong className="text-ink">100 % de la sienne</strong>.
-            </p>
+            <span>le gagnant rafle les deux mises</span>
           </li>
-          <li className="regles-chance">
-            <div className="flex items-baseline justify-between gap-2">
-              <b className="font-display text-[15px] font-black tracking-wide text-ink uppercase">
-                Garder ses flocons
-              </b>
-              {chance !== null && (
-                <span className="font-display text-xl leading-none font-black text-ice tabular-nums">
-                  {libelleMultiplicateur(chance)}
-                </span>
-              )}
-            </div>
-            <div className="jauge-chance mt-2" aria-hidden="true">
-              <span style={{ width: `${((chance ?? 0) / CHANCE.max) * 100}%` }} />
-            </div>
-            <p className="mt-2 text-[13px] leading-snug text-ink-2">
-              Ton solde pousse la chance de tes boosters, de {libelleMultiplicateur(0)} à {libelleMultiplicateur(CHANCE.max)}{' '}
-              à {flakes(ECONOMY.soldeMax)} ❄. En jouant, on finit la saison vers ×2,5 ; au-delà, il faut gagner des duels.
-              Miser, c’est la risquer.
-            </p>
-          </li>
-        </ol>
-      </section>
+        </ul>
+      </EnTetePage>
 
       <Affrontements
         initial={{
