@@ -11,12 +11,12 @@ import { GEMME_DU_PACK, packArt } from '@/lib/domain/catalog';
 import type { PackDefinition } from '@/lib/domain/types';
 
 /**
- * L'aurore derrière le sachet retenu, de la plus discrète à la plus riche :
- * le Perso, qu'on ouvre le plus souvent, n'a qu'une brume et un voile ; le
- * Finisseur, une fois par joueur et par saison, trois voiles et des paillettes
- * d'or. Les couleurs de chacun vivent dans `app/globals.css` (`.aurore`).
+ * La fumée derrière le sachet retenu, de la plus discrète à la plus riche : le
+ * Perso, qu'on ouvre le plus souvent, n'a qu'une fumée d'une couleur ; le
+ * Finisseur, une fois par joueur et par saison, une fumée de toutes les
+ * couleurs. Les teintes de chacun vivent dans `app/globals.css` (`.fumee`).
  */
-const NIVEAU_AURORE: Record<string, 1 | 2 | 3 | 4> = {
+const NIVEAU_FUMEE: Record<string, 1 | 2 | 3 | 4> = {
   perso: 1,
   commu: 2,
   folie: 3,
@@ -50,35 +50,35 @@ export function RangeePacks({
   );
 
   /**
-   * Pose l'aurore derrière le sachet retenu : le centre de sa case et sa
+   * Pose la fumée derrière le sachet retenu : le centre de sa case et sa
    * largeur, écrits en variables sur le cadre. Elle vit hors de la rangée, qui
    * défile et rogne donc tout ce qui dépasse : dans le cadre, elle peut monter
    * au-dessus des sachets et s'étendre entre eux. La largeur est celle de la
    * mise en page, pas celle de l'écran : le sachet retenu grandit de 7 % en
-   * transition, l'aurore ne doit pas le suivre à la trace.
+   * transition, la fumée ne doit pas le suivre à la trace.
    *
-   * La première pose se fait sans glisser : le cadre ne reçoit `data-aurore`
+   * La première pose se fait sans glisser : le cadre ne reçoit `data-fumee`
    * qu'à l'image suivante, et c'est lui qui allume la transition.
    */
-  const placeAurore = useCallback(() => {
+  const placeFumee = useCallback(() => {
     const k = cadre.current;
     const c = cases.current[rang];
     if (!k || !c) return;
     const rk = k.getBoundingClientRect();
     const rc = c.getBoundingClientRect();
-    k.style.setProperty('--aurore-x', `${rc.left - rk.left + rc.width / 2}px`);
-    k.style.setProperty('--aurore-l', `${c.offsetWidth}px`);
-    if (!k.dataset.aurore) requestAnimationFrame(() => (k.dataset.aurore = 'pret'));
+    k.style.setProperty('--fumee-x', `${rc.left - rk.left + rc.width / 2}px`);
+    k.style.setProperty('--fumee-l', `${c.offsetWidth}px`);
+    if (!k.dataset.fumee) requestAnimationFrame(() => (k.dataset.fumee = 'pret'));
   }, [rang]);
 
   useEffect(() => {
-    placeAurore();
+    placeFumee();
     const el = rangee.current;
     if (!el || typeof ResizeObserver === 'undefined') return;
-    const observateur = new ResizeObserver(placeAurore);
+    const observateur = new ResizeObserver(placeFumee);
     observateur.observe(el);
     return () => observateur.disconnect();
-  }, [placeAurore]);
+  }, [placeFumee]);
 
   /**
    * La rangée déborde-t-elle de sa boîte ?
@@ -129,7 +129,7 @@ export function RangeePacks({
    * large la rangée ne défile pas, et ce gestionnaire ne se déclenche jamais.
    */
   const onScroll = () => {
-    placeAurore();
+    placeFumee();
     if (fige) return;
     const el = rangee.current;
     if (!el) return;
@@ -171,14 +171,11 @@ export function RangeePacks({
 
   return (
     <div className="rangee-cadre" ref={cadre}>
-      <div className="aurore-cadre" aria-hidden="true">
-        <div className="aurore" data-pack={selection} data-niveau={NIVEAU_AURORE[selection] ?? 1}>
-          <span className="aurore-brume" />
-          <span className="aurore-voile aurore-voile-1" />
-          <span className="aurore-voile aurore-voile-2" />
-          <span className="aurore-voile aurore-voile-3" />
-          <span className="aurore-voile aurore-voile-4" />
-          <span className="aurore-paillettes" />
+      <div className="fumee-cadre" aria-hidden="true">
+        <div className="fumee" data-pack={selection} data-niveau={NIVEAU_FUMEE[selection] ?? 1}>
+          <span className="fumee-nappe fumee-nappe-1" />
+          <span className="fumee-nappe fumee-nappe-2" />
+          <span className="fumee-nappe fumee-nappe-3" />
         </div>
       </div>
 

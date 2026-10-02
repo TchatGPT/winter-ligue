@@ -10353,67 +10353,58 @@
 }
 
 /* ==========================================================================
-   L'AURORE DERRIÈRE LE SACHET RETENU — voir `RangeePacks`.
+   LA FUMÉE DERRIÈRE LE SACHET RETENU — voir `RangeePacks`.
    ==========================================================================
-   Une aurore, pas un halo : des voiles de lumière qui ondulent derrière le
-   booster choisi, une brume à sa base, et, pour le Finisseur, des paillettes
-   d'or qui montent. Elle remplace la lueur floue qui épousait la planche, la
-   même sur les quatre boosters.
+   Une fumée discrète, colorée, qui monte lentement derrière le booster
+   choisi : quelques nappes de couleur, effilochées par un grain de bruit, qui
+   dérivent et se croisent. Elle remplace la lueur floue — la même derrière les
+   quatre sachets —, puis une aurore à rayons, rejetée : ses rayons se lisaient
+   comme de grosses rayures.
 
-   Le sachet en cache le milieu : l'aurore est donc trois fois plus large que
-   lui, monte derrière le titre, et ses voiles brillent au tiers de leur
-   hauteur — ce qui se voit, ce sont les rideaux entre les sachets et au-dessus,
-   et la brume qui déborde à leur pied.
+   Du plus courant au plus rare, elle se colore : une seule teinte de glace
+   pour le Perso, la glace et le vert pour le Commu, le violet, le rose et le
+   vert pour la Folie, toutes les couleurs et l'or pour le Finisseur. Changer de
+   booster la fait glisser jusqu'au nouveau sachet et fondre ses teintes :
+   `@property` les rend interpolables.
 
-   Du plus courant au plus rare, elle s'étoffe : trois voiles pour le Perso
-   et le Commu, le second plus vif, un quatrième pour la Folie, et l'or en plus
-   pour le Finisseur — chaque booster a les couleurs de sa planche. Changer de booster fait
-   glisser l'aurore jusqu'au nouveau sachet et fondre ses couleurs : `@property`
-   rend les teintes et les intensités interpolables.
-
-   Légère : aucun flou, seulement des dégradés à bord doux, et l'on n'anime
-   que la transformation et l'opacité. Les voiles se fondent en `screen`, comme
-   de la lumière : deux voiles qui se croisent s'éclaircissent au lieu de se
-   salir. Moins d'animations demandées (ce que Windows annonce dès que ses
-   effets sont coupés) : les voiles ondulent toujours, mais de moins loin.
+   Légère : le grain est un bruit SVG (`feTurbulence`) que le navigateur peint
+   une fois, puis qui sert de masque ; on n'anime que la transformation et
+   l'opacité des nappes. Elles se fondent en `screen`, comme de la lumière.
+   Moins d'animations demandées (ce que Windows annonce dès que ses effets
+   sont coupés) : la fumée dérive toujours, mais de moins loin.
    ========================================================================== */
-@property --a1 {
+@property --f1 {
   syntax: '<color>';
   inherits: true;
   initial-value: transparent;
 }
-@property --a2 {
+@property --f2 {
   syntax: '<color>';
   inherits: true;
   initial-value: transparent;
 }
-@property --a3 {
+@property --f3 {
   syntax: '<color>';
   inherits: true;
   initial-value: transparent;
 }
-@property --aurore-force {
+@property --f4 {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: transparent;
+}
+@property --fumee-force {
   syntax: '<number>';
   inherits: true;
-  initial-value: 0.5;
+  initial-value: 0.4;
 }
-@property --v3 {
-  syntax: '<number>';
-  inherits: true;
-  initial-value: 0;
-}
-@property --v4 {
-  syntax: '<number>';
-  inherits: true;
-  initial-value: 0;
-}
-@property --vor {
+@property --n3 {
   syntax: '<number>';
   inherits: true;
   initial-value: 0;
 }
 
-/* La rangée passe devant l'aurore ; la lueur floue des sachets s'y efface. */
+/* La rangée passe devant la fumée ; la lueur floue des sachets s'y efface. */
 .rangee-cadre > .rangee {
   position: relative;
   z-index: 1;
@@ -10422,270 +10413,185 @@
   display: none;
 }
 
-/* Le cadre de l'aurore : la largeur de la rangée, et plus haut qu'elle. Il
-   fond l'aurore à ses bords — tranchée par le bord du panneau, la lumière du
-   premier et du dernier sachet y faisait une bande claire — et en haut, sous
-   le titre. Les voiles s'y fondent entre eux en `screen`, puis le tout se
-   pose sur la scène. */
-.aurore-cadre {
+/* Le cadre de la fumée : la largeur de la rangée, et plus haut qu'elle. Il la
+   fond à ses bords — tranchée par le bord du panneau, la fumée du premier et
+   du dernier sachet y ferait une bande — et en haut, sous le titre. */
+.fumee-cadre {
   position: absolute;
   z-index: 0;
   inset: -40% 0 -10%;
   overflow: hidden;
   pointer-events: none;
   -webkit-mask-image:
-    linear-gradient(90deg, transparent, #000 5%, #000 95%, transparent),
-    linear-gradient(to bottom, transparent, #000 18%);
+    linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent),
+    linear-gradient(to bottom, transparent, #000 22%, #000 88%, transparent);
   -webkit-mask-composite: source-in;
   mask-image:
-    linear-gradient(90deg, transparent, #000 5%, #000 95%, transparent),
-    linear-gradient(to bottom, transparent, #000 18%);
+    linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent),
+    linear-gradient(to bottom, transparent, #000 22%, #000 88%, transparent);
   mask-composite: intersect;
 }
 
 /* Dans le cadre, qui déborde de 40 % au-dessus de la rangée et de 10 % en
-   dessous : l'aurore monte à 30 % au-dessus d'elle et descend à 6 % sous elle. */
-.aurore {
+   dessous : la fumée monte à 28 % au-dessus d'elle et descend à 4 % sous elle. */
+.fumee {
   --amp: 1;
+  /* Le grain : un bruit fractal, dont l'alpha seul compte, contrasté pour que
+     la fumée s'effiloche en mèches plutôt que de faire des taches rondes. */
+  --bruit-fumee: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='480' height='480'%3E%3Cfilter id='b' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.007 0.012' numOctaves='3' seed='11' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 2.4 -0.75'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23b)'/%3E%3C/svg%3E");
   position: absolute;
-  top: calc(10% / 1.5);
-  bottom: calc(4% / 1.5);
-  left: var(--aurore-x, 50%);
-  width: calc(var(--aurore-l, 240px) * 3);
+  top: calc(12% / 1.5);
+  bottom: calc(6% / 1.5);
+  left: var(--fumee-x, 50%);
+  width: calc(var(--fumee-l, 240px) * 2.6);
   transform: translateX(-50%);
-  pointer-events: none;
   opacity: 0;
   transition:
     opacity 0.8s ease,
-    --a1 0.9s ease,
-    --a2 0.9s ease,
-    --a3 0.9s ease,
-    --aurore-force 0.9s ease,
-    --v3 0.9s ease,
-    --v4 0.9s ease,
-    --vor 0.9s ease;
+    --f1 0.9s ease,
+    --f2 0.9s ease,
+    --f3 0.9s ease,
+    --f4 0.9s ease,
+    --fumee-force 0.9s ease,
+    --n3 0.9s ease;
 }
-/* Posée une première fois, elle s'allume, et ne glisse qu'ensuite. */
-.rangee-cadre[data-aurore='pret'] .aurore {
+/* Posée une première fois, elle apparaît, et ne glisse qu'ensuite. */
+.rangee-cadre[data-fumee='pret'] .fumee {
   opacity: 1;
   transition:
-    left 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+    left 0.6s cubic-bezier(0.22, 1, 0.36, 1),
     opacity 0.8s ease,
-    --a1 0.9s ease,
-    --a2 0.9s ease,
-    --a3 0.9s ease,
-    --aurore-force 0.9s ease,
-    --v3 0.9s ease,
-    --v4 0.9s ease,
-    --vor 0.9s ease;
+    --f1 0.9s ease,
+    --f2 0.9s ease,
+    --f3 0.9s ease,
+    --f4 0.9s ease,
+    --fumee-force 0.9s ease,
+    --n3 0.9s ease;
 }
 
-/* Les couleurs de chaque planche. */
-.aurore[data-pack='perso'] {
-  --a1: var(--ice);
-  --a2: var(--frost);
-  --a3: var(--ice-2);
+/* Les teintes, du plus courant au plus rare. */
+.fumee[data-pack='perso'] {
+  --f1: var(--ice);
+  --f2: var(--frost);
+  --f3: var(--ice-2);
+  --f4: var(--ice);
 }
-.aurore[data-pack='commu'] {
-  --a1: var(--ice-2);
-  --a2: var(--aurora);
-  --a3: var(--ice);
+.fumee[data-pack='commu'] {
+  --f1: var(--ice-2);
+  --f2: var(--aurora);
+  --f3: var(--ice);
+  --f4: var(--ice-2);
 }
-.aurore[data-pack='folie'] {
-  --a1: var(--violet);
-  --a2: var(--aurora);
-  --a3: color-mix(in srgb, var(--live) 55%, var(--violet));
+.fumee[data-pack='folie'] {
+  --f1: var(--violet);
+  --f2: color-mix(in srgb, var(--live) 55%, var(--violet));
+  --f3: var(--aurora);
+  --f4: var(--twitch-clair);
 }
-.aurore[data-pack='finisseur'] {
-  --a1: var(--aurora);
-  --a2: var(--violet);
-  --a3: var(--gold);
-}
-
-/* L'intensité, du plus courant au plus rare. */
-.aurore[data-niveau='1'] {
-  --aurore-force: 0.62;
-  --v3: 1;
-  --v4: 0;
-  --vor: 0;
-}
-.aurore[data-niveau='2'] {
-  --aurore-force: 0.78;
-  --v3: 1;
-  --v4: 0;
-  --vor: 0;
-}
-.aurore[data-niveau='3'] {
-  --aurore-force: 0.9;
-  --v3: 1;
-  --v4: 1;
-  --vor: 0;
-}
-.aurore[data-niveau='4'] {
-  --aurore-force: 1;
-  --v3: 1;
-  --v4: 1;
-  --vor: 1;
+.fumee[data-pack='finisseur'] {
+  --f1: var(--aurora);
+  --f2: var(--violet);
+  --f3: var(--gold);
+  --f4: color-mix(in srgb, var(--live) 50%, var(--violet));
 }
 
-/* Un voile : un rideau de lumière, vif vers le bas, qui s'efface en montant.
-   Sa forme est une bande verticale aux flancs fondus — une ellipse en faisait
-   une tache ronde —, striée de rayons fins comme une vraie aurore : un second
-   masque, en rayures douces, croisé avec le premier. Il ondule depuis sa base,
-   et ses rayons avec lui. */
-.aurore-voile {
+/* La densité : discrète partout, un peu plus présente chez les plus rares,
+   qui ont aussi une troisième nappe. */
+.fumee[data-niveau='1'] {
+  --fumee-force: 0.4;
+  --n3: 0;
+}
+.fumee[data-niveau='2'] {
+  --fumee-force: 0.47;
+  --n3: 0;
+}
+.fumee[data-niveau='3'] {
+  --fumee-force: 0.54;
+  --n3: 1;
+}
+.fumee[data-niveau='4'] {
+  --fumee-force: 0.6;
+  --n3: 1;
+}
+
+/* Une nappe : trois volutes de couleur, effilochées par le grain, dans une
+   ellipse aux bords fondus. Elles montent et tournent un peu, lentement. */
+.fumee-nappe {
   position: absolute;
-  bottom: 12%;
-  width: 30%;
-  height: 86%;
-  background: linear-gradient(
-    to top,
-    transparent 0%,
-    color-mix(in srgb, var(--c) 55%, transparent) 10%,
-    color-mix(in srgb, var(--c) 78%, transparent) 24%,
-    color-mix(in srgb, var(--c) 38%, transparent) 52%,
-    color-mix(in srgb, var(--c) 10%, transparent) 80%,
-    transparent 97%
-  );
-  -webkit-mask-image:
-    linear-gradient(90deg, transparent 0%, #000 24%, #000 76%, transparent 100%),
-    repeating-linear-gradient(90deg, #000 0 2px, rgb(0 0 0 / 0.45) 9px, #000 16px),
-    repeating-linear-gradient(90deg, #000 0 4px, rgb(0 0 0 / 0.62) 14px, #000 23px);
+  inset: 0;
+  background:
+    radial-gradient(34% 30% at 38% 66%, color-mix(in srgb, var(--c1) 80%, transparent), transparent),
+    radial-gradient(30% 28% at 64% 50%, color-mix(in srgb, var(--c2) 75%, transparent), transparent),
+    radial-gradient(28% 26% at 47% 30%, color-mix(in srgb, var(--c3) 70%, transparent), transparent);
+  -webkit-mask-image: radial-gradient(closest-side, #000 30%, transparent), var(--bruit-fumee);
+  -webkit-mask-size: 100% 100%, var(--grain) var(--grain);
+  -webkit-mask-repeat: no-repeat, repeat;
+  -webkit-mask-position: 0 0, var(--grain-x) var(--grain-y);
   -webkit-mask-composite: source-in;
-  mask-image:
-    linear-gradient(90deg, transparent 0%, #000 24%, #000 76%, transparent 100%),
-    repeating-linear-gradient(90deg, #000 0 2px, rgb(0 0 0 / 0.45) 9px, #000 16px),
-    repeating-linear-gradient(90deg, #000 0 4px, rgb(0 0 0 / 0.62) 14px, #000 23px);
+  mask-image: radial-gradient(closest-side, #000 30%, transparent), var(--bruit-fumee);
+  mask-size: 100% 100%, var(--grain) var(--grain);
+  mask-repeat: no-repeat, repeat;
+  mask-position: 0 0, var(--grain-x) var(--grain-y);
   mask-composite: intersect;
   mix-blend-mode: screen;
-  transform-origin: 50% 100%;
-  animation: aurore-onde var(--duree) ease-in-out var(--retard) infinite alternate;
+  animation: fumee-derive var(--duree) ease-in-out var(--retard) infinite alternate;
 }
-/* Les deux rideaux des côtés, centrés au quart et aux trois quarts : sur les
-   intervalles entre le sachet retenu et ses voisins. */
-.aurore-voile-1 {
-  --c: var(--a1);
+.fumee-nappe-1 {
+  --c1: var(--f1);
+  --c2: var(--f2);
+  --c3: var(--f3);
   --vis: 1;
-  --duree: 14s;
-  --retard: -3s;
-  left: 11%;
+  --sens: 1;
+  --grain: 520px;
+  --grain-x: 0px;
+  --grain-y: 0px;
+  --duree: 26s;
+  --retard: -4s;
 }
-.aurore-voile-2 {
-  --c: var(--a2);
+.fumee-nappe-2 {
+  --c1: var(--f2);
+  --c2: var(--f3);
+  --c3: var(--f4);
   --vis: 1;
-  --duree: 17s;
-  --retard: -9s;
-  left: 59%;
+  --sens: -1;
+  --grain: 680px;
+  --grain-x: 210px;
+  --grain-y: 140px;
+  --duree: 32s;
+  --retard: -13s;
 }
-/* La couronne : sa bande vive au ras du haut du sachet, qui s'efface en
-   montant derrière le titre. Plus bas, le sachet la cacherait. */
-.aurore-voile-3 {
-  --c: var(--a3);
-  --vis: var(--v3);
-  --duree: 19s;
-  --retard: -12s;
-  bottom: 58%;
-  left: 24%;
-  width: 52%;
-  height: 42%;
+.fumee-nappe-3 {
+  --c1: var(--f3);
+  --c2: var(--f4);
+  --c3: var(--f1);
+  --vis: var(--n3);
+  --sens: 1;
+  --grain: 420px;
+  --grain-x: 120px;
+  --grain-y: 330px;
+  --duree: 38s;
+  --retard: -21s;
 }
-/* Le quatrième, pour les deux plus rares : une seconde couronne, décalée,
-   d'une autre couleur. */
-.aurore-voile-4 {
-  --c: var(--a1);
-  --vis: var(--v4);
-  --duree: 23s;
-  --retard: -6s;
-  bottom: 52%;
-  left: 40%;
-  width: 40%;
-  height: 46%;
-}
-@keyframes aurore-onde {
+@keyframes fumee-derive {
   0% {
-    opacity: calc(var(--aurore-force) * var(--vis) * 0.6);
-    transform: translateX(calc(-12% * var(--amp))) skewX(calc(-8deg * var(--amp))) scaleY(0.92);
+    opacity: calc(var(--fumee-force) * var(--vis) * 0.7);
+    transform: translate(calc(-4% * var(--sens) * var(--amp)), calc(5% * var(--amp)))
+      rotate(calc(-4deg * var(--sens) * var(--amp))) scale(1);
   }
   50% {
-    opacity: calc(var(--aurore-force) * var(--vis));
-    transform: translateX(calc(3% * var(--amp))) skewX(calc(5deg * var(--amp))) scaleY(1.04);
+    opacity: calc(var(--fumee-force) * var(--vis));
+    transform: translate(calc(2% * var(--sens) * var(--amp)), calc(-2% * var(--amp)))
+      rotate(calc(2deg * var(--sens) * var(--amp))) scale(1.06);
   }
   100% {
-    opacity: calc(var(--aurore-force) * var(--vis) * 0.78);
-    transform: translateX(calc(12% * var(--amp))) skewX(calc(-4deg * var(--amp))) scaleY(0.97);
-  }
-}
-
-/* La brume, au pied du sachet, plus large que lui : trois nappes des
-   couleurs du booster, qui débordent de part et d'autre. */
-.aurore-brume {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  height: 38%;
-  /* Chaque nappe s'éteint avant le bord de la boîte : un dégradé qui le
-     dépasse y est tranché net, et l'on voyait une ligne droite sous les
-     sachets. */
-  background:
-    radial-gradient(40% 50% at 50% 50%, color-mix(in srgb, var(--a1) 55%, transparent), transparent),
-    radial-gradient(24% 44% at 26% 52%, color-mix(in srgb, var(--a2) 40%, transparent), transparent),
-    radial-gradient(24% 42% at 74% 50%, color-mix(in srgb, var(--a3) 36%, transparent), transparent);
-  mix-blend-mode: screen;
-  animation: aurore-brume 17s ease-in-out -5s infinite alternate;
-}
-@keyframes aurore-brume {
-  0% {
-    opacity: calc(var(--aurore-force) * 0.7);
-    transform: translateX(calc(-4% * var(--amp))) scale(1);
-  }
-  100% {
-    opacity: var(--aurore-force);
-    transform: translateX(calc(4% * var(--amp))) scale(1.06);
-  }
-}
-
-/* Les paillettes d'or du Finisseur : des points qui montent et s'éteignent,
-   en deux nappes décalées — la seconde en miroir, pour ne pas répéter les
-   mêmes points. */
-.aurore-paillettes,
-.aurore-paillettes::after {
-  position: absolute;
-  inset: 4% 6% 14%;
-  background:
-    radial-gradient(circle 2.2px at 8% 72%, var(--gold) 55%, transparent),
-    radial-gradient(circle 1.6px at 16% 34%, var(--frost) 55%, transparent),
-    radial-gradient(circle 2.6px at 24% 58%, var(--gold) 55%, transparent),
-    radial-gradient(circle 1.8px at 37% 18%, var(--gold) 55%, transparent),
-    radial-gradient(circle 2px at 63% 22%, var(--frost) 55%, transparent),
-    radial-gradient(circle 2.4px at 74% 52%, var(--gold) 55%, transparent),
-    radial-gradient(circle 1.6px at 84% 30%, var(--gold) 55%, transparent),
-    radial-gradient(circle 2.2px at 93% 68%, var(--gold) 55%, transparent);
-  mix-blend-mode: screen;
-  animation: aurore-paillettes 7s ease-in-out infinite;
-}
-.aurore-paillettes::after {
-  content: '';
-  inset: 0;
-  scale: -1 1;
-  animation-delay: -3.5s;
-}
-@keyframes aurore-paillettes {
-  0% {
-    opacity: 0;
-    transform: translateY(6%);
-  }
-  35% {
-    opacity: calc(var(--vor) * 0.95);
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(-14%);
+    opacity: calc(var(--fumee-force) * var(--vis) * 0.8);
+    transform: translate(calc(5% * var(--sens) * var(--amp)), calc(-7% * var(--amp)))
+      rotate(calc(5deg * var(--sens) * var(--amp))) scale(1.12);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .aurore {
+  .fumee {
     --amp: 0.35;
   }
 }
