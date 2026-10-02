@@ -10460,11 +10460,17 @@
    hauteur qui le déborde d'autant en haut qu'en bas — de 11 % au-dessus de la
    rangée à 11 % en dessous, le sachet étant au milieu de la rangée. Le cadre
    mesure 160 % de la rangée, d'où la division. */
-.fumee {
+/* Le grain et l'amplitude, communs à la fumée des boosters et à celle de la
+   carte révélée. */
+.fumee,
+.reveal-fumee {
   --amp: 1;
   /* Le grain : un bruit fractal, dont l'alpha seul compte, contrasté pour que
      la fumée s'effiloche en mèches plutôt que de faire des taches rondes. */
   --bruit-fumee: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='480' height='480'%3E%3Cfilter id='b' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.007 0.012' numOctaves='3' seed='11' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 2.4 -0.75'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23b)'/%3E%3C/svg%3E");
+}
+
+.fumee {
   position: absolute;
   top: calc(19% / 1.6);
   bottom: calc(19% / 1.6);
@@ -10670,7 +10676,219 @@
    la page ; elle reste, à peine moins ample. Au tiers, on ne la voyait plus
    bouger — et Windows le demande dès que ses effets sont coupés. */
 @media (prefers-reduced-motion: reduce) {
-  .fumee {
+  .fumee,
+  .reveal-fumee {
     --amp: 0.8;
+  }
+}
+
+/* ==========================================================================
+   LA CARTE RÉVÉLÉE — la fin d'une ouverture, voir `PackOpening`.
+   ==========================================================================
+   La carte en grand, sa fumée derrière elle à la couleur de sa rareté, et à
+   côté, en grand aussi : le booster, la rareté avec son emblème, le nom,
+   l'action, l'effet, où elle est tombée, la chance du tirage, et la suite.
+   Avant, une carte de 280 px flottait dans la scène, sous un « Ouvert »
+   isolé, avec une rareté réduite à un éclat sans nom.
+
+   Tout se règle sur la largeur de la scène (`.scene-boosters` en est le
+   conteneur), pas sur celle de l'écran : la scène fait 680 px sur un portable,
+   1 600 sur un très grand écran, et la carte suit — de 200 à 420 px, 260 sur
+   un portable. Sur un téléphone, la carte et le texte s'empilent au centre.
+   ========================================================================== */
+.scene-boosters {
+  container-type: inline-size;
+}
+
+.revelation {
+  display: grid;
+  justify-items: center;
+  gap: 1.5rem;
+}
+/* Côte à côte, la carte et le texte restent un groupe centré, avec de l'air
+   de part et d'autre : la carte à 38 % de la scène, le texte à la moitié au
+   plus. */
+@container (min-width: 40rem) {
+  .revelation {
+    grid-template-columns: auto minmax(0, min(30rem, 50cqw));
+    justify-content: center;
+    align-items: center;
+    justify-items: start;
+    column-gap: clamp(1.75rem, 4.7cqw, 4.5rem);
+  }
+}
+
+.revelation-carte {
+  --fumee-l: clamp(200px, 38cqw, 420px);
+  position: relative;
+  width: var(--fumee-l);
+}
+
+/* La fumée de la carte : celle des boosters, posée derrière elle, à la
+   couleur de sa rareté — un peu plus présente qu'eux, c'est le moment de la
+   révélation, et plus riche à mesure que la carte est rare, multicolore et
+   dorée pour la légendaire. */
+.reveal-fumee {
+  /* Ce qui sépare la carte du bord de la scène — empilée : la moitié de ce
+     que la carte laisse ; côte à côte : la moitié de ce que laisse le groupe
+     carte, écart et texte (les mêmes mesures que la grille). La fumée ne
+     s'étend pas au-delà sur les côtés : sur un portable, la carte est à
+     40 px du bord, et la scène la rognait net. Elle monte et descend, où il y
+     a la place. */
+  --marge: calc((100cqw - var(--fumee-l)) / 2 + 1rem);
+  position: absolute;
+  inset: -30% calc(-1 * min(50%, var(--marge) - 6px));
+  pointer-events: none;
+}
+@container (min-width: 40rem) {
+  .reveal-fumee {
+    --marge: calc(
+      (100cqw - var(--fumee-l) - clamp(1.75rem, 4.7cqw, 4.5rem) - min(30rem, 50cqw)) / 2 + 1rem
+    );
+  }
+}
+/* Elle s'éteint plus tôt vers ses bords que celle des boosters : sur un
+   portable ou un téléphone, la carte est à quelques dizaines de pixels du bord
+   de la scène, qui la rognerait net. */
+.reveal-fumee .fumee-nappe {
+  -webkit-mask-image: radial-gradient(closest-side, #000 30%, transparent), var(--bruit-fumee);
+  mask-image: radial-gradient(closest-side, #000 30%, transparent), var(--bruit-fumee);
+}
+.revelation[data-rarete='C'] .reveal-fumee {
+  --f1: var(--r-c);
+  --f2: var(--ice);
+  --f3: var(--frost);
+  --f4: var(--r-c);
+  --fumee-force: 0.62;
+  --n3: 0;
+}
+.revelation[data-rarete='R'] .reveal-fumee {
+  --f1: var(--r-r);
+  --f2: var(--violet);
+  --f3: var(--ice);
+  --f4: var(--r-r);
+  --fumee-force: 0.74;
+  --n3: 0;
+}
+.revelation[data-rarete='UR'] .reveal-fumee {
+  --f1: var(--r-ur);
+  --f2: var(--gold);
+  --f3: color-mix(in srgb, var(--live) 45%, var(--r-ur));
+  --f4: var(--r-ur);
+  --fumee-force: 0.84;
+  --n3: 1;
+}
+.revelation[data-rarete='L'] .reveal-fumee {
+  --f1: var(--r-l);
+  --f2: var(--aurora);
+  --f3: var(--violet);
+  --f4: var(--gold);
+  --fumee-force: 0.95;
+  --n3: 1;
+}
+
+/* Le texte : centré sur un téléphone, à gauche à côté de la carte. Il passe
+   devant la fumée, qui déborde de la carte jusque sous lui. */
+.revelation-texte {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  width: 100%;
+  max-width: 30rem;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  animation: revelation-texte 0.6s 0.15s cubic-bezier(0.2, 0.9, 0.3, 1) both;
+}
+@container (min-width: 40rem) {
+  .revelation-texte {
+    align-items: flex-start;
+    text-align: left;
+  }
+}
+@keyframes revelation-texte {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+.revelation-booster {
+  font-family: var(--font-display);
+  font-size: clamp(0.8125rem, 0.95cqw, 1rem);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+.revelation-rarete {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.6rem;
+  font-family: var(--font-display);
+  font-size: clamp(1.125rem, 1.6cqw, 1.5rem);
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--rarete);
+}
+.revelation-embleme {
+  width: clamp(2.25rem, 3cqw, 3rem);
+  height: clamp(2.25rem, 3cqw, 3rem);
+  flex: none;
+  /* L'ombre de contact de la médaille, comme dans les taux : pas une lueur. */
+  filter: drop-shadow(0 3px 3px rgb(0 8 24 / 0.55));
+}
+.revelation-nom {
+  margin-top: 0.7rem;
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 4.4cqw, 3.75rem);
+  font-weight: 900;
+  line-height: 0.95;
+  letter-spacing: 0.01em;
+  color: var(--ink);
+}
+.revelation-action {
+  margin-top: 0.6rem;
+  font-family: var(--font-display);
+  font-size: clamp(0.9375rem, 1.4cqw, 1.3rem);
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--rarete);
+}
+.revelation-description {
+  margin-top: 0.6rem;
+  font-size: clamp(0.9375rem, 1.3cqw, 1.2rem);
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+/* Où elle est tombée : l'encadré du site, à la taille du reste du texte. */
+.revelation-destin {
+  width: 100%;
+  margin-top: 1.1rem;
+  text-align: left;
+}
+.revelation-destin > div {
+  font-size: clamp(0.9375rem, 1.15cqw, 1.125rem);
+}
+.revelation-chance {
+  margin-top: 0.6rem;
+  font-size: clamp(0.875rem, 1cqw, 1rem);
+  color: var(--faint);
+}
+.revelation-suite {
+  margin-top: 1.4rem;
+}
+@container (min-width: 80rem) {
+  .btn.revelation-suite {
+    min-height: 52px;
+    padding-inline: 1.6rem;
+    font-size: 1rem;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .revelation-texte {
+    animation: none;
   }
 }

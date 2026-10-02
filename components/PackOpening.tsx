@@ -10,7 +10,7 @@ import { RailJoueurs } from '@/components/RailJoueurs';
 import { RailPack, type CarteRailPack } from '@/components/RailPack';
 import { CartesParRarete, type CarteSaison } from '@/components/CartesParRarete';
 import { DestinCarte } from '@/components/DestinCarte';
-import { CardTile, Notice, RarityChip, flakes, rarityMeta } from '@/components/ui';
+import { CardTile, Notice, flakes, rarityMeta } from '@/components/ui';
 import { packArt } from '@/lib/domain/catalog';
 import { ECONOMY, libelleMultiplicateur, PACKS_REGLES, rarityPercent, SUB_MILESTONES } from '@/lib/domain/rules';
 import { CE_QUI_COMPTE, CE_QUI_NE_COMPTE_PAS } from '@/lib/domain/twitchSubs';
@@ -348,7 +348,7 @@ export function PackOpening({
             qui se posent par-dessus dans la même case. Changer de booster,
             choisir un joueur ou ouvrir ne fait donc rien bouger autour, ni la
             scène ni la colonne des taux, qui suit sa hauteur. */}
-        <div className="relative grid min-h-[400px] grid-cols-[minmax(0,1fr)] px-4 py-10 sm:min-h-[460px] xl:h-full">
+        <div className="scene-boosters relative grid min-h-[400px] grid-cols-[minmax(0,1fr)] px-4 py-10 sm:min-h-[460px] xl:h-full">
           <div
             className={`col-start-1 row-start-1 flex flex-col items-center justify-center gap-6 ${
               surScene ? 'invisible' : ''
@@ -503,32 +503,24 @@ export function PackOpening({
             </div>
           )}
 
+          {/* La carte posée : elle en grand, sa fumée derrière elle — la même que
+              derrière les boosters, à la couleur de sa rareté —, et à côté, en
+              grand aussi, ce qu'elle est et où elle est tombée. Sur un
+              téléphone, tout s'empile au centre. Les tailles se règlent sur la
+              largeur de la scène, pas sur celle de l'écran. */}
           {surScene === 'reveal' && ouverture && (
-            <div className="col-start-1 row-start-1 w-full self-center">
-              <div className="mb-5 flex flex-wrap items-center justify-center gap-3 text-center">
-                <span
-                  className="font-display text-xl font-black tracking-wide uppercase xl:text-2xl"
-                  style={{ color: rarityMeta(ouverture.rarity).color }}
-                >
-                  {ouverture.rarity === 'L'
-                    ? '★ Légendaire ★'
-                    : ouverture.rarity === 'UR'
-                      ? 'Ultra rare !'
-                      : ouverture.rarity === 'R'
-                          ? 'Une rare'
-                          : 'Ouvert'}
-                </span>
-              </div>
-
-              <div className="mx-auto flex max-w-3xl flex-col items-center gap-5 sm:flex-row sm:items-start sm:justify-center xl:max-w-4xl xl:gap-8 3xl:max-w-5xl">
-                <div className="reveal relative w-[220px] shrink-0 sm:w-[250px] xl:w-[280px] 3xl:w-[340px]">
-                  {rarityMeta(ouverture.rarity).holo && (
-                    <span
-                      className="reveal-halo"
-                      style={{ ['--r' as string]: rarityMeta(ouverture.rarity).color }}
-                      aria-hidden="true"
-                    />
-                  )}
+            <div
+              className="revelation col-start-1 row-start-1 w-full self-center"
+              data-rarete={ouverture.rarity}
+              style={{ ['--rarete' as string]: rarityMeta(ouverture.rarity).color }}
+            >
+              <div className="revelation-carte">
+                <div className="reveal-fumee" aria-hidden="true">
+                  <span className="fumee-nappe fumee-nappe-1" />
+                  <span className="fumee-nappe fumee-nappe-2" />
+                  <span className="fumee-nappe fumee-nappe-3" />
+                </div>
+                <div className="reveal relative">
                   <CardTile
                     cardId={ouverture.cardId}
                     name={ouverture.nom}
@@ -539,33 +531,26 @@ export function PackOpening({
                     nature={ouverture.nature}
                   />
                 </div>
-                <div className="max-w-sm text-center sm:text-left xl:max-w-md">
-                  <RarityChip rarity={ouverture.rarity} />
-                  <h3
-                    className="mt-2 font-display text-[28px] leading-none font-black 3xl:text-[36px]"
-                    style={{ color: rarityMeta(ouverture.rarity).color }}
-                  >
-                    {ouverture.nom}
-                  </h3>
-                  {ouverture.action && (
-                    <p className="mt-2 font-display text-[15px] font-bold tracking-wide text-ink uppercase">
-                      {ouverture.action}
-                    </p>
-                  )}
-                  <p className="mt-1.5 text-[15px] text-ink-2">{ouverture.description}</p>
-                  {ouverture.joueurId && (
-                    <p className="num mt-1 text-[13px] text-faint">
-                      tirée avec un multiplicateur de {libelleMultiplicateur(ouverture.chance)}
-                    </p>
-                  )}
-                  <div className="mt-3">
-                    <DestinCarte o={ouverture} />
-                  </div>
-                </div>
               </div>
 
-              <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
-                <button className="btn btn-ice" onClick={reset}>
+              <div className="revelation-texte">
+                <p className="revelation-booster">{packOuvert.name}</p>
+                <p className="revelation-rarete">
+                  <EmblemeRarete rarity={ouverture.rarity} className="revelation-embleme" />
+                  {ouverture.rarity === 'L' ? '★ Légendaire ★' : rarityMeta(ouverture.rarity).label}
+                </p>
+                <h3 className="revelation-nom">{ouverture.nom}</h3>
+                {ouverture.action && <p className="revelation-action">{ouverture.action}</p>}
+                <p className="revelation-description">{ouverture.description}</p>
+                <div className="revelation-destin">
+                  <DestinCarte o={ouverture} />
+                </div>
+                {ouverture.joueurId && (
+                  <p className="revelation-chance num">
+                    Tirée avec une chance de {libelleMultiplicateur(ouverture.chance)}
+                  </p>
+                )}
+                <button className="btn btn-ice revelation-suite" onClick={reset}>
                   Ouvrir un autre booster
                 </button>
               </div>
