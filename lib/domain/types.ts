@@ -123,7 +123,7 @@ export interface CardDefinition {
   effect: CardEffect;
   /** Un bonus aide celui qui la reçoit, un malus lui retire. */
   nature: 'bonus' | 'malus';
-  /** Indice de puissance sur 100, affiché sur la vignette. Réglé à la main. */
+  /** Indice de puissance sur 100, réglé à la main : il range les cartes d'une rareté. Il n'est plus affiché. */
   power: number;
   /** Les packs dans lesquels cette carte peut sortir. */
   packs: readonly PackId[];

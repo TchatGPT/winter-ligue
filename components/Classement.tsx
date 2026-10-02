@@ -388,7 +388,6 @@ function CarteActive({ row, onOuvrir }: { row: RankingRow; onOuvrir: () => void 
           description={c.description}
           rarity={c.rarity}
           glyph={c.glyph}
-          power={c.power}
           nature={c.nature}
         />
       </span>

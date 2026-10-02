@@ -101,7 +101,6 @@ export function FicheCarte({
                 description={carte.description}
                 rarity={carte.rarity}
                 glyph={carte.glyph}
-                power={carte.power}
                 nature={carte.nature}
               />
             </div>

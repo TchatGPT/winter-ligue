@@ -154,7 +154,7 @@ describe('cohérence du jeu de cartes', () => {
     expect(malus.every((c) => c.rarity !== 'C')).toBe(true);
   });
 
-  it('fait monter la puissance affichée avec la rareté', () => {
+  it('fait monter la puissance avec la rareté', () => {
     let plafondPrecedent = -1;
     for (const rarity of RARITIES) {
       const powers = cardsOfRarity(rarity).map((c) => c.power);

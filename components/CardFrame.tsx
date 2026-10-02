@@ -1,5 +1,5 @@
 import { aUneIllustration, CardArt } from '@/components/CardArt';
-import { IconImpact, IconSnowflake } from '@/components/icons';
+import { IconSnowflake } from '@/components/icons';
 import { getCard, RARITY_META } from '@/lib/domain/catalog';
 import { compact } from '@/lib/format';
 import type { Rarity } from '@/lib/domain/types';
@@ -38,7 +38,6 @@ export interface CardFrameProps {
   description?: string;
   rarity: string;
   glyph: string;
-  power?: number;
   quote?: number | null;
   nature?: 'bonus' | 'malus';
   /**
@@ -60,7 +59,6 @@ export function CardFrame({
   description,
   rarity,
   glyph,
-  power,
   quote,
   nature,
   copies,
@@ -111,28 +109,23 @@ export function CardFrame({
       {corner && <span className="cadre-coin">{corner}</span>}
 
       {/* Le panneau ne fait qu'un sixième de la carte : deux lignes, lisibles,
-          plutôt que quatre qu'on devine. Le nom ; puis l'action et la puissance
-          côte à côte. La description ne vient que sur une grande carte (voir
-          `.cadre-desc`) : partout ailleurs, elle est écrite à côté de la carte,
-          en grand. La rareté est au bas de l'illustration. */}
+          plutôt que quatre qu'on devine. Le nom, puis l'action. La description
+          ne vient que sur une grande carte (voir `.cadre-desc`) : partout
+          ailleurs, elle est écrite à côté de la carte, en grand. La rareté est
+          au bas de l'illustration. La puissance n'est plus affichée : un chiffre
+          sur cent, sans unité, qui ne disait rien de ce que fait la carte. */}
       <div className="cadre-texte">
         <h3 className="cadre-nom">{name}</h3>
         <div className="cadre-ligne">
           {action && <p className="cadre-action">{action}</p>}
-          <span className="cadre-chiffres">
-            {power !== undefined && (
-              <span className="cadre-stat cadre-stat-pui" title={`Puissance ${power} sur 100`}>
-                <IconImpact className="h-[1em] w-[1em]" />
-                <span className="num">{power}</span>
-              </span>
-            )}
-            {quote !== undefined && (
+          {quote !== undefined && (
+            <span className="cadre-chiffres">
               <span className="cadre-stat cadre-stat-cote" title="Cote : dernier prix constaté">
                 <IconSnowflake className="h-[1em] w-[1em]" />
                 <span className="num">{quote === null ? '—' : compact(quote)}</span>
               </span>
-            )}
-          </span>
+            </span>
+          )}
         </div>
         {description && <p className="cadre-desc">{description}</p>}
       </div>

@@ -7541,7 +7541,7 @@
     -webkit-box-orient: vertical;
   }
 
-  /* L'action et la puissance, sur la même ligne. */
+  /* L'action, et la cote quand une vignette en porte une. */
   .cadre-ligne {
     display: flex;
     align-items: baseline;
@@ -7623,12 +7623,8 @@
     gap: 0.8cqw;
   }
 
-  /* Mesurées sur le panneau, qui reste au-dessus de 230 de clarté quelle que
-     soit la rotation de teinte : 8:1 pour le rouge, 9:1 pour le bleu. */
-  .cadre-stat-pui {
-    color: #8e1119;
-  }
-
+  /* Mesurée sur le panneau, qui reste au-dessus de 230 de clarté quelle que
+     soit la rotation de teinte : 9:1. */
   .cadre-stat-cote {
     color: #0d3f74;
   }

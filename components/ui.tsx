@@ -118,7 +118,6 @@ export interface CardTileProps {
   description?: string;
   rarity: string;
   glyph: string;
-  power?: number;
   quote?: number | null;
   nature?: 'bonus' | 'malus';
   /** Exemplaires détenus : au-delà de 1, la carte porte un compteur. */
@@ -157,7 +156,6 @@ export function CardTile({
   description,
   rarity,
   glyph,
-  power,
   quote,
   nature,
   copies,
@@ -176,7 +174,6 @@ export function CardTile({
           description={description ?? subtitle}
           rarity={rarity}
           glyph={glyph}
-          power={power}
           quote={quote}
           nature={nature}
           copies={copies}

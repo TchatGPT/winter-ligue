@@ -288,7 +288,6 @@ function Revelation({ booster }: { booster: BoosterOverlay }) {
           description={booster.carte.description}
           rarity={booster.carte.rarity}
           glyph={booster.carte.glyph}
-          power={booster.carte.power}
           nature={booster.carte.nature}
         />
       </div>

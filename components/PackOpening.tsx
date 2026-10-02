@@ -527,7 +527,6 @@ export function PackOpening({
                     description={ouverture.description}
                     rarity={ouverture.rarity}
                     glyph={ouverture.glyph}
-                    power={ouverture.power}
                     nature={ouverture.nature}
                   />
                 </div>
