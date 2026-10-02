@@ -6512,6 +6512,160 @@
   }
 }
 
+/*
+ * Pour qui s'ouvre un booster personnel — voir `ChoixJoueurBooster`. Une
+ * pastille allumée par joueur qui a un booster à ouvrir : avatar, pseudo,
+ * combien. La case a une hauteur fixe, deux rangées de pastilles, message ou
+ * pas : changer de booster ne fait rien bouger dans la scène ; au-delà de deux
+ * rangées, la liste défile dans sa case.
+ */
+.choix-joueur {
+  display: grid;
+  width: 100%;
+  gap: 0.6rem;
+}
+.choix-joueur-liste {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: safe center;
+  justify-content: center;
+  gap: 0.5rem;
+  /* Deux rangées, et le liseré de 2 px qui garde entier l'anneau de la
+     pastille choisie au bord de la case. */
+  height: calc(5.5rem + 4px);
+  overflow-y: auto;
+  padding: 2px;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--ice) 40%, transparent) transparent;
+}
+/* Beaucoup de joueurs (le champ de recherche est là) : une troisième rangée
+   dépasse à moitié, pour qu'on voie qu'il y en a d'autres plus bas. */
+.choix-joueur[data-beaucoup] .choix-joueur-liste {
+  height: 7.75rem;
+  align-content: flex-start;
+}
+.choix-joueur-vide {
+  display: grid;
+  height: calc(5.5rem + 4px);
+  place-items: center;
+  margin: 0;
+  padding-inline: 0.5rem;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  text-align: center;
+  color: var(--muted);
+}
+.choix-joueur-aucun {
+  flex-basis: 100%;
+  font-size: 0.875rem;
+  text-align: center;
+  color: var(--muted);
+}
+.choix-joueur-pastille {
+  display: inline-flex;
+  max-width: 14rem;
+  height: 2.5rem;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 0.35rem 0 0.3rem;
+  border: 1px solid color-mix(in srgb, var(--ice) 45%, transparent);
+  border-radius: var(--r-pilule);
+  background: color-mix(in srgb, var(--ice) 12%, transparent);
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 0.9375rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+.choix-joueur-pastille:hover:not(:disabled),
+.choix-joueur-pastille:focus-visible {
+  border-color: color-mix(in srgb, var(--ice) 75%, transparent);
+  background: color-mix(in srgb, var(--ice) 18%, transparent);
+}
+/* Choisie : la glace pleine et un anneau franc — jamais de halo. */
+.choix-joueur-pastille[aria-pressed='true'] {
+  border-color: var(--ice);
+  background: color-mix(in srgb, var(--ice) 28%, transparent);
+  box-shadow: 0 0 0 1px var(--ice);
+}
+.choix-joueur-pastille:disabled {
+  cursor: default;
+  opacity: 0.65;
+}
+.choix-joueur-avatar {
+  display: grid;
+  width: 1.875rem;
+  height: 1.875rem;
+  flex: none;
+  place-items: center;
+  border-radius: var(--r-pilule);
+  object-fit: cover;
+  background: color-mix(in srgb, var(--ice) 22%, var(--fond));
+  color: var(--ice);
+  font-size: 0.875rem;
+}
+.choix-joueur-pseudo {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Combien l'attendent : le chiffre allumé de la pastille. */
+.choix-joueur-nombre {
+  display: grid;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  flex: none;
+  place-items: center;
+  padding-inline: 0.35rem;
+  border-radius: var(--r-pilule);
+  background: var(--ice);
+  color: var(--fond);
+  font-size: 0.8125rem;
+  font-weight: 900;
+}
+/* Très grand écran : la scène et ses boosters grandissent, les pastilles aussi. */
+@media (min-width: 150rem) {
+  .choix-joueur-liste {
+    gap: 0.65rem;
+    height: calc(2 * 3.25rem + 0.65rem + 4px);
+  }
+  .choix-joueur[data-beaucoup] .choix-joueur-liste {
+    height: calc(2.5 * 3.25rem + 2 * 0.65rem);
+  }
+  .choix-joueur-vide {
+    height: calc(2 * 3.25rem + 0.65rem + 4px);
+    font-size: 1rem;
+  }
+  .choix-joueur-pastille {
+    max-width: 18rem;
+    height: 3.25rem;
+    gap: 0.65rem;
+    padding: 0 0.45rem 0 0.4rem;
+    font-size: 1.125rem;
+  }
+  .choix-joueur-avatar {
+    width: 2.5rem;
+    height: 2.5rem;
+    font-size: 1.05rem;
+  }
+  .choix-joueur-nombre {
+    min-width: 1.9rem;
+    height: 1.9rem;
+    font-size: 1rem;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .choix-joueur-pastille {
+    transition: none;
+  }
+}
+
 .btn-ouvrir-prix {
     display: inline-flex;
     align-items: center;

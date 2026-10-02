@@ -1,6 +1,8 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { ChoixJoueurBooster, type CandidatBooster } from '@/components/ChoixJoueurBooster';
 import { RangeePacks } from '@/components/RangeePacks';
 import { SnowCap } from '@/components/SnowCap';
 import { prechargeSons, reveilleSon } from '@/components/bruitage';
@@ -90,6 +92,7 @@ export interface PackVitrine extends PackDefinition {
 export interface JoueurOuverture {
   id: string;
   pseudo: string;
+  avatarUrl: string | null;
   snowflakes: number;
   chance: number;
 }
@@ -140,6 +143,7 @@ export function PackOpening({
   /** Les subs de la saison : pour annoncer le prochain palier d'un booster collectif. */
   totalSubs?: number;
 }) {
+  const router = useRouter();
   const [selected, setSelected] = useState<PackId>(packs[0]?.id ?? 'perso');
   const [joueurId, setJoueurId] = useState('');
   const [phase, setPhase] = useState<Phase>('repos');
@@ -155,7 +159,6 @@ export function PackOpening({
   const pack = useMemo(() => packs.find((p) => p.id === selected) ?? packs[0], [packs, selected]);
   const busy = phase === 'demande' || phase === 'tirage' || phase === 'joueurs';
   const pourUnJoueur = pack?.portee === 'JOUEUR';
-  const joueur = joueurs.find((j) => j.id === joueurId);
 
   const choisir = useCallback((id: string) => {
     setSelected((actuel) => (actuel === id ? actuel : (id as PackId)));
@@ -171,18 +174,41 @@ export function PackOpening({
     return n;
   }, [dus]);
 
-  /** Les joueurs, ceux qui ont un booster à ouvrir en tête. */
-  const joueursTries = useMemo(
-    () => [...joueurs].sort((a, b) => (dusParJoueur.get(b.id) ?? 0) - (dusParJoueur.get(a.id) ?? 0)),
+  /** Les joueurs qui ont un booster de ce type à ouvrir : les seuls qu'on peut choisir. */
+  const candidats = useMemo(
+    (): CandidatBooster[] =>
+      joueurs
+        .filter((j) => dusParJoueur.has(j.id))
+        .map((j) => ({
+          id: j.id,
+          pseudo: j.pseudo,
+          avatarUrl: j.avatarUrl,
+          chance: j.chance,
+          n: dusParJoueur.get(j.id) ?? 0,
+        }))
+        .sort((a, b) => b.n - a.n || a.pseudo.localeCompare(b.pseudo, 'fr')),
     [joueurs, dusParJoueur],
   );
+
+  /**
+   * Le joueur choisi, tant qu'il a un booster à ouvrir ; seul candidat, il est
+   * choisi d'office. Déduit à chaque rendu plutôt que gardé : après une
+   * ouverture, la file se recharge, et qui n'a plus rien à ouvrir ne reste pas
+   * choisi.
+   */
+  const choisi = candidats.some((c) => c.id === joueurId)
+    ? joueurId
+    : candidats.length === 1
+      ? candidats[0].id
+      : '';
+  const joueur = joueurs.find((j) => j.id === choisi);
 
   /**
    * Ce que le bouton peut ouvrir : les boosters dus à ce joueur, ou, pour un
    * booster collectif, ceux que les paliers ont mis en file. Le serveur ne
    * laisse rien ouvrir d'autre.
    */
-  const restants = pack?.portee === 'JOUEUR' ? (joueurId ? (dusParJoueur.get(joueurId) ?? 0) : 0) : dus.length;
+  const restants = pack?.portee === 'JOUEUR' ? (choisi ? (dusParJoueur.get(choisi) ?? 0) : 0) : dus.length;
 
   /** Le prochain palier d'un booster collectif : à combien de subs, et combien il en manque. */
   const palier = SUB_MILESTONES.find((m) => m.kind === 'PACK' && m.packId === pack?.id);
@@ -212,6 +238,10 @@ export function PackOpening({
       setOuverture(payload.data as OuvertureTiree);
       setRangJoueur(0);
       setPhase('tirage');
+      // La file se recharge pendant que le rail tourne, caché sous lui : la
+      // pastille d'un joueur qui n'a plus rien à ouvrir s'éteint, les compteurs
+      // descendent.
+      router.refresh();
     } catch {
       setError('Le serveur n’a pas répondu. Réessaie dans un instant.');
       setPhase('repos');
@@ -333,27 +363,18 @@ export function PackOpening({
             <RangeePacks packs={packs} selection={pack.id} onSelection={choisir} fige={busy || surScene !== null} />
 
             {moderateur ? (
-              <div className="flex w-full max-w-md flex-col items-center gap-3">
-                {/* La liste garde sa place pour les boosters collectifs, où il n'y
-                    a personne à choisir : sans elle, la scène raccourcissait. */}
+              <div className="flex w-full max-w-md flex-col items-center gap-3 4xl:max-w-2xl">
+                {/* Le choix garde sa place pour les boosters collectifs, où il n'y
+                    a personne à choisir : sans lui, la scène raccourcissait. */}
                 {aLaMain && (
-                  <select
-                    className={`field w-full ${pourUnJoueur ? '' : 'invisible'}`}
-                    value={joueurId}
-                    onChange={(e) => setJoueurId(e.target.value)}
-                    disabled={busy || !pourUnJoueur}
-                    aria-label="Joueur pour qui le pack s’ouvre"
-                  >
-                    <option value="">— Pour quel joueur ? —</option>
-                    {joueursTries.map((j) => {
-                      const n = dusParJoueur.get(j.id) ?? 0;
-                      return (
-                        <option key={j.id} value={j.id} disabled={n === 0}>
-                          {j.pseudo} — {n === 0 ? 'aucun à ouvrir' : `${n} à ouvrir`} · {libelleMultiplicateur(j.chance)}
-                        </option>
-                      );
-                    })}
-                  </select>
+                  <ChoixJoueurBooster
+                    candidats={candidats}
+                    choisi={choisi}
+                    onChoix={setJoueurId}
+                    fige={busy || !pourUnJoueur}
+                    nomBooster={pack.name}
+                    cache={!pourUnJoueur}
+                  />
                 )}
                 {/* La ligne du multiplicateur, réservée sur deux lignes : un long
                     pseudo la fait passer à la ligne. */}
@@ -374,12 +395,12 @@ export function PackOpening({
                   <button
                     className={`btn btn-ice ${busy ? 'btn-lg min-h-[62px]' : 'btn-ouvrir'}`}
                     disabled={busy || restants === 0}
-                    onClick={() => ouvre({ packId: pack.id, ...(pourUnJoueur ? { joueurId } : {}) })}
+                    onClick={() => ouvre({ packId: pack.id, ...(pourUnJoueur ? { joueurId: choisi } : {}) })}
                   >
                     <span>
                       {busy
                         ? 'Ouverture…'
-                        : pourUnJoueur && !joueurId
+                        : pourUnJoueur && !choisi
                           ? dus.length === 0
                             ? 'Aucun à ouvrir'
                             : 'Choisis un joueur'
@@ -393,7 +414,7 @@ export function PackOpening({
                     </span>
                     {!busy && (
                       <span className="btn-ouvrir-prix">
-                        {pourUnJoueur && !joueurId
+                        {pourUnJoueur && !choisi
                           ? `${dus.length} à ouvrir`
                           : restants > 0
                             ? `${restants} restant${restants > 1 ? 's' : ''}`

@@ -5,7 +5,7 @@ import { getStore } from '@/lib/db/store';
 import { CARDS, cartesDuPack, impactMax, momentDe } from '@/lib/domain/catalog';
 import type { CarteSaison } from '@/components/CartesParRarete';
 import { chanceDe } from '@/lib/domain/rules';
-import { fileDesPacks, resolvedPacks } from '@/lib/services/packs';
+import { fileDesPacks, joueursEnLice, resolvedPacks } from '@/lib/services/packs';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Boosters' };
@@ -44,13 +44,14 @@ export default async function PacksPage(){
     // Pour dire à la modération quand tombe le prochain Commu ou Folie.
     totalSubs: db.config.totalSubs,
     // La liste des joueurs ne quitte le serveur que pour qui peut ouvrir à la main.
+    // Ceux qui sont en lice : la streameuse ne joue pas, rien ne s'ouvre pour elle.
     joueurs: aLaMain
-      ? db.players
-          .filter((p) => p.active)
+      ? joueursEnLice(db)
           .map(
             (p): JoueurOuverture => ({
               id: p.id,
               pseudo: p.pseudo,
+              avatarUrl: p.avatarUrl ?? null,
               snowflakes: p.snowflakes,
               chance: chanceDe(p.snowflakes),
             }),
