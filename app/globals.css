@@ -6968,6 +6968,11 @@
     justify-content: center;
     line-height: 0;
   }
+  .rarity-embleme {
+    flex: none;
+    /* L'ombre de contact de la médaille, comme dans les taux : pas une lueur. */
+    filter: drop-shadow(0 2px 2px rgb(0 8 24 / 0.55));
+  }
 
   /* --------------------------------------------------------------------------
      CARTE À COLLECTIONNER
@@ -7284,6 +7289,11 @@
     container-type: inline-size;
     aspect-ratio: 1514 / 2231;
     isolation: isolate;
+    /* La carte n'hérite pas de l'ombre du texte du site, faite pour un texte
+       clair sur le verre : sur le panneau clair, ce halo sombre de 12 px
+       barbouillait chaque lettre du nom et de l'action. Le sceau garde la
+       sienne, nette. */
+    text-shadow: none;
     filter: drop-shadow(0 10px 22px rgb(0 0 0 / 0.55));
     transition:
       transform 0.28s cubic-bezier(0.2, 0.8, 0.3, 1),
@@ -7411,26 +7421,26 @@
     bottom: 0;
     left: 0;
     z-index: 2;
-    padding: 3cqw 2.5cqw 1.6cqw;
+    padding: 4.6cqw 2.5cqw 2cqw;
     background: linear-gradient(
       180deg,
       transparent 0%,
-      rgb(4 9 18 / 0.5) 42%,
-      rgb(4 9 18 / 0.88) 100%
+      rgb(4 9 18 / 0.62) 40%,
+      rgb(4 9 18 / 0.92) 100%
     );
-    color: var(--r, #6f8db0);
+    /* La teinte de la rareté, éclaircie : sur le fond sombre, la commune et
+       la rare se lisaient mal à pleine saturation. */
+    color: color-mix(in srgb, var(--r, #6f8db0) 72%, var(--frost));
     font-family: var(--font-display);
-    font-size: 3.4cqw;
+    font-size: 4.6cqw;
     font-weight: 900;
-    letter-spacing: 0.12em;
+    letter-spacing: 0.08em;
     line-height: 1;
     text-align: center;
     text-transform: uppercase;
-    /* La lueur à la couleur de la rareté : c'est elle qui fait « sceau » plutôt
-       que « légende », et elle décolle le texte du dessin sans caisson. */
-    text-shadow:
-      0 0 1.4cqw color-mix(in srgb, var(--r, #6f8db0) 70%, transparent),
-      0 0.3cqw 0.6cqw rgb(0 0 0 / 0.9);
+    /* Une ombre nette, plus de lueur : la lueur à la couleur de la rareté
+       floutait les lettres, à cette taille. */
+    text-shadow: 0 0.35cqw 0.5cqw rgb(0 0 0 / 0.9);
   }
 
   /* Un filet à la couleur de la rareté, sous le texte : il ferme la fenêtre
@@ -7513,15 +7523,17 @@
     z-index: 3;
     display: flex;
     flex-direction: column;
+    justify-content: center;
+    gap: 1cqw;
     color: #131c2a;
   }
 
   .cadre-nom {
     font-family: var(--font-display);
-    font-size: 6.4cqw;
+    font-size: 7.4cqw;
     font-weight: 900;
-    line-height: 1.08;
-    color: #101a28;
+    line-height: 1.02;
+    color: #0b1320;
     overflow: hidden;
     display: -webkit-box;
     -webkit-line-clamp: 2;
@@ -7529,32 +7541,48 @@
     -webkit-box-orient: vertical;
   }
 
+  /* L'action et la puissance, sur la même ligne. */
+  .cadre-ligne {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 2cqw;
+    font-family: var(--font-display);
+    font-size: 4.8cqw;
+    font-weight: 900;
+  }
+
   /*
-   * La description ne s'affiche qu'à partir de 300 px de carte.
+   * La description ne s'affiche qu'à partir de 400 px de carte.
    *
-   * Le panneau du cadre est petit — un sixième de la hauteur. Sur une vignette
-   * de collection de 220 px, la description tomberait à huit pixels : elle
-   * remplirait le panneau sans être lisible, et masquerait le nom. La requête
-   * porte sur le conteneur et non sur l'écran : c'est la largeur de la carte
+   * Le panneau du cadre est petit — un sixième de la hauteur. À 300 px, elle
+   * tombait à dix pixels et se coupait au milieu d'un mot ; partout où la carte
+   * est plus petite que 400 px, la description est écrite à côté d'elle, en
+   * grand. Le nom se tient alors sur une ligne, pour lui laisser les deux
+   * siennes. La requête porte sur le conteneur : c'est la largeur de la carte
    * qui décide, pas celle de la fenêtre.
    */
   .cadre-desc {
     display: none;
-    margin-top: 0.6cqw;
     font-size: 3.5cqw;
-    line-height: 1.28;
-    color: rgb(19 28 42 / 0.82);
+    line-height: 1.26;
+    color: rgb(14 22 36 / 0.86);
     overflow: hidden;
     -webkit-box-orient: vertical;
   }
 
-  @container (min-width: 300px) {
+  @container (min-width: 400px) {
     .cadre-desc {
       display: -webkit-box;
-      /* Deux lignes, depuis que l'intitulé de l'action en prend une : à trois,
-         le pied sortait du panneau. */
       -webkit-line-clamp: 2;
       line-clamp: 2;
+    }
+    .cadre-texte:has(.cadre-desc) .cadre-nom {
+      -webkit-line-clamp: 1;
+      line-clamp: 1;
+    }
+    .cadre-texte:has(.cadre-desc) {
+      gap: 0.8cqw;
     }
   }
 
@@ -7566,28 +7594,18 @@
    * teinte de la rareté assombrie pour rester lisible sur le panneau clair.
    */
   .cadre-action {
-    margin-top: 0.4cqw;
+    min-width: 0;
     overflow: hidden;
     font-family: var(--font-display);
-    font-size: 4.2cqw;
     font-weight: 800;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.03em;
     line-height: 1.15;
     text-overflow: ellipsis;
     text-transform: uppercase;
     white-space: nowrap;
-    color: color-mix(in srgb, var(--r, #6f8db0) 45%, #0c1626);
-  }
-
-  .cadre-pied {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 1.5cqw;
-    margin-top: auto;
-    font-family: var(--font-display);
-    font-size: 4cqw;
-    font-weight: 900;
+    /* Plus sombre qu'avant (45 % de la teinte) : sur le panneau clair, l'or
+       de la légendaire tournait à l'olive pâle. */
+    color: color-mix(in srgb, var(--r, #6f8db0) 36%, #0b1424);
   }
 
 
@@ -7596,6 +7614,7 @@
     display: inline-flex;
     flex-shrink: 0;
     gap: 2.4cqw;
+    margin-left: auto;
   }
 
   .cadre-stat {
@@ -10719,7 +10738,7 @@
 }
 
 .revelation-carte {
-  --fumee-l: clamp(200px, 38cqw, 420px);
+  --fumee-l: clamp(220px, 38cqw, 420px);
   position: relative;
   width: var(--fumee-l);
 }
@@ -10877,14 +10896,22 @@
   font-size: clamp(0.875rem, 1cqw, 1rem);
   color: var(--faint);
 }
-.revelation-suite {
-  margin-top: 1.4rem;
+/* La suite, à la taille du bouton qui ouvre (`.btn-ouvrir`) : c'est le geste
+   suivant, pas une note de bas de page. Assez large pour le pouce sur un
+   téléphone. */
+.btn.revelation-suite {
+  min-width: min(100%, 17rem);
+  min-height: 56px;
+  margin-top: 1.5rem;
+  padding-inline: 1.9rem;
+  font-size: 1.0625rem;
+  letter-spacing: 0.08em;
 }
 @container (min-width: 80rem) {
   .btn.revelation-suite {
-    min-height: 52px;
-    padding-inline: 1.6rem;
-    font-size: 1rem;
+    min-height: 62px;
+    font-size: 1.25rem;
+    letter-spacing: 0.09em;
   }
 }
 @media (prefers-reduced-motion: reduce) {

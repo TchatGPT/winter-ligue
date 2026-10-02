@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { Database, Game, Player } from '@/lib/db/entities';
 import { emptyDatabase } from '@/lib/db/store';
 import { CARDS, getCard, momentDe, resumeEffet } from '@/lib/domain/catalog';
@@ -16,6 +16,12 @@ import {
   reglagePack,
   teteDuClassement,
 } from '@/lib/services/packs';
+
+// Le catalogue n'a plus qu'une carte par rareté : les cartes retirées restent
+// trouvables par `getCard`, pour exercer chaque genre d'effet.
+vi.mock('@/lib/domain/catalog', async (vrai) =>
+  (await import('./stubs/cartes-retirees')).avecCartesRetirees(await vrai()),
+);
 
 /**
  * Ce que font les cartes, action par action.

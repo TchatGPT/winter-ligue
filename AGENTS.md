@@ -44,6 +44,11 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   l'**intitulé de son action** (`subtitle`). Ajouter une carte, c'est ajouter une entrée
   là ; ajouter un genre d'effet, c'est aussi une branche dans `lib/services/effects.ts`,
   dans `impactMax()`, dans `momentDe()` et dans `resumeEffet()`.
+- Le catalogue a été ramené à **une carte par rareté** (octobre 2026), le temps de
+  repenser toutes les cartes. Les cartes retirées restent dans
+  `tests/stubs/cartes-retirees.ts` : les tests y trouvent chaque genre d'effet
+  (`avecCartesRetirees`, ou `avecAnciensBoosters` pour les tirer d'un booster). Une
+  carte doit pouvoir sortir de chaque booster qui tire sa rareté — un test le vérifie.
 - Les taux de rareté sont dans `RARITY_WEIGHTS_BASE` et dans `PACKS[].weights`.
   Toute table doit sommer **exactement** à 100 000 — un test le vérifie.
 - **Une carte pèse ce que sa rareté autorise** : `IMPACT_PAR_RARETE`, de 6 points pour

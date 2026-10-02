@@ -39,9 +39,9 @@ const total = (weights: Record<string, number>) =>
   Object.values(weights).reduce((a, b) => a + b, 0);
 
 describe('cohérence du catalogue', () => {
-  it('propose au moins quatre cartes par rareté', () => {
+  it('propose au moins une carte par rareté', () => {
     for (const rarity of LADDER) {
-      expect(cardsOfRarity(rarity).length).toBeGreaterThanOrEqual(4);
+      expect(cardsOfRarity(rarity).length).toBeGreaterThanOrEqual(1);
     }
     expect(TOTAL_CARDS).toBe(CARDS.length);
   });

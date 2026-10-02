@@ -13,7 +13,7 @@ import type { Rarity } from '@/lib/domain/types';
  * centré, là où une carte à collectionner demande une **scène**.
  *
  * Ce sont donc des vecteurs, et non des fichiers dans `public/cartes/`. Les
- * raisons sont les mêmes que pour {@link RarityIcon} :
+ * raisons sont les mêmes que pour les emblèmes de rareté (`EmblemeRarete`) :
  *
  * - le cadre est en `cqw`, l'illustration suit la carte de la vignette de
  *   collection au plein écran de l'ouverture, sans jamais crêper ;

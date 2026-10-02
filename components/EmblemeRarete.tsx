@@ -11,8 +11,10 @@ import type { Rarity } from '@/lib/domain/types';
  *  - **Légendaire** — une couronne de glace, ses trois pointes serties.
  *
  * Pas de halo : la médaille tient par son biseau et son ombre de contact,
- * comme la neige posée sur les blocs. Les flocons de `RarityIcon` restent ceux
- * des cartes ; ceci est le blason du bloc des taux.
+ * comme la neige posée sur les blocs. C'est la marque de rareté de tout le
+ * site : les taux, la révélation d'une carte, et, par `RarityChip`, la liste
+ * des cartes, la fiche d'une carte et les règles. Les anciens flocons de
+ * rareté ont été retirés.
  *
  * Décoratif : masqué aux lecteurs d'écran, la ligne dit la rareté en toutes
  * lettres.
@@ -87,12 +89,20 @@ function Gemme({ rarity, fond }: { rarity: Rarity; fond: string }) {
   }
 }
 
-export function EmblemeRarete({ rarity, className }: { rarity: Rarity; className?: string }) {
+export function EmblemeRarete({
+  rarity,
+  className,
+  style,
+}: {
+  rarity: Rarity;
+  className?: string;
+  style?: React.CSSProperties;
+}) {
   const meta = RARITY_META[rarity];
   const fond = `embleme-gemme-${rarity}`;
   const reflet = `embleme-reflet-${rarity}`;
   return (
-    <svg viewBox="0 0 48 48" className={className} aria-hidden="true" focusable="false">
+    <svg viewBox="0 0 48 48" className={className} style={style} aria-hidden="true" focusable="false">
       <defs>
         <linearGradient id={fond} x1="0.15" y1="0" x2="0.85" y2="1">
           <stop offset="0" stopColor="#ffffff" stopOpacity={0.95} />

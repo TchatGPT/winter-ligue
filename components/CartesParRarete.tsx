@@ -44,8 +44,9 @@ export function CartesParRarete({ cartes }: { cartes: CarteSaison[] }) {
   return (
     <div className="space-y-8">
       <p className="text-[14px] text-muted">
-        {cartes.length} cartes cette saison, de la commune à la légendaire. {malus} malus parmi elles, teintés de
-        rouge. Plus la carte est rare, plus elle peut peser sur une game.
+        {cartes.length} carte{cartes.length > 1 ? 's' : ''} cette saison, de la commune à la légendaire.
+        {malus > 0 && ` ${malus} malus parmi elles, teinté${malus > 1 ? 's' : ''} de rouge.`} Plus la carte est
+        rare, plus elle peut peser sur une game.
       </p>
 
       {ECHELLE.map((rarete) => {

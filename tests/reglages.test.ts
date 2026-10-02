@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { Database, Player } from '@/lib/db/entities';
 import { emptyDatabase } from '@/lib/db/store';
 import { cartesDuPack, getCard, momentDe, PACKS } from '@/lib/domain/catalog';
@@ -19,6 +19,13 @@ import {
   verifieFinisseur,
   verifieTable,
 } from '@/lib/services/packs';
+
+// Le catalogue n'a plus qu'une carte par rareté : ces tests ouvrent les
+// boosters tels qu'ils étaient, pour tirer une carte de flocons, une carte à
+// deux ou un malus de tête, et vérifier ce que l'ouverture en fait.
+vi.mock('@/lib/domain/catalog', async (vrai) =>
+  (await import('./stubs/cartes-retirees')).avecAnciensBoosters(await vrai()),
+);
 
 const base = () => emptyDatabase();
 const premier = PACKS[0];

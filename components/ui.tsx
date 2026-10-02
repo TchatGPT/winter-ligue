@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { CardFrame } from '@/components/CardFrame';
-import { RarityIcon } from '@/components/RarityIcon';
+import { EmblemeRarete } from '@/components/EmblemeRarete';
 import { RARITY_META } from '@/lib/domain/catalog';
 import type { Rarity } from '@/lib/domain/types';
 import { compact, num } from '@/lib/format';
@@ -63,9 +63,11 @@ export function StatTile({
 /**
  * La pastille de rareté.
  *
- * Elle portait le sigle — `C`, `PC`, `SR` — et porte désormais une marque
- * dessinée. Un sigle se décode, une forme se reconnaît : dans une grille de
- * vignettes, on veut classer sans lire.
+ * Elle portait le sigle — `C`, `PC`, `SR` —, puis un flocon par rareté, et
+ * porte désormais l'emblème du bloc des taux (`EmblemeRarete`) : une seule
+ * marque de rareté sur tout le site, la même dans les taux, à la révélation
+ * d'une carte et dans la liste des cartes. Un sigle se décode, une forme se
+ * reconnaît : dans une grille de vignettes, on veut classer sans lire.
  *
  * Le nom accessible est repris sur la pastille elle-même. Le sigle en tenait
  * lieu jusqu'ici sans qu'on ait à y penser ; un dessin, non.
@@ -77,10 +79,13 @@ export function RarityChip({
 }: {
   rarity: string;
   title?: string;
-  /** Taille du flocon, en pixels. 18 par défaut. */
+  /** Taille de l'ancienne marque, en pixels : l'emblème est un peu plus grand. 18 par défaut. */
   taille?: number;
 }) {
   const meta = rarityMeta(rarity);
+  // L'hexagone de l'emblème laisse de l'air autour de sa gemme : un tiers de
+  // plus pour garder le poids de la marque qu'il remplace.
+  const cote = Math.round((taille ?? 18) * 1.3);
   return (
     <span
       className="rarity-chip"
@@ -89,7 +94,7 @@ export function RarityChip({
       role="img"
       aria-label={title ?? meta.label}
     >
-      <RarityIcon rarity={rarity} taille={taille} />
+      <EmblemeRarete rarity={rarity as Rarity} className="rarity-embleme" style={{ width: cote, height: cote }} />
     </span>
   );
 }

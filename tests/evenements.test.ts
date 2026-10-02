@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { type Database, type Game, type Player } from '@/lib/db/entities';
 import { emptyDatabase } from '@/lib/db/store';
 import { getCard } from '@/lib/domain/catalog';
@@ -19,6 +19,12 @@ import {
   facteurGain,
 } from '@/lib/services/evenements';
 import { addSubs } from '@/lib/services/subs';
+
+// Le catalogue n'a plus qu'une carte par rareté : les cartes retirées restent
+// trouvables par `getCard`, pour exercer chaque genre d'effet.
+vi.mock('@/lib/domain/catalog', async (vrai) =>
+  (await import('./stubs/cartes-retirees')).avecCartesRetirees(await vrai()),
+);
 
 /**
  * Ce que les évènements de subs doivent garantir.

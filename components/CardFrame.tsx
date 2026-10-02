@@ -110,16 +110,15 @@ export function CardFrame({
       {nature === 'malus' && <span className="cadre-malus">Malus</span>}
       {corner && <span className="cadre-coin">{corner}</span>}
 
+      {/* Le panneau ne fait qu'un sixième de la carte : deux lignes, lisibles,
+          plutôt que quatre qu'on devine. Le nom ; puis l'action et la puissance
+          côte à côte. La description ne vient que sur une grande carte (voir
+          `.cadre-desc`) : partout ailleurs, elle est écrite à côté de la carte,
+          en grand. La rareté est au bas de l'illustration. */}
       <div className="cadre-texte">
         <h3 className="cadre-nom">{name}</h3>
-        {action && <p className="cadre-action">{action}</p>}
-        {description && <p className="cadre-desc">{description}</p>}
-
-        <div className="cadre-pied">
-          {/* La rareté n'est plus répétée ici : elle est posée au bas de
-              l'illustration, où elle se lit sans quitter le dessin des yeux. Le
-              pied ne porte plus que les chiffres, qui ont enfin la place de
-              respirer. */}
+        <div className="cadre-ligne">
+          {action && <p className="cadre-action">{action}</p>}
           <span className="cadre-chiffres">
             {power !== undefined && (
               <span className="cadre-stat cadre-stat-pui" title={`Puissance ${power} sur 100`}>
@@ -135,6 +134,7 @@ export function CardFrame({
             )}
           </span>
         </div>
+        {description && <p className="cadre-desc">{description}</p>}
       </div>
     </div>
   );

@@ -1,13 +1,20 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { Database, OuverturePack } from '@/lib/db/entities';
 import type { FluxOverlay } from '@/lib/db/store';
 import { emptyDatabase } from '@/lib/db/store';
 import { CARDS, joueursTires } from '@/lib/domain/catalog';
+import { CARTES_RETIREES } from './stubs/cartes-retirees';
 import { construitBandeJoueurs } from '@/lib/spin/bande';
 import { RANG_GAGNANT, TUILES } from '@/lib/spin/courbe';
 import { rattacheCompteTwitch } from '@/lib/services/comptes';
 import { vueBoosters } from '@/lib/services/overlay';
 import { tirageDe } from '@/lib/services/packs';
+
+// Le catalogue n'a plus qu'une carte par rareté : les cartes retirées restent
+// trouvables par `getCard`, pour exercer chaque genre d'effet.
+vi.mock('@/lib/domain/catalog', async (vrai) =>
+  (await import('./stubs/cartes-retirees')).avecCartesRetirees(await vrai()),
+);
 
 /**
  * Le second tirage d'un booster de la ligue : sur qui tombe la carte, quand
@@ -25,7 +32,8 @@ function graine(n: number): () => number {
   };
 }
 
-const carteDeCible = (cible: string) => CARDS.find((c) => c.cible === cible && c.packs.includes('commu'))!;
+const carteDeCible = (cible: string) =>
+  [...CARDS, ...CARTES_RETIREES].find((c) => c.cible === cible && c.packs.includes('commu'))!;
 
 describe('combien de joueurs une carte fait tirer', () => {
   it('un pour un joueur au hasard, deux pour un face-à-face, aucun sinon', () => {

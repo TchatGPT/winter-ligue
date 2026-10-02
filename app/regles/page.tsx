@@ -227,7 +227,7 @@ export default async function ReglesPage(){
               tes games tant qu’elle court. Les bonus t’atteignent toujours.
             </li>
             <li>
-              Le Chassé-Croisé oppose deux joueurs tirés au sort : ils échangent les kills de leur
+              Une carte à deux oppose deux joueurs tirés au sort : ils échangent les kills de leur
               prochaine game, et la carte se règle quand la seconde est saisie. Ce que l’un gagne,
               l’autre le perd, borné de chaque côté.
             </li>
