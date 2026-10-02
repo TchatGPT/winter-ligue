@@ -6675,10 +6675,10 @@
   color: var(--aurora);
 }
 /*
- * Combien l'attendent : une pastille creusée, celle du compte du bouton
- * d'ouverture (« 2 restants ») — sombre, l'ombre en haut, l'arête claire en
- * bas ; le chiffre en glace, le reste en clair. Chiffres proportionnels : un
- * « 1 » tabulaire garde la chasse d'un « 0 » et se décale dans la pastille.
+ * Combien l'attendent : une pastille de glace, celle des badges du site (la
+ * « Tempête de neige » des subs) — un voile de glace, un liseré de glace, le
+ * mot en glace et le chiffre en givre. Chiffres proportionnels : un « 1 »
+ * tabulaire garde la chasse d'un « 0 » et se décale dans la pastille.
  */
 .choix-joueur-nombre {
   display: inline-flex;
@@ -6689,14 +6689,12 @@
      des lettres laisse un blanc après la dernière, qu'on reprend à droite. */
   padding: 0.29rem calc(0.7rem - 0.06em) 0.335rem 0.7rem;
   border-radius: var(--r-pilule);
-  background: color-mix(in srgb, var(--bg-deep) 72%, transparent);
-  box-shadow:
-    inset 0 2px 4px color-mix(in srgb, var(--bg-deep) 75%, transparent),
-    inset 0 -1px 0 color-mix(in srgb, var(--ink) 24%, transparent);
-  color: var(--muted);
+  background: color-mix(in srgb, var(--ice) 14%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ice) 42%, transparent);
+  color: var(--ice);
   font-family: var(--font-display);
   font-size: 0.8125rem;
-  font-weight: 700;
+  font-weight: 800;
   font-variant-numeric: proportional-nums;
   letter-spacing: 0.06em;
   line-height: 1;
@@ -6704,7 +6702,7 @@
   white-space: nowrap;
 }
 .choix-joueur-nombre strong {
-  color: var(--ice);
+  color: var(--frost);
   font-weight: 900;
 }
 /* Très grand écran : la scène et ses boosters grandissent, le champ aussi. */
