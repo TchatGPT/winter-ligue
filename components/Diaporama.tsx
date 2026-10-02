@@ -308,6 +308,13 @@ export function Diaporama({ id, label, diapositives }: { id?: string; label: str
           aller(k);
         }}
       >
+        {/* La lumière derrière le paquet : le verre la floute et s'en colore. */}
+        <span className="deck-lumiere" aria-hidden="true">
+          <span />
+          <span />
+          <span />
+          <span />
+        </span>
         <span className="deck-sol" aria-hidden="true" />
         {diapositives.map((diapo, i) => {
           const { d, ad } = distance(i, 0, n);

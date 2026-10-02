@@ -11872,7 +11872,7 @@
 
 .deck {
   --l-carte: min(76vw, 20rem);
-  --h-carte: calc(var(--l-carte) * 1.62);
+  --h-carte: calc(var(--l-carte) * 1.42);
   --ecart: 1.02;
   --duree-carte: 7s;
   position: relative;
@@ -11880,14 +11880,14 @@
 @media (min-width: 640px) {
   .deck {
     --l-carte: 20.5rem;
-    --h-carte: calc(var(--l-carte) * 1.52);
+    --h-carte: calc(var(--l-carte) * 1.34);
     --ecart: 1.04;
   }
 }
 @media (min-width: 1280px) {
   .deck {
-    --l-carte: clamp(21rem, 19vw, 29rem);
-    --h-carte: calc(var(--l-carte) * 1.48);
+    --l-carte: clamp(21rem, 18vw, 27rem);
+    --h-carte: calc(var(--l-carte) * 1.3);
     --ecart: 1.1;
   }
 }
@@ -11915,6 +11915,71 @@
   outline: 2px solid var(--ice);
   outline-offset: 5px;
 }
+/* La lumière derrière le paquet : des nappes d'aurore — vert, violet, rose,
+   glace — qui dérivent lentement. Le verre les floute et s'en colore : c'est
+   ce qui le fait briller. Elles s'éteignent avant les bords de la scène. */
+.deck-lumiere {
+  position: absolute;
+  inset: 0 6%;
+  pointer-events: none;
+  -webkit-mask-image: radial-gradient(closest-side, #000 55%, transparent);
+  mask-image: radial-gradient(closest-side, #000 55%, transparent);
+}
+.deck-lumiere span {
+  position: absolute;
+  width: var(--t);
+  aspect-ratio: 1.3;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, var(--c), transparent);
+  opacity: 0.85;
+  animation: deck-nappe var(--duree) ease-in-out var(--retard) infinite alternate;
+}
+.deck-lumiere span:nth-child(1) {
+  --c: color-mix(in srgb, var(--aurora) 75%, transparent);
+  --t: 46%;
+  --duree: 13s;
+  --retard: -2s;
+  top: 18%;
+  left: 14%;
+}
+.deck-lumiere span:nth-child(2) {
+  --c: color-mix(in srgb, var(--violet) 80%, transparent);
+  --t: 50%;
+  --duree: 17s;
+  --retard: -9s;
+  top: 6%;
+  left: 40%;
+}
+.deck-lumiere span:nth-child(3) {
+  --c: color-mix(in srgb, color-mix(in srgb, var(--live) 55%, var(--violet)) 70%, transparent);
+  --t: 40%;
+  --duree: 15s;
+  --retard: -5s;
+  top: 38%;
+  left: 52%;
+}
+.deck-lumiere span:nth-child(4) {
+  --c: color-mix(in srgb, var(--ice-2) 80%, transparent);
+  --t: 44%;
+  --duree: 19s;
+  --retard: -12s;
+  top: 34%;
+  left: 24%;
+}
+@keyframes deck-nappe {
+  from {
+    transform: translate(calc(-6% * var(--amp-acc)), calc(4% * var(--amp-acc))) scale(0.92);
+  }
+  to {
+    transform: translate(calc(7% * var(--amp-acc)), calc(-5% * var(--amp-acc))) scale(1.08);
+  }
+}
+@media (hover: none) and (pointer: coarse) {
+  .deck-lumiere span {
+    animation: none;
+  }
+}
+
 /* Le sol : l'ombre de contact sous la carte au centre. */
 .deck-sol {
   position: absolute;
@@ -11947,30 +12012,57 @@
   opacity: clamp(0, calc((var(--bord, 3) - var(--ad)) * 0.95), 1);
   will-change: transform, opacity;
   transition: --incl 0.45s ease-out;
-  /* La matière : la lumière qui suit la souris, le lustre du haut, puis la
-     teinte du verre, plus claire en haut. */
+  /* La matière : une dalle de glace épaisse. De haut en bas : la lumière qui
+     suit la souris, l'éclat en biais sur la face, la lumière prise dans la
+     glace — à la couleur de la carte, qui monte du bas —, le jour du haut,
+     et une teinte de glace à peine bleutée. Ce qu'il y a derrière, flouté
+     et saturé, donne le reste. */
   background:
     radial-gradient(
-      55% 42% at calc(var(--mx) * 100%) calc(var(--my) * 100%),
-      rgb(255 255 255 / calc(0.04 + var(--incl) * 0.011)),
+      50% 40% at calc(var(--mx) * 100%) calc(var(--my) * 100%),
+      rgb(255 255 255 / calc(0.06 + var(--incl) * 0.014)),
       transparent 70%
     ),
-    linear-gradient(168deg, rgb(255 255 255 / 0.16) 0%, rgb(255 255 255 / 0.04) 30%, transparent 52%),
     linear-gradient(
-      165deg,
-      color-mix(in srgb, var(--glass-2) 78%, transparent) 0%,
-      color-mix(in srgb, var(--glass-3) 92%, transparent) 100%
-    );
+      118deg,
+      rgb(255 255 255 / 0.26) 0%,
+      rgb(255 255 255 / 0.07) 20%,
+      transparent 36%,
+      transparent 68%,
+      rgb(255 255 255 / 0.05) 84%,
+      rgb(255 255 255 / 0.16) 100%
+    ),
+    radial-gradient(85% 55% at 50% 108%, color-mix(in srgb, var(--teinte, var(--ice)) 42%, transparent), transparent 72%),
+    radial-gradient(90% 45% at 28% -4%, rgb(225 243 255 / 0.2), transparent 70%),
+    linear-gradient(165deg, rgb(210 235 255 / 0.12), rgb(120 170 230 / 0.07));
+  /* Les arêtes : vive en haut, claire à gauche, bleutée en bas — la lumière
+     tombe d'en haut à gauche — et l'épaisseur, une lueur froide qui longe le
+     bord par l'intérieur. */
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.8),
-    inset 1px 0 0 rgb(255 255 255 / 0.24),
-    inset -1px 0 0 rgb(255 255 255 / 0.14),
-    inset 0 -1px 0 rgb(255 255 255 / 0.22),
-    inset 0 24px 36px -28px rgb(255 255 255 / 0.45),
-    inset 0 -30px 40px -34px rgb(143 220 255 / 0.3),
-    0 46px 70px -34px rgb(0 6 20 / 0.8),
-    0 16px 26px -16px rgb(0 6 20 / 0.6);
-  text-shadow: 0 1px 2px rgb(0 8 24 / 0.7);
+    inset 0 1.5px 0 rgb(255 255 255 / 0.95),
+    inset 1.5px 0 0 rgb(255 255 255 / 0.5),
+    inset -1px 0 0 rgb(255 255 255 / 0.22),
+    inset 0 -1.5px 0 rgb(170 222 255 / 0.5),
+    inset 0 0 0 1px rgb(255 255 255 / 0.1),
+    inset 0 0 26px rgb(170 225 255 / 0.2),
+    inset 0 34px 44px -34px rgb(255 255 255 / 0.4),
+    0 50px 80px -34px rgb(0 6 20 / 0.75),
+    0 18px 28px -18px rgb(0 6 20 / 0.6);
+  text-shadow: 0 1px 2px rgb(0 8 24 / 0.55);
+}
+/* Le flou du verre, sur les cartes proches du centre seulement : les autres
+   sont voilées, et chaque flou se recalcule à chaque image du geste. */
+.deck-carte[data-proche] {
+  -webkit-backdrop-filter: blur(40px) saturate(185%);
+  backdrop-filter: blur(40px) saturate(185%);
+}
+@media (hover: none) and (pointer: coarse) {
+  .deck-carte[data-proche]:not([data-actif]) {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background-color: color-mix(in srgb, var(--fond) 55%, transparent);
+  }
+}  text-shadow: 0 1px 2px rgb(0 8 24 / 0.7);
 }
 .deck-carte[data-loin] {
   visibility: hidden;
@@ -11984,16 +12076,17 @@
   position: absolute;
   inset: 0;
   z-index: 4;
-  padding: 2px;
+  padding: 1.5px;
   border-radius: inherit;
   background: conic-gradient(
     from var(--angle-holo),
-    var(--aurora),
+    rgb(255 255 255 / 0.95),
     var(--ice),
-    var(--violet),
-    color-mix(in srgb, var(--live) 55%, var(--violet)),
-    var(--gold),
-    var(--aurora)
+    color-mix(in srgb, var(--aurora) 70%, white),
+    rgb(255 255 255 / 0.5),
+    color-mix(in srgb, var(--violet) 60%, white),
+    var(--ice),
+    rgb(255 255 255 / 0.95)
   );
   -webkit-mask:
     linear-gradient(#000 0 0) content-box,
@@ -12056,14 +12149,6 @@
   background: var(--bg-deep);
   opacity: calc(min(var(--ad), 2) * 0.32);
   pointer-events: none;
-}
-/* Le flou des bandeaux, sur les cartes proches du centre seulement : les
-   autres sont voilées, et chaque flou se recalcule à chaque image du geste. */
-.deck-carte:not([data-proche]) .carte-ligue-bande,
-.deck-carte:not([data-proche]) .carte-ligue-num,
-.deck-carte:not([data-proche]) .carte-ligue-icone {
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
 }
 
 /* La navigation : flèche, points, flèche, pause. Des cibles de 44 px. */
@@ -12177,176 +12262,152 @@
   }
 }
 
-/* -- Une carte de la ligue : une carte à collectionner --
-   La planche peinte en pleine page, recadrée sur son illustration (les
-   sertissages du sachet restent hors champ), et qui glisse un peu sous la
-   souris, à contre-sens de l'inclinaison. Un dégradé l'assombrit en haut et
-   en bas, un filet de cadre court à quelques pixels du bord, et le texte
-   tient sur un bandeau de verre givré qui floute la planche. */
-.carte-ligue {
+/* -- Une dalle de la ligue --
+   Le givre sur la face (un grain fin), l'épaisseur de la glace (un second
+   bord, en retrait), le thème en haut, puis au cœur un grand nombre taillé
+   dans la glace, sa légende, et le titre et la phrase. */
+.carte-glace {
   position: absolute;
   inset: 0;
   z-index: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 1.35rem 1.4rem 1.45rem;
   border-radius: inherit;
 }
-.carte-ligue-art {
+.carte-glace-givre {
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background-color: var(--bg-deep);
-  background-image:
-    linear-gradient(
-      180deg,
-      rgb(1 4 9 / 0.5) 0%,
-      transparent 22%,
-      transparent 46%,
-      rgb(1 4 9 / 0.55) 78%,
-      rgb(1 4 9 / 0.75) 100%
-    ),
-    var(--art);
-  background-repeat: no-repeat;
-  background-size:
-    100% 100%,
-    138% auto;
-  background-position:
-    0 0,
-    calc(50% + (0.5 - var(--mx)) * 5%) calc(40% + (0.5 - var(--my)) * 4%);
-}
-.carte-ligue-cadre {
-  position: absolute;
-  inset: 8px;
-  z-index: 2;
-  border-radius: 23px;
-  box-shadow:
-    inset 0 0 0 1px rgb(255 255 255 / 0.32),
-    inset 0 0 0 2px rgb(0 8 24 / 0.25);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' seed='4' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1.4 -0.55'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+  background-size: 220px 220px;
+  opacity: 0.16;
   pointer-events: none;
 }
-.carte-ligue-tete {
+.carte-glace-epaisseur {
   position: absolute;
-  top: 1.15rem;
-  right: 1rem;
-  left: 1rem;
-  z-index: 3;
+  inset: 7px;
+  border-radius: 23px;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.32),
+    inset 0 0 0 1px rgb(255 255 255 / 0.12);
+  pointer-events: none;
+}
+.carte-glace-tete {
+  position: relative;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.6rem;
+  gap: 0.65rem;
 }
-/* Le numéro et le thème, sur une pastille de verre. */
-.carte-ligue-num {
-  display: inline-flex;
+.carte-glace-tete .eyebrow {
   min-width: 0;
-  align-items: baseline;
-  gap: 0.15rem;
-  padding: 0.4rem 0.85rem 0.42rem 0.75rem;
-  border-radius: var(--r-pilule);
-  background: rgb(4 14 32 / 0.42);
-  -webkit-backdrop-filter: blur(10px) saturate(150%);
-  backdrop-filter: blur(10px) saturate(150%);
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.4),
-    inset 0 0 0 1px rgb(255 255 255 / 0.14);
-  font-family: var(--font-display);
-  font-size: 1.05rem;
-  font-weight: 900;
-  line-height: 1;
-  color: var(--frost);
-}
-.carte-ligue-num small {
-  font-size: 0.72em;
-  font-weight: 700;
-  color: var(--faint);
-}
-.carte-ligue-num span {
-  margin-left: 0.55rem;
   overflow: hidden;
-  font-size: 0.75rem;
-  font-weight: 800;
-  letter-spacing: 0.14em;
   text-overflow: ellipsis;
-  text-transform: uppercase;
   white-space: nowrap;
-  color: var(--aurora);
 }
-/* Le médaillon : une bille de glace, l'icône gravée dedans. */
-.carte-ligue-icone {
+/* L'icône, gravée : une bille de glace claire. */
+.carte-glace-icone {
   display: grid;
-  width: 2.5rem;
-  height: 2.5rem;
+  width: 2.35rem;
+  height: 2.35rem;
   flex: none;
   place-items: center;
   border-radius: var(--r-pilule);
   color: var(--frost);
   background: radial-gradient(
     circle at 34% 28%,
-    rgb(255 255 255 / 0.5) 0%,
-    rgb(143 220 255 / 0.2) 46%,
-    rgb(8 30 60 / 0.55) 100%
+    rgb(255 255 255 / 0.55) 0%,
+    color-mix(in srgb, var(--teinte) 30%, transparent) 50%,
+    rgb(8 30 60 / 0.3) 100%
   );
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
   box-shadow:
-    inset 0 1.5px 0 rgb(255 255 255 / 0.8),
-    inset 0 -6px 12px -6px rgb(0 16 40 / 0.6),
-    0 6px 10px -6px rgb(0 8 24 / 0.75);
+    inset 0 1.5px 0 rgb(255 255 255 / 0.85),
+    inset 0 -6px 12px -6px rgb(0 16 40 / 0.5),
+    0 6px 10px -6px rgb(0 8 24 / 0.6);
 }
-/* Le bandeau : du verre givré posé sur la planche. */
-.carte-ligue-bande {
-  position: absolute;
-  right: 12px;
-  bottom: 12px;
-  left: 12px;
-  z-index: 3;
-  padding: 1.05rem 1.1rem 1.1rem;
-  border-radius: 21px;
-  background: linear-gradient(170deg, rgb(255 255 255 / 0.16) 0%, rgb(255 255 255 / 0.05) 60%),
-    rgb(6 18 40 / 0.38);
-  -webkit-backdrop-filter: blur(18px) saturate(170%);
-  backdrop-filter: blur(18px) saturate(170%);
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.62),
-    inset 0 0 0 1px rgb(255 255 255 / 0.14),
-    inset 0 16px 24px -20px rgb(255 255 255 / 0.4),
-    0 14px 26px -16px rgb(0 6 20 / 0.7);
-  text-shadow: 0 1px 2px rgb(0 8 24 / 0.75);
-}
-.carte-ligue-bande h3 {
+.carte-glace-num {
+  margin-left: auto;
   font-family: var(--font-display);
-  font-size: clamp(1.35rem, 8.2cqw, 2.05rem);
+  font-size: 0.9375rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: rgb(255 255 255 / 0.55);
+}
+/* Le cœur : le nombre taillé dans la glace, et sa légende. */
+.carte-glace-coeur {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.carte-glace-chiffre {
+  display: flex;
+  align-items: center;
+  gap: 0.1em;
+  font-family: var(--font-display);
+  font-size: clamp(4.2rem, 33cqw, 8.5rem);
   font-weight: 900;
-  line-height: 0.98;
-  letter-spacing: 0.005em;
+  line-height: 0.9;
+  letter-spacing: -0.02em;
+}
+/* La glace du nombre : la même que « Ligue » dans le hero — givre en haut,
+   glace en bas, des stries en biais, et un reflet qui la balaie. */
+.carte-glace-chiffre .glace {
+  --glace-haut: var(--neige-1);
+  --glace-mi: color-mix(in srgb, var(--teinte) 30%, var(--frost));
+  --glace-bas: color-mix(in srgb, var(--teinte) 55%, var(--ice));
+  background-image:
+    repeating-linear-gradient(
+      112deg,
+      transparent 0 0.42em,
+      rgb(255 255 255 / 0.14) 0.42em 0.47em,
+      transparent 0.47em 1.05em
+    ),
+    linear-gradient(110deg, var(--glace-haut) 0%, var(--glace-mi) 35%, var(--glace-bas) 70%, var(--glace-haut) 100%);
+  background-size:
+    100% 100%,
+    220% 100%;
+  animation: hero-balaye 12s ease-in-out infinite;
+}
+.carte-glace-chiffre svg {
+  width: 0.42em;
+  height: 0.42em;
+  color: var(--frost);
+  filter: drop-shadow(0 2px 0 rgb(4 18 40 / 0.45));
+}
+.carte-glace-legende {
+  margin-top: 0.6rem;
+  font-family: var(--font-display);
+  font-size: clamp(0.8125rem, 4cqw, 1rem);
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--frost);
+  opacity: 0.85;
+}
+.carte-glace-texte {
+  position: relative;
+  padding-top: 1rem;
+  border-top: 1px solid rgb(255 255 255 / 0.18);
+}
+.carte-glace-texte h3 {
+  font-family: var(--font-display);
+  font-size: clamp(1.3rem, 7.4cqw, 1.85rem);
+  font-weight: 900;
+  line-height: 1;
   text-transform: uppercase;
   text-wrap: balance;
   color: var(--frost);
 }
-.carte-ligue-bande p {
+.carte-glace-texte p {
   margin-top: 0.45rem;
-  font-size: clamp(0.875rem, 4.3cqw, 1rem);
-  line-height: 1.42;
+  font-size: clamp(0.875rem, 4.2cqw, 1rem);
+  line-height: 1.45;
   text-wrap: pretty;
   color: var(--ink-2);
-}
-.carte-ligue-chiffres {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-  margin-top: 0.75rem;
-}
-.carte-ligue-chiffres li {
-  padding: 0.22rem 0.6rem 0.25rem;
-  border-radius: var(--r-pilule);
-  background: rgb(255 255 255 / 0.1);
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.3),
-    inset 0 0 0 1px rgb(255 255 255 / 0.1);
-  font-family: var(--font-display);
-  font-size: clamp(0.75rem, 3.5cqw, 0.875rem);
-  font-weight: 800;
-  letter-spacing: 0.03em;
-  white-space: nowrap;
-  color: var(--frost);
 }
 
 /* L'entrée, sous le paquet. */

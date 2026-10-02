@@ -3,10 +3,9 @@ import { BoosterPack3D } from '@/components/BoosterPack3D';
 import { Diaporama, type Diapositive } from '@/components/Diaporama';
 import { EventailBoosters } from '@/components/EventailBoosters';
 import { SnowCap } from '@/components/SnowCap';
-import { IconJauge, IconPack, IconSwords, IconTrophy, IconTwitch } from '@/components/icons';
+import { IconJauge, IconPack, IconSnowflake, IconSwords, IconTrophy, IconTwitch } from '@/components/icons';
 import { GEMME_DU_PACK, PACKS, packArt } from '@/lib/domain/catalog';
-import { CADEAU_DU_JOUR, CARD_IMPACT_CAP, CHANCE, DUEL, ECONOMY, PLACEMENT_POINTS, SEASON } from '@/lib/domain/rules';
-import { num } from '@/lib/format';
+import { CADEAU_DU_JOUR, CARD_IMPACT_CAP, CHANCE, ECONOMY, PLACEMENT_POINTS, SEASON } from '@/lib/domain/rules';
 
 /**
  * L'accueil, quand on n'est pas connecté.
@@ -17,10 +16,11 @@ import { num } from '@/lib/format';
  *  - le hero, à même le ciel des boosters : le nom, une phrase, l'entrée par
  *    Twitch, et les quatre boosters distribués en éventail à l'arrivée, qui
  *    suivent la souris ;
- *  - puis la ligue en quatre cartes à collectionner (`Diaporama`), qu'on tire
- *    du doigt ou à la souris : le classement, les flocons et la chance, les
- *    boosters, les duels. Chacune porte une planche peinte des boosters en
- *    pleine page, et son titre sur un bandeau de verre givré.
+ *  - puis la ligue en cinq dalles de glace (`Diaporama`), qu'on tire du doigt
+ *    ou à la souris : le classement, les flocons, les boosters, la chance,
+ *    les duels. Chacune porte un grand nombre taillé dans la glace, une
+ *    légende, un titre et une phrase ; derrière le paquet, des nappes
+ *    d'aurore que le verre floute et dont il se colore.
  *
  * Le détail est dans les règles, une fois connecté. Toutes les valeurs
  * viennent de `lib/domain/rules` et du catalogue : la page ne peut pas dire
@@ -50,60 +50,64 @@ function jourDe(iso: string): string {
 }
 
 /**
- * Une carte de la ligue, comme une carte à collectionner : la planche peinte
- * en pleine page, un filet de cadre, le numéro et le thème en haut, son
- * médaillon, et en bas, sur un bandeau de verre givré, le titre, la phrase et
- * les nombres qui comptent.
+ * Une dalle de la ligue, taillée dans la glace : le givre sur la face, son
+ * épaisseur, le thème en haut, au cœur un grand nombre en glace et sa
+ * légende, puis le titre et la phrase. La lumière prise dans la glace est à
+ * la couleur de la dalle (`teinte`).
  */
-function Carte({
+function Dalle({
   numero,
   total,
-  art,
+  teinte,
   eyebrow,
   icone,
+  chiffre,
+  flocon = false,
+  legende,
   titre,
-  chiffres,
   children,
 }: {
   numero: number;
   total: number;
-  /** La planche peinte : l'adresse d'une image de `public/`. */
-  art: string | null;
+  /** Une couleur du thème : `var(--gold)`… */
+  teinte: string;
   eyebrow: string;
   icone: ReactNode;
+  /** Le nombre, en grand : « +20 », « ×4 ». */
+  chiffre: string;
+  /** Un flocon après le nombre. */
+  flocon?: boolean;
+  legende: string;
   titre: string;
-  /** Deux ou trois nombres, en pastilles. */
-  chiffres: string[];
   children: ReactNode;
 }) {
   const deux = (x: number) => String(x).padStart(2, '0');
   return (
-    <article className="carte-ligue">
-      <span
-        className="carte-ligue-art"
-        aria-hidden="true"
-        style={art ? ({ ['--art' as string]: `url("${art}")` } as CSSProperties) : undefined}
-      />
-      <span className="carte-ligue-cadre" aria-hidden="true" />
-      <SnowCap radius="30px" seed={`carte-ligue-${numero}`} epaisseur={14} />
-      <header className="carte-ligue-tete">
-        <p className="carte-ligue-num">
-          {deux(numero)}
-          <small>/{deux(total)}</small>
-          <span>{eyebrow}</span>
-        </p>
-        <span className="carte-ligue-icone" aria-hidden="true">
+    <article className="carte-glace" style={{ ['--teinte' as string]: teinte } as CSSProperties}>
+      <span className="carte-glace-givre" aria-hidden="true" />
+      <span className="carte-glace-epaisseur" aria-hidden="true" />
+      <SnowCap radius="30px" seed={`dalle-${numero}`} epaisseur={14} />
+      <header className="carte-glace-tete">
+        <span className="carte-glace-icone" aria-hidden="true">
           {icone}
         </span>
+        <p className="eyebrow">{eyebrow}</p>
+        <span className="carte-glace-num" aria-hidden="true">
+          {deux(numero)}/{deux(total)}
+        </span>
       </header>
-      <div className="carte-ligue-bande">
+      <div className="carte-glace-coeur">
+        <p className="carte-glace-chiffre">
+          <b className="glace" data-text={chiffre}>
+            {chiffre}
+          </b>
+          {flocon && <IconSnowflake />}
+        </p>
+        <p className="carte-glace-legende">{legende}</p>
+      </div>
+      <div className="carte-glace-texte">
         <h3>{titre}</h3>
         <p>{children}</p>
-        <ul className="carte-ligue-chiffres">
-          {chiffres.map((c) => (
-            <li key={c}>{c}</li>
-          ))}
-        </ul>
       </div>
     </article>
   );
@@ -124,65 +128,79 @@ export function Accueil({ twitchEnabled, devLogin }: { twitchEnabled: boolean; d
     </a>
   );
 
-  const CARTES: { cle: string; titre: string; carte: Omit<Parameters<typeof Carte>[0], 'numero' | 'total'> }[] = [
+  const DALLES: { cle: string; titre: string; dalle: Omit<Parameters<typeof Dalle>[0], 'numero' | 'total'> }[] = [
     {
       cle: 'classement',
       titre: 'Le classement',
-      carte: {
-        art: packArt('finisseur'),
+      dalle: {
+        teinte: 'var(--gold)',
         eyebrow: 'Le classement',
         icone: <IconTrophy className="h-5 w-5" />,
+        chiffre: `+${PLACEMENT_POINTS['1']}`,
+        legende: 'le Top 1 · +1 par kill',
         titre: 'Chaque kill compte',
-        chiffres: ['+1 par kill', `+${PLACEMENT_POINTS['1']} le Top 1`, `${SEASON.finalistCount} en finale`],
-        children: 'Tes kills et tes Top 3 te font grimper. En fin de saison, les meilleurs jouent la finale.',
+        children: `Tes kills et tes Top 3 font ton score. Les ${SEASON.finalistCount} premiers jouent la finale.`,
       },
     },
     {
       cle: 'flocons',
       titre: 'Les flocons',
-      carte: {
-        art: packArt('commu'),
+      dalle: {
+        teinte: 'var(--ice)',
         eyebrow: 'Les flocons',
-        icone: <IconJauge className="h-5 w-5" />,
-        titre: 'Garde tes flocons, tire plus haut',
-        chiffres: [
-          `+${ECONOMY.perKill} ❄ par kill`,
-          `+${CADEAU_DU_JOUR.parJour} ❄ par jour`,
-          `×${1 + CHANCE.max} de chance`,
-        ],
-        children: 'Chaque game en rapporte. Plus ta réserve est grosse, plus tes boosters sortent des cartes rares.',
+        icone: <IconSnowflake className="h-5 w-5" />,
+        chiffre: `+${ECONOMY.perKill}`,
+        flocon: true,
+        legende: 'flocons par kill',
+        titre: 'Tes games rapportent des flocons',
+        children: `+${ECONOMY.perPlacement['1']} le Top 1, +${CADEAU_DU_JOUR.parJour} chaque jour. Ils ne s’achètent pas.`,
       },
     },
     {
       cle: 'boosters',
       titre: 'Les boosters',
-      carte: {
-        art: packArt('folie'),
+      dalle: {
+        teinte: 'var(--violet)',
         eyebrow: 'Les boosters',
         icone: <IconPack className="h-5 w-5" />,
+        chiffre: String(PACKS.length),
+        legende: 'boosters, ouverts en live',
         titre: 'Les subs font tomber des boosters',
-        chiffres: [`${PACKS.length} boosters`, 'ouverts en live', `jusqu’à ${CARD_IMPACT_CAP} pts`],
-        children: 'Chacun donne une carte qui change une game, en bonus ou en malus.',
+        children: `Chacun donne une carte qui change une game : jusqu’à ${CARD_IMPACT_CAP} points, bonus ou malus.`,
+      },
+    },
+    {
+      cle: 'chance',
+      titre: 'La chance',
+      dalle: {
+        teinte: 'var(--aurora)',
+        eyebrow: 'La chance',
+        icone: <IconJauge className="h-5 w-5" />,
+        chiffre: `×${1 + CHANCE.max}`,
+        legende: 'de chance, au plus',
+        titre: 'Garde tes flocons, tire plus haut',
+        children: 'Plus ta réserve est grosse, plus tes boosters sortent des cartes rares.',
       },
     },
     {
       cle: 'duels',
       titre: 'Les duels',
-      carte: {
-        art: packArt('perso'),
+      dalle: {
+        teinte: 'color-mix(in srgb, var(--live) 55%, var(--violet))',
         eyebrow: 'Les duels',
         icone: <IconSwords className="h-5 w-5" />,
+        chiffre: '×2',
+        legende: 'ta mise, si tu gagnes',
         titre: 'Mise tes flocons en duel',
-        chiffres: ['même mise', '1 chance sur 2', `jusqu’à ${num(DUEL.miseMax)} ❄`],
-        children: 'Un joueur contre un autre : le gagnant rafle les deux mises.',
+        children: 'La même mise des deux côtés, une chance sur deux : le gagnant rafle tout.',
       },
     },
   ];
 
-  const DIAPOS: Diapositive[] = CARTES.map(({ cle, titre, carte }, i) => ({
+  const DIAPOS: Diapositive[] = DALLES.map(({ cle, titre, dalle }, i) => ({
     cle,
     titre,
-    contenu: <Carte numero={i + 1} total={CARTES.length} {...carte} />,
+    contenu: <Dalle numero={i + 1} total={DALLES.length} {...dalle} />,
   }));
 
   return (
@@ -257,13 +275,13 @@ export function Accueil({ twitchEnabled, devLogin }: { twitchEnabled: boolean; d
         </EventailBoosters>
       </section>
 
-      {/* ---- La ligue, en quatre cartes à collectionner ---- */}
+      {/* ---- La ligue, en cinq dalles de glace ---- */}
       <section id="ligue" className="acc-ligue" aria-labelledby="ligue-titre">
         <header className="acc-ligue-tete">
           <p className="eyebrow">Comment ça marche</p>
           <h2 id="ligue-titre" className="titre-glace titre-glace-page">
-            <span className="glace" data-text="La ligue en quatre cartes">
-              La ligue en quatre cartes
+            <span className="glace" data-text="La ligue en cinq cartes">
+              La ligue en cinq cartes
             </span>
           </h2>
           <p className="acc-ligue-indice">
@@ -273,7 +291,7 @@ export function Accueil({ twitchEnabled, devLogin }: { twitchEnabled: boolean; d
             Fais glisser les cartes
           </p>
         </header>
-        <Diaporama label="La ligue en quatre cartes" diapositives={DIAPOS} />
+        <Diaporama label="La ligue en cinq cartes" diapositives={DIAPOS} />
         <div className="acc-ligue-fin">
           {rejoindre}
           <p>{avantLaSaison ? `Coup d’envoi le ${debut}.` : `En jeu jusqu’au ${fin}.`}</p>
