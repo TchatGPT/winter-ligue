@@ -11789,7 +11789,7 @@
   opacity: 1;
 }
 
-/* -- La ligue en six cartes : un titre, une indication, le paquet -- */
+/* -- La ligue en quatre cartes : un titre, une indication, le paquet -- */
 .acc-ligue {
   scroll-margin-top: 1rem;
 }
@@ -11872,7 +11872,7 @@
 
 .deck {
   --l-carte: min(76vw, 20rem);
-  --h-carte: calc(var(--l-carte) * 1.46);
+  --h-carte: calc(var(--l-carte) * 1.62);
   --ecart: 1.02;
   --duree-carte: 7s;
   position: relative;
@@ -11880,14 +11880,14 @@
 @media (min-width: 640px) {
   .deck {
     --l-carte: 20.5rem;
-    --h-carte: calc(var(--l-carte) * 1.4);
+    --h-carte: calc(var(--l-carte) * 1.52);
     --ecart: 1.04;
   }
 }
 @media (min-width: 1280px) {
   .deck {
-    --l-carte: clamp(20rem, 17vw, 27rem);
-    --h-carte: calc(var(--l-carte) * 1.38);
+    --l-carte: clamp(21rem, 19vw, 29rem);
+    --h-carte: calc(var(--l-carte) * 1.48);
     --ecart: 1.1;
   }
 }
@@ -11944,7 +11944,7 @@
     translateX(calc(var(--d) * var(--l-carte) * (var(--ecart) - var(--ad) * 0.12)))
     translateZ(calc(var(--ad) * -7.5rem)) rotateY(clamp(-40deg, calc(var(--d) * -26deg), 40deg))
     rotateX(calc((0.5 - var(--my)) * var(--incl) * 1deg)) rotateY(calc((var(--mx) - 0.5) * var(--incl) * 1deg));
-  opacity: clamp(0, calc(1.32 - var(--ad) * 0.44), 1);
+  opacity: clamp(0, calc((var(--bord, 3) - var(--ad)) * 0.95), 1);
   will-change: transform, opacity;
   transition: --incl 0.45s ease-out;
   /* La matière : la lumière qui suit la souris, le lustre du haut, puis la
@@ -11972,13 +11972,6 @@
     0 16px 26px -16px rgb(0 6 20 / 0.6);
   text-shadow: 0 1px 2px rgb(0 8 24 / 0.7);
 }
-/* Le vrai verre — le flou de ce qu'il y a derrière — sur les cartes proches
-   du centre seulement : les autres sont loin et voilées, et chaque flou se
-   recalcule à chaque image du geste. */
-.deck-carte[data-proche] {
-  -webkit-backdrop-filter: blur(22px) saturate(170%);
-  backdrop-filter: blur(22px) saturate(170%);
-}
 .deck-carte[data-loin] {
   visibility: hidden;
 }
@@ -11991,7 +11984,7 @@
   position: absolute;
   inset: 0;
   z-index: 4;
-  padding: 1.5px;
+  padding: 2px;
   border-radius: inherit;
   background: conic-gradient(
     from var(--angle-holo),
@@ -12061,17 +12054,16 @@
   z-index: 5;
   border-radius: inherit;
   background: var(--bg-deep);
-  opacity: calc(min(var(--ad), 2.4) * 0.34);
+  opacity: calc(min(var(--ad), 2) * 0.32);
   pointer-events: none;
 }
-/* Sur un téléphone : le flou sur la carte au centre seulement, et une teinte
-   un peu plus dense pour les autres. */
-@media (hover: none) and (pointer: coarse) {
-  .deck-carte[data-proche]:not([data-actif]) {
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-    background-color: color-mix(in srgb, var(--fond) 70%, transparent);
-  }
+/* Le flou des bandeaux, sur les cartes proches du centre seulement : les
+   autres sont voilées, et chaque flou se recalcule à chaque image du geste. */
+.deck-carte:not([data-proche]) .carte-ligue-bande,
+.deck-carte:not([data-proche]) .carte-ligue-num,
+.deck-carte:not([data-proche]) .carte-ligue-icone {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
 }
 
 /* La navigation : flèche, points, flèche, pause. Des cibles de 44 px. */
@@ -12185,375 +12177,189 @@
   }
 }
 
-/* -- Une carte de la ligue : son en-tête, sa fenêtre, son titre, sa phrase -- */
+/* -- Une carte de la ligue : une carte à collectionner --
+   La planche peinte en pleine page, recadrée sur son illustration (les
+   sertissages du sachet restent hors champ), et qui glisse un peu sous la
+   souris, à contre-sens de l'inclinaison. Un dégradé l'assombrit en haut et
+   en bas, un filet de cadre court à quelques pixels du bord, et le texte
+   tient sur un bandeau de verre givré qui floute la planche. */
 .carte-ligue {
-  position: relative;
+  position: absolute;
+  inset: 0;
   z-index: 1;
-  display: flex;
-  height: 100%;
-  flex-direction: column;
-  padding: 1.35rem 1.3rem 1.4rem;
+  border-radius: inherit;
+}
+.carte-ligue-art {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background-color: var(--bg-deep);
+  background-image:
+    linear-gradient(
+      180deg,
+      rgb(1 4 9 / 0.5) 0%,
+      transparent 22%,
+      transparent 46%,
+      rgb(1 4 9 / 0.55) 78%,
+      rgb(1 4 9 / 0.75) 100%
+    ),
+    var(--art);
+  background-repeat: no-repeat;
+  background-size:
+    100% 100%,
+    138% auto;
+  background-position:
+    0 0,
+    calc(50% + (0.5 - var(--mx)) * 5%) calc(40% + (0.5 - var(--my)) * 4%);
+}
+.carte-ligue-cadre {
+  position: absolute;
+  inset: 8px;
+  z-index: 2;
+  border-radius: 23px;
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 0.32),
+    inset 0 0 0 2px rgb(0 8 24 / 0.25);
+  pointer-events: none;
 }
 .carte-ligue-tete {
+  position: absolute;
+  top: 1.15rem;
+  right: 1rem;
+  left: 1rem;
+  z-index: 3;
   display: flex;
   align-items: center;
-  gap: 0.65rem;
+  justify-content: space-between;
+  gap: 0.6rem;
 }
+/* Le numéro et le thème, sur une pastille de verre. */
 .carte-ligue-num {
+  display: inline-flex;
+  min-width: 0;
+  align-items: baseline;
+  gap: 0.15rem;
+  padding: 0.4rem 0.85rem 0.42rem 0.75rem;
+  border-radius: var(--r-pilule);
+  background: rgb(4 14 32 / 0.42);
+  -webkit-backdrop-filter: blur(10px) saturate(150%);
+  backdrop-filter: blur(10px) saturate(150%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.4),
+    inset 0 0 0 1px rgb(255 255 255 / 0.14);
   font-family: var(--font-display);
-  font-size: 1.25rem;
+  font-size: 1.05rem;
   font-weight: 900;
   line-height: 1;
   color: var(--frost);
 }
 .carte-ligue-num small {
-  font-size: 0.7em;
+  font-size: 0.72em;
   font-weight: 700;
   color: var(--faint);
 }
-.carte-ligue-tete .eyebrow {
-  min-width: 0;
+.carte-ligue-num span {
+  margin-left: 0.55rem;
   overflow: hidden;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
   text-overflow: ellipsis;
+  text-transform: uppercase;
   white-space: nowrap;
+  color: var(--aurora);
 }
 /* Le médaillon : une bille de glace, l'icône gravée dedans. */
 .carte-ligue-icone {
   display: grid;
-  width: 2.4rem;
-  height: 2.4rem;
+  width: 2.5rem;
+  height: 2.5rem;
   flex: none;
   place-items: center;
-  margin-left: auto;
   border-radius: var(--r-pilule);
   color: var(--frost);
   background: radial-gradient(
     circle at 34% 28%,
-    rgb(255 255 255 / 0.42) 0%,
-    color-mix(in srgb, var(--teinte) 28%, transparent) 46%,
-    rgb(8 30 60 / 0.4) 100%
+    rgb(255 255 255 / 0.5) 0%,
+    rgb(143 220 255 / 0.2) 46%,
+    rgb(8 30 60 / 0.55) 100%
   );
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   box-shadow:
-    inset 0 1.5px 0 rgb(255 255 255 / 0.75),
+    inset 0 1.5px 0 rgb(255 255 255 / 0.8),
     inset 0 -6px 12px -6px rgb(0 16 40 / 0.6),
     0 6px 10px -6px rgb(0 8 24 / 0.75);
 }
-/* La fenêtre : creusée dans le verre, éclairée d'en haut à la couleur de la
-   carte — comme l'illustration d'une carte à collectionner. */
-.carte-ligue-visuel {
-  position: relative;
-  display: grid;
-  min-height: 7.5rem;
-  flex: 1 1 auto;
-  place-items: center;
-  margin-top: 0.9rem;
-  padding: 0.9rem;
-  overflow: hidden;
-  border-radius: 22px;
-  container-type: size;
-  background:
-    radial-gradient(110% 80% at 50% -5%, color-mix(in srgb, var(--teinte) 38%, transparent), transparent 72%),
-    radial-gradient(90% 60% at 50% 110%, color-mix(in srgb, var(--teinte) 14%, transparent), transparent 70%),
-    linear-gradient(180deg, rgb(0 10 30 / 0.22), rgb(0 10 30 / 0.5));
+/* Le bandeau : du verre givré posé sur la planche. */
+.carte-ligue-bande {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  left: 12px;
+  z-index: 3;
+  padding: 1.05rem 1.1rem 1.1rem;
+  border-radius: 21px;
+  background: linear-gradient(170deg, rgb(255 255 255 / 0.16) 0%, rgb(255 255 255 / 0.05) 60%),
+    rgb(6 18 40 / 0.38);
+  -webkit-backdrop-filter: blur(18px) saturate(170%);
+  backdrop-filter: blur(18px) saturate(170%);
   box-shadow:
-    inset 0 3px 8px rgb(0 8 24 / 0.55),
-    inset 0 0 0 1px rgb(255 255 255 / 0.09),
-    inset 0 -1px 0 rgb(255 255 255 / 0.2);
+    inset 0 1px 0 rgb(255 255 255 / 0.62),
+    inset 0 0 0 1px rgb(255 255 255 / 0.14),
+    inset 0 16px 24px -20px rgb(255 255 255 / 0.4),
+    0 14px 26px -16px rgb(0 6 20 / 0.7);
+  text-shadow: 0 1px 2px rgb(0 8 24 / 0.75);
 }
-.carte-ligue h3 {
-  margin-top: 1rem;
+.carte-ligue-bande h3 {
   font-family: var(--font-display);
-  font-size: clamp(1.4rem, 8cqw, 2rem);
+  font-size: clamp(1.35rem, 8.2cqw, 2.05rem);
   font-weight: 900;
-  line-height: 1;
+  line-height: 0.98;
   letter-spacing: 0.005em;
   text-transform: uppercase;
   text-wrap: balance;
   color: var(--frost);
 }
-.carte-ligue-texte {
-  margin-top: 0.5rem;
-  font-size: clamp(0.9375rem, 4.6cqw, 1.0625rem);
-  line-height: 1.45;
+.carte-ligue-bande p {
+  margin-top: 0.45rem;
+  font-size: clamp(0.875rem, 4.3cqw, 1rem);
+  line-height: 1.42;
   text-wrap: pretty;
   color: var(--ink-2);
 }
-.carte-ligue-action {
-  margin-top: 0.9rem;
-}
-.carte-ligue-action .btn {
-  width: 100%;
-}
-
-/* -- Les images des cartes. Chacune se mesure à sa fenêtre (`cq*`). -- */
-
-/* Le podium : trois marches de glace, la couronne et les médailles dessus. */
-.acc-v-podium {
-  display: grid;
-  width: 100%;
-  height: 100%;
-  grid-template-columns: repeat(3, minmax(0, 27cqw));
-  align-items: end;
-  justify-content: center;
-  gap: 4cqw;
-}
-.acc-v-podium li {
+.carte-ligue-chiffres {
   display: flex;
-  flex-direction: column;
-  align-items: center;
+  flex-wrap: wrap;
   gap: 0.35rem;
+  margin-top: 0.75rem;
 }
-.acc-v-podium-icone {
-  width: clamp(1.8rem, 24cqh, 3.4rem);
-  height: clamp(1.8rem, 24cqh, 3.4rem);
-}
-.acc-v-marche {
-  display: flex;
-  width: 100%;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.1rem;
-  border-radius: 14px 14px 6px 6px;
-  background: linear-gradient(
-    180deg,
-    rgb(255 255 255 / 0.26) 0%,
-    rgb(143 220 255 / 0.1) 55%,
-    rgb(143 220 255 / 0.04) 100%
-  );
-  box-shadow:
-    inset 0 1.5px 0 rgb(255 255 255 / 0.7),
-    inset 0 -12px 18px -12px rgb(0 16 40 / 0.55),
-    0 8px 14px -10px rgb(0 8 24 / 0.7);
-}
-.acc-v-podium li[data-rang='1'] .acc-v-marche {
-  height: 52cqh;
-}
-.acc-v-podium li[data-rang='2'] .acc-v-marche {
-  height: 38cqh;
-}
-.acc-v-podium li[data-rang='3'] .acc-v-marche {
-  height: 28cqh;
-}
-.acc-v-marche b {
-  font-family: var(--font-display);
-  font-size: clamp(1.15rem, 14cqh, 2.2rem);
-  font-weight: 900;
-  line-height: 1;
-  color: var(--frost);
-}
-.acc-v-podium li[data-rang='1'] .acc-v-marche b {
-  color: var(--gold);
-}
-.acc-v-marche small {
-  font-size: clamp(0.625rem, 5.5cqh, 0.8125rem);
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--faint);
-}
-
-/* Les flocons : trois pastilles en quinconce. */
-.acc-v-gains {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6cqh;
-}
-.acc-v-gains li {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 0.35rem;
-  padding: 0.4rem 1.05rem 0.45rem;
+.carte-ligue-chiffres li {
+  padding: 0.22rem 0.6rem 0.25rem;
   border-radius: var(--r-pilule);
-  background: rgb(255 255 255 / 0.08);
+  background: rgb(255 255 255 / 0.1);
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.36),
-    inset 0 0 0 1px rgb(255 255 255 / 0.08),
-    0 8px 14px -10px rgb(0 8 24 / 0.7);
-  translate: -8% 0;
-}
-.acc-v-gains li:nth-child(2) {
-  translate: 10% 0;
-}
-.acc-v-gains li:nth-child(3) {
-  translate: -3% 0;
-}
-.acc-v-gains b {
+    inset 0 1px 0 rgb(255 255 255 / 0.3),
+    inset 0 0 0 1px rgb(255 255 255 / 0.1);
   font-family: var(--font-display);
-  font-size: clamp(1.3rem, 15cqh, 2.2rem);
-  font-weight: 900;
-  line-height: 1;
-  color: var(--frost);
-}
-.acc-v-gains i {
-  font-style: normal;
-  font-size: clamp(0.9rem, 9cqh, 1.35rem);
-  color: var(--ice);
-}
-.acc-v-gains span {
-  font-size: clamp(0.8125rem, 6.5cqh, 1rem);
-  color: var(--ink-2);
-}
-
-/* Les boosters : un petit éventail, chacun dans sa lévitation. */
-.acc-v-sachets {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-}
-.acc-v-sachet {
-  position: absolute;
-  bottom: 6%;
-  left: calc(50% + var(--o) * 19%);
-  width: min(27%, calc(80cqh / 1.865));
-  transform-origin: 50% 100%;
-  transform: translate(-50%, calc(var(--o-abs) * 7%)) rotate(calc(var(--o) * 7deg));
-}
-
-/* La chance : « jusqu'à ×4 » en grand, en glace, et l'escalier des paliers. */
-.acc-v-chance {
-  display: flex;
-  width: 100%;
-  height: 100%;
-  flex-direction: column;
-  justify-content: space-between;
-}
-.acc-v-chance-max {
-  display: flex;
-  align-items: baseline;
-  justify-content: center;
-  gap: 0.5rem;
-  font-family: var(--font-display);
-  font-weight: 800;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--faint);
-  font-size: clamp(0.75rem, 6cqh, 0.9375rem);
-}
-.acc-v-chance-max b {
-  font-size: clamp(2.6rem, 34cqh, 4.6rem);
-  font-weight: 900;
-  line-height: 0.95;
-  letter-spacing: -0.01em;
-  --glace-haut: var(--frost);
-  --glace-mi: var(--aurora);
-  --glace-bas: var(--ice-2);
-}
-.acc-v-escalier {
-  display: block;
-  width: 100%;
-  height: 42cqh;
-}
-.acc-v-escalier-ligne {
-  fill: none;
-  stroke: var(--ice);
-  stroke-width: 2;
-  stroke-linejoin: round;
-}
-
-/* Le duel : deux orbes face à face, le pot entre elles. */
-.acc-v-duel {
-  display: grid;
-  width: 100%;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  align-items: center;
-  gap: 0.5rem;
-}
-.acc-v-camp {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.45rem;
-}
-.acc-v-camp .orbe {
-  --taille: clamp(2.9rem, 40cqh, 4.6rem);
-}
-.acc-v-camp b {
-  font-family: var(--font-display);
-  font-size: 0.8125rem;
-  font-weight: 900;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  white-space: nowrap;
-  color: var(--ink);
-}
-.acc-v-pot {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.15rem;
-  text-align: center;
-}
-.acc-v-vs {
-  font-family: var(--font-display);
-  font-size: 0.875rem;
-  font-weight: 900;
-  font-style: italic;
-  letter-spacing: 0.08em;
-  color: var(--ice);
-}
-.acc-v-pot strong {
-  font-family: var(--font-display);
-  font-size: clamp(1.5rem, 12cqw, 2.3rem);
-  font-weight: 900;
-  line-height: 1;
-  white-space: nowrap;
-  color: var(--frost);
-}
-.acc-v-pot strong i {
-  font-style: normal;
-  color: var(--ice);
-}
-.acc-v-pot small {
-  font-family: var(--font-display);
-  font-size: 0.6875rem;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--faint);
-}
-
-/* Pour entrer : trois gestes, numérotés dans des billes de glace. */
-.acc-v-etapes {
-  display: grid;
-  width: 100%;
-  gap: 7cqh;
-}
-.acc-v-etapes li {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  font-family: var(--font-display);
-  font-size: clamp(0.875rem, 11cqh, 1.1rem);
+  font-size: clamp(0.75rem, 3.5cqw, 0.875rem);
   font-weight: 800;
   letter-spacing: 0.03em;
-  text-align: left;
-  text-transform: uppercase;
-  color: var(--ink);
-}
-.acc-v-etapes span {
-  display: grid;
-  width: clamp(1.8rem, 22cqh, 2.5rem);
-  height: clamp(1.8rem, 22cqh, 2.5rem);
-  flex: none;
-  place-items: center;
-  border-radius: var(--r-pilule);
-  font-size: 1.15em;
-  font-weight: 900;
+  white-space: nowrap;
   color: var(--frost);
-  background: radial-gradient(
-    circle at 34% 28%,
-    rgb(255 255 255 / 0.4) 0%,
-    color-mix(in srgb, var(--twitch-clair) 30%, transparent) 46%,
-    rgb(8 30 60 / 0.34) 100%
-  );
-  box-shadow:
-    inset 0 1.5px 0 rgb(255 255 255 / 0.75),
-    inset 0 -6px 12px -6px rgb(0 16 40 / 0.6),
-    0 6px 10px -6px rgb(0 8 24 / 0.75);
+}
+
+/* L'entrée, sous le paquet. */
+.acc-ligue-fin {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 1.25rem;
+}
+.acc-ligue-fin p {
+  font-size: 0.875rem;
+  color: var(--faint);
 }
 
 @media (prefers-reduced-motion: reduce) {

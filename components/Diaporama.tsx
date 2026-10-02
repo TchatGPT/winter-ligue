@@ -59,8 +59,12 @@ function distance(i: number, p: number, n: number): { d: number; ad: number } {
   return { d, ad: Math.min(Math.abs(d), 3) };
 }
 
-/** Au-delà, une carte est hors de vue : on ne la peint plus. */
-const LOIN = 2.6;
+/**
+ * Au-delà, une carte est hors de vue : on ne la peint plus. Le bord du paquet
+ * est à n/2 — la carte qui y passe change de côté —, et elle s'y est déjà
+ * éteinte (`--bord`, dans le CSS).
+ */
+const loinDe = (n: number) => Math.min(2.6, n / 2 - 0.04);
 /** En deçà, une carte est assez proche pour porter du vrai verre (flou). */
 const PROCHE = 1.5;
 
@@ -104,7 +108,7 @@ export function Diaporama({ id, label, diapositives }: { id?: string; label: str
         el.style.setProperty('--d', d.toFixed(4));
         el.style.setProperty('--ad', ad.toFixed(4));
         el.style.zIndex = String(50 - Math.round(ad * 10));
-        el.toggleAttribute('data-loin', ad > LOIN);
+        el.toggleAttribute('data-loin', ad > loinDe(n));
         el.toggleAttribute('data-proche', ad < PROCHE);
       });
       setActif(modulo(Math.round(p), n));
@@ -259,6 +263,7 @@ export function Diaporama({ id, label, diapositives }: { id?: string; label: str
       <div
         ref={scene}
         className="deck-scene"
+        style={{ ['--bord' as string]: Math.min(3, n / 2) } as CSSProperties}
         data-glisse={glisse ? '' : undefined}
         tabIndex={0}
         onPointerDown={appuie}
@@ -318,7 +323,7 @@ export function Diaporama({ id, label, diapositives }: { id?: string; label: str
               aria-label={`${i + 1} sur ${n} : ${diapo.titre}`}
               data-actif={i === actif ? '' : undefined}
               data-proche={ad < PROCHE ? '' : undefined}
-              data-loin={ad > LOIN ? '' : undefined}
+              data-loin={ad > loinDe(n) ? '' : undefined}
               inert={i !== actif}
               style={
                 { ['--d' as string]: d, ['--ad' as string]: ad, zIndex: 50 - Math.round(ad * 10) } as CSSProperties
