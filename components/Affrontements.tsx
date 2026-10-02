@@ -41,10 +41,12 @@ import {
   type BatailleVueClient,
   type CampApercu,
 } from '@/components/BatailleArene';
+import { CouronneGlace } from '@/components/CouronneGlace';
 import { IconSwords } from '@/components/icons';
+import { MedailleGlace } from '@/components/MedailleGlace';
 import { SnowCap } from '@/components/SnowCap';
 import { reveilleSonsDuel } from '@/components/sonsDuel';
-import { Notice, flakes } from '@/components/ui';
+import { flakes } from '@/components/ui';
 import { CHANCE, DUEL, chanceDe, libelleMultiplicateur } from '@/lib/domain/rules';
 import { shortDateTime } from '@/lib/format';
 
@@ -68,8 +70,46 @@ const MISE_DEPART = 100;
 /** Les résultats montrés d'emblée sur un écran étroit ; le reste se déplie. */
 const RESULTATS_REPLIES = 5;
 
+/** Les défis montrés d'emblée sur un écran étroit ; le reste se déplie. */
+const DEFIS_REPLIES = 3;
+
+/** Le temps qu'un message reste à l'écran — une erreur, un peu plus. */
+const DUREE_MESSAGE = 6500;
+const DUREE_ERREUR = 9000;
+
+/** Le dernier message du salon : un défi lancé ou annulé, un duel joué, une erreur. */
+interface Message {
+  kind: 'success' | 'error' | 'info';
+  texte: string;
+  /** Un numéro par message : le même texte deux fois relance le minuteur. */
+  cle: number;
+}
+
 /** Le pot : les deux mises réunies. C'est ce qui change de mains. */
 const pot = (b: BatailleVueClient) => b.mise * 2;
+
+/**
+ * Le rang dans le top de la semaine : la couronne et les médailles de glace du
+ * classement — la même matière, le même éclat qui passe —, sertis dans son
+ * disque teinté or, argent ou cuivre (`.rang-socle`), puis un chiffre. Des
+ * pastilles pleines l'ont précédé : elles n'étaient de rien d'autre sur le site.
+ */
+function RangTop({ rang }: { rang: number }) {
+  return (
+    <span className="rang-socle duels-rang" data-podium={rang <= 3 ? rang : undefined}>
+      {rang === 1 ? (
+        <CouronneGlace className="h-8 w-8" id="couronne-duels" />
+      ) : rang <= 3 ? (
+        <MedailleGlace rang={rang as 2 | 3} className="h-8 w-8" id={`medaille-${rang}-duels`} />
+      ) : (
+        <span className="duels-rang-chiffre" aria-hidden="true">
+          {rang}
+        </span>
+      )}
+      <span className="sr-only">{rang === 1 ? '1er' : `${rang}e`}</span>
+    </span>
+  );
+}
 
 /** Ce qu'on dit d'un duel joué, une fois sa fenêtre refermée. */
 function bilanDe(b: BatailleVueClient, moiId: string | null): { gagne: boolean; texte: string } {
@@ -181,12 +221,7 @@ function FenetreDuel({
         onClick={(e) => e.stopPropagation()}
       >
         {fermable && (
-          <button
-            type="button"
-            className="btn btn-sm absolute top-5 right-5 z-10"
-            onClick={ferme}
-            aria-label="Fermer"
-          >
+          <button type="button" className="btn btn-sm absolute top-5 right-5 z-10" onClick={ferme} aria-label="Fermer">
             ✕
           </button>
         )}
@@ -197,6 +232,25 @@ function FenetreDuel({
           </footer>
         )}
       </div>
+    </div>,
+    document.body,
+  );
+}
+
+/**
+ * Le message du salon, dans un coin de l'écran : en bas à droite sur un
+ * ordinateur, au-dessus de la barre de navigation sur un téléphone. Il ne
+ * pousse rien dans la page, et s'en va de lui-même (voir `DUREE_MESSAGE`).
+ */
+function Annonce({ message, ferme }: { message: Message; ferme: () => void }) {
+  const navigateur = useNavigateur();
+  if (!navigateur) return null;
+  return createPortal(
+    <div className="duels-annonce" data-kind={message.kind} role="status" aria-live="polite">
+      <p>{message.texte}</p>
+      <button type="button" className="duels-annonce-fermer" onClick={ferme} aria-label="Fermer le message">
+        ✕
+      </button>
     </div>,
     document.body,
   );
@@ -310,10 +364,25 @@ export function Affrontements({
   soldeMax: number;
 }) {
   const [etat, setEtat] = useState<Charge>(initial);
-  const [erreur, setErreur] = useState<string | null>(null);
-  const [info, setInfo] = useState<string | null>(null);
-  /** L'issue du dernier duel joué, affichée quand sa fenêtre se referme. */
-  const [bilan, setBilan] = useState<{ gagne: boolean; texte: string } | null>(null);
+  /**
+   * Le dernier message — un défi lancé, un duel joué, une erreur —, posé dans
+   * un coin de l'écran (`Annonce`) : en tête du salon, il repoussait tout le
+   * reste vers le bas.
+   */
+  const [message, setMessage] = useState<Message | null>(null);
+  const annonce = useCallback(
+    (kind: Message['kind'], texte: string) => setMessage({ kind, texte, cle: nouveauNumero() }),
+    [],
+  );
+  const annonceBilan = useCallback(
+    (b: { gagne: boolean; texte: string }) => annonce(b.gagne ? 'success' : 'info', b.texte),
+    [annonce],
+  );
+  useEffect(() => {
+    if (!message) return;
+    const t = setTimeout(() => setMessage(null), message.kind === 'error' ? DUREE_ERREUR : DUREE_MESSAGE);
+    return () => clearTimeout(t);
+  }, [message]);
   const [occupe, setOccupe] = useState(false);
 
   /** La mise du duel qu'on monte. */
@@ -323,6 +392,8 @@ export function Affrontements({
   const [onglet, setOnglet] = useState<Onglet>('recents');
   /** Toute la liste des résultats, sur un écran étroit (voir `RESULTATS_REPLIES`). */
   const [tousResultats, setTousResultats] = useState(false);
+  /** Tous les défis à relever, sur un écran étroit (voir `DEFIS_REPLIES`). */
+  const [tousDefis, setTousDefis] = useState(false);
 
   const [fenetre, setFenetre] = useState<Fenetre | null>(null);
   /** Les courses de mes duels relevés, en attente d'une fenêtre libre. */
@@ -400,9 +471,7 @@ export function Affrontements({
     if (enCours.current) return;
     enCours.current = true;
     setOccupe(true);
-    setErreur(null);
-    setInfo(null);
-    setBilan(null);
+    setMessage(null);
     // Le contexte audio se réveille ici, pendant le geste : ouvert plus tard,
     // il naîtrait suspendu et la course serait muette.
     reveilleSonsDuel();
@@ -422,12 +491,12 @@ export function Affrontements({
         setFenetre({ etat: 'duel', bataille: b, anime: true, tour: nouveauNumero(), fini: false });
       } else {
         // Fenêtre fermée pendant le tirage : le duel est joué quand même, on le dit.
-        setBilan(bilanDe(b, etat.moiId));
+        annonceBilan(bilanDe(b, etat.moiId));
       }
     } else if (toujoursLa) {
       setFenetre({ etat: 'erreur', message: resultat.message });
     } else {
-      setErreur(resultat.message);
+      annonce('error', resultat.message);
     }
 
     enCours.current = false;
@@ -440,12 +509,10 @@ export function Affrontements({
     if (enCours.current) return;
     enCours.current = true;
     setOccupe(true);
-    setErreur(null);
-    setInfo(null);
-    setBilan(null);
+    setMessage(null);
     const resultat = await poste(url, corps);
-    if (resultat.ok) setInfo(succes(resultat.data));
-    else setErreur(resultat.message);
+    if (resultat.ok) annonce('success', succes(resultat.data));
+    else annonce('error', resultat.message);
     enCours.current = false;
     setOccupe(false);
     void recharge();
@@ -459,7 +526,7 @@ export function Affrontements({
       '/api/affrontements',
       { mise },
       (b) =>
-        `Ton défi est lancé : ${flakes(b.mise)} ❄ misés. Il attend un adversaire dans « Duels à rejoindre » ; la course s’ouvrira ici dès qu’on le relève. Tu peux l’annuler jusque-là.`,
+        `Ton défi de ${flakes(b.mise)} ❄ est lancé : la course s’ouvrira ici dès qu’un joueur le relèvera. Tu peux l’annuler jusque-là.`,
     );
   };
 
@@ -471,13 +538,17 @@ export function Affrontements({
     );
 
   const annule = (b: BatailleVueClient) =>
-    agit('/api/affrontements/annuler', { batailleId: b.id }, () => `Défi annulé : ta mise de ${flakes(b.mise)} ❄ t’est rendue.`);
+    agit(
+      '/api/affrontements/annuler',
+      { batailleId: b.id },
+      () => `Défi annulé : ta mise de ${flakes(b.mise)} ❄ t’est rendue.`,
+    );
 
   function ferme() {
     attenteOuverte.current = null;
     // Fermée à la main sur le verdict, la fenêtre laisse l'issue dans le salon —
     // et la place à la course suivante, s'il y en a une en file.
-    if (fenetre?.etat === 'duel') setBilan(bilanDe(fenetre.bataille, etat.moiId));
+    if (fenetre?.etat === 'duel') annonceBilan(bilanDe(fenetre.bataille, etat.moiId));
     const suivante = prochaineCourse(aMontrer.current);
     fenetreLa.current = suivante !== null;
     setFenetre(suivante);
@@ -489,7 +560,7 @@ export function Affrontements({
   }, []);
 
   // La course finie, le verdict reste le temps d'être lu, puis la fenêtre se
-  // ferme d'elle-même et l'issue passe en tête du salon.
+  // ferme d'elle-même et l'issue s'annonce dans un coin de l'écran.
   const duelTermine = fenetre?.etat === 'duel' && fenetre.fini ? fenetre.bataille : null;
   const moiId = etat.moiId;
   useEffect(() => {
@@ -498,22 +569,26 @@ export function Affrontements({
       const suivante = prochaineCourse(aMontrer.current);
       fenetreLa.current = suivante !== null;
       setFenetre(suivante);
-      setBilan(bilanDe(duelTermine, moiId));
+      annonceBilan(bilanDe(duelTermine, moiId));
       void recharge();
     }, DELAI_VERDICT);
     return () => clearTimeout(t);
-  }, [duelTermine, moiId, recharge]);
+  }, [duelTermine, moiId, recharge, annonceBilan]);
 
   /* ------------------------------ Les listes ----------------------------- */
 
   const ouverts = etat.batailles.filter((b) => b.statut === 'ATTENTE');
-  // Ceux qu'on peut relever d'abord, les plus grosses mises en tête ; les siens ensuite.
-  const aRejoindre = [...ouverts].sort(
-    (a, b) => Number(a.hoteId === etat.moiId) - Number(b.hoteId === etat.moiId) || b.mise - a.mise,
-  );
-  /** Mes défis en attente : `DUEL.enAttenteMax` au plus, le serveur le vérifie. */
-  const mesDefis = joueur ? ouverts.filter((b) => b.hoteId === etat.moiId).length : 0;
-  const complet = mesDefis >= DUEL.enAttenteMax;
+  /** Les défis des autres, à relever : les plus grosses mises en tête. */
+  const aRelever = ouverts.filter((b) => b.hoteId !== etat.moiId).sort((a, b) => b.mise - a.mise);
+  /**
+   * Mes défis en attente — `DUEL.enAttenteMax` au plus, le serveur le vérifie.
+   * Ils ne sont pas dans la liste des défis à relever : ils vivent dans le
+   * panneau de lancement, avec leur compte.
+   */
+  const mesDefis = joueur
+    ? ouverts.filter((b) => b.hoteId === etat.moiId).sort((a, b) => a.creeeA.localeCompare(b.creeeA))
+    : [];
+  const complet = mesDefis.length >= DUEL.enAttenteMax;
   const jouees = etat.batailles.filter((b) => b.statut === 'TERMINEE');
   const miens = jouees.filter((b) => joueur && b.camps.some((c) => c.id === etat.moiId));
   const listes: Record<Onglet, { titre: string; lignes: BatailleVueClient[]; vide: string }> = {
@@ -530,22 +605,25 @@ export function Affrontements({
     solde !== null && miseValide ? Math.max(0, Math.min(mise * 2, soldeMax - (solde - mise)) - mise) : mise;
   const gainPerdu = miseValide ? mise - gainReel : 0;
   const chance = solde !== null ? chanceDe(solde) : null;
+  /** On ne peut pas miser du tout : pas de joueur derrière la session, ou plus assez de flocons. */
+  const bloque = !joueur || solde === null || solde < miseMin;
   /** On peut régler une mise : un joueur, des flocons, rien en cours. */
-  const peutMiser = joueur && solde !== null && solde >= miseMin && !occupe;
+  const peutMiser = !bloque && !occupe;
   const changeMise = (valeur: number) => setMise(Math.min(plafond, Math.max(miseMin, valeur)));
 
   /** Une seule alerte à la fois, la plus bloquante d'abord. */
-  const alerte = !joueur || solde === null || solde < miseMin
-    ? null
-    : !miseValide
-      ? `La mise va de ${flakes(miseMin)} à ${flakes(miseMax)} ❄.`
-      : !abordable
-        ? `Il te manque ${flakes(mise - solde)} ❄ pour cette mise.`
-        : complet
-          ? `Tu as déjà ${DUEL.enAttenteMax} défis en attente : attends qu’on les relève, ou annules-en un.`
-          : gainPerdu > 0
-            ? `Ton solde est plafonné à ${flakes(soldeMax)} ❄ : ${flakes(gainPerdu)} ❄ du gain seraient perdus.`
-            : null;
+  const alerte =
+    !joueur || solde === null || solde < miseMin
+      ? null
+      : !miseValide
+        ? `La mise va de ${flakes(miseMin)} à ${flakes(miseMax)} ❄.`
+        : !abordable
+          ? `Il te manque ${flakes(mise - solde)} ❄ pour cette mise.`
+          : complet
+            ? `Tu as déjà ${DUEL.enAttenteMax} défis en attente : attends qu’on les relève, ou annules-en un.`
+            : gainPerdu > 0
+              ? `Ton solde est plafonné à ${flakes(soldeMax)} ❄ : ${flakes(gainPerdu)} ❄ du gain seraient perdus.`
+              : null;
 
   /* ------------------------------- La fenêtre ---------------------------- */
 
@@ -599,21 +677,15 @@ export function Affrontements({
     <div className="duels-salon">
       {/* =========================== Jouer ===========================
           Relever un défi, ou lancer le sien : tout ce qui sert à jouer, dans
-          une colonne. Les messages viennent en tête, où l'on regarde. */}
+          une colonne. Sur un ordinateur, la zone des défis a une hauteur fixe
+          — la liste défile dedans — : le panneau de lancement ne bouge pas,
+          qu'il y ait un défi ou vingt. */}
       <div className="duels-jouer">
-        {(erreur || info || bilan) && (
-          <div className="duels-messages">
-            {erreur && <Notice kind="error">{erreur}</Notice>}
-            {info && <Notice kind="success">{info}</Notice>}
-            {bilan && <Notice kind={bilan.gagne ? 'success' : 'info'}>{bilan.texte}</Notice>}
-          </div>
-        )}
-
-        {/* ---- Les défis ouverts : qui, combien, et son bouton ---- */}
+        {/* ---- Les défis des autres : qui, combien, et son bouton ---- */}
         <section
           className="glass duels-panneau duels-defis"
           aria-labelledby="defis-titre"
-          data-vide={aRejoindre.length === 0 ? '' : undefined}
+          data-vide={aRelever.length === 0 ? '' : undefined}
         >
           <SnowCap radius="var(--r-lg)" seed="duels-rejoindre" epaisseur={16} />
           <header className="duels-panneau-tete">
@@ -621,47 +693,46 @@ export function Affrontements({
               <p className="eyebrow">Défis ouverts</p>
               <h2 id="defis-titre">
                 Duels à rejoindre
-                <span className="duels-compte" data-actif={aRejoindre.length > 0 ? '' : undefined}>
-                  {aRejoindre.length}
+                <span className="duels-compte" data-actif={aRelever.length > 0 ? '' : undefined}>
+                  {aRelever.length}
                 </span>
               </h2>
             </div>
-            {mesDefis > 0 && (
-              <p className="duels-quota">
-                Tes défis en attente :{' '}
-                <b>
-                  {mesDefis} / {DUEL.enAttenteMax}
-                </b>
-              </p>
-            )}
           </header>
 
-          {aRejoindre.length === 0 ? (
+          {aRelever.length === 0 ? (
             <div className="duels-vide">
               <span className="duels-vide-icone" aria-hidden="true">
                 <IconSwords className="h-5 w-5" />
               </span>
               <p>
-                <b>Personne n’attend d’adversaire.</b> Lance le premier défi : il s’affichera ici pour les autres
-                joueurs.
+                {mesDefis.length > 0 ? (
+                  <>
+                    <b>Aucun défi d’un autre joueur pour l’instant.</b> Les tiens attendent qu’on les relève.
+                  </>
+                ) : (
+                  <>
+                    <b>Personne n’attend d’adversaire.</b> Lance le premier défi : il s’affichera ici pour les autres
+                    joueurs.
+                  </>
+                )}
               </p>
             </div>
           ) : (
-            <ul className="duels-defis-liste">
-              {aRejoindre.map((b) => {
+            <ul className="duels-defis-liste" data-tout={tousDefis ? '' : undefined}>
+              {aRelever.map((b) => {
                 const hote = b.camps[0];
-                const mien = b.hoteId === etat.moiId;
                 const manque = solde !== null && solde < b.mise ? b.mise - solde : 0;
                 return (
-                  <li key={b.id} className="duels-defi" data-mien={mien ? '' : undefined}>
+                  <li key={b.id} className="duels-defi">
                     <span className="orbe orbe-sm" aria-hidden="true">
                       {hote ? initiale(hote) : '?'}
                     </span>
                     <div className="duels-defi-qui">
-                      <b>{mien ? 'Ton défi' : (hote?.pseudo ?? '?')}</b>
+                      <b>{hote?.pseudo ?? '?'}</b>
                       <small>
                         {/* Étroit, la date seule : le verbe y faisait passer la ligne à trois. */}
-                        <span className="duels-defi-verbe">{mien ? 'en attente' : 'te défie'} · </span>
+                        <span className="duels-defi-verbe">te défie · </span>
                         <span className="whitespace-nowrap">{shortDateTime(b.creeeA)}</span>
                       </small>
                     </div>
@@ -672,25 +743,26 @@ export function Affrontements({
                       <small>{flakes(pot(b))}&nbsp;❄ au gagnant</small>
                     </div>
                     <div className="duels-defi-action">
-                      {mien ? (
-                        <button type="button" className="btn btn-ghost" disabled={occupe} onClick={() => annule(b)}>
-                          Annuler
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          className="btn btn-ice"
-                          disabled={occupe || !joueur || solde === null || manque > 0}
-                          onClick={() => releve(b)}
-                        >
-                          {manque > 0 ? `Il te manque ${flakes(manque)} ❄` : 'Relever le défi'}
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        className="btn btn-ice"
+                        disabled={occupe || !joueur || solde === null || manque > 0}
+                        onClick={() => releve(b)}
+                      >
+                        {manque > 0 ? `Il te manque ${flakes(manque)} ❄` : 'Relever le défi'}
+                      </button>
                     </div>
                   </li>
                 );
               })}
             </ul>
+          )}
+          {/* Sur un écran étroit, les trois premiers ; la suite se déplie. Sur
+              un ordinateur, la liste défile dans sa zone. */}
+          {aRelever.length > DEFIS_REPLIES && !tousDefis && (
+            <button type="button" className="btn btn-ghost duels-defis-plus" onClick={() => setTousDefis(true)}>
+              Voir les {aRelever.length} défis
+            </button>
           )}
         </section>
 
@@ -723,28 +795,6 @@ export function Affrontements({
             )}
           </header>
 
-          {/* La session s'est perdue en route — expirée, ou sans joueur derrière
-              elle. On le dit, et on donne de quoi repartir. */}
-          {!joueur && (
-            <div className="duels-avis">
-              <p>
-                <strong>Ta session ne permet pas de jouer.</strong> Elle a expiré, ou elle n’est rattachée à aucun
-                joueur.
-              </p>
-              <a href="/connexion" className="btn btn-ice no-underline">
-                Se reconnecter
-              </a>
-            </div>
-          )}
-          {joueur && solde !== null && solde < miseMin && (
-            <div className="duels-avis">
-              <p>
-                <strong>Tu n’as plus assez de flocons.</strong> Il en faut au moins {flakes(miseMin)} pour miser :
-                ils se gagnent à chaque game saisie, et avec le cadeau du jour.
-              </p>
-            </div>
-          )}
-
           {/* L'affiche : toi, l'adversaire, et ce que le gagnant rafle. */}
           <div className="duels-affiche" aria-hidden="true">
             <div className="duels-camp">
@@ -766,101 +816,173 @@ export function Affrontements({
             </div>
           </div>
 
-          {/* La mise : des mises rapides, puis le montant exact entre − et +, et à
+          {/* On ne peut pas miser — la session s'est perdue, ou il n'y a plus
+              assez de flocons : l'avis prend la place du réglage et du bouton,
+              qui ne seraient que grisés. */}
+          {bloque ? (
+            <>
+              {/* La session s'est perdue en route — expirée, ou sans joueur derrière
+                elle. On le dit, et on donne de quoi repartir. */}
+              {!joueur && (
+                <div className="duels-avis">
+                  <p>
+                    <strong>Ta session ne permet pas de jouer.</strong> Elle a expiré, ou elle n’est rattachée à aucun
+                    joueur.
+                  </p>
+                  <a href="/connexion" className="btn btn-ice no-underline">
+                    Se reconnecter
+                  </a>
+                </div>
+              )}
+              {joueur && solde !== null && solde < miseMin && (
+                <div className="duels-avis">
+                  <p>
+                    <strong>Tu n’as plus assez de flocons.</strong> Il en faut au moins {flakes(miseMin)} pour miser :
+                    ils se gagnent à chaque game saisie, et avec le cadeau du jour.
+                    {mesDefis.length > 0 && ' Annuler un de tes défis en attente te rend sa mise.'}
+                  </p>
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              {/* La mise : des mises rapides, puis le montant exact entre − et +, et à
               côté ce qu'elle rapporte ou coûte, au flocon près, avec le solde qui
               en résulte. Une grille plutôt qu'un formulaire en colonne : sur un
               ordinateur, le montant et ses issues tiennent sur une ligne. */}
-          <div className="duels-reglage" data-inactif={peutMiser ? undefined : ''}>
-            <p className="eyebrow duels-reglage-titre" id="mise-titre">
-              Ta mise
-            </p>
-            <div className="duels-mise-rapide" role="group" aria-labelledby="mise-titre">
-              {MISES_RAPIDES.map((v) => (
-                <button
-                  key={v}
-                  type="button"
-                  aria-pressed={mise === v}
-                  disabled={!peutMiser || v > plafond}
-                  onClick={() => changeMise(v)}
-                >
-                  {flakes(v)}
-                </button>
-              ))}
-              <button
-                type="button"
-                aria-pressed={mise === plafond && !MISES_RAPIDES.includes(plafond)}
-                disabled={!peutMiser}
-                onClick={() => changeMise(plafond)}
-                title={`Tout miser : ${flakes(plafond)} ❄`}
-              >
-                Max
-              </button>
-            </div>
-            <div className="duels-mise-champ">
-              <button
-                type="button"
-                aria-label="Miser moins"
-                data-sens="moins"
-                disabled={!peutMiser || !miseValide || mise <= miseMin}
-                onClick={() => changeMise(mise - pasDe(mise - 1))}
-              >
-                −
-              </button>
-              <label>
-                <span className="sr-only">Mise exacte en flocons</span>
-                <input
-                  type="number"
-                  inputMode="numeric"
-                  className="num"
-                  min={miseMin}
-                  max={miseMax}
-                  value={Number.isFinite(mise) ? mise : ''}
-                  disabled={!peutMiser}
-                  onChange={(e) => setMise(Math.floor(Number(e.target.value)))}
-                />
-                <span aria-hidden="true">❄</span>
-              </label>
-              <button
-                type="button"
-                aria-label="Miser plus"
-                data-sens="plus"
-                disabled={!peutMiser || !miseValide || mise >= plafond}
-                onClick={() => changeMise(mise + pasDe(mise))}
-              >
-                +
-              </button>
-            </div>
-            <div className="duels-issues">
-              <div data-issue="gain">
-                <span>Si tu gagnes</span>
-                <strong>{miseValide ? `+${flakes(gainReel)}\u00a0❄` : '—'}</strong>
-                {miseValide && solde !== null && abordable && <small>solde {flakes(solde + gainReel)}&nbsp;❄</small>}
+              <div className="duels-reglage" data-inactif={peutMiser ? undefined : ''}>
+                <p className="eyebrow duels-reglage-titre" id="mise-titre">
+                  Ta mise
+                </p>
+                <div className="duels-mise-rapide" role="group" aria-labelledby="mise-titre">
+                  {MISES_RAPIDES.map((v) => (
+                    <button
+                      key={v}
+                      type="button"
+                      aria-pressed={mise === v}
+                      disabled={!peutMiser || v > plafond}
+                      onClick={() => changeMise(v)}
+                    >
+                      {flakes(v)}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    aria-pressed={mise === plafond && !MISES_RAPIDES.includes(plafond)}
+                    disabled={!peutMiser}
+                    onClick={() => changeMise(plafond)}
+                    title={`Tout miser : ${flakes(plafond)} ❄`}
+                  >
+                    Max
+                  </button>
+                </div>
+                <div className="duels-mise-champ">
+                  <button
+                    type="button"
+                    aria-label="Miser moins"
+                    data-sens="moins"
+                    disabled={!peutMiser || !miseValide || mise <= miseMin}
+                    onClick={() => changeMise(mise - pasDe(mise - 1))}
+                  >
+                    −
+                  </button>
+                  <label>
+                    <span className="sr-only">Mise exacte en flocons</span>
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      className="num"
+                      min={miseMin}
+                      max={miseMax}
+                      value={Number.isFinite(mise) ? mise : ''}
+                      disabled={!peutMiser}
+                      onChange={(e) => setMise(Math.floor(Number(e.target.value)))}
+                    />
+                    <span aria-hidden="true">❄</span>
+                  </label>
+                  <button
+                    type="button"
+                    aria-label="Miser plus"
+                    data-sens="plus"
+                    disabled={!peutMiser || !miseValide || mise >= plafond}
+                    onClick={() => changeMise(mise + pasDe(mise))}
+                  >
+                    +
+                  </button>
+                </div>
+                <div className="duels-issues">
+                  <div data-issue="gain">
+                    <span>Si tu gagnes</span>
+                    <strong>{miseValide ? `+${flakes(gainReel)}\u00a0❄` : '—'}</strong>
+                    {miseValide && solde !== null && abordable && (
+                      <small>solde {flakes(solde + gainReel)}&nbsp;❄</small>
+                    )}
+                  </div>
+                  <div data-issue="perte">
+                    <span>Si tu perds</span>
+                    <strong>{miseValide ? `−${flakes(mise)}\u00a0❄` : '—'}</strong>
+                    {miseValide && solde !== null && abordable && <small>solde {flakes(solde - mise)}&nbsp;❄</small>}
+                  </div>
+                </div>
               </div>
-              <div data-issue="perte">
-                <span>Si tu perds</span>
-                <strong>{miseValide ? `−${flakes(mise)}\u00a0❄` : '—'}</strong>
-                {miseValide && solde !== null && abordable && <small>solde {flakes(solde - mise)}&nbsp;❄</small>}
-              </div>
-            </div>
-          </div>
 
-          {alerte && (
-            <p className="duels-alerte" role="status">
-              {alerte}
-            </p>
+              {alerte && (
+                <p className="duels-alerte" role="status">
+                  {alerte}
+                </p>
+              )}
+            </>
           )}
 
-          <div className="duels-lancer-pied">
-            <button
-              type="button"
-              className="btn btn-ice btn-ouvrir w-full"
-              disabled={!peutJouer || complet}
-              onClick={ouvreAuxJoueurs}
-            >
-              <IconSwords className="h-5 w-5" /> Lancer le défi
-            </button>
-            <p>Il attend dans les défis ouverts, et la course part dès qu’un joueur le relève.</p>
-          </div>
+          {/* Le pied : le bouton, puis ses défis en attente — ou, s'il n'y en a
+              pas, ce qu'il advient d'un défi lancé. */}
+          {(!bloque || mesDefis.length > 0) && (
+            <div className="duels-lancer-pied">
+              {!bloque && (
+                <button
+                  type="button"
+                  className="btn btn-ice btn-ouvrir w-full"
+                  disabled={!peutJouer || complet}
+                  onClick={ouvreAuxJoueurs}
+                >
+                  <IconSwords className="h-5 w-5" /> Lancer le défi
+                </button>
+              )}
+              {/* Mes défis en attente : une pastille par défi, sa mise et de quoi
+                  l'annuler, et le compte — c'est lui qui dit pourquoi on ne peut
+                  plus en lancer. */}
+              {mesDefis.length > 0 ? (
+                <div className="duels-miens">
+                  <p className="duels-miens-titre">
+                    Tes défis en attente{' '}
+                    <b>
+                      {mesDefis.length} / {DUEL.enAttenteMax}
+                    </b>
+                  </p>
+                  <ul className="duels-miens-liste">
+                    {mesDefis.map((b) => (
+                      <li key={b.id} className="duels-mien">
+                        <span className="num">
+                          {flakes(b.mise)} <span className="text-ice">❄</span>
+                        </span>
+                        <button
+                          type="button"
+                          disabled={occupe}
+                          onClick={() => annule(b)}
+                          aria-label={`Annuler ton défi de ${flakes(b.mise)} flocons`}
+                          title="Annuler ce défi : ta mise t’est rendue"
+                        >
+                          ✕
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : (
+                <p>Il attend dans les défis ouverts, et la course part dès qu’un joueur le relève.</p>
+              )}
+            </div>
+          )}
         </section>
       </div>
 
@@ -900,16 +1022,8 @@ export function Affrontements({
               const joue = joueur && b.camps.some((c) => c.id === etat.moiId);
               const gagne = joue && b.vainqueurId === etat.moiId;
               return (
-                <li
-                  key={b.id}
-                  className="duels-resultat"
-                  data-issue={joue ? (gagne ? 'gain' : 'perte') : undefined}
-                >
-                  {onglet === 'top' && (
-                    <span className="medaille" data-rang={i + 1}>
-                      {i + 1}
-                    </span>
-                  )}
+                <li key={b.id} className="duels-resultat" data-issue={joue ? (gagne ? 'gain' : 'perte') : undefined}>
+                  {onglet === 'top' && <RangTop rang={i + 1} />}
                   <div className="min-w-0 flex-1">
                     <p className="duels-resultat-phrase">
                       <b data-gagne="">{gagnant?.pseudo ?? '?'}</b>
@@ -939,6 +1053,8 @@ export function Affrontements({
           </button>
         )}
       </section>
+
+      {message && <Annonce key={message.cle} message={message} ferme={() => setMessage(null)} />}
 
       {fenetre && (
         <FenetreDuel

@@ -3372,10 +3372,6 @@
     flex-direction: column;
     gap: 1.25rem;
   }
-  .duels-messages {
-    display: grid;
-    gap: 0.6rem;
-  }
   @media (min-width: 1280px) {
     /* La hauteur de l'écran, moins le rembourrage du contenu (4 rem) et le
        bandeau des évènements quand il est là. Un minimum, pas une hauteur :
@@ -3393,14 +3389,27 @@
       flex: 1 0 auto;
       flex-direction: column;
     }
-    /* La liste des défis défile au-delà de quatre — moins sur un écran plus
-       bas : sa hauteur, moins ce que le reste de la page occupe (57 rem),
-       pour que le panneau de lancement et son bouton restent à l'écran.
-       Jamais moins de deux défis entiers ; le suivant dépasse, pour qu'on
-       voie qu'il y en a d'autres. */
+    /* La zone des défis a une hauteur fixe, quel que soit leur nombre : c'est
+       la hauteur de l'écran qui la règle, pas la liste. Le panneau de
+       lancement ne bouge donc plus quand un défi arrive ou part ; la liste
+       défile dans sa zone, et le vide s'y centre. */
+    .duels-defis {
+      display: flex;
+      height: clamp(13.5rem, 25dvh, 24rem);
+      flex: none;
+      flex-direction: column;
+    }
     .duels-defis-liste {
-      max-height: clamp(10.5rem, calc(100dvh - 57rem - var(--bandeau-evts, 0px)), 20rem);
+      min-height: 0;
+      flex: 1 1 0;
       overflow-y: auto;
+    }
+    .duels-defis .duels-vide {
+      flex: 1 1 auto;
+      flex-direction: column;
+      justify-content: center;
+      gap: 0.75rem;
+      text-align: center;
     }
     /* Les résultats ne comptent pas leur contenu dans la hauteur de la
        rangée (`contain: size`) : la colonne « jouer » la fixe, et ils
@@ -3484,13 +3493,6 @@
     box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--aurora) 45%, transparent);
     color: var(--aurora);
   }
-  .duels-quota {
-    font-size: 0.875rem;
-    color: var(--muted);
-  }
-  .duels-quota b {
-    color: var(--ink);
-  }
 
   /* ---- Les défis ouverts ---- */
   .duels-vide {
@@ -3564,13 +3566,6 @@
       min-width: 10.5rem;
     }
   }
-  /* Le sien : en pointillés, il attend. */
-  .duels-defi[data-mien] {
-    background: transparent;
-    box-shadow: none;
-    outline: 1px dashed color-mix(in srgb, var(--ice) 45%, transparent);
-    outline-offset: -1px;
-  }
   .duels-defi > .orbe {
     grid-area: avatar;
   }
@@ -3628,6 +3623,166 @@
   }
   .duels-defi-action {
     grid-area: action;
+  }
+  /* Sur un écran étroit, trois défis ; la suite se déplie (`DEFIS_REPLIES`).
+     Sur un ordinateur, la liste défile dans sa zone. */
+  .duels-defis-plus {
+    position: relative;
+    width: 100%;
+    margin-top: 0.75rem;
+  }
+  @media (max-width: 1279px) {
+    .duels-defis-liste:not([data-tout]) > li:nth-child(n + 4) {
+      display: none;
+    }
+  }
+  @media (min-width: 1280px) {
+    .btn.duels-defis-plus {
+      display: none;
+    }
+  }
+
+  /* Ses défis en attente, sous le bouton de lancement : une pastille en
+     pointillés par défi — il attend —, sa mise et sa croix, et le compte. Ils
+     prennent la place de la ligne qui explique ce que devient un défi lancé. */
+  .duels-miens {
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem 0.9rem;
+    margin-top: 0.75rem;
+  }
+  .duels-miens-titre {
+    font-family: var(--font-display);
+    font-size: 0.8125rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--faint);
+  }
+  .duels-miens-titre b {
+    margin-left: 0.2rem;
+    color: var(--ink);
+  }
+  .duels-miens-liste {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+  }
+  .duels-mien {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.2rem 0.25rem 0.2rem 0.85rem;
+    border-radius: var(--r-pilule);
+    background: color-mix(in srgb, var(--ice) 7%, transparent);
+    outline: 1px dashed color-mix(in srgb, var(--ice) 50%, transparent);
+    outline-offset: -1px;
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-weight: 900;
+    color: var(--ink);
+  }
+  .duels-mien button {
+    display: grid;
+    width: 2rem;
+    height: 2rem;
+    place-items: center;
+    border-radius: var(--r-pilule);
+    background: color-mix(in srgb, var(--ink) 8%, transparent);
+    font-size: 0.8125rem;
+    color: var(--muted);
+    cursor: pointer;
+    transition:
+      background-color 0.15s ease,
+      color 0.15s ease;
+  }
+  .duels-mien button:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--danger) 24%, transparent);
+    color: var(--ink);
+  }
+  .duels-mien button:disabled {
+    cursor: default;
+    opacity: 0.5;
+  }
+
+  /* Le message du salon, dans un coin de l'écran : il ne pousse rien. Au-dessus
+     de la barre de navigation sur un téléphone, en bas à droite sur un
+     ordinateur ; un filet à sa couleur, aurore pour un gain, rouge pour une
+     erreur. */
+  .duels-annonce {
+    position: fixed;
+    z-index: 55;
+    right: 0.75rem;
+    bottom: 6.5rem;
+    left: 0.75rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.85rem 0.6rem 0.85rem 1.15rem;
+    border-radius: var(--r-md);
+    background: color-mix(in srgb, var(--fond) 96%, transparent);
+    box-shadow:
+      var(--lift-2),
+      inset 0 0 0 1px color-mix(in srgb, var(--ice) 32%, transparent),
+      inset 4px 0 0 var(--ice);
+    animation: duels-annonce 0.35s cubic-bezier(0.2, 0.9, 0.3, 1) both;
+  }
+  .duels-annonce[data-kind='success'] {
+    box-shadow:
+      var(--lift-2),
+      inset 0 0 0 1px color-mix(in srgb, var(--aurora) 40%, transparent),
+      inset 4px 0 0 var(--aurora);
+  }
+  .duels-annonce[data-kind='error'] {
+    box-shadow:
+      var(--lift-2),
+      inset 0 0 0 1px color-mix(in srgb, var(--danger) 45%, transparent),
+      inset 4px 0 0 var(--danger);
+  }
+  @media (min-width: 1024px) {
+    .duels-annonce {
+      right: 1.75rem;
+      bottom: 1.75rem;
+      left: auto;
+      width: min(30rem, calc(100vw - 3.5rem));
+    }
+  }
+  .duels-annonce p {
+    min-width: 0;
+    flex: 1 1 auto;
+    padding-top: 0.2rem;
+    font-size: 0.9375rem;
+    line-height: 1.45;
+    color: var(--ink);
+  }
+  .duels-annonce-fermer {
+    display: grid;
+    width: 2rem;
+    height: 2rem;
+    flex: none;
+    place-items: center;
+    border-radius: var(--r-pilule);
+    font-size: 0.8125rem;
+    color: var(--muted);
+    cursor: pointer;
+  }
+  .duels-annonce-fermer:hover {
+    background: color-mix(in srgb, var(--ink) 10%, transparent);
+    color: var(--ink);
+  }
+  @keyframes duels-annonce {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .duels-annonce {
+      animation: none;
+    }
   }
 
   /* ---- Lancer son défi ---- */
@@ -3781,7 +3936,7 @@
        grand ; sur un portable, il se contente du minimum. */
     .duels-affiche {
       container-type: size;
-      min-height: 9rem;
+      min-height: 8rem;
       flex: 1 1 0;
       align-content: center;
     }
@@ -4124,6 +4279,19 @@
     box-shadow:
       inset 3px 0 0 color-mix(in srgb, var(--danger) 75%, transparent),
       inset 0 0 0 1px color-mix(in srgb, var(--danger) 18%, transparent);
+  }
+  /* Le rang du top de la semaine : la couronne, les médailles, puis un chiffre,
+     dans le disque du classement mobile (`.rang-socle`). */
+  .duels-rang {
+    flex: none;
+  }
+  .duels-rang-chiffre {
+    font-family: var(--font-display);
+    font-size: 1.35rem;
+    font-weight: 900;
+    line-height: 1;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
   }
   .duels-resultat-phrase {
     display: flex;
