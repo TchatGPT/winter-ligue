@@ -179,18 +179,6 @@ export function RangeePacks({
         </div>
       </div>
 
-      {deborde && (
-        <button
-          type="button"
-          className="rangee-fleche rangee-fleche-avant"
-          onClick={() => decale(-1)}
-          disabled={fige || rang === 0}
-          aria-label="Sachet précédent"
-        >
-          <span aria-hidden="true">‹</span>
-        </button>
-      )}
-
       <div
         ref={rangee}
         className={`rangee ${fige ? 'rangee-gros-plan' : ''}`}
@@ -260,16 +248,49 @@ export function RangeePacks({
         </div>
       </div>
 
+      {/* Quand la rangée défile (un téléphone), on la pilote d'en dessous :
+          les flèches, et un point par booster, qui dit lequel est retenu et
+          y mène d'un toucher. Posées sur la rangée, les flèches tombaient sur
+          les boosters voisins. La barre vit dans le rembourrage bas de la
+          rangée : elle n'allonge pas la scène. */}
       {deborde && (
-        <button
-          type="button"
-          className="rangee-fleche rangee-fleche-apres"
-          onClick={() => decale(1)}
-          disabled={fige || rang === boosters.length - 1}
-          aria-label="Sachet suivant"
-        >
-          <span aria-hidden="true">›</span>
-        </button>
+        <div className="rangee-nav">
+          <button
+            type="button"
+            className="rangee-fleche"
+            onClick={() => decale(-1)}
+            disabled={fige || rang === 0}
+            aria-label="Booster précédent"
+          >
+            <span aria-hidden="true">‹</span>
+          </button>
+          <span className="rangee-points">
+            {boosters.map((b, i) => (
+              <button
+                key={b.id}
+                type="button"
+                className="rangee-point"
+                aria-label={`Choisir le ${b.name}`}
+                aria-pressed={i === rang}
+                disabled={fige}
+                onClick={() => {
+                  if (fige || i === rang) return;
+                  onSelection(b.id);
+                  defileVers(i);
+                }}
+              />
+            ))}
+          </span>
+          <button
+            type="button"
+            className="rangee-fleche"
+            onClick={() => decale(1)}
+            disabled={fige || rang === boosters.length - 1}
+            aria-label="Booster suivant"
+          >
+            <span aria-hidden="true">›</span>
+          </button>
+        </div>
       )}
     </div>
   );

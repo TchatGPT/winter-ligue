@@ -8632,25 +8632,34 @@
     cursor: inherit;
   }
 
-  /* Les flèches n'apparaissent que si la rangée déborde — c'est mesuré, pas
-     supposé : quatre sachets peuvent déborder sur un ordinateur à fenêtre
-     étroite comme tenir sur une tablette large. */
+  /* La barre de pilotage, sous la rangée : elle n'apparaît que si la rangée
+     déborde — c'est mesuré, pas supposé : quatre boosters peuvent déborder
+     sur un ordinateur à fenêtre étroite comme tenir sur une tablette large.
+     Posées sur la rangée, à ses bords, les flèches tombaient sur les boosters
+     voisins du booster retenu. La barre remonte dans le rembourrage bas de la
+     rangée (48 px, laissés au balancement des boosters) : la scène n'en
+     grandit pas. */
+  .rangee-nav {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-top: -34px;
+  }
   .rangee-fleche {
-    position: absolute;
-    top: 50%;
-    z-index: 5;
     display: grid;
+    width: 36px;
+    height: 36px;
+    flex: none;
     place-items: center;
-    width: 44px;
-    height: 44px;
-    margin-top: -22px;
     border: 1px solid var(--bord);
     border-radius: 999px;
     background: rgb(10 18 32 / 0.82);
     color: var(--texte);
-    font-size: 26px;
+    font-size: 22px;
     line-height: 1;
-    backdrop-filter: blur(6px);
     transition:
       background 160ms ease,
       opacity 160ms ease;
@@ -8667,12 +8676,32 @@
     cursor: inherit;
   }
 
-  .rangee-fleche-avant {
-    left: 4px;
+  /* Un point par booster : le retenu en glace, les autres éteints. La zone
+     de toucher fait 24 px, le point 8. */
+  .rangee-points {
+    display: flex;
   }
-
-  .rangee-fleche-apres {
-    right: 4px;
+  .rangee-point {
+    position: relative;
+    width: 24px;
+    height: 24px;
+    border: 0;
+    background: none;
+    padding: 0;
+  }
+  .rangee-point::before {
+    content: '';
+    position: absolute;
+    inset: 8px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--ink) 28%, transparent);
+    transition:
+      background-color 200ms ease,
+      transform 200ms ease;
+  }
+  .rangee-point[aria-pressed='true']::before {
+    background: var(--ice);
+    transform: scale(1.3);
   }
 
   /* -- Le halo et le reflet balayant ---------------------------------------- */
@@ -10597,6 +10626,43 @@
     transform: translate(calc(6% * var(--sens) * var(--amp)), calc(-5% * var(--amp)))
       rotate(calc(7deg * var(--sens) * var(--amp))) scale(1.08);
     filter: hue-rotate(calc(12deg * var(--amp)));
+  }
+}
+
+/* Sur un téléphone, une fumée plus légère, pour rester fluide : deux nappes au
+   lieu de trois — les quatre teintes y sont encore —, sans glissement de
+   teinte (un filtre animé sur un calque masqué, que le téléphone repeignait),
+   et un cadre sans masque : le booster retenu est au centre de la rangée, sa
+   fumée n'atteint pas les bords du panneau. Le fondu `screen` reste : sans
+   lui, la glace du Perso tournait au gris. */
+@media (max-width: 40rem), (hover: none) and (pointer: coarse) {
+  .fumee-cadre {
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+  .fumee-nappe {
+    animation-name: fumee-derive-legere;
+    will-change: transform, opacity;
+  }
+  .fumee-nappe-3 {
+    display: none;
+  }
+}
+@keyframes fumee-derive-legere {
+  0% {
+    opacity: calc(var(--fumee-force) * var(--vis) * 0.45);
+    transform: translate(calc(-6% * var(--sens) * var(--amp)), calc(4% * var(--amp)))
+      rotate(calc(-7deg * var(--sens) * var(--amp))) scale(0.94);
+  }
+  50% {
+    opacity: calc(var(--fumee-force) * var(--vis));
+    transform: translate(calc(2% * var(--sens) * var(--amp)), calc(-2% * var(--amp)))
+      rotate(calc(3deg * var(--sens) * var(--amp))) scale(1.04);
+  }
+  100% {
+    opacity: calc(var(--fumee-force) * var(--vis) * 0.6);
+    transform: translate(calc(6% * var(--sens) * var(--amp)), calc(-5% * var(--amp)))
+      rotate(calc(7deg * var(--sens) * var(--amp))) scale(1.08);
   }
 }
 
