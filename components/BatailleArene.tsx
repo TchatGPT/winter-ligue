@@ -83,6 +83,34 @@ const APRES_BOSSE = 0.05;
 
 const CAMPS: Camp[] = ['hote', 'adversaire'];
 
+/**
+ * Le temps entre la résolution d'un duel par le serveur et le départ de sa
+ * course. Les deux joueurs partent au même instant — celui du serveur — après
+ * un compte à rebours : celui qui relève le duel le voit tout de suite, celui
+ * qui l'a lancé l'apprend au sondage suivant, et les deux arrivent ensemble.
+ */
+export const DELAI_DEPART_MS = 3500;
+
+/**
+ * Ce que dure une course, du départ au verdict, au plus. Au-delà, un duel
+ * découvert en retard se rejoue du début : il n'y a plus personne avec qui
+ * être synchrone.
+ */
+export const DUREE_COURSE_MAX_MS = Math.ceil(DUREE + FIN_BOULE * 1000 + 400);
+
+/**
+ * L'avancée de la course à `e` millisecondes du départ : calculée de l'heure,
+ * pas accumulée image par image — deux écrans au même instant montrent la
+ * même chose, et un écran en retard rattrape l'autre.
+ */
+function temps(course: Course, e: number) {
+  const boule = course.chute.type === 'boule';
+  const chuteA = boule ? Infinity : course.chute.instant * DUREE;
+  const u = e <= chuteA ? e / DUREE : course.chute.instant + ((e - chuteA) * HATE) / DUREE;
+  const ligneA = boule ? DUREE : chuteA + ((1 - course.chute.instant) * DUREE) / HATE;
+  return { u: Math.max(0, Math.min(1, u)), tombe: e >= chuteA, apres: (e - ligneA) / 1000 };
+}
+
 type EtatCouloir = 'depart' | 'course' | 'chute' | 'victoire';
 
 /* -------------------------------------------------------------------------- */
@@ -193,7 +221,10 @@ function PereNoel() {
       <ellipse cx="52" cy="22.6" rx="9" ry="1.6" className="noel-ao noel-ao-douce" />
       <path d="M42 27 Q43 44 56 42 Q65 38 61 26 Q56 33 50 30 Q45 31 42 27 Z" fill={u('fourrure')} />
       <path d="M46.2 32.5 q0.6 3.4 2.6 5.6 M51 34 q0.4 3.6 2.4 5.8 M56.4 33.4 q0.8 3 3 4.4" className="noel-boucles" />
-      <path d="M54.6 29.6 Q58 27.4 61.4 29.4 Q63.8 31.4 61.2 32.2 Q58.2 30.6 55.6 32.2 Q52.9 31.6 54.6 29.6 Z" fill={u('fourrure')} />
+      <path
+        d="M54.6 29.6 Q58 27.4 61.4 29.4 Q63.8 31.4 61.2 32.2 Q58.2 30.6 55.6 32.2 Q52.9 31.6 54.6 29.6 Z"
+        fill={u('fourrure')}
+      />
       <circle cx="61" cy="27" r="2.4" fill={u('nez')} />
       <circle cx="60.2" cy="26.1" r="0.7" className="noel-reflet" />
       {/* L'œil, juste sous le revers du bonnet, qui lui fait sourcil. */}
@@ -402,7 +433,7 @@ export function ArenePreparation({
 /* -------------------------------------------------------------------------- */
 
 /** `lancer` : la ligne passée, le vainqueur se retourne, boule de neige en main. */
-type Phase = 'course' | 'lancer' | 'chute' | 'fini';
+type Phase = 'compte' | 'course' | 'lancer' | 'chute' | 'fini';
 
 /** Ce que dit la chute, selon ce qui l'a causée. */
 function recitChute(course: Course, nom: string): string {
@@ -418,24 +449,33 @@ export function BatailleArene({
   bataille,
   moiId,
   anime,
+  depart,
   onFini,
 }: {
   bataille: BatailleVueClient;
   moiId: string | null;
   /** Jouer la course, ou montrer d'emblée l'arrivée. */
   anime: boolean;
+  /**
+   * L'instant du départ, à l'horloge de ce navigateur. Avant, un compte à
+   * rebours ; après, la course reprend là où elle en est. Absent : tout de suite.
+   */
+  depart?: number;
   /** Appelé quand le vainqueur a passé la ligne. */
   onFini?: () => void;
 }) {
   const b = bataille;
   const hote = b.camps[0];
   const adversaire = b.camps[1];
-  const vainqueur: Camp | null =
-    b.vainqueurId === null ? null : b.vainqueurId === hote?.id ? 'hote' : 'adversaire';
+  const vainqueur: Camp | null = b.vainqueurId === null ? null : b.vainqueurId === hote?.id ? 'hote' : 'adversaire';
 
   const course = useMemo(() => (vainqueur ? ecritCourse(b.id, vainqueur) : null), [b.id, vainqueur]);
 
-  const [phase, setPhase] = useState<Phase>(anime ? 'course' : 'fini');
+  // Le départ est fixé une fois, à l'ouverture : un nouveau rendu ne le décale pas.
+  const [departFixe] = useState(() => depart ?? Date.now());
+  const [phase, setPhase] = useState<Phase>(() => (anime ? (departFixe > Date.now() ? 'compte' : 'course') : 'fini'));
+  /** Le compte à rebours : les secondes avant le départ. */
+  const [restant, setRestant] = useState(() => Math.ceil((departFixe - Date.now()) / 1000));
   /** Qui mène, pour le commentaire. */
   const [tete, setTete] = useState<Camp | null>(null);
 
@@ -503,25 +543,38 @@ export function BatailleArene({
       return;
     }
 
-    const roule: Record<Camp, Roulement> = { hote: demarreRoulement(), adversaire: demarreRoulement() };
+    let roule: Record<Camp, Roulement> | null = null;
     const bosses: Record<Camp, number> = { hote: 0, adversaire: 0 };
-    sonDepart();
-
-    let u = 0;
-    let avant: number | null = null;
     let tombe = false;
     let meneurAffiche: Camp | null = null;
     let image = 0;
-    /** La boule de neige en pleine face : le temps écoulé depuis l'arrivée, en secondes. */
+    /** La boule de neige en pleine face : le lancer est-il parti ? */
     const boule = course.chute.type === 'boule';
-    let apres = -1;
+    let lance = false;
+    let secondes = Number.NaN;
 
-    const pas = (t: number) => {
-      const dt = avant === null ? 0 : Math.min(64, t - avant);
-      avant = t;
-      u = Math.min(1, u + (dt / DUREE) * (tombe ? HATE : 1));
+    const pas = () => {
+      const e = Date.now() - departFixe;
 
-      if (!tombe && !boule && u >= course.chute.instant) {
+      // Avant le départ : les deux sur la ligne, et le compte à rebours.
+      if (e < 0) {
+        const s = Math.ceil(-e / 1000);
+        if (s !== secondes) {
+          secondes = s;
+          setRestant(s);
+        }
+        for (const camp of CAMPS) pose(camp, 0, false);
+        image = requestAnimationFrame(pas);
+        return;
+      }
+      if (!roule) {
+        roule = { hote: demarreRoulement(), adversaire: demarreRoulement() };
+        sonDepart();
+        setPhase('course');
+      }
+
+      const t = temps(course, e);
+      if (!tombe && t.tombe) {
         tombe = true;
         roule[course.perdant].arrete();
         sonFracas();
@@ -530,7 +583,7 @@ export function BatailleArene({
 
       for (const camp of CAMPS) {
         const perd = course.perdant === camp;
-        const p = perd && tombe ? course.chute.position : avancee(course.couloirs[camp].allure, u);
+        const p = perd && tombe ? course.chute.position : avancee(course.couloirs[camp].allure, t.u);
         pose(camp, p, perd && tombe);
         if (perd && tombe) continue;
         roule[camp].regle(p);
@@ -545,35 +598,33 @@ export function BatailleArene({
       }
 
       if (!tombe) {
-        const m = meneur(course, u);
+        const m = meneur(course, t.u);
         if (m !== meneurAffiche) {
           meneurAffiche = m;
           setTete(m);
         }
       }
 
-      if (u >= 1 && boule) {
+      if (t.u >= 1 && boule) {
         // La ligne passée : il se retourne, lance, et la boule touche l'autre.
-        if (apres < 0) {
-          apres = 0;
+        if (!lance) {
+          lance = true;
           roule.hote.arrete();
           roule.adversaire.arrete();
           setPhase('lancer');
-        } else {
-          apres += dt / 1000;
         }
-        if (!tombe && apres >= IMPACT_BOULE) {
+        if (!tombe && t.apres >= IMPACT_BOULE) {
           tombe = true;
           sonFracas();
           setPhase('chute');
         }
-        if (apres < FIN_BOULE) {
+        if (t.apres < FIN_BOULE) {
           image = requestAnimationFrame(pas);
           return;
         }
       }
 
-      if (u >= 1) {
+      if (t.u >= 1) {
         roule[course.vainqueur].arrete();
         if (jeJoue && !jeGagne) sonDefaite();
         else sonGrelots();
@@ -587,10 +638,10 @@ export function BatailleArene({
 
     return () => {
       cancelAnimationFrame(image);
-      roule.hote.arrete();
-      roule.adversaire.arrete();
+      roule?.hote.arrete();
+      roule?.adversaire.arrete();
     };
-  }, [course, anime, jeGagne, jeJoue]);
+  }, [course, anime, departFixe, jeGagne, jeJoue]);
 
   // La scène 3D suit l'état de chaque camp : course, lancer, chute, victoire.
   useEffect(() => {
@@ -598,7 +649,9 @@ export function BatailleArene({
     const boule = course.chute.type === 'boule';
     for (const camp of CAMPS) {
       let etat: 'course' | 'depart' | 'lancer' | 'chute' | 'victoire';
-      if (course.perdant === camp) {
+      if (phase === 'compte') {
+        etat = 'depart';
+      } else if (course.perdant === camp) {
         // Battu d'un rien, il s'arrête juste après la ligne — et attend la boule.
         etat = phase === 'course' ? 'course' : phase === 'lancer' ? 'depart' : 'chute';
       } else if (phase === 'fini') {
@@ -617,6 +670,7 @@ export function BatailleArene({
   const tirage = b.echanges.at(-1);
 
   const etatDe = (camp: Camp): EtatCouloir => {
+    if (phase === 'compte') return 'depart';
     if (course.perdant === camp) return phase === 'course' || phase === 'lancer' ? 'course' : 'chute';
     return phase === 'fini' ? 'victoire' : 'course';
   };
@@ -666,6 +720,12 @@ export function BatailleArene({
 
       {/* ---- Ce qui se passe ---- */}
       <div className="arene-recit">
+        {phase === 'compte' && (
+          <p className="arene-compte" key={restant}>
+            <span>Départ dans</span>
+            <b>{Math.max(1, restant)}</b>
+          </p>
+        )}
         {phase === 'course' && (
           <p className="font-display text-lg font-black tracking-wide text-ink uppercase sm:text-xl">
             {tete === null ? 'Au coude à coude…' : `${noms[tete]} prend la tête`}

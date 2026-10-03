@@ -3726,6 +3726,16 @@
     background: color-mix(in srgb, var(--fond) 60%, transparent);
     box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 10%, transparent);
   }
+  /* Le sien : en pointillés, il attend qu'on le relève. */
+  .duels-defi[data-mien] {
+    background: color-mix(in srgb, var(--ice) 6%, transparent);
+    box-shadow: none;
+    outline: 1.5px dashed color-mix(in srgb, var(--ice) 50%, transparent);
+    outline-offset: -1.5px;
+  }
+  .duels-defi[data-mien] .duels-defi-qui b {
+    color: var(--ice);
+  }
   .duels-defi-action > .btn {
     width: 100%;
   }
@@ -3815,72 +3825,6 @@
     .btn.duels-defis-plus {
       display: none;
     }
-  }
-
-  /* Ses défis en attente, sous le bouton de lancement : une pastille en
-     pointillés par défi — il attend —, sa mise et sa croix, et le compte. Ils
-     prennent la place de la ligne qui explique ce que devient un défi lancé. */
-  .duels-miens {
-    position: relative;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem 0.9rem;
-    margin-top: 0.75rem;
-  }
-  .duels-miens-titre {
-    font-family: var(--font-display);
-    font-size: 0.8125rem;
-    font-weight: 800;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--faint);
-  }
-  .duels-miens-titre b {
-    margin-left: 0.2rem;
-    color: var(--ink);
-  }
-  .duels-miens-liste {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.45rem;
-  }
-  .duels-mien {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    padding: 0.2rem 0.25rem 0.2rem 0.85rem;
-    border-radius: var(--r-pilule);
-    background: color-mix(in srgb, var(--ice) 7%, transparent);
-    outline: 1px dashed color-mix(in srgb, var(--ice) 50%, transparent);
-    outline-offset: -1px;
-    font-family: var(--font-display);
-    font-size: 1rem;
-    font-weight: 900;
-    color: var(--ink);
-  }
-  .duels-mien button {
-    display: grid;
-    width: 2rem;
-    height: 2rem;
-    place-items: center;
-    border-radius: var(--r-pilule);
-    background: color-mix(in srgb, var(--ink) 8%, transparent);
-    font-size: 0.8125rem;
-    color: var(--muted);
-    cursor: pointer;
-    transition:
-      background-color 0.15s ease,
-      color 0.15s ease;
-  }
-  .duels-mien button:hover:not(:disabled) {
-    background: color-mix(in srgb, var(--danger) 24%, transparent);
-    color: var(--ink);
-  }
-  .duels-mien button:disabled {
-    cursor: default;
-    opacity: 0.5;
   }
 
   /* Le message du salon, dans un coin de l'écran : il ne pousse rien. Au-dessus
@@ -5224,6 +5168,37 @@
     min-height: 112px;
     margin-top: 1.25rem;
     text-align: center;
+  }
+  /* Le compte à rebours avant le départ : le chiffre en glace, qui tombe à
+     chaque seconde. Les deux joueurs le voient finir au même instant. */
+  .arene-compte {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    animation: arene-compte 0.9s cubic-bezier(0.2, 0.9, 0.25, 1) both;
+  }
+  .arene-compte span {
+    font-size: 1.1rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+  }
+  .arene-compte b {
+    font-size: 3.4rem;
+    font-weight: 900;
+    line-height: 1;
+    color: var(--frost);
+  }
+  @keyframes arene-compte {
+    from {
+      opacity: 0;
+      transform: scale(1.4);
+    }
+    40% {
+      opacity: 1;
+    }
   }
 
   /*

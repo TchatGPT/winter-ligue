@@ -37,6 +37,8 @@ import { createPortal } from 'react-dom';
 import {
   ArenePreparation,
   BatailleArene,
+  DELAI_DEPART_MS,
+  DUREE_COURSE_MAX_MS,
   initiale,
   type BatailleVueClient,
   type CampApercu,
@@ -52,6 +54,27 @@ import { shortDateTime } from '@/lib/format';
 
 /** Le rythme du sondage, quand personne ne joue. */
 const SONDAGE = 2000;
+/**
+ * Plus serré quand un de ses défis attend : relevé, la course part au même
+ * instant chez les deux joueurs, après un compte à rebours — il faut l'apprendre
+ * avant qu'il ne soit fini.
+ */
+const SONDAGE_EN_ATTENTE = 1000;
+
+/**
+ * L'écart entre l'horloge du serveur et celle de ce navigateur, en
+ * millisecondes, mesuré à chaque sondage : il cale le départ des courses.
+ */
+let decalage = 0;
+
+/** L'instant du départ d'une course, à l'horloge de ce navigateur. */
+function departDe(b: BatailleVueClient): number | undefined {
+  if (!b.resolueA) return undefined;
+  const depart = Date.parse(b.resolueA) + DELAI_DEPART_MS - decalage;
+  // Découverte après la fin : elle se rejoue du début, il n'y a plus personne
+  // avec qui être synchrone.
+  return depart + DUREE_COURSE_MAX_MS < Date.now() ? Date.now() : depart;
+}
 
 /** Le temps de lire le verdict, avant que la fenêtre ne se ferme d'elle-même. */
 const DELAI_VERDICT = 2500;
@@ -62,6 +85,8 @@ interface Charge {
   balance: number | null;
   bornes: { manches: { min: number; max: number }; mise: { min: number; max: number } };
   moiId: string | null;
+  /** L'heure du serveur à la lecture. */
+  maintenant?: string;
 }
 
 /** La mise proposée à l'arrivée. Le curseur et le champ font le reste. */
@@ -262,7 +287,7 @@ function Annonce({ message, ferme }: { message: Message; ferme: () => void }) {
 
 type Fenetre =
   | { etat: 'attente'; jeton: number; gauche: CampApercu; droite: CampApercu; moi: 'gauche' | 'droite'; mise: number }
-  | { etat: 'duel'; bataille: BatailleVueClient; anime: boolean; tour: number; fini: boolean }
+  | { etat: 'duel'; bataille: BatailleVueClient; anime: boolean; tour: number; fini: boolean; depart?: number }
   | { etat: 'erreur'; message: string };
 
 type Resultat = { ok: true; data: BatailleVueClient } | { ok: false; message: string };
@@ -324,7 +349,7 @@ function prochaineCourse(file: BatailleVueClient[]): Fenetre | null {
   const b = file.shift();
   if (!b) return null;
   marqueVue(b.id);
-  return { etat: 'duel', bataille: b, anime: true, tour: nouveauNumero(), fini: false };
+  return { etat: 'duel', bataille: b, anime: true, tour: nouveauNumero(), fini: false, depart: departDe(b) };
 }
 
 /**
@@ -425,10 +450,13 @@ export function Affrontements({
   const recharge = useCallback(async () => {
     let suivant: Charge;
     try {
+      const avant = Date.now();
       const reponse = await fetch('/api/affrontements', { cache: 'no-store' });
       const charge = await reponse.json();
       if (!charge.ok) return;
       suivant = charge.data as Charge;
+      // L'heure du serveur, rapportée au milieu de l'aller-retour.
+      if (suivant.maintenant) decalage = Date.parse(suivant.maintenant) - (avant + Date.now()) / 2;
     } catch {
       // Un sondage qui échoue ne mérite pas de message : le suivant passera.
       return;
@@ -450,11 +478,12 @@ export function Affrontements({
   }, []);
 
   const fenetreOuverte = fenetre !== null;
+  const jAttends = etat.moiId !== null && etat.batailles.some((b) => b.statut === 'ATTENTE' && b.hoteId === etat.moiId);
   useEffect(() => {
     if (fenetreOuverte) return;
-    const t = setInterval(recharge, SONDAGE);
+    const t = setInterval(recharge, jAttends ? SONDAGE_EN_ATTENTE : SONDAGE);
     return () => clearInterval(t);
-  }, [fenetreOuverte, recharge]);
+  }, [fenetreOuverte, jAttends, recharge]);
 
   /* ------------------------------ Les gestes ----------------------------- */
 
@@ -488,7 +517,7 @@ export function Affrontements({
     if (resultat.ok) {
       const b = resultat.data;
       if (toujoursLa) {
-        setFenetre({ etat: 'duel', bataille: b, anime: true, tour: nouveauNumero(), fini: false });
+        setFenetre({ etat: 'duel', bataille: b, anime: true, tour: nouveauNumero(), fini: false, depart: departDe(b) });
       } else {
         // Fenêtre fermée pendant le tirage : le duel est joué quand même, on le dit.
         annonceBilan(bilanDe(b, etat.moiId));
@@ -582,12 +611,13 @@ export function Affrontements({
   const aRelever = ouverts.filter((b) => b.hoteId !== etat.moiId).sort((a, b) => b.mise - a.mise);
   /**
    * Mes défis en attente — `DUEL.enAttenteMax` au plus, le serveur le vérifie.
-   * Ils ne sont pas dans la liste des défis à relever : ils vivent dans le
-   * panneau de lancement, avec leur compte.
+   * Ils sont en tête de la liste des défis ouverts, avec de quoi les annuler :
+   * un défi lancé se voit là où les autres le voient.
    */
   const mesDefis = joueur
     ? ouverts.filter((b) => b.hoteId === etat.moiId).sort((a, b) => a.creeeA.localeCompare(b.creeeA))
     : [];
+  const defisOuverts = [...mesDefis, ...aRelever];
   const complet = mesDefis.length >= DUEL.enAttenteMax;
   const jouees = etat.batailles.filter((b) => b.statut === 'TERMINEE');
   const miens = jouees.filter((b) => joueur && b.camps.some((c) => c.id === etat.moiId));
@@ -655,7 +685,14 @@ export function Affrontements({
   } else if (fenetre?.etat === 'duel') {
     const b = fenetre.bataille;
     contenuFenetre = (
-      <BatailleArene key={fenetre.tour} bataille={b} moiId={etat.moiId} anime={fenetre.anime} onFini={marqueFini} />
+      <BatailleArene
+        key={fenetre.tour}
+        bataille={b}
+        moiId={etat.moiId}
+        anime={fenetre.anime}
+        depart={fenetre.depart}
+        onFini={marqueFini}
+      />
     );
     // Pas de raccourci vers le résultat : la course se regarde jusqu'au bout.
     // Finie, la fenêtre se ferme d'elle-même ; on peut seulement la fermer un
@@ -685,7 +722,7 @@ export function Affrontements({
         <section
           className="glass duels-panneau duels-defis"
           aria-labelledby="defis-titre"
-          data-vide={aRelever.length === 0 ? '' : undefined}
+          data-vide={defisOuverts.length === 0 ? '' : undefined}
         >
           <SnowCap radius="var(--r-lg)" seed="duels-rejoindre" epaisseur={16} />
           <header className="duels-panneau-tete">
@@ -693,33 +730,57 @@ export function Affrontements({
               <p className="eyebrow">Défis ouverts</p>
               <h2 id="defis-titre">
                 Duels à rejoindre
-                <span className="duels-compte" data-actif={aRelever.length > 0 ? '' : undefined}>
-                  {aRelever.length}
+                <span className="duels-compte" data-actif={defisOuverts.length > 0 ? '' : undefined}>
+                  {defisOuverts.length}
                 </span>
               </h2>
             </div>
           </header>
 
-          {aRelever.length === 0 ? (
+          {defisOuverts.length === 0 ? (
             <div className="duels-vide">
               <span className="duels-vide-icone" aria-hidden="true">
                 <IconSwords className="h-5 w-5" />
               </span>
               <p>
-                {mesDefis.length > 0 ? (
-                  <>
-                    <b>Aucun défi d’un autre joueur pour l’instant.</b> Les tiens attendent qu’on les relève.
-                  </>
-                ) : (
-                  <>
-                    <b>Personne n’attend d’adversaire.</b> Lance le premier défi : il s’affichera ici pour les autres
-                    joueurs.
-                  </>
-                )}
+                <b>Personne n’attend d’adversaire.</b> Lance le premier défi : il s’affichera ici pour les autres
+                joueurs.
               </p>
             </div>
           ) : (
             <ul className="duels-defis-liste" data-tout={tousDefis ? '' : undefined}>
+              {/* Les miens d'abord, en pointillés : ils attendent qu'on les relève. */}
+              {mesDefis.map((b) => (
+                <li key={b.id} className="duels-defi" data-mien="">
+                  <span className="orbe orbe-sm" aria-hidden="true">
+                    {initiale(moi)}
+                  </span>
+                  <div className="duels-defi-qui">
+                    <b>Ton défi</b>
+                    <small>
+                      <span className="duels-defi-verbe">en attente d’un adversaire · </span>
+                      <span className="whitespace-nowrap">{shortDateTime(b.creeeA)}</span>
+                    </small>
+                  </div>
+                  <div className="duels-defi-mise">
+                    <strong>
+                      {flakes(b.mise)} <span className="text-ice">❄</span>
+                    </strong>
+                    <small>{flakes(pot(b))}&nbsp;❄ au gagnant</small>
+                  </div>
+                  <div className="duels-defi-action">
+                    <button
+                      type="button"
+                      className="btn btn-ghost"
+                      disabled={occupe}
+                      onClick={() => annule(b)}
+                      title="Annuler ce défi : ta mise t’est rendue"
+                    >
+                      Annuler
+                    </button>
+                  </div>
+                </li>
+              ))}
               {aRelever.map((b) => {
                 const hote = b.camps[0];
                 const manque = solde !== null && solde < b.mise ? b.mise - solde : 0;
@@ -759,9 +820,9 @@ export function Affrontements({
           )}
           {/* Sur un écran étroit, les trois premiers ; la suite se déplie. Sur
               un ordinateur, la liste défile dans sa zone. */}
-          {aRelever.length > DEFIS_REPLIES && !tousDefis && (
+          {defisOuverts.length > DEFIS_REPLIES && !tousDefis && (
             <button type="button" className="btn btn-ghost duels-defis-plus" onClick={() => setTousDefis(true)}>
-              Voir les {aRelever.length} défis
+              Voir les {defisOuverts.length} défis
             </button>
           )}
         </section>
@@ -948,39 +1009,20 @@ export function Affrontements({
                   <IconSwords className="h-5 w-5" /> Lancer le défi
                 </button>
               )}
-              {/* Mes défis en attente : une pastille par défi, sa mise et de quoi
-                  l'annuler, et le compte — c'est lui qui dit pourquoi on ne peut
-                  plus en lancer. */}
-              {mesDefis.length > 0 ? (
-                <div className="duels-miens">
-                  <p className="duels-miens-titre">
-                    Tes défis en attente{' '}
-                    <b>
+              {/* Ce qu'il advient d'un défi lancé, et combien en attendent déjà —
+                  c'est ce compte qui dit pourquoi on ne peut plus en lancer. */}
+              <p>
+                Il s’affiche dans les défis ouverts, et la course part dès qu’un joueur le relève.
+                {mesDefis.length > 0 && (
+                  <>
+                    {' '}
+                    <b className="text-ink">
                       {mesDefis.length} / {DUEL.enAttenteMax}
-                    </b>
-                  </p>
-                  <ul className="duels-miens-liste">
-                    {mesDefis.map((b) => (
-                      <li key={b.id} className="duels-mien">
-                        <span className="num">
-                          {flakes(b.mise)} <span className="text-ice">❄</span>
-                        </span>
-                        <button
-                          type="button"
-                          disabled={occupe}
-                          onClick={() => annule(b)}
-                          aria-label={`Annuler ton défi de ${flakes(b.mise)} flocons`}
-                          title="Annuler ce défi : ta mise t’est rendue"
-                        >
-                          ✕
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ) : (
-                <p>Il attend dans les défis ouverts, et la course part dès qu’un joueur le relève.</p>
-              )}
+                    </b>{' '}
+                    en attente.
+                  </>
+                )}
+              </p>
             </div>
           )}
         </section>

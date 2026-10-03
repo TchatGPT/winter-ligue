@@ -43,6 +43,9 @@ export async function GET(request: Request): Promise<NextResponse> {
       mise: { min: DUEL.miseMin, max: DUEL.miseMax },
     },
     moiId: playerIdOf(g.session),
+    // L'heure du serveur : les deux joueurs d'un duel partent à la même, chacun
+    // corrige la sienne avec (voir `DELAI_DEPART_MS`).
+    maintenant: new Date().toISOString(),
   });
 }
 
