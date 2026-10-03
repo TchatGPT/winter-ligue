@@ -272,6 +272,29 @@ export function ligneDuGeste(message: { id: string; maintenant: number }, g: Ges
   };
 }
 
+/** Ce qu'une personne a payé de subs, d'après le registre. */
+export interface BilanSubs {
+  /** Les subs qu'elle a offerts, tous niveaux confondus. */
+  offerts: number;
+  /** Ses subs de niveau 3, pris pour elle ou offerts. */
+  niveau3: number;
+  /** Ses subs pour elle-même : nouveaux subs et resubs partagés. */
+  siens: number;
+}
+
+/** Le bilan des subs payés par un compte Twitch, d'après le registre. */
+export function bilanDesSubs(registre: readonly LigneSub[], twitchId: string | null): BilanSubs {
+  const bilan: BilanSubs = { offerts: 0, niveau3: 0, siens: 0 };
+  if (!twitchId) return bilan;
+  for (const l of registre) {
+    if (l.twitchId !== twitchId) continue;
+    if (l.genre === 'cadeau') bilan.offerts += l.nombre;
+    else bilan.siens += l.nombre;
+    if (l.niveau === 3) bilan.niveau3 += l.nombre;
+  }
+  return bilan;
+}
+
 export interface PersoEnAttente {
   twitchId: string;
   pseudo: string;

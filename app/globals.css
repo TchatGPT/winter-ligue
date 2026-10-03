@@ -2323,641 +2323,806 @@
 
   /* --------------------------------------------------------------------------
      LA FICHE D'UN JOUEUR (app/joueurs/[slug]/page.tsx)
-     L'en-tête — qui, où il en est —, une bande de chiffres, puis sa saison à
-     gauche et ce qu'il a en main à droite. Chaque titre est dans sa plaque.
+     En tête, une plaque de verre éclairée par l'aurore : l'avatar dans son
+     anneau de glace et sa couronne, le pseudo, les trois chiffres taillés dans
+     la glace, puis la saison en cinq chiffres. Dessous, trois colonnes : les
+     games (la courbe, puis chaque game), les duels et les subs, les flocons
+     et les cartes. Une colonne sur un téléphone, deux sur une tablette.
      -------------------------------------------------------------------------- */
-  .fiche-hero {
-    container-type: inline-size;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1.4rem 2rem;
-    padding: 1.9rem 1.25rem 1.5rem;
-  }
-  @media (min-width: 640px) {
-    .fiche-hero {
-      padding: 2.1rem 2rem 1.8rem;
-    }
-  }
-  .fiche-identite {
-    display: flex;
-    min-width: 0;
-    align-items: center;
+  .profil {
+    display: grid;
     gap: 1.25rem;
   }
 
-  /* L'avatar : la photo Twitch, ou les initiales dans une bille de glace. La
-     médaille du rang s'y accroche en bas à droite. */
-  .fiche-avatar {
-    position: relative;
+  /* -- L'en-tête -- */
+  .profil-hero {
     display: grid;
-    width: 92px;
-    height: 92px;
-    flex-shrink: 0;
-    place-items: center;
-    border-radius: 999px;
-    background: radial-gradient(
-      circle at 34% 28%,
-      rgb(255 255 255 / 0.55) 0%,
-      rgb(143 220 255 / 0.3) 38%,
-      rgb(20 70 120 / 0.66) 100%
-    );
-    box-shadow:
-      inset 0 2px 0 rgb(255 255 255 / 0.7),
-      inset 0 -10px 18px -8px rgb(0 20 50 / 0.6),
-      0 12px 18px -10px rgb(0 8 24 / 0.8);
+    grid-template-areas: 'identite' 'trio' 'saison';
+    gap: 1.5rem;
+    padding: 1.6rem 1.25rem 1.4rem;
+    overflow: hidden;
+    container-type: inline-size;
   }
-  @container (min-width: 640px) {
-    .fiche-avatar {
-      width: 112px;
-      height: 112px;
+  @media (min-width: 1024px) {
+    .profil-hero {
+      grid-template-columns: minmax(0, 1fr) auto;
+      grid-template-areas:
+        'identite trio'
+        'saison saison';
+      align-items: center;
+      padding: 2rem 2.2rem 1.7rem;
     }
   }
-  .fiche-avatar img {
-    width: 100%;
-    height: 100%;
-    border-radius: inherit;
-    object-fit: cover;
-    box-shadow: inset 0 0 0 2px rgb(255 255 255 / 0.4);
-  }
-  .fiche-avatar > span:not(.fiche-medaille) {
-    font-family: var(--font-display);
-    font-size: 2.1rem;
-    font-weight: 900;
-    color: var(--frost);
-    text-shadow: 0 2px 4px rgb(0 10 30 / 0.55);
-  }
-  .fiche-medaille {
+  /* La lumière prise dans la plaque : trois nappes d'aurore, posées une fois. */
+  .profil-hero-lumiere {
     position: absolute;
-    right: -4px;
-    bottom: -4px;
-    width: 36px;
-    height: 36px;
-    font-size: 1rem;
-    /* Un anneau couleur de plaque : la médaille se détache de l'avatar. */
-    box-shadow:
-      0 0 0 3px rgb(10 26 46 / 0.9),
-      inset 0 1px 0 rgb(255 255 255 / 0.4);
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
   }
-  .fiche-medaille:not([data-rang]) {
-    background: var(--ice-3);
-    color: var(--frost);
+  .profil-hero-lumiere span {
+    position: absolute;
+    border-radius: 50%;
+    background: radial-gradient(closest-side, var(--c), transparent);
+  }
+  .profil-hero-lumiere span:nth-child(1) {
+    --c: color-mix(in srgb, var(--aurora) 26%, transparent);
+    top: -40%;
+    left: -8%;
+    width: 46%;
+    height: 150%;
+  }
+  .profil-hero-lumiere span:nth-child(2) {
+    --c: color-mix(in srgb, var(--violet) 28%, transparent);
+    top: -55%;
+    left: 34%;
+    width: 44%;
+    height: 140%;
+  }
+  .profil-hero-lumiere span:nth-child(3) {
+    --c: color-mix(in srgb, var(--ice-2) 22%, transparent);
+    right: -10%;
+    bottom: -60%;
+    width: 50%;
+    height: 150%;
   }
 
-  .fiche-badges {
+  .profil-identite {
+    display: flex;
+    min-width: 0;
+    grid-area: identite;
+    align-items: center;
+    gap: 1.25rem;
+  }
+  /* L'avatar dans un anneau de glace, et le rang serti en bas à droite. */
+  .profil-avatar {
+    position: relative;
+    width: 5.5rem;
+    height: 5.5rem;
+    flex: none;
+    padding: 4px;
+    border-radius: var(--r-pilule);
+    background: conic-gradient(from 210deg, var(--frost), var(--ice), var(--aurora), var(--violet), var(--frost));
+    box-shadow: 0 12px 24px -12px rgb(0 8 24 / 0.8);
+  }
+  @media (min-width: 640px) {
+    .profil-avatar {
+      width: 7rem;
+      height: 7rem;
+    }
+  }
+  .profil-avatar img,
+  .profil-avatar > span:first-child {
+    display: grid;
+    width: 100%;
+    height: 100%;
+    place-items: center;
+    border-radius: inherit;
+    object-fit: cover;
+    background: var(--fond);
+    font-family: var(--font-display);
+    font-size: 1.8rem;
+    font-weight: 900;
+    color: var(--frost);
+  }
+  .profil-avatar-rang {
+    position: absolute;
+    right: -0.35rem;
+    bottom: -0.35rem;
+    display: grid;
+    width: 2.6rem;
+    height: 2.6rem;
+    place-items: center;
+    padding: 0.3rem;
+    border-radius: var(--r-pilule);
+    background: radial-gradient(circle at 34% 28%, rgb(255 255 255 / 0.35), var(--fond) 70%);
+    box-shadow:
+      inset 0 1.5px 0 rgb(255 255 255 / 0.7),
+      0 6px 12px -6px rgb(0 8 24 / 0.9);
+  }
+  .profil-rang-chiffre {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: 900;
+    line-height: 1;
+    color: var(--frost);
+  }
+  .profil-nom {
+    margin-top: 0.35rem;
+    font-size: clamp(2.1rem, 1.4rem + 3vw, 4rem);
+    line-height: 0.95;
+    overflow-wrap: anywhere;
+  }
+  .profil-badges {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.4rem;
+    gap: 0.45rem;
     margin-top: 0.8rem;
   }
-  .fiche-badge {
+  .profil-badge {
     display: inline-flex;
     align-items: center;
     gap: 0.35rem;
     padding: 0.28rem 0.75rem;
     border-radius: var(--r-pilule);
-    background: rgb(255 255 255 / 0.1);
-    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.14);
-    font-size: 0.875rem;
+    background: rgb(255 255 255 / 0.07);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.28),
+      inset 0 0 0 1px rgb(255 255 255 / 0.1);
+    font-size: 0.8125rem;
     font-weight: 600;
-    color: var(--ink-2);
-    transition: background 0.18s ease;
-  }
-  a.fiche-badge:hover {
-    background: rgb(255 255 255 / 0.18);
     color: var(--ink);
+    transition: background-color 0.15s ease;
   }
-  .fiche-twitch {
+  a.profil-badge:hover {
+    background: rgb(255 255 255 / 0.14);
+  }
+  .profil-badge-twitch {
     color: var(--twitch-clair);
   }
 
-  /* Les trois chiffres de l'en-tête, chacun dans son creux. */
-  .fiche-chiffres {
+  /* Les trois chiffres, taillés dans la glace. */
+  .profil-trio {
     display: grid;
+    grid-area: trio;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0.6rem;
-    width: 100%;
   }
-  @container (min-width: 900px) {
-    .fiche-chiffres {
-      width: auto;
-      grid-template-columns: repeat(3, minmax(8.5rem, auto));
+  @media (min-width: 1024px) {
+    .profil-trio {
+      grid-template-columns: repeat(3, minmax(7.5rem, auto));
+      gap: 0.8rem;
     }
   }
-  .fiche-chiffres > div {
-    padding: 0.75rem 1rem 0.8rem;
+  .profil-trio > div {
+    padding: 0.85rem 0.9rem 0.9rem;
     border-radius: var(--r-md);
-    background: rgb(0 10 30 / 0.24);
-    box-shadow:
-      inset 0 1px 3px rgb(0 8 24 / 0.45),
-      inset 0 -1px 0 rgb(255 255 255 / 0.1);
     text-align: center;
+    background: rgb(0 10 30 / 0.28);
+    box-shadow:
+      inset 0 1px 2px rgb(0 8 24 / 0.5),
+      inset 0 -1px 0 rgb(255 255 255 / 0.14);
   }
-  .fiche-chiffres dt {
+  .profil-trio dt {
     font-family: var(--font-display);
-    font-size: 0.8125rem;
-    font-weight: 700;
-    letter-spacing: 0.12em;
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.14em;
     text-transform: uppercase;
     color: var(--faint);
   }
-  .fiche-chiffres dd {
-    margin-top: 0.15rem;
+  .profil-trio dd {
+    margin-top: 0.3rem;
     font-family: var(--font-display);
-    font-size: clamp(1.9rem, 5cqi, 2.8rem);
+    font-size: clamp(2rem, 1.5rem + 2vw, 3.2rem);
     font-weight: 900;
     line-height: 1;
-    color: var(--ink);
+    color: var(--frost);
   }
-  .fiche-chiffres dd small {
+  .profil-trio dd small {
+    margin-left: 0.1rem;
     font-size: 0.45em;
-    color: var(--muted);
+    font-weight: 700;
+    color: var(--faint);
   }
 
-  /* La bande de chiffres. */
-  .fiche-stats {
+  /* La saison en cinq chiffres, sous un filet. */
+  .profil-saison {
     display: grid;
+    grid-area: saison;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.75rem;
+    gap: 1rem 0;
+    padding-top: 1.2rem;
+    border-top: 1px solid rgb(255 255 255 / 0.14);
   }
-  @media (min-width: 1024px) {
-    .fiche-stats {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-    }
-  }
-  .fiche-stat {
+  .profil-saison > li {
     display: flex;
     min-width: 0;
     flex-direction: column;
-    gap: 0.2rem;
-    padding: 1rem 1.2rem 1.05rem;
+    gap: 0.25rem;
+    padding-inline: 1rem;
   }
-  .fiche-stat > span {
+  .profil-saison > li:nth-child(odd) {
+    padding-left: 0;
+  }
+  .profil-saison > li:last-child {
+    grid-column: 1 / -1;
+  }
+  @container (min-width: 46rem) {
+    .profil-saison {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+    .profil-saison > li:nth-child(odd) {
+      padding-left: 1rem;
+    }
+    .profil-saison > li:first-child {
+      padding-left: 0;
+    }
+    .profil-saison > li:last-child {
+      grid-column: auto;
+    }
+    .profil-saison > li + li {
+      border-left: 1px solid rgb(255 255 255 / 0.1);
+    }
+  }
+  .profil-saison span {
     font-family: var(--font-display);
-    font-size: 0.8125rem;
-    font-weight: 700;
+    font-size: 0.75rem;
+    font-weight: 800;
     letter-spacing: 0.12em;
     text-transform: uppercase;
     color: var(--faint);
   }
-  .fiche-stat > strong {
+  .profil-saison b {
     font-family: var(--font-display);
-    font-size: 2.2rem;
+    font-size: 1.85rem;
     font-weight: 900;
-    line-height: 1.05;
-    color: var(--ink);
+    line-height: 1;
+    color: var(--frost);
   }
-  .fiche-stat > strong small {
-    font-size: 0.5em;
-    color: var(--muted);
+  .profil-saison b small {
+    font-size: 0.55em;
+    font-weight: 700;
+    color: var(--faint);
   }
-  .fiche-stat > em {
-    font-size: 0.875rem;
+  .profil-saison em {
+    font-size: 0.8125rem;
     font-style: normal;
     color: var(--muted);
   }
-  .fiche-barre {
+  .profil-jauge {
+    position: relative;
     display: block;
     height: 6px;
-    margin: 0.2rem 0 0.1rem;
+    margin-top: 0.15rem;
     overflow: hidden;
     border-radius: var(--r-pilule);
-    background: rgb(0 10 30 / 0.4);
-    box-shadow: inset 0 1px 2px rgb(0 8 24 / 0.5);
+    background: rgb(0 10 30 / 0.42);
+    box-shadow: inset 0 1px 2px rgb(0 8 24 / 0.6);
   }
-  .fiche-barre > b {
-    display: block;
-    height: 100%;
+  .profil-jauge > i {
+    position: absolute;
+    inset: 0 auto 0 0;
+    min-width: 6px;
     border-radius: inherit;
-    background: linear-gradient(90deg, var(--ice-3), var(--ice));
+    background: linear-gradient(90deg, var(--ice-3), var(--ice) 70%, var(--frost));
   }
-  .fiche-podiums {
+  .profil-podiums {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.35rem 0.9rem;
-    margin: 0.35rem 0 0.1rem;
-  }
-  .fiche-podiums > span {
-    display: inline-flex;
     align-items: center;
-    gap: 0.35rem;
-    font-family: var(--font-display);
-    font-size: 1.45rem;
-    font-weight: 900;
-    color: var(--ink);
-  }
-  .fiche-podiums .medaille {
-    width: 26px;
-    height: 26px;
-    font-size: 0.875rem;
-  }
-
-  .fiche-titre {
-    margin-top: 0.25rem;
-    font-family: var(--font-display);
-    font-size: 1.6rem;
-    font-weight: 900;
-    letter-spacing: 0.04em;
-    line-height: 1;
-    text-transform: uppercase;
-    color: var(--ink);
-  }
-
-  /* ---- La saison en cases (components/SaisonEnCases.tsx) ----
-     Une case par game : la glace y monte avec le score, le score se lit en
-     grand, la médaille d'un podium dans le coin. Les games à jouer sont des
-     cases vides en pointillés. */
-  .cases-legende {
-    margin: 0.5rem 0 0.9rem;
-    font-size: 0.875rem;
-    color: var(--muted);
-  }
-  .cases-grille {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(4.25rem, 1fr));
     gap: 0.6rem;
   }
-  @media (max-width: 639px) {
-    .cases-grille {
-      grid-template-columns: repeat(5, minmax(0, 1fr));
-      gap: 0.45rem;
+  .profil-podiums > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+  .profil-podiums b {
+    font-size: 1.35rem;
+  }
+
+  /* -- La grille des plaques -- */
+  .profil-grille {
+    display: grid;
+    align-items: start;
+    gap: 1.25rem;
+  }
+  .profil-colonne {
+    display: grid;
+    gap: 1.25rem;
+  }
+  @media (min-width: 900px) {
+    .profil-grille {
+      grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+    }
+    .profil-grille > .profil-colonne:last-child {
+      grid-column: 1 / -1;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      align-items: start;
+    }
+  }
+  @media (min-width: 1440px) {
+    .profil-grille {
+      grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr);
+    }
+    .profil-grille > .profil-colonne:last-child {
+      grid-column: auto;
+      grid-template-columns: minmax(0, 1fr);
     }
   }
 
-  /* Trois lignes : le numéro et la médaille, le score, les kills. */
-  .case {
-    position: relative;
-    display: flex;
-    aspect-ratio: 3 / 4;
-    flex-direction: column;
+  /* Une plaque : son médaillon, son titre, et à droite un chiffre. */
+  .profil-plaque {
+    display: grid;
+    gap: 1.1rem;
+    padding: 1.35rem 1.25rem 1.4rem;
     overflow: hidden;
-    padding: 0.3rem 0.35rem 0.35rem;
-    border-radius: var(--r-sm);
-    background: linear-gradient(165deg, rgb(255 255 255 / 0.12) 0%, rgb(255 255 255 / 0.04) 100%);
-    box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / 0.4),
-      inset 0 0 0 1px rgb(255 255 255 / 0.1),
-      0 8px 14px -10px rgb(0 8 24 / 0.8);
-    outline: none;
-    transition: transform 0.18s ease;
   }
-  .case[tabindex]:focus-visible {
-    box-shadow:
-      inset 0 0 0 2px var(--ice),
-      0 8px 14px -10px rgb(0 8 24 / 0.8);
+  @media (min-width: 640px) {
+    .profil-plaque {
+      padding: 1.5rem 1.6rem 1.6rem;
+    }
   }
-  .case[data-actif] {
-    transform: translateY(-3px);
-  }
-  .case[data-passee] {
-    opacity: 0.45;
-  }
-  /* Le record : un liseré d'aurore, franc, sans halo. */
-  .case[data-record] {
-    box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / 0.4),
-      inset 0 0 0 2px var(--aurora),
-      0 8px 14px -10px rgb(0 8 24 / 0.8);
-  }
-
-  /* La glace qui monte : claire en surface, profonde au fond, et une ligne de
-     givre à la surface. */
-  .case-glace {
-    position: absolute;
-    right: 0;
-    bottom: 0;
-    left: 0;
-    background: linear-gradient(0deg, rgb(28 138 194 / 0.78) 0%, rgb(69 189 240 / 0.5) 62%, rgb(143 220 255 / 0.38) 100%);
-    box-shadow:
-      inset 0 2px 0 rgb(234 247 255 / 0.8),
-      inset 0 10px 12px -10px rgb(255 255 255 / 0.55);
-    transition: height 0.6s cubic-bezier(0.2, 0.8, 0.3, 1);
-  }
-  .case-tete {
-    position: relative;
-    z-index: 1;
-    display: flex;
-    min-height: 18px;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.2rem;
-  }
-  .case-numero {
-    padding-left: 0.15rem;
-    font-family: var(--font-display);
-    font-size: 0.8125rem;
-    font-weight: 800;
-    color: var(--ink-2);
-    text-shadow: 0 1px 2px rgb(0 8 24 / 0.7);
-  }
-  /* Plus précis que .medaille, déclarée plus loin : sinon elle reprend ses 30 px. */
-  .case-tete .case-medaille {
-    width: 18px;
-    height: 18px;
-    font-size: 0.75rem;
-  }
-  .case-score {
-    position: relative;
-    z-index: 1;
-    display: grid;
-    flex: 1;
-    place-items: center;
-    font-family: var(--font-display);
-    font-size: clamp(1.25rem, 2.2vw, 1.7rem);
-    font-weight: 900;
-    line-height: 1;
-    color: var(--ink);
-    text-shadow: 0 1px 3px rgb(0 8 24 / 0.75);
-  }
-  .case-pied {
-    position: relative;
-    z-index: 1;
-    font-size: 0.8125rem;
-    font-weight: 600;
-    text-align: center;
-    color: var(--ink);
-    text-shadow: 0 1px 2px rgb(0 8 24 / 0.8);
-  }
-
-  /* Une game à jouer : une case vide, en pointillés, son numéro en filigrane. */
-  .case-libre {
-    align-items: center;
-    justify-content: center;
-    background: rgb(255 255 255 / 0.03);
-    box-shadow: none;
-    outline: 1.5px dashed rgb(255 255 255 / 0.2);
-    outline-offset: -1.5px;
-  }
-  .case-libre > span {
-    font-family: var(--font-display);
-    font-size: 0.875rem;
-    font-weight: 800;
-    color: rgb(255 255 255 / 0.3);
-  }
-
-  /* ---- La liste des games : le détail de chaque case ---- */
-  .fiche-games {
-    display: grid;
-    gap: 0.5rem;
-    max-height: 34rem;
-    margin-top: 1.1rem;
-    overflow-y: auto;
-    padding-right: 0.15rem;
-  }
-  .fiche-game {
+  .profil-plaque-tete {
     display: flex;
     align-items: center;
-    gap: 0.9rem;
-    padding: 0.75rem 0.95rem;
-    border-radius: var(--r-md);
-    background: rgb(0 10 30 / 0.22);
-    box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / 0.1),
-      inset 0 0 0 1px rgb(255 255 255 / 0.05);
+    gap: 0.85rem;
   }
-  .fiche-game[data-passee] {
-    opacity: 0.55;
-  }
-  .fiche-game-numero {
-    width: 2.2rem;
-    flex-shrink: 0;
-    font-family: var(--font-display);
-    font-size: 0.9375rem;
-    font-weight: 800;
-    color: var(--faint);
-  }
-  .fiche-game-ligne {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.35rem 1rem;
-    font-size: 0.875rem;
-    color: var(--ink-2);
-  }
-  .fiche-game-ligne strong {
-    font-family: var(--font-display);
-    font-size: 1.1rem;
-    font-weight: 900;
-    color: var(--ink);
-  }
-  .fiche-top {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    font-family: var(--font-display);
-    font-size: 0.875rem;
-    font-weight: 800;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--ink);
-  }
-  .fiche-top .medaille {
-    width: 22px;
-    height: 22px;
-    font-size: 0.8125rem;
-  }
-  .fiche-top-aucun {
-    color: var(--faint);
-  }
-  .fiche-passee {
-    padding: 0.05rem 0.5rem;
-    border-radius: var(--r-pilule);
-    background: rgb(255 255 255 / 0.1);
-    font-size: 0.8125rem;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--muted);
-  }
-  .fiche-game-date {
+  .profil-plaque-tete h2 {
     margin-top: 0.15rem;
-    font-size: 0.8125rem;
-    color: var(--faint);
-  }
-  .fiche-game-cartes {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.35rem;
-    margin-top: 0.45rem;
-  }
-  .fiche-game-cartes > span {
-    padding: 0.12rem 0.55rem;
-    border-radius: var(--r-pilule);
-    background: rgb(255 255 255 / 0.08);
-    font-size: 0.8125rem;
-    color: var(--ink-2);
-  }
-  .fiche-game-cartes b {
-    margin-left: 0.35rem;
-    color: var(--aurora);
-  }
-  .fiche-game-cartes > span[data-malus] b {
-    color: var(--danger);
-  }
-  .fiche-game-score {
-    flex-shrink: 0;
-    text-align: right;
-  }
-  .fiche-game-score strong {
-    display: block;
     font-family: var(--font-display);
-    font-size: 1.9rem;
+    font-size: 1.55rem;
     font-weight: 900;
     line-height: 1;
-    color: var(--ink);
-  }
-  .fiche-game-score small {
-    font-family: var(--font-display);
-    font-size: 0.8125rem;
-    font-weight: 700;
-    letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: var(--faint);
+    color: var(--frost);
   }
-
-  /* ---- La colonne de droite : flocons, cartes, duels ---- */
-  .fiche-solde {
-    font-family: var(--font-display);
-    font-size: 2rem;
-    font-weight: 900;
-    line-height: 1;
-    color: var(--ink);
-  }
-  .fiche-solde small {
-    font-size: 0.5em;
-    color: var(--muted);
-  }
-  .fiche-bloc {
-    padding: 0.85rem 1rem 0.9rem;
-    border-radius: var(--r-md);
-    background: rgb(0 10 30 / 0.2);
+  .profil-plaque-icone {
+    display: grid;
+    width: 2.6rem;
+    height: 2.6rem;
+    flex: none;
+    place-items: center;
+    border-radius: var(--r-pilule);
+    color: var(--frost);
+    background: radial-gradient(
+      circle at 34% 28%,
+      rgb(255 255 255 / 0.42) 0%,
+      rgb(143 220 255 / 0.18) 46%,
+      rgb(8 30 60 / 0.38) 100%
+    );
     box-shadow:
-      inset 0 1px 3px rgb(0 8 24 / 0.4),
-      inset 0 -1px 0 rgb(255 255 255 / 0.08);
+      inset 0 1.5px 0 rgb(255 255 255 / 0.75),
+      inset 0 -6px 12px -6px rgb(0 16 40 / 0.6),
+      0 6px 10px -6px rgb(0 8 24 / 0.75);
   }
-  .fiche-bloc-titre {
-    font-family: var(--font-display);
-    font-size: 0.9375rem;
-    font-weight: 800;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    color: var(--ink);
-  }
-  .fiche-subs {
-    display: flex;
-    gap: 0.35rem;
-    margin-top: 0.6rem;
-  }
-  .fiche-subs > i {
-    height: 8px;
-    flex: 1;
-    border-radius: var(--r-pilule);
-    background: rgb(255 255 255 / 0.12);
-    box-shadow: inset 0 1px 2px rgb(0 8 24 / 0.5);
-  }
-  .fiche-subs > i[data-plein] {
-    background: var(--aurora);
-    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.4);
-  }
-
-  .fiche-cartes {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
-    gap: 0.9rem 0.7rem;
-    margin-top: 0.7rem;
-  }
-  .fiche-cartes > li {
-    display: grid;
-    min-width: 0;
-    justify-items: center;
-    gap: 0.2rem;
-    text-align: center;
-  }
-  .fiche-carte {
-    display: block;
-    width: 84px;
-    margin-bottom: 0.25rem;
-  }
-  .fiche-carte .cadre {
-    filter: drop-shadow(0 4px 6px rgb(0 0 0 / 0.5));
-  }
-  .fiche-cartes b {
-    max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-size: 0.875rem;
-    font-weight: 700;
-    color: var(--ink);
-  }
-  .fiche-cartes small {
-    font-size: 0.8125rem;
-    line-height: 1.3;
-    color: var(--muted);
-  }
-
-  .fiche-duels-chiffres {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.5rem;
-    margin-top: 0.9rem;
-  }
-  .fiche-duels-chiffres > div {
-    padding: 0.6rem 0.8rem;
-    border-radius: var(--r-sm);
-    background: rgb(0 10 30 / 0.22);
-    box-shadow: inset 0 1px 3px rgb(0 8 24 / 0.4);
-    text-align: center;
-  }
-  .fiche-duels-chiffres dt {
-    font-family: var(--font-display);
-    font-size: 0.8125rem;
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--faint);
-  }
-  .fiche-duels-chiffres dd {
+  .profil-plaque-chiffre {
+    flex: none;
     font-family: var(--font-display);
     font-size: 1.6rem;
     font-weight: 900;
-    line-height: 1.1;
+    line-height: 1;
+    white-space: nowrap;
+    color: var(--frost);
+  }
+  .profil-plaque-chiffre small {
+    font-size: 0.6em;
+    font-weight: 700;
+    color: var(--faint);
+  }
+  .profil-vide {
+    padding: 1.2rem;
+    border-radius: var(--r-md);
+    background: rgb(0 10 30 / 0.2);
+    font-size: 0.9375rem;
+    color: var(--muted);
+  }
+  .profil-note {
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    color: var(--muted);
+  }
+
+  /* -- Ses games : la courbe -- */
+  .profil-courbe {
+    padding: 1rem 1rem 0.8rem;
+    border-radius: var(--r-md);
+    background:
+      radial-gradient(90% 70% at 50% 0%, color-mix(in srgb, var(--ice) 8%, transparent), transparent),
+      rgb(0 10 30 / 0.24);
+    box-shadow:
+      inset 0 1px 3px rgb(0 8 24 / 0.5),
+      inset 0 -1px 0 rgb(255 255 255 / 0.12);
+  }
+  .profil-courbe-barres {
+    position: relative;
+    display: flex;
+    height: 8.5rem;
+    align-items: flex-end;
+    gap: 3px;
+  }
+  .profil-courbe-barres > span {
+    max-width: 2.2rem;
+    min-width: 3px;
+    height: calc(var(--part) * 100%);
+    flex: 1 1 0;
+    border-radius: 6px 6px 2px 2px;
+    background: linear-gradient(180deg, var(--ice), color-mix(in srgb, var(--ice-3) 70%, transparent));
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.5);
+  }
+  .profil-courbe-barres > span[data-top='1'] {
+    background: linear-gradient(180deg, var(--gold), color-mix(in srgb, var(--gold) 45%, transparent));
+  }
+  .profil-courbe-barres > span[data-top='2'] {
+    background: linear-gradient(180deg, var(--noel-acier-clair), color-mix(in srgb, var(--noel-acier) 55%, transparent));
+  }
+  .profil-courbe-barres > span[data-top='3'] {
+    background: linear-gradient(180deg, var(--r-ur), color-mix(in srgb, var(--r-ur) 40%, transparent));
+  }
+  .profil-courbe-barres > span[data-passee] {
+    opacity: 0.35;
+  }
+  .profil-courbe-moyenne {
+    position: absolute;
+    right: 0;
+    bottom: calc(var(--moyenne) * 100%);
+    left: 0;
+    border-top: 1.5px dashed rgb(255 255 255 / 0.45);
+    pointer-events: none;
+  }
+  .profil-courbe figcaption {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 1rem;
+    margin-top: 0.75rem;
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+  .profil-courbe figcaption span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+  .profil-courbe figcaption i {
+    width: 0.7rem;
+    height: 0.7rem;
+    border-radius: 3px;
+  }
+  .profil-courbe figcaption i[data-legende='1'] {
+    background: var(--gold);
+  }
+  .profil-courbe figcaption i[data-legende='2'] {
+    background: var(--noel-acier-clair);
+  }
+  .profil-courbe figcaption i[data-legende='3'] {
+    background: var(--r-ur);
+  }
+  .profil-courbe figcaption i[data-legende='moyenne'] {
+    height: 0;
+    border-top: 1.5px dashed rgb(255 255 255 / 0.6);
+    border-radius: 0;
+  }
+
+  /* -- Ses games : la liste. Une plaque fine par game, et dessous une jauge
+        à la mesure de son score, rapporté à sa meilleure. -- */
+  .profil-liste-games {
+    display: grid;
+    gap: 0.5rem;
+  }
+  .profil-game {
+    position: relative;
+    display: grid;
+    grid-template-columns: 2.4rem 2rem minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem 0.95rem;
+    overflow: hidden;
+    border-radius: var(--r-md);
+    background: rgb(255 255 255 / 0.05);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.16),
+      inset 0 0 0 1px rgb(255 255 255 / 0.05);
+  }
+  .profil-game[data-passee] {
+    opacity: 0.55;
+  }
+  .profil-game-numero {
+    font-family: var(--font-display);
+    font-size: 0.9375rem;
+    font-weight: 800;
+    color: var(--faint);
+  }
+  .profil-game-top {
+    display: grid;
+    place-items: center;
+  }
+  .profil-game-hors {
+    color: var(--faint);
+  }
+  .profil-game-corps {
+    min-width: 0;
+  }
+  .profil-game-corps p {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.35rem 0.6rem;
+    font-size: 0.9375rem;
+    color: var(--ink-2);
+  }
+  .profil-game-corps strong {
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+    font-weight: 900;
+    color: var(--frost);
+  }
+  .profil-game-place {
+    font-family: var(--font-display);
+    font-size: 0.8125rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ice);
+  }
+  .profil-game[data-top='1'] .profil-game-place {
+    color: var(--gold);
+  }
+  .profil-game-passee {
+    padding: 0.05rem 0.5rem;
+    border-radius: var(--r-pilule);
+    background: rgb(255 255 255 / 0.1);
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+  .profil-game-cartes {
+    margin-top: 0.3rem;
+  }
+  .profil-game-cartes > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.1rem 0.55rem;
+    border-radius: var(--r-pilule);
+    background: color-mix(in srgb, var(--aurora) 12%, transparent);
+    font-size: 0.75rem;
     color: var(--ink);
   }
-  .fiche-duels {
-    display: grid;
-    gap: 0.4rem;
-    margin-top: 0.75rem;
+  .profil-game-cartes > span b {
+    color: var(--aurora);
   }
-  .fiche-duels > li {
+  .profil-game-cartes > span[data-malus] {
+    background: color-mix(in srgb, var(--danger) 14%, transparent);
+  }
+  .profil-game-cartes > span[data-malus] b {
+    color: var(--danger);
+  }
+  .profil-game-corps small {
+    display: block;
+    margin-top: 0.2rem;
+    font-size: 0.75rem;
+    color: var(--faint);
+  }
+  .profil-game-score {
+    text-align: right;
+  }
+  .profil-game-score strong {
+    display: block;
+    font-family: var(--font-display);
+    font-size: 1.8rem;
+    font-weight: 900;
+    line-height: 1;
+    color: var(--frost);
+  }
+  .profil-game-score small {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--faint);
+  }
+  .profil-game-barre {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: calc(var(--part) * 100%);
+    height: 3px;
+    border-radius: 0 3px 3px 0;
+    background: linear-gradient(90deg, var(--ice-3), var(--ice));
+  }
+  .profil-game[data-top='1'] .profil-game-barre {
+    background: linear-gradient(90deg, color-mix(in srgb, var(--gold) 50%, transparent), var(--gold));
+  }
+  .profil-plus summary {
+    padding: 0.6rem 0;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--ice);
+    text-align: center;
+    cursor: pointer;
+  }
+  .profil-plus[open] summary {
+    margin-bottom: 0.5rem;
+  }
+
+  /* -- Trois chiffres d'une plaque : duels, subs -- */
+  .profil-triplet {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 0.05rem 0.75rem;
-    padding: 0.55rem 0.85rem;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+  .profil-triplet > div {
+    padding: 0.7rem 0.6rem 0.75rem;
     border-radius: var(--r-sm);
-    background: rgb(0 10 30 / 0.2);
+    text-align: center;
+    background: rgb(0 10 30 / 0.24);
+    box-shadow:
+      inset 0 1px 2px rgb(0 8 24 / 0.45),
+      inset 0 -1px 0 rgb(255 255 255 / 0.12);
+  }
+  .profil-triplet dt {
+    font-family: var(--font-display);
+    font-size: 0.6875rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--faint);
+  }
+  .profil-triplet dd {
+    margin-top: 0.25rem;
+    font-family: var(--font-display);
+    font-size: 1.65rem;
+    font-weight: 900;
+    line-height: 1;
+    white-space: nowrap;
+    color: var(--frost);
+  }
+  .profil-triplet dd small {
+    font-size: 0.5em;
+    font-weight: 700;
+    color: var(--faint);
+  }
+  .profil-triplet > div[data-signe='plus'] dd {
+    color: var(--aurora);
+  }
+  .profil-triplet > div[data-signe='moins'] dd {
+    color: var(--danger);
+  }
+
+  /* -- Ses duels : un filet à gauche, aurore pour un gain, rouge pour une perte -- */
+  .profil-duels {
+    display: grid;
+    gap: 0.45rem;
+  }
+  .profil-duels > li {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 0.9rem 0.6rem 0.7rem;
+    border-radius: var(--r-sm);
+    background: rgb(255 255 255 / 0.05);
+    box-shadow:
+      inset 3px 0 0 var(--danger),
+      inset 0 1px 0 rgb(255 255 255 / 0.12);
     font-size: 0.875rem;
     color: var(--ink-2);
   }
-  .fiche-duels > li b {
+  .profil-duels > li[data-gagne] {
+    box-shadow:
+      inset 3px 0 0 var(--aurora),
+      inset 0 1px 0 rgb(255 255 255 / 0.12);
+  }
+  .profil-duels .orbe {
+    --taille: 2.2rem;
+    font-size: 0.95rem;
+  }
+  .profil-duels b {
     font-family: var(--font-display);
     font-weight: 800;
     letter-spacing: 0.04em;
     text-transform: uppercase;
-    color: var(--ink);
+    color: var(--danger);
   }
-  .fiche-duels > li[data-gagne] b {
+  .profil-duels li[data-gagne] b {
     color: var(--aurora);
   }
-  .fiche-duels > li > span:nth-child(2) {
+  .profil-duels small {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--faint);
+  }
+  .profil-duels strong {
+    flex: none;
     font-family: var(--font-display);
-    font-weight: 800;
+    font-size: 1.05rem;
+    font-weight: 900;
+    white-space: nowrap;
     color: var(--ink);
   }
-  .fiche-duels > li small {
-    grid-column: 1 / -1;
+  .profil-duels li[data-gagne] strong {
+    color: var(--aurora);
+  }
+
+  /* -- Ses flocons -- */
+  .profil-chance {
+    display: grid;
+    gap: 0.6rem;
+    padding: 1rem;
+    border-radius: var(--r-md);
+    background: rgb(0 10 30 / 0.22);
+    box-shadow:
+      inset 0 1px 2px rgb(0 8 24 / 0.45),
+      inset 0 -1px 0 rgb(255 255 255 / 0.12);
+  }
+  .profil-chance-tete {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+  .profil-chance-tete span {
+    font-family: var(--font-display);
     font-size: 0.8125rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .profil-chance-tete strong {
+    font-family: var(--font-display);
+    font-size: 1.8rem;
+    font-weight: 900;
+    line-height: 1;
+    color: var(--ice);
+  }
+  .profil-a-ouvrir {
+    display: grid;
+    gap: 0.45rem;
+  }
+  .profil-a-ouvrir > span {
+    font-family: var(--font-display);
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--faint);
+  }
+  .profil-a-ouvrir ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  /* -- Ses cartes -- */
+  .profil-cartes {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(5.5rem, 1fr));
+    gap: 0.9rem 0.7rem;
+  }
+  .profil-cartes > li {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3rem;
+    text-align: center;
+  }
+  .profil-carte {
+    display: block;
+    width: 100%;
+    max-width: 6.5rem;
+  }
+  .profil-cartes b {
+    max-width: 100%;
+    overflow: hidden;
+    font-size: 0.8125rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--ink);
+  }
+  .profil-cartes small {
+    font-size: 0.6875rem;
+    line-height: 1.3;
     color: var(--faint);
   }
 

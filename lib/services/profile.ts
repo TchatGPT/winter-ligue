@@ -12,6 +12,7 @@ import { CAMP_BOT, type Database } from '@/lib/db/entities';
 import { getStore } from '@/lib/db/store';
 import { chanceDe, SEASON } from '@/lib/domain/rules';
 import { estLaStreameuse } from '@/lib/domain/streameuse';
+import { type BilanSubs, bilanDesSubs } from '@/lib/domain/twitchSubs';
 import { classementDe, gamesOf, totalsOf } from './league';
 import {
   type OuvertureVue,
@@ -129,6 +130,8 @@ export interface DuelFiche {
 export interface FicheJoueur {
   profil: Omit<ProfileView, 'ledger'>;
   role: 'joueur' | 'admin';
+  /** Son compte Twitch : il dit, au registre, les subs qu'il a payés. */
+  twitchId: string | null;
   /** La streameuse : hors classement, elle ne joue pas de game. */
   streameuse: boolean;
   /**
@@ -184,6 +187,7 @@ export async function getFicheJoueur(slug: string): Promise<FicheJoueur | null> 
     return {
       profil,
       role: player.role,
+      twitchId: player.twitchId,
       streameuse: estLaStreameuse(player, chaineDeLaLigue()),
       rang,
       creneaux: db.config.maxGamesPerPlayer + (player.creneauxBonus ?? 0),
@@ -207,4 +211,13 @@ export async function getFicheJoueur(slug: string): Promise<FicheJoueur | null> 
       },
     };
   });
+}
+
+/** Assez de registre pour additionner les subs d'une saison. */
+const REGISTRE = 2000;
+
+/** Ce qu'un joueur a payé de subs, pour sa fiche : le registre ne se lit pas avec la base. */
+export async function subsDuJoueur(twitchId: string | null): Promise<BilanSubs> {
+  if (!twitchId) return bilanDesSubs([], null);
+  return bilanDesSubs(await getStore().subsTwitch(REGISTRE), twitchId);
 }

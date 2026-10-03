@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Database } from '@/lib/db/entities';
 import { emptyDatabase } from '@/lib/db/store';
-import { TYPE_TCHAT } from '@/lib/domain/twitchSubs';
+import { bilanDesSubs, TYPE_TCHAT } from '@/lib/domain/twitchSubs';
 import { rattacheCompteTwitch } from '@/lib/services/comptes';
 import { ajouteSubsTwitch, remetSubsAZero } from '@/lib/services/subs';
 
@@ -167,5 +167,18 @@ describe('la remise à zéro du compteur', () => {
     expect(db.subEvents).toHaveLength(0);
     expect(joueur(db).snowflakes).toBe(solde);
     expect(db.audit.some((a) => a.action === 'SUBS_REMIS_A_ZERO')).toBe(true);
+  });
+});
+
+describe('le bilan des subs d’un joueur, pour sa fiche', () => {
+  it('additionne ses cadeaux, ses subs à lui et ses T3', () => {
+    const db = base();
+    ajouteSubsTwitch(db, annonce('community_sub_gift', { id: 'cg1', total: 5, sub_tier: '1000' }));
+    ajouteSubsTwitch(db, annonce('community_sub_gift', { id: 'cg2', total: 2, sub_tier: '3000' }));
+    ajouteSubsTwitch(db, annonce('sub', sub('3000')));
+    ajouteSubsTwitch(db, annonce('resub', resub('1000')));
+    ajouteSubsTwitch(db, annonce('sub', sub('1000'), 'tw-x'));
+    expect(bilanDesSubs(db.subsTwitch, 'tw-joueur')).toEqual({ offerts: 7, niveau3: 3, siens: 2 });
+    expect(bilanDesSubs(db.subsTwitch, null)).toEqual({ offerts: 0, niveau3: 0, siens: 0 });
   });
 });
