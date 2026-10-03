@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server';
 import { toResponse } from '@/lib/api/errors';
-import { fail, guard, ok } from '@/lib/api/respond';
+import { guard, ok } from '@/lib/api/respond';
 import { boostersPersoSchema } from '@/lib/api/schemas';
-import { playerIdOf } from '@/lib/auth/session';
 import { getStore } from '@/lib/db/store';
 import { LIMITS } from '@/lib/security/ratelimit';
 import { ajusteBoostersPerso } from '@/lib/services/packs';
@@ -11,8 +10,9 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 /**
- * Le − et le + du compteur de Boosters Perso d'un joueur (Modération → Joueurs).
- * Personne ne règle le sien : un autre membre de la modération le fait.
+ * Le − et le + du compteur de Boosters Perso d'un joueur, sous son pseudo dans
+ * le classement. Un membre de la modération peut régler le sien — décidé par
+ * l'organisation : le journal garde qui a fait quoi.
  */
 export async function POST(request: Request): Promise<NextResponse> {
   const g = await guard(request, {
@@ -22,10 +22,6 @@ export async function POST(request: Request): Promise<NextResponse> {
     schema: boostersPersoSchema,
   });
   if (!g.ok) return g.response;
-
-  if (g.body.playerId === playerIdOf(g.session)) {
-    return fail('NON_AUTORISE', 'On ne règle pas ses propres Boosters Perso : un autre membre de la modération le fait.');
-  }
 
   try {
     return ok(

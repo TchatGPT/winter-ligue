@@ -207,7 +207,8 @@ export function crediteBoostersPerso(
  * gagné l'offre : un − chez l'un, un + chez l'autre. Le compteur,
  * c'est le nombre de Boosters Perso en file pour ce joueur, pas encore ouverts :
  * `+` en met un en file, `−` retire le plus récent. La streameuse n'en reçoit
- * pas, et personne ne règle le sien. Chaque geste est au journal.
+ * pas ; un membre de la modération peut régler le sien. Chaque geste est au
+ * journal.
  */
 export function ajusteBoostersPerso(
   db: Database,

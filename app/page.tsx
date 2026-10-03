@@ -5,7 +5,7 @@ import { Hero } from '@/components/Hero';
 import { Accueil } from '@/components/Accueil';
 import { SaisieGames } from '@/components/SaisieGames';
 import { exigeSession } from '@/lib/auth/acces';
-import { getSession, playerIdOf } from '@/lib/auth/session';
+import { getSession } from '@/lib/auth/session';
 import { chaineDeLaLigue, isTwitchEnabled } from '@/lib/auth/twitch';
 import { estLaStreameuse } from '@/lib/domain/streameuse';
 import { getStore } from '@/lib/db/store';
@@ -78,7 +78,7 @@ export default async function ClassementPage() {
           bouton de saisie avec. */}
         <Classement
           rows={ranking}
-          boostersPerso={subs.boostersPerso ? { parJoueur: subs.boostersPerso, moiId: playerIdOf(session) } : undefined}
+          boostersPerso={subs.boostersPerso ? { parJoueur: subs.boostersPerso } : undefined}
           outils={
             moderateur ? (
               // La clé : cet élément traverse la frontière serveur → client et se

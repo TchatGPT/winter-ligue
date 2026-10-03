@@ -120,8 +120,6 @@ const plat = (s: string) =>
 /** Les Boosters Perso en attente de chaque joueur — pour la modération seulement. */
 export interface BoostersPersoModeration {
   parJoueur: Record<string, number>;
-  /** Le joueur derrière la session : personne ne règle les siens. */
-  moiId: string | null;
 }
 
 export function Classement({
@@ -387,8 +385,8 @@ function Pseudo({ row }: { row: RankingRow }) {
  *
  * Les subs payés y mettent d'office ce qu'ils valent, à qui les a payés. Quand
  * celui-là veut offrir le sien à un autre, la modération fait − chez lui et +
- * chez l'autre. Personne ne règle les siens : la route le refuse, et les
- * boutons sont grisés. Le compteur est dans une ligne qu'on déplie sur un
+ * chez l'autre — y compris sur son propre compte. Le compteur est dans une
+ * ligne qu'on déplie sur un
  * téléphone : un appui ne doit pas la plier, d'où l'arrêt de l'évènement.
  */
 function CompteurPerso({ row, moderation }: { row: RankingRow; moderation: BoostersPersoModeration }) {
@@ -396,7 +394,6 @@ function CompteurPerso({ row, moderation }: { row: RankingRow; moderation: Boost
   const [n, setN] = useState(moderation.parJoueur[row.id] ?? 0);
   const [occupe, setOccupe] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
-  const soi = row.id === moderation.moiId;
 
   async function regle(sens: 'plus' | 'moins', e: React.MouseEvent) {
     e.preventDefault();
@@ -428,7 +425,6 @@ function CompteurPerso({ row, moderation }: { row: RankingRow; moderation: Boost
       <span
         className="compteur-perso compteur-perso-classement"
         data-vide={n === 0 ? '' : undefined}
-        title={soi ? 'Tes propres Boosters Perso se règlent par un autre membre de la modération.' : undefined}
       >
         <span className="compteur-perso-libelle">
           <span className="num">{n}</span> Booster{n > 1 ? 's' : ''} Perso
@@ -436,7 +432,7 @@ function CompteurPerso({ row, moderation }: { row: RankingRow; moderation: Boost
         <button
           type="button"
           aria-label={`Retirer un Booster Perso à ${row.pseudo}`}
-          disabled={occupe || soi || n === 0}
+          disabled={occupe || n === 0}
           onClick={(e) => regle('moins', e)}
         >
           −
@@ -444,7 +440,7 @@ function CompteurPerso({ row, moderation }: { row: RankingRow; moderation: Boost
         <button
           type="button"
           aria-label={`Ajouter un Booster Perso à ${row.pseudo}`}
-          disabled={occupe || soi}
+          disabled={occupe}
           onClick={(e) => regle('plus', e)}
         >
           +

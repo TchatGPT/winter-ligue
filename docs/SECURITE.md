@@ -359,7 +359,8 @@ un Booster Perso à qui le paie, et cinq subs offerts aussi (cumulés sur la sai
 est mis en file d'office, dans la même transaction, si le payeur a un compte — jamais
 pour un cadeau anonyme, jamais pour la streameuse. Sinon le registre le garde. La
 modération peut le déplacer d'un joueur à un autre (− et + sous le pseudo, dans le
-classement), jamais sur son propre compte ; chaque geste est au journal. Un admin peut remettre le compteur à zéro avant le départ de la saison : rien de
+classement), y compris sur son propre compte — décidé par l'organisation ; chaque geste
+est au journal. Un admin peut remettre le compteur à zéro avant le départ de la saison : rien de
 ce qui a été versé n'est repris, et le journal le note.
 
 **Tant que Twitch n'est pas branché, la connexion Twitch est fermée.** Une
