@@ -2322,93 +2322,85 @@
   }
 
   /* --------------------------------------------------------------------------
-     LA FICHE D'UN JOUEUR (app/joueurs/[slug]/page.tsx)
-     En tête, une plaque de verre éclairée par l'aurore : l'avatar dans son
-     anneau de glace et sa couronne, le pseudo, les trois chiffres taillés dans
-     la glace, puis la saison en cinq chiffres. Dessous, trois colonnes : les
-     games (la courbe, puis chaque game), les duels et les subs, les flocons
-     et les cartes. Une colonne sur un téléphone, deux sur une tablette.
+     LA FICHE D'UN JOUEUR (components/FicheJoueur.tsx)
+     Un en-tête compact — l'avatar dans son anneau de glace et son rang serti,
+     le pseudo, cinq chiffres —, une barre d'onglets, puis un sujet à la fois,
+     sur toute la largeur. L'onglet des games est fait pour soixante games et
+     plus : une barre par créneau, et un tableau fin, filtrable, triable.
      -------------------------------------------------------------------------- */
   .profil {
     display: grid;
-    gap: 1.25rem;
+    gap: 1rem;
   }
 
   /* -- L'en-tête -- */
-  .profil-hero {
+  .profil-tete {
     display: grid;
-    grid-template-areas: 'identite' 'trio' 'saison';
-    gap: 1.5rem;
-    padding: 1.6rem 1.25rem 1.4rem;
+    gap: 1.25rem;
+    padding: 1.4rem 1.2rem 1.3rem;
     overflow: hidden;
-    container-type: inline-size;
   }
-  @media (min-width: 1024px) {
-    .profil-hero {
+  @media (min-width: 1100px) {
+    .profil-tete {
       grid-template-columns: minmax(0, 1fr) auto;
-      grid-template-areas:
-        'identite trio'
-        'saison saison';
       align-items: center;
-      padding: 2rem 2.2rem 1.7rem;
+      gap: 2rem;
+      padding: 1.5rem 2rem;
     }
   }
   /* La lumière prise dans la plaque : trois nappes d'aurore, posées une fois. */
-  .profil-hero-lumiere {
+  .profil-tete-lumiere {
     position: absolute;
     inset: 0;
     z-index: -1;
     pointer-events: none;
   }
-  .profil-hero-lumiere span {
+  .profil-tete-lumiere span {
     position: absolute;
     border-radius: 50%;
     background: radial-gradient(closest-side, var(--c), transparent);
   }
-  .profil-hero-lumiere span:nth-child(1) {
-    --c: color-mix(in srgb, var(--aurora) 26%, transparent);
-    top: -40%;
-    left: -8%;
+  .profil-tete-lumiere span:nth-child(1) {
+    --c: color-mix(in srgb, var(--aurora) 24%, transparent);
+    top: -60%;
+    left: -6%;
+    width: 40%;
+    height: 200%;
+  }
+  .profil-tete-lumiere span:nth-child(2) {
+    --c: color-mix(in srgb, var(--violet) 26%, transparent);
+    top: -80%;
+    left: 30%;
+    width: 40%;
+    height: 200%;
+  }
+  .profil-tete-lumiere span:nth-child(3) {
+    --c: color-mix(in srgb, var(--ice-2) 20%, transparent);
+    right: -8%;
+    bottom: -90%;
     width: 46%;
-    height: 150%;
+    height: 220%;
   }
-  .profil-hero-lumiere span:nth-child(2) {
-    --c: color-mix(in srgb, var(--violet) 28%, transparent);
-    top: -55%;
-    left: 34%;
-    width: 44%;
-    height: 140%;
-  }
-  .profil-hero-lumiere span:nth-child(3) {
-    --c: color-mix(in srgb, var(--ice-2) 22%, transparent);
-    right: -10%;
-    bottom: -60%;
-    width: 50%;
-    height: 150%;
-  }
-
   .profil-identite {
     display: flex;
     min-width: 0;
-    grid-area: identite;
     align-items: center;
-    gap: 1.25rem;
+    gap: 1.1rem;
   }
-  /* L'avatar dans un anneau de glace, et le rang serti en bas à droite. */
   .profil-avatar {
     position: relative;
-    width: 5.5rem;
-    height: 5.5rem;
+    width: 4.75rem;
+    height: 4.75rem;
     flex: none;
-    padding: 4px;
+    padding: 3px;
     border-radius: var(--r-pilule);
     background: conic-gradient(from 210deg, var(--frost), var(--ice), var(--aurora), var(--violet), var(--frost));
-    box-shadow: 0 12px 24px -12px rgb(0 8 24 / 0.8);
+    box-shadow: 0 10px 22px -12px rgb(0 8 24 / 0.8);
   }
   @media (min-width: 640px) {
     .profil-avatar {
-      width: 7rem;
-      height: 7rem;
+      width: 5.75rem;
+      height: 5.75rem;
     }
   }
   .profil-avatar img,
@@ -2421,19 +2413,19 @@
     object-fit: cover;
     background: var(--fond);
     font-family: var(--font-display);
-    font-size: 1.8rem;
+    font-size: 1.6rem;
     font-weight: 900;
     color: var(--frost);
   }
   .profil-avatar-rang {
     position: absolute;
-    right: -0.35rem;
-    bottom: -0.35rem;
+    right: -0.4rem;
+    bottom: -0.4rem;
     display: grid;
-    width: 2.6rem;
-    height: 2.6rem;
+    width: 2.35rem;
+    height: 2.35rem;
     place-items: center;
-    padding: 0.3rem;
+    padding: 0.28rem;
     border-radius: var(--r-pilule);
     background: radial-gradient(circle at 34% 28%, rgb(255 255 255 / 0.35), var(--fond) 70%);
     box-shadow:
@@ -2442,28 +2434,28 @@
   }
   .profil-rang-chiffre {
     font-family: var(--font-display);
-    font-size: 1.1rem;
+    font-size: 1rem;
     font-weight: 900;
     line-height: 1;
     color: var(--frost);
   }
   .profil-nom {
-    margin-top: 0.35rem;
-    font-size: clamp(2.1rem, 1.4rem + 3vw, 4rem);
+    margin-top: 0.3rem;
+    font-size: clamp(1.9rem, 1.3rem + 2.6vw, 3.4rem);
     line-height: 0.95;
     overflow-wrap: anywhere;
   }
   .profil-badges {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.45rem;
-    margin-top: 0.8rem;
+    gap: 0.4rem;
+    margin-top: 0.65rem;
   }
   .profil-badge {
     display: inline-flex;
     align-items: center;
     gap: 0.35rem;
-    padding: 0.28rem 0.75rem;
+    padding: 0.25rem 0.7rem;
     border-radius: var(--r-pilule);
     background: rgb(255 255 255 / 0.07);
     box-shadow:
@@ -2477,33 +2469,53 @@
   a.profil-badge:hover {
     background: rgb(255 255 255 / 0.14);
   }
-  .profil-badge-twitch {
-    color: var(--twitch-clair);
-  }
 
-  /* Les trois chiffres, taillés dans la glace. */
-  .profil-trio {
+  /* Les cinq chiffres de l'en-tête : séparés d'un filet, alignés sur la base. */
+  .profil-chiffres {
     display: grid;
-    grid-area: trio;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.6rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.9rem 0;
   }
-  @media (min-width: 1024px) {
-    .profil-trio {
-      grid-template-columns: repeat(3, minmax(7.5rem, auto));
-      gap: 0.8rem;
+  @media (min-width: 640px) {
+    .profil-chiffres {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
     }
   }
-  .profil-trio > div {
-    padding: 0.85rem 0.9rem 0.9rem;
-    border-radius: var(--r-md);
-    text-align: center;
-    background: rgb(0 10 30 / 0.28);
-    box-shadow:
-      inset 0 1px 2px rgb(0 8 24 / 0.5),
-      inset 0 -1px 0 rgb(255 255 255 / 0.14);
+  .profil-chiffre {
+    min-width: 0;
+    padding-inline: 0.9rem;
   }
-  .profil-trio dt {
+  .profil-chiffres .profil-chiffre:nth-child(odd) {
+    padding-left: 0;
+  }
+  @media (max-width: 639px) {
+    .profil-chiffres .profil-chiffre:nth-child(even) {
+      border-left: 1px solid rgb(255 255 255 / 0.12);
+    }
+    .profil-chiffres .profil-chiffre:last-child {
+      grid-column: 1 / -1;
+    }
+  }
+  @media (min-width: 640px) {
+    .profil-chiffres .profil-chiffre:nth-child(odd) {
+      padding-left: 0.9rem;
+    }
+    .profil-chiffres .profil-chiffre:first-child {
+      padding-left: 0;
+    }
+    .profil-chiffres .profil-chiffre + .profil-chiffre {
+      border-left: 1px solid rgb(255 255 255 / 0.12);
+    }
+  }
+  @media (min-width: 1100px) {
+    .profil-chiffre {
+      padding-inline: 1.2rem;
+    }
+    .profil-chiffres .profil-chiffre:nth-child(odd) {
+      padding-left: 1.2rem;
+    }
+  }
+  .profil-chiffre dt {
     font-family: var(--font-display);
     font-size: 0.75rem;
     font-weight: 800;
@@ -2511,205 +2523,112 @@
     text-transform: uppercase;
     color: var(--faint);
   }
-  .profil-trio dd {
-    margin-top: 0.3rem;
+  .profil-chiffre dd {
+    margin-top: 0.2rem;
     font-family: var(--font-display);
-    font-size: clamp(2rem, 1.5rem + 2vw, 3.2rem);
-    font-weight: 900;
-    line-height: 1;
-    color: var(--frost);
-  }
-  .profil-trio dd small {
-    margin-left: 0.1rem;
-    font-size: 0.45em;
-    font-weight: 700;
-    color: var(--faint);
-  }
-
-  /* La saison en cinq chiffres, sous un filet. */
-  .profil-saison {
-    display: grid;
-    grid-area: saison;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 1rem 0;
-    padding-top: 1.2rem;
-    border-top: 1px solid rgb(255 255 255 / 0.14);
-  }
-  .profil-saison > li {
-    display: flex;
-    min-width: 0;
-    flex-direction: column;
-    gap: 0.25rem;
-    padding-inline: 1rem;
-  }
-  .profil-saison > li:nth-child(odd) {
-    padding-left: 0;
-  }
-  .profil-saison > li:last-child {
-    grid-column: 1 / -1;
-  }
-  @container (min-width: 46rem) {
-    .profil-saison {
-      grid-template-columns: repeat(5, minmax(0, 1fr));
-    }
-    .profil-saison > li:nth-child(odd) {
-      padding-left: 1rem;
-    }
-    .profil-saison > li:first-child {
-      padding-left: 0;
-    }
-    .profil-saison > li:last-child {
-      grid-column: auto;
-    }
-    .profil-saison > li + li {
-      border-left: 1px solid rgb(255 255 255 / 0.1);
-    }
-  }
-  .profil-saison span {
-    font-family: var(--font-display);
-    font-size: 0.75rem;
-    font-weight: 800;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--faint);
-  }
-  .profil-saison b {
-    font-family: var(--font-display);
-    font-size: 1.85rem;
-    font-weight: 900;
-    line-height: 1;
-    color: var(--frost);
-  }
-  .profil-saison b small {
-    font-size: 0.55em;
-    font-weight: 700;
-    color: var(--faint);
-  }
-  .profil-saison em {
-    font-size: 0.8125rem;
-    font-style: normal;
-    color: var(--muted);
-  }
-  .profil-jauge {
-    position: relative;
-    display: block;
-    height: 6px;
-    margin-top: 0.15rem;
-    overflow: hidden;
-    border-radius: var(--r-pilule);
-    background: rgb(0 10 30 / 0.42);
-    box-shadow: inset 0 1px 2px rgb(0 8 24 / 0.6);
-  }
-  .profil-jauge > i {
-    position: absolute;
-    inset: 0 auto 0 0;
-    min-width: 6px;
-    border-radius: inherit;
-    background: linear-gradient(90deg, var(--ice-3), var(--ice) 70%, var(--frost));
-  }
-  .profil-podiums {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.6rem;
-  }
-  .profil-podiums > span {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-  }
-  .profil-podiums b {
-    font-size: 1.35rem;
-  }
-
-  /* -- La grille des plaques -- */
-  .profil-grille {
-    display: grid;
-    align-items: start;
-    gap: 1.25rem;
-  }
-  .profil-colonne {
-    display: grid;
-    gap: 1.25rem;
-  }
-  @media (min-width: 900px) {
-    .profil-grille {
-      grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
-    }
-    .profil-grille > .profil-colonne:last-child {
-      grid-column: 1 / -1;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      align-items: start;
-    }
-  }
-  @media (min-width: 1440px) {
-    .profil-grille {
-      grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr);
-    }
-    .profil-grille > .profil-colonne:last-child {
-      grid-column: auto;
-      grid-template-columns: minmax(0, 1fr);
-    }
-  }
-
-  /* Une plaque : son médaillon, son titre, et à droite un chiffre. */
-  .profil-plaque {
-    display: grid;
-    gap: 1.1rem;
-    padding: 1.35rem 1.25rem 1.4rem;
-    overflow: hidden;
-  }
-  @media (min-width: 640px) {
-    .profil-plaque {
-      padding: 1.5rem 1.6rem 1.6rem;
-    }
-  }
-  .profil-plaque-tete {
-    display: flex;
-    align-items: center;
-    gap: 0.85rem;
-  }
-  .profil-plaque-tete h2 {
-    margin-top: 0.15rem;
-    font-family: var(--font-display);
-    font-size: 1.55rem;
-    font-weight: 900;
-    line-height: 1;
-    text-transform: uppercase;
-    color: var(--frost);
-  }
-  .profil-plaque-icone {
-    display: grid;
-    width: 2.6rem;
-    height: 2.6rem;
-    flex: none;
-    place-items: center;
-    border-radius: var(--r-pilule);
-    color: var(--frost);
-    background: radial-gradient(
-      circle at 34% 28%,
-      rgb(255 255 255 / 0.42) 0%,
-      rgb(143 220 255 / 0.18) 46%,
-      rgb(8 30 60 / 0.38) 100%
-    );
-    box-shadow:
-      inset 0 1.5px 0 rgb(255 255 255 / 0.75),
-      inset 0 -6px 12px -6px rgb(0 16 40 / 0.6),
-      0 6px 10px -6px rgb(0 8 24 / 0.75);
-  }
-  .profil-plaque-chiffre {
-    flex: none;
-    font-family: var(--font-display);
-    font-size: 1.6rem;
+    font-size: clamp(1.7rem, 1.3rem + 1.2vw, 2.4rem);
     font-weight: 900;
     line-height: 1;
     white-space: nowrap;
     color: var(--frost);
   }
-  .profil-plaque-chiffre small {
-    font-size: 0.6em;
+  .profil-chiffre dd small {
+    margin-left: 0.08rem;
+    font-size: 0.5em;
     font-weight: 700;
     color: var(--faint);
+  }
+  .profil-chiffre p {
+    margin-top: 0.25rem;
+    font-size: 0.8125rem;
+    white-space: nowrap;
+    color: var(--muted);
+  }
+
+  /* -- Les onglets : une rainure, et l'onglet pris en neige, comme les
+        segments du site, en plus grand ; chacun dit son compte. -- */
+  .profil-onglets {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    padding: 6px;
+    border-radius: var(--r-pilule);
+    background: rgb(0 10 30 / 0.34);
+    box-shadow:
+      inset 0 1px 3px rgb(0 8 24 / 0.55),
+      inset 0 -1px 0 rgb(255 255 255 / 0.12);
+    scrollbar-width: none;
+  }
+  .profil-onglets::-webkit-scrollbar {
+    display: none;
+  }
+  /* Sur un téléphone, les quatre onglets en deux rangées : aucun n'est coupé. */
+  @media (max-width: 639px) {
+    .profil-onglets {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      border-radius: var(--r-md);
+    }
+    .profil-onglets > button {
+      padding: 0 0.6rem;
+      font-size: 0.8125rem;
+      letter-spacing: 0.05em;
+    }
+  }
+  .profil-onglets > button {
+    display: inline-flex;
+    min-height: 44px;
+    flex: 1 0 auto;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0 1.1rem;
+    border-radius: var(--r-pilule);
+    font-family: var(--font-display);
+    font-size: 0.9375rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    color: var(--muted);
+    cursor: pointer;
+    transition:
+      background 0.18s ease,
+      color 0.18s ease;
+  }
+  .profil-onglets > button:hover {
+    color: var(--ink);
+  }
+  .profil-onglets > button[aria-selected='true'] {
+    background: linear-gradient(178deg, var(--neige-1) 0%, var(--neige-2) 55%, var(--neige-3) 100%);
+    color: var(--nuit);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.9),
+      0 4px 10px -4px rgb(0 8 24 / 0.6);
+  }
+  .profil-onglet-compte {
+    min-width: 1.6rem;
+    padding: 0.05rem 0.45rem;
+    border-radius: var(--r-pilule);
+    background: rgb(255 255 255 / 0.1);
+    font-size: 0.8125rem;
+    letter-spacing: 0.02em;
+    text-align: center;
+  }
+  .profil-onglets > button[aria-selected='true'] .profil-onglet-compte {
+    background: color-mix(in srgb, var(--nuit) 12%, transparent);
+  }
+
+  /* -- Un panneau -- */
+  .profil-panneau {
+    display: grid;
+    gap: 1.1rem;
+    padding: 1.2rem 1rem 1.3rem;
+  }
+  @media (min-width: 640px) {
+    .profil-panneau {
+      padding: 1.5rem 1.6rem 1.6rem;
+    }
   }
   .profil-vide {
     padding: 1.2rem;
@@ -2719,18 +2638,53 @@
     color: var(--muted);
   }
   .profil-note {
-    font-size: 0.8125rem;
+    font-size: 0.875rem;
     line-height: 1.5;
     color: var(--muted);
   }
+  .profil-sous-titre {
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+    font-weight: 900;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--frost);
+  }
 
-  /* -- Ses games : la courbe -- */
+  /* -- Games : le résumé -- */
+  .profil-resume {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .profil-resume > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.85rem;
+    border-radius: var(--r-pilule);
+    background: rgb(255 255 255 / 0.06);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.16);
+    font-size: 0.875rem;
+    color: var(--muted);
+  }
+  .profil-resume b {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: 900;
+    color: var(--frost);
+  }
+  .profil-resume-podium {
+    padding-left: 0.4rem !important;
+  }
+
+  /* -- Games : la saison en barres, un créneau par barre -- */
   .profil-courbe {
-    padding: 1rem 1rem 0.8rem;
+    padding: 0.9rem 0.9rem 0.7rem;
     border-radius: var(--r-md);
     background:
-      radial-gradient(90% 70% at 50% 0%, color-mix(in srgb, var(--ice) 8%, transparent), transparent),
-      rgb(0 10 30 / 0.24);
+      radial-gradient(90% 70% at 50% 0%, color-mix(in srgb, var(--ice) 7%, transparent), transparent),
+      rgb(0 10 30 / 0.26);
     box-shadow:
       inset 0 1px 3px rgb(0 8 24 / 0.5),
       inset 0 -1px 0 rgb(255 255 255 / 0.12);
@@ -2738,18 +2692,22 @@
   .profil-courbe-barres {
     position: relative;
     display: flex;
-    height: 8.5rem;
+    height: 7.5rem;
     align-items: flex-end;
-    gap: 3px;
+    gap: 2px;
+  }
+  @media (min-width: 1024px) {
+    .profil-courbe-barres {
+      height: 9rem;
+      gap: 3px;
+    }
   }
   .profil-courbe-barres > span {
-    max-width: 2.2rem;
-    min-width: 3px;
+    min-width: 2px;
     height: calc(var(--part) * 100%);
     flex: 1 1 0;
-    border-radius: 6px 6px 2px 2px;
+    border-radius: 4px 4px 1px 1px;
     background: linear-gradient(180deg, var(--ice), color-mix(in srgb, var(--ice-3) 70%, transparent));
-    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.5);
   }
   .profil-courbe-barres > span[data-top='1'] {
     background: linear-gradient(180deg, var(--gold), color-mix(in srgb, var(--gold) 45%, transparent));
@@ -2763,6 +2721,11 @@
   .profil-courbe-barres > span[data-passee] {
     opacity: 0.35;
   }
+  /* Un créneau à venir : un creux, au ras du sol. */
+  .profil-courbe-barres > span[data-a-venir] {
+    height: 6px;
+    background: rgb(255 255 255 / 0.1);
+  }
   .profil-courbe-moyenne {
     position: absolute;
     right: 0;
@@ -2774,8 +2737,8 @@
   .profil-courbe figcaption {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.4rem 1rem;
-    margin-top: 0.75rem;
+    gap: 0.35rem 1rem;
+    margin-top: 0.7rem;
     font-size: 0.75rem;
     color: var(--muted);
   }
@@ -2798,87 +2761,118 @@
   .profil-courbe figcaption i[data-legende='3'] {
     background: var(--r-ur);
   }
+  .profil-courbe figcaption i[data-legende='autre'] {
+    background: var(--ice);
+  }
   .profil-courbe figcaption i[data-legende='moyenne'] {
     height: 0;
     border-top: 1.5px dashed rgb(255 255 255 / 0.6);
     border-radius: 0;
   }
 
-  /* -- Ses games : la liste. Une plaque fine par game, et dessous une jauge
-        à la mesure de son score, rapporté à sa meilleure. -- */
-  .profil-liste-games {
-    display: grid;
-    gap: 0.5rem;
+  /* -- Games : les réglages du tableau -- */
+  .profil-reglages {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.6rem;
   }
-  .profil-game {
-    position: relative;
+
+  /* -- Games : le tableau. Des lignes fines, une jauge de score à droite ;
+        sur un téléphone, deux lignes par game. -- */
+  .profil-tableau {
     display: grid;
-    grid-template-columns: 2.4rem 2rem minmax(0, 1fr) auto;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.75rem 1rem 0.95rem;
+    gap: 2px;
     overflow: hidden;
     border-radius: var(--r-md);
-    background: rgb(255 255 255 / 0.05);
-    box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / 0.16),
-      inset 0 0 0 1px rgb(255 255 255 / 0.05);
+    background: rgb(0 10 30 / 0.22);
   }
-  .profil-game[data-passee] {
+  .profil-tableau-tete,
+  .profil-ligne {
+    display: grid;
+    /* La jauge du score prend ce qui reste : sur un grand écran, pas de vide
+       entre les cartes et le score. */
+    grid-template-columns: 2.6rem 7.5rem 7rem 5.5rem minmax(9rem, 22rem) minmax(9rem, 1fr);
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0 1rem;
+  }
+  .profil-tableau-tete {
+    min-height: 2.4rem;
+    font-family: var(--font-display);
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--faint);
+  }
+  .profil-tableau-tete > span:last-child {
+    text-align: right;
+  }
+  .profil-ligne {
+    min-height: 3rem;
+    background: rgb(255 255 255 / 0.04);
+    font-size: 0.9375rem;
+    color: var(--ink-2);
+    transition: background-color 0.15s ease;
+  }
+  .profil-ligne:hover {
+    background: rgb(255 255 255 / 0.08);
+  }
+  .profil-ligne[data-top='1'] {
+    background: color-mix(in srgb, var(--gold) 7%, rgb(255 255 255 / 0.04));
+  }
+  .profil-ligne[data-passee] {
     opacity: 0.55;
   }
-  .profil-game-numero {
+  .profil-ligne-numero {
     font-family: var(--font-display);
-    font-size: 0.9375rem;
     font-weight: 800;
     color: var(--faint);
   }
-  .profil-game-top {
-    display: grid;
-    place-items: center;
+  .profil-ligne-date {
+    font-size: 0.8125rem;
+    color: var(--muted);
   }
-  .profil-game-hors {
-    color: var(--faint);
+  .profil-ligne-date em {
+    margin-left: 0.4rem;
+    padding: 0 0.4rem;
+    border-radius: var(--r-pilule);
+    background: rgb(255 255 255 / 0.1);
+    font-size: 0.6875rem;
+    font-style: normal;
   }
-  .profil-game-corps {
-    min-width: 0;
+  .profil-ligne-top {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-family: var(--font-display);
+    font-size: 0.875rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink);
   }
-  .profil-game-corps p {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    gap: 0.35rem 0.6rem;
-    font-size: 0.9375rem;
-    color: var(--ink-2);
+  .profil-ligne[data-top='1'] .profil-ligne-top {
+    color: var(--gold);
   }
-  .profil-game-corps strong {
+  .profil-ligne-kills b {
     font-family: var(--font-display);
     font-size: 1.15rem;
     font-weight: 900;
     color: var(--frost);
   }
-  .profil-game-place {
-    font-family: var(--font-display);
+  .profil-ligne-kills small {
     font-size: 0.8125rem;
-    font-weight: 800;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--ice);
-  }
-  .profil-game[data-top='1'] .profil-game-place {
-    color: var(--gold);
-  }
-  .profil-game-passee {
-    padding: 0.05rem 0.5rem;
-    border-radius: var(--r-pilule);
-    background: rgb(255 255 255 / 0.1);
-    font-size: 0.75rem;
     color: var(--muted);
   }
-  .profil-game-cartes {
-    margin-top: 0.3rem;
+  .profil-ligne-cartes {
+    display: flex;
+    min-width: 0;
+    flex-wrap: wrap;
+    gap: 0.3rem;
   }
-  .profil-game-cartes > span {
+  .profil-ligne-cartes > span:not(.text-faint) {
     display: inline-flex;
     align-items: center;
     gap: 0.35rem;
@@ -2888,111 +2882,126 @@
     font-size: 0.75rem;
     color: var(--ink);
   }
-  .profil-game-cartes > span b {
+  .profil-ligne-cartes > span b {
     color: var(--aurora);
   }
-  .profil-game-cartes > span[data-malus] {
+  .profil-ligne-cartes > span[data-malus] {
     background: color-mix(in srgb, var(--danger) 14%, transparent);
   }
-  .profil-game-cartes > span[data-malus] b {
+  .profil-ligne-cartes > span[data-malus] b {
     color: var(--danger);
   }
-  .profil-game-corps small {
-    display: block;
-    margin-top: 0.2rem;
-    font-size: 0.75rem;
-    color: var(--faint);
+  /* Le score, et sa jauge à la mesure de la meilleure game. */
+  .profil-ligne-score {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
   }
-  .profil-game-score {
-    text-align: right;
+  .profil-ligne-score > i {
+    position: relative;
+    height: 6px;
+    flex: 1 1 auto;
+    overflow: hidden;
+    border-radius: var(--r-pilule);
+    background: rgb(0 10 30 / 0.4);
   }
-  .profil-game-score strong {
-    display: block;
-    font-family: var(--font-display);
-    font-size: 1.8rem;
-    font-weight: 900;
-    line-height: 1;
-    color: var(--frost);
-  }
-  .profil-game-score small {
-    font-size: 0.6875rem;
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--faint);
-  }
-  .profil-game-barre {
+  .profil-ligne-score > i > i {
     position: absolute;
-    bottom: 0;
-    left: 0;
+    inset: 0 auto 0 0;
     width: calc(var(--part) * 100%);
-    height: 3px;
-    border-radius: 0 3px 3px 0;
+    border-radius: inherit;
     background: linear-gradient(90deg, var(--ice-3), var(--ice));
   }
-  .profil-game[data-top='1'] .profil-game-barre {
+  .profil-ligne[data-top='1'] .profil-ligne-score > i > i {
     background: linear-gradient(90deg, color-mix(in srgb, var(--gold) 50%, transparent), var(--gold));
   }
-  .profil-plus summary {
-    padding: 0.6rem 0;
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: var(--ice);
-    text-align: center;
-    cursor: pointer;
+  .profil-ligne-score b {
+    min-width: 2.6rem;
+    font-family: var(--font-display);
+    font-size: 1.35rem;
+    font-weight: 900;
+    text-align: right;
+    color: var(--frost);
   }
-  .profil-plus[open] summary {
-    margin-bottom: 0.5rem;
+  @media (max-width: 899px) {
+    .profil-tableau-tete {
+      display: none;
+    }
+    .profil-ligne {
+      grid-template-columns: 2rem minmax(0, 1fr) auto;
+      grid-template-areas:
+        'numero top score'
+        'numero kills score'
+        'numero cartes cartes'
+        'numero date date';
+      row-gap: 0.15rem;
+      padding: 0.6rem 0.9rem;
+    }
+    .profil-ligne-numero {
+      grid-area: numero;
+      align-self: start;
+    }
+    .profil-ligne-top {
+      grid-area: top;
+    }
+    .profil-ligne-kills {
+      grid-area: kills;
+    }
+    .profil-ligne-cartes {
+      grid-area: cartes;
+    }
+    .profil-ligne-cartes:has(> .text-faint) {
+      display: none;
+    }
+    .profil-ligne-top:has(> .text-faint) {
+      display: none;
+    }
+    .profil-ligne-date {
+      grid-area: date;
+    }
+    .profil-ligne-score {
+      grid-area: score;
+      align-self: center;
+    }
+    .profil-ligne-score > i {
+      display: none;
+    }
+    .profil-ligne-score b {
+      font-size: 1.6rem;
+    }
+  }
+  .profil-tout {
+    justify-self: center;
   }
 
-  /* -- Trois chiffres d'une plaque : duels, subs -- */
-  .profil-triplet {
+  /* -- Trois chiffres d'un panneau : duels, subs -- */
+  .profil-trio {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.5rem;
+    gap: 0.6rem;
   }
-  .profil-triplet > div {
-    padding: 0.7rem 0.6rem 0.75rem;
-    border-radius: var(--r-sm);
+  .profil-trio .profil-chiffre {
+    padding: 0.85rem 0.9rem 0.9rem;
+    border-radius: var(--r-md);
     text-align: center;
-    background: rgb(0 10 30 / 0.24);
+    background: rgb(0 10 30 / 0.26);
     box-shadow:
       inset 0 1px 2px rgb(0 8 24 / 0.45),
       inset 0 -1px 0 rgb(255 255 255 / 0.12);
   }
-  .profil-triplet dt {
-    font-family: var(--font-display);
-    font-size: 0.6875rem;
-    font-weight: 800;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--faint);
-  }
-  .profil-triplet dd {
-    margin-top: 0.25rem;
-    font-family: var(--font-display);
-    font-size: 1.65rem;
-    font-weight: 900;
-    line-height: 1;
-    white-space: nowrap;
-    color: var(--frost);
-  }
-  .profil-triplet dd small {
-    font-size: 0.5em;
-    font-weight: 700;
-    color: var(--faint);
-  }
-  .profil-triplet > div[data-signe='plus'] dd {
-    color: var(--aurora);
-  }
-  .profil-triplet > div[data-signe='moins'] dd {
-    color: var(--danger);
+  .profil-trio .profil-chiffre p {
+    white-space: normal;
   }
 
-  /* -- Ses duels : un filet à gauche, aurore pour un gain, rouge pour une perte -- */
+  /* -- Duels : un filet à gauche, aurore pour un gain, rouge pour une perte -- */
   .profil-duels {
     display: grid;
-    gap: 0.45rem;
+    gap: 0.4rem;
+  }
+  @media (min-width: 1100px) {
+    .profil-duels {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
   }
   .profil-duels > li {
     display: flex;
@@ -3004,7 +3013,7 @@
     box-shadow:
       inset 3px 0 0 var(--danger),
       inset 0 1px 0 rgb(255 255 255 / 0.12);
-    font-size: 0.875rem;
+    font-size: 0.9375rem;
     color: var(--ink-2);
   }
   .profil-duels > li[data-gagne] {
@@ -3034,7 +3043,7 @@
   .profil-duels strong {
     flex: none;
     font-family: var(--font-display);
-    font-size: 1.05rem;
+    font-size: 1.1rem;
     font-weight: 900;
     white-space: nowrap;
     color: var(--ink);
@@ -3043,13 +3052,23 @@
     color: var(--aurora);
   }
 
-  /* -- Ses flocons -- */
+  /* -- Flocons et cartes -- */
+  .profil-flocons {
+    display: grid;
+    gap: 0.8rem;
+  }
+  @media (min-width: 900px) {
+    .profil-flocons {
+      grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+    }
+  }
   .profil-chance {
     display: grid;
+    align-content: start;
     gap: 0.6rem;
-    padding: 1rem;
+    padding: 1rem 1.1rem;
     border-radius: var(--r-md);
-    background: rgb(0 10 30 / 0.22);
+    background: rgb(0 10 30 / 0.24);
     box-shadow:
       inset 0 1px 2px rgb(0 8 24 / 0.45),
       inset 0 -1px 0 rgb(255 255 255 / 0.12);
@@ -3070,34 +3089,25 @@
   }
   .profil-chance-tete strong {
     font-family: var(--font-display);
-    font-size: 1.8rem;
+    font-size: 1.9rem;
     font-weight: 900;
     line-height: 1;
-    color: var(--ice);
+    color: var(--frost);
   }
-  .profil-a-ouvrir {
-    display: grid;
-    gap: 0.45rem;
-  }
-  .profil-a-ouvrir > span {
-    font-family: var(--font-display);
-    font-size: 0.75rem;
-    font-weight: 800;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
+  .profil-chance-tete strong small {
+    font-size: 0.5em;
+    font-weight: 700;
     color: var(--faint);
   }
-  .profil-a-ouvrir ul {
+  .profil-a-ouvrir {
     display: flex;
     flex-wrap: wrap;
     gap: 0.4rem;
   }
-
-  /* -- Ses cartes -- */
   .profil-cartes {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(5.5rem, 1fr));
-    gap: 0.9rem 0.7rem;
+    grid-template-columns: repeat(auto-fill, minmax(6.5rem, 1fr));
+    gap: 1rem 0.8rem;
   }
   .profil-cartes > li {
     display: flex;
@@ -3110,18 +3120,18 @@
   .profil-carte {
     display: block;
     width: 100%;
-    max-width: 6.5rem;
+    max-width: 7.5rem;
   }
   .profil-cartes b {
     max-width: 100%;
     overflow: hidden;
-    font-size: 0.8125rem;
+    font-size: 0.875rem;
     text-overflow: ellipsis;
     white-space: nowrap;
     color: var(--ink);
   }
   .profil-cartes small {
-    font-size: 0.6875rem;
+    font-size: 0.75rem;
     line-height: 1.3;
     color: var(--faint);
   }

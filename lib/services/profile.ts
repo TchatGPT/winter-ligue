@@ -65,7 +65,7 @@ function buildProfile(db: Database, playerId: string): ProfileView | null {
     ouvertures: [...db.ouvertures]
       .filter((o) => o.joueurId === playerId || o.beneficiaires.includes(playerId))
       .sort((a, b) => b.openedAt.localeCompare(a.openedAt))
-      .slice(0, 8)
+      .slice(0, 24)
       .map((o) => vueOuverture(db, o)),
     totals: totalsOf(db, playerId),
     games: gamesOf(db, playerId).map((g) => ({
@@ -197,7 +197,7 @@ export async function getFicheJoueur(slug: string): Promise<FicheJoueur | null> 
         perdus: joues.length - gagnes,
         // Le gagnant récupère sa mise et prend celle de l'autre : +mise, ou −mise.
         net: joues.reduce((total, b) => total + (b.vainqueurId === player.id ? b.mise : -b.mise), 0),
-        derniers: joues.slice(0, 4).map((b) => {
+        derniers: joues.slice(0, 60).map((b) => {
           const adversaireId = b.hoteId === player.id ? b.adversaireId : b.hoteId;
           return {
             id: b.id,
