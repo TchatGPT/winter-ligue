@@ -67,6 +67,14 @@ const SONDAGE_EN_ATTENTE = 1000;
  */
 let decalage = 0;
 
+/**
+ * La course est-elle déjà finie, à l'heure du serveur ? Un duel relevé pendant
+ * qu'on n'était pas là ne se rejoue pas : il s'annonce, gagné ou perdu.
+ */
+function courseFinie(b: BatailleVueClient): boolean {
+  return b.resolueA !== null && Date.parse(b.resolueA) + DELAI_DEPART_MS - decalage + DUREE_COURSE_MAX_MS < Date.now();
+}
+
 /** L'instant du départ d'une course, à l'horloge de ce navigateur. */
 function departDe(b: BatailleVueClient): number | undefined {
   if (!b.resolueA) return undefined;
@@ -464,9 +472,17 @@ export function Affrontements({
     setEtat(suivant);
 
     // Un de mes duels vient d'être relevé : la course se joue chez moi aussi,
-    // dès que la fenêtre est libre.
-    for (const b of coursesAMontrer(suivant, Date.now())) {
-      if (!aMontrer.current.some((x) => x.id === b.id)) aMontrer.current.push(b);
+    // dès que la fenêtre est libre — si elle est encore en cours. Finie pendant
+    // mon absence, elle ne se rejoue pas : seul le dernier s'annonce.
+    const nouvelles = coursesAMontrer(suivant, Date.now());
+    const manquees = nouvelles.filter(courseFinie).sort((a, b) => (b.resolueA ?? '').localeCompare(a.resolueA ?? ''));
+    for (const b of manquees) marqueVue(b.id);
+    if (manquees[0]) {
+      const bilan = bilanDe(manquees[0], suivant.moiId);
+      annonceBilan({ gagne: bilan.gagne, texte: `Pendant ton absence — ${bilan.texte}` });
+    }
+    for (const b of nouvelles) {
+      if (!courseFinie(b) && !aMontrer.current.some((x) => x.id === b.id)) aMontrer.current.push(b);
     }
     if (!fenetreLa.current) {
       const course = prochaineCourse(aMontrer.current);
@@ -475,7 +491,14 @@ export function Affrontements({
         setFenetre(course);
       }
     }
-  }, []);
+  }, [annonceBilan]);
+
+  // Une lecture dès l'arrivée : un duel joué pendant l'absence s'annonce tout
+  // de suite, sans attendre le premier sondage.
+  useEffect(() => {
+    const t = setTimeout(recharge, 0);
+    return () => clearTimeout(t);
+  }, [recharge]);
 
   const fenetreOuverte = fenetre !== null;
   const jAttends = etat.moiId !== null && etat.batailles.some((b) => b.statut === 'ATTENTE' && b.hoteId === etat.moiId);
