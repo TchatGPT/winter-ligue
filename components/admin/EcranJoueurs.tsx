@@ -19,7 +19,7 @@ export interface LigneJoueur {
   /** Le pseudo en jeu, que la reconnaissance des captures compare aux noms lus. */
   activisionId: string | null;
   snowflakes: number;
-  /** Ses Boosters Perso en attente : le compteur que la modération règle. */
+  /** Ses Boosters Perso en attente. Ils se règlent dans le classement, sous le pseudo. */
   boostersPerso: number;
   /** La streameuse ne joue pas : pas de compteur pour elle. */
   streameuse: boolean;
@@ -64,15 +64,7 @@ function plie(valeur: string): string {
  * une fois derrière l'icône cadeau. Aucune carte ne se donne ici : une carte
  * sort d'un pack, ouvert à l'antenne, ou ne sort pas.
  */
-export function EcranJoueurs({
-  joueurs,
-  codes,
-  moiId,
-}: {
-  joueurs: LigneJoueur[];
-  codes: LigneCode[];
-  moiId: string | null;
-}) {
+export function EcranJoueurs({ joueurs, codes }: { joueurs: LigneJoueur[]; codes: LigneCode[] }) {
   const { busy, message, envoie, setMessage } = useAction();
 
   const [recherche, setRecherche] = useState('');
@@ -333,7 +325,7 @@ export function EcranJoueurs({
                 <th className="text-right">Flocons</th>
                 <th
                   className="text-right"
-                  title={`Un Booster Perso par sub T3, pris ou offert, et un tous les ${PACKS_REGLES.persoTousLes} subs offerts`}
+                  title={`Un Booster Perso par sub T3, pris ou offert, et un tous les ${PACKS_REGLES.persoTousLes} subs offerts — versés d'office ; ils se règlent dans le classement, sous le pseudo`}
                 >
                   Boosters Perso
                 </th>
@@ -377,37 +369,10 @@ export function EcranJoueurs({
                     {p.streameuse ? (
                       <span className="text-faint">—</span>
                     ) : (
-                      <div className="compteur-perso" data-vide={p.boostersPerso === 0 ? '' : undefined}>
-                        <button
-                          type="button"
-                          aria-label={`Retirer un Booster Perso à ${p.pseudo}`}
-                          disabled={busy !== null || p.boostersPerso === 0 || p.id === moiId}
-                          onClick={() =>
-                            envoie(
-                              '/api/admin/boosters-perso',
-                              { playerId: p.id, sens: 'moins' },
-                              { cle: `perso:${p.id}`, succes: `${p.pseudo} : un Booster Perso en moins.` },
-                            )
-                          }
-                        >
-                          −
-                        </button>
-                        <span className="num">{p.boostersPerso}</span>
-                        <button
-                          type="button"
-                          aria-label={`Ajouter un Booster Perso à ${p.pseudo}`}
-                          disabled={busy !== null || p.id === moiId}
-                          onClick={() =>
-                            envoie(
-                              '/api/admin/boosters-perso',
-                              { playerId: p.id, sens: 'plus' },
-                              { cle: `perso:${p.id}`, succes: `${p.pseudo} : un Booster Perso en plus.` },
-                            )
-                          }
-                        >
-                          +
-                        </button>
-                      </div>
+                      // Lecture seule : il se règle sous le pseudo, dans le classement.
+                      <span className={`num ${p.boostersPerso > 0 ? 'text-aurora' : 'text-faint'}`}>
+                        {p.boostersPerso}
+                      </span>
                     )}
                   </td>
                 </tr>

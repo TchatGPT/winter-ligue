@@ -31,6 +31,7 @@ import { getCard, getPack, joueursTires, momentDe, PACKS } from '@/lib/domain/ca
 import { pick, tirePack } from '@/lib/domain/rng';
 import {
   chanceDe,
+  packsPersoAcquis,
   poidsAvecChance,
   tailleDeLaQueue,
   WEIGHT_TOTAL,
@@ -162,13 +163,48 @@ export function ajoutePackDu(
 }
 
 /**
- * Le compteur de Boosters Perso d'un joueur, réglé à la main par la
- * modération — comme les roues perso de la Summer Ligue.
+ * Les Boosters Perso que des subs payés valent à qui les a payés, mis en file
+ * d'office : un par sub T3, pris ou offert, et un tous les
+ * `PACKS_REGLES.persoTousLes` subs offerts de niveau 1 ou 2 — voir
+ * `packsPersoAcquis`. Les subs offerts s'additionnent sur la saison
+ * (`subsOfferts`) : trois aujourd'hui et deux demain en valent un.
  *
- * Un Booster Perso se donne pour chaque sub T3, pris ou offert, et pour des
- * subs offerts (un tous les `PACKS_REGLES.persoTousLes`) — voir
- * `packsPersoAcquis` —, et peut passer d'un joueur à un autre quand
- * celui qui l'a gagné l'offre : un − chez l'un, un + chez l'autre. Le compteur,
+ * La streameuse n'en reçoit pas. Celui qui veut offrir le sien à un autre
+ * joueur le demande à la modération : un − chez lui, un + chez l'autre, dans
+ * le classement (`ajusteBoostersPerso`).
+ *
+ * À appeler dans une transaction. Renvoie le nombre de boosters mis en file.
+ */
+export function crediteBoostersPerso(
+  db: Database,
+  joueur: Player,
+  subs: { niveau3: number; offerts: number },
+  raison: string,
+): number {
+  if (!joueur.active || estLaStreameuse(joueur, chaineDeLaLigue())) return 0;
+  const avant = joueur.subsOfferts;
+  joueur.subsOfferts = avant + Math.max(0, subs.offerts);
+  const gagnes = packsPersoAcquis(joueur.subsOfferts, subs.niveau3) - packsPersoAcquis(avant);
+  for (let i = 0; i < gagnes; i += 1) ajoutePackDu(db, 'perso', joueur.id, raison);
+  if (gagnes > 0) {
+    audit(
+      db,
+      'twitch',
+      'BOOSTER_PERSO_GAGNE',
+      joueur.id,
+      `${joueur.pseudo} : +${gagnes} Booster${gagnes > 1 ? 's' : ''} Perso (${raison})`,
+    );
+  }
+  return gagnes;
+}
+
+/**
+ * Le compteur de Boosters Perso d'un joueur, réglé par la modération — comme
+ * les roues perso de la Summer Ligue. Les subs payés y mettent d'office ce
+ * qu'ils valent (`crediteBoostersPerso`) ; la modération le corrige ici.
+ *
+ * Un Booster Perso peut passer d'un joueur à un autre quand celui qui l'a
+ * gagné l'offre : un − chez l'un, un + chez l'autre. Le compteur,
  * c'est le nombre de Boosters Perso en file pour ce joueur, pas encore ouverts :
  * `+` en met un en file, `−` retire le plus récent. La streameuse n'en reçoit
  * pas, et personne ne règle le sien. Chaque geste est au journal.

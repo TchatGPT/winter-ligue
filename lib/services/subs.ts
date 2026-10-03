@@ -10,9 +10,9 @@ import 'server-only';
  * peut désigner le bénéficiaire d'un versement.
  *
  * Les Boosters Perso — un par sub de niveau 3, un tous les cinq subs offerts —
- * sont la seule chose qu'un sub vaut à quelqu'un en particulier. Ils ne
- * passent pas par ici : la modération les règle à la main, joueur par joueur
- * (`ajusteBoostersPerso` dans `packs.ts`).
+ * sont la seule chose qu'un sub vaut à quelqu'un en particulier. Les subs de
+ * Twitch les versent d'office à qui a payé (`ajouteSubsTwitch`) ; la
+ * modération les déplace d'un joueur à l'autre (`ajusteBoostersPerso`).
  */
 
 import type { Database } from '@/lib/db/entities';
@@ -20,7 +20,7 @@ import { newId } from '@/lib/db/store';
 import { crossedMilestones, nextMilestone, SUBS } from '@/lib/domain/rules';
 import type { PackId } from '@/lib/domain/types';
 import { audit } from './ledger';
-import { ajoutePackDu } from './packs';
+import { ajoutePackDu, crediteBoostersPerso } from './packs';
 import { commuAccelereDepuis, declencheEvenements } from '@/lib/services/evenements';
 import { dejaVu, gesteDuMessage, ligneDuGeste, recitDuGeste, retiens } from '@/lib/domain/twitchSubs';
 
@@ -121,9 +121,10 @@ export function addSubs(db: Database, delta: number, actor: string, precision?: 
  * les deux réussissent ou échouent ensemble. Un message qui n'ajoute rien (le
  * destinataire d'un sub offert, déjà compté par le cadeau) n'est pas retenu.
  *
- * Twitch ne donne de Booster Perso à personne : un sub de niveau 3 en vaut un,
- * le journal et le registre le disent, et la modération l'ajoute à la main
- * (`ajusteBoostersPerso`).
+ * Ce qu'il vaut à qui l'a payé — un Booster Perso par sub de niveau 3, un tous
+ * les cinq subs offerts — est mis en file d'office, s'il a un compte dans la
+ * ligue (`crediteBoostersPerso`). Sinon le registre le garde, et la
+ * modération le voit dans la liste de ce qui attend.
  *
  * À appeler dans une transaction. Renvoie null si le message ne change rien.
  */
@@ -138,6 +139,19 @@ export function ajouteSubsTwitch(
   const resultat = addSubs(db, geste.nombre, 'twitch', recitDuGeste(geste));
   // Au registre, que lit la modération : qui, combien, quand, à quel niveau.
   db.subsTwitch.push(ligneDuGeste(message, geste));
+  // Ce qu'il vaut à qui l'a payé. Un cadeau anonyme ne vaut rien à personne.
+  const payeur = geste.twitchId && !geste.anonyme ? db.players.find((p) => p.twitchId === geste.twitchId) : undefined;
+  if (payeur) {
+    crediteBoostersPerso(
+      db,
+      payeur,
+      {
+        niveau3: geste.niveau === 3 ? geste.nombre : 0,
+        offerts: geste.genre === 'cadeau' && geste.niveau !== 3 ? geste.nombre : 0,
+      },
+      recitDuGeste(geste),
+    );
+  }
   return resultat;
 }
 

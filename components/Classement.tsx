@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { CouronneGlace } from '@/components/CouronneGlace';
 import { MedailleGlace } from '@/components/MedailleGlace';
@@ -116,7 +117,22 @@ const plat = (s: string) =>
  * `outils` : ce que la modération pose dans l'entête, à côté de la recherche
  * — la saisie par capture. Pour tout le monde d'autre, rien.
  */
-export function Classement({ rows, outils }: { rows: RankingRow[]; outils?: React.ReactNode }) {
+/** Les Boosters Perso en attente de chaque joueur — pour la modération seulement. */
+export interface BoostersPersoModeration {
+  parJoueur: Record<string, number>;
+  /** Le joueur derrière la session : personne ne règle les siens. */
+  moiId: string | null;
+}
+
+export function Classement({
+  rows,
+  outils,
+  boostersPerso,
+}: {
+  rows: RankingRow[];
+  outils?: React.ReactNode;
+  boostersPerso?: BoostersPersoModeration;
+}) {
   const [tri, setTri] = useState<{ cle: Cle; desc: boolean }>({ cle: 'rang', desc: false });
   const [recherche, setRecherche] = useState('');
   /** La ligne dont on regarde la carte en grand, s'il y en a une. */
@@ -238,6 +254,7 @@ export function Classement({ rows, outils }: { rows: RankingRow[]; outils?: Reac
                 </td>
                 <td>
                   <Pseudo row={row} />
+                  {boostersPerso && <CompteurPerso row={row} moderation={boostersPerso} />}
                 </td>
                 <td>
                   <CarteActive row={row} onOuvrir={() => setFiche(row)} />
@@ -283,6 +300,7 @@ export function Classement({ rows, outils }: { rows: RankingRow[]; outils?: Reac
                 </span>
                 <span className="min-w-0 flex-1">
                   <Pseudo row={row} />
+                  {boostersPerso && <CompteurPerso row={row} moderation={boostersPerso} />}
                   {row.carte && (
                     <span className="mt-1.5 block">
                       <CarteActive row={row} onOuvrir={() => setFiche(row)} />
@@ -357,6 +375,84 @@ function Pseudo({ row }: { row: RankingRow }) {
       {row.immunise && (
         <span className="pastille-immunite" title="Immunisé : aucun malus ne touche ses games">
           Immunisé
+        </span>
+      )}
+    </span>
+  );
+}
+
+/**
+ * Le compteur de Boosters Perso d'un joueur, sous son pseudo — pour la
+ * modération seulement : − en retire un, + en ajoute un.
+ *
+ * Les subs payés y mettent d'office ce qu'ils valent, à qui les a payés. Quand
+ * celui-là veut offrir le sien à un autre, la modération fait − chez lui et +
+ * chez l'autre. Personne ne règle les siens : la route le refuse, et les
+ * boutons sont grisés. Le compteur est dans une ligne qu'on déplie sur un
+ * téléphone : un appui ne doit pas la plier, d'où l'arrêt de l'évènement.
+ */
+function CompteurPerso({ row, moderation }: { row: RankingRow; moderation: BoostersPersoModeration }) {
+  const router = useRouter();
+  const [n, setN] = useState(moderation.parJoueur[row.id] ?? 0);
+  const [occupe, setOccupe] = useState(false);
+  const [erreur, setErreur] = useState<string | null>(null);
+  const soi = row.id === moderation.moiId;
+
+  async function regle(sens: 'plus' | 'moins', e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    setOccupe(true);
+    setErreur(null);
+    try {
+      const reponse = await fetch('/api/admin/boosters-perso', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ playerId: row.id, sens }),
+      });
+      const charge = await reponse.json();
+      if (!charge.ok) {
+        setErreur(charge.error?.message ?? 'Action refusée.');
+        return;
+      }
+      setN(charge.data.boostersPerso);
+      router.refresh();
+    } catch {
+      setErreur('Le serveur n’a pas répondu.');
+    } finally {
+      setOccupe(false);
+    }
+  }
+
+  return (
+    <span className="compteur-perso-ligne">
+      <span
+        className="compteur-perso compteur-perso-classement"
+        data-vide={n === 0 ? '' : undefined}
+        title={soi ? 'Tes propres Boosters Perso se règlent par un autre membre de la modération.' : undefined}
+      >
+        <span className="compteur-perso-libelle">
+          <span className="num">{n}</span> Booster{n > 1 ? 's' : ''} Perso
+        </span>
+        <button
+          type="button"
+          aria-label={`Retirer un Booster Perso à ${row.pseudo}`}
+          disabled={occupe || soi || n === 0}
+          onClick={(e) => regle('moins', e)}
+        >
+          −
+        </button>
+        <button
+          type="button"
+          aria-label={`Ajouter un Booster Perso à ${row.pseudo}`}
+          disabled={occupe || soi}
+          onClick={(e) => regle('plus', e)}
+        >
+          +
+        </button>
+      </span>
+      {erreur && (
+        <span className="compteur-perso-erreur" role="alert">
+          {erreur}
         </span>
       )}
     </span>

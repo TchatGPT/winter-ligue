@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Joueurs — Modération' };
 
 export default async function AdminJoueursPage() {
-  const session = await exigeRole('admin');
+  await exigeRole('admin');
   const chaine = chaineDeLaLigue();
 
   const { joueurs, codes } = await getStore().read((db) => ({
@@ -37,5 +37,5 @@ export default async function AdminJoueursPage() {
     codes: vueCodes(db),
   }));
 
-  return <EcranJoueurs joueurs={joueurs} codes={codes} moiId={session.sub} />;
+  return <EcranJoueurs joueurs={joueurs} codes={codes} />;
 }

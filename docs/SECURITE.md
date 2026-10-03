@@ -354,10 +354,12 @@ réessaie. Le compteur avance par `addSubs()`, comme la saisie de la modération
 payé compte pour un, quel que soit son niveau — nouveau sub, resub partagé dans le tchat,
 sub offert, même anonyme — ; un sub Prime ne compte pas, ni un resub né d'un cadeau (le
 cadeau a compté), ni ce qui vient d'une autre chaîne en tchat partagé. Un sub offert
-compte par l'annonce du cadeau, jamais par celles de ses destinataires. Twitch ne donne
-de Booster Perso à personne : un sub T3 en vaut un à qui le paie, et cinq subs offerts
-aussi, mais la modération les ajoute à la main ; le journal et le registre le lui
-disent. Un admin peut remettre le compteur à zéro avant le départ de la saison : rien de
+compte par l'annonce du cadeau, jamais par celles de ses destinataires. Un sub T3 vaut
+un Booster Perso à qui le paie, et cinq subs offerts aussi (cumulés sur la saison) : il
+est mis en file d'office, dans la même transaction, si le payeur a un compte — jamais
+pour un cadeau anonyme, jamais pour la streameuse. Sinon le registre le garde. La
+modération peut le déplacer d'un joueur à un autre (− et + sous le pseudo, dans le
+classement), jamais sur son propre compte ; chaque geste est au journal. Un admin peut remettre le compteur à zéro avant le départ de la saison : rien de
 ce qui a été versé n'est repris, et le journal le note.
 
 **Tant que Twitch n'est pas branché, la connexion Twitch est fermée.** Une

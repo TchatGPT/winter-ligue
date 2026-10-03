@@ -117,10 +117,11 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   qu'une fois : sa trace (`config.twitchVus`) s'écrit dans la même transaction que le
   compteur. **Ce qui compte se décide dans `gesteDuMessage()`, nulle part ailleurs** : un
   sub payé compte pour un, quel que soit son niveau — nouveau sub, resub partagé, sub
-  offert — ; les subs Prime ne comptent pas. Un T3 vaut en plus un Booster Perso à qui
-  le paie, mais Twitch ne donne de Booster Perso à personne : la modération règle à la
-  main le compteur de chaque joueur (`ajusteBoostersPerso`), le registre et le journal
-  lui disent ce qui est dû.
+  offert — ; les subs Prime ne comptent pas. Un T3, et cinq subs offerts (cumulés sur la
+  saison dans `subsOfferts`), valent en plus un Booster Perso à qui les paie : il est mis
+  en file d'office s'il a un compte (`crediteBoostersPerso`). Pour l'offrir à un autre,
+  la modération fait − chez l'un et + chez l'autre, sous le pseudo dans le classement
+  (`ajusteBoostersPerso`) ; plus de − / + dans Modération → Joueurs.
 - Les duels se jouent entre joueurs : il n'y a plus de bot. `CAMP_BOT` ne sert plus
   qu'à afficher les anciens duels.
 - Les overlays OBS (`/overlay/…`) lisent par `Store.fluxOverlay`, jamais par `read()` :

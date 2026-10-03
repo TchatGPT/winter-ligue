@@ -5,7 +5,7 @@ import { Hero } from '@/components/Hero';
 import { Accueil } from '@/components/Accueil';
 import { SaisieGames } from '@/components/SaisieGames';
 import { exigeSession } from '@/lib/auth/acces';
-import { getSession } from '@/lib/auth/session';
+import { getSession, playerIdOf } from '@/lib/auth/session';
 import { chaineDeLaLigue, isTwitchEnabled } from '@/lib/auth/twitch';
 import { estLaStreameuse } from '@/lib/domain/streameuse';
 import { getStore } from '@/lib/db/store';
@@ -39,6 +39,14 @@ export default async function ClassementPage() {
             .map((p) => ({ id: p.id, pseudo: p.pseudo }))
             .sort((a, b) => a.pseudo.localeCompare(b.pseudo, 'fr'))
         : [],
+      // Les Boosters Perso en attente de chaque joueur : la modération les
+      // règle sous le pseudo, dans le classement. Personne d'autre ne les voit.
+      boostersPerso: moderateur
+        ? db.packsDus.reduce<Record<string, number>>((n, p) => {
+            if (p.packId === 'perso' && p.joueurId && p.ouvertureId === null) n[p.joueurId] = (n[p.joueurId] ?? 0) + 1;
+            return n;
+          }, {})
+        : null,
     })),
   ]);
 
@@ -70,6 +78,7 @@ export default async function ClassementPage() {
           bouton de saisie avec. */}
         <Classement
           rows={ranking}
+          boostersPerso={subs.boostersPerso ? { parJoueur: subs.boostersPerso, moiId: playerIdOf(session) } : undefined}
           outils={
             moderateur ? (
               // La clé : cet élément traverse la frontière serveur → client et se
