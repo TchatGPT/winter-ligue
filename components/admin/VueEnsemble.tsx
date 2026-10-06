@@ -3,8 +3,8 @@
 import Link from 'next/link';
 import { type ReactNode, useMemo, useState } from 'react';
 import { useAction } from '@/components/admin/action';
-import { Bloc, Chiffre, Ecran } from '@/components/admin/Cadre';
-import { EmptyState, flakes } from '@/components/ui';
+import { IconCadeau, IconPack } from '@/components/icons';
+import { Notice, flakes } from '@/components/ui';
 import { shortDateTime } from '@/lib/format';
 
 /* ------------------------------- Les données ------------------------------ */
@@ -54,164 +54,228 @@ export interface DonVue {
   donateur: string;
 }
 
-/* ------------------------------ Les listes ------------------------------ */
+/* ------------------------------ Le tableau ------------------------------ */
 
-const PAR_PAGE = 12;
+const PAR_PAGE = 15;
 
 const pluriel = (n: number, mot: string) => `${n} ${mot}${n > 1 ? 's' : ''}`;
 
 /** Sans accents ni majuscules, pour chercher un pseudo. */
 const plat = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
-interface Option<T> {
+interface Colonne<T> {
+  cle: string;
+  titre: string;
+  rendu: (x: T) => ReactNode;
+  /** Trier par cette colonne : l'ordre croissant. */
+  tri?: (a: T, b: T) => number;
+  align?: 'droite';
+  /** La colonne qui fait le titre d'une ligne, sur un téléphone. */
+  principale?: boolean;
+}
+
+interface Filtre<T> {
   cle: string;
   nom: string;
   garde?: (x: T) => boolean;
-  ordre?: (a: T, b: T) => number;
 }
 
 /**
- * Une liste qu'on cherche, filtre, trie et feuillette : les filtres et les tris
- * en segments, la recherche par pseudo, des pages de `PAR_PAGE`.
+ * Un tableau qu'on cherche, filtre, trie et feuillette.
+ *
+ * Les en-têtes trient (un clic : décroissant, un second : croissant), les
+ * filtres sont en segment, avec leur compte, la recherche porte sur le
+ * pseudo, quinze lignes par page. Sur un téléphone, chaque ligne devient une
+ * carte : la colonne principale en titre, les autres dessous avec leur nom.
  */
-function useListe<T>(
-  items: T[],
-  { pseudo, filtres, tris }: { pseudo: (x: T) => string; filtres: Option<T>[]; tris: Option<T>[] },
-) {
-  const [filtre, setFiltre] = useState(filtres[0].cle);
-  const [tri, setTri] = useState(tris[0].cle);
+function Tableau<T>({
+  lignes: items,
+  colonnes,
+  filtres,
+  pseudo,
+  cleDe,
+  triDefaut,
+  vide,
+}: {
+  lignes: T[];
+  colonnes: Colonne<T>[];
+  filtres: Filtre<T>[];
+  pseudo: (x: T) => string;
+  cleDe: (x: T) => string;
+  triDefaut: { cle: string; desc: boolean };
+  vide: string;
+}) {
+  const [filtre, setFiltre] = useState(filtres[0]?.cle ?? '');
+  const [tri, setTri] = useState(triDefaut);
   const [recherche, setRecherche] = useState('');
   const [page, setPage] = useState(0);
 
   const lignes = useMemo(() => {
     const q = plat(recherche.trim());
     const garde = filtres.find((f) => f.cle === filtre)?.garde;
-    const ordre = tris.find((t) => t.cle === tri)?.ordre;
+    const ordre = colonnes.find((c) => c.cle === tri.cle)?.tri;
     const gardees = items.filter((x) => (!garde || garde(x)) && (!q || plat(pseudo(x)).includes(q)));
-    return ordre ? [...gardees].sort(ordre) : gardees;
-  }, [items, filtres, tris, filtre, tri, recherche, pseudo]);
+    if (!ordre) return gardees;
+    return [...gardees].sort((a, b) => (tri.desc ? -1 : 1) * ordre(a, b));
+  }, [items, filtres, colonnes, filtre, tri, recherche, pseudo]);
 
   const pages = Math.max(1, Math.ceil(lignes.length / PAR_PAGE));
   const courante = Math.min(page, pages - 1);
   const visibles = lignes.slice(courante * PAR_PAGE, (courante + 1) * PAR_PAGE);
+  const trie = (cle: string) => {
+    setTri((t) => (t.cle === cle ? { cle, desc: !t.desc } : { cle, desc: true }));
+    setPage(0);
+  };
 
-  const outils = (
-    <div className="admin-outils">
-      <input
-        type="search"
-        className="field admin-outils-recherche"
-        placeholder="Chercher un pseudo…"
-        value={recherche}
-        onChange={(e) => {
-          setRecherche(e.target.value);
-          setPage(0);
-        }}
-        aria-label="Chercher un pseudo"
-      />
-      {filtres.length > 1 && (
-        <div className="segment" role="group" aria-label="Filtrer">
-          {filtres.map((f) => (
-            <button
-              key={f.cle}
-              type="button"
-              aria-pressed={filtre === f.cle}
-              onClick={() => {
-                setFiltre(f.cle);
-                setPage(0);
-              }}
-            >
-              {f.nom}
-            </button>
-          ))}
-        </div>
-      )}
-      <label className="admin-outils-tri">
-        <span>Trier</span>
-        <select
-          className="field"
-          value={tri}
+  return (
+    <div className="mod-tableau">
+      <div className="mod-outils">
+        <input
+          type="search"
+          className="field mod-recherche"
+          placeholder="Chercher un pseudo…"
+          value={recherche}
           onChange={(e) => {
-            setTri(e.target.value);
+            setRecherche(e.target.value);
             setPage(0);
           }}
-        >
-          {tris.map((t) => (
-            <option key={t.cle} value={t.cle}>
-              {t.nom}
-            </option>
-          ))}
-        </select>
-      </label>
+          aria-label="Chercher un pseudo"
+        />
+        {filtres.length > 1 && (
+          <div className="segment" role="group" aria-label="Filtrer">
+            {filtres.map((f) => (
+              <button
+                key={f.cle}
+                type="button"
+                aria-pressed={filtre === f.cle}
+                onClick={() => {
+                  setFiltre(f.cle);
+                  setPage(0);
+                }}
+              >
+                {f.nom}
+                <span className="mod-filtre-compte">{f.garde ? items.filter(f.garde).length : items.length}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {lignes.length === 0 ? (
+        <p className="mod-vide">{recherche.trim() ? 'Aucun pseudo ne correspond.' : vide}</p>
+      ) : (
+        <table className="mod-table">
+          <thead>
+            <tr>
+              {colonnes.map((c) => (
+                <th
+                  key={c.cle}
+                  className={c.align === 'droite' ? 'text-right' : undefined}
+                  aria-sort={tri.cle === c.cle ? (tri.desc ? 'descending' : 'ascending') : undefined}
+                >
+                  {c.tri ? (
+                    <button type="button" onClick={() => trie(c.cle)} data-actif={tri.cle === c.cle ? '' : undefined}>
+                      {c.titre}
+                      <span aria-hidden="true">{tri.cle === c.cle ? (tri.desc ? '▼' : '▲') : '△'}</span>
+                    </button>
+                  ) : (
+                    c.titre
+                  )}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {visibles.map((x) => (
+              <tr key={cleDe(x)}>
+                {colonnes.map((c) => (
+                  <td
+                    key={c.cle}
+                    data-titre={c.titre}
+                    data-principale={c.principale ? '' : undefined}
+                    className={c.align === 'droite' ? 'text-right' : undefined}
+                  >
+                    {c.rendu(x)}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+
+      {lignes.length > 0 && (
+        <nav className="mod-pages" aria-label="Pages">
+          <span>
+            {lignes.length > PAR_PAGE
+              ? `${courante * PAR_PAGE + 1}–${Math.min(lignes.length, (courante + 1) * PAR_PAGE)} sur ${lignes.length}`
+              : pluriel(lignes.length, 'ligne')}
+          </span>
+          {lignes.length > PAR_PAGE && (
+            <span className="mod-pages-boutons">
+              <button
+                type="button"
+                className="mod-page"
+                disabled={courante === 0}
+                onClick={() => setPage(courante - 1)}
+                aria-label="Page précédente"
+              >
+                ‹
+              </button>
+              <span className="mod-page-num">
+                {courante + 1} / {pages}
+              </span>
+              <button
+                type="button"
+                className="mod-page"
+                disabled={courante >= pages - 1}
+                onClick={() => setPage(courante + 1)}
+                aria-label="Page suivante"
+              >
+                ›
+              </button>
+            </span>
+          )}
+        </nav>
+      )}
     </div>
   );
-
-  const pied =
-    lignes.length > PAR_PAGE ? (
-      <nav className="admin-pages" aria-label="Pages">
-        <button type="button" className="btn btn-sm" disabled={courante === 0} onClick={() => setPage(courante - 1)}>
-          ← Précédent
-        </button>
-        <span>
-          {courante * PAR_PAGE + 1}–{Math.min(lignes.length, (courante + 1) * PAR_PAGE)} sur {lignes.length}
-        </span>
-        <button
-          type="button"
-          className="btn btn-sm"
-          disabled={courante >= pages - 1}
-          onClick={() => setPage(courante + 1)}
-        >
-          Suivant →
-        </button>
-      </nav>
-    ) : lignes.length > 0 ? (
-      <p className="admin-pages-total">{pluriel(lignes.length, 'ligne')}</p>
-    ) : null;
-
-  return { lignes, visibles, outils, pied, vide: lignes.length === 0, filtre: recherche.trim() !== '' };
 }
 
-/** Le corps d'une liste : ses lignes, ou ce qu'on dit quand il n'y en a pas. */
-function Corps({
-  vide,
-  filtre,
-  titreVide,
-  aideVide,
-  children,
-}: {
-  vide: boolean;
-  filtre: boolean;
-  titreVide: string;
-  aideVide: string;
-  children: ReactNode;
-}) {
-  if (vide) {
-    return filtre ? (
-      <p className="admin-pages-total">Aucun pseudo ne correspond.</p>
-    ) : (
-      <EmptyState title={titreVide} hint={aideVide} />
-    );
-  }
-  return <ul className="admin-liste">{children}</ul>;
+/** Une pastille de statut : pas inscrit, anonyme, modération, booster. */
+function Statut({ ton, children }: { ton: 'or' | 'glace' | 'gris' | 'aurore'; children: ReactNode }) {
+  return (
+    <span className="mod-statut" data-ton={ton}>
+      {children}
+    </span>
+  );
 }
 
-/** Un tri par date (ISO), du plus récent (-1) ou du plus ancien (1). */
-function parDate<T>(cle: keyof T, sens: 1 | -1) {
-  return (a: T, b: T) => sens * String(a[cle]).localeCompare(String(b[cle]));
-}
+const parTexte =
+  <T,>(f: (x: T) => string) =>
+  (a: T, b: T) =>
+    f(a).localeCompare(f(b), 'fr');
+const parNombre =
+  <T,>(f: (x: T) => number) =>
+  (a: T, b: T) =>
+    f(a) - f(b);
 
 /* ------------------------------ L'écran ------------------------------ */
+
+type Onglet = 'subs' | 'donateurs' | 'joueurs';
 
 /**
  * La vue d'ensemble de la modération.
  *
- *  - **Les boosters cadeau** : ce que des non-inscrits ont payé de Booster
- *    Perso — leurs subs comptent pour la saison, et leurs boosters vont à la
- *    réserve. La modération les redonne à des joueurs de la ligue ; un
- *    donateur qui s'inscrit reçoit ce qui reste de sa part.
- *  - **Les subs** : le registre, filtrable par inscrit, cadeau, T3.
- *  - **Les joueurs inscrits**.
+ * En haut, ce qui se compte ; puis ce qui est à faire — les boosters cadeau à
+ * redonner, avec de quoi le faire sur place, et les boosters à ouvrir — ; puis
+ * un tableau à onglets : les subs, les non-inscrits qui ont payé des boosters,
+ * les joueurs inscrits.
  *
- * Chaque liste se cherche, se filtre, se trie et se feuillette.
+ * Un booster cadeau, c'est un Booster Perso payé par quelqu'un qui n'est pas
+ * inscrit : ses subs comptent pour la saison, et la modération redonne ses
+ * boosters à des joueurs de la ligue. S'il s'inscrit, il reçoit ce qui reste
+ * de sa part.
  */
 export function VueEnsemble({
   subs,
@@ -220,6 +284,7 @@ export function VueEnsemble({
   joueurs,
   totalSubs,
   prochainPalier,
+  aOuvrir,
 }: {
   subs: SubVue[];
   donateurs: DonateurVue[];
@@ -227,58 +292,20 @@ export function VueEnsemble({
   joueurs: JoueurVue[];
   totalSubs: number;
   prochainPalier: string;
+  /** Les boosters en file, pas encore ouverts : Perso, et ceux de la ligue. */
+  aOuvrir: { perso: number; ligue: number };
 }) {
   const { busy, message, envoie } = useAction();
+  const [onglet, setOnglet] = useState<Onglet>('subs');
+  const [receveur, setReceveur] = useState('');
   const reserve = donateurs.reduce((n, d) => n + d.restants, 0);
+  const avecReserve = donateurs.filter((d) => d.restants > 0).length;
   const receveurs = useMemo(
     () => joueurs.filter((j) => j.statut !== 'streameuse').sort((a, b) => a.pseudo.localeCompare(b.pseudo, 'fr')),
     [joueurs],
   );
-  const [receveur, setReceveur] = useState('');
   const dernier = [...joueurs].sort((a, b) => b.inscritLe.localeCompare(a.inscritLe))[0] ?? null;
-
-  /* ---- Les listes ---- */
-  const listeDonateurs = useListe(donateurs, {
-    pseudo: (d) => d.pseudo,
-    filtres: [
-      { cle: 'restants', nom: 'À redonner', garde: (d) => d.restants > 0 },
-      { cle: 'tous', nom: 'Tous' },
-    ],
-    tris: [
-      { cle: 'recents', nom: 'Plus récents', ordre: parDate<DonateurVue>('dernier', -1) },
-      { cle: 'anciens', nom: 'Plus anciens', ordre: parDate<DonateurVue>('dernier', 1) },
-      { cle: 'boosters', nom: 'Plus de boosters', ordre: (a, b) => b.restants - a.restants || b.boosters - a.boosters },
-    ],
-  });
-  const listeSubs = useListe(subs, {
-    pseudo: (s) => s.pseudo,
-    filtres: [
-      { cle: 'tous', nom: 'Tous' },
-      { cle: 'inscrits', nom: 'Inscrits', garde: (s) => s.inscrit === true },
-      { cle: 'non', nom: 'Pas inscrits', garde: (s) => s.inscrit !== true },
-      { cle: 'cadeaux', nom: 'Subs offerts', garde: (s) => s.genre === 'cadeau' },
-      { cle: 't3', nom: 'T3', garde: (s) => s.niveau === 3 },
-    ],
-    tris: [
-      { cle: 'recents', nom: 'Plus récents', ordre: parDate<SubVue>('le', -1) },
-      { cle: 'anciens', nom: 'Plus anciens', ordre: parDate<SubVue>('le', 1) },
-      { cle: 'nombre', nom: 'Plus de subs', ordre: (a, b) => b.nombre - a.nombre || b.le.localeCompare(a.le) },
-    ],
-  });
-  const listeJoueurs = useListe(joueurs, {
-    pseudo: (j) => j.pseudo,
-    filtres: [
-      { cle: 'tous', nom: 'Tous' },
-      { cle: 'boosters', nom: 'Avec Booster Perso', garde: (j) => j.boostersPerso > 0 },
-      { cle: 'modo', nom: 'Modération', garde: (j) => j.statut !== 'joueur' },
-    ],
-    tris: [
-      { cle: 'recents', nom: 'Plus récents', ordre: parDate<JoueurVue>('inscritLe', -1) },
-      { cle: 'anciens', nom: 'Plus anciens', ordre: parDate<JoueurVue>('inscritLe', 1) },
-      { cle: 'az', nom: 'De A à Z', ordre: (a, b) => a.pseudo.localeCompare(b.pseudo, 'fr') },
-      { cle: 'boosters', nom: 'Plus de boosters', ordre: (a, b) => b.boostersPerso - a.boostersPerso },
-    ],
-  });
+  const total = aOuvrir.perso + aOuvrir.ligue;
 
   async function donne() {
     const j = receveurs.find((x) => x.id === receveur);
@@ -291,218 +318,316 @@ export function VueEnsemble({
     if (fait) setReceveur('');
   }
 
-  return (
-    <Ecran
-      titre="Vue d’ensemble"
-      lead="Les subs de la saison, les boosters cadeau à redonner, et les joueurs inscrits."
-      message={message}
-    >
-      <section className="admin-chiffres">
-        <Chiffre label="Subs de la saison" valeur={flakes(totalSubs)} note={prochainPalier} accent="aurora" />
-        <Chiffre
-          label="Boosters cadeau"
-          valeur={reserve}
-          note={reserve > 0 ? 'à redonner à des joueurs' : 'réserve vide'}
-          accent="gold"
-        />
-        <Chiffre label="Joueurs inscrits" valeur={joueurs.length} note="par Twitch" />
-        <Chiffre
-          label="Dernier inscrit"
-          valeur={dernier ? dernier.pseudo : '—'}
-          note={dernier ? shortDateTime(dernier.inscritLe) : 'personne encore'}
-          accent="ice"
-        />
-      </section>
+  const ONGLETS: { cle: Onglet; nom: string; compte: number }[] = [
+    { cle: 'subs', nom: 'Subs', compte: subs.length },
+    { cle: 'donateurs', nom: 'Non inscrits', compte: donateurs.length },
+    { cle: 'joueurs', nom: 'Joueurs', compte: joueurs.length },
+  ];
 
-      <div className="admin-vue">
-        {/* ---------------------------- Les boosters cadeau ---------------------------- */}
-        <Bloc
-          titre="Boosters cadeau"
-          icone="snowflake"
-          neige="admin-cadeau"
-          className="admin-vue-cadeau"
-          aide="Des subs payés par quelqu’un qui n’est pas inscrit : ils comptent pour la saison, et leurs Boosters Perso (un par sub T3, un tous les 5 subs offerts) vont à la réserve, à redonner à des joueurs de la ligue. Si le donateur s’inscrit, il reçoit ce qui reste de sa part."
-        >
-          <div className="admin-cadeau-don">
-            <p className="admin-cadeau-reserve">
-              <strong>{reserve}</strong>
-              <span>
-                booster{reserve > 1 ? 's' : ''} cadeau
-                <br />à redonner
-              </span>
-            </p>
-            <div className="admin-cadeau-form">
-              <label className="admin-outils-tri">
-                <span>Donner à</span>
-                <select
-                  className="field"
-                  value={receveur}
-                  onChange={(e) => setReceveur(e.target.value)}
-                  disabled={reserve === 0}
-                >
-                  <option value="">Choisir un joueur…</option>
-                  {receveurs.map((j) => (
-                    <option key={j.id} value={j.id}>
-                      {j.pseudo}
-                      {j.boostersPerso > 0 ? ` (${j.boostersPerso} en attente)` : ''}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <button
-                type="button"
-                className="btn btn-ice"
-                disabled={reserve === 0 || !receveur || busy !== null}
-                onClick={donne}
-              >
-                Donner un booster
-              </button>
+  return (
+    <div className="mod">
+      {/* ------------------------------ Les chiffres ------------------------------ */}
+      <dl className="glass mod-chiffres">
+        <div>
+          <dt>Subs de la saison</dt>
+          <dd className="text-aurora">{flakes(totalSubs)}</dd>
+          <p>{prochainPalier}</p>
+        </div>
+        <div>
+          <dt>Joueurs inscrits</dt>
+          <dd>{joueurs.length}</dd>
+          <p>par Twitch</p>
+        </div>
+        <div>
+          <dt>Dernier inscrit</dt>
+          <dd className="mod-chiffre-texte">{dernier ? dernier.pseudo : '—'}</dd>
+          <p>{dernier ? shortDateTime(dernier.inscritLe) : 'personne encore'}</p>
+        </div>
+        <div>
+          <dt>Non inscrits</dt>
+          <dd>{donateurs.length}</dd>
+          <p>ont payé des boosters</p>
+        </div>
+      </dl>
+
+      {message && <Notice kind={message.kind}>{message.text}</Notice>}
+
+      {/* ------------------------------- À faire ------------------------------- */}
+      <section className="mod-actions" aria-label="À faire">
+        <div className="glass mod-action" data-ton="or">
+          <div className="mod-action-tete">
+            <span className="mod-action-icone" aria-hidden="true">
+              <IconCadeau className="h-5 w-5" />
+            </span>
+            <div className="min-w-0">
+              <p className="mod-action-nombre">
+                {reserve}
+                <span> booster{reserve > 1 ? 's' : ''} cadeau</span>
+              </p>
+              <p className="mod-action-texte">
+                {reserve > 0
+                  ? `Payés par ${pluriel(avecReserve, 'non-inscrit')} : à redonner à des joueurs de la ligue.`
+                  : 'Rien à redonner pour l’instant.'}
+              </p>
             </div>
           </div>
+          <div className="mod-action-form">
+            <select
+              className="field"
+              value={receveur}
+              onChange={(e) => setReceveur(e.target.value)}
+              disabled={reserve === 0}
+              aria-label="Le joueur qui reçoit le booster cadeau"
+            >
+              <option value="">Choisir un joueur…</option>
+              {receveurs.map((j) => (
+                <option key={j.id} value={j.id}>
+                  {j.pseudo}
+                  {j.boostersPerso > 0 ? ` · ${j.boostersPerso} en attente` : ''}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              className="btn btn-ice"
+              disabled={reserve === 0 || !receveur || busy !== null}
+              onClick={donne}
+            >
+              Donner
+            </button>
+          </div>
+          {dons.length > 0 && (
+            <p className="mod-action-pied">
+              Dernier don : {dons[0].joueur}, payé par {dons[0].donateur} · {shortDateTime(dons[0].le)}
+            </p>
+          )}
+        </div>
 
-          {listeDonateurs.outils}
-          <Corps
-            vide={listeDonateurs.vide}
-            filtre={listeDonateurs.filtre}
-            titreVide="Rien à redonner"
-            aideVide="Un sub T3 ou cinq subs offerts par quelqu’un qui n’est pas inscrit apparaîtront ici."
-          >
-            {listeDonateurs.visibles.map((d) => (
-              <li key={d.twitchId} data-eteint={d.restants === 0 ? '' : undefined}>
-                <span className="admin-liste-titre">
-                  {d.pseudo}
-                  <span className="admin-pastille" data-ton="or">
-                    pas inscrit
+        <div className="glass mod-action" data-ton="glace">
+          <div className="mod-action-tete">
+            <span className="mod-action-icone" aria-hidden="true">
+              <IconPack className="h-5 w-5" />
+            </span>
+            <div className="min-w-0">
+              <p className="mod-action-nombre">
+                {total}
+                <span> booster{total > 1 ? 's' : ''} à ouvrir</span>
+              </p>
+              <p className="mod-action-texte">
+                {pluriel(aOuvrir.perso, 'Booster')} Perso · {aOuvrir.ligue} de la ligue. Ils s’ouvrent à l’antenne.
+              </p>
+            </div>
+          </div>
+          <Link href="/boosters" className="btn btn-ice no-underline">
+            Ouvrir sur la page Boosters →
+          </Link>
+        </div>
+      </section>
+
+      {/* ------------------------------- Le registre ------------------------------- */}
+      <section className="glass mod-registre" aria-label="Le registre">
+        <div className="mod-onglets" role="tablist">
+          {ONGLETS.map((o) => (
+            <button
+              key={o.cle}
+              type="button"
+              role="tab"
+              aria-selected={onglet === o.cle}
+              onClick={() => setOnglet(o.cle)}
+            >
+              {o.nom}
+              <span className="mod-onglet-compte">{o.compte}</span>
+            </button>
+          ))}
+        </div>
+
+        {onglet === 'subs' && (
+          <Tableau
+            key="subs"
+            lignes={subs}
+            pseudo={(s) => s.pseudo}
+            cleDe={(s) => s.id}
+            triDefaut={{ cle: 'le', desc: true }}
+            vide="Aucun sub encore : chaque sub, resub et cadeau arrivé par Twitch s’inscrit ici."
+            filtres={[
+              { cle: 'tous', nom: 'Tous' },
+              { cle: 'inscrits', nom: 'Inscrits', garde: (s) => s.inscrit === true },
+              { cle: 'non', nom: 'Pas inscrits', garde: (s) => s.inscrit !== true },
+              { cle: 'cadeaux', nom: 'Offerts', garde: (s) => s.genre === 'cadeau' },
+              { cle: 't3', nom: 'T3', garde: (s) => s.niveau === 3 },
+            ]}
+            colonnes={[
+              {
+                cle: 'pseudo',
+                titre: 'Pseudo',
+                principale: true,
+                tri: parTexte((s) => s.pseudo),
+                rendu: (s) => (
+                  <span className="mod-pseudo">
+                    {s.pseudo}
+                    {s.inscrit === false && <Statut ton="or">pas inscrit</Statut>}
+                    {s.inscrit === null && <Statut ton="gris">anonyme</Statut>}
                   </span>
-                </span>
-                <span className="admin-liste-detail">
-                  {[
-                    d.offerts > 0 ? `${pluriel(d.offerts, 'sub')} offert${d.offerts > 1 ? 's' : ''}` : null,
-                    d.niveau3 > 0 ? `${pluriel(d.niveau3, 'sub')} T3` : null,
+                ),
+              },
+              {
+                cle: 'nombre',
+                titre: 'Sub',
+                tri: parNombre((s) => s.nombre),
+                rendu: (s) =>
+                  s.genre === 'cadeau' ? (
+                    <>
+                      <b>{s.nombre}</b> offert{s.nombre > 1 ? 's' : ''}
+                    </>
+                  ) : s.genre === 'resub' ? (
+                    'resub'
+                  ) : (
+                    'sub'
+                  ),
+              },
+              {
+                cle: 'niveau',
+                titre: 'Niveau',
+                tri: parNombre((s) => s.niveau),
+                rendu: (s) => (
+                  <span className="mod-niveau" data-t3={s.niveau === 3 ? '' : undefined}>
+                    T{s.niveau}
+                  </span>
+                ),
+              },
+              {
+                cle: 'booster',
+                titre: 'Booster',
+                tri: parNombre((s) => s.boosters),
+                rendu: (s) =>
+                  s.boosters === 0 ? (
+                    <span className="text-faint">—</span>
+                  ) : s.inscrit ? (
+                    <Statut ton="aurore">{s.boosters} Perso</Statut>
+                  ) : (
+                    <Statut ton="or">{s.boosters} cadeau</Statut>
+                  ),
+              },
+              {
+                cle: 'le',
+                titre: 'Date',
+                align: 'droite',
+                tri: parTexte((s) => s.le),
+                rendu: (s) => <time className="mod-date">{shortDateTime(s.le)}</time>,
+              },
+            ]}
+          />
+        )}
+
+        {onglet === 'donateurs' && (
+          <Tableau
+            key="donateurs"
+            lignes={donateurs}
+            pseudo={(d) => d.pseudo}
+            cleDe={(d) => d.twitchId}
+            triDefaut={{ cle: 'restants', desc: true }}
+            vide="Personne : un sub T3 ou cinq subs offerts par quelqu’un qui n’est pas inscrit apparaîtront ici."
+            filtres={[
+              { cle: 'restants', nom: 'À redonner', garde: (d) => d.restants > 0 },
+              { cle: 'tous', nom: 'Tous' },
+            ]}
+            colonnes={[
+              {
+                cle: 'pseudo',
+                titre: 'Pseudo',
+                principale: true,
+                tri: parTexte((d) => d.pseudo),
+                rendu: (d) => <span className="mod-pseudo">{d.pseudo}</span>,
+              },
+              {
+                cle: 'paye',
+                titre: 'A payé',
+                tri: parNombre((d) => d.offerts + d.niveau3 * 5),
+                rendu: (d) =>
+                  [
+                    d.offerts > 0 ? `${d.offerts} offert${d.offerts > 1 ? 's' : ''}` : null,
+                    d.niveau3 > 0 ? `${d.niveau3} T3` : null,
                   ]
                     .filter(Boolean)
-                    .join(' · ')}
-                  {' · '}
-                  <strong className="text-aurora">{pluriel(d.restants, 'booster')} à redonner</strong>
-                  {d.donnes > 0 && (
-                    <>
-                      {' '}
-                      · {d.donnes} déjà donné{d.donnes > 1 ? 's' : ''}
-                    </>
-                  )}
-                </span>
-                <time className="admin-liste-date">{shortDateTime(d.dernier)}</time>
-              </li>
-            ))}
-          </Corps>
-          {listeDonateurs.pied}
+                    .join(' · '),
+              },
+              {
+                cle: 'donnes',
+                titre: 'Donnés',
+                align: 'droite',
+                tri: parNombre((d) => d.donnes),
+                rendu: (d) => (d.donnes > 0 ? `${d.donnes} / ${d.boosters}` : <span className="text-faint">—</span>),
+              },
+              {
+                cle: 'restants',
+                titre: 'À redonner',
+                align: 'droite',
+                tri: parNombre((d) => d.restants),
+                rendu: (d) =>
+                  d.restants > 0 ? <Statut ton="or">{d.restants}</Statut> : <span className="text-faint">0</span>,
+              },
+              {
+                cle: 'dernier',
+                titre: 'Dernier sub',
+                align: 'droite',
+                tri: parTexte((d) => d.dernier),
+                rendu: (d) => <time className="mod-date">{shortDateTime(d.dernier)}</time>,
+              },
+            ]}
+          />
+        )}
 
-          {dons.length > 0 && (
-            <details className="admin-dons">
-              <summary>Derniers boosters cadeau donnés · {dons.length}</summary>
-              <ul className="admin-liste">
-                {dons.slice(0, 20).map((d) => (
-                  <li key={d.id}>
-                    <span className="admin-liste-titre">{d.joueur}</span>
-                    <span className="admin-liste-detail">payé par {d.donateur}</span>
-                    <time className="admin-liste-date">{shortDateTime(d.le)}</time>
-                  </li>
-                ))}
-              </ul>
-            </details>
-          )}
-        </Bloc>
-
-        {/* ---------------------------------- Les subs ---------------------------------- */}
-        <Bloc
-          titre="Les subs"
-          icone="antenne"
-          className="admin-vue-subs"
-          aide="Chaque sub compté depuis Twitch. Un sub T3, et cinq subs offerts, valent un Booster Perso : à qui les a payés s’il est inscrit, sinon à la réserve des boosters cadeau."
-        >
-          {listeSubs.outils}
-          <Corps
-            vide={listeSubs.vide}
-            filtre={listeSubs.filtre}
-            titreVide="Aucun sub"
-            aideVide="Chaque sub, resub et cadeau arrivé par Twitch s’inscrit ici."
-          >
-            {listeSubs.visibles.map((s) => (
-              <li key={s.id}>
-                <span className="admin-liste-titre">
-                  {s.pseudo}
-                  {s.inscrit === false && (
-                    <span className="admin-pastille" data-ton="or">
-                      pas inscrit
-                    </span>
-                  )}
-                  {s.inscrit === null && <span className="admin-pastille">anonyme</span>}
-                </span>
-                <span className="admin-liste-detail">
-                  {s.genre === 'cadeau'
-                    ? `${pluriel(s.nombre, 'sub')} offert${s.nombre > 1 ? 's' : ''}`
-                    : s.genre === 'resub'
-                      ? 'resub'
-                      : 'sub'}{' '}
-                  · T{s.niveau}
-                  {s.boosters > 0 && (
-                    <>
-                      {' · '}
-                      <strong className="text-aurora">
-                        {s.inscrit
-                          ? pluriel(s.boosters, 'Booster') + ' Perso'
-                          : `${pluriel(s.boosters, 'booster')} cadeau`}
-                      </strong>
-                    </>
-                  )}
-                </span>
-                <time className="admin-liste-date">{shortDateTime(s.le)}</time>
-              </li>
-            ))}
-          </Corps>
-          {listeSubs.pied}
-        </Bloc>
-
-        {/* ------------------------------ Les joueurs inscrits ------------------------------ */}
-        <Bloc
-          titre="Joueurs inscrits"
-          icone="user"
-          className="admin-vue-joueurs"
-          actions={
-            <Link href="/admin/joueurs" className="btn btn-sm no-underline">
-              Gérer →
-            </Link>
-          }
-        >
-          {listeJoueurs.outils}
-          <Corps
-            vide={listeJoueurs.vide}
-            filtre={listeJoueurs.filtre}
-            titreVide="Personne encore"
-            aideVide="Les joueurs s’inscrivent en se connectant avec Twitch."
-          >
-            {listeJoueurs.visibles.map((j) => (
-              <li key={j.id}>
-                <span className="admin-liste-titre">
-                  <Link href={`/joueurs/${j.slug}`} className="text-ink no-underline hover:text-ice">
-                    {j.pseudo}
-                  </Link>
-                  {j.statut !== 'joueur' && <span className="admin-pastille">{j.statut}</span>}
-                </span>
-                <span className="admin-liste-detail">
-                  {j.boostersPerso > 0 ? (
-                    <strong className="text-aurora">{pluriel(j.boostersPerso, 'Booster')} Perso en attente</strong>
+        {onglet === 'joueurs' && (
+          <Tableau
+            key="joueurs"
+            lignes={joueurs}
+            pseudo={(j) => j.pseudo}
+            cleDe={(j) => j.id}
+            triDefaut={{ cle: 'inscritLe', desc: true }}
+            vide="Personne encore : les joueurs s’inscrivent en se connectant avec Twitch."
+            filtres={[
+              { cle: 'tous', nom: 'Tous' },
+              { cle: 'boosters', nom: 'Avec Booster Perso', garde: (j) => j.boostersPerso > 0 },
+              { cle: 'modo', nom: 'Modération', garde: (j) => j.statut !== 'joueur' },
+            ]}
+            colonnes={[
+              {
+                cle: 'pseudo',
+                titre: 'Pseudo',
+                principale: true,
+                tri: parTexte((j) => j.pseudo),
+                rendu: (j) => (
+                  <span className="mod-pseudo">
+                    <Link href={`/joueurs/${j.slug}`} className="text-ink no-underline hover:text-ice">
+                      {j.pseudo}
+                    </Link>
+                    {j.statut !== 'joueur' && <Statut ton="glace">{j.statut}</Statut>}
+                  </span>
+                ),
+              },
+              {
+                cle: 'boosters',
+                titre: 'Boosters Perso',
+                align: 'droite',
+                tri: parNombre((j) => j.boostersPerso),
+                rendu: (j) =>
+                  j.boostersPerso > 0 ? (
+                    <Statut ton="aurore">{j.boostersPerso} en attente</Statut>
                   ) : (
-                    'aucun Booster Perso en attente'
-                  )}
-                </span>
-                <time className="admin-liste-date">{shortDateTime(j.inscritLe)}</time>
-              </li>
-            ))}
-          </Corps>
-          {listeJoueurs.pied}
-        </Bloc>
-      </div>
-    </Ecran>
+                    <span className="text-faint">—</span>
+                  ),
+              },
+              {
+                cle: 'inscritLe',
+                titre: 'Inscrit le',
+                align: 'droite',
+                tri: parTexte((j) => j.inscritLe),
+                rendu: (j) => <time className="mod-date">{shortDateTime(j.inscritLe)}</time>,
+              },
+            ]}
+          />
+        )}
+      </section>
+    </div>
   );
 }

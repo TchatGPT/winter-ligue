@@ -54,6 +54,11 @@ export default async function AdminAccueilPage() {
           .sort((a, b) => b.creeA.localeCompare(a.creeA))
           .map((p) => ({ id: p.id, le: p.creeA, joueur: pseudoDe.get(p.joueurId ?? '') ?? '?', donDe: p.donDe! })),
         totalSubs: db.config.totalSubs,
+        // Ce qui attend d'être ouvert à l'antenne : les Perso, et ceux de la ligue.
+        aOuvrir: {
+          perso: db.packsDus.filter((p) => p.packId === 'perso' && p.joueurId && p.ouvertureId === null).length,
+          ligue: db.packsDus.filter((p) => p.joueurId === null && p.ouvertureId === null).length,
+        },
       };
     }),
     store.subsTwitch(REGISTRE),
@@ -87,6 +92,7 @@ export default async function AdminAccueilPage() {
       dons={dons}
       joueurs={ligue.joueurs.map(({ twitchId: _twitchId, ...j }) => j)}
       totalSubs={ligue.totalSubs}
+      aOuvrir={ligue.aOuvrir}
       prochainPalier={prochain ? `${prochain.milestone.label} dans ${prochain.remaining}` : 'tous les paliers franchis'}
     />
   );

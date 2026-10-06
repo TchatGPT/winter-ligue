@@ -10705,175 +10705,460 @@
     color: var(--faint);
   }
 
-  /* ---- La vue d'ensemble : trois blocs, des listes qu'on feuillette ----
-     Une colonne sur un téléphone ; deux sur un ordinateur — les boosters cadeau
-     et les joueurs à gauche, les subs à droite sur toute la hauteur ; trois
-     de front sur un très grand écran. */
-  .admin-vue {
+  /* ---- La vue d'ensemble (components/admin/VueEnsemble.tsx) ----
+     Une bande de chiffres, deux cartes « à faire », puis le registre en
+     onglets : un vrai tableau, aux en-têtes qui trient, qui devient une pile de
+     cartes sur un téléphone. */
+  .mod {
     display: grid;
-    align-items: start;
-    gap: 1.25rem;
+    gap: 1rem;
   }
-  @media (min-width: 1280px) {
-    .admin-vue {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-    .admin-vue-subs {
-      grid-column: 2;
-      grid-row: 1 / span 2;
-    }
-  }
-  @media (min-width: 120rem) {
-    .admin-vue {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-    .admin-vue-subs {
-      grid-row: auto;
-    }
-  }
-  /* Dans la vue, le détail d'une ligne passe à la ligne au lieu d'être coupé. */
-  .admin-vue .admin-liste-detail {
-    white-space: normal;
-    line-height: 1.45;
+  /* Un enfant de grille s'élargit à son contenu : le tableau, les onglets
+     débordaient l'écran d'un téléphone. */
+  .mod > * {
+    min-width: 0;
   }
 
-  /* Les outils d'une liste : la recherche, les filtres, le tri. */
-  .admin-outils {
+  /* Les chiffres : une seule plaque, quatre colonnes séparées d'un filet. */
+  .mod-chiffres {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem 0;
+    padding: 1.1rem 1.2rem;
+  }
+  @media (min-width: 900px) {
+    .mod-chiffres {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      padding: 1.2rem 1.6rem;
+    }
+  }
+  .mod-chiffres > div {
+    min-width: 0;
+    padding-inline: 1rem;
+  }
+  .mod-chiffres > div:nth-child(odd) {
+    padding-left: 0;
+  }
+  .mod-chiffres > div:nth-child(even) {
+    border-left: 1px solid rgb(255 255 255 / 0.1);
+  }
+  @media (min-width: 900px) {
+    .mod-chiffres > div:nth-child(odd) {
+      padding-left: 1rem;
+    }
+    .mod-chiffres > div:first-child {
+      padding-left: 0;
+    }
+    .mod-chiffres > div + div {
+      border-left: 1px solid rgb(255 255 255 / 0.1);
+    }
+  }
+  .mod-chiffres dt {
+    font-family: var(--font-display);
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--faint);
+  }
+  .mod-chiffres dd {
+    margin-top: 0.2rem;
+    overflow: hidden;
+    font-family: var(--font-display);
+    font-size: 2rem;
+    font-weight: 900;
+    line-height: 1.05;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--frost);
+  }
+  .mod-chiffres dd.mod-chiffre-texte {
+    font-size: 1.5rem;
+    color: var(--ice);
+  }
+  .mod-chiffres p {
+    margin-top: 0.15rem;
+    font-size: 0.8125rem;
+    color: var(--muted);
+  }
+
+  /* À faire : deux cartes, chacune son chiffre en grand, sa phrase, son geste. */
+  .mod-actions {
+    display: grid;
+    gap: 1rem;
+  }
+  @media (min-width: 900px) {
+    .mod-actions {
+      grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+    }
+  }
+  .mod-action {
+    --ton: var(--ice);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.2rem 1.25rem;
+    box-shadow:
+      inset 0 0 0 1px color-mix(in srgb, var(--ton) 26%, transparent),
+      inset 0 1px 0 rgb(255 255 255 / 0.5),
+      var(--lift-2);
+  }
+  .mod-action[data-ton='or'] {
+    --ton: var(--gold);
+  }
+  .mod-action-tete {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.9rem;
+  }
+  .mod-action-icone {
+    display: grid;
+    width: 2.75rem;
+    height: 2.75rem;
+    flex: none;
+    place-items: center;
+    border-radius: var(--r-pilule);
+    color: var(--ton);
+    background: color-mix(in srgb, var(--ton) 14%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ton) 40%, transparent);
+  }
+  .mod-action-nombre {
+    font-family: var(--font-display);
+    font-size: 2.4rem;
+    font-weight: 900;
+    line-height: 1;
+    color: var(--ton);
+  }
+  .mod-action-nombre span {
+    margin-left: 0.15rem;
+    font-size: 1rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink);
+  }
+  .mod-action-texte {
+    margin-top: 0.35rem;
+    font-size: 0.875rem;
+    line-height: 1.45;
+    color: var(--muted);
+  }
+  .mod-action-pied {
+    font-size: 0.8125rem;
+    color: var(--faint);
+  }
+  .mod-action-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+  }
+  .mod-action-form .field {
+    min-width: 0;
+    min-height: 44px;
+    flex: 1 1 14rem;
+  }
+  .mod-action-form .btn {
+    min-height: 44px;
+    flex: 0 0 auto;
+    padding-inline: 1.6rem;
+  }
+  .mod-action > .btn {
+    align-self: flex-start;
+  }
+
+  /* Le registre : les onglets, puis le tableau. */
+  .mod-registre {
+    padding: 0.9rem 0.9rem 1rem;
+  }
+  @media (min-width: 640px) {
+    .mod-registre {
+      padding: 1.1rem 1.4rem 1.2rem;
+    }
+  }
+  .mod-onglets {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 4px;
+    padding: 4px;
+    border-radius: var(--r-pilule);
+    background: rgb(0 10 30 / 0.34);
+    box-shadow:
+      inset 0 1px 3px rgb(0 8 24 / 0.55),
+      inset 0 -1px 0 rgb(255 255 255 / 0.12);
+  }
+  @media (min-width: 900px) {
+    .mod-onglets {
+      display: inline-grid;
+      grid-template-columns: repeat(3, auto);
+    }
+  }
+  .mod-onglets > button {
+    display: inline-flex;
+    min-width: 0;
+    min-height: 40px;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    padding: 0 1.1rem;
+    border-radius: var(--r-pilule);
+    font-family: var(--font-display);
+    font-size: 0.875rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    color: var(--muted);
+    cursor: pointer;
+  }
+  .mod-onglets > button:hover {
+    color: var(--ink);
+  }
+  @media (max-width: 479px) {
+    .mod-onglets > button {
+      gap: 0.3rem;
+      padding: 0 0.4rem;
+      font-size: 0.75rem;
+      letter-spacing: 0.04em;
+    }
+  }
+  .mod-onglets > button[aria-selected='true'] {
+    background: linear-gradient(178deg, var(--neige-1) 0%, var(--neige-2) 55%, var(--neige-3) 100%);
+    color: var(--nuit);
+  }
+  .mod-onglet-compte,
+  .mod-filtre-compte {
+    padding: 0 0.4rem;
+    border-radius: var(--r-pilule);
+    background: rgb(255 255 255 / 0.1);
+    font-size: 0.75rem;
+    letter-spacing: 0;
+  }
+  .mod-onglets > button[aria-selected='true'] .mod-onglet-compte,
+  .segment > button[aria-pressed='true'] .mod-filtre-compte {
+    background: color-mix(in srgb, var(--nuit) 12%, transparent);
+  }
+  .mod-filtre-compte {
+    margin-left: 0.35rem;
+  }
+
+  .mod-tableau {
+    margin-top: 1rem;
+  }
+  .mod-outils {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: 0.6rem;
-    margin-bottom: 0.6rem;
+    margin-bottom: 0.75rem;
   }
-  .field.admin-outils-recherche {
+  .field.mod-recherche {
     min-width: 0;
-    flex: 1 1 12rem;
     min-height: 40px;
+    flex: 1 1 14rem;
+    max-width: 24rem;
     padding-block: 0.4rem;
   }
-  .admin-outils .segment {
+  .mod-outils .segment {
     max-width: 100%;
   }
-  .admin-outils .segment > button {
-    min-height: 32px;
-    padding: 0 0.75rem;
+  .mod-outils .segment > button {
+    min-height: 34px;
+    padding: 0 0.8rem;
     font-size: 0.75rem;
   }
-  .admin-outils-tri {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.75rem;
-    font-weight: 700;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--faint);
-  }
-  .admin-outils-tri > span {
-    white-space: nowrap;
-  }
-  .admin-outils-tri .field {
-    min-height: 40px;
-    padding-block: 0.35rem;
-    font-size: 0.875rem;
-    letter-spacing: normal;
-    text-transform: none;
-  }
-
-  /* Les pages : précédent, où l'on en est, suivant. */
-  .admin-pages {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.75rem;
-    margin-top: 0.75rem;
-    padding-top: 0.75rem;
-    border-top: 1px solid rgb(255 255 255 / 0.08);
-    font-size: 0.875rem;
+  .mod-vide {
+    padding: 1.2rem;
+    border-radius: var(--r-md);
+    background: rgb(0 10 30 / 0.2);
+    font-size: 0.9375rem;
     color: var(--muted);
   }
-  .admin-pages-total {
-    margin-top: 0.5rem;
-    font-size: 0.8125rem;
+
+  /* Le tableau : des lignes fines, un filet entre elles, l'en-tête qui trie. */
+  .mod-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9375rem;
+  }
+  .mod-table th {
+    padding: 0.55rem 0.75rem;
+    border-bottom: 1px solid rgb(255 255 255 / 0.14);
+    font-family: var(--font-display);
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-align: left;
+    text-transform: uppercase;
+    white-space: nowrap;
     color: var(--faint);
   }
-
-  /* Une pastille dans une ligne : « pas inscrit », « modération ». */
-  .admin-pastille {
-    padding: 0.05rem 0.5rem;
+  .mod-table th.text-right {
+    text-align: right;
+  }
+  .mod-table th button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    letter-spacing: inherit;
+    text-transform: inherit;
+    color: inherit;
+    cursor: pointer;
+  }
+  .mod-table th button:hover,
+  .mod-table th button[data-actif] {
+    color: var(--ice);
+  }
+  .mod-table td {
+    padding: 0.6rem 0.75rem;
+    border-bottom: 1px solid rgb(255 255 255 / 0.06);
+    vertical-align: middle;
+    color: var(--ink-2);
+  }
+  .mod-table tbody tr:hover td {
+    background: rgb(255 255 255 / 0.04);
+  }
+  .mod-pseudo {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem 0.55rem;
+    font-weight: 700;
+    color: var(--ink);
+  }
+  .mod-statut {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.1rem 0.55rem;
     border-radius: var(--r-pilule);
     background: rgb(255 255 255 / 0.08);
     font-size: 0.6875rem;
-    font-weight: 700;
-    letter-spacing: 0.1em;
+    font-weight: 800;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
     white-space: nowrap;
     color: var(--muted);
   }
-  .admin-pastille[data-ton='or'] {
+  .mod-statut[data-ton='or'] {
     background: color-mix(in srgb, var(--gold) 14%, transparent);
     color: var(--gold);
   }
-
-  /* Les boosters cadeau : la réserve en grand, et de quoi en donner un. */
-  .admin-cadeau-don {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 1rem 1.5rem;
-    margin-bottom: 1rem;
-    padding: 1rem 1.1rem;
-    border-radius: var(--r-md);
-    background: color-mix(in srgb, var(--gold) 7%, rgb(0 10 30 / 0.24));
-    box-shadow:
-      inset 0 1px 2px rgb(0 8 24 / 0.45),
-      inset 0 0 0 1px color-mix(in srgb, var(--gold) 22%, transparent);
+  .mod-statut[data-ton='aurore'] {
+    background: color-mix(in srgb, var(--aurora) 14%, transparent);
+    color: var(--aurora);
   }
-  .admin-cadeau-reserve {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
+  .mod-statut[data-ton='glace'] {
+    background: color-mix(in srgb, var(--ice) 14%, transparent);
+    color: var(--ice);
   }
-  .admin-cadeau-reserve strong {
+  .mod-niveau {
     font-family: var(--font-display);
-    font-size: 3rem;
-    font-weight: 900;
-    line-height: 1;
-    color: var(--gold);
-  }
-  .admin-cadeau-reserve span {
-    font-family: var(--font-display);
-    font-size: 0.8125rem;
     font-weight: 800;
-    letter-spacing: 0.1em;
-    line-height: 1.3;
-    text-transform: uppercase;
     color: var(--muted);
   }
-  .admin-cadeau-form {
+  .mod-niveau[data-t3] {
+    color: var(--violet);
+  }
+  .mod-date {
+    font-size: 0.8125rem;
+    white-space: nowrap;
+    color: var(--muted);
+  }
+
+  /* Sur un téléphone, chaque ligne devient une carte : la colonne principale en
+     titre, les autres en paires nom et valeur. */
+  @media (max-width: 699px) {
+    .mod-table thead {
+      display: none;
+    }
+    .mod-table,
+    .mod-table tbody {
+      display: block;
+    }
+    .mod-table tr {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.35rem 0.75rem;
+      margin-bottom: 0.5rem;
+      padding: 0.75rem 0.85rem;
+      border-radius: var(--r-sm);
+      background: rgb(255 255 255 / 0.05);
+      box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.12);
+    }
+    .mod-table td {
+      display: block;
+      min-width: 0;
+      padding: 0;
+      border: 0;
+      text-align: left;
+    }
+    .mod-table td.text-right {
+      text-align: left;
+    }
+    .mod-table td::before {
+      content: attr(data-titre);
+      display: block;
+      margin-bottom: 0.1rem;
+      font-family: var(--font-display);
+      font-size: 0.6875rem;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--faint);
+    }
+    .mod-table td[data-principale] {
+      grid-column: 1 / -1;
+    }
+    .mod-table td[data-principale]::before {
+      display: none;
+    }
+    .mod-table tbody tr:hover td {
+      background: none;
+    }
+  }
+
+  /* Les pages : combien, et où l'on en est. */
+  .mod-pages {
     display: flex;
-    min-width: 0;
-    flex: 1 1 18rem;
     flex-wrap: wrap;
     align-items: center;
+    justify-content: space-between;
     gap: 0.6rem;
+    margin-top: 0.75rem;
+    font-size: 0.8125rem;
+    color: var(--faint);
   }
-  .admin-cadeau-form .admin-outils-tri {
-    min-width: 0;
-    flex: 1 1 12rem;
+  .mod-pages-boutons {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
   }
-  .admin-cadeau-form .admin-outils-tri .field {
-    min-width: 0;
-    flex: 1 1 auto;
-  }
-  .admin-dons {
-    margin-top: 1rem;
-  }
-  .admin-dons summary {
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: var(--ice);
+  .mod-page {
+    display: grid;
+    width: 2.5rem;
+    height: 2.5rem;
+    place-items: center;
+    border-radius: var(--r-pilule);
+    background: rgb(255 255 255 / 0.07);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.25);
+    font-size: 1.3rem;
+    line-height: 1;
+    color: var(--frost);
     cursor: pointer;
+  }
+  .mod-page:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--ice) 22%, transparent);
+  }
+  .mod-page:disabled {
+    cursor: not-allowed;
+    opacity: 0.35;
+  }
+  .mod-page-num {
+    min-width: 3rem;
+    font-family: var(--font-display);
+    font-weight: 800;
+    text-align: center;
+    color: var(--ink);
   }
 
   /* ---- Le journal ---- */
