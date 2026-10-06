@@ -45,7 +45,11 @@ const compte = (evenement: Record<string, unknown>) => vaut(evenement)?.nombre ?
 
 describe('ce que vaut une annonce du tchat', () => {
   it('compte un nouveau sub pour un, quel que soit son niveau', () => {
-    for (const [tier, niveau] of [['1000', 1], ['2000', 2], ['3000', 3]] as const) {
+    for (const [tier, niveau] of [
+      ['1000', 1],
+      ['2000', 2],
+      ['3000', 3],
+    ] as const) {
       expect(vaut(annonce('sub', { sub_tier: tier, is_prime: false, duration_months: 1 }))).toEqual({
         genre: 'sub',
         nombre: 1,
@@ -95,7 +99,14 @@ describe('ce que vaut une annonce du tchat', () => {
 
   it('compte un sub offert à quelqu’un en particulier', () => {
     expect(
-      vaut(annonce('sub_gift', { sub_tier: '2000', duration_months: 1, recipient_user_id: 'tw-r', community_gift_id: null })),
+      vaut(
+        annonce('sub_gift', {
+          sub_tier: '2000',
+          duration_months: 1,
+          recipient_user_id: 'tw-r',
+          community_gift_id: null,
+        }),
+      ),
     ).toMatchObject({ genre: 'cadeau', nombre: 1, niveau: 2 });
   });
 
@@ -124,7 +135,9 @@ describe('ce que vaut une annonce du tchat', () => {
     expect(vaut(annonce('sub', { sub_tier: '1000', is_prime: false }, ailleurs))).toBeNull();
     expect(vaut(annonce('shared_chat_sub', { sub_tier: '1000', is_prime: false }, ailleurs))).toBeNull();
     // Venue de la chaîne elle-même, l'annonce compte.
-    expect(compte(annonce('sub', { sub_tier: '1000', is_prime: false }, { source_broadcaster_user_id: 'tw-chaine' }))).toBe(1);
+    expect(
+      compte(annonce('sub', { sub_tier: '1000', is_prime: false }, { source_broadcaster_user_id: 'tw-chaine' })),
+    ).toBe(1);
   });
 
   it('ne compte rien de ce qui n’est pas un sub payé', () => {
@@ -149,13 +162,17 @@ describe('ce que vaut une annonce du tchat', () => {
 
 describe('l’ancien branchement, jusqu’à ce que la streameuse rebranche', () => {
   it('compte encore un nouveau sub et un cadeau, comme avant', () => {
-    expect(gesteDuMessage('channel.subscribe', { user_id: 'a', user_name: 'A', tier: '3000', is_gift: false })).toMatchObject({
+    expect(
+      gesteDuMessage('channel.subscribe', { user_id: 'a', user_name: 'A', tier: '3000', is_gift: false }),
+    ).toMatchObject({
       genre: 'sub',
       nombre: 1,
       niveau: 3,
     });
     expect(gesteDuMessage('channel.subscribe', { user_id: 'r', is_gift: true })).toBeNull();
-    expect(gesteDuMessage('channel.subscription.gift', { user_id: 'a', user_name: 'A', total: 5, tier: '1000' })).toMatchObject({
+    expect(
+      gesteDuMessage('channel.subscription.gift', { user_id: 'a', user_name: 'A', total: 5, tier: '1000' }),
+    ).toMatchObject({
       genre: 'cadeau',
       nombre: 5,
     });
@@ -255,7 +272,15 @@ describe('le registre des subs', () => {
   });
 
   it('retrouve les Boosters Perso qui attendent les non-inscrits : un par T3, un tous les cinq subs offerts', () => {
-    const ligne = (id: string, le: string, genre: 'sub' | 'resub' | 'cadeau', twitchId: string | null, pseudo: string, nombre: number, niveau: number) => ({
+    const ligne = (
+      id: string,
+      le: string,
+      genre: 'sub' | 'resub' | 'cadeau',
+      twitchId: string | null,
+      pseudo: string,
+      nombre: number,
+      niveau: number,
+    ) => ({
       id,
       le,
       genre,
@@ -276,10 +301,75 @@ describe('le registre des subs', () => {
       ligne('j', '2026-12-02T11:00:00.000Z', 'resub', 'y', 'Yann', 1, 3),
     ];
     expect(persoEnAttente(registre, new Set(['i']))).toEqual([
-      { twitchId: 'x', pseudo: 'Xavier_', offerts: 15, niveau3: 0, boosters: 3, dernier: '2026-12-02T20:00:00.000Z' },
+      {
+        twitchId: 'x',
+        pseudo: 'Xavier_',
+        offerts: 15,
+        niveau3: 0,
+        boosters: 3,
+        donnes: 0,
+        restants: 3,
+        premier: '2026-12-01T20:00:00.000Z',
+        dernier: '2026-12-02T20:00:00.000Z',
+      },
       // À Boosters égaux, qui a payé le plus de subs passe devant.
-      { twitchId: 'z', pseudo: 'Zoé', offerts: 4, niveau3: 2, boosters: 2, dernier: '2026-12-02T09:00:00.000Z' },
-      { twitchId: 'y', pseudo: 'Yann', offerts: 0, niveau3: 2, boosters: 2, dernier: '2026-12-02T11:00:00.000Z' },
+      {
+        twitchId: 'z',
+        pseudo: 'Zoé',
+        offerts: 4,
+        niveau3: 2,
+        boosters: 2,
+        donnes: 0,
+        restants: 2,
+        premier: '2026-12-02T08:00:00.000Z',
+        dernier: '2026-12-02T09:00:00.000Z',
+      },
+      {
+        twitchId: 'y',
+        pseudo: 'Yann',
+        offerts: 0,
+        niveau3: 2,
+        boosters: 2,
+        donnes: 0,
+        restants: 2,
+        premier: '2026-12-01T22:00:00.000Z',
+        dernier: '2026-12-02T11:00:00.000Z',
+      },
+    ]);
+  });
+
+  it('retranche de chaque part les boosters cadeau déjà redonnés, sans descendre sous zéro', () => {
+    const registre = [
+      {
+        id: 'a',
+        le: '2026-12-01T20:00:00.000Z',
+        genre: 'cadeau' as const,
+        twitchId: 'x',
+        pseudo: 'X',
+        nombre: 10,
+        niveau: 1,
+      },
+      {
+        id: 'b',
+        le: '2026-12-01T21:00:00.000Z',
+        genre: 'sub' as const,
+        twitchId: 'y',
+        pseudo: 'Y',
+        nombre: 1,
+        niveau: 3,
+      },
+    ];
+    const parts = persoEnAttente(
+      registre,
+      new Set(),
+      new Map([
+        ['x', 1],
+        ['y', 5],
+      ]),
+    );
+    expect(parts.map((p) => [p.twitchId, p.boosters, p.donnes, p.restants])).toEqual([
+      ['x', 2, 1, 1],
+      ['y', 1, 1, 0],
     ]);
   });
 });
