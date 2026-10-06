@@ -10705,462 +10705,6 @@
     color: var(--faint);
   }
 
-  /* ---- La vue d'ensemble (components/admin/VueEnsemble.tsx) ----
-     Une bande de chiffres, deux cartes « à faire », puis le registre en
-     onglets : un vrai tableau, aux en-têtes qui trient, qui devient une pile de
-     cartes sur un téléphone. */
-  .mod {
-    display: grid;
-    gap: 1rem;
-  }
-  /* Un enfant de grille s'élargit à son contenu : le tableau, les onglets
-     débordaient l'écran d'un téléphone. */
-  .mod > * {
-    min-width: 0;
-  }
-
-  /* Les chiffres : une seule plaque, quatre colonnes séparées d'un filet. */
-  .mod-chiffres {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 1rem 0;
-    padding: 1.1rem 1.2rem;
-  }
-  @media (min-width: 900px) {
-    .mod-chiffres {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      padding: 1.2rem 1.6rem;
-    }
-  }
-  .mod-chiffres > div {
-    min-width: 0;
-    padding-inline: 1rem;
-  }
-  .mod-chiffres > div:nth-child(odd) {
-    padding-left: 0;
-  }
-  .mod-chiffres > div:nth-child(even) {
-    border-left: 1px solid rgb(255 255 255 / 0.1);
-  }
-  @media (min-width: 900px) {
-    .mod-chiffres > div:nth-child(odd) {
-      padding-left: 1rem;
-    }
-    .mod-chiffres > div:first-child {
-      padding-left: 0;
-    }
-    .mod-chiffres > div + div {
-      border-left: 1px solid rgb(255 255 255 / 0.1);
-    }
-  }
-  .mod-chiffres dt {
-    font-family: var(--font-display);
-    font-size: 0.75rem;
-    font-weight: 800;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--faint);
-  }
-  .mod-chiffres dd {
-    margin-top: 0.2rem;
-    overflow: hidden;
-    font-family: var(--font-display);
-    font-size: 2rem;
-    font-weight: 900;
-    line-height: 1.05;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    color: var(--frost);
-  }
-  .mod-chiffres dd.mod-chiffre-texte {
-    font-size: 1.5rem;
-    color: var(--ice);
-  }
-  .mod-chiffres p {
-    margin-top: 0.15rem;
-    font-size: 0.8125rem;
-    color: var(--muted);
-  }
-
-  /* À faire : deux cartes, chacune son chiffre en grand, sa phrase, son geste. */
-  .mod-actions {
-    display: grid;
-    gap: 1rem;
-  }
-  @media (min-width: 900px) {
-    .mod-actions {
-      grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
-    }
-  }
-  .mod-action {
-    --ton: var(--ice);
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    gap: 1rem;
-    padding: 1.2rem 1.25rem;
-    box-shadow:
-      inset 0 0 0 1px color-mix(in srgb, var(--ton) 26%, transparent),
-      inset 0 1px 0 rgb(255 255 255 / 0.5),
-      var(--lift-2);
-  }
-  .mod-action[data-ton='or'] {
-    --ton: var(--gold);
-  }
-  .mod-action-tete {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.9rem;
-  }
-  .mod-action-icone {
-    display: grid;
-    width: 2.75rem;
-    height: 2.75rem;
-    flex: none;
-    place-items: center;
-    border-radius: var(--r-pilule);
-    color: var(--ton);
-    background: color-mix(in srgb, var(--ton) 14%, transparent);
-    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ton) 40%, transparent);
-  }
-  .mod-action-nombre {
-    font-family: var(--font-display);
-    font-size: 2.4rem;
-    font-weight: 900;
-    line-height: 1;
-    color: var(--ton);
-  }
-  .mod-action-nombre span {
-    margin-left: 0.15rem;
-    font-size: 1rem;
-    font-weight: 800;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--ink);
-  }
-  .mod-action-texte {
-    margin-top: 0.35rem;
-    font-size: 0.875rem;
-    line-height: 1.45;
-    color: var(--muted);
-  }
-  .mod-action-pied {
-    font-size: 0.8125rem;
-    color: var(--faint);
-  }
-  .mod-action-form {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.6rem;
-  }
-  .mod-action-form .field {
-    min-width: 0;
-    min-height: 44px;
-    flex: 1 1 14rem;
-  }
-  .mod-action-form .btn {
-    min-height: 44px;
-    flex: 0 0 auto;
-    padding-inline: 1.6rem;
-  }
-  .mod-action > .btn {
-    align-self: flex-start;
-  }
-
-  /* Le registre : les onglets, puis le tableau. */
-  .mod-registre {
-    padding: 0.9rem 0.9rem 1rem;
-  }
-  @media (min-width: 640px) {
-    .mod-registre {
-      padding: 1.1rem 1.4rem 1.2rem;
-    }
-  }
-  .mod-onglets {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 4px;
-    padding: 4px;
-    border-radius: var(--r-pilule);
-    background: rgb(0 10 30 / 0.34);
-    box-shadow:
-      inset 0 1px 3px rgb(0 8 24 / 0.55),
-      inset 0 -1px 0 rgb(255 255 255 / 0.12);
-  }
-  @media (min-width: 900px) {
-    .mod-onglets {
-      display: inline-grid;
-      grid-template-columns: repeat(3, auto);
-    }
-  }
-  .mod-onglets > button {
-    display: inline-flex;
-    min-width: 0;
-    min-height: 40px;
-    align-items: center;
-    justify-content: center;
-    gap: 0.45rem;
-    padding: 0 1.1rem;
-    border-radius: var(--r-pilule);
-    font-family: var(--font-display);
-    font-size: 0.875rem;
-    font-weight: 800;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    white-space: nowrap;
-    color: var(--muted);
-    cursor: pointer;
-  }
-  .mod-onglets > button:hover {
-    color: var(--ink);
-  }
-  @media (max-width: 479px) {
-    .mod-onglets > button {
-      gap: 0.3rem;
-      padding: 0 0.4rem;
-      font-size: 0.75rem;
-      letter-spacing: 0.04em;
-    }
-  }
-  .mod-onglets > button[aria-selected='true'] {
-    background: linear-gradient(178deg, var(--neige-1) 0%, var(--neige-2) 55%, var(--neige-3) 100%);
-    color: var(--nuit);
-  }
-  .mod-onglet-compte,
-  .mod-filtre-compte {
-    padding: 0 0.4rem;
-    border-radius: var(--r-pilule);
-    background: rgb(255 255 255 / 0.1);
-    font-size: 0.75rem;
-    letter-spacing: 0;
-  }
-  .mod-onglets > button[aria-selected='true'] .mod-onglet-compte,
-  .segment > button[aria-pressed='true'] .mod-filtre-compte {
-    background: color-mix(in srgb, var(--nuit) 12%, transparent);
-  }
-  .mod-filtre-compte {
-    margin-left: 0.35rem;
-  }
-
-  .mod-tableau {
-    margin-top: 1rem;
-  }
-  .mod-outils {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.6rem;
-    margin-bottom: 0.75rem;
-  }
-  .field.mod-recherche {
-    min-width: 0;
-    min-height: 40px;
-    flex: 1 1 14rem;
-    max-width: 24rem;
-    padding-block: 0.4rem;
-  }
-  .mod-outils .segment {
-    max-width: 100%;
-  }
-  .mod-outils .segment > button {
-    min-height: 34px;
-    padding: 0 0.8rem;
-    font-size: 0.75rem;
-  }
-  .mod-vide {
-    padding: 1.2rem;
-    border-radius: var(--r-md);
-    background: rgb(0 10 30 / 0.2);
-    font-size: 0.9375rem;
-    color: var(--muted);
-  }
-
-  /* Le tableau : des lignes fines, un filet entre elles, l'en-tête qui trie. */
-  .mod-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.9375rem;
-  }
-  .mod-table th {
-    padding: 0.55rem 0.75rem;
-    border-bottom: 1px solid rgb(255 255 255 / 0.14);
-    font-family: var(--font-display);
-    font-size: 0.75rem;
-    font-weight: 800;
-    letter-spacing: 0.12em;
-    text-align: left;
-    text-transform: uppercase;
-    white-space: nowrap;
-    color: var(--faint);
-  }
-  .mod-table th.text-right {
-    text-align: right;
-  }
-  .mod-table th button {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    letter-spacing: inherit;
-    text-transform: inherit;
-    color: inherit;
-    cursor: pointer;
-  }
-  .mod-table th button:hover,
-  .mod-table th button[data-actif] {
-    color: var(--ice);
-  }
-  .mod-table td {
-    padding: 0.6rem 0.75rem;
-    border-bottom: 1px solid rgb(255 255 255 / 0.06);
-    vertical-align: middle;
-    color: var(--ink-2);
-  }
-  .mod-table tbody tr:hover td {
-    background: rgb(255 255 255 / 0.04);
-  }
-  .mod-pseudo {
-    display: inline-flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.4rem 0.55rem;
-    font-weight: 700;
-    color: var(--ink);
-  }
-  .mod-statut {
-    display: inline-flex;
-    align-items: center;
-    padding: 0.1rem 0.55rem;
-    border-radius: var(--r-pilule);
-    background: rgb(255 255 255 / 0.08);
-    font-size: 0.6875rem;
-    font-weight: 800;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    white-space: nowrap;
-    color: var(--muted);
-  }
-  .mod-statut[data-ton='or'] {
-    background: color-mix(in srgb, var(--gold) 14%, transparent);
-    color: var(--gold);
-  }
-  .mod-statut[data-ton='aurore'] {
-    background: color-mix(in srgb, var(--aurora) 14%, transparent);
-    color: var(--aurora);
-  }
-  .mod-statut[data-ton='glace'] {
-    background: color-mix(in srgb, var(--ice) 14%, transparent);
-    color: var(--ice);
-  }
-  .mod-niveau {
-    font-family: var(--font-display);
-    font-weight: 800;
-    color: var(--muted);
-  }
-  .mod-niveau[data-t3] {
-    color: var(--violet);
-  }
-  .mod-date {
-    font-size: 0.8125rem;
-    white-space: nowrap;
-    color: var(--muted);
-  }
-
-  /* Sur un téléphone, chaque ligne devient une carte : la colonne principale en
-     titre, les autres en paires nom et valeur. */
-  @media (max-width: 699px) {
-    .mod-table thead {
-      display: none;
-    }
-    .mod-table,
-    .mod-table tbody {
-      display: block;
-    }
-    .mod-table tr {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 0.35rem 0.75rem;
-      margin-bottom: 0.5rem;
-      padding: 0.75rem 0.85rem;
-      border-radius: var(--r-sm);
-      background: rgb(255 255 255 / 0.05);
-      box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.12);
-    }
-    .mod-table td {
-      display: block;
-      min-width: 0;
-      padding: 0;
-      border: 0;
-      text-align: left;
-    }
-    .mod-table td.text-right {
-      text-align: left;
-    }
-    .mod-table td::before {
-      content: attr(data-titre);
-      display: block;
-      margin-bottom: 0.1rem;
-      font-family: var(--font-display);
-      font-size: 0.6875rem;
-      font-weight: 800;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--faint);
-    }
-    .mod-table td[data-principale] {
-      grid-column: 1 / -1;
-    }
-    .mod-table td[data-principale]::before {
-      display: none;
-    }
-    .mod-table tbody tr:hover td {
-      background: none;
-    }
-  }
-
-  /* Les pages : combien, et où l'on en est. */
-  .mod-pages {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.6rem;
-    margin-top: 0.75rem;
-    font-size: 0.8125rem;
-    color: var(--faint);
-  }
-  .mod-pages-boutons {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-  .mod-page {
-    display: grid;
-    width: 2.5rem;
-    height: 2.5rem;
-    place-items: center;
-    border-radius: var(--r-pilule);
-    background: rgb(255 255 255 / 0.07);
-    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.25);
-    font-size: 1.3rem;
-    line-height: 1;
-    color: var(--frost);
-    cursor: pointer;
-  }
-  .mod-page:hover:not(:disabled) {
-    background: color-mix(in srgb, var(--ice) 22%, transparent);
-  }
-  .mod-page:disabled {
-    cursor: not-allowed;
-    opacity: 0.35;
-  }
-  .mod-page-num {
-    min-width: 3rem;
-    font-family: var(--font-display);
-    font-weight: 800;
-    text-align: center;
-    color: var(--ink);
-  }
-
   /* ---- Le journal ---- */
   .admin-barre-outils {
     display: flex;
@@ -13077,5 +12621,1194 @@
 @media (prefers-reduced-motion: reduce) {
   .accueil {
     --amp-acc: 0.5;
+  }
+}
+
+/* ==========================================================================
+   LA MODÉRATION — components/admin/Kit.tsx et ses écrans.
+   ==========================================================================
+   Une barre (le nom, les sections, l'ouverture des boosters), une phrase qui
+   dit à quoi sert l'écran, puis ses panneaux.
+
+   Sur un ordinateur, l'espace tient dans la fenêtre, pied de page compris :
+   sa hauteur est celle de l'écran moins ce qui l'entoure (`--adm-hors`), les
+   panneaux se la partagent, et ce qui est long défile dans son panneau. Sur un
+   téléphone et une tablette, tout s'empile et la page défile ; les listes
+   longues gardent une hauteur bornée. */
+.adm {
+  --adm-hors: 15rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.9rem;
+}
+@media (min-width: 1024px) and (min-height: 760px) {
+  .adm {
+    height: calc(100dvh - var(--adm-hors) - var(--bandeau-evts, 0px));
+    min-height: 30rem;
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+}
+/* Plus bas que 760 pixels, tenir dans la fenêtre ne laisserait qu'une ligne à
+   chaque liste : la page défile, comme sur un téléphone. */
+/* Ce qui entoure l'espace — les marges de la page, la neige et la bande du
+   pied de page — change avec la largeur : mesuré, pour garder une vingtaine
+   de pixels entre les panneaux et la neige. */
+@media (min-width: 1280px) {
+  .adm {
+    --adm-hors: 14.25rem;
+  }
+}
+@media (min-width: 1536px) {
+  .adm {
+    --adm-hors: 13.75rem;
+  }
+}
+@media (min-width: 150rem) {
+  .adm {
+    --adm-hors: 12.25rem;
+  }
+}
+
+/* -- La barre -- */
+.adm-barre {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem 1.25rem;
+  padding: 0.55rem 0.7rem 0.55rem 1rem;
+  border-radius: var(--r-md);
+}
+.adm-barre-nom {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--frost);
+}
+.adm-barre-icone {
+  display: grid;
+  width: 2.2rem;
+  height: 2.2rem;
+  place-items: center;
+  border-radius: var(--r-pilule);
+  color: var(--frost);
+  background: radial-gradient(circle at 34% 28%, rgb(255 255 255 / 0.4), rgb(143 220 255 / 0.16) 46%, rgb(8 30 60 / 0.34));
+  box-shadow:
+    inset 0 1.5px 0 rgb(255 255 255 / 0.75),
+    inset 0 -6px 12px -6px rgb(0 16 40 / 0.6);
+}
+.adm-nav {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  gap: 0.25rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.adm-nav::-webkit-scrollbar {
+  display: none;
+}
+.adm-nav-lien {
+  display: inline-flex;
+  min-height: 40px;
+  flex: none;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0 0.9rem;
+  border-radius: var(--r-pilule);
+  font-family: var(--font-display);
+  font-size: 0.875rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--muted);
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+.adm-nav-lien:hover {
+  background: rgb(255 255 255 / 0.07);
+  color: var(--ink);
+}
+.adm-nav-lien[aria-current='page'] {
+  background: linear-gradient(178deg, var(--neige-1) 0%, var(--neige-2) 55%, var(--neige-3) 100%);
+  color: var(--nuit);
+}
+.adm-barre-boosters {
+  margin-left: auto;
+}
+/* Sur un écran étroit : le nom et le bouton, puis les sections en dessous. */
+@media (max-width: 1279px) {
+  .adm-nav {
+    order: 3;
+    flex-basis: 100%;
+  }
+}
+/* Sur un téléphone : les six sections en deux rangées, chacune nommée. */
+@media (max-width: 639px) {
+  .adm-nav {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    overflow: visible;
+  }
+  .adm-nav-lien {
+    min-height: 54px;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.25rem;
+    padding: 0.4rem 0.3rem;
+    border-radius: var(--r-sm);
+    font-size: 0.6875rem;
+    letter-spacing: 0.04em;
+    line-height: 1.1;
+    text-align: center;
+    white-space: normal;
+  }
+}
+
+/* -- L'écran -- */
+.adm-ecran {
+  display: grid;
+  min-height: 0;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+}
+@media (min-width: 1024px) and (min-height: 760px) {
+  .adm-ecran {
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+}
+.adm-intro {
+  padding-inline: 0.25rem;
+  font-size: 0.9375rem;
+  color: var(--muted);
+}
+/* Sur un écran d'ordinateur bas, la phrase d'introduction laisse sa place
+   aux listes. */
+@media (min-width: 1024px) and (max-height: 880px) {
+  .adm-intro {
+    display: none;
+  }
+}
+.adm-grille {
+  display: grid;
+  min-height: 0;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.9rem;
+}
+
+/* L'alerte : une bande, pas un panneau. */
+.adm-alerte {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem 0.85rem;
+  padding: 0.6rem 0.7rem 0.6rem 0.8rem;
+  border-radius: var(--r-md);
+  background: color-mix(in srgb, var(--danger) 13%, rgb(0 10 30 / 0.4));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--danger) 45%, transparent);
+}
+.adm-alerte-icone {
+  display: grid;
+  width: 1.75rem;
+  height: 1.75rem;
+  flex: none;
+  place-items: center;
+  border-radius: var(--r-pilule);
+  font-family: var(--font-display);
+  font-weight: 900;
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 18%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--danger) 50%, transparent);
+}
+.adm-alerte p {
+  min-width: 0;
+  flex: 1 1 16rem;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  color: var(--muted);
+}
+.adm-alerte p b {
+  color: var(--ink);
+}
+
+/* Les dispositions. Sur un téléphone, une colonne, dans l'ordre des zones. */
+.adm-grille[data-grille='tableau'],
+.adm-grille[data-grille='tableau-alerte'] {
+  grid-template-areas: 'alerte' 'mesures' 'cadeau' 'fil';
+}
+.adm-grille[data-grille='codes'] {
+  grid-template-areas: 'creer' 'liste';
+}
+.adm-grille[data-grille='saison'] {
+  grid-template-areas: 'twitch' 'compteur' 'regles' 'sauvegarde';
+}
+.adm-grille[data-grille='overlays'] {
+  grid-template-areas: 'obs' 'booster' 'duel' 'subs';
+}
+@media (min-width: 1024px) {
+  .adm-grille[data-grille='tableau'] {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-areas:
+      'mesures mesures'
+      'cadeau fil';
+  }
+  .adm-grille[data-grille='tableau-alerte'] {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    grid-template-rows: auto auto minmax(0, 1fr);
+    grid-template-areas:
+      'alerte alerte'
+      'mesures mesures'
+      'cadeau fil';
+  }
+  .adm-grille[data-grille='codes'] {
+    grid-template-columns: minmax(0, 24rem) minmax(0, 1fr);
+    grid-template-areas: 'creer liste';
+  }
+  .adm-grille[data-grille='saison'] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'twitch compteur'
+      'regles sauvegarde';
+  }
+  .adm-grille[data-grille='overlays'] {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-areas:
+      'obs obs obs'
+      'booster duel subs';
+    overflow-y: auto;
+  }
+  .adm-grille[data-grille='seul'] {
+    grid-template-rows: minmax(0, 1fr);
+  }
+}
+@media (min-width: 1024px) and (min-height: 760px) {
+  .adm-grille {
+    height: 100%;
+  }
+}
+
+/* -- Le message d'une action, dans un coin -- */
+.adm-toast {
+  position: fixed;
+  z-index: 60;
+  right: 0.75rem;
+  bottom: 6.5rem;
+  left: 0.75rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.85rem 0.6rem 0.85rem 1.1rem;
+  border-radius: var(--r-md);
+  background: color-mix(in srgb, var(--fond) 96%, transparent);
+  box-shadow:
+    var(--lift-2),
+    inset 0 0 0 1px color-mix(in srgb, var(--ice) 32%, transparent),
+    inset 4px 0 0 var(--ice);
+  animation: duels-annonce 0.35s cubic-bezier(0.2, 0.9, 0.3, 1) both;
+}
+.adm-toast[data-kind='success'] {
+  box-shadow:
+    var(--lift-2),
+    inset 0 0 0 1px color-mix(in srgb, var(--aurora) 40%, transparent),
+    inset 4px 0 0 var(--aurora);
+}
+.adm-toast[data-kind='error'] {
+  box-shadow:
+    var(--lift-2),
+    inset 0 0 0 1px color-mix(in srgb, var(--danger) 45%, transparent),
+    inset 4px 0 0 var(--danger);
+}
+@media (min-width: 1024px) {
+  .adm-toast {
+    right: 1.75rem;
+    bottom: 1.75rem;
+    left: auto;
+    width: min(30rem, calc(100vw - 3.5rem));
+  }
+}
+.adm-toast p {
+  min-width: 0;
+  flex: 1 1 auto;
+  padding-top: 0.2rem;
+  font-size: 0.9375rem;
+  line-height: 1.45;
+  color: var(--ink);
+}
+.adm-toast button {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  flex: none;
+  place-items: center;
+  border-radius: var(--r-pilule);
+  font-size: 0.8125rem;
+  color: var(--muted);
+  cursor: pointer;
+}
+.adm-toast button:hover {
+  background: rgb(255 255 255 / 0.1);
+  color: var(--ink);
+}
+
+/* -- Le panneau -- */
+.adm-panneau {
+  --ton: var(--ice);
+  display: flex;
+  min-height: 0;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding: 1rem 1.05rem 1.05rem;
+  border-radius: var(--r-md);
+}
+@media (min-width: 640px) {
+  .adm-panneau {
+    padding: 1.1rem 1.3rem 1.2rem;
+  }
+}
+.adm-panneau[data-ton='or'] {
+  --ton: var(--gold);
+}
+.adm-panneau[data-ton='aurore'] {
+  --ton: var(--aurora);
+}
+.adm-panneau[data-ton='danger'] {
+  --ton: var(--danger);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--danger) 45%, transparent),
+    inset 0 1px 0 rgb(255 255 255 / 0.4);
+}
+.adm-panneau-tete {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+.adm-panneau-icone {
+  display: grid;
+  width: 2.25rem;
+  height: 2.25rem;
+  flex: none;
+  place-items: center;
+  border-radius: var(--r-pilule);
+  color: var(--ton);
+  background: color-mix(in srgb, var(--ton) 14%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ton) 38%, transparent);
+}
+.adm-panneau-tete h2 {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 900;
+  line-height: 1.15;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--frost);
+}
+.adm-panneau-tete p {
+  margin-top: 0.2rem;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: var(--muted);
+}
+.adm-panneau-tete p b {
+  color: var(--ink);
+}
+.adm-panneau-actions {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+/* Sur un téléphone, ce qui se range à droite passe sous le titre. */
+@media (max-width: 559px) {
+  .adm-panneau-tete {
+    flex-wrap: wrap;
+  }
+  .adm-panneau-actions {
+    flex-basis: 100%;
+  }
+}
+.adm-panneau-corps {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.adm-panneau-corps:empty {
+  display: none;
+}
+.adm-panneau-corps[data-defile] {
+  flex: 1 1 auto;
+  max-height: 75dvh;
+  margin-right: -0.5rem;
+  padding-right: 0.5rem;
+  overflow-y: auto;
+}
+@media (min-width: 1024px) and (min-height: 760px) {
+  .adm-panneau-corps[data-defile] {
+    max-height: none;
+  }
+}
+
+/* -- Les petites pièces -- */
+.adm-pastille {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.12rem 0.55rem;
+  border-radius: var(--r-pilule);
+  background: rgb(255 255 255 / 0.08);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  color: var(--muted);
+}
+.adm-pastille[data-ton='or'] {
+  background: color-mix(in srgb, var(--gold) 15%, transparent);
+  color: var(--gold);
+}
+.adm-pastille[data-ton='aurore'] {
+  background: color-mix(in srgb, var(--aurora) 15%, transparent);
+  color: var(--aurora);
+}
+.adm-pastille[data-ton='glace'] {
+  background: color-mix(in srgb, var(--ice) 15%, transparent);
+  color: var(--ice);
+}
+.adm-pastille[data-ton='violet'] {
+  background: color-mix(in srgb, var(--violet) 18%, transparent);
+  color: var(--violet);
+}
+.adm-pastille[data-ton='danger'] {
+  background: color-mix(in srgb, var(--danger) 16%, transparent);
+  color: var(--danger);
+}
+.adm-vide {
+  padding: 1rem 1.1rem;
+  border-radius: var(--r-sm);
+  background: rgb(0 10 30 / 0.2);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: var(--muted);
+}
+.adm-note {
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: var(--faint);
+}
+.adm-note b {
+  color: var(--ink);
+}
+.adm-sous-titre {
+  font-family: var(--font-display);
+  font-size: 0.8125rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+.adm-date {
+  font-size: 0.8125rem;
+  white-space: nowrap;
+  color: var(--muted);
+}
+
+/* Les chiffres : une plaque, quatre mesures côte à côte. */
+.adm-mesures {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem 0;
+  padding: 0.85rem 1rem;
+  border-radius: var(--r-md);
+}
+@media (min-width: 768px) {
+  .adm-mesures {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    padding: 0.85rem 1.3rem;
+  }
+}
+.adm-mesure {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  gap: 0.6rem;
+  padding-inline: 0.9rem;
+}
+.adm-mesure:nth-child(odd) {
+  padding-left: 0;
+}
+.adm-mesure:nth-child(even) {
+  border-left: 1px solid rgb(255 255 255 / 0.1);
+}
+@media (min-width: 768px) {
+  .adm-mesure:nth-child(odd) {
+    padding-left: 0.9rem;
+  }
+  .adm-mesure:first-child {
+    padding-left: 0;
+  }
+  .adm-mesure + .adm-mesure {
+    border-left: 1px solid rgb(255 255 255 / 0.1);
+  }
+}
+.adm-mesure strong {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 900;
+  line-height: 1;
+  color: var(--frost);
+}
+.adm-mesure[data-ton='or'] strong {
+  color: var(--gold);
+}
+.adm-mesure[data-ton='aurore'] strong {
+  color: var(--aurora);
+}
+.adm-mesure[data-ton='glace'] strong {
+  color: var(--ice);
+}
+.adm-mesure-lien {
+  border-radius: var(--r-sm);
+  transition: background-color 0.15s ease;
+}
+.adm-mesure-lien:hover {
+  background: rgb(255 255 255 / 0.05);
+}
+.adm-mesure-lien span {
+  color: var(--ice);
+}
+.adm-mesure span {
+  min-width: 0;
+  font-size: 0.8125rem;
+  line-height: 1.3;
+  color: var(--muted);
+}
+
+/* Les outils d'une liste : la recherche, les filtres. */
+.adm-outils {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+.field.adm-recherche {
+  min-width: 0;
+  min-height: 40px;
+  flex: 1 1 13rem;
+  padding-block: 0.4rem;
+}
+.field.adm-select {
+  min-height: 40px;
+  flex: 0 1 14rem;
+  padding-block: 0.4rem;
+}
+.adm-filtres {
+  max-width: 100%;
+}
+.adm-filtres > button {
+  min-height: 34px;
+  padding: 0 0.8rem;
+  font-size: 0.75rem;
+}
+.adm-filtre-compte {
+  margin-left: 0.35rem;
+  padding: 0 0.4rem;
+  border-radius: var(--r-pilule);
+  background: rgb(255 255 255 / 0.1);
+  font-size: 0.6875rem;
+  letter-spacing: 0;
+}
+.segment > button[aria-pressed='true'] .adm-filtre-compte {
+  background: color-mix(in srgb, var(--nuit) 12%, transparent);
+}
+
+/* -- Le tableau : une grille, l'en-tête collé en haut quand le corps défile -- */
+.adm-table {
+  display: grid;
+  font-size: 0.9375rem;
+}
+.adm-table-tete,
+.adm-table-ligne {
+  display: grid;
+  grid-template-columns: var(--gabarit);
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0 0.75rem;
+}
+.adm-table-tete {
+  position: sticky;
+  z-index: 2;
+  top: 0;
+  min-height: 2.4rem;
+  border-bottom: 1px solid rgb(255 255 255 / 0.14);
+  background: color-mix(in srgb, var(--fond) 92%, transparent);
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+.adm-table-tete [data-droite],
+.adm-table-ligne [data-droite] {
+  justify-self: end;
+  text-align: right;
+}
+.adm-table-tete button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.adm-table-tete button i {
+  font-style: normal;
+  opacity: 0.6;
+}
+.adm-table-tete button:hover,
+.adm-table-tete button[data-actif] {
+  color: var(--ice);
+}
+.adm-table-ligne {
+  min-height: 3rem;
+  padding-block: 0.4rem;
+  border-bottom: 1px solid rgb(255 255 255 / 0.06);
+  color: var(--ink-2);
+}
+.adm-table-ligne:hover {
+  background: rgb(255 255 255 / 0.035);
+}
+.adm-table-ligne > span {
+  min-width: 0;
+}
+/* Sur un téléphone, chaque ligne devient une carte. */
+@media (max-width: 699px) {
+  .adm-table-tete {
+    display: none;
+  }
+  .adm-table {
+    gap: 0.5rem;
+  }
+  .adm-table-ligne {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem 0.75rem;
+    padding: 0.75rem 0.85rem;
+    border: 0;
+    border-radius: var(--r-sm);
+    background: rgb(255 255 255 / 0.05);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.12);
+  }
+  .adm-table-ligne > span {
+    justify-self: start !important;
+    text-align: left !important;
+  }
+  .adm-table-ligne > span::before {
+    content: attr(data-titre);
+    display: block;
+    margin-bottom: 0.1rem;
+    font-family: var(--font-display);
+    font-size: 0.6875rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--faint);
+  }
+  .adm-table-ligne > span[data-principale] {
+    grid-column: 1 / -1;
+  }
+  .adm-table-ligne > span[data-principale]::before {
+    display: none;
+  }
+}
+
+/* -- Le tableau de bord -- */
+.adm-don {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1rem;
+  padding: 0.85rem 0.95rem;
+  border-radius: var(--r-sm);
+  background: color-mix(in srgb, var(--gold) 7%, rgb(0 10 30 / 0.24));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gold) 22%, transparent);
+}
+.adm-don-reserve {
+  display: flex;
+  align-items: baseline;
+  gap: 0.45rem;
+}
+.adm-don-reserve strong {
+  font-family: var(--font-display);
+  font-size: 2.6rem;
+  font-weight: 900;
+  line-height: 1;
+  color: var(--gold);
+}
+.adm-don-reserve span {
+  font-family: var(--font-display);
+  font-size: 0.8125rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.adm-don-form {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 100%;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.adm-don-form .field {
+  min-width: 0;
+  min-height: 44px;
+  flex: 1 1 11rem;
+}
+.adm-don-form .btn {
+  min-height: 44px;
+}
+.adm-donateurs {
+  display: grid;
+}
+.adm-donateurs li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.55rem 0.1rem;
+  border-bottom: 1px solid rgb(255 255 255 / 0.06);
+}
+.adm-donateurs li:last-child {
+  border-bottom: 0;
+}
+.adm-donateurs b {
+  display: block;
+  color: var(--ink);
+}
+.adm-donateurs span:not(.adm-pastille) {
+  display: block;
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+.adm-donateurs .adm-pastille {
+  min-width: 2.2rem;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+/* Le fil des subs : jour par jour, une phrase par sub. */
+.adm-fil {
+  display: grid;
+  gap: 0.9rem;
+}
+.adm-fil-jour {
+  position: sticky;
+  z-index: 1;
+  top: 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.4rem 0.1rem;
+  background: color-mix(in srgb, var(--fond) 92%, transparent);
+  font-family: var(--font-display);
+  font-size: 0.875rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--frost);
+}
+.adm-fil-jour span {
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--faint);
+}
+.adm-fil-ligne {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.55rem 0.1rem;
+  border-bottom: 1px solid rgb(255 255 255 / 0.06);
+}
+.adm-fil-pastille {
+  display: grid;
+  min-width: 2.4rem;
+  height: 2.4rem;
+  flex: none;
+  place-items: center;
+  padding-inline: 0.3rem;
+  border-radius: var(--r-pilule);
+  background: color-mix(in srgb, var(--ice) 12%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ice) 30%, transparent);
+  font-family: var(--font-display);
+  font-size: 0.9375rem;
+  font-weight: 900;
+  color: var(--ice);
+}
+.adm-fil-ligne[data-genre='cadeau'] .adm-fil-pastille {
+  background: color-mix(in srgb, var(--gold) 13%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gold) 34%, transparent);
+  color: var(--gold);
+}
+.adm-fil-ligne[data-genre='resub'] .adm-fil-pastille {
+  background: color-mix(in srgb, var(--aurora) 12%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--aurora) 30%, transparent);
+  color: var(--aurora);
+}
+.adm-fil-phrase {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--ink);
+}
+.adm-fil-detail {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.5rem;
+  margin-top: 0.25rem;
+}
+.adm-fil-detail time {
+  font-size: 0.8125rem;
+  color: var(--faint);
+}
+
+/* -- Les formulaires -- */
+.adm-form {
+  display: grid;
+  gap: 0.75rem;
+}
+.adm-champ {
+  display: grid;
+  gap: 0.35rem;
+}
+.adm-champ span {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+.adm-champ .field {
+  min-height: 44px;
+}
+.adm-rapides {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.adm-rapides button {
+  min-height: 36px;
+  padding: 0 0.85rem;
+  border-radius: var(--r-pilule);
+  background: rgb(255 255 255 / 0.07);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.22);
+  font-family: var(--font-display);
+  font-size: 0.9375rem;
+  font-weight: 800;
+  color: var(--ink);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+.adm-rapides button:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--ice) 22%, transparent);
+}
+.adm-rapides button[aria-pressed='true'] {
+  background: linear-gradient(178deg, var(--neige-1) 0%, var(--neige-2) 55%, var(--neige-3) 100%);
+  color: var(--nuit);
+}
+.adm-rapides button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+.adm-ligne-form {
+  display: flex;
+  gap: 0.5rem;
+}
+.adm-ligne-form .field {
+  min-height: 44px;
+  max-width: 9rem;
+}
+.adm-retour {
+  padding: 0.6rem 0.8rem;
+  border-radius: var(--r-sm);
+  background: color-mix(in srgb, var(--aurora) 9%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--aurora) 32%, transparent);
+  font-size: 0.875rem;
+  color: var(--aurora);
+}
+.adm-danger {
+  display: grid;
+  gap: 0.6rem;
+  padding: 0.8rem 0.9rem;
+  border-radius: var(--r-sm);
+  background: color-mix(in srgb, var(--danger) 8%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--danger) 38%, transparent);
+  font-size: 0.875rem;
+  color: var(--ink-2);
+}
+
+/* -- Joueurs -- */
+.adm-joueur {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.5rem;
+  font-weight: 700;
+}
+.adm-joueur a {
+  color: var(--ink);
+}
+.adm-joueur a:hover {
+  color: var(--ice);
+}
+.adm-activision {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.4rem;
+}
+.adm-activision .field {
+  min-width: 0;
+  min-height: 36px;
+  flex: 1 1 auto;
+  padding-block: 0.25rem;
+  font-size: 0.875rem;
+}
+.adm-activision .field[data-vide] {
+  border-color: color-mix(in srgb, var(--gold) 45%, transparent);
+}
+
+/* -- Codes cadeaux -- */
+.adm-code-cree {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: var(--r-sm);
+  background: color-mix(in srgb, var(--aurora) 8%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--aurora) 35%, transparent);
+}
+.adm-code-cree span {
+  display: block;
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+.adm-code-cree strong {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  color: var(--frost);
+}
+.adm-code {
+  display: grid;
+  gap: 0.1rem;
+}
+.adm-code button {
+  justify-self: start;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  color: var(--ink);
+  cursor: pointer;
+}
+.adm-code button:hover {
+  color: var(--ice);
+}
+.adm-code small {
+  font-size: 0.75rem;
+  color: var(--faint);
+}
+.adm-gestes,
+.adm-confirme {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.adm-gestes button {
+  display: grid;
+  width: 2.25rem;
+  height: 2.25rem;
+  place-items: center;
+  border-radius: 0.65rem;
+  background: rgb(255 255 255 / 0.05);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.14);
+  color: var(--muted);
+  cursor: pointer;
+}
+.adm-gestes button:hover:not(:disabled) {
+  color: var(--ice);
+}
+.adm-gestes button[data-danger]:hover:not(:disabled) {
+  color: var(--danger);
+}
+.adm-confirme button {
+  min-height: 32px;
+  padding: 0 0.7rem;
+  border-radius: var(--r-pilule);
+  background: rgb(255 255 255 / 0.08);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--ink);
+  cursor: pointer;
+}
+.adm-confirme button[data-danger] {
+  background: color-mix(in srgb, var(--danger) 22%, transparent);
+  color: var(--danger);
+}
+
+/* -- Subs & saison -- */
+.adm-liste-etats {
+  display: grid;
+  gap: 0.45rem;
+}
+.adm-liste-etats li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9375rem;
+  color: var(--ink-2);
+}
+.adm-liste-etats li > span[aria-hidden] {
+  display: grid;
+  width: 1.5rem;
+  height: 1.5rem;
+  place-items: center;
+  border-radius: var(--r-pilule);
+  background: color-mix(in srgb, var(--danger) 18%, transparent);
+  font-size: 0.75rem;
+  font-weight: 900;
+  color: var(--danger);
+}
+.adm-liste-etats li[data-actif] > span[aria-hidden] {
+  background: color-mix(in srgb, var(--aurora) 18%, transparent);
+  color: var(--aurora);
+}
+.adm-etape {
+  padding: 0.75rem 0.9rem;
+  border-radius: var(--r-sm);
+  background: color-mix(in srgb, var(--gold) 8%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gold) 30%, transparent);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+.adm-etape b {
+  color: var(--gold);
+}
+.adm-compteur {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.adm-compteur strong {
+  font-family: var(--font-display);
+  font-size: 3.4rem;
+  font-weight: 900;
+  line-height: 1;
+  color: var(--aurora);
+}
+.adm-compteur span {
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+/* -- Overlays -- */
+.adm-etapes {
+  display: grid;
+  gap: 0.35rem;
+  padding-left: 1.2rem;
+  list-style: decimal;
+  font-size: 0.9375rem;
+  color: var(--ink-2);
+}
+.adm-etapes b {
+  color: var(--ink);
+}
+
+/* -- Journal -- */
+.adm-journal {
+  display: grid;
+}
+.adm-journal li {
+  display: grid;
+  grid-template-columns: 6.5rem minmax(0, 1fr);
+  gap: 0.75rem;
+  padding: 0.6rem 0.1rem;
+  border-bottom: 1px solid rgb(255 255 255 / 0.06);
+}
+.adm-journal time {
+  padding-top: 0.15rem;
+  font-size: 0.8125rem;
+  white-space: nowrap;
+  color: var(--faint);
+}
+.adm-journal p {
+  font-size: 0.9375rem;
+  color: var(--ink-2);
+}
+.adm-journal p b {
+  color: var(--ink);
+}
+.adm-journal-detail {
+  margin-top: 0.2rem;
+  font-size: 0.875rem !important;
+  color: var(--muted) !important;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 479px) {
+  .adm-journal li {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.2rem;
+  }
+}
+
+/* Sur un écran d'ordinateur bas, les panneaux se resserrent pour laisser de la
+   place aux listes. */
+@media (min-width: 1024px) and (max-height: 900px) {
+  .adm,
+  .adm-grille {
+    gap: 0.7rem;
+  }
+  .adm-panneau {
+    gap: 0.6rem;
+    padding: 0.8rem 1.1rem 0.9rem;
+  }
+  .adm-panneau-tete p {
+    font-size: 0.8125rem;
+    line-height: 1.35;
+  }
+  .adm-mesures {
+    padding-block: 0.6rem;
+  }
+  .adm-don {
+    padding: 0.6rem 0.8rem;
+  }
+  .adm-don-reserve strong {
+    font-size: 2rem;
+  }
+  .adm-don-form .field,
+  .adm-don-form .btn {
+    min-height: 40px;
   }
 }

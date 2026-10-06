@@ -3,7 +3,6 @@ import { exigeRole } from '@/lib/auth/acces';
 import { chaineDeLaLigue } from '@/lib/auth/twitch';
 import { estLaStreameuse } from '@/lib/domain/streameuse';
 import { getStore } from '@/lib/db/store';
-import { vueCodes } from '@/lib/services/codes';
 import { totalsOf } from '@/lib/services/league';
 
 export const dynamic = 'force-dynamic';
@@ -13,7 +12,7 @@ export default async function AdminJoueursPage() {
   await exigeRole('admin');
   const chaine = chaineDeLaLigue();
 
-  const { joueurs, codes } = await getStore().read((db) => ({
+  const { joueurs } = await getStore().read((db) => ({
     joueurs: db.players
       .filter((p) => p.active)
       .map((p): LigneJoueur => {
@@ -31,11 +30,11 @@ export default async function AdminJoueursPage() {
           streameuse: estLaStreameuse(p, chaine),
           games: totals.countedGames,
           score: totals.totalScore,
+          inscritLe: p.joinedAt,
         };
       })
       .sort((a, b) => b.score - a.score),
-    codes: vueCodes(db),
   }));
 
-  return <EcranJoueurs joueurs={joueurs} codes={codes} />;
+  return <EcranJoueurs joueurs={joueurs} />;
 }

@@ -2,396 +2,211 @@
 
 import { useMemo, useState } from 'react';
 import { useAction } from '@/components/admin/action';
-import { Bloc, Ecran } from '@/components/admin/Cadre';
-import { IconCorbeille, IconInterdit } from '@/components/icons';
+import {
+  EcranAdmin,
+  Filtres,
+  Panneau,
+  Pastille,
+  Recherche,
+  Tableau,
+  parNombre,
+  parTexte,
+  plat,
+} from '@/components/admin/Kit';
 import { flakes } from '@/components/ui';
-import { UTILISATIONS_MAX } from '@/lib/domain/codes';
-import { ECONOMY, PACKS_REGLES } from '@/lib/domain/rules';
 import { shortDateTime } from '@/lib/format';
-
-export type RoleJoueur = 'joueur' | 'admin';
 
 export interface LigneJoueur {
   id: string;
   pseudo: string;
   slug: string;
-  role: RoleJoueur;
-  /** Le pseudo en jeu, que la reconnaissance des captures compare aux noms lus. */
+  role: 'joueur' | 'admin';
+  /** Le pseudo en jeu, que la lecture des captures compare aux noms lus. */
   activisionId: string | null;
   snowflakes: number;
   /** Ses Boosters Perso en attente. Ils se règlent dans le classement, sous le pseudo. */
   boostersPerso: number;
-  /** La streameuse ne joue pas : pas de compteur pour elle. */
+  /** La streameuse ne joue pas. */
   streameuse: boolean;
   games: number;
   score: number;
+  inscritLe: string;
 }
 
-const LIBELLE_ROLE: Record<RoleJoueur, string> = { joueur: 'Joueur', admin: 'Modération' };
-
-export interface LigneCode {
-  id: string;
-  code: string;
-  montant: number;
-  utilisations: number;
-  utilisationsMax: number;
-  etat: 'actif' | 'epuise' | 'desactive';
-  creeLe: string;
-  /** Le pseudo de qui l'a créé. */
-  createur: string;
-}
-
-const LIBELLE_ETAT: Record<LigneCode['etat'], string> = {
-  actif: 'Actif',
-  epuise: 'Épuisé',
-  desactive: 'Désactivé',
-};
-
-/** Retire accents et casse, pour que « boreal » trouve « Boréal ». */
-function plie(valeur: string): string {
-  return valeur
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .toLowerCase();
-}
+type Filtre = 'tous' | 'sansActivision' | 'boosters' | 'modo';
 
 /**
- * Les joueurs et les codes cadeaux.
+ * Les joueurs de la ligue.
  *
- * Les joueurs arrivent par Twitch, et leur rôle suit la chaîne : il n'y a plus
- * ni inscription, ni rôle, ni flocons donnés à la main. Les flocons se donnent
- * par des codes : un montant, un nombre d'utilisations, et chaque joueur le tape
- * une fois derrière l'icône cadeau. Aucune carte ne se donne ici : une carte
- * sort d'un pack, ouvert à l'antenne, ou ne sort pas.
+ * Ils arrivent par Twitch, et leur rôle suit la chaîne. On y corrige le pseudo
+ * Activision — celui que la lecture des captures cherche sur le tableau de fin
+ * de game : un joueur jamais reconnu, c'est ici qu'on regarde — et on y voit
+ * ses games, ses points, ses flocons et ses Boosters Perso en attente.
  */
-export function EcranJoueurs({ joueurs, codes }: { joueurs: LigneJoueur[]; codes: LigneCode[] }) {
+export function EcranJoueurs({ joueurs }: { joueurs: LigneJoueur[] }) {
   const { busy, message, envoie, setMessage } = useAction();
-
   const [recherche, setRecherche] = useState('');
-  const [montant, setMontant] = useState(100);
-  const [utilisationsMax, setUtilisationsMax] = useState(10);
-  const [dernierCode, setDernierCode] = useState<{ code: string; annonce: boolean } | null>(null);
-  /** Le code dont la suppression attend sa confirmation : un premier clic la propose. */
-  const [aSupprimer, setASupprimer] = useState<string | null>(null);
+  const [filtre, setFiltre] = useState<Filtre>('tous');
 
-  async function supprime(c: LigneCode) {
-    const fait = await envoie(
-      '/api/admin/codes',
-      { id: c.id },
-      { methode: 'DELETE', cle: `code:${c.id}`, succes: `${c.code} supprimé. Les flocons déjà versés restent.` },
-    );
-    setASupprimer(null);
-    if (fait && dernierCode?.code === c.code) setDernierCode(null);
-  }
-
-  async function copie(code: string) {
-    try {
-      await navigator.clipboard.writeText(code);
-      setMessage({ kind: 'success', text: `${code} copié.` });
-    } catch {
-      setMessage({ kind: 'error', text: 'Copie impossible : sélectionne le code à la main.' });
-    }
-  }
+  const garde = (p: LigneJoueur, f: Filtre) =>
+    f === 'sansActivision'
+      ? !p.streameuse && !p.activisionId
+      : f === 'boosters'
+        ? p.boostersPerso > 0
+        : f === 'modo'
+          ? p.role === 'admin'
+          : true;
 
   const visibles = useMemo(() => {
-    const q = plie(recherche.trim());
-    if (!q) return joueurs;
-    return joueurs.filter((p) => plie(p.pseudo).includes(q) || plie(p.slug).includes(q));
-  }, [joueurs, recherche]);
+    const q = plat(recherche.trim());
+    return joueurs.filter(
+      (p) => garde(p, filtre) && (!q || plat(p.pseudo).includes(q) || plat(p.activisionId ?? '').includes(q)),
+    );
+  }, [joueurs, recherche, filtre]);
 
   return (
-    <Ecran
-      titre="Joueurs"
-      lead="Les joueurs arrivent par Twitch. Ici : leur pseudo Activision, et les codes cadeaux qui distribuent les flocons — chaque code et chaque utilisation sont au journal."
+    <EcranAdmin
+      intro="Les joueurs arrivent tout seuls en se connectant avec Twitch. Ici, on vérifie leur pseudo en jeu et où ils en sont."
+      grille="seul"
       message={message}
+      onFermeMessage={() => setMessage(null)}
     >
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
-        <Bloc
-          titre="Créer un code cadeau"
-          icone="cadeau"
-          neige="admin-codes"
-          aide="C’est ainsi que les flocons se donnent : un montant, un nombre de joueurs, et un code tiré au sort, aussitôt annoncé dans le tchat. Chacun le tape une fois, derrière le cadeau près de son solde. Celui qui crée un code ne peut pas s’en servir."
-        >
-          <form
-            className="space-y-3"
-            onSubmit={async (e) => {
-              e.preventDefault();
-              const data = await envoie(
-                '/api/admin/codes',
-                { montant, utilisationsMax },
-                { cle: 'code-cree', succes: 'Code créé.' },
-              );
-              if (!data) return;
-              const code = String(data.code);
-              const tchat = data.tchat as { envoye?: boolean; detail?: string } | undefined;
-              const annonce = tchat?.envoye === true;
-              setDernierCode({ code, annonce });
-              setMessage(
-                annonce
-                  ? { kind: 'success', text: `Code ${code} créé et annoncé dans le tchat.` }
-                  : {
-                      kind: 'error',
-                      text: `Code ${code} créé, mais Twitch a refusé l’annonce dans le tchat${
-                        tchat?.detail ? ` (${tchat.detail})` : ''
-                      }. Le détail est au journal.`,
-                    },
-              );
-            }}
-          >
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="label" htmlFor="code-montant">
-                  Flocons par joueur
-                </label>
-                <input
-                  id="code-montant"
-                  type="number"
-                  className="field num"
-                  min={1}
-                  max={ECONOMY.soldeMax}
-                  value={Number.isFinite(montant) ? montant : ''}
-                  onChange={(e) => setMontant(Math.floor(Number(e.target.value)))}
-                  required
-                />
-              </div>
-              <div>
-                <label className="label" htmlFor="code-utilisations">
-                  Utilisations max
-                </label>
-                <input
-                  id="code-utilisations"
-                  type="number"
-                  className="field num"
-                  min={1}
-                  max={UTILISATIONS_MAX}
-                  value={Number.isFinite(utilisationsMax) ? utilisationsMax : ''}
-                  onChange={(e) => setUtilisationsMax(Math.floor(Number(e.target.value)))}
-                  required
-                />
-              </div>
-            </div>
-            <button
-              className="btn btn-ice w-full"
-              disabled={busy !== null || !(montant >= 1) || !(utilisationsMax >= 1)}
-            >
-              Créer le code
-            </button>
-          </form>
-
-          {dernierCode && (
-            <div className="mt-4 flex items-center justify-between gap-3 rounded-lg border border-aurora/40 px-3 py-2.5">
-              <div className="min-w-0">
-                <p className="text-[13px] text-muted">
-                  {dernierCode.annonce ? 'Code créé — annoncé dans le tchat' : 'Code créé — à annoncer sur le stream'}
-                </p>
-                <p className="truncate font-display text-2xl font-black tracking-[0.14em] text-ink">
-                  {dernierCode.code}
-                </p>
-              </div>
-              <button type="button" className="btn btn-sm shrink-0" onClick={() => copie(dernierCode.code)}>
-                Copier
-              </button>
-            </div>
-          )}
-        </Bloc>
-
-        <Bloc
-          titre="Codes cadeaux"
-          icone="snowflake"
-          aide="Un code épuisé ou désactivé ne sert plus ; un code supprimé disparaît. Ce qu’il a versé reste versé, et le journal garde sa trace."
-        >
-          {codes.length === 0 ? (
-            <p className="text-[13px] text-faint">Aucun code pour l’instant.</p>
-          ) : (
-            <div className="scroll-x admin-table">
-              <table className="grid-table min-w-[560px]">
-                <thead>
-                  <tr>
-                    <th>Code</th>
-                    <th className="text-right">Flocons</th>
-                    <th className="text-right">Utilisations</th>
-                    <th>État</th>
-                    <th className="text-right" aria-label="Actions" />
-                  </tr>
-                </thead>
-                <tbody>
-                  {codes.map((c) => (
-                    <tr key={c.id}>
-                      <td>
-                        <button
-                          type="button"
-                          className="font-display font-black tracking-[0.12em] text-ink hover:text-ice"
-                          title="Copier le code"
-                          onClick={() => copie(c.code)}
-                        >
-                          {c.code}
-                        </button>
-                        <div className="text-[13px] text-muted">
-                          par <span className="font-semibold text-ink-2">{c.createur}</span> ·{' '}
-                          {shortDateTime(c.creeLe)}
-                        </div>
-                      </td>
-                      <td className="num text-right text-ice">❄ {flakes(c.montant)}</td>
-                      <td className="num text-right text-muted">
-                        {c.utilisations} / {c.utilisationsMax}
-                      </td>
-                      <td>
-                        <span
-                          className="badge"
-                          style={c.etat === 'actif' ? { borderColor: 'var(--aurora)', color: 'var(--aurora)' } : undefined}
-                        >
-                          {LIBELLE_ETAT[c.etat]}
-                        </span>
-                      </td>
-                      <td className="text-right">
-                        {/* La suppression se confirme sur place : la ligne propose
-                            « Supprimer ? Oui / Non » à la place des deux boutons. */}
-                        {aSupprimer === c.id ? (
-                          <div className="code-confirme" role="group" aria-label={`Supprimer ${c.code} pour de bon ?`}>
-                            <span>Supprimer ?</span>
-                            <button type="button" data-oui="" disabled={busy !== null} onClick={() => supprime(c)}>
-                              Oui
-                            </button>
-                            <button type="button" data-non="" disabled={busy !== null} onClick={() => setASupprimer(null)}>
-                              Non
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="code-actions">
-                            {c.etat === 'actif' && (
-                              <button
-                                type="button"
-                                className="code-action"
-                                disabled={busy !== null}
-                                title="Désactiver : le code ne sert plus, ce qu’il a versé reste versé"
-                                aria-label={`Désactiver ${c.code}`}
-                                onClick={() =>
-                                  envoie(
-                                    '/api/admin/codes',
-                                    { id: c.id },
-                                    { methode: 'PATCH', cle: `code:${c.id}`, succes: `${c.code} désactivé.` },
-                                  )
-                                }
-                              >
-                                <IconInterdit className="h-[18px] w-[18px]" />
-                              </button>
-                            )}
-                            <button
-                              type="button"
-                              className="code-action"
-                              data-danger=""
-                              disabled={busy !== null}
-                              title="Supprimer ce code pour de bon"
-                              aria-label={`Supprimer ${c.code}`}
-                              onClick={() => setASupprimer(c.id)}
-                            >
-                              <IconCorbeille className="h-[18px] w-[18px]" />
-                            </button>
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </Bloc>
-      </div>
-
-      <Bloc
-        titre={`${visibles.length} joueur${visibles.length > 1 ? 's' : ''}`}
+      <Panneau
         icone="user"
-        aide="Le pseudo Activision est celui que la lecture des captures compare au tableau de fin de game."
-        actions={
-          <input
-            className="field max-w-[220px]"
-            placeholder="Rechercher…"
-            value={recherche}
-            onChange={(e) => setRecherche(e.target.value)}
-            aria-label="Rechercher un joueur"
-          />
-        }
+        titre={`${visibles.length} joueur${visibles.length > 1 ? 's' : ''}`}
+        sousTitre="Le pseudo Activision est celui qu’on lit sur les captures de fin de game : sans lui, ses games ne se reconnaissent pas toutes seules."
+        defile
       >
-        <div className="scroll-x admin-table">
-          <table className="grid-table min-w-[820px]">
-            <thead>
-              <tr>
-                <th>Joueur</th>
-                <th>Activision</th>
-                <th>Rôle</th>
-                <th className="text-right">Games</th>
-                <th className="text-right">Points</th>
-                <th className="text-right">Flocons</th>
-                <th
-                  className="text-right"
-                  title={`Un Booster Perso par sub T3, pris ou offert, et un tous les ${PACKS_REGLES.persoTousLes} subs offerts — versés d'office ; ils se règlent dans le classement, sous le pseudo`}
-                >
-                  Boosters Perso
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {visibles.map((p) => (
-                <tr key={p.id}>
-                  <td>
-                    <a href={`/joueurs/${p.slug}`} className="text-ink no-underline hover:text-ice">
-                      {p.pseudo}
-                    </a>
-                  </td>
-                  <td>
-                    <ActivisionCellule
-                      joueur={p}
-                      busy={busy === `activision:${p.id}`}
-                      enregistre={(valeur) =>
-                        envoie(
-                          '/api/players',
-                          { playerId: p.id, activisionId: valeur || null },
-                          { methode: 'PATCH', cle: `activision:${p.id}`, succes: `${p.pseudo} : pseudo Activision enregistré.` },
-                        )
-                      }
-                    />
-                  </td>
-                  <td>
-                    <span
-                      className="badge"
-                      style={
-                        p.role === 'admin' ? { borderColor: 'var(--ice)', color: 'var(--ice)' } : undefined
-                      }
-                    >
-                      {LIBELLE_ROLE[p.role]}
-                    </span>
-                  </td>
-                  <td className="num text-right text-muted">{p.games}</td>
-                  <td className="num text-right text-ice">{p.score}</td>
-                  <td className="num text-right text-faint">❄ {flakes(p.snowflakes)}</td>
-                  <td className="text-right">
-                    {p.streameuse ? (
-                      <span className="text-faint">—</span>
-                    ) : (
-                      // Lecture seule : il se règle sous le pseudo, dans le classement.
-                      <span className={`num ${p.boostersPerso > 0 ? 'text-aurora' : 'text-faint'}`}>
-                        {p.boostersPerso}
-                      </span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="adm-outils">
+          <Recherche
+            valeur={recherche}
+            onChange={setRecherche}
+            placeholder="Chercher un pseudo Twitch ou Activision…"
+          />
+          <Filtres
+            valeur={filtre}
+            onChange={setFiltre}
+            options={[
+              { cle: 'tous', nom: 'Tous', compte: joueurs.length },
+              {
+                cle: 'sansActivision',
+                nom: 'Sans pseudo Activision',
+                compte: joueurs.filter((p) => garde(p, 'sansActivision')).length,
+              },
+              {
+                cle: 'boosters',
+                nom: 'Avec Booster Perso',
+                compte: joueurs.filter((p) => garde(p, 'boosters')).length,
+              },
+              { cle: 'modo', nom: 'Modération', compte: joueurs.filter((p) => garde(p, 'modo')).length },
+            ]}
+          />
         </div>
-      </Bloc>
-    </Ecran>
+        <Tableau
+          lignes={visibles}
+          cleDe={(p) => p.id}
+          triDefaut={{ cle: 'score', desc: true }}
+          vide={recherche.trim() ? 'Aucun pseudo ne correspond.' : 'Aucun joueur dans ce filtre.'}
+          colonnes={[
+            {
+              cle: 'pseudo',
+              titre: 'Joueur',
+              principale: true,
+              largeur: 'minmax(0, 1.4fr)',
+              tri: parTexte((p) => p.pseudo),
+              rendu: (p) => (
+                <span className="adm-joueur">
+                  <a href={`/joueurs/${p.slug}`} className="no-underline">
+                    {p.pseudo}
+                  </a>
+                  {p.streameuse ? (
+                    <Pastille ton="violet">streameuse</Pastille>
+                  ) : (
+                    p.role === 'admin' && <Pastille ton="glace">modération</Pastille>
+                  )}
+                </span>
+              ),
+            },
+            {
+              cle: 'activision',
+              titre: 'Pseudo Activision',
+              largeur: 'minmax(0, 1.5fr)',
+              tri: parTexte((p) => p.activisionId ?? ''),
+              rendu: (p) =>
+                p.streameuse ? (
+                  <span className="text-faint">ne joue pas</span>
+                ) : (
+                  <Activision
+                    joueur={p}
+                    busy={busy === `activision:${p.id}`}
+                    enregistre={(valeur) =>
+                      envoie(
+                        '/api/players',
+                        { playerId: p.id, activisionId: valeur || null },
+                        {
+                          methode: 'PATCH',
+                          cle: `activision:${p.id}`,
+                          succes: `${p.pseudo} : pseudo Activision enregistré.`,
+                        },
+                      )
+                    }
+                  />
+                ),
+            },
+            {
+              cle: 'games',
+              titre: 'Games',
+              align: 'droite',
+              largeur: '5.5rem',
+              tri: parNombre((p) => p.games),
+              rendu: (p) => <span className="num">{p.games}</span>,
+            },
+            {
+              cle: 'score',
+              titre: 'Points',
+              align: 'droite',
+              largeur: '5.5rem',
+              tri: parNombre((p) => p.score),
+              rendu: (p) => <b className="num text-ice">{p.score}</b>,
+            },
+            {
+              cle: 'flocons',
+              titre: 'Flocons',
+              align: 'droite',
+              largeur: '7rem',
+              tri: parNombre((p) => p.snowflakes),
+              rendu: (p) => <span className="num">{flakes(p.snowflakes)} ❄</span>,
+            },
+            {
+              cle: 'boosters',
+              titre: 'Boosters Perso',
+              align: 'droite',
+              largeur: '8rem',
+              tri: parNombre((p) => p.boostersPerso),
+              rendu: (p) =>
+                p.boostersPerso > 0 ? (
+                  <Pastille ton="aurore">{p.boostersPerso} à ouvrir</Pastille>
+                ) : (
+                  <span className="text-faint">—</span>
+                ),
+            },
+            {
+              cle: 'inscrit',
+              titre: 'Arrivé le',
+              align: 'droite',
+              largeur: '7.5rem',
+              tri: parTexte((p) => p.inscritLe),
+              rendu: (p) => <time className="adm-date">{shortDateTime(p.inscritLe)}</time>,
+            },
+          ]}
+        />
+      </Panneau>
+    </EcranAdmin>
   );
 }
 
-/**
- * Le pseudo Activision d'un joueur, à corriger sur place.
- *
- * C'est le nom que la lecture des captures compare aux lignes du tableau de
- * fin de game : quand un joueur n'est jamais reconnu, c'est ici qu'on regarde.
- */
-function ActivisionCellule({
+/** Le pseudo Activision d'un joueur, à corriger sur place. */
+function Activision({
   joueur,
   busy,
   enregistre,
@@ -404,23 +219,23 @@ function ActivisionCellule({
   const modifie = valeur.trim() !== (joueur.activisionId ?? '');
   return (
     <form
-      className="flex items-center gap-1.5"
+      className="adm-activision"
       onSubmit={(e) => {
         e.preventDefault();
         void enregistre(valeur.trim());
       }}
     >
       <input
-        className="field !py-1 text-sm"
-        style={{ minWidth: 150 }}
+        className="field"
         value={valeur}
         onChange={(e) => setValeur(e.target.value)}
         maxLength={40}
-        placeholder="non renseigné"
+        placeholder="à renseigner"
+        data-vide={joueur.activisionId ? undefined : ''}
         aria-label={`Pseudo Activision de ${joueur.pseudo}`}
       />
       {modifie && (
-        <button className="btn btn-sm" disabled={busy}>
+        <button className="btn btn-sm btn-ice" disabled={busy}>
           {busy ? '…' : 'OK'}
         </button>
       )}

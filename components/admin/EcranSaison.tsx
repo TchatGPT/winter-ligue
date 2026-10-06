@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { useAction } from '@/components/admin/action';
-import { Bloc, Ecran } from '@/components/admin/Cadre';
-import { Notice, flakes } from '@/components/ui';
+import { EcranAdmin, Panneau, Pastille } from '@/components/admin/Kit';
+import { flakes } from '@/components/ui';
 import { SUBS, nextMilestone } from '@/lib/domain/rules';
 
 export interface ConfigSaison {
@@ -24,27 +24,17 @@ export interface TwitchSubs {
   retour: RetourSubs | null;
 }
 
-const NOMS_ABONNEMENTS: Record<string, string> = {
-  'channel.chat.notification': 'Subs, resubs et cadeaux (annonces du tchat)',
-  'channel.moderator.add': 'Modos ajoutés',
-  'channel.moderator.remove': 'Modos retirés',
+/** Ce que fait chaque abonnement, en clair. */
+const ABONNEMENTS: Record<string, string> = {
+  'channel.chat.notification': 'Les subs, resubs et subs offerts (sans les Prime)',
+  'channel.moderator.add': 'Un modo ajouté sur Twitch le devient ici',
+  'channel.moderator.remove': 'Un modo retiré sur Twitch ne l’est plus ici',
 };
 
-function libelleStatut(statut: string | null): string {
-  if (statut === 'enabled') return 'actif';
-  if (statut === 'webhook_callback_verification_pending') return 'vérification en cours';
-  if (statut === null) return 'absent';
-  return `coupé (${statut})`;
-}
-
 /**
- * Ce qui se règle une fois, ou une fois par soir : les subs, la limite de
- * games, la sauvegarde. Les deux dernières touchent aux règles de la saison :
- * elles sont réservées aux administrateurs, et le serveur le revérifie.
- *
- * Le compteur de saison verse à tout le monde et met les packs collectifs en
- * file. Les Boosters Perso, eux, se règlent joueur par joueur, dans
- * Modération → Joueurs.
+ * Les subs et la saison : le branchement Twitch, le compteur de subs, la
+ * limite de games et la sauvegarde. La limite et la sauvegarde touchent aux
+ * règles de la saison : le serveur revérifie le rôle.
  */
 export function EcranSaison({
   config,
@@ -59,9 +49,11 @@ export function EcranSaison({
 }) {
   const { busy, message, envoie, setMessage } = useAction();
   const [maxGames, setMaxGames] = useState(config.maxGamesPerPlayer);
-  const [dernierVersement, setDernierVersement] = useState<string | null>(null);
+  const [dernierAjout, setDernierAjout] = useState<string | null>(null);
   /** La remise à zéro se confirme : un premier clic la propose, le second la fait. */
   const [confirmeZero, setConfirmeZero] = useState(false);
+  /** Le retour du branchement Twitch, lu une fois puis refermé. */
+  const [retourLu, setRetourLu] = useState(false);
 
   const prochain = nextMilestone(config.totalSubs);
   const branche = twitch.etat?.branche === true;
@@ -73,20 +65,17 @@ export function EcranSaison({
       { cle: 'subs-zero', succes: 'Compteur de subs remis à zéro.' },
     );
     setConfirmeZero(false);
-    if (data) setDernierVersement(null);
+    if (data) setDernierAjout(null);
   }
 
   async function ajouteSubs(delta: number) {
     const data = await envoie(
       '/api/admin/subs',
       { action: 'subs', delta },
-      { cle: `subs-${delta}`, succes: 'Subs enregistrés.' },
+      { cle: `subs-${delta}`, succes: 'Subs ajoutés.' },
     );
     if (!data) return;
-    const d = data as {
-      milestones: string[];
-      evenements?: { label: string; endsAt: string }[];
-    };
+    const d = data as { milestones: string[]; evenements?: { label: string; endsAt: string }[] };
     // « Booster Commu ×3 » plutôt que trois fois son nom.
     const groupe = (noms: string[]) =>
       [...new Set(noms)].map((n) => {
@@ -95,11 +84,11 @@ export function EcranSaison({
       });
     const boosters = groupe(d.milestones);
     const evenements = groupe((d.evenements ?? []).map((e) => e.label));
-    setDernierVersement(
+    setDernierAjout(
       [
         `+${delta} subs`,
-        boosters.length ? `en file : ${boosters.join(', ')}` : 'aucun booster',
-        evenements.length ? `évènements ouverts : ${evenements.join(', ')}` : null,
+        boosters.length ? `à ouvrir : ${boosters.join(', ')}` : 'pas de nouveau booster',
+        evenements.length ? `évènements : ${evenements.join(', ')}` : null,
       ]
         .filter(Boolean)
         .join(' · '),
@@ -107,195 +96,188 @@ export function EcranSaison({
   }
 
   return (
-    <Ecran
-      titre="Saison"
-      lead="Le compteur de subs de la saison, alimenté par Twitch une fois branché. L’overlay du stream suit le compteur. Les Boosters Perso se règlent dans Modération → Joueurs."
-      message={message}
+    <EcranAdmin
+      intro="Le compteur de subs de la saison, ce qui l’alimente, et les règles de la saison."
+      grille="saison"
+      message={message ?? (twitch.retour && !retourLu ? { kind: twitch.retour.kind, text: twitch.retour.text } : null)}
+      onFermeMessage={() => {
+        setMessage(null);
+        setRetourLu(true);
+      }}
     >
-      {/* Une seule grille : deux colonnes, trois sur un très grand écran, où la
-          limite et la sauvegarde se rangent l'une sous l'autre. */}
-      <div className="grid gap-5 xl:grid-cols-2 3xl:grid-cols-3">
-      {twitch.configure && (
-        <Bloc
-          titre="Twitch : subs, tchat et modos"
-          icone="antenne"
-          neige="admin-twitch"
-          aide={
-            branche
-              ? 'Branchés : chaque sub payé — nouveau sub, resub partagé dans le tchat, sub offert — s’ajoute tout seul au compteur, avec ses paliers ; les subs Prime ne comptent pas. Le même branchement autorise la ligue à annoncer les codes cadeaux dans le tchat, et fait suivre la modération : un modo ajouté ou retiré sur Twitch l’est aussitôt ici.'
-              : 'Une fois branchés, les subs de la chaîne s’ajoutent tout seuls au compteur — sauf les Prime —, les codes cadeaux s’annoncent dans le tchat, et les modos ajoutés ou retirés sur Twitch le sont aussitôt ici. Le branchement se fait une fois, par la streameuse elle-même : Twitch lui demande d’autoriser la ligue à lire et à écrire dans son tchat — c’est là qu’il annonce les subs, et lui seul dit lesquels sont Prime — et à voir ses modos.'
-          }
-          actions={
-            estAdmin ? (
-              <a
-                href="/api/auth/twitch?returnTo=/admin/saison&subs=1"
-                className={`btn btn-sm no-underline ${branche ? '' : 'btn-ice'}`}
-              >
-                {branche ? 'Rebrancher' : 'Brancher les subs Twitch'}
-              </a>
-            ) : undefined
-          }
-        >
-          {twitch.retour && (
-            <div className="mb-3">
-              <Notice kind={twitch.retour.kind}>{twitch.retour.text}</Notice>
-            </div>
-          )}
-          {twitch.etat === null ? (
-            <p className="text-[13px] text-faint">Twitch n’a pas répondu : état inconnu pour l’instant.</p>
-          ) : (
-            <ul className="flex flex-wrap gap-2">
-              {twitch.etat.types.map((t) => (
-                <li
-                  key={t.type}
-                  className={`rounded-full border border-white/15 px-3 py-1 text-[13px] ${
-                    t.statut === 'enabled' ? 'text-aurora' : 'text-faint'
-                  }`}
-                >
-                  {NOMS_ABONNEMENTS[t.type] ?? t.type} · {libelleStatut(t.statut)}
-                </li>
-              ))}
-            </ul>
-          )}
-          {estAdmin && !branche && (
-            <p className="mt-3 text-[13px] text-faint">
-              À faire par la streameuse, sur un navigateur où Twitch est ouvert sur son compte.
-            </p>
-          )}
-        </Bloc>
-      )}
+      {/* ------------------------------ Twitch ------------------------------ */}
+      <Panneau
+        zone="twitch"
+        icone="antenne"
+        ton={twitch.configure && !branche ? 'danger' : 'aurore'}
+        titre={branche ? 'Twitch est branché' : 'Twitch n’est pas branché'}
+        sousTitre={
+          branche
+            ? 'Chaque sub payé arrive tout seul au compteur ; les subs Prime ne comptent pas. Les codes cadeaux s’annoncent dans le tchat.'
+            : 'Sans ce branchement, Twitch ne dit pas quels subs sont Prime : ils comptent comme des subs payés.'
+        }
+        actions={
+          twitch.configure && estAdmin ? (
+            <a
+              href="/api/auth/twitch?returnTo=/admin/saison&subs=1"
+              className={`btn btn-sm no-underline ${branche ? '' : 'btn-ice'}`}
+            >
+              {branche ? 'Rebrancher' : 'Brancher les subs'}
+            </a>
+          ) : undefined
+        }
+      >
+        {!twitch.configure ? (
+          <p className="adm-note">La connexion Twitch n’est pas configurée sur ce serveur.</p>
+        ) : twitch.etat === null ? (
+          <p className="adm-note">Twitch n’a pas répondu : état inconnu pour l’instant.</p>
+        ) : (
+          <ul className="adm-liste-etats">
+            {twitch.etat.types.map((t) => (
+              <li key={t.type} data-actif={t.statut === 'enabled' ? '' : undefined}>
+                <span aria-hidden="true">{t.statut === 'enabled' ? '✓' : '✕'}</span>
+                {ABONNEMENTS[t.type] ?? t.type}
+                {t.statut !== 'enabled' && (
+                  <Pastille ton="danger">
+                    {t.statut === null
+                      ? 'absent'
+                      : t.statut === 'webhook_callback_verification_pending'
+                        ? 'en vérification'
+                        : 'coupé'}
+                  </Pastille>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+        {twitch.configure && !branche && (
+          <p className="adm-etape">
+            <b>À faire par Lriaa elle-même</b>, sur un navigateur où Twitch est ouvert sur son compte : cliquer «
+            Brancher les subs », puis accepter ce que Twitch lui demande.
+          </p>
+        )}
+      </Panneau>
 
-        <Bloc
-          titre="Compteur de subs"
-          icone="snowflake"
-          neige="admin-subs"
-          actions={
-            estAdmin && !confirmeZero ? (
-              <button
-                className="btn btn-sm btn-ghost"
-                disabled={busy !== null || config.totalSubs === 0}
-                onClick={() => setConfirmeZero(true)}
-              >
-                Remettre à zéro
+      {/* ------------------------------ Le compteur ------------------------------ */}
+      <Panneau
+        zone="compteur"
+        icone="snowflake"
+        titre="Compteur de subs"
+        sousTitre="Ses paliers font tomber les Boosters Commu et Folie et ouvrent les évènements, pour tous les joueurs à la fois."
+        actions={
+          estAdmin && !confirmeZero ? (
+            <button
+              className="btn btn-sm btn-ghost"
+              disabled={busy !== null || config.totalSubs === 0}
+              onClick={() => setConfirmeZero(true)}
+            >
+              Remettre à zéro
+            </button>
+          ) : undefined
+        }
+      >
+        <div className="adm-compteur">
+          <strong>{flakes(config.totalSubs)}</strong>
+          <span>
+            subs cette saison
+            {prochain && (
+              <>
+                <br />
+                {prochain.milestone.label} dans {prochain.remaining}
+              </>
+            )}
+          </span>
+        </div>
+
+        {confirmeZero && (
+          <div className="adm-danger">
+            <p>
+              Le compteur repart de <b>0</b>, et les évènements en cours s’arrêtent. Les flocons, les boosters à ouvrir
+              et les subs offerts restent. Le journal garde la trace.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <button className="btn btn-sm btn-danger" disabled={busy !== null} onClick={remetAZero}>
+                Remettre à zéro ({flakes(config.totalSubs)} subs)
               </button>
-            ) : undefined
-          }
-          aide={
-            <>
-              Les paliers mettent les Boosters Commu et Folie en file et ouvrent les évènements, pour{' '}
-              <strong className="text-muted">tous les joueurs actifs</strong> à la fois. Rien ne vise un
-              joueur en particulier.
-              {branche && (
-                <>
-                  {' '}
-                  Les subs de Twitch arrivent tout seuls : ne saisis ici que ce que Twitch ne compte pas.
-                </>
-              )}
-            </>
-          }
-        >
-          {confirmeZero && (
-            <div className="mb-4 rounded-lg border border-danger/40 px-3 py-3">
-              <p className="text-[13px] text-ink-2">
-                Le compteur repart de <strong className="text-ink">0</strong>, son historique s’efface et les
-                évènements en cours s’arrêtent. Les flocons déjà versés, les boosters en file et les subs offerts
-                restent. Le journal garde la trace.
-              </p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <button className="btn btn-sm btn-danger" disabled={busy !== null} onClick={remetAZero}>
-                  Remettre à zéro ({flakes(config.totalSubs)} subs)
-                </button>
-                <button className="btn btn-sm btn-ghost" disabled={busy !== null} onClick={() => setConfirmeZero(false)}>
-                  Annuler
-                </button>
-              </div>
-            </div>
-          )}
-          <div className="flex flex-wrap items-end justify-between gap-3">
-            <div className="flex flex-wrap gap-1.5">
-              {SUBS.adminSteps.map((pas) => (
-                <button
-                  key={pas}
-                  className="btn btn-sm"
-                  disabled={busy !== null}
-                  onClick={() => ajouteSubs(pas)}
-                >
-                  +{pas}
-                </button>
-              ))}
-            </div>
-            <div className="text-right">
-              <div className="num font-display text-5xl leading-none font-black text-ink">
-                {flakes(config.totalSubs)}
-              </div>
-              {prochain && (
-                <div className="text-[13px] text-faint">
-                  {prochain.milestone.label} dans {prochain.remaining} sub
-                  {prochain.remaining > 1 ? 's' : ''}
-                </div>
-              )}
+              <button className="btn btn-sm btn-ghost" disabled={busy !== null} onClick={() => setConfirmeZero(false)}>
+                Annuler
+              </button>
             </div>
           </div>
+        )}
 
-          {dernierVersement && (
-            <p className="mt-3 rounded-lg border border-aurora/40 bg-aurora/5 px-3 py-2 text-[13px] text-aurora">
-              {dernierVersement}
-            </p>
-          )}
+        <p className="adm-sous-titre">Ajouter des subs à la main</p>
+        <p className="adm-note">
+          {branche
+            ? 'Twitch les compte déjà : n’ajoute ici que ce qu’il n’a pas vu.'
+            : 'Pour les subs que Twitch n’a pas comptés.'}
+        </p>
+        <div className="adm-rapides" role="group" aria-label="Ajouter des subs">
+          {SUBS.adminSteps.map((pas) => (
+            <button key={pas} type="button" disabled={busy !== null} onClick={() => ajouteSubs(pas)}>
+              +{pas}
+            </button>
+          ))}
+        </div>
+        {dernierAjout && <p className="adm-retour">{dernierAjout}</p>}
+        <p className="adm-note">
+          {packsEnFile === 0
+            ? 'Aucun booster à ouvrir.'
+            : `${packsEnFile} booster${packsEnFile > 1 ? 's' : ''} à ouvrir depuis la page Boosters.`}
+        </p>
+      </Panneau>
 
-          <p className="mt-3 text-[13px] text-faint">
-            {packsEnFile === 0
-              ? 'Aucun booster en file.'
-              : `${packsEnFile} booster${packsEnFile > 1 ? 's' : ''} en file, à ouvrir depuis l’écran des boosters.`}
-          </p>
-        </Bloc>
+      {/* ------------------------------ Les règles ------------------------------ */}
+      {estAdmin && (
+        <Panneau
+          zone="regles"
+          icone="trophy"
+          titre="Games par joueur"
+          sousTitre="Le nombre de games qui comptent pour chaque joueur. La dernière ouvre son Booster Finisseur."
+        >
+          <form
+            className="adm-ligne-form"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void envoie(
+                '/api/admin/config',
+                { maxGamesPerPlayer: maxGames },
+                { methode: 'PATCH', succes: 'Limite de games enregistrée.' },
+              );
+            }}
+          >
+            <input
+              type="number"
+              className="field num"
+              min={1}
+              max={100}
+              value={maxGames}
+              onChange={(e) => setMaxGames(Number(e.target.value))}
+              aria-label="Games par joueur"
+            />
+            <button className="btn" disabled={busy !== null || maxGames === config.maxGamesPerPlayer}>
+              Enregistrer
+            </button>
+          </form>
+        </Panneau>
+      )}
 
       {estAdmin && (
-        <div className="grid gap-5 xl:contents 3xl:grid 3xl:content-start">
-          <Bloc
-            titre="Limite de games"
-            icone="trophy"
-            aide="Le nombre de games comptées par joueur. La dernière ouvre le Booster Finisseur."
+        <Panneau
+          zone="sauvegarde"
+          icone="layers"
+          titre="Sauvegarde"
+          sousTitre="Un export complet de la base, journal compris. Il contient des données personnelles : à garder pour soi, et à supprimer une fois inutile."
+        >
+          <a
+            href="/api/admin/backup"
+            className="btn no-underline"
+            onClick={() => setMessage({ kind: 'success', text: 'Export lancé.' })}
           >
-            <div className="flex gap-2">
-              <input
-                id="max-games"
-                type="number"
-                className="field num"
-                min={1}
-                max={100}
-                value={maxGames}
-                onChange={(e) => setMaxGames(Number(e.target.value))}
-                aria-label="Limite de games par joueur"
-              />
-              <button
-                className="btn shrink-0"
-                disabled={busy !== null}
-                onClick={() =>
-                  envoie('/api/admin/config', { maxGamesPerPlayer: maxGames }, { methode: 'PATCH' })
-                }
-              >
-                Appliquer
-              </button>
-            </div>
-          </Bloc>
-
-          <Bloc
-            titre="Sauvegarde"
-            icone="layers"
-            aide="Un export complet, journal compris. Il contient des données personnelles : à garder hors du dépôt, et à supprimer une fois inutile. La restauration depuis le site est fermée."
-          >
-            <a
-              href="/api/admin/backup"
-              className="btn no-underline"
-              onClick={() => setMessage({ kind: 'success', text: 'Export lancé.' })}
-            >
-              Exporter la base (JSON)
-            </a>
-          </Bloc>
-        </div>
+            Exporter la base (JSON)
+          </a>
+        </Panneau>
       )}
-      </div>
-    </Ecran>
+    </EcranAdmin>
   );
 }

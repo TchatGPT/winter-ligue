@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useAction } from '@/components/admin/action';
-import { Bloc, Ecran } from '@/components/admin/Cadre';
+import { EcranAdmin, Panneau } from '@/components/admin/Kit';
 import type { NavIconName } from '@/components/icons';
 import { OverlayBooster } from '@/components/overlay/OverlayBooster';
 import { OverlayDuel } from '@/components/overlay/OverlayDuel';
@@ -11,32 +11,33 @@ import { vueSubsDemo } from '@/components/overlay/demo';
 
 type IdOverlay = 'booster' | 'duel' | 'subs';
 
-const OVERLAYS: { id: IdOverlay; titre: string; icone: NavIconName; aide: string; largeur: number; hauteur: number }[] = [
-  {
-    id: 'booster',
-    titre: 'Ouverture de booster',
-    icone: 'rocket',
-    aide: 'Quand la streameuse ouvre un booster : il surgit en 3D avec le nom du joueur, s’ouvre sur le rail du site, puis la carte reste quelques secondes à l’écran.',
-    largeur: 1920,
-    hauteur: 1080,
-  },
-  {
-    id: 'duel',
-    titre: 'Duel lancé',
-    icone: 'swords',
-    aide: 'Quand un joueur lance un duel et attend un adversaire : son nom, sa mise, et « !duel » dans le tchat en dessous.',
-    largeur: 1200,
-    hauteur: 420,
-  },
-  {
-    id: 'subs',
-    titre: 'Compteur de subs',
-    icone: 'snowflake',
-    aide: 'Toujours affiché : les subs de la saison, le prochain palier et ce qu’il rapporte, l’évènement qui vient.',
-    largeur: 880,
-    hauteur: 260,
-  },
-];
+const OVERLAYS: { id: IdOverlay; titre: string; icone: NavIconName; aide: string; largeur: number; hauteur: number }[] =
+  [
+    {
+      id: 'booster',
+      titre: 'Ouverture de booster',
+      icone: 'rocket',
+      aide: 'Quand la streameuse ouvre un booster : il surgit en 3D avec le nom du joueur, s’ouvre sur le rail du site, puis la carte reste quelques secondes à l’écran.',
+      largeur: 1920,
+      hauteur: 1080,
+    },
+    {
+      id: 'duel',
+      titre: 'Duel lancé',
+      icone: 'swords',
+      aide: 'Quand un joueur lance un duel et attend un adversaire : son nom, sa mise, et « !duel » dans le tchat en dessous.',
+      largeur: 1200,
+      hauteur: 420,
+    },
+    {
+      id: 'subs',
+      titre: 'Compteur de subs',
+      icone: 'snowflake',
+      aide: 'Toujours affiché : les subs de la saison, le prochain palier et ce qu’il rapporte, l’évènement qui vient.',
+      largeur: 880,
+      hauteur: 260,
+    },
+  ];
 
 /**
  * Les overlays du stream : un aperçu qui tourne, le lien à coller dans OBS,
@@ -75,7 +76,11 @@ export function EcranOverlays({
   }
 
   async function regenere() {
-    if (!window.confirm('Tous les liens d’overlay actuels cesseront de marcher. Il faudra les recoller dans OBS. Continuer ?')) {
+    if (
+      !window.confirm(
+        'Tous les liens d’overlay actuels cesseront de marcher. Il faudra les recoller dans OBS. Continuer ?',
+      )
+    ) {
       return;
     }
     setVisible(null);
@@ -83,75 +88,77 @@ export function EcranOverlays({
   }
 
   return (
-    <Ecran
-      titre="Overlays"
-      lead="Trois sources pour OBS, aux couleurs du site. Elles suivent la ligue en direct : rien à déclencher à la main."
+    <EcranAdmin
+      intro="Trois sources pour OBS, aux couleurs du site. Elles suivent la ligue en direct : rien à déclencher à la main."
+      grille="overlays"
       message={message}
-      actions={
-        estAdmin && (
-          <button className="btn btn-sm btn-danger" disabled={busy !== null} onClick={regenere}>
-            Régénérer les liens
-          </button>
-        )
-      }
+      onFermeMessage={() => setMessage(null)}
     >
-      <Bloc titre="Dans OBS" icone="antenne" neige="admin-obs">
-        <ol className="admin-etapes">
+      <Panneau
+        zone="obs"
+        icone="antenne"
+        titre="Dans OBS"
+        sousTitre="Un lien ne montre que ce que le stream montre déjà. Ne l’affiche pas en direct ; s’il a fuité, régénère les liens."
+        actions={
+          estAdmin && (
+            <button className="btn btn-sm btn-danger" disabled={busy !== null} onClick={regenere}>
+              Régénérer les liens
+            </button>
+          )
+        }
+      >
+        <ol className="adm-etapes">
           <li>
-            <strong>Sources</strong> → <strong>+</strong> → <strong>Navigateur</strong>.
+            <b>Sources</b> → <b>+</b> → <b>Navigateur</b>.
           </li>
-          <li>Colle le lien de l’overlay, et règle la largeur et la hauteur conseillées.</li>
+          <li>Colle le lien de l’overlay, avec la largeur et la hauteur conseillées.</li>
           <li>
-            Coche <strong>« Rafraîchir le navigateur quand la scène devient active »</strong>. Le fond est déjà
-            transparent : aucun CSS à ajouter.
+            Coche <b>« Rafraîchir le navigateur quand la scène devient active »</b>. Le fond est déjà transparent.
           </li>
         </ol>
-        <p className="admin-note">
-          Un lien ne montre que ce que le stream montre déjà, sans rien pouvoir modifier. Ne l’affiche pas en
-          direct ; s’il a fuité, régénère les liens.
-        </p>
-      </Bloc>
+      </Panneau>
 
-      <div className="admin-overlays">
-        {OVERLAYS.map((o) => (
-          <Bloc key={o.id} titre={o.titre} icone={o.icone} aide={o.aide}>
-            <div className="admin-apercu" style={{ aspectRatio: `${o.largeur} / ${o.hauteur}` }}>
-              {o.id === 'booster' && <OverlayBooster cle="" depart={depart} demo />}
-              {o.id === 'duel' && <OverlayDuel cle="" depart={depart} demo />}
-              {o.id === 'subs' && <OverlaySubs cle="" depart={depart} initial={vueSubsDemo(42)} demo />}
-            </div>
+      {OVERLAYS.map((o) => (
+        <Panneau key={o.id} zone={o.id} titre={o.titre} icone={o.icone} sousTitre={o.aide}>
+          <div className="admin-apercu" style={{ aspectRatio: `${o.largeur} / ${o.hauteur}` }}>
+            {o.id === 'booster' && <OverlayBooster cle="" depart={depart} demo />}
+            {o.id === 'duel' && <OverlayDuel cle="" depart={depart} demo />}
+            {o.id === 'subs' && <OverlaySubs cle="" depart={depart} initial={vueSubsDemo(42)} demo />}
+          </div>
 
-            <div className="admin-lien">
-              <code title={visible === o.id ? lien(o.id) : undefined}>
-                {visible === o.id ? lien(o.id) : `${base}/overlay/${o.id}?cle=••••••••••••`}
-              </code>
-              <div className="admin-lien-actions">
-                <button className="btn btn-sm" onClick={() => setVisible((v) => (v === o.id ? null : o.id))}>
-                  {visible === o.id ? 'Masquer' : 'Afficher'}
-                </button>
-                <button className="btn btn-sm btn-ice" onClick={() => copie(o.id)}>
-                  Copier le lien
-                </button>
-              </div>
+          <div className="admin-lien">
+            <code title={visible === o.id ? lien(o.id) : undefined}>
+              {visible === o.id ? lien(o.id) : `${base}/overlay/${o.id}?cle=••••••••••••`}
+            </code>
+            <div className="admin-lien-actions">
+              <button className="btn btn-sm" onClick={() => setVisible((v) => (v === o.id ? null : o.id))}>
+                {visible === o.id ? 'Masquer' : 'Afficher'}
+              </button>
+              <button className="btn btn-sm btn-ice" onClick={() => copie(o.id)}>
+                Copier le lien
+              </button>
             </div>
+          </div>
 
-            <div className="admin-overlay-pied">
-              <span>
-                Source conseillée : <strong>{o.largeur} × {o.hauteur}</strong>
-              </span>
-              {o.id === 'booster' && (
-                <label className="admin-case">
-                  <input type="checkbox" checked={son} onChange={(e) => setSon(e.target.checked)} />
-                  Avec le son du rail
-                </label>
-              )}
-              <a href={`/overlay/${o.id}?demo=1`} target="_blank" rel="noreferrer" className="admin-lien-demo">
-                Aperçu plein écran ↗
-              </a>
-            </div>
-          </Bloc>
-        ))}
-      </div>
-    </Ecran>
+          <div className="admin-overlay-pied">
+            <span>
+              Taille :{' '}
+              <strong>
+                {o.largeur} × {o.hauteur}
+              </strong>
+            </span>
+            {o.id === 'booster' && (
+              <label className="admin-case">
+                <input type="checkbox" checked={son} onChange={(e) => setSon(e.target.checked)} />
+                Avec le son
+              </label>
+            )}
+            <a href={`/overlay/${o.id}?demo=1`} target="_blank" rel="noreferrer" className="admin-lien-demo">
+              Aperçu plein écran ↗
+            </a>
+          </div>
+        </Panneau>
+      ))}
+    </EcranAdmin>
   );
 }
