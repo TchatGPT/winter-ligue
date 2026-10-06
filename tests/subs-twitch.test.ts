@@ -182,3 +182,28 @@ describe('le bilan des subs d’un joueur, pour sa fiche', () => {
     expect(bilanDesSubs(db.subsTwitch, null)).toEqual({ offerts: 0, niveau3: 0, siens: 0 });
   });
 });
+
+describe('les Boosters Perso payés avant l’inscription', () => {
+  it('sont versés à la première connexion, d’après le registre', () => {
+    const db = base();
+    // Queen_Ludi n'a pas de compte : ses cinq subs offerts restent au registre.
+    ajouteSubsTwitch(db, annonce('community_sub_gift', { id: 'cg', total: 5, sub_tier: '1000' }, 'tw-queen'));
+    ajouteSubsTwitch(db, annonce('sub', sub('3000'), 'tw-queen'));
+    expect(boostersPerso(db)).toHaveLength(0);
+
+    const profil = {
+      id: 'tw-queen',
+      login: 'queen_ludi',
+      displayName: 'Queen_Ludi',
+      avatarUrl: null,
+      roleChaine: 'joueur' as const,
+    };
+    const queen = rattacheCompteTwitch(db, profil, db.subsTwitch);
+    expect(boostersPerso(db).filter((b) => b.joueurId === queen.id)).toHaveLength(2);
+    expect(queen.subsOfferts).toBe(5);
+
+    // Se reconnecter ne les verse pas une seconde fois.
+    rattacheCompteTwitch(db, profil, db.subsTwitch);
+    expect(boostersPerso(db).filter((b) => b.joueurId === queen.id)).toHaveLength(2);
+  });
+});

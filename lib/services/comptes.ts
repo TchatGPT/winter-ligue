@@ -1,10 +1,11 @@
 import 'server-only';
 
-import type { Database, Player, PlayerRole } from '@/lib/db/entities';
+import type { Database, Player, PlayerRole, SubTwitch } from '@/lib/db/entities';
 import { newId } from '@/lib/db/store';
 import { ECONOMY } from '@/lib/domain/rules';
 import { makeSlug } from '@/lib/services/league';
 import { audit, credit } from '@/lib/services/ledger';
+import { crediteBoostersPerso } from '@/lib/services/packs';
 
 /** Ce que la connexion Twitch sait de la personne. */
 export interface ProfilTwitch {
@@ -32,9 +33,18 @@ export interface ProfilTwitch {
  * route de refuser la session. Il a longtemps été réactivé ici, en silence —
  * une exclusion se défaisait d'un simple clic sur « Se connecter ».
  *
+ * Un compte qui naît reçoit les Boosters Perso de ce qu'il a payé avant de
+ * s'inscrire — ses subs T3, ses subs offerts —, d'après le registre des subs
+ * (`registre`, lu à part : il ne se charge pas avec la base). Une seule fois :
+ * à la création du compte.
+ *
  * À appeler dans une transaction.
  */
-export function rattacheCompteTwitch(db: Database, profil: ProfilTwitch): Player {
+export function rattacheCompteTwitch(
+  db: Database,
+  profil: ProfilTwitch,
+  registre: readonly SubTwitch[] = [],
+): Player {
   const existant = db.players.find((p) => p.twitchId === profil.id);
   if (existant) {
     // On rafraîchit l'affichage sans toucher au slug déjà partagé en lien.
@@ -71,6 +81,14 @@ export function rattacheCompteTwitch(db: Database, profil: ProfilTwitch): Player
   if (ECONOMY.welcomeGrant > 0) credit(db, cree.id, ECONOMY.welcomeGrant, 'INSCRIPTION', null);
   if (cree.role !== 'joueur') {
     audit(db, 'twitch', 'ROLE_CHAINE', cree.id, `${cree.pseudo} : ${cree.role}`);
+  }
+  // Ce qu'il a payé avant de s'inscrire : un Booster Perso par sub T3, et un
+  // tous les cinq subs offerts de niveau 1 ou 2.
+  const siens = registre.filter((l) => l.twitchId === profil.id);
+  const niveau3 = siens.filter((l) => l.niveau === 3).reduce((n, l) => n + l.nombre, 0);
+  const offerts = siens.filter((l) => l.genre === 'cadeau' && l.niveau !== 3).reduce((n, l) => n + l.nombre, 0);
+  if (niveau3 > 0 || offerts > 0) {
+    crediteBoostersPerso(db, cree, { niveau3, offerts }, 'subs payés avant son inscription');
   }
   return cree;
 }

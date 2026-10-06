@@ -39,6 +39,9 @@ export const dynamic = 'force-dynamic';
  * autorisant la lecture de ses subs, et le site crée ses abonnements EventSub.
  * Quelqu'un d'autre qui tenterait le même chemin est connecté, sans plus.
  */
+/** Assez de registre pour une saison de subs. */
+const REGISTRE_SUBS = 5000;
+
 export async function GET(request: Request): Promise<NextResponse> {
   const g = await guard(request, { scope: 'twitch-retour', limit: LIMITS.mutation });
   if (!g.ok) return g.response;
@@ -59,7 +62,10 @@ export async function GET(request: Request): Promise<NextResponse> {
   const profile = await exchangeCode(code, url.origin);
   if (!profile) return refus('twitch');
 
-  const player = await getStore().transaction((db) => rattacheCompteTwitch(db, profile));
+  // Le registre des subs : un compte qui naît reçoit les Boosters Perso de ce
+  // qu'il a payé avant de s'inscrire.
+  const registre = await getStore().subsTwitch(REGISTRE_SUBS);
+  const player = await getStore().transaction((db) => rattacheCompteTwitch(db, profile, registre));
   if (!player.active) return refus('desactive');
 
   await setSessionCookie(createToken(player.id, player.role));

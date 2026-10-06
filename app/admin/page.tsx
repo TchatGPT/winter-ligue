@@ -85,7 +85,7 @@ export default async function AdminAccueilPage() {
           titre="Boosters Perso en attente"
           icone="snowflake"
           neige="admin-attente"
-          aide={`Ils ont payé des subs sans être inscrits à la ligue. Un Booster Perso par sub T3, pris ou offert, et un tous les ${PACKS_REGLES.persoTousLes} subs offerts : dès qu’ils s’inscrivent, ajoute-les dans Joueurs.`}
+          aide={`Ils ont payé des subs sans être inscrits à la ligue. Un Booster Perso par sub T3, pris ou offert, et un tous les ${PACKS_REGLES.persoTousLes} subs offerts : ils leur sont versés d’office à leur première connexion.`}
         >
           {enAttente.length === 0 ? (
             <EmptyState title="Personne en attente" hint="Un abonné T3 ou un donateur non inscrit apparaîtra ici." />
@@ -115,7 +115,7 @@ export default async function AdminAccueilPage() {
         <Bloc
           titre="Les subs"
           icone="antenne"
-          aide="Chaque sub compté depuis Twitch, le plus récent en tête. Un sub T3 vaut un Booster Perso à qui l’a payé : à ajouter dans Joueurs."
+          aide="Chaque sub compté depuis Twitch, le plus récent en tête. Un sub T3, et cinq subs offerts, valent un Booster Perso à qui les a payés : versé d’office."
           className="xl:row-span-2 3xl:row-span-1"
         >
           {registre.length === 0 ? (
