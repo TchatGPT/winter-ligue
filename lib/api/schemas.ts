@@ -184,4 +184,7 @@ export const adminSubsSchema = z.union([
 /** Le − ou le + du compteur de Boosters Perso d'un joueur. */
 export const boostersPersoSchema = z.object({ playerId: uuid, sens: z.enum(['plus', 'moins']) });
 
+/** Redonner un booster cadeau à un joueur : le serveur choisit de quelle réserve. */
+export const boosterCadeauSchema = z.object({ playerId: uuid });
+
 export type GameInput = z.infer<typeof gameSchema>;

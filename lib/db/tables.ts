@@ -92,6 +92,7 @@ export const COLLECTIONS: Collection[] = [
       c('raison', 'raison', 'text'),
       c('creeA', 'cree_le', 'ts'),
       c('ouvertureId', 'ouverture_id', 'text'),
+      c('donDe', 'donateur_twitch_id', 'text'),
     ],
   },
   {
@@ -426,6 +427,10 @@ alter table joueurs add column if not exists immunise_jusqua timestamptz;
 
 -- La révocation des sessions : celles ouvertes avant cette date sont refusées.
 alter table joueurs add column if not exists sessions_depuis timestamptz;
+
+-- Un booster cadeau : payé par quelqu'un qui n'est pas inscrit, redonné par la
+-- modération à un joueur de la ligue.
+alter table boosters_a_ouvrir add column if not exists donateur_twitch_id text;
 
 -- Un rôle choisi à la main : la connexion Twitch n'y touche plus.
 alter table joueurs add column if not exists role_manuel boolean not null default false;

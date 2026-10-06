@@ -129,6 +129,12 @@ export interface PackDu {
   creeA: string;
   /** Renseigné à l'ouverture. Un pack ouvert reste dans la file, comme trace. */
   ouvertureId: string | null;
+  /**
+   * Un booster cadeau : le compte Twitch de qui l'a payé sans être inscrit, et
+   * dont la modération l'a redonné à ce joueur. Nul sinon. C'est ce qui le
+   * retire de la réserve, et de ce que l'autre recevra s'il s'inscrit.
+   */
+  donDe?: string | null;
 }
 
 /** Une ouverture de pack : le tirage, et sur qui il est tombé. */

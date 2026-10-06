@@ -5,7 +5,7 @@ import { newId } from '@/lib/db/store';
 import { ECONOMY } from '@/lib/domain/rules';
 import { makeSlug } from '@/lib/services/league';
 import { audit, credit } from '@/lib/services/ledger';
-import { crediteBoostersPerso } from '@/lib/services/packs';
+import { boostersCadeauDonnes, crediteBoostersPerso } from '@/lib/services/packs';
 
 /** Ce que la connexion Twitch sait de la personne. */
 export interface ProfilTwitch {
@@ -88,7 +88,9 @@ export function rattacheCompteTwitch(
   const niveau3 = siens.filter((l) => l.niveau === 3).reduce((n, l) => n + l.nombre, 0);
   const offerts = siens.filter((l) => l.genre === 'cadeau' && l.niveau !== 3).reduce((n, l) => n + l.nombre, 0);
   if (niveau3 > 0 || offerts > 0) {
-    crediteBoostersPerso(db, cree, { niveau3, offerts }, 'subs payés avant son inscription');
+    // Ceux que la modération a déjà redonnés en boosters cadeau ne lui reviennent pas.
+    const dejaDonnes = boostersCadeauDonnes(db).get(profil.id) ?? 0;
+    crediteBoostersPerso(db, cree, { niveau3, offerts }, 'subs payés avant son inscription', dejaDonnes);
   }
   return cree;
 }

@@ -25,7 +25,8 @@ import 'server-only';
  */
 
 import { chaineDeLaLigue } from '@/lib/auth/twitch';
-import type { Database, OuverturePack, PackDu, Player } from '@/lib/db/entities';
+import type { Database, OuverturePack, PackDu, Player, SubTwitch } from '@/lib/db/entities';
+import { persoEnAttente } from '@/lib/domain/twitchSubs';
 import { newId } from '@/lib/db/store';
 import { getCard, getPack, joueursTires, momentDe, PACKS } from '@/lib/domain/catalog';
 import { pick, tirePack } from '@/lib/domain/rng';
@@ -180,11 +181,16 @@ export function crediteBoostersPerso(
   joueur: Player,
   subs: { niveau3: number; offerts: number },
   raison: string,
+  /** Ceux que la modération a déjà redonnés à d'autres : ils ne lui reviennent pas. */
+  dejaDonnes = 0,
 ): number {
   if (!joueur.active || estLaStreameuse(joueur, chaineDeLaLigue())) return 0;
   const avant = joueur.subsOfferts;
   joueur.subsOfferts = avant + Math.max(0, subs.offerts);
-  const gagnes = packsPersoAcquis(joueur.subsOfferts, subs.niveau3) - packsPersoAcquis(avant);
+  const gagnes = Math.max(
+    0,
+    packsPersoAcquis(joueur.subsOfferts, subs.niveau3) - packsPersoAcquis(avant) - Math.max(0, dejaDonnes),
+  );
   for (let i = 0; i < gagnes; i += 1) ajoutePackDu(db, 'perso', joueur.id, raison);
   if (gagnes > 0) {
     audit(
@@ -196,6 +202,58 @@ export function crediteBoostersPerso(
     );
   }
   return gagnes;
+}
+
+/** Les boosters cadeau déjà redonnés, par compte Twitch de qui les a payés. */
+export function boostersCadeauDonnes(db: Database): Map<string, number> {
+  const donnes = new Map<string, number>();
+  for (const p of db.packsDus) if (p.donDe) donnes.set(p.donDe, (donnes.get(p.donDe) ?? 0) + 1);
+  return donnes;
+}
+
+/**
+ * Redonne un booster cadeau à un joueur de la ligue.
+ *
+ * Un booster cadeau, c'est un Booster Perso payé par quelqu'un qui n'est pas
+ * inscrit (`persoEnAttente`). Il se prend sur le plus ancien donateur qui en a
+ * encore, et retient son compte Twitch (`donDe`) : il sort de la réserve, et ne
+ * lui sera pas versé s'il s'inscrit plus tard. La streameuse n'en reçoit pas.
+ *
+ * Le registre se lit hors de la base (`Store.subsTwitch`) : on le passe.
+ * À appeler dans une transaction.
+ */
+export function donneBoosterCadeau(
+  db: Database,
+  joueurId: string,
+  registre: readonly SubTwitch[],
+  auteur: string,
+): { boostersPerso: number; reserve: number; donateur: string } {
+  const joueur = db.players.find((p) => p.id === joueurId && p.active);
+  if (!joueur) throw new PackError('Joueur introuvable.', 'JOUEUR_INTROUVABLE');
+  if (estLaStreameuse(joueur, chaineDeLaLigue())) {
+    throw new PackError('La streameuse ne joue pas : pas de Booster Perso pour elle.', 'STREAMEUSE');
+  }
+  const inscrits = new Set(db.players.map((p) => p.twitchId).filter((id): id is string => Boolean(id)));
+  const sources = persoEnAttente(registre, inscrits, boostersCadeauDonnes(db))
+    .filter((s) => s.restants > 0)
+    .sort((a, b) => a.premier.localeCompare(b.premier));
+  const source = sources[0];
+  if (!source) throw new PackError('Plus aucun booster cadeau à redonner.', 'AUCUN_DU');
+
+  const du = ajoutePackDu(db, 'perso', joueur.id, `booster cadeau, payé par ${source.pseudo}`);
+  du.donDe = source.twitchId;
+  const reserve = sources.reduce((n, s) => n + s.restants, 0) - 1;
+  const boostersPerso = db.packsDus.filter(
+    (p) => p.packId === 'perso' && p.joueurId === joueur.id && p.ouvertureId === null,
+  ).length;
+  audit(
+    db,
+    auteur,
+    'BOOSTER_CADEAU_DONNE',
+    joueur.id,
+    `${joueur.pseudo} reçoit un booster cadeau payé par ${source.pseudo} (réserve : ${reserve})`,
+  );
+  return { boostersPerso, reserve, donateur: source.pseudo };
 }
 
 /**

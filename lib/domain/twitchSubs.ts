@@ -304,15 +304,26 @@ export interface PersoEnAttente {
   niveau3: number;
   /** Les Boosters Perso qu'ils valent. */
   boosters: number;
+  /** Ceux que la modération en a déjà redonnés à des joueurs de la ligue. */
+  donnes: number;
+  /** Ce qui reste à redonner — ou à lui verser, s'il s'inscrit. */
+  restants: number;
+  premier: string;
   dernier: string;
 }
 
 /**
  * Qui a payé des subs qui valent un Booster Perso — des subs offerts, des subs
- * de niveau 3 — sans être inscrit à la ligue : ses Boosters Perso l'attendent.
- * Les cadeaux anonymes n'y figurent pas — on ne sait pas de qui.
+ * de niveau 3 — sans être inscrit à la ligue. Ses Boosters Perso forment la
+ * réserve des boosters cadeau : la modération les redonne à des joueurs de la
+ * ligue (`donnes`, par compte Twitch), et ce qui reste lui est versé s'il
+ * s'inscrit. Les cadeaux anonymes n'y figurent pas — on ne sait pas de qui.
  */
-export function persoEnAttente(registre: readonly LigneSub[], inscrits: ReadonlySet<string>): PersoEnAttente[] {
+export function persoEnAttente(
+  registre: readonly LigneSub[],
+  inscrits: ReadonlySet<string>,
+  donnes: ReadonlyMap<string, number> = new Map(),
+): PersoEnAttente[] {
   const parPersonne = new Map<string, PersoEnAttente>();
   for (const l of registre) {
     if (!l.twitchId || inscrits.has(l.twitchId)) continue;
@@ -327,12 +338,27 @@ export function persoEnAttente(registre: readonly LigneSub[], inscrits: Readonly
         deja.dernier = l.le;
         deja.pseudo = l.pseudo;
       }
+      if (l.le < deja.premier) deja.premier = l.le;
     } else {
-      parPersonne.set(l.twitchId, { twitchId: l.twitchId, pseudo: l.pseudo, offerts, niveau3, boosters: 0, dernier: l.le });
+      parPersonne.set(l.twitchId, {
+        twitchId: l.twitchId,
+        pseudo: l.pseudo,
+        offerts,
+        niveau3,
+        boosters: 0,
+        donnes: 0,
+        restants: 0,
+        premier: l.le,
+        dernier: l.le,
+      });
     }
   }
   return [...parPersonne.values()]
-    .map((p) => ({ ...p, boosters: packsPersoAcquis(p.offerts, p.niveau3) }))
+    .map((p) => {
+      const boosters = packsPersoAcquis(p.offerts, p.niveau3);
+      const donnesIci = Math.min(boosters, donnes.get(p.twitchId) ?? 0);
+      return { ...p, boosters, donnes: donnesIci, restants: boosters - donnesIci };
+    })
     .sort(
       (a, b) =>
         b.boosters - a.boosters ||

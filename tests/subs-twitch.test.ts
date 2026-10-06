@@ -3,6 +3,7 @@ import type { Database } from '@/lib/db/entities';
 import { emptyDatabase } from '@/lib/db/store';
 import { bilanDesSubs, TYPE_TCHAT } from '@/lib/domain/twitchSubs';
 import { rattacheCompteTwitch } from '@/lib/services/comptes';
+import { donneBoosterCadeau } from '@/lib/services/packs';
 import { ajouteSubsTwitch, remetSubsAZero } from '@/lib/services/subs';
 
 /**
@@ -205,5 +206,32 @@ describe('les Boosters Perso payés avant l’inscription', () => {
     // Se reconnecter ne les verse pas une seconde fois.
     rattacheCompteTwitch(db, profil, db.subsTwitch);
     expect(boostersPerso(db).filter((b) => b.joueurId === queen.id)).toHaveLength(2);
+  });
+});
+
+describe('les boosters cadeau', () => {
+  it('se redonnent à un joueur, et ne reviennent pas à qui les a payés s’il s’inscrit ensuite', () => {
+    const db = base();
+    // Deux non-inscrits : dix subs offerts (2 boosters), puis un T3 (1 booster).
+    ajouteSubsTwitch(db, annonce('community_sub_gift', { id: 'cg', total: 10, sub_tier: '1000' }, 'tw-queen'));
+    ajouteSubsTwitch(db, annonce('sub', sub('3000'), 'tw-absinthe'));
+    const genereux = joueur(db);
+
+    // Le premier se prend sur le plus ancien donateur.
+    const r = donneBoosterCadeau(db, genereux.id, db.subsTwitch, 'modo');
+    expect(r).toMatchObject({ boostersPerso: 1, reserve: 2, donateur: 'X' });
+    expect(boostersPerso(db).filter((b) => b.joueurId === genereux.id)).toHaveLength(1);
+
+    // Queen s'inscrit : elle ne reçoit que le booster qui n'a pas été redonné.
+    const queen = rattacheCompteTwitch(
+      db,
+      { id: 'tw-queen', login: 'queen', displayName: 'Queen', avatarUrl: null, roleChaine: 'joueur' },
+      db.subsTwitch,
+    );
+    expect(boostersPerso(db).filter((b) => b.joueurId === queen.id)).toHaveLength(1);
+
+    // Il reste le T3 d'absinthe, puis plus rien.
+    expect(donneBoosterCadeau(db, genereux.id, db.subsTwitch, 'modo').reserve).toBe(0);
+    expect(() => donneBoosterCadeau(db, genereux.id, db.subsTwitch, 'modo')).toThrow('Plus aucun booster cadeau');
   });
 });
