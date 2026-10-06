@@ -12802,45 +12802,94 @@
   gap: 0.9rem;
 }
 
-/* L'alerte : une bande, pas un panneau. */
+/* L'alerte : un bandeau, comme ceux des évènements en haut du site — une
+   médaille, ce qu'il faut faire, et le bouton. */
 .adm-alerte {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.6rem 0.85rem;
-  padding: 0.6rem 0.7rem 0.6rem 0.8rem;
+  gap: 0.6rem 1rem;
+  padding: 0.7rem 0.8rem 0.7rem 0.85rem;
   border-radius: var(--r-md);
-  background: color-mix(in srgb, var(--danger) 13%, rgb(0 10 30 / 0.4));
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--danger) 45%, transparent);
+  background:
+    linear-gradient(100deg, color-mix(in srgb, var(--danger) 20%, transparent) 0%, transparent 60%),
+    linear-gradient(160deg, var(--glass-1) 0%, var(--glass-2) 100%);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--danger) 40%, transparent),
+    inset 0 1px 0 rgb(255 255 255 / 0.4);
 }
-.adm-alerte-icone {
-  display: grid;
-  width: 1.75rem;
-  height: 1.75rem;
-  flex: none;
-  place-items: center;
-  border-radius: var(--r-pilule);
-  font-family: var(--font-display);
-  font-weight: 900;
-  color: var(--danger);
-  background: color-mix(in srgb, var(--danger) 18%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--danger) 50%, transparent);
+.adm-alerte-medaille {
+  width: 2.6rem;
+  height: 2.6rem;
 }
-.adm-alerte p {
+.adm-alerte-corps {
   min-width: 0;
-  flex: 1 1 16rem;
-  font-size: 0.9rem;
+  flex: 1 1 18rem;
+}
+.adm-alerte-titre {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 900;
+  line-height: 1.15;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.adm-alerte-titre span {
+  margin-right: 0.45rem;
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  color: var(--danger);
+}
+.adm-alerte-texte {
+  margin-top: 0.15rem;
+  font-size: 0.875rem;
   line-height: 1.4;
   color: var(--muted);
 }
-.adm-alerte p b {
-  color: var(--ink);
+@media (min-width: 1024px) {
+  .adm-alerte {
+    padding-block: 0.5rem;
+  }
+  .adm-alerte-medaille {
+    width: 2.2rem;
+    height: 2.2rem;
+  }
+  .adm-alerte-corps {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    column-gap: 0.9rem;
+  }
+  .adm-alerte-texte {
+    margin-top: 0;
+  }
+}
+
+/* La médaille d'une tuile : l'hexagone de glace des paliers, une icône dessus. */
+.medaille {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  filter: drop-shadow(0 3px 3px color-mix(in srgb, var(--fond) 80%, transparent));
+}
+.medaille > * {
+  grid-area: 1 / 1;
+}
+.medaille > svg:first-child {
+  width: 100%;
+  height: 100%;
+}
+.medaille-icone {
+  width: 46%;
+  height: 46%;
+  color: var(--neige-1);
 }
 
 /* Les dispositions. Sur un téléphone, une colonne, dans l'ordre des zones. */
 .adm-grille[data-grille='tableau'],
 .adm-grille[data-grille='tableau-alerte'] {
-  grid-template-areas: 'alerte' 'mesures' 'cadeau' 'fil';
+  grid-template-areas: 'alerte' 'tuiles' 'cadeau' 'fil' 'paliers';
 }
 .adm-grille[data-grille='codes'] {
   grid-template-areas: 'creer' 'liste';
@@ -12856,7 +12905,7 @@
     grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
     grid-template-rows: auto minmax(0, 1fr);
     grid-template-areas:
-      'mesures mesures'
+      'tuiles tuiles'
       'cadeau fil';
   }
   .adm-grille[data-grille='tableau-alerte'] {
@@ -12864,8 +12913,13 @@
     grid-template-rows: auto auto minmax(0, 1fr);
     grid-template-areas:
       'alerte alerte'
-      'mesures mesures'
+      'tuiles tuiles'
       'cadeau fil';
+  }
+  /* Les paliers n'ont de place qu'en troisième colonne, sur un très grand
+     écran ; la tuile des subs dit déjà le prochain. */
+  .adm-panneau[data-zone='paliers'] {
+    display: none;
   }
   .adm-grille[data-grille='codes'] {
     grid-template-columns: minmax(0, 24rem) minmax(0, 1fr);
@@ -12893,6 +12947,24 @@
 @media (min-width: 1024px) and (min-height: 760px) {
   .adm-grille {
     height: 100%;
+  }
+}
+@media (min-width: 1800px) {
+  .adm-grille[data-grille='tableau'] {
+    grid-template-columns: minmax(0, 4fr) minmax(0, 6fr) minmax(0, 4fr);
+    grid-template-areas:
+      'tuiles tuiles tuiles'
+      'cadeau fil paliers';
+  }
+  .adm-grille[data-grille='tableau-alerte'] {
+    grid-template-columns: minmax(0, 4fr) minmax(0, 6fr) minmax(0, 4fr);
+    grid-template-areas:
+      'alerte alerte alerte'
+      'tuiles tuiles tuiles'
+      'cadeau fil paliers';
+  }
+  .adm-panneau[data-zone='paliers'] {
+    display: flex;
   }
 }
 
@@ -12959,27 +13031,29 @@
   color: var(--ink);
 }
 
-/* -- Le panneau -- */
+/* -- Le panneau --
+   Celui du reste du site : une plaque de verre, la neige posée sur l'arête
+   (`SnowCap`), un surtitre dans sa teinte et un grand titre. */
 .adm-panneau {
-  --ton: var(--ice);
+  --ton: var(--aurora);
   display: flex;
   min-height: 0;
   min-width: 0;
   flex-direction: column;
-  gap: 0.85rem;
-  padding: 1rem 1.05rem 1.05rem;
-  border-radius: var(--r-md);
+  gap: 0.9rem;
+  padding: 1.7rem 1.1rem 1.1rem;
+  border-radius: var(--r-lg);
 }
 @media (min-width: 640px) {
   .adm-panneau {
-    padding: 1.1rem 1.3rem 1.2rem;
+    padding: 1.85rem 1.6rem 1.35rem;
   }
 }
 .adm-panneau[data-ton='or'] {
   --ton: var(--gold);
 }
-.adm-panneau[data-ton='aurore'] {
-  --ton: var(--aurora);
+.adm-panneau[data-ton='glace'] {
+  --ton: var(--ice);
 }
 .adm-panneau[data-ton='danger'] {
   --ton: var(--danger);
@@ -12990,35 +13064,34 @@
 .adm-panneau-tete {
   display: flex;
   align-items: flex-start;
-  gap: 0.75rem;
+  gap: 0.75rem 1rem;
 }
-.adm-panneau-icone {
-  display: grid;
-  width: 2.25rem;
-  height: 2.25rem;
-  flex: none;
-  place-items: center;
-  border-radius: var(--r-pilule);
-  color: var(--ton);
-  background: color-mix(in srgb, var(--ton) 14%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ton) 38%, transparent);
-}
-.adm-panneau-tete h2 {
+.adm-panneau-sur {
+  margin-bottom: 0.35rem;
   font-family: var(--font-display);
-  font-size: 1.2rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ton);
+}
+.adm-panneau-titre {
+  font-family: var(--font-display);
+  font-size: 1.85rem;
   font-weight: 900;
-  line-height: 1.15;
+  line-height: 0.95;
   letter-spacing: 0.03em;
   text-transform: uppercase;
-  color: var(--frost);
+  color: var(--ink);
 }
-.adm-panneau-tete p {
-  margin-top: 0.2rem;
+.adm-panneau-phrase {
+  max-width: 62ch;
+  margin-top: 0.5rem;
   font-size: 0.875rem;
   line-height: 1.45;
   color: var(--muted);
 }
-.adm-panneau-tete p b {
+.adm-panneau-phrase b {
   color: var(--ink);
 }
 .adm-panneau-actions {
@@ -13028,12 +13101,16 @@
   align-items: center;
   gap: 0.5rem;
 }
-/* Sur un téléphone, ce qui se range à droite passe sous le titre. */
-@media (max-width: 559px) {
+/* Sur un téléphone, un champ ou un bouton rangé à droite passe sous le titre ;
+   un chiffre reste à côté. */
+@media (max-width: 639px) {
+  .adm-panneau-titre {
+    font-size: 1.55rem;
+  }
   .adm-panneau-tete {
     flex-wrap: wrap;
   }
-  .adm-panneau-actions {
+  .adm-panneau-actions:has(input, select, button, a) {
     flex-basis: 100%;
   }
 }
@@ -13041,7 +13118,7 @@
   display: flex;
   min-height: 0;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.85rem;
 }
 .adm-panneau-corps:empty {
   display: none;
@@ -13049,9 +13126,11 @@
 .adm-panneau-corps[data-defile] {
   flex: 1 1 auto;
   max-height: 75dvh;
-  margin-right: -0.5rem;
-  padding-right: 0.5rem;
+  margin-right: -0.6rem;
+  padding-right: 0.6rem;
   overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgb(255 255 255 / 0.22) transparent;
 }
 @media (min-width: 1024px) and (min-height: 760px) {
   .adm-panneau-corps[data-defile] {
@@ -13122,78 +13201,6 @@
   color: var(--muted);
 }
 
-/* Les chiffres : une plaque, quatre mesures côte à côte. */
-.adm-mesures {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.75rem 0;
-  padding: 0.85rem 1rem;
-  border-radius: var(--r-md);
-}
-@media (min-width: 768px) {
-  .adm-mesures {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    padding: 0.85rem 1.3rem;
-  }
-}
-.adm-mesure {
-  display: flex;
-  min-width: 0;
-  align-items: baseline;
-  gap: 0.6rem;
-  padding-inline: 0.9rem;
-}
-.adm-mesure:nth-child(odd) {
-  padding-left: 0;
-}
-.adm-mesure:nth-child(even) {
-  border-left: 1px solid rgb(255 255 255 / 0.1);
-}
-@media (min-width: 768px) {
-  .adm-mesure:nth-child(odd) {
-    padding-left: 0.9rem;
-  }
-  .adm-mesure:first-child {
-    padding-left: 0;
-  }
-  .adm-mesure + .adm-mesure {
-    border-left: 1px solid rgb(255 255 255 / 0.1);
-  }
-}
-.adm-mesure strong {
-  font-family: var(--font-display);
-  font-size: 2rem;
-  font-weight: 900;
-  line-height: 1;
-  color: var(--frost);
-}
-.adm-mesure[data-ton='or'] strong {
-  color: var(--gold);
-}
-.adm-mesure[data-ton='aurore'] strong {
-  color: var(--aurora);
-}
-.adm-mesure[data-ton='glace'] strong {
-  color: var(--ice);
-}
-.adm-mesure-lien {
-  border-radius: var(--r-sm);
-  transition: background-color 0.15s ease;
-}
-.adm-mesure-lien:hover {
-  background: rgb(255 255 255 / 0.05);
-}
-.adm-mesure-lien span {
-  color: var(--ice);
-}
-.adm-mesure span {
-  min-width: 0;
-  font-size: 0.8125rem;
-  line-height: 1.3;
-  color: var(--muted);
-}
-
-/* Les outils d'une liste : la recherche, les filtres. */
 .adm-outils {
   display: flex;
   flex-wrap: wrap;
@@ -13229,6 +13236,24 @@
 }
 .segment > button[aria-pressed='true'] .adm-filtre-compte {
   background: color-mix(in srgb, var(--nuit) 12%, transparent);
+}
+/* Sur un téléphone, les filtres se rangent sur deux colonnes au lieu de
+   déborder : chacun reste lisible en entier, compte compris. */
+@media (max-width: 639px) {
+  .segment.adm-filtres {
+    display: grid;
+    width: 100%;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    border-radius: var(--r-md);
+  }
+  .segment.adm-filtres > button {
+    min-height: 40px;
+    padding: 0.3rem 0.5rem;
+    border-radius: var(--r-sm);
+    line-height: 1.1;
+    text-align: center;
+    white-space: normal;
+  }
 }
 
 /* -- Le tableau : une grille, l'en-tête collé en haut quand le corps défile -- */
@@ -13333,160 +13358,407 @@
 }
 
 /* -- Le tableau de bord -- */
-.adm-don {
+
+/* Les tuiles : comme celles de l'accueil — le nombre en grand, ce qu'il
+   compte en capitales — avec la médaille et la teinte de ce qu'elles comptent. */
+.adm-tuiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+@media (min-width: 1200px) {
+  .adm-tuiles {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+/* Quatre tuiles étroites : la médaille laisse sa place au texte. */
+@media (min-width: 1200px) and (max-width: 1399px) {
+  .adm-tuile .adm-tuile-medaille {
+    display: none;
+  }
+}
+.adm-tuile {
+  --teinte: var(--ice);
   display: flex;
-  flex-wrap: wrap;
+  min-width: 0;
   align-items: center;
-  gap: 0.75rem 1rem;
-  padding: 0.85rem 0.95rem;
-  border-radius: var(--r-sm);
-  background: color-mix(in srgb, var(--gold) 7%, rgb(0 10 30 / 0.24));
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gold) 22%, transparent);
+  gap: 0.9rem;
+  padding: 0.85rem 1rem 0.85rem 0.85rem;
+  border-radius: var(--r-md);
+  background:
+    linear-gradient(100deg, color-mix(in srgb, var(--teinte) 18%, transparent) 0%, transparent 62%),
+    linear-gradient(160deg, var(--glass-1) 0%, var(--glass-2) 100%);
+  color: inherit;
+  transition: transform 0.18s ease;
 }
-.adm-don-reserve {
+.adm-tuile[data-ton='or'] {
+  --teinte: var(--gold);
+}
+.adm-tuile[data-ton='aurore'] {
+  --teinte: var(--aurora);
+}
+a.adm-tuile:hover {
+  transform: translateY(-2px);
+}
+.adm-tuile-medaille {
+  width: 3rem;
+  height: 3rem;
+  flex: none;
+}
+.adm-tuile-corps {
   display: flex;
-  align-items: baseline;
-  gap: 0.45rem;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
 }
-.adm-don-reserve strong {
+.adm-tuile-nombre {
+  font-family: var(--font-display);
+  font-size: 2.2rem;
+  font-weight: 900;
+  line-height: 1;
+  color: var(--ink);
+}
+.adm-tuile-nom {
+  margin-top: 0.3rem;
+  font-size: 0.8125rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+.adm-tuile-detail {
+  margin-top: 0.15rem;
+  font-size: 0.8125rem;
+  line-height: 1.35;
+  color: var(--muted);
+}
+.adm-tuile-detail b {
+  color: var(--ink);
+}
+.adm-tuile-jauge {
+  width: 100%;
+  flex: none;
+  margin-top: 0.45rem;
+}
+.adm-tuile-fleche {
+  flex: none;
+  font-size: 1.6rem;
+  line-height: 1;
+  color: var(--faint);
+  transition:
+    transform 0.18s ease,
+    color 0.18s ease;
+}
+a.adm-tuile:hover .adm-tuile-fleche {
+  transform: translateX(3px);
+  color: var(--ink);
+}
+@media (min-width: 1600px) {
+  .adm-tuile-corps {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    column-gap: 0.8rem;
+  }
+  .adm-tuile-nombre {
+    grid-row: 1 / span 3;
+  }
+  .adm-tuile-nom,
+  .adm-tuile-detail,
+  .adm-tuile-jauge {
+    grid-column: 2;
+  }
+  .adm-tuile-nom {
+    margin-top: 0;
+  }
+}
+@media (max-width: 639px) {
+  .adm-tuile {
+    position: relative;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.55rem;
+    padding: 0.85rem;
+  }
+  .adm-tuile-medaille {
+    width: 2.4rem;
+    height: 2.4rem;
+  }
+  .adm-tuile-nombre {
+    font-size: 1.9rem;
+  }
+  .adm-tuile-fleche {
+    position: absolute;
+    top: 0.7rem;
+    right: 0.85rem;
+  }
+}
+
+/* La réserve des boosters cadeau, à droite du titre : le nombre en or. */
+.adm-reserve {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  text-align: right;
+}
+.adm-reserve strong {
   font-family: var(--font-display);
   font-size: 2.6rem;
   font-weight: 900;
-  line-height: 1;
+  line-height: 0.9;
   color: var(--gold);
 }
-.adm-don-reserve span {
+.adm-reserve span {
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+.adm-reserve[data-vide] strong {
+  color: var(--faint);
+}
+
+/* Donner : le choix du joueur et le bouton d'or. */
+.adm-don {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.55rem;
+  border-radius: var(--r-md);
+  background: color-mix(in srgb, var(--gold) 8%, rgb(0 10 30 / 0.24));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gold) 24%, transparent);
+}
+.adm-don .field {
+  min-width: 0;
+  min-height: 44px;
+  flex: 1 1 12rem;
+}
+.adm-don .btn {
+  min-height: 44px;
+  flex: none;
+}
+.adm-don .btn-gold:disabled {
+  border-color: rgb(255 255 255 / 0.16);
+  background: rgb(255 255 255 / 0.06);
+  color: var(--muted);
+  opacity: 0.75;
+}
+@media (max-width: 479px) {
+  .adm-don .btn {
+    flex-basis: 100%;
+  }
+}
+
+/* Les listes du tableau de bord : un intertitre, puis des lignes séparées
+   d'un filet. */
+.adm-bloc {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.adm-intertitre {
   font-family: var(--font-display);
   font-size: 0.8125rem;
   font-weight: 800;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: var(--faint);
 }
-.adm-don-form {
-  display: flex;
-  min-width: 0;
-  flex: 1 1 100%;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-.adm-don-form .field {
-  min-width: 0;
-  min-height: 44px;
-  flex: 1 1 11rem;
-}
-.adm-don-form .btn {
-  min-height: 44px;
-}
-.adm-donateurs {
-  display: grid;
-}
-.adm-donateurs li {
+.adm-personnes li,
+.adm-dons li {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 0.75rem;
-  padding: 0.55rem 0.1rem;
-  border-bottom: 1px solid rgb(255 255 255 / 0.06);
+  padding: 0.55rem 0.15rem;
+  border-bottom: 1px solid rgb(255 255 255 / 0.07);
 }
-.adm-donateurs li:last-child {
+.adm-personnes li:last-child,
+.adm-dons li:last-child {
   border-bottom: 0;
 }
-.adm-donateurs b {
-  display: block;
+.adm-personne-nom {
+  font-weight: 700;
+  overflow-wrap: anywhere;
   color: var(--ink);
 }
-.adm-donateurs span:not(.adm-pastille) {
-  display: block;
+.adm-personne-detail {
   font-size: 0.8125rem;
   color: var(--muted);
 }
-.adm-donateurs .adm-pastille {
-  min-width: 2.2rem;
-  justify-content: center;
+.adm-compte {
+  min-width: 2.4rem;
+  flex: none;
+  padding: 0.2rem 0.6rem;
+  border-radius: var(--r-pilule);
   font-family: var(--font-display);
   font-size: 1rem;
   font-weight: 900;
+  text-align: center;
+  color: var(--gold);
+  background: color-mix(in srgb, var(--gold) 14%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gold) 40%, transparent);
+}
+.adm-dons li {
+  justify-content: space-between;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+.adm-dons b {
+  color: var(--ink);
+}
+.adm-dons time {
+  flex: none;
+  font-size: 0.8125rem;
+  color: var(--faint);
 }
 
-/* Le fil des subs : jour par jour, une phrase par sub. */
-.adm-fil {
+/* L'initiale d'un pseudo : de la neige pour un joueur de la ligue, du verre
+   pour un viewer ; un sub offert se cerne d'or. */
+.adm-avatar {
   display: grid;
-  gap: 0.9rem;
-}
-.adm-fil-jour {
-  position: sticky;
-  z-index: 1;
-  top: 0;
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 0.5rem;
-  padding: 0.4rem 0.1rem;
-  background: color-mix(in srgb, var(--fond) 92%, transparent);
+  width: 2.25rem;
+  height: 2.25rem;
+  flex: none;
+  place-items: center;
+  border-radius: var(--r-pilule);
   font-family: var(--font-display);
-  font-size: 0.875rem;
+  font-size: 1rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  color: var(--ink);
+  background: rgb(255 255 255 / 0.08);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.35),
+    inset 0 0 0 1px rgb(255 255 255 / 0.12);
+}
+.adm-avatar[data-statut='joueur'] {
+  background: linear-gradient(178deg, var(--neige-1) 0%, var(--neige-2) 55%, var(--neige-3) 100%);
+  color: var(--nuit);
+  text-shadow: none;
+}
+.adm-avatar[data-statut='anonyme'] {
+  color: var(--faint);
+}
+.adm-sub[data-genre='cadeau'] .adm-avatar {
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.35),
+    0 0 0 2px color-mix(in srgb, var(--gold) 75%, transparent);
+}
+
+/* Le fil des subs : jour par jour, une ligne par sub. */
+.adm-ordre {
+  display: inline-flex;
+  min-height: 40px;
+  flex: none;
+  align-items: center;
+  gap: 0.4rem;
+  margin-left: auto;
+  padding: 0 0.95rem;
+  border-radius: var(--r-pilule);
+  font-family: var(--font-display);
+  font-size: 0.75rem;
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--frost);
+  white-space: nowrap;
+  color: var(--muted);
+  background: rgb(255 255 255 / 0.06);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.3),
+    inset 0 0 0 1px rgb(255 255 255 / 0.12);
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
 }
-.adm-fil-jour span {
-  font-family: var(--font-sans);
-  font-size: 0.8125rem;
-  font-weight: 500;
-  letter-spacing: 0;
-  text-transform: none;
-  color: var(--faint);
-}
-.adm-fil-ligne {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.75rem;
-  padding: 0.55rem 0.1rem;
-  border-bottom: 1px solid rgb(255 255 255 / 0.06);
-}
-.adm-fil-pastille {
-  display: grid;
-  min-width: 2.4rem;
-  height: 2.4rem;
-  flex: none;
-  place-items: center;
-  padding-inline: 0.3rem;
-  border-radius: var(--r-pilule);
-  background: color-mix(in srgb, var(--ice) 12%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ice) 30%, transparent);
-  font-family: var(--font-display);
-  font-size: 0.9375rem;
-  font-weight: 900;
-  color: var(--ice);
-}
-.adm-fil-ligne[data-genre='cadeau'] .adm-fil-pastille {
-  background: color-mix(in srgb, var(--gold) 13%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gold) 34%, transparent);
-  color: var(--gold);
-}
-.adm-fil-ligne[data-genre='resub'] .adm-fil-pastille {
-  background: color-mix(in srgb, var(--aurora) 12%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--aurora) 30%, transparent);
-  color: var(--aurora);
-}
-.adm-fil-phrase {
-  font-size: 0.9375rem;
-  font-weight: 600;
-  line-height: 1.35;
+.adm-ordre:hover {
+  background: rgb(255 255 255 / 0.12);
   color: var(--ink);
 }
-.adm-fil-detail {
+.adm-ordre span {
+  font-size: 0.95rem;
+  color: var(--ice);
+}
+.adm-jour {
   display: flex;
+  flex-direction: column;
+}
+.adm-jour-tete {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.4rem 0.15rem;
+  font-family: var(--font-display);
+  font-size: 0.8125rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ice);
+}
+.adm-jour-tete::after {
+  content: '';
+  order: 1;
+  height: 1px;
+  flex: 1;
+  background: linear-gradient(90deg, rgb(255 255 255 / 0.2), rgb(255 255 255 / 0.04));
+}
+.adm-jour-tete span:last-child {
+  order: 2;
+  letter-spacing: 0.08em;
+  color: var(--faint);
+}
+.adm-sub {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.4rem;
+  border-bottom: 1px solid rgb(255 255 255 / 0.06);
+}
+.adm-sub:last-child {
+  border-bottom: 0;
+}
+.adm-sub[data-statut='joueur'] {
+  background: linear-gradient(90deg, color-mix(in srgb, var(--ice) 11%, transparent) 0%, transparent 60%);
+}
+.adm-sub-corps {
+  display: flex;
+  min-width: 0;
+  flex: 1;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.35rem 0.5rem;
-  margin-top: 0.25rem;
+  gap: 0.25rem 0.6rem;
 }
-.adm-fil-detail time {
+.adm-sub-phrase {
+  min-width: 0;
+  font-size: 0.9375rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  color: var(--muted);
+}
+.adm-sub-phrase b {
+  font-weight: 700;
+  color: var(--ink);
+}
+.adm-sub-etiquettes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+.adm-sub-heure {
+  flex: none;
   font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
   color: var(--faint);
+}
+.adm-plus {
+  align-self: center;
+}
+
+/* Les paliers, dans leur panneau : ceux de l'accueil. */
+.adm-paliers {
+  container-type: inline-size;
+}
+.adm-paliers .subs-route-liste {
+  margin-top: 0;
 }
 
 /* -- Les formulaires -- */
@@ -13791,24 +14063,42 @@
     gap: 0.7rem;
   }
   .adm-panneau {
-    gap: 0.6rem;
-    padding: 0.8rem 1.1rem 0.9rem;
+    gap: 0.65rem;
+    padding: 1.45rem 1.3rem 1rem;
   }
-  .adm-panneau-tete p {
+  .adm-panneau-titre {
+    font-size: 1.5rem;
+  }
+  .adm-panneau-sur {
+    margin-bottom: 0.2rem;
+  }
+  .adm-panneau-phrase {
+    margin-top: 0.3rem;
     font-size: 0.8125rem;
     line-height: 1.35;
   }
-  .adm-mesures {
-    padding-block: 0.6rem;
+  .adm-tuile {
+    padding-block: 0.55rem;
   }
-  .adm-don {
-    padding: 0.6rem 0.8rem;
+  .adm-tuile-nom {
+    margin-top: 0.15rem;
   }
-  .adm-don-reserve strong {
-    font-size: 2rem;
+  .adm-tuile-medaille {
+    width: 2.6rem;
+    height: 2.6rem;
   }
-  .adm-don-form .field,
-  .adm-don-form .btn {
+  .adm-tuile-nombre {
+    font-size: 1.85rem;
+  }
+  .adm-reserve strong {
+    font-size: 2.1rem;
+  }
+  .adm-don .field,
+  .adm-don .btn {
     min-height: 40px;
+  }
+  .adm-panneau[data-zone='fil'] .adm-panneau-phrase,
+  .adm-panneau[data-zone='paliers'] .adm-panneau-phrase {
+    display: none;
   }
 }

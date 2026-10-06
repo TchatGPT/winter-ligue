@@ -97,13 +97,7 @@ export function EcranCodes({ codes }: { codes: LigneCode[] }) {
       message={message}
       onFermeMessage={() => setMessage(null)}
     >
-      <Panneau
-        zone="creer"
-        ton="or"
-        icone="cadeau"
-        titre="Créer un code"
-        sousTitre="Il est tiré au sort et annoncé dans le tchat."
-      >
+      <Panneau zone="creer" ton="or" titre="Créer un code" sousTitre="Il est tiré au sort et annoncé dans le tchat.">
         <form
           className="adm-form"
           onSubmit={(e) => {
@@ -165,7 +159,6 @@ export function EcranCodes({ codes }: { codes: LigneCode[] }) {
 
       <Panneau
         zone="liste"
-        icone="snowflake"
         titre="Les codes"
         sousTitre="Un clic sur un code le copie. Désactivé ou supprimé, il ne sert plus ; ce qu’il a versé reste versé."
         defile

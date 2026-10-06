@@ -33,7 +33,8 @@ export interface LigneJoueur {
   inscritLe: string;
 }
 
-type Filtre = 'tous' | 'sansActivision' | 'boosters' | 'modo';
+export type FiltreJoueurs = 'tous' | 'sansActivision' | 'boosters' | 'modo';
+type Filtre = FiltreJoueurs;
 
 /**
  * Les joueurs de la ligue.
@@ -43,10 +44,17 @@ type Filtre = 'tous' | 'sansActivision' | 'boosters' | 'modo';
  * de game : un joueur jamais reconnu, c'est ici qu'on regarde — et on y voit
  * ses games, ses points, ses flocons et ses Boosters Perso en attente.
  */
-export function EcranJoueurs({ joueurs }: { joueurs: LigneJoueur[] }) {
+export function EcranJoueurs({
+  joueurs,
+  filtreInitial = 'tous',
+}: {
+  joueurs: LigneJoueur[];
+  /** Le filtre d'arrivée : le tableau de bord envoie vers ceux sans pseudo Activision. */
+  filtreInitial?: Filtre;
+}) {
   const { busy, message, envoie, setMessage } = useAction();
   const [recherche, setRecherche] = useState('');
-  const [filtre, setFiltre] = useState<Filtre>('tous');
+  const [filtre, setFiltre] = useState<Filtre>(filtreInitial);
 
   const garde = (p: LigneJoueur, f: Filtre) =>
     f === 'sansActivision'
@@ -72,7 +80,6 @@ export function EcranJoueurs({ joueurs }: { joueurs: LigneJoueur[] }) {
       onFermeMessage={() => setMessage(null)}
     >
       <Panneau
-        icone="user"
         titre={`${visibles.length} joueur${visibles.length > 1 ? 's' : ''}`}
         sousTitre="Le pseudo Activision est celui qu’on lit sur les captures de fin de game : sans lui, ses games ne se reconnaissent pas toutes seules."
         defile

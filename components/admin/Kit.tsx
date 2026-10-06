@@ -4,10 +4,13 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { type ReactNode, useEffect, useMemo, useState } from 'react';
 import { NAV_ICONS, type NavIconName } from '@/components/icons';
+import { SnowCap } from '@/components/SnowCap';
 
 /**
  * Le kit de la modération : la barre de navigation, l'écran, le panneau, la
- * pastille, le message flottant et le tableau triable.
+ * pastille, le message flottant et le tableau triable. Les panneaux sont ceux
+ * du reste du site : une plaque de verre, de la neige posée sur l'arête, un
+ * grand titre.
  *
  * Un écran de modération tient dans la fenêtre sur un ordinateur, pied de page
  * compris : les panneaux se partagent la hauteur, et ce qui est long défile
@@ -69,8 +72,9 @@ export function BarreAdmin() {
 /* ------------------------------- L'écran ------------------------------- */
 
 /**
- * Un écran : une phrase qui dit à quoi il sert, puis ses panneaux. `grille`
- * nomme la disposition des panneaux (voir `.adm-ecran[data-grille]`).
+ * Un écran : une phrase qui dit à quoi il sert, s'il en faut une, puis ses
+ * panneaux. `grille` nomme la disposition des panneaux (voir
+ * `.adm-grille[data-grille]`).
  */
 export function EcranAdmin({
   intro,
@@ -79,7 +83,7 @@ export function EcranAdmin({
   onFermeMessage,
   children,
 }: {
-  intro: ReactNode;
+  intro?: ReactNode;
   grille: string;
   message?: { kind: 'success' | 'error' | 'info'; text: string } | null;
   onFermeMessage?: () => void;
@@ -87,7 +91,7 @@ export function EcranAdmin({
 }) {
   return (
     <div className="adm-ecran">
-      <p className="adm-intro">{intro}</p>
+      {intro && <p className="adm-intro">{intro}</p>}
       <div className="adm-grille" data-grille={grille}>
         {children}
       </div>
@@ -124,42 +128,45 @@ function Toast({
 /* ------------------------------- Le panneau ------------------------------- */
 
 /**
- * Un panneau : son médaillon, son titre et une phrase, ce qui se range à
+ * Un panneau : un surtitre, son grand titre et une phrase, ce qui se range à
  * droite, puis son corps. `defile` : le corps défile dans le panneau.
  */
 export function Panneau({
   titre,
+  surtitre,
   sousTitre,
-  icone,
   ton,
   actions,
   defile = false,
   zone,
   children,
 }: {
-  titre: string;
+  titre: ReactNode;
+  /** Au-dessus du titre, dans la teinte du panneau : « En direct de la chaîne ». */
+  surtitre?: ReactNode;
   sousTitre?: ReactNode;
-  icone?: NavIconName;
-  /** La couleur du médaillon et de l'arête : or pour ce qui attend un geste. */
+  /** La teinte du surtitre et de l'arête : or pour ce qui attend un geste. */
   ton?: 'or' | 'glace' | 'aurore' | 'danger';
   actions?: ReactNode;
   defile?: boolean;
-  /** Le nom de sa zone dans la grille de l'écran. */
+  /** Le nom de sa zone dans la grille de l'écran ; il tire aussi sa neige. */
   zone?: string;
   children: ReactNode;
 }) {
-  const Icone = icone ? NAV_ICONS[icone] : null;
   return (
-    <section className="glass adm-panneau" data-ton={ton} style={zone ? { gridArea: zone } : undefined}>
+    <section
+      id={zone ? `panneau-${zone}` : undefined}
+      className="glass adm-panneau"
+      data-ton={ton}
+      data-zone={zone}
+      style={zone ? { gridArea: zone } : undefined}
+    >
+      <SnowCap radius="var(--r-lg)" seed={`adm-${zone ?? String(titre)}`} epaisseur={14} />
       <header className="adm-panneau-tete">
-        {Icone && (
-          <span className="adm-panneau-icone" aria-hidden="true">
-            <Icone className="h-[18px] w-[18px]" />
-          </span>
-        )}
         <div className="min-w-0 flex-1">
-          <h2>{titre}</h2>
-          {sousTitre && <p>{sousTitre}</p>}
+          {surtitre && <p className="adm-panneau-sur">{surtitre}</p>}
+          <h2 className="adm-panneau-titre">{titre}</h2>
+          {sousTitre && <p className="adm-panneau-phrase">{sousTitre}</p>}
         </div>
         {actions && <div className="adm-panneau-actions">{actions}</div>}
       </header>
@@ -182,24 +189,6 @@ export function Pastille({
     <span className="adm-pastille" data-ton={ton}>
       {children}
     </span>
-  );
-}
-
-/** Un chiffre et ce qu'il compte. */
-export function Mesure({
-  valeur,
-  libelle,
-  ton,
-}: {
-  valeur: ReactNode;
-  libelle: ReactNode;
-  ton?: 'or' | 'aurore' | 'glace';
-}) {
-  return (
-    <div className="adm-mesure" data-ton={ton}>
-      <strong>{valeur}</strong>
-      <span>{libelle}</span>
-    </div>
   );
 }
 

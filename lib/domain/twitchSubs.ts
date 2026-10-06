@@ -295,6 +295,37 @@ export function bilanDesSubs(registre: readonly LigneSub[], twitchId: string | n
   return bilan;
 }
 
+/**
+ * Les Boosters Perso que chaque ligne du registre a fait gagner à qui l'a
+ * payée, par identifiant de ligne : ce que valent ses subs juste après elle,
+ * moins ce qu'ils valaient juste avant (`packsPersoAcquis`), dans l'ordre où
+ * ils sont arrivés. Les cinq subs offerts qui font un booster peuvent venir de
+ * plusieurs annonces : c'est celle qui franchit le palier qui le vaut. Un
+ * cadeau anonyme ne vaut rien à personne — on ne sait pas de qui.
+ *
+ * Le booster va à qui a payé s'il est inscrit ; sinon, c'est un booster
+ * cadeau (`persoEnAttente`). Les deux comptes tombent donc juste ensemble.
+ */
+export function boostersParLigne(registre: readonly LigneSub[]): Map<string, number> {
+  const cumul = new Map<string, { offerts: number; niveau3: number }>();
+  const parLigne = new Map<string, number>();
+  const ordre = [...registre].sort((a, b) => a.le.localeCompare(b.le) || a.id.localeCompare(b.id));
+  for (const l of ordre) {
+    if (!l.twitchId) {
+      parLigne.set(l.id, 0);
+      continue;
+    }
+    const avant = cumul.get(l.twitchId) ?? { offerts: 0, niveau3: 0 };
+    const apres = {
+      offerts: avant.offerts + (l.niveau !== 3 && l.genre === 'cadeau' ? l.nombre : 0),
+      niveau3: avant.niveau3 + (l.niveau === 3 ? l.nombre : 0),
+    };
+    cumul.set(l.twitchId, apres);
+    parLigne.set(l.id, packsPersoAcquis(apres.offerts, apres.niveau3) - packsPersoAcquis(avant.offerts, avant.niveau3));
+  }
+  return parLigne;
+}
+
 export interface PersoEnAttente {
   twitchId: string;
   pseudo: string;

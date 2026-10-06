@@ -12,6 +12,8 @@
  * Pas de halo : elle tient par son biseau et son ombre de contact. Décoratif.
  */
 
+import type { ReactNode } from 'react';
+
 export type GlyphePalier = 'booster' | 'flocons' | 'tempete';
 
 const MEDAILLE = 'M24 3L42.19 13.5V34.5L24 45L5.81 34.5V13.5Z';
@@ -67,5 +69,48 @@ export function EmblemePalier({
       <path d={BISEAU} fill="none" stroke="#ffffff" strokeOpacity={0.18} strokeWidth={1} strokeLinejoin="round" />
       <Glyphe glyphe={glyphe} />
     </svg>
+  );
+}
+
+/**
+ * La même médaille, avec une icône du site au lieu d'un glyphe de palier :
+ * les tuiles de la modération. L'icône se pose par-dessus, en blanc ; la
+ * médaille prend sa teinte comme les autres.
+ */
+export function Medaille({
+  teinte,
+  id,
+  className,
+  children,
+}: {
+  teinte: string;
+  /** Unique sur la page : il nomme le dégradé du reflet. */
+  id: string;
+  className?: string;
+  /** L'icône, déjà dimensionnée. */
+  children: ReactNode;
+}) {
+  const reflet = `medaille-reflet-${id}`;
+  return (
+    <span className={`medaille ${className ?? ''}`} aria-hidden="true">
+      <svg viewBox="0 0 48 48" focusable="false">
+        <defs>
+          <linearGradient id={reflet} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" style={{ stopColor: teinte, stopOpacity: 0.6 }} />
+            <stop offset="0.7" style={{ stopColor: teinte, stopOpacity: 0 }} />
+          </linearGradient>
+        </defs>
+        <path d={MEDAILLE} style={{ fill: `color-mix(in srgb, ${teinte} 32%, var(--fond))` }} />
+        <path
+          d={MEDAILLE}
+          fill={`url(#${reflet})`}
+          style={{ stroke: teinte }}
+          strokeWidth={1.6}
+          strokeLinejoin="round"
+        />
+        <path d={BISEAU} fill="none" stroke="#ffffff" strokeOpacity={0.18} strokeWidth={1} strokeLinejoin="round" />
+      </svg>
+      {children}
+    </span>
   );
 }

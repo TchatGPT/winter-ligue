@@ -22,7 +22,7 @@ import { departAccelere, paliersDuCompteur, type PalierAVenir } from '@/lib/doma
  */
 
 /** La médaille et la teinte d'un palier : celles du booster, ou de l'évènement. */
-function blason(p: PalierAVenir): { glyphe: GlyphePalier; teinte: string } {
+export function blason(p: PalierAVenir): { glyphe: GlyphePalier; teinte: string } {
   if (p.genre === 'PACK' && p.packId) return { glyphe: 'booster', teinte: RARITY_META[GEMME_DU_PACK[p.packId]].color };
   if (p.kind === 'COMMU_ACCELERE') return { glyphe: 'tempete', teinte: 'var(--ice)' };
   return { glyphe: 'flocons', teinte: 'var(--aurora)' };
@@ -36,10 +36,6 @@ export function SubsBanner({
   /** Les évènements en cours : une Tempête de neige accélère le Booster Commu. */
   evenements?: EvenementActif[];
 }) {
-  const tempete = evenements.find((e) => e.kind === 'COMMU_ACCELERE');
-  const paliers = paliersDuCompteur(totalSubs, tempete ? departAccelere(tempete.declencheA) : null);
-  const plusProche = Math.min(...paliers.map((p) => p.remaining));
-
   return (
     <section className="subs-route glass relative px-5 pt-10 pb-6 sm:px-8 sm:pt-11 4xl:pt-9 4xl:pb-5">
       <SnowCap radius="var(--r-lg)" seed="subs" />
@@ -64,41 +60,60 @@ export function SubsBanner({
         {/* 3. Les paliers. */}
         <div className="subs-route-paliers">
           <p className="text-[13px] tracking-[0.12em] text-faint uppercase">Ce que les subs font tomber</p>
-          <ul className="subs-route-liste">
-            {paliers.map((p) => {
-              const { glyphe, teinte } = blason(p);
-              const cle = `${p.genre}-${p.packId ?? p.kind}`;
-              return (
-                <li
-                  key={cle}
-                  className="palier"
-                  style={{ ['--teinte' as string]: teinte }}
-                  data-premier={p.remaining === plusProche ? '' : undefined}
-                >
-                  <EmblemePalier glyphe={glyphe} teinte={teinte} id={cle} className="palier-embleme" />
-                  <div className="palier-corps">
-                    <div className="palier-tete">
-                      <span className="palier-nom">{p.label}</span>
-                      <span className="palier-tous">tous les {p.every}</span>
-                      {p.accelere && <span className="palier-badge">Tempête de neige</span>}
-                      <span className="palier-dans num">
-                        dans <strong>{p.remaining}</strong>
-                      </span>
-                    </div>
-                    {p.explication && <p className="palier-explication">{p.explication}</p>}
-                    <div className="palier-pied">
-                      <span className="palier-jauge" aria-hidden="true">
-                        <span style={{ width: `${Math.round(p.progress * 100)}%` }} />
-                      </span>
-                      <span className="palier-resume">subs</span>
-                    </div>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
+          <PaliersSubs totalSubs={totalSubs} evenements={evenements} />
         </div>
       </div>
     </section>
+  );
+}
+
+/** Les paliers du compteur, quand une Tempête de neige accélère le Booster Commu ou non. */
+export function paliersEnCours(totalSubs: number, evenements: EvenementActif[] = []): PalierAVenir[] {
+  const tempete = evenements.find((e) => e.kind === 'COMMU_ACCELERE');
+  return paliersDuCompteur(totalSubs, tempete ? departAccelere(tempete.declencheA) : null);
+}
+
+/**
+ * Les paliers, un par ligne : la médaille, le nom dans sa teinte, « tous les
+ * N », le décompte et la jauge creusée. Le plus proche est marqué. Sur
+ * l'accueil, et dans le tableau de bord de la modération.
+ */
+export function PaliersSubs({ totalSubs, evenements = [] }: { totalSubs: number; evenements?: EvenementActif[] }) {
+  const paliers = paliersEnCours(totalSubs, evenements);
+  const plusProche = Math.min(...paliers.map((p) => p.remaining));
+  return (
+    <ul className="subs-route-liste">
+      {paliers.map((p) => {
+        const { glyphe, teinte } = blason(p);
+        const cle = `${p.genre}-${p.packId ?? p.kind}`;
+        return (
+          <li
+            key={cle}
+            className="palier"
+            style={{ ['--teinte' as string]: teinte }}
+            data-premier={p.remaining === plusProche ? '' : undefined}
+          >
+            <EmblemePalier glyphe={glyphe} teinte={teinte} id={cle} className="palier-embleme" />
+            <div className="palier-corps">
+              <div className="palier-tete">
+                <span className="palier-nom">{p.label}</span>
+                <span className="palier-tous">tous les {p.every}</span>
+                {p.accelere && <span className="palier-badge">Tempête de neige</span>}
+                <span className="palier-dans num">
+                  dans <strong>{p.remaining}</strong>
+                </span>
+              </div>
+              {p.explication && <p className="palier-explication">{p.explication}</p>}
+              <div className="palier-pied">
+                <span className="palier-jauge" aria-hidden="true">
+                  <span style={{ width: `${Math.round(p.progress * 100)}%` }} />
+                </span>
+                <span className="palier-resume">subs</span>
+              </div>
+            </div>
+          </li>
+        );
+      })}
+    </ul>
   );
 }

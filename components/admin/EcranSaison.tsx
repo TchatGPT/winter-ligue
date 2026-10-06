@@ -108,7 +108,6 @@ export function EcranSaison({
       {/* ------------------------------ Twitch ------------------------------ */}
       <Panneau
         zone="twitch"
-        icone="antenne"
         ton={twitch.configure && !branche ? 'danger' : 'aurore'}
         titre={branche ? 'Twitch est branché' : 'Twitch n’est pas branché'}
         sousTitre={
@@ -161,7 +160,6 @@ export function EcranSaison({
       {/* ------------------------------ Le compteur ------------------------------ */}
       <Panneau
         zone="compteur"
-        icone="snowflake"
         titre="Compteur de subs"
         sousTitre="Ses paliers font tomber les Boosters Commu et Folie et ouvrent les évènements, pour tous les joueurs à la fois."
         actions={
@@ -231,7 +229,6 @@ export function EcranSaison({
       {estAdmin && (
         <Panneau
           zone="regles"
-          icone="trophy"
           titre="Games par joueur"
           sousTitre="Le nombre de games qui comptent pour chaque joueur. La dernière ouvre son Booster Finisseur."
         >
@@ -265,7 +262,6 @@ export function EcranSaison({
       {estAdmin && (
         <Panneau
           zone="sauvegarde"
-          icone="layers"
           titre="Sauvegarde"
           sousTitre="Un export complet de la base, journal compris. Il contient des données personnelles : à garder pour soi, et à supprimer une fois inutile."
         >

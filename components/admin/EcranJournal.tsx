@@ -74,12 +74,7 @@ export function EcranJournal({ entrees }: { entrees: LigneJournal[] }) {
       intro="Tout ce qui s’est passé dans la ligue, le plus récent en haut. Rien ne s’y efface."
       grille="seul"
     >
-      <Panneau
-        icone="book"
-        titre="Journal"
-        sousTitre={`${visibles.length} sur les ${entrees.length} dernières entrées.`}
-        defile
-      >
+      <Panneau titre="Journal" sousTitre={`${visibles.length} sur les ${entrees.length} dernières entrées.`} defile>
         <div className="adm-outils">
           <Recherche
             valeur={recherche}

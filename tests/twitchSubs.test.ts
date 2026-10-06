@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   boostersDuGeste,
+  boostersParLigne,
   dejaVu,
   FRAICHEUR_MS,
   gesteDuMessage,
@@ -336,6 +337,44 @@ describe('le registre des subs', () => {
         dernier: '2026-12-02T11:00:00.000Z',
       },
     ]);
+  });
+
+  it('dit quelle annonce a fait gagner chaque booster, et en tombe d’accord avec la réserve', () => {
+    const ligne = (
+      id: string,
+      heure: number,
+      genre: 'sub' | 'resub' | 'cadeau',
+      twitchId: string | null,
+      nombre: number,
+      niveau: number,
+    ) => ({
+      id,
+      le: `2026-12-01T${String(heure).padStart(2, '0')}:00:00.000Z`,
+      genre,
+      twitchId,
+      pseudo: twitchId ?? 'Anonyme',
+      nombre,
+      niveau,
+    });
+    const registre = [
+      // Dans le désordre : c'est l'heure qui compte.
+      ligne('x3', 12, 'cadeau', 'x', 4, 1),
+      ligne('x1', 10, 'cadeau', 'x', 3, 1),
+      ligne('x2', 11, 'cadeau', 'x', 3, 2),
+      ligne('y1', 10, 'resub', 'y', 1, 3),
+      ligne('y2', 11, 'cadeau', 'y', 2, 3),
+      ligne('z1', 10, 'sub', 'z', 1, 1),
+      ligne('a1', 10, 'cadeau', null, 50, 1),
+    ];
+    const parLigne = boostersParLigne(registre);
+    // 3 puis 3 : le palier de cinq tombe sur la deuxième annonce ; 4 de plus font 10.
+    expect(Object.fromEntries(parLigne)).toEqual({ x1: 0, x2: 1, x3: 1, y1: 1, y2: 2, z1: 0, a1: 0 });
+    // La réserve compte la même chose, en bloc.
+    const reserve = persoEnAttente(registre, new Set());
+    for (const p of reserve) {
+      const siens = registre.filter((l) => l.twitchId === p.twitchId).reduce((n, l) => n + parLigne.get(l.id)!, 0);
+      expect(siens).toBe(p.boosters);
+    }
   });
 
   it('retranche de chaque part les boosters cadeau déjà redonnés, sans descendre sous zéro', () => {

@@ -1,10 +1,11 @@
-import { TableauDeBord, type DonVue, type SubVue } from '@/components/admin/TableauDeBord';
+import { TableauDeBord, type DonVue, type ProchainPalier, type SubVue } from '@/components/admin/TableauDeBord';
+import { PaliersSubs, blason, paliersEnCours } from '@/components/SubsBanner';
 import { exigeRole } from '@/lib/auth/acces';
 import { chaineDeLaLigue, isTwitchEnabled } from '@/lib/auth/twitch';
 import { getStore } from '@/lib/db/store';
-import { nextMilestone } from '@/lib/domain/rules';
 import { estLaStreameuse } from '@/lib/domain/streameuse';
-import { boostersDuGeste, persoEnAttente } from '@/lib/domain/twitchSubs';
+import { boostersParLigne, persoEnAttente } from '@/lib/domain/twitchSubs';
+import { evenementsActifs } from '@/lib/services/evenements';
 import { boostersCadeauDonnes } from '@/lib/services/packs';
 import { etatSubsTwitch } from '@/lib/services/twitchSubs';
 
@@ -25,9 +26,9 @@ async function twitchBranche(): Promise<boolean | null> {
 }
 
 /**
- * Le tableau de bord de la modération : les boosters cadeau à redonner, les
- * boosters à ouvrir, et le fil des subs. Les données sont lues ici ; l'écran
- * les raconte (`components/admin/TableauDeBord`).
+ * Le tableau de bord de la modération : les chiffres de la saison, les
+ * boosters cadeau à donner, le fil des subs et les paliers. Les données sont
+ * lues ici ; l'écran les raconte (`components/admin/TableauDeBord`).
  */
 export default async function AdminAccueilPage() {
   await exigeRole('admin');
@@ -45,7 +46,11 @@ export default async function AdminAccueilPage() {
       }
       const actifs = db.players.filter((p) => p.active);
       return {
-        inscrits: actifs.length,
+        joueurs: {
+          inscrits: actifs.length,
+          // Comme le filtre de l'écran des joueurs : la streameuse ne joue pas.
+          sansPseudo: actifs.filter((p) => !p.activisionId && !estLaStreameuse(p, chaine)).length,
+        },
         receveurs: actifs
           .filter((p) => !estLaStreameuse(p, chaine))
           .map((p) => ({ id: p.id, pseudo: p.pseudo, boostersPerso: enFile.get(p.id) ?? 0 }))
@@ -60,6 +65,7 @@ export default async function AdminAccueilPage() {
           .slice(0, 20)
           .map((p) => ({ id: p.id, le: p.creeA, joueur: pseudoDe.get(p.joueurId ?? '') ?? '?', donDe: p.donDe! })),
         totalSubs: db.config.totalSubs,
+        evenements: evenementsActifs(db),
         aOuvrir: {
           perso: db.packsDus.filter((p) => p.packId === 'perso' && p.joueurId && p.ouvertureId === null).length,
           ligue: db.packsDus.filter((p) => p.joueurId === null && p.ouvertureId === null).length,
@@ -73,6 +79,7 @@ export default async function AdminAccueilPage() {
   const inscrits = new Set(ligue.twitchIds);
   const donateurs = persoEnAttente(registre, inscrits, new Map(ligue.donnes));
   const pseudoTwitch = new Map(registre.map((s) => [s.twitchId, s.pseudo]));
+  const gagnes = boostersParLigne(registre);
   const subs: SubVue[] = registre.map((s) => ({
     id: s.id,
     le: s.le,
@@ -81,7 +88,7 @@ export default async function AdminAccueilPage() {
     nombre: s.nombre,
     niveau: s.niveau,
     inscrit: s.twitchId === null ? null : inscrits.has(s.twitchId),
-    boosters: boostersDuGeste({ niveau: s.niveau, nombre: s.nombre, anonyme: s.twitchId === null }),
+    boosters: gagnes.get(s.id) ?? 0,
   }));
   const dons: DonVue[] = ligue.dons.map((d) => ({
     id: d.id,
@@ -89,7 +96,11 @@ export default async function AdminAccueilPage() {
     joueur: d.joueur,
     donateur: pseudoTwitch.get(d.donDe) ?? 'quelqu’un hors du site',
   }));
-  const prochain = nextMilestone(ligue.totalSubs);
+  const paliers = paliersEnCours(ligue.totalSubs, ligue.evenements);
+  const plusProche = [...paliers].sort((a, b) => a.remaining - b.remaining)[0];
+  const prochain: ProchainPalier | null = plusProche
+    ? { label: plusProche.label, remaining: plusProche.remaining, progress: plusProche.progress, ...blason(plusProche) }
+    : null;
 
   return (
     <TableauDeBord
@@ -98,8 +109,9 @@ export default async function AdminAccueilPage() {
       dons={dons}
       receveurs={ligue.receveurs}
       totalSubs={ligue.totalSubs}
-      prochainPalier={prochain ? `${prochain.milestone.label} dans ${prochain.remaining}` : 'tous les paliers franchis'}
-      inscrits={ligue.inscrits}
+      prochain={prochain}
+      paliers={<PaliersSubs totalSubs={ligue.totalSubs} evenements={ligue.evenements} />}
+      joueurs={ligue.joueurs}
       aOuvrir={ligue.aOuvrir}
       twitchBranche={branche}
       maintenant={new Date().toISOString()}

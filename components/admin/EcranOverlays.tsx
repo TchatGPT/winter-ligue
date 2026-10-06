@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useAction } from '@/components/admin/action';
 import { EcranAdmin, Panneau } from '@/components/admin/Kit';
-import type { NavIconName } from '@/components/icons';
 import { OverlayBooster } from '@/components/overlay/OverlayBooster';
 import { OverlayDuel } from '@/components/overlay/OverlayDuel';
 import { OverlaySubs } from '@/components/overlay/OverlaySubs';
@@ -11,33 +10,29 @@ import { vueSubsDemo } from '@/components/overlay/demo';
 
 type IdOverlay = 'booster' | 'duel' | 'subs';
 
-const OVERLAYS: { id: IdOverlay; titre: string; icone: NavIconName; aide: string; largeur: number; hauteur: number }[] =
-  [
-    {
-      id: 'booster',
-      titre: 'Ouverture de booster',
-      icone: 'rocket',
-      aide: 'Quand la streameuse ouvre un booster : il surgit en 3D avec le nom du joueur, s’ouvre sur le rail du site, puis la carte reste quelques secondes à l’écran.',
-      largeur: 1920,
-      hauteur: 1080,
-    },
-    {
-      id: 'duel',
-      titre: 'Duel lancé',
-      icone: 'swords',
-      aide: 'Quand un joueur lance un duel et attend un adversaire : son nom, sa mise, et « !duel » dans le tchat en dessous.',
-      largeur: 1200,
-      hauteur: 420,
-    },
-    {
-      id: 'subs',
-      titre: 'Compteur de subs',
-      icone: 'snowflake',
-      aide: 'Toujours affiché : les subs de la saison, le prochain palier et ce qu’il rapporte, l’évènement qui vient.',
-      largeur: 880,
-      hauteur: 260,
-    },
-  ];
+const OVERLAYS: { id: IdOverlay; titre: string; aide: string; largeur: number; hauteur: number }[] = [
+  {
+    id: 'booster',
+    titre: 'Ouverture de booster',
+    aide: 'Quand la streameuse ouvre un booster : il surgit en 3D avec le nom du joueur, s’ouvre sur le rail du site, puis la carte reste quelques secondes à l’écran.',
+    largeur: 1920,
+    hauteur: 1080,
+  },
+  {
+    id: 'duel',
+    titre: 'Duel lancé',
+    aide: 'Quand un joueur lance un duel et attend un adversaire : son nom, sa mise, et « !duel » dans le tchat en dessous.',
+    largeur: 1200,
+    hauteur: 420,
+  },
+  {
+    id: 'subs',
+    titre: 'Compteur de subs',
+    aide: 'Toujours affiché : les subs de la saison, le prochain palier et ce qu’il rapporte, l’évènement qui vient.',
+    largeur: 880,
+    hauteur: 260,
+  },
+];
 
 /**
  * Les overlays du stream : un aperçu qui tourne, le lien à coller dans OBS,
@@ -96,7 +91,6 @@ export function EcranOverlays({
     >
       <Panneau
         zone="obs"
-        icone="antenne"
         titre="Dans OBS"
         sousTitre="Un lien ne montre que ce que le stream montre déjà. Ne l’affiche pas en direct ; s’il a fuité, régénère les liens."
         actions={
@@ -119,7 +113,7 @@ export function EcranOverlays({
       </Panneau>
 
       {OVERLAYS.map((o) => (
-        <Panneau key={o.id} zone={o.id} titre={o.titre} icone={o.icone} sousTitre={o.aide}>
+        <Panneau key={o.id} zone={o.id} titre={o.titre} sousTitre={o.aide}>
           <div className="admin-apercu" style={{ aspectRatio: `${o.largeur} / ${o.hauteur}` }}>
             {o.id === 'booster' && <OverlayBooster cle="" depart={depart} demo />}
             {o.id === 'duel' && <OverlayDuel cle="" depart={depart} demo />}
