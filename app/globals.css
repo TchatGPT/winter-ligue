@@ -12636,7 +12636,7 @@
    téléphone et une tablette, tout s'empile et la page défile ; les listes
    longues gardent une hauteur bornée. */
 .adm,
-.rg {
+.rgs {
   --adm-hors: 15rem;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -12644,7 +12644,7 @@
 }
 @media (min-width: 1024px) and (min-height: 760px) {
   .adm,
-.rg {
+.rgs {
     height: calc(100dvh - var(--adm-hors) - var(--bandeau-evts, 0px));
     min-height: 30rem;
     grid-template-rows: auto minmax(0, 1fr);
@@ -12657,19 +12657,19 @@
    de pixels entre les panneaux et la neige. */
 @media (min-width: 1280px) {
   .adm,
-.rg {
+.rgs {
     --adm-hors: 14.25rem;
   }
 }
 @media (min-width: 1536px) {
   .adm,
-.rg {
+.rgs {
     --adm-hors: 13.75rem;
   }
 }
 @media (min-width: 150rem) {
   .adm,
-.rg {
+.rgs {
     --adm-hors: 12.25rem;
   }
 }
@@ -14109,303 +14109,949 @@ a.adm-tuile:hover .adm-tuile-fleche {
 }
 
 /* ==========================================================================
-   LES RÈGLES — app/regles/page.tsx
+   LES RÈGLES — components/Regles.tsx et ReglesSommaire.tsx
    ==========================================================================
-   Six blocs courts, chacun sa médaille et sa neige. Sur un ordinateur, la
-   page tient dans la fenêtre, pied de page compris : trois colonnes et deux
-   rangées (deux colonnes sous 1280 px), et ce qui ne tient pas défile dans
-   son bloc. Sur un téléphone, les blocs s'empilent. */
-.rg-grille {
-  display: grid;
-  min-height: 0;
-  grid-template-columns: minmax(0, 1fr);
+   Un sommaire de sept sujets, chacun résumé en une ligne, et la page du sujet
+   choisi. Sur un ordinateur, l'ensemble tient dans la fenêtre, pied de page
+   compris (mêmes marges que la modération) ; une page trop longue défile en
+   elle-même. Sur un téléphone, le sommaire mène à chaque sujet, et tous les
+   sujets s'empilent. */
+.rgs {
   gap: 1rem;
 }
-@media (min-width: 768px) {
-  .rg-grille {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-@media (min-width: 1280px) {
-  .rg-grille {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+@media (min-width: 1024px) {
+  .rgs {
+    grid-template-columns: minmax(17rem, 21rem) minmax(0, 1fr);
+    align-items: stretch;
   }
 }
 @media (min-width: 1024px) and (min-height: 760px) {
-  .rg-grille {
-    grid-auto-rows: minmax(0, 1fr);
+  .rgs {
+    grid-template-rows: minmax(0, 1fr);
   }
 }
-.rg-bloc {
+
+/* -- Le sommaire -- */
+.rgs-nav {
   display: flex;
   min-height: 0;
-  min-width: 0;
   flex-direction: column;
-  gap: 0.85rem;
-  padding: 1.75rem 1.25rem 1.2rem;
+  gap: 0.9rem;
+  padding: 1.6rem 0.9rem 0.9rem;
   border-radius: var(--r-lg);
 }
-@media (min-width: 640px) {
-  .rg-bloc {
-    padding: 1.85rem 1.5rem 1.3rem;
-  }
+.rgs-nav-tete {
+  padding-inline: 0.5rem;
 }
-.rg-tete {
-  display: flex;
-  align-items: center;
-  gap: 0.85rem;
-}
-.rg-medaille {
-  width: 2.9rem;
-  height: 2.9rem;
-}
-.rg-titre {
+.rgs-nav-titre {
+  margin-top: 0.25rem;
   font-family: var(--font-display);
-  font-size: 1.6rem;
+  font-size: 2rem;
   font-weight: 900;
   line-height: 1;
   letter-spacing: 0.03em;
   text-transform: uppercase;
   color: var(--ink);
 }
-.rg-phrase {
-  margin-top: 0.3rem;
-  font-size: 0.9rem;
-  line-height: 1.35;
-  color: var(--aurora);
-}
-.rg-corps {
-  display: flex;
+.rgs-liste {
+  display: grid;
   min-height: 0;
-  flex: 1;
-  flex-direction: column;
-  gap: 0.7rem;
+  gap: 0.3rem;
   overflow-y: auto;
-  font-size: 0.9375rem;
-  line-height: 1.45;
-  color: var(--muted);
   scrollbar-width: thin;
-  scrollbar-color: rgb(255 255 255 / 0.22) transparent;
 }
-.rg-corps b {
-  color: var(--ink);
-}
-/* Rien ne se tasse dans un bloc : ce qui ne tient pas défile. */
-.rg-corps > * {
-  flex: none;
-}
-.rg-bloc {
-  container-type: inline-size;
-}
-.rg-court {
-  display: none;
-}
-@container (max-width: 25rem) {
-  .rg-raretes .rg-long {
-    display: none;
-  }
-  .rg-raretes .rg-court {
-    display: inline;
+@media (max-width: 1023px) {
+  .rgs-liste {
+    grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
   }
 }
-.rg-note {
-  font-size: 0.8125rem;
-  line-height: 1.45;
+.rgs-entree {
+  display: grid;
+  grid-template-columns: 1.1rem 2.4rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.55rem 0.7rem 0.55rem 0.55rem;
+  border-radius: var(--r-md);
+  color: var(--muted);
+  transition:
+    background-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+.rgs-entree:hover {
+  background: rgb(255 255 255 / 0.06);
+}
+.rgs-entree[aria-current='true'] {
+  background: linear-gradient(100deg, rgb(255 255 255 / 0.16), rgb(255 255 255 / 0.05));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.45),
+    inset 0 0 0 1px rgb(255 255 255 / 0.14);
+}
+/* Sur un téléphone, rien n'est « ouvert » : tout est à la suite. */
+@media (max-width: 1023px) {
+  .rgs-entree[aria-current='true'] {
+    background: none;
+    box-shadow: none;
+  }
+}
+.rgs-numero {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 900;
+  text-align: center;
   color: var(--faint);
 }
-
-/* Ce qu'on fait, ce que ça rapporte : un tableau d'affichage. */
-.rg-lignes {
-  display: grid;
-  border-radius: var(--r-sm);
-  background: rgb(0 10 30 / 0.22);
-  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.08);
+.rgs-medaille {
+  width: 2.4rem;
+  height: 2.4rem;
 }
-.rg-lignes li {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0.45rem 0.8rem;
-}
-.rg-lignes li + li {
-  border-top: 1px solid rgb(255 255 255 / 0.07);
-}
-.rg-lignes b {
+.rgs-entree-titre {
+  display: block;
   font-family: var(--font-display);
-  font-size: 1rem;
+  font-size: 1.05rem;
   font-weight: 900;
-  letter-spacing: 0.02em;
-  text-align: right;
-  color: var(--ink);
-}
-
-/* Les quatre boosters, en deux groupes : pour toi, et au sort. */
-.rg-boosters {
-  --teinte: var(--aurora);
-  padding: 0.45rem 0.8rem 0.5rem;
-  border-radius: var(--r-sm);
-  background: linear-gradient(100deg, color-mix(in srgb, var(--teinte) 12%, transparent) 0%, rgb(0 10 30 / 0.22) 60%);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--teinte) 28%, transparent);
-}
-.rg-boosters[data-pour='sort'] {
-  --teinte: var(--ice);
-}
-.rg-boosters-qui {
-  margin-bottom: 0.15rem;
-  font-family: var(--font-display);
-  font-size: 0.75rem;
-  font-weight: 800;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--teinte);
-}
-.rg-boosters li {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  column-gap: 0.6rem;
-}
-.rg-boosters b {
-  font-family: var(--font-display);
-  font-size: 0.95rem;
-  font-weight: 900;
+  line-height: 1.1;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--ink);
 }
-.rg-boosters span {
-  font-size: 0.8125rem;
-  color: var(--muted);
+.rgs-entree-resume {
+  display: -webkit-box;
+  margin-top: 0.15rem;
+  overflow: hidden;
+  font-size: 0.78rem;
+  line-height: 1.3;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
-/* Les raretés et ce qu'une carte peut faire bouger. */
-.rg-raretes {
+/* -- La page d'un sujet -- */
+.rgs-pages {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.4rem;
+  min-height: 0;
+  gap: 1rem;
 }
-.rg-raretes li {
+@media (min-width: 1024px) {
+  .rgs-page:not([data-actif]) {
+    display: none;
+  }
+}
+.rgs-page {
   display: flex;
+  min-height: 0;
   min-width: 0;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.4rem 0.6rem;
-  border-radius: var(--r-sm);
-  background: rgb(0 10 30 / 0.22);
-  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.08);
-  font-size: 0.8125rem;
+  flex-direction: column;
+  gap: 1.1rem;
+  padding: 1.8rem 1.2rem 1.3rem;
+  border-radius: var(--r-lg);
+  scroll-margin-top: 6rem;
 }
-.rg-raretes span {
-  min-width: 0;
-  flex: 1;
-  line-height: 1.2;
+@media (min-width: 640px) {
+  .rgs-page {
+    padding: 2rem 1.9rem 1.5rem;
+  }
+}
+.rgs-page-tete {
+  display: flex;
+  align-items: center;
+  gap: 1.1rem;
+}
+.rgs-medaille-grande {
+  width: 3.6rem;
+  height: 3.6rem;
+}
+.rgs-page-numero {
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  color: var(--aurora);
+}
+.rgs-page-titre {
+  font-family: var(--font-display);
+  font-size: 2.3rem;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
   color: var(--ink);
 }
-.rg-raretes b {
-  white-space: nowrap;
+.rgs-page-resume {
+  margin-top: 0.35rem;
+  font-size: 1.02rem;
+  line-height: 1.4;
+  color: var(--ink-2);
 }
-.rg-raretes b {
-  font-family: var(--font-display);
-  font-weight: 900;
+@media (max-width: 639px) {
+  .rgs-page-tete {
+    align-items: flex-start;
+  }
+  .rgs-medaille-grande {
+    width: 2.8rem;
+    height: 2.8rem;
+  }
+  .rgs-page-titre {
+    font-size: 1.75rem;
+  }
+}
+.rgs-page-corps {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 1rem;
+  overflow-y: auto;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: var(--muted);
+  scrollbar-width: thin;
+  scrollbar-color: rgb(255 255 255 / 0.22) transparent;
+}
+.rgs-page-corps > * {
+  flex: none;
+}
+.rgs-page-corps b {
+  color: var(--ink);
 }
 
-/* La chance : une jauge de glace qui finit en or, et quatre repères. */
-.rg-jauge {
-  height: 10px;
-  overflow: hidden;
-  border-radius: var(--r-pilule);
-  background: color-mix(in srgb, var(--fond) 70%, transparent);
-  box-shadow: inset 0 1px 2px color-mix(in srgb, var(--fond) 90%, transparent);
+/* -- Les pièces d'une page -- */
+.rgs-page {
+  container-type: inline-size;
 }
-.rg-jauge span {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: linear-gradient(90deg, var(--ice-3), var(--ice) 45%, var(--gold));
-}
-.rg-reperes {
+
+/* Deux colonnes quand la page est large : le concret, puis les encarts. */
+.rgs-duo {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0.25rem;
-  margin-top: -0.35rem;
+  gap: 0.8rem;
 }
-.rg-reperes li {
+@container (min-width: 42rem) {
+  .rgs-duo {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+  }
+}
+.rgs-pile {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.rgs-encart {
   display: flex;
   flex-direction: column;
-  font-size: 0.75rem;
+  gap: 0.5rem;
+  padding: 1rem 1.1rem;
+  border-radius: var(--r-md);
+  background: rgb(0 10 30 / 0.22);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.08);
+}
+.rgs-encart-titre {
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--aurora);
+}
+.rgs-puces {
+  display: grid;
+  gap: 0.4rem;
+}
+.rgs-puces li {
+  position: relative;
+  padding-left: 1.05rem;
+}
+.rgs-puces li::before {
+  content: '';
+  position: absolute;
+  top: 0.62em;
+  left: 0.15rem;
+  width: 0.38rem;
+  height: 0.38rem;
+  border-radius: 1px;
+  background: var(--ice);
+  transform: rotate(45deg);
+}
+.rgs-sous-note {
+  margin-top: -0.45rem;
+  font-size: 0.8125rem;
   color: var(--faint);
 }
-.rg-reperes li:nth-child(2),
-.rg-reperes li:nth-child(3) {
-  align-items: center;
+.rgs-encart .rgs-sous-note {
+  margin-top: 0;
 }
-.rg-reperes li:last-child {
-  align-items: flex-end;
-}
-.rg-reperes b {
-  font-family: var(--font-display);
-  font-size: 1.15rem;
-  font-weight: 900;
-  color: var(--ink);
-}
-.rg-reperes li:last-child b {
-  color: var(--gold);
-}
-
-.rg-lien {
+.rgs-lien {
   align-self: flex-start;
-  margin-top: auto;
   font-weight: 700;
   color: var(--aurora);
 }
 
-/* Sur un écran d'ordinateur bas : les blocs se resserrent. */
-@media (min-width: 1024px) and (max-height: 1000px) {
-  .rg,
-  .rg-grille {
-    gap: 0.75rem;
+/* Une grande tuile : la valeur en grand, ce qu'elle paie en capitales. */
+.rgs-tuile {
+  --teinte: var(--ice);
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.15rem;
+  padding: 0.9rem 1rem;
+  border-radius: var(--r-md);
+  background:
+    linear-gradient(160deg, color-mix(in srgb, var(--teinte) 13%, transparent) 0%, transparent 70%),
+    rgb(0 10 30 / 0.22);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--teinte) 24%, transparent);
+}
+.rgs-tuile[data-ton='or'] {
+  --teinte: var(--gold);
+}
+.rgs-tuile[data-ton='aurore'] {
+  --teinte: var(--aurora);
+}
+.rgs-tuile-valeur {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
+  color: var(--ink);
+}
+.rgs-tuile[data-ton='or'] .rgs-tuile-valeur {
+  color: var(--gold);
+}
+.rgs-tuile-nom {
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+.rgs-tuile-detail {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+/* Le score d'une game, en addition. */
+.rgs-formule {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.45rem;
+}
+.rgs-formule i {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-style: normal;
+  font-weight: 900;
+  line-height: 1;
+  text-align: center;
+  color: var(--faint);
+}
+@container (min-width: 40rem) {
+  .rgs-formule {
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: stretch;
   }
-  .rg-bloc {
-    gap: 0.6rem;
-    padding: 1.5rem 1.3rem 1rem;
-  }
-  .rg-medaille {
-    width: 2.4rem;
-    height: 2.4rem;
-  }
-  .rg-titre {
-    font-size: 1.35rem;
-  }
-  .rg-corps {
-    gap: 0.5rem;
-    font-size: 0.875rem;
-  }
-  .rg-lignes li {
-    padding-block: 0.25rem;
-  }
-  .rg-phrase {
-    margin-top: 0.15rem;
-    font-size: 0.8125rem;
-  }
-  /* Les précisions laissent la place à l'essentiel. */
-  .rg-note {
-    display: none;
-  }
-  .rg > .entete-page {
-    padding-block: 0.6rem;
-  }
-  .rg > .entete-page .entete-page-lead {
-    display: none;
+  .rgs-formule i {
+    align-self: center;
   }
 }
-/* Plus bas encore : le menu dit déjà où l'on est, l'en-tête laisse sa place
-   aux règles. */
-@media (min-width: 1024px) and (min-height: 760px) and (max-height: 900px) {
-  .rg > .entete-page {
-    display: none;
+
+/* Un exemple chiffré : un ticket, les lignes puis le total. */
+.rgs-ticket {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem 1.1rem;
+  border-radius: var(--r-md);
+  background: rgb(0 10 30 / 0.3);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.1);
+}
+.rgs-ticket li,
+.rgs-ticket-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.4rem 0;
+}
+.rgs-ticket li + li {
+  border-top: 1px dashed rgb(255 255 255 / 0.12);
+}
+.rgs-ticket li b {
+  font-family: var(--font-display);
+  font-weight: 900;
+  white-space: nowrap;
+}
+.rgs-ticket-total {
+  margin-top: 0.1rem;
+  padding: 0.55rem 0.8rem;
+  border-radius: var(--r-sm);
+  background: color-mix(in srgb, var(--gold) 12%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gold) 38%, transparent);
+  color: var(--ink);
+}
+.rgs-ticket-total b {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 900;
+  white-space: nowrap;
+  color: var(--gold) !important;
+}
+
+/* Les quatre boosters : quand, pour qui, et leurs taux. */
+.rgs-boosters {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.7rem;
+}
+@container (min-width: 34rem) {
+  .rgs-boosters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .rg {
-    grid-template-rows: minmax(0, 1fr);
+}
+@container (min-width: 80rem) {
+  .rgs-boosters {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+.rgs-booster {
+  --teinte: var(--aurora);
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0.95rem 1rem;
+  border-radius: var(--r-md);
+  background:
+    linear-gradient(160deg, color-mix(in srgb, var(--teinte) 13%, transparent) 0%, transparent 70%),
+    rgb(0 10 30 / 0.22);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--teinte) 26%, transparent);
+}
+.rgs-booster[data-pour='sort'] {
+  --teinte: var(--ice);
+}
+.rgs-booster header {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+.rgs-booster-glyphe {
+  font-size: 1.35rem;
+  line-height: 1;
+}
+.rgs-booster h3 {
+  min-width: 0;
+  flex: 1;
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 900;
+  line-height: 1.05;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.rgs-booster em {
+  flex: none;
+  padding: 0.12rem 0.55rem;
+  border-radius: var(--r-pilule);
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  font-style: normal;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--teinte);
+  background: color-mix(in srgb, var(--teinte) 14%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--teinte) 40%, transparent);
+}
+.rgs-booster > p {
+  font-size: 0.875rem;
+  color: var(--ink-2);
+}
+.rgs-taux {
+  margin-top: auto;
+}
+.rgs-taux-barre {
+  display: flex;
+  height: 8px;
+  gap: 2px;
+  overflow: hidden;
+  border-radius: var(--r-pilule);
+  background: color-mix(in srgb, var(--fond) 70%, transparent);
+}
+.rgs-taux-barre span {
+  min-width: 3px;
+  height: 100%;
+}
+.rgs-taux-legende {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem 0.7rem;
+  margin-top: 0.4rem;
+  font-size: 0.75rem;
+  color: var(--faint);
+}
+.rgs-taux-legende span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  white-space: nowrap;
+}
+.rgs-taux-legende i {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 2px;
+}
+
+/* Des étapes numérotées : côte à côte, ou en colonne. */
+.rgs-etapes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
+  gap: 0.6rem;
+  counter-reset: etape;
+}
+.rgs-etapes li {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.9rem 1rem;
+  border-radius: var(--r-md);
+  background: rgb(0 10 30 / 0.22);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.08);
+  counter-increment: etape;
+  font-size: 0.875rem;
+}
+.rgs-etapes li::before {
+  content: counter(etape);
+  display: grid;
+  width: 1.75rem;
+  height: 1.75rem;
+  flex: none;
+  margin-bottom: 0.35rem;
+  place-items: center;
+  border-radius: var(--r-pilule);
+  font-family: var(--font-display);
+  font-weight: 900;
+  color: var(--nuit);
+  background: linear-gradient(178deg, var(--neige-1) 0%, var(--neige-2) 55%, var(--neige-3) 100%);
+}
+.rgs-etapes b {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.rgs-etapes[data-vertical] {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+}
+.rgs-etapes[data-vertical] li {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1.75rem minmax(0, 1fr);
+  column-gap: 0.8rem;
+  padding: 0.45rem 0;
+  background: none;
+  box-shadow: none;
+}
+.rgs-etapes[data-vertical] li::before {
+  grid-row: 1 / span 2;
+  margin: 0;
+}
+/* Le fil qui relie les étapes. */
+.rgs-etapes[data-vertical] li:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 2.4rem;
+  bottom: -0.3rem;
+  left: calc(0.875rem - 1px);
+  width: 2px;
+  border-radius: 1px;
+  background: rgb(255 255 255 / 0.14);
+}
+.rgs-etapes[data-vertical] b {
+  font-size: 0.95rem;
+}
+
+/* Les raretés : ce qu'une carte fait bouger, au plus. */
+.rgs-raretes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+@container (min-width: 40rem) {
+  .rgs-raretes {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+.rgs-raretes li {
+  --teinte: var(--ice);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.3rem;
+  padding: 0.9rem 1rem;
+  border-radius: var(--r-md);
+  background:
+    linear-gradient(160deg, color-mix(in srgb, var(--teinte) 16%, transparent) 0%, transparent 70%),
+    rgb(0 10 30 / 0.22);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--teinte) 30%, transparent);
+}
+.rgs-raretes b {
+  font-family: var(--font-display);
+  font-size: 1.9rem;
+  font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
+  color: var(--ink);
+}
+.rgs-raretes span {
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+/* Les gains de flocons : six tuiles. */
+.rgs-gains {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+@container (min-width: 40rem) {
+  .rgs-gains {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@container (min-width: 70rem) {
+  .rgs-gains {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}
+
+/* Deux usages, deux tuiles qui mènent quelque part. */
+.rgs-choix {
+  display: grid;
+  gap: 0.5rem;
+}
+.rgs-choix a {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: var(--r-sm);
+  background: rgb(255 255 255 / 0.05);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.1);
+  color: var(--muted);
+  transition: background-color 0.15s ease;
+}
+.rgs-choix a:hover {
+  background: rgb(255 255 255 / 0.1);
+}
+.rgs-choix b {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.rgs-choix b::after {
+  content: ' →';
+  color: var(--aurora);
+}
+
+/* La chance : un escalier, du ×1 au ×4. */
+.rgs-marches {
+  display: flex;
+  height: 9.5rem;
+  align-items: stretch;
+  gap: 5px;
+  padding: 0.9rem 0.9rem 0.6rem;
+  border-radius: var(--r-md);
+  background: rgb(0 10 30 / 0.22);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.08);
+}
+.rgs-marches > div {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.3rem;
+}
+.rgs-marches b {
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 900;
+  white-space: nowrap;
+  color: var(--ink);
+}
+.rgs-marches > div:last-child b {
+  color: var(--gold);
+}
+.rgs-marches span {
+  width: 100%;
+  height: calc(var(--h) * 0.72);
+  border-radius: 5px 5px 2px 2px;
+  background: linear-gradient(180deg, var(--gold), var(--ice) 70%, var(--ice-3));
+}
+.rgs-marches small {
+  font-size: 0.7rem;
+  white-space: nowrap;
+  color: var(--faint);
+}
+@container (max-width: 36rem) {
+  .rgs-marches > div:nth-child(even) b,
+  .rgs-marches > div:nth-child(even) small {
+    visibility: hidden;
+  }
+}
+
+/* Les paliers de subs : le nombre en grand, ce qu'il fait tomber. */
+.rgs-paliers {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+  gap: 0.6rem;
+}
+.rgs-paliers li {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.9rem 1rem;
+  border-radius: var(--r-md);
+  background:
+    linear-gradient(160deg, color-mix(in srgb, var(--violet) 14%, transparent) 0%, transparent 70%),
+    rgb(0 10 30 / 0.22);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--violet) 26%, transparent);
+}
+.rgs-paliers-nombre {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1;
+}
+.rgs-paliers-nombre b {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 900;
+  color: var(--violet);
+}
+.rgs-paliers-nombre small {
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+.rgs-paliers-effet {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  font-size: 0.82rem;
+  line-height: 1.3;
+}
+.rgs-paliers-effet strong {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+/* Ce qui compte, ce qui ne compte pas. */
+.rgs-compte {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+  gap: 0.8rem;
+}
+.rgs-compte ul {
+  display: grid;
+  gap: 0.35rem;
+}
+.rgs-compte li {
+  position: relative;
+  padding-left: 1.5rem;
+}
+.rgs-compte li::before {
+  content: '✕';
+  position: absolute;
+  top: 0.1em;
+  left: 0;
+  display: grid;
+  width: 1.1rem;
+  height: 1.1rem;
+  place-items: center;
+  border-radius: var(--r-pilule);
+  font-size: 0.65rem;
+  font-weight: 900;
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 16%, transparent);
+}
+.rgs-compte ul[data-oui] li::before {
+  content: '✓';
+  color: var(--aurora);
+  background: color-mix(in srgb, var(--aurora) 16%, transparent);
+}
+
+/* -- Le sommaire remplit sa colonne : les entrées se partagent la hauteur. -- */
+@media (min-width: 1024px) and (min-height: 760px) {
+  .rgs-liste {
+    flex: 1;
+    grid-auto-rows: minmax(0, 1fr);
+  }
+  .rgs-liste li {
+    display: flex;
+    min-height: 0;
+    align-items: center;
+  }
+  .rgs-liste .rgs-entree {
+    flex: 1;
+  }
+}
+
+/* -- D'un sujet au suivant : en bas de chaque page, sur un ordinateur. -- */
+.rgs-page-pied {
+  display: none;
+}
+@media (min-width: 1024px) {
+  .rgs-page-pied {
+    display: flex;
+    flex: none;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding-top: 0.9rem;
+    border-top: 1px solid rgb(255 255 255 / 0.08);
+  }
+}
+
+/* -- Sur un grand écran, tout prend de l'ampleur. -- */
+@media (min-width: 1800px) and (min-height: 1000px) {
+  .rgs-page {
+    gap: 1.5rem;
+    padding: 2.4rem 2.4rem 1.8rem;
+  }
+  .rgs-medaille-grande {
+    width: 4.2rem;
+    height: 4.2rem;
+  }
+  .rgs-page-titre {
+    font-size: 2.8rem;
+  }
+  .rgs-page-resume {
+    font-size: 1.15rem;
+  }
+  .rgs-page-corps {
+    gap: 1.4rem;
+    font-size: 1.02rem;
+  }
+  .rgs-duo,
+  .rgs-pile {
+    gap: 1.1rem;
+  }
+  .rgs-encart,
+  .rgs-ticket {
+    gap: 0.65rem;
+    padding: 1.3rem 1.4rem;
+  }
+  .rgs-encart-titre {
+    font-size: 0.9rem;
+  }
+  .rgs-tuile,
+  .rgs-booster,
+  .rgs-raretes li,
+  .rgs-paliers li,
+  .rgs-etapes:not([data-vertical]) li {
+    padding: 1.3rem 1.3rem;
+  }
+  .rgs-tuile-valeur,
+  .rgs-raretes b,
+  .rgs-paliers-nombre b {
+    font-size: 2.6rem;
+  }
+  .rgs-booster h3 {
+    font-size: 1.25rem;
+  }
+  .rgs-marches {
+    height: 16rem;
+    gap: 8px;
+  }
+  .rgs-marches b {
+    font-size: 1.05rem;
+  }
+  .rgs-marches small {
+    font-size: 0.82rem;
+  }
+  .rgs-entree-titre {
+    font-size: 1.15rem;
+  }
+  .rgs-entree-resume {
+    font-size: 0.85rem;
+  }
+  .rgs-medaille {
+    width: 2.8rem;
+    height: 2.8rem;
+  }
+  .rgs-entree {
+    grid-template-columns: 1.1rem 2.8rem minmax(0, 1fr);
+  }
+}
+
+/* -- Sur un écran d'ordinateur bas : tout se resserre un peu. -- */
+@media (min-width: 1024px) and (max-height: 900px) {
+  .rgs {
+    gap: 0.8rem;
+  }
+  .rgs-nav {
+    gap: 0.6rem;
+    padding-top: 1.4rem;
+  }
+  .rgs-nav-titre {
+    font-size: 1.6rem;
+  }
+  .rgs-entree {
+    padding-block: 0.3rem;
+  }
+  .rgs-medaille {
+    width: 2.1rem;
+    height: 2.1rem;
+  }
+  .rgs-entree-resume {
+    -webkit-line-clamp: 1;
+  }
+  .rgs-page {
+    gap: 0.8rem;
+    padding: 1.6rem 1.6rem 1.1rem;
+  }
+  .rgs-medaille-grande {
+    width: 3rem;
+    height: 3rem;
+  }
+  .rgs-page-titre {
+    font-size: 1.9rem;
+  }
+  .rgs-page-corps {
+    gap: 0.75rem;
+  }
+  .rgs-encart,
+  .rgs-ticket {
+    padding: 0.75rem 0.9rem;
+  }
+  .rgs-tuile,
+  .rgs-booster,
+  .rgs-raretes li,
+  .rgs-paliers li {
+    padding: 0.7rem 0.85rem;
+  }
+  .rgs-tuile-valeur,
+  .rgs-raretes b,
+  .rgs-paliers-nombre b {
+    font-size: 1.6rem;
+  }
+  .rgs-marches {
+    height: 7.5rem;
   }
 }
