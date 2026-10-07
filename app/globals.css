@@ -12635,14 +12635,16 @@
    panneaux se la partagent, et ce qui est long défile dans son panneau. Sur un
    téléphone et une tablette, tout s'empile et la page défile ; les listes
    longues gardent une hauteur bornée. */
-.adm {
+.adm,
+.rg {
   --adm-hors: 15rem;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 0.9rem;
 }
 @media (min-width: 1024px) and (min-height: 760px) {
-  .adm {
+  .adm,
+.rg {
     height: calc(100dvh - var(--adm-hors) - var(--bandeau-evts, 0px));
     min-height: 30rem;
     grid-template-rows: auto minmax(0, 1fr);
@@ -12654,17 +12656,20 @@
    pied de page — change avec la largeur : mesuré, pour garder une vingtaine
    de pixels entre les panneaux et la neige. */
 @media (min-width: 1280px) {
-  .adm {
+  .adm,
+.rg {
     --adm-hors: 14.25rem;
   }
 }
 @media (min-width: 1536px) {
-  .adm {
+  .adm,
+.rg {
     --adm-hors: 13.75rem;
   }
 }
 @media (min-width: 150rem) {
-  .adm {
+  .adm,
+.rg {
     --adm-hors: 12.25rem;
   }
 }
@@ -14100,5 +14105,307 @@ a.adm-tuile:hover .adm-tuile-fleche {
   .adm-panneau[data-zone='fil'] .adm-panneau-phrase,
   .adm-panneau[data-zone='paliers'] .adm-panneau-phrase {
     display: none;
+  }
+}
+
+/* ==========================================================================
+   LES RÈGLES — app/regles/page.tsx
+   ==========================================================================
+   Six blocs courts, chacun sa médaille et sa neige. Sur un ordinateur, la
+   page tient dans la fenêtre, pied de page compris : trois colonnes et deux
+   rangées (deux colonnes sous 1280 px), et ce qui ne tient pas défile dans
+   son bloc. Sur un téléphone, les blocs s'empilent. */
+.rg-grille {
+  display: grid;
+  min-height: 0;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+}
+@media (min-width: 768px) {
+  .rg-grille {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (min-width: 1280px) {
+  .rg-grille {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (min-width: 1024px) and (min-height: 760px) {
+  .rg-grille {
+    grid-auto-rows: minmax(0, 1fr);
+  }
+}
+.rg-bloc {
+  display: flex;
+  min-height: 0;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding: 1.75rem 1.25rem 1.2rem;
+  border-radius: var(--r-lg);
+}
+@media (min-width: 640px) {
+  .rg-bloc {
+    padding: 1.85rem 1.5rem 1.3rem;
+  }
+}
+.rg-tete {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+.rg-medaille {
+  width: 2.9rem;
+  height: 2.9rem;
+}
+.rg-titre {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.rg-phrase {
+  margin-top: 0.3rem;
+  font-size: 0.9rem;
+  line-height: 1.35;
+  color: var(--aurora);
+}
+.rg-corps {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.7rem;
+  overflow-y: auto;
+  font-size: 0.9375rem;
+  line-height: 1.45;
+  color: var(--muted);
+  scrollbar-width: thin;
+  scrollbar-color: rgb(255 255 255 / 0.22) transparent;
+}
+.rg-corps b {
+  color: var(--ink);
+}
+/* Rien ne se tasse dans un bloc : ce qui ne tient pas défile. */
+.rg-corps > * {
+  flex: none;
+}
+.rg-bloc {
+  container-type: inline-size;
+}
+.rg-court {
+  display: none;
+}
+@container (max-width: 25rem) {
+  .rg-raretes .rg-long {
+    display: none;
+  }
+  .rg-raretes .rg-court {
+    display: inline;
+  }
+}
+.rg-note {
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--faint);
+}
+
+/* Ce qu'on fait, ce que ça rapporte : un tableau d'affichage. */
+.rg-lignes {
+  display: grid;
+  border-radius: var(--r-sm);
+  background: rgb(0 10 30 / 0.22);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.08);
+}
+.rg-lignes li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.45rem 0.8rem;
+}
+.rg-lignes li + li {
+  border-top: 1px solid rgb(255 255 255 / 0.07);
+}
+.rg-lignes b {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  text-align: right;
+  color: var(--ink);
+}
+
+/* Les quatre boosters, en deux groupes : pour toi, et au sort. */
+.rg-boosters {
+  --teinte: var(--aurora);
+  padding: 0.45rem 0.8rem 0.5rem;
+  border-radius: var(--r-sm);
+  background: linear-gradient(100deg, color-mix(in srgb, var(--teinte) 12%, transparent) 0%, rgb(0 10 30 / 0.22) 60%);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--teinte) 28%, transparent);
+}
+.rg-boosters[data-pour='sort'] {
+  --teinte: var(--ice);
+}
+.rg-boosters-qui {
+  margin-bottom: 0.15rem;
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--teinte);
+}
+.rg-boosters li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 0.6rem;
+}
+.rg-boosters b {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.rg-boosters span {
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+/* Les raretés et ce qu'une carte peut faire bouger. */
+.rg-raretes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.4rem;
+}
+.rg-raretes li {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: var(--r-sm);
+  background: rgb(0 10 30 / 0.22);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.08);
+  font-size: 0.8125rem;
+}
+.rg-raretes span {
+  min-width: 0;
+  flex: 1;
+  line-height: 1.2;
+  color: var(--ink);
+}
+.rg-raretes b {
+  white-space: nowrap;
+}
+.rg-raretes b {
+  font-family: var(--font-display);
+  font-weight: 900;
+}
+
+/* La chance : une jauge de glace qui finit en or, et quatre repères. */
+.rg-jauge {
+  height: 10px;
+  overflow: hidden;
+  border-radius: var(--r-pilule);
+  background: color-mix(in srgb, var(--fond) 70%, transparent);
+  box-shadow: inset 0 1px 2px color-mix(in srgb, var(--fond) 90%, transparent);
+}
+.rg-jauge span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--ice-3), var(--ice) 45%, var(--gold));
+}
+.rg-reperes {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.25rem;
+  margin-top: -0.35rem;
+}
+.rg-reperes li {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.75rem;
+  color: var(--faint);
+}
+.rg-reperes li:nth-child(2),
+.rg-reperes li:nth-child(3) {
+  align-items: center;
+}
+.rg-reperes li:last-child {
+  align-items: flex-end;
+}
+.rg-reperes b {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 900;
+  color: var(--ink);
+}
+.rg-reperes li:last-child b {
+  color: var(--gold);
+}
+
+.rg-lien {
+  align-self: flex-start;
+  margin-top: auto;
+  font-weight: 700;
+  color: var(--aurora);
+}
+
+/* Sur un écran d'ordinateur bas : les blocs se resserrent. */
+@media (min-width: 1024px) and (max-height: 1000px) {
+  .rg,
+  .rg-grille {
+    gap: 0.75rem;
+  }
+  .rg-bloc {
+    gap: 0.6rem;
+    padding: 1.5rem 1.3rem 1rem;
+  }
+  .rg-medaille {
+    width: 2.4rem;
+    height: 2.4rem;
+  }
+  .rg-titre {
+    font-size: 1.35rem;
+  }
+  .rg-corps {
+    gap: 0.5rem;
+    font-size: 0.875rem;
+  }
+  .rg-lignes li {
+    padding-block: 0.25rem;
+  }
+  .rg-phrase {
+    margin-top: 0.15rem;
+    font-size: 0.8125rem;
+  }
+  /* Les précisions laissent la place à l'essentiel. */
+  .rg-note {
+    display: none;
+  }
+  .rg > .entete-page {
+    padding-block: 0.6rem;
+  }
+  .rg > .entete-page .entete-page-lead {
+    display: none;
+  }
+}
+/* Plus bas encore : le menu dit déjà où l'on est, l'en-tête laisse sa place
+   aux règles. */
+@media (min-width: 1024px) and (min-height: 760px) and (max-height: 900px) {
+  .rg > .entete-page {
+    display: none;
+  }
+  .rg {
+    grid-template-rows: minmax(0, 1fr);
   }
 }
