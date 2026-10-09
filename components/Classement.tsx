@@ -8,6 +8,7 @@ import { MedailleGlace } from '@/components/MedailleGlace';
 import { SnowCap } from '@/components/SnowCap';
 import { CardFrame } from '@/components/CardFrame';
 import { FicheCarte } from '@/components/FicheCarte';
+import { IconViseur } from '@/components/icons';
 import { flakesShort } from '@/components/ui';
 import { RARITY_ORDER } from '@/lib/domain/rules';
 import type { RankingRow } from '@/lib/services/league';
@@ -42,17 +43,7 @@ import type { RankingRow } from '@/lib/services/league';
  * liste, pas une pile de cartes. Au-delà de 1 600 px, les lignes s'agrandissent.
  */
 
-type Cle =
-  | 'rang'
-  | 'pseudo'
-  | 'carte'
-  | 'points'
-  | 'games'
-  | 'moyenne'
-  | 'kills'
-  | 'top1'
-  | 'meilleure'
-  | 'flocons';
+type Cle = 'rang' | 'pseudo' | 'carte' | 'points' | 'games' | 'moyenne' | 'kills' | 'top1' | 'meilleure' | 'flocons';
 
 /**
  * `secondaire` : une colonne qui s'efface quand le tableau manque de place.
@@ -107,11 +98,7 @@ function valeur(row: RankingRow, cle: Cle): number | string {
 }
 
 /** Sans accent ni casse, pour que « Boreal » trouve « Boréal ». */
-const plat = (s: string) =>
-  s
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .toLowerCase();
+const plat = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
 /**
  * `outils` : ce que la modération pose dans l'entête, à côté de la recherche
@@ -138,7 +125,10 @@ export function Classement({
 
   const visibles = useMemo(() => {
     const q = plat(recherche.trim());
-    const filtrees = q ? rows.filter((r) => plat(r.pseudo).includes(q)) : rows;
+    // Le pseudo Twitch ou le pseudo en jeu : on cherche un joueur par l'un ou l'autre.
+    const filtrees = q
+      ? rows.filter((r) => plat(r.pseudo).includes(q) || plat(r.activisionId ?? '').includes(q))
+      : rows;
     const sens = tri.desc ? -1 : 1;
     return [...filtrees].sort((a, b) => {
       const va = valeur(a, tri.cle);
@@ -151,9 +141,7 @@ export function Classement({
 
   /** Un clic trie ; sur la même colonne, il inverse. Les nombres descendent d'abord. */
   const trier = (cle: Cle) =>
-    setTri((t) =>
-      t.cle === cle ? { cle, desc: !t.desc } : { cle, desc: cle !== 'rang' && cle !== 'pseudo' },
-    );
+    setTri((t) => (t.cle === cle ? { cle, desc: !t.desc } : { cle, desc: cle !== 'rang' && cle !== 'pseudo' }));
 
   return (
     <section className="glass tableau-verre @container relative" aria-label="Classement général">
@@ -164,8 +152,7 @@ export function Classement({
           carte={fiche.carte}
           legende={
             <>
-              Carte active de <strong className="text-ink">{fiche.pseudo}</strong> : elle tombera
-              sur sa prochaine game.
+              Carte active de <strong className="text-ink">{fiche.pseudo}</strong> : elle tombera sur sa prochaine game.
             </>
           }
           onClose={() => setFiche(null)}
@@ -357,22 +344,35 @@ function Rang({
   ou?: 'table' | 'liste';
 }) {
   if (rang === 1) return <CouronneGlace className={`mx-auto ${taille}`} id={`couronne-classement-${ou}`} />;
-  if (rang === 2 || rang === 3) return <MedailleGlace rang={rang} className={`mx-auto ${taille}`} id={`medaille-${rang}-${ou}`} />;
+  if (rang === 2 || rang === 3)
+    return <MedailleGlace rang={rang} className={`mx-auto ${taille}`} id={`medaille-${rang}-${ou}`} />;
   return <span className="num font-display text-[20px] font-black text-muted @min-[100rem]:text-[24px]">{rang}</span>;
 }
 
+/** Le pseudo Twitch, et dessous le pseudo en jeu (Warzone), derrière son viseur. */
 function Pseudo({ row }: { row: RankingRow }) {
   return (
-    <span className="flex min-w-0 items-center gap-2">
-      <Link
-        href={`/joueurs/${row.slug}`}
-        className="truncate font-display text-[18px] font-bold tracking-wide text-ink no-underline hover:text-ice @min-[100rem]:text-[22px]"
-      >
-        {row.pseudo}
-      </Link>
-      {row.immunise && (
-        <span className="pastille-immunite" title="Immunisé : aucun malus ne touche ses games">
-          Immunisé
+    <span className="block min-w-0">
+      <span className="flex min-w-0 items-center gap-2">
+        <Link
+          href={`/joueurs/${row.slug}`}
+          className="truncate font-display text-[18px] font-bold tracking-wide text-ink no-underline hover:text-ice @min-[100rem]:text-[22px]"
+        >
+          {row.pseudo}
+        </Link>
+        {row.immunise && (
+          <span className="pastille-immunite" title="Immunisé : aucun malus ne touche ses games">
+            Immunisé
+          </span>
+        )}
+      </span>
+      {row.activisionId && (
+        <span className="pseudo-jeu" title="Pseudo Warzone">
+          <IconViseur className="pseudo-jeu-icone" />
+          <span className="sr-only">Pseudo Warzone : </span>
+          <span className="truncate" translate="no">
+            {row.activisionId}
+          </span>
         </span>
       )}
     </span>
@@ -422,10 +422,7 @@ function CompteurPerso({ row, moderation }: { row: RankingRow; moderation: Boost
 
   return (
     <span className="compteur-perso-ligne">
-      <span
-        className="compteur-perso compteur-perso-classement"
-        data-vide={n === 0 ? '' : undefined}
-      >
+      <span className="compteur-perso compteur-perso-classement" data-vide={n === 0 ? '' : undefined}>
         <span className="compteur-perso-libelle">
           <span className="num">{n}</span> Booster{n > 1 ? 's' : ''} Perso
         </span>

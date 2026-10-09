@@ -60,11 +60,7 @@ export function IconPack(props: IconProps) {
       <Fond d={carte} />
       <path d={carte} />
       <path d="M4 7v12a2 2 0 0 0 2 2h9" />
-      <path
-        d="m13.5 7.2.9 2.4 2.4.9-2.4.9-.9 2.4-.9-2.4-2.4-.9 2.4-.9.9-2.4Z"
-        fill="currentColor"
-        strokeWidth={1.2}
-      />
+      <path d="m13.5 7.2.9 2.4 2.4.9-2.4.9-.9 2.4-.9-2.4-2.4-.9 2.4-.9.9-2.4Z" fill="currentColor" strokeWidth={1.2} />
     </Svg>
   );
 }
@@ -280,6 +276,18 @@ export function IconQuitter(props: IconProps) {
     <Svg {...props}>
       <path d="M7.1 6.7a7.5 7.5 0 1 0 9.8 0" />
       <path d="M12 3.5V11" />
+    </Svg>
+  );
+}
+
+/** Pseudo en jeu — un viseur. */
+export function IconViseur(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <circle cx="12" cy="12" r="6.5" fill="currentColor" fillOpacity={0.24} />
+      <circle cx="12" cy="12" r="6.5" />
+      <path d="M12 2.5v4M12 17.5v4M2.5 12h4M17.5 12h4" />
+      <circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none" />
     </Svg>
   );
 }

@@ -4993,6 +4993,30 @@
   /* Sous le pseudo, dans le classement (modération) : une pastille fine, le
      nombre et son nom en petites capitales, puis − et +. Elle passe à la
      ligne sous le pseudo, et ne pèse pas sur la hauteur de la ligne. */
+  /* Le pseudo en jeu (Warzone), sous le pseudo Twitch : plus petit, derrière
+     un viseur, pour qu'on ne confonde pas les deux noms. */
+  .pseudo-jeu {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 0.35rem;
+    margin-top: 0.15rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    line-height: 1.2;
+    color: var(--muted);
+  }
+  .pseudo-jeu-icone {
+    width: 0.95rem;
+    height: 0.95rem;
+    flex: none;
+    color: var(--ice);
+  }
+  @container (min-width: 100rem) {
+    .pseudo-jeu {
+      font-size: 0.95rem;
+    }
+  }
   .compteur-perso-ligne {
     display: flex;
     flex-wrap: wrap;

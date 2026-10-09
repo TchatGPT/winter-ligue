@@ -84,6 +84,8 @@ export interface RankingRow {
   id: string;
   slug: string;
   pseudo: string;
+  /** Le pseudo en jeu (Warzone) : celui que la modération cherche sur les captures. */
+  activisionId: string | null;
   avatarUrl: string | null;
   twitchLogin: string | null;
   snowflakes: number;
@@ -122,6 +124,7 @@ export function classementDe(db: Database): RankingRow[] {
     id: player.id,
     slug: player.slug,
     pseudo: player.pseudo,
+    activisionId: player.activisionId,
     avatarUrl: player.avatarUrl,
     twitchLogin: player.twitchLogin,
     snowflakes: player.snowflakes,
