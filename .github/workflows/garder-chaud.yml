@@ -1,0 +1,26 @@
+# Garde le serveur du site chaud : toutes les cinq minutes en journée, une
+# simple visite de pages publiques. Sans elle, le premier visiteur après un
+# moment de calme attendait plus d'une seconde que le serveur démarre.
+# Aucune donnée, aucun secret : des requêtes GET, comme un visiteur déconnecté.
+name: Garder le site chaud
+
+on:
+  schedule:
+    # De 6 h à 1 h, heure de Paris (UTC+1 l'hiver, UTC+2 l'été).
+    - cron: '*/5 5-23 * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  reveil:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Réveiller le serveur
+        run: |
+          for page in / /connexion /api/me; do
+            curl -s -o /dev/null --max-time 20 \
+              -w "$page %{http_code} %{time_starttransfer}s\n" \
+              "https://www.winter-ligue.com$page" || true
+          done
