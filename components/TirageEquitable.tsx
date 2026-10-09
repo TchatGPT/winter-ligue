@@ -9,6 +9,21 @@ import type { PackDefinition } from '@/lib/domain/types';
 
 const rienAEcouter = () => () => {};
 
+/** La coche d'un point : le seul trait, dans le rond que dessine la feuille de style. */
+function Coche() {
+  return (
+    <svg viewBox="0 0 24 24" className="equitable-coche-icone" fill="none" focusable="false">
+      <path
+        d="M6.5 12.5l3.6 3.6 7.4-8"
+        stroke="currentColor"
+        strokeWidth="2.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 /**
  * Le badge « Tirage équitable », sous le nom d'un booster, et la fenêtre qu'il
  * ouvre : trois phrases — rien n'est truqué, le tirage est enregistré avant
@@ -80,24 +95,39 @@ function FenetreEquitable({ pack, onClose }: { pack: PackDefinition; onClose: ()
 
           <ul className="equitable-points">
             <li>
-              <b>Rien n’est truqué.</b> La carte est tirée au hasard par le serveur. Personne ne la choisit, ni Lriaa ni
-              la modération.
+              <span className="equitable-coche" aria-hidden="true">
+                <Coche />
+              </span>
+              <span>
+                <b>Rien n’est truqué.</b> La carte est tirée au hasard par le serveur. Personne ne la choisit, ni Lriaa
+                ni la modération.
+              </span>
             </li>
             <li>
-              <b>Enregistré avant l’animation.</b> Le tirage est stocké dès l’ouverture : l’animation ne fait que le
-              montrer.
+              <span className="equitable-coche" aria-hidden="true">
+                <Coche />
+              </span>
+              <span>
+                <b>Enregistré avant l’animation.</b> Le tirage est stocké dès l’ouverture : l’animation ne fait que le
+                montrer.
+              </span>
             </li>
             <li>
-              {pourUnJoueur ? (
-                <>
-                  <b>Ton multiplicateur de chance</b> augmente tes chances d’avoir une carte rare.
-                </>
-              ) : (
-                <>
-                  <b>La chance ne compte pas sur ce booster.</b> Tout le monde a les mêmes chances, quel que soit son
-                  multiplicateur.
-                </>
-              )}
+              <span className="equitable-coche" aria-hidden="true">
+                <Coche />
+              </span>
+              <span>
+                {pourUnJoueur ? (
+                  <>
+                    <b>Ton multiplicateur de chance</b> augmente tes chances d’avoir une carte rare.
+                  </>
+                ) : (
+                  <>
+                    <b>La chance ne compte pas sur ce booster.</b> Tout le monde a les mêmes chances, quel que soit son
+                    multiplicateur.
+                  </>
+                )}
+              </span>
             </li>
           </ul>
         </div>
