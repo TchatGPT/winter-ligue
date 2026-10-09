@@ -10056,7 +10056,20 @@
     pointer-events: none;
     /* Sur le stream, elle passe par-dessus le jeu : plus franche qu'au site. */
     filter: saturate(1.5) brightness(1.15);
-    animation: ov-fumee-monte 1.6s ease-out 0.35s both;
+    /* La carte ne reste que sept secondes : la fumée du site, qui dérive en
+       quinze à vingt-trois secondes, y paraissait figée. Ici, des nappes plus
+       rapides et plus amples, et tout le nuage qui tourbillonne. */
+    animation:
+      ov-fumee-monte 1.6s ease-out 0.35s both,
+      ov-fumee-tourne 7s ease-in-out 0.35s infinite alternate;
+  }
+  @keyframes ov-fumee-tourne {
+    from {
+      transform: rotate(-10deg) scale(0.96);
+    }
+    to {
+      transform: rotate(12deg) scale(1.08);
+    }
   }
   .ov-fumee .fumee-nappe {
     -webkit-mask-image: radial-gradient(closest-side, #000 38%, transparent), var(--bruit-fumee);
@@ -10065,7 +10078,6 @@
   @keyframes ov-fumee-monte {
     from {
       opacity: 0;
-      transform: scale(0.7);
     }
   }
   /* La légende : une plaque du site, avec sa neige. */
@@ -15477,4 +15489,24 @@ a.adm-tuile:hover .adm-tuile-fleche {
   .chargement-ligne::after {
     animation: none;
   }
+}
+
+/* La fumée de l'overlay des boosters (voir `.ov-fumee`), hors couche : les
+   règles de la fumée du site le sont aussi, et l'emporteraient. La carte ne
+   reste que sept secondes à l'écran : des nappes plus rapides et plus amples
+   que sur le site, où la fumée dérive en quinze à vingt-trois secondes. */
+.ov-fumee {
+  --amp: 2.2;
+}
+.ov-fumee .fumee-nappe-1 {
+  --duree: 3.6s;
+  --retard: -1s;
+}
+.ov-fumee .fumee-nappe-2 {
+  --duree: 4.4s;
+  --retard: -2.6s;
+}
+.ov-fumee .fumee-nappe-3 {
+  --duree: 5.2s;
+  --retard: -0.4s;
 }
