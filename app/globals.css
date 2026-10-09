@@ -15489,7 +15489,6 @@ a.adm-tuile:hover .adm-tuile-fleche {
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
-  margin-top: 0.75rem;
   padding: 0.35rem 0.85rem 0.35rem 0.55rem;
   border-radius: var(--r-pilule);
   font-family: var(--font-display);

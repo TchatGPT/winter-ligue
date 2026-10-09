@@ -378,6 +378,8 @@ export function PackOpening({
               <TitreGlace taille="page" niveau={2} align="center" givre={false}>
                 {pack.name}
               </TitreGlace>
+              {/* Comment la carte est tirée, et ce que la chance y change. */}
+              <TirageEquitable pack={pack} />
             </div>
 
             <RangeePacks packs={packs} selection={pack.id} onSelection={choisir} fige={busy || surScene !== null} />
@@ -616,8 +618,6 @@ export function PackOpening({
             <p className="eyebrow">Booster choisi</p>
             <TitreGlace taille="bloc">{pack.name}</TitreGlace>
             <p className="mt-1 text-[16px] text-ink-2">{pack.tagline}</p>
-            {/* Comment la carte est tirée, et ce que la chance y change. */}
-            <TirageEquitable pack={pack} />
             <dl className="mt-4 grid grid-cols-2 gap-x-3 gap-y-3 text-[16px]">
               <div>
                 <dt className="text-[13px] tracking-[0.12em] text-faint uppercase">Contenu</dt>
