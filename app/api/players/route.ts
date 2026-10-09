@@ -21,7 +21,7 @@ export async function GET(request: Request): Promise<NextResponse> {
 /**
  * La modération corrige le pseudo Activision d'un joueur : celui que la
  * reconnaissance des captures compare aux noms lus. Vide, il retire le
- * pseudo, et le joueur repassera par la page de bienvenue.
+ * pseudo, et la fenêtre d'inscription le redemandera au joueur.
  */
 export async function PATCH(request: Request): Promise<NextResponse> {
   const g = await guard(request, {

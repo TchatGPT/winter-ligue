@@ -15055,3 +15055,253 @@ a.adm-tuile:hover .adm-tuile-fleche {
     height: 7.5rem;
   }
 }
+
+/* ==========================================================================
+   L'INSCRIPTION — components/InscriptionWarzone.tsx
+   ==========================================================================
+   La fenêtre de la première connexion : le pseudo Warzone, puis sa
+   vérification. Elle se pose au-dessus de tout — menu, barre du bas — sur un
+   voile de nuit qui floute la page. */
+.insc-fond {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  overflow-y: auto;
+  background: rgb(2 8 22 / 0.72);
+  backdrop-filter: blur(10px) saturate(120%);
+}
+.insc {
+  display: flex;
+  width: min(100%, 34rem);
+  flex-direction: column;
+  gap: 1.1rem;
+  padding: 2rem 1.3rem 1.4rem;
+  border-radius: var(--r-lg);
+  animation: insc-entree 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@media (min-width: 640px) {
+  .insc {
+    padding: 2.3rem 2.2rem 1.8rem;
+  }
+}
+@keyframes insc-entree {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.98);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .insc {
+    animation: none;
+  }
+}
+
+/* Les deux étapes, en haut. */
+.insc-etapes {
+  display: flex;
+  gap: 0.5rem;
+}
+.insc-etapes li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.25rem 0.75rem 0.25rem 0.3rem;
+  border-radius: var(--r-pilule);
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--faint);
+  background: rgb(255 255 255 / 0.05);
+}
+.insc-etapes span {
+  display: grid;
+  width: 1.4rem;
+  height: 1.4rem;
+  place-items: center;
+  border-radius: var(--r-pilule);
+  background: rgb(255 255 255 / 0.1);
+  color: var(--ink);
+}
+.insc-etapes li[aria-current='step'] {
+  color: var(--ink);
+  background: rgb(255 255 255 / 0.1);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.18);
+}
+.insc-etapes li[aria-current='step'] span {
+  background: linear-gradient(178deg, var(--neige-1) 0%, var(--neige-2) 55%, var(--neige-3) 100%);
+  color: var(--nuit);
+  text-shadow: none;
+}
+
+.insc-corps {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+.insc-titre {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+@media (max-width: 479px) {
+  .insc-titre {
+    font-size: 1.65rem;
+  }
+}
+.insc-phrase {
+  font-size: 0.98rem;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+.insc-phrase b {
+  color: var(--ink);
+}
+
+.insc-label {
+  margin-top: 0.3rem;
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.insc-label span {
+  font-family: var(--font-body, inherit);
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--faint);
+}
+.field.insc-champ {
+  min-height: 54px;
+  font-size: 1.15rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.insc-erreur {
+  margin-top: -0.35rem;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  color: var(--danger);
+}
+
+/* La consigne : copier-coller, au caractère près. */
+.insc-consigne {
+  padding: 0.85rem 1rem;
+  border-radius: var(--r-md);
+  background: color-mix(in srgb, var(--gold) 10%, rgb(0 10 30 / 0.3));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gold) 38%, transparent);
+}
+.insc-consigne-titre {
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+.insc-consigne ul {
+  display: grid;
+  gap: 0.3rem;
+  margin-top: 0.45rem;
+}
+.insc-consigne li {
+  position: relative;
+  padding-left: 1.05rem;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: var(--muted);
+}
+.insc-consigne li::before {
+  content: '';
+  position: absolute;
+  top: 0.6em;
+  left: 0.15rem;
+  width: 0.38rem;
+  height: 0.38rem;
+  border-radius: 1px;
+  background: var(--gold);
+  transform: rotate(45deg);
+}
+
+.insc-bouton {
+  width: 100%;
+  min-height: 52px;
+}
+
+/* La vérification : le pseudo en grand, tel qu'il sera enregistré — sans
+   capitales forcées, pour qu'on voie chaque majuscule. */
+.insc-apercu {
+  padding: 1rem 1.1rem;
+  border-radius: var(--r-md);
+  background: rgb(0 10 30 / 0.4);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.16);
+  font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0.03em;
+  text-align: center;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  color: var(--frost);
+}
+.insc-case {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  padding: 0.8rem 0.9rem;
+  border-radius: var(--r-md);
+  background: rgb(255 255 255 / 0.05);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.1);
+  cursor: pointer;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+.insc-case input {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex: none;
+  margin-top: 0.1rem;
+  accent-color: var(--aurora);
+}
+.insc-case b {
+  color: var(--ink);
+}
+.insc-note {
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--faint);
+}
+.insc-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+.insc-actions .btn {
+  min-height: 50px;
+  flex: 1 1 10rem;
+}
+.insc-sans-jouer {
+  align-self: center;
+  font-size: 0.85rem;
+  color: var(--faint);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.insc-sans-jouer:hover {
+  color: var(--ink);
+}
+.insc-fin {
+  text-align: center;
+}

@@ -256,8 +256,9 @@ retournent le sens de lecture : une ligne du journal ne peut pas se déguiser.
 
 **Déconnecté, on ne voit que l'accueil.** `lib/auth/acces.ts` expose `exigeSession()`,
 appelé en tête de chaque page de membre (`/`, `/boosters`, `/duels`, `/regles`,
-`/joueurs/[slug]`) : sans session, redirection vers `/` ; avec une session de
-joueur sans pseudo Activision, redirection vers `/bienvenue`. L'espace
+`/joueurs/[slug]`) : sans session, redirection vers `/`. Un joueur sans pseudo
+Warzone entre, et la fenêtre d'inscription (`components/InscriptionWarzone.tsx`,
+posée par la mise en page) le lui demande par-dessus la page. L'espace
 `/admin` garde son propre garde. Ce n'est qu'un aiguillage d'affichage : les
 routes d'API restent seules responsables de leurs contrôles.
 
@@ -268,14 +269,16 @@ L'aiguillage est une fonction pure, `lib/domain/aiguillage.ts`, verrouillée par
 `tests/aiguillage.test.ts`.
 
 **Le pseudo Activision** (`Player.activisionId`) est la seule donnée qu'un joueur
-écrit sur son propre compte : `PATCH /api/me`, `guard({ role: 'joueur' })`, schéma
+écrit sur son propre compte, **une seule fois**, à l'inscription : `PATCH /api/me`
+refuse dès qu'il est renseigné. `guard({ role: 'joueur' })`, schéma
 `monActivisionSchema` (lettres, chiffres, `_ - .`, espace, suffixe `#chiffres`
 facultatif ; jamais de `<`). La modération corrige celui d'un joueur par
 `PATCH /api/players` (`admin`). Les deux passent par `transaction()` et
 laissent une trace au journal — seulement sur un vrai changement. Un nom déjà pris
 par un autre joueur est refusé (comparé sans suffixe, casse ni accents,
 `lib/domain/activision.ts`) : sinon l'un se ferait attribuer les games de
-l'autre. Le retour Twitch envoie vers `/bienvenue` tant qu'il manque.
+l'autre. Tant qu'il manque, la fenêtre d'inscription s'ouvre sur chaque page,
+sauf pour la streameuse, qui ne joue pas.
 
 **Les overlays OBS** (`/overlay/booster`, `/overlay/duel`, `/overlay/subs`) n'ont
 pas de session : ils s'ouvrent par un lien qui porte une clé signée (dérivée

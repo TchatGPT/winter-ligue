@@ -9,8 +9,8 @@ import { destination } from '@/lib/domain/aiguillage';
  * L'accès aux pages du site.
  *
  * Déconnecté, on ne voit que l'accueil, qui présente la ligue et invite à se
- * connecter. Connecté sans pseudo Activision, on passe d'abord par la page de
- * bienvenue.
+ * connecter. Connecté sans pseudo Warzone, on entre, et la fenêtre
+ * d'inscription le demande par-dessus la page.
  *
  * La décision elle-même vit dans `lib/domain/aiguillage.ts`, où elle est
  * testée ; ici on rassemble les faits — le cookie, la base — et on suit.
@@ -21,18 +21,9 @@ export async function exigeSession(): Promise<SessionPayload> {
   const session = await getSession();
   const playerId = playerIdOf(session);
 
-  const joueur = playerId
-    ? await getStore().read((db) => {
-        const p = db.players.find((x) => x.id === playerId);
-        return p ? { activisionId: p.activisionId } : null;
-      })
-    : null;
+  const compteTrouve = playerId ? await getStore().read((db) => db.players.some((x) => x.id === playerId)) : false;
 
-  const ou = destination({
-    connecte: session !== null,
-    compteTrouve: joueur !== null,
-    activision: Boolean(joueur?.activisionId),
-  });
+  const ou = destination({ connecte: session !== null, compteTrouve });
   if (ou || !session) redirect(ou ?? '/');
 
   return session;

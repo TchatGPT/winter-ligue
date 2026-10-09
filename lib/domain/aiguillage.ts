@@ -9,15 +9,13 @@
  * derrière, a disparu avec l'entrée par mot de passe.
  */
 
-export type Destination = '/' | '/connexion' | '/bienvenue';
+export type Destination = '/' | '/connexion';
 
 export interface FaitsSession {
   /** Une session valide existe. */
   connecte: boolean;
   /** Son joueur existe encore en base. */
   compteTrouve: boolean;
-  /** Son pseudo Activision est renseigné. */
-  activision: boolean;
 }
 
 /** Où envoyer cette session, ou `null` si elle peut entrer. */
@@ -25,13 +23,11 @@ export function destination(faits: FaitsSession): Destination | null {
   if (!faits.connecte) return '/';
 
   // Le compte n'existe plus (joueur supprimé, base vidée) : on renvoie se
-  // reconnecter, plutôt que de faire tourner l'accueil et la bienvenue l'un
-  // sur l'autre.
+  // reconnecter.
   if (!faits.compteTrouve) return '/connexion';
 
-  // Sans pseudo Activision, la modération ne peut pas reconnaître le joueur
-  // sur les captures : ses games ne seraient pas saisies.
-  if (!faits.activision) return '/bienvenue';
-
+  // Sans pseudo Warzone, on entre quand même : la fenêtre d'inscription
+  // (`InscriptionWarzone`, posée par la mise en page) le demande par-dessus
+  // la page, avant tout le reste.
   return null;
 }

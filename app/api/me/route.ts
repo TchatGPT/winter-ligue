@@ -39,16 +39,15 @@ export async function GET(request: Request): Promise<NextResponse> {
 }
 
 /**
- * Le joueur renseigne — ou corrige — son pseudo Activision.
+ * L'inscription : le joueur donne son pseudo Warzone (identifiant Activision).
  *
- * C'est la seule chose qu'un joueur écrit sur son propre compte, et elle
- * ne touche ni score ni flocons : elle sert à le reconnaître sur les
- * captures de fin de game. La session de modération n'a pas de profil,
- * donc rien à renseigner.
+ * C'est la seule chose qu'un joueur écrit sur son propre compte, et une seule
+ * fois : ensuite, seule la modération le corrige (`PATCH /api/players`). Elle
+ * ne touche ni score ni flocons : elle sert à le reconnaître sur les captures
+ * de fin de game.
  *
  * Un nom déjà pris par un autre joueur est refusé : sinon l'un se ferait
- * attribuer les games de l'autre. Le journal ne note qu'un vrai changement —
- * renvoyer le même pseudo en boucle ne le remplit pas.
+ * attribuer les games de l'autre.
  */
 export async function PATCH(request: Request): Promise<NextResponse> {
   const g = await guard(request, {
@@ -68,14 +67,21 @@ export async function PATCH(request: Request): Promise<NextResponse> {
     const resultat = await getStore().transaction((db) => {
       const player = db.players.find((p) => p.id === playerId);
       if (!player) throw new Error('Joueur introuvable.');
-      if (activisionPris(g.body.activisionId, db.players, player.id)) return null;
-      if (player.activisionId !== g.body.activisionId) {
-        player.activisionId = g.body.activisionId;
-        audit(db, playerId, 'ACTIVISION_RENSEIGNE', playerId, g.body.activisionId);
-      }
+      if (player.activisionId !== null) return 'DEJA' as const;
+      if (activisionPris(g.body.activisionId, db.players, player.id)) return 'PRIS' as const;
+      player.activisionId = g.body.activisionId;
+      audit(db, playerId, 'ACTIVISION_RENSEIGNE', playerId, g.body.activisionId);
       return { activisionId: player.activisionId };
     });
-    if (!resultat) return fail('CONFLIT', 'Ce pseudo Activision est déjà celui d’un autre joueur.');
+    if (resultat === 'DEJA') {
+      return fail('CONFLIT', 'Ton pseudo Warzone est déjà enregistré : seule la modération peut le corriger.');
+    }
+    if (resultat === 'PRIS') {
+      return fail(
+        'CONFLIT',
+        'Ce pseudo Warzone est déjà celui d’un autre joueur. Vérifie-le, ou contacte la modération.',
+      );
+    }
     return ok(resultat);
   } catch (error) {
     return toResponse(error);

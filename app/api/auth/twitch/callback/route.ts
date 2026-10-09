@@ -98,9 +98,7 @@ export async function GET(request: Request): Promise<NextResponse> {
     return NextResponse.redirect(cible);
   }
 
-  // Première connexion, ou pseudo Activision jamais renseigné : on passe par
-  // la bienvenue avant tout le reste. Sans ce pseudo, ses games ne peuvent
-  // pas être reconnues sur les captures.
-  const destination = player.activisionId ? returnTo : '/bienvenue';
-  return NextResponse.redirect(`${base}${destination}`);
+  // Première connexion : la fenêtre d'inscription (pseudo Warzone) s'ouvre
+  // par-dessus la page où l'on arrive, avant tout le reste.
+  return NextResponse.redirect(`${base}${returnTo}`);
 }

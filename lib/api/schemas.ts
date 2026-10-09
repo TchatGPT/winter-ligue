@@ -8,6 +8,7 @@
 
 import { z } from 'zod';
 import { MANCHES_POSSIBLES } from '@/lib/domain/bataille';
+import { LONGUEUR_ACTIVISION, MOTIF_ACTIVISION } from '@/lib/domain/activision';
 import { UTILISATIONS_MAX } from '@/lib/domain/codes';
 import { DUEL, ECONOMY, GAME_LIMITS } from '@/lib/domain/rules';
 import { PACK_IDS } from '@/lib/domain/types';
@@ -45,9 +46,9 @@ export const pseudo = z
 export const activisionId = z
   .string()
   .trim()
-  .min(2, 'Deux caractères minimum.')
-  .max(40, 'Quarante caractères maximum.')
-  .regex(/^[\p{L}\p{N}_\-. ]+(#\d{2,10})?$/u, 'Caractères non autorisés dans le pseudo Activision.');
+  .min(LONGUEUR_ACTIVISION.min, 'Deux caractères minimum.')
+  .max(LONGUEUR_ACTIVISION.max, 'Quarante caractères maximum.')
+  .regex(MOTIF_ACTIVISION, 'Caractères non autorisés dans le pseudo Activision.');
 
 /** Le joueur renseigne son propre pseudo Activision. */
 export const monActivisionSchema = z.object({ activisionId });

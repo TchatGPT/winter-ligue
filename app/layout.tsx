@@ -5,7 +5,10 @@ import { Analytics } from '@vercel/analytics/next';
 import { FondAurores } from '@/components/FondAurores';
 import { FondHiver } from '@/components/FondHiver';
 import { Sidebar, SIDEBAR_WIDTH } from '@/components/Sidebar';
-import { getSession } from '@/lib/auth/session';
+import { InscriptionWarzone } from '@/components/InscriptionWarzone';
+import { getSession, playerIdOf } from '@/lib/auth/session';
+import { chaineDeLaLigue } from '@/lib/auth/twitch';
+import { estLaStreameuse } from '@/lib/domain/streameuse';
 import './globals.css';
 import { PiedDePage } from '@/components/PiedDePage';
 import { EvenementsFlottants, HAUTEUR_BANDEAU_EVENEMENTS } from '@/components/EvenementsFlottants';
@@ -31,8 +34,7 @@ export const metadata: Metadata = {
     default: 'Winter Ligue — Call of Duty Warzone',
     template: '%s · Winter Ligue',
   },
-  description:
-    'La ligue hivernale Warzone : classement, boosters, cartes bonus et malus, et duels en flocons.',
+  description: 'La ligue hivernale Warzone : classement, boosters, cartes bonus et malus, et duels en flocons.',
   applicationName: 'Winter Ligue',
   openGraph: {
     title: 'Winter Ligue — Call of Duty Warzone',
@@ -79,10 +81,25 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     );
   }
 
-  const connecte = (await getSession()) !== null;
-  // Les évènements de subs en cours, pour la mini-bannière du haut. La base est
-  // déjà chargée pour la page : la lecture est gardée le temps du rendu.
-  const enCours = connecte ? await getStore().read((db) => evenementsActifs(db)) : [];
+  const session = await getSession();
+  const connecte = session !== null;
+  // Les évènements de subs en cours, pour la mini-bannière du haut, et
+  // l'inscription : un joueur sans pseudo Warzone le donne avant tout le
+  // reste — sauf la streameuse, qui ne joue pas. La base est déjà chargée pour
+  // la page : la lecture est gardée le temps du rendu.
+  const { enCours, inscription } = connecte
+    ? await getStore().read((db) => {
+        const id = playerIdOf(session);
+        const moi = id ? db.players.find((p) => p.id === id) : undefined;
+        return {
+          enCours: evenementsActifs(db),
+          inscription:
+            moi && moi.activisionId === null && !estLaStreameuse(moi, chaineDeLaLigue())
+              ? { pseudo: moi.pseudo, admin: session.role === 'admin' }
+              : null,
+        };
+      })
+    : { enCours: [], inscription: null };
   return (
     <html lang="fr" className={`${barlow.variable} ${barlowCondensed.variable}`}>
       <body className="flex min-h-dvh flex-col">
@@ -114,6 +131,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <PiedDePage barreMobile={connecte} />
           </div>
         </div>
+        {inscription && <InscriptionWarzone pseudoTwitch={inscription.pseudo} admin={inscription.admin} />}
         <Analytics />
       </body>
     </html>

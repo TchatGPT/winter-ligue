@@ -5,7 +5,6 @@ import { destination, type FaitsSession } from '@/lib/domain/aiguillage';
 const joueur: FaitsSession = {
   connecte: true,
   compteTrouve: true,
-  activision: true,
 };
 
 describe('aiguillage des pages de jeu', () => {
@@ -15,10 +14,6 @@ describe('aiguillage des pages de jeu', () => {
 
   it('renvoie un visiteur déconnecté à l’accueil', () => {
     expect(destination({ ...joueur, connecte: false })).toBe('/');
-  });
-
-  it('demande le pseudo Activision tant qu’il manque', () => {
-    expect(destination({ ...joueur, activision: false })).toBe('/bienvenue');
   });
 
   it('renvoie se reconnecter quand le compte a disparu', () => {
