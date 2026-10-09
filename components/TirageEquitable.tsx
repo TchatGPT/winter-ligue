@@ -94,7 +94,8 @@ function FenetreEquitable({ pack, onClose }: { pack: PackDefinition; onClose: ()
                 </>
               ) : (
                 <>
-                  <b>Mêmes chances pour tous :</b> sur ce booster, le multiplicateur de chance ne joue pas.
+                  <b>La chance ne compte pas sur ce booster.</b> Tout le monde a les mêmes chances, quel que soit son
+                  multiplicateur.
                 </>
               )}
             </li>
