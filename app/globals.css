@@ -9594,49 +9594,65 @@
     inset: 0;
   }
 
+  /* Le bandeau : une plaque du site, sa neige sur l'arête, sur une ligne — la
+     gemme du booster, son nom dans sa teinte, un filet, et pour qui. */
   .ov-bandeau {
+    --teinte: var(--ice);
     position: absolute;
-    top: 70px;
+    top: 64px;
     left: 50%;
     z-index: 3;
     display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: 8px;
-    padding: 18px 52px 22px;
-    border-radius: 26px;
-    background: linear-gradient(160deg, rgb(24 58 96 / 0.92) 0%, rgb(7 24 48 / 0.94) 100%);
+    gap: 20px;
+    padding: 22px 40px 20px 26px;
+    border-radius: 28px;
+    background:
+      linear-gradient(100deg, color-mix(in srgb, var(--teinte) 22%, transparent) 0%, transparent 55%),
+      linear-gradient(160deg, rgb(24 58 96 / 0.92) 0%, rgb(7 24 48 / 0.94) 100%);
     box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / 0.4),
-      inset 0 0 0 1px rgb(255 255 255 / 0.12),
-      0 22px 30px -18px rgb(0 8 24 / 0.9);
+      inset 0 1px 0 rgb(255 255 255 / 0.5),
+      inset 0 0 0 1px rgb(255 255 255 / 0.14),
+      0 24px 40px -22px rgb(0 8 24 / 0.95);
     white-space: nowrap;
     animation: ov-bandeau-entre 0.75s cubic-bezier(0.2, 1.35, 0.4, 1) both;
   }
   .ov-booster[data-phase='sort'] .ov-bandeau {
     animation: ov-bandeau-sort 0.6s ease-in both;
   }
+  .ov-bandeau-embleme {
+    width: 52px;
+    height: 52px;
+    flex: none;
+    filter: drop-shadow(0 4px 4px rgb(0 8 24 / 0.6));
+  }
   .ov-bandeau-pack {
     font-family: var(--font-display);
-    font-size: 24px;
-    font-weight: 800;
-    letter-spacing: 0.26em;
+    font-size: 34px;
+    font-weight: 900;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: var(--ice);
+    color: color-mix(in srgb, var(--teinte) 55%, var(--frost));
+  }
+  .ov-bandeau-sep {
+    width: 2px;
+    height: 38px;
+    border-radius: 2px;
+    background: rgb(255 255 255 / 0.22);
   }
   .ov-bandeau-pour {
     font-family: var(--font-display);
-    font-size: 30px;
+    font-size: 26px;
     font-weight: 700;
-    line-height: 1;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
     color: var(--ink-2);
   }
   .ov-bandeau-pour strong {
-    margin-left: 0.2em;
-    font-size: 1.75em;
+    margin-left: 0.25em;
+    font-size: 1.45em;
     font-weight: 900;
+    letter-spacing: 0.03em;
     color: var(--frost);
   }
   @keyframes ov-bandeau-entre {
@@ -10026,25 +10042,45 @@
       transform: translateY(0) scale(1) rotateY(0);
     }
   }
-  .ov-anneau {
-    position: absolute;
-    top: 50%;
-    left: 220px;
-    width: 300px;
-    height: 300px;
-    margin: -150px;
-    border: 6px solid var(--r);
-    border-radius: 50%;
-    animation: ov-onde 1.1s ease-out 0.25s both;
+  /* La carte et sa fumée : la fumée derrière, qui déborde largement autour,
+     et monte doucement une fois la carte posée. */
+  .ov-carte-zone {
+    position: relative;
+    flex: none;
   }
+  .ov-fumee {
+    --fumee-l: 440px;
+    position: absolute;
+    inset: -34% -62%;
+    z-index: 0;
+    pointer-events: none;
+    /* Sur le stream, elle passe par-dessus le jeu : plus franche qu'au site. */
+    filter: saturate(1.5) brightness(1.15);
+    animation: ov-fumee-monte 1.6s ease-out 0.35s both;
+  }
+  .ov-fumee .fumee-nappe {
+    -webkit-mask-image: radial-gradient(closest-side, #000 38%, transparent), var(--bruit-fumee);
+    mask-image: radial-gradient(closest-side, #000 38%, transparent), var(--bruit-fumee);
+  }
+  @keyframes ov-fumee-monte {
+    from {
+      opacity: 0;
+      transform: scale(0.7);
+    }
+  }
+  /* La légende : une plaque du site, avec sa neige. */
   .ov-legende {
+    position: relative;
     display: flex;
-    min-width: 420px;
-    max-width: 560px;
+    min-width: 440px;
+    max-width: 580px;
     flex-direction: column;
-    gap: 10px;
-    padding: 28px 34px 30px;
-    border-radius: 26px;
+    gap: 12px;
+    padding: 40px 38px 32px;
+    border-radius: 30px;
+    background:
+      linear-gradient(160deg, color-mix(in srgb, var(--r) 16%, transparent) 0%, transparent 60%),
+      linear-gradient(160deg, rgb(24 58 96 / 0.92) 0%, rgb(7 24 48 / 0.94) 100%) !important;
     animation: ov-legende-entre 0.7s cubic-bezier(0.2, 1.2, 0.4, 1) 0.35s both;
   }
   @keyframes ov-legende-entre {
@@ -10054,36 +10090,65 @@
     }
   }
   .ov-legende-rarete {
-    align-self: flex-start;
-    padding: 5px 14px;
-    border-radius: 999px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
     font-family: var(--font-display);
-    font-size: 17px;
+    font-size: 22px;
     font-weight: 800;
-    letter-spacing: 0.2em;
+    letter-spacing: 0.18em;
     text-transform: uppercase;
-    color: var(--bg-deep);
-    background: var(--r);
+    color: color-mix(in srgb, var(--r) 70%, var(--frost));
+  }
+  .ov-legende-embleme {
+    width: 46px;
+    height: 46px;
+    flex: none;
+    filter: drop-shadow(0 4px 4px rgb(0 8 24 / 0.6));
   }
   .ov-legende-nom {
     font-family: var(--font-display);
-    font-size: 54px;
+    font-size: 58px;
     font-weight: 900;
-    line-height: 1;
+    line-height: 0.95;
+    letter-spacing: 0.02em;
     text-transform: uppercase;
     color: var(--ink);
   }
   .ov-legende-action {
-    font-size: 24px;
-    font-weight: 600;
-    color: var(--ice);
+    align-self: flex-start;
+    padding: 6px 16px;
+    border-radius: 999px;
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: color-mix(in srgb, var(--r) 60%, var(--frost));
+    background: color-mix(in srgb, var(--r) 16%, transparent);
+    box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--r) 50%, transparent);
   }
   .ov-legende-cible {
-    margin-top: 6px;
-    font-size: 24px;
-    color: var(--ink-2);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 8px;
+    padding-top: 16px;
+    border-top: 1px solid rgb(255 255 255 / 0.12);
+  }
+  .ov-legende-cible span {
+    font-family: var(--font-display);
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--aurora);
   }
   .ov-legende-cible strong {
+    font-family: var(--font-display);
+    font-size: 34px;
+    font-weight: 900;
+    line-height: 1.1;
     color: var(--frost);
   }
   .ov-booster[data-phase='sort'] .ov-revelation {
@@ -11055,7 +11120,8 @@
 /* Le grain et l'amplitude, communs à la fumée des boosters et à celle de la
    carte révélée. */
 .fumee,
-.reveal-fumee {
+.reveal-fumee,
+.ov-fumee {
   --amp: 1;
   /* Le grain : un bruit fractal, dont l'alpha seul compte, contrasté pour que
      la fumée s'effiloche en mèches plutôt que de faire des taches rondes. */
@@ -11346,7 +11412,8 @@
   -webkit-mask-image: radial-gradient(closest-side, #000 30%, transparent), var(--bruit-fumee);
   mask-image: radial-gradient(closest-side, #000 30%, transparent), var(--bruit-fumee);
 }
-.revelation[data-rarete='C'] .reveal-fumee {
+.revelation[data-rarete='C'] .reveal-fumee,
+.ov-revelation[data-rarete='C'] .ov-fumee {
   --f1: var(--r-c);
   --f2: var(--ice);
   --f3: var(--frost);
@@ -11354,7 +11421,8 @@
   --fumee-force: 0.62;
   --n3: 0;
 }
-.revelation[data-rarete='R'] .reveal-fumee {
+.revelation[data-rarete='R'] .reveal-fumee,
+.ov-revelation[data-rarete='R'] .ov-fumee {
   --f1: var(--r-r);
   --f2: var(--violet);
   --f3: var(--ice);
@@ -11362,7 +11430,8 @@
   --fumee-force: 0.74;
   --n3: 0;
 }
-.revelation[data-rarete='UR'] .reveal-fumee {
+.revelation[data-rarete='UR'] .reveal-fumee,
+.ov-revelation[data-rarete='UR'] .ov-fumee {
   --f1: var(--r-ur);
   --f2: var(--gold);
   --f3: color-mix(in srgb, var(--live) 45%, var(--r-ur));
@@ -11370,7 +11439,8 @@
   --fumee-force: 0.84;
   --n3: 1;
 }
-.revelation[data-rarete='L'] .reveal-fumee {
+.revelation[data-rarete='L'] .reveal-fumee,
+.ov-revelation[data-rarete='L'] .ov-fumee {
   --f1: var(--r-l);
   --f2: var(--aurora);
   --f3: var(--violet);

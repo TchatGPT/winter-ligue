@@ -3,9 +3,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BoosterPack3D } from '@/components/BoosterPack3D';
 import { CardFrame } from '@/components/CardFrame';
+import { EmblemeRarete } from '@/components/EmblemeRarete';
 import { RailJoueurs } from '@/components/RailJoueurs';
 import { RailPack, type CarteRailPack } from '@/components/RailPack';
 import { Scene } from '@/components/overlay/Scene';
+import { SnowCap } from '@/components/SnowCap';
 import { boosterDemo } from '@/components/overlay/demo';
 import { useFluxOverlay } from '@/components/overlay/useFluxOverlay';
 import { CARDS, RARITY_META } from '@/lib/domain/catalog';
@@ -183,8 +185,16 @@ function Ouverture({
 
   return (
     <div className="ov-booster" data-phase={phase}>
-      <header className="ov-bandeau">
+      {/* Le bandeau : une plaque du site, sa neige, la gemme du booster, puis
+          pour qui il s'ouvre — sur une ligne. */}
+      <header
+        className="ov-bandeau"
+        style={{ ['--teinte' as string]: (RARITY_META[booster.pack.gemme] ?? RARITY_META.C).color }}
+      >
+        <SnowCap radius="28px" seed={`ov-bandeau-${booster.pack.id}`} epaisseur={12} />
+        <EmblemeRarete rarity={booster.pack.gemme} className="ov-bandeau-embleme" />
         <span className="ov-bandeau-pack">{booster.pack.nom}</span>
+        <span className="ov-bandeau-sep" aria-hidden="true" />
         <span className="ov-bandeau-pour">
           pour <strong>{booster.pour}</strong>
         </span>
@@ -312,30 +322,44 @@ function TirageJoueurs({
   );
 }
 
-/** La carte tirée, grande, avec ce qu'elle fait et sur qui elle tombe. */
+/**
+ * La carte tirée, grande, dans la fumée de sa rareté — celle des boosters du
+ * site, qui dérive lentement derrière elle —, et à côté, sur une plaque du
+ * site : sa rareté, son nom, ce qu'elle fait et sur qui elle tombe.
+ */
 function Revelation({ booster }: { booster: BoosterOverlay }) {
   const meta = RARITY_META[booster.carte.rarity] ?? RARITY_META.C;
   return (
-    <div className="ov-revelation" style={{ ['--r' as string]: meta.color }}>
-      <span className="ov-anneau" aria-hidden="true" />
-      <div className="ov-carte">
-        <CardFrame
-          cardId={booster.carte.cardId}
-          name={booster.carte.name}
-          description={booster.carte.description}
-          rarity={booster.carte.rarity}
-          glyph={booster.carte.glyph}
-          nature={booster.carte.nature}
-        />
+    <div className="ov-revelation" data-rarete={booster.carte.rarity} style={{ ['--r' as string]: meta.color }}>
+      <div className="ov-carte-zone">
+        <div className="ov-fumee" aria-hidden="true">
+          <span className="fumee-nappe fumee-nappe-1" />
+          <span className="fumee-nappe fumee-nappe-2" />
+          <span className="fumee-nappe fumee-nappe-3" />
+        </div>
+        <div className="ov-carte">
+          <CardFrame
+            cardId={booster.carte.cardId}
+            name={booster.carte.name}
+            description={booster.carte.description}
+            rarity={booster.carte.rarity}
+            glyph={booster.carte.glyph}
+            nature={booster.carte.nature}
+          />
+        </div>
       </div>
       <div className="ov-legende glass">
-        <span className="ov-legende-rarete">{meta.label}</span>
+        <SnowCap radius="30px" seed={`ov-legende-${booster.carte.cardId}`} epaisseur={14} />
+        <p className="ov-legende-rarete">
+          <EmblemeRarete rarity={booster.carte.rarity} className="ov-legende-embleme" />
+          {booster.carte.rarity === 'L' ? '★ Légendaire ★' : meta.label}
+        </p>
         <strong className="ov-legende-nom">{booster.carte.name}</strong>
         {booster.carte.action && <span className="ov-legende-action">{booster.carte.action}</span>}
-        <span className="ov-legende-cible">
-          {booster.carte.nature === 'malus' ? 'Tombe sur ' : 'Pour '}
+        <p className="ov-legende-cible">
+          <span>{booster.carte.nature === 'malus' ? 'Tombe sur' : 'Pour'}</span>
           <strong>{booster.tombeSur}</strong>
-        </span>
+        </p>
       </div>
     </div>
   );
