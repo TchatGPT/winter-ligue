@@ -290,7 +290,10 @@ subs, boosters ouverts, duels lancés — par une lecture ciblée
 à 240 lectures par minute et par adresse. Les pages d'overlay sont rendues sans
 décor (le proxy pose un en-tête qu'il efface de toute requête entrante), en
 `Referrer-Policy: no-referrer` et `noindex`. Un joueur a au plus trois duels en
-attente : chacun est annoncé sur le stream.
+attente : chacun est annoncé sur le stream. L'overlay des boosters peut aussi demander l'annonce d'une ouverture dans
+le tchat (`POST /api/overlay/annonce`, même clé) : il ne donne que l'identifiant de
+l'ouverture, le message se compose sur le serveur (`messageOuverture`), et une ouverture
+ne s'annonce qu'une fois (`ouvertures.annoncee_le`, posé dans la transaction).
 
 **Les rôles viennent de Twitch.** Il n'y a plus de connexion « modération » à
 l'écran. À chaque connexion, le retour OAuth lit, avec le jeton de la personne

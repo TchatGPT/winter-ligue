@@ -25,6 +25,13 @@ import { EmblemeRarete } from '@/components/EmblemeRarete';
 const RARITY_LADDER: Rarity[] = ['C', 'R', 'UR', 'L'];
 
 /** Un taux en pourcentage, à la française : « 83,0 % », « 0,20 % ». */
+/**
+ * Le délai avant que cet écran annonce lui-même une ouverture, faute
+ * d'overlay. L'overlay révèle la carte jusqu'à 6,3 s après cet écran — son
+ * entrée (4,25 s) et sa lecture du flux (2 s) — : le secours ne le devance pas.
+ */
+const SECOURS_ANNONCE_MS = 9000;
+
 function pourcent(v: number): string {
   const decimales = v === 0 ? 0 : v < 0.1 ? 3 : v < 1 ? 2 : 1;
   return `${v.toLocaleString('fr-FR', { minimumFractionDigits: decimales, maximumFractionDigits: decimales })} %`;
@@ -196,11 +203,7 @@ export function PackOpening({
    * ouverture, la file se recharge, et qui n'a plus rien à ouvrir ne reste pas
    * choisi.
    */
-  const choisi = candidats.some((c) => c.id === joueurId)
-    ? joueurId
-    : candidats.length === 1
-      ? candidats[0].id
-      : '';
+  const choisi = candidats.some((c) => c.id === joueurId) ? joueurId : candidats.length === 1 ? candidats[0].id : '';
   const joueur = joueurs.find((j) => j.id === choisi);
 
   /**
@@ -247,6 +250,22 @@ export function PackOpening({
       setPhase('repos');
     }
   }
+
+  // L'annonce dans le tchat : c'est l'overlay OBS qui la fait, au moment où le
+  // stream voit la carte. Si aucun overlay ne tourne, cet écran prend le
+  // relais, neuf secondes après la révélation ; une ouverture ne s'annonce
+  // qu'une fois. Le minuteur survit à la suivante : on ne l'annule pas.
+  const ouvertureRevelee = phase === 'reveal' ? ouverture?.id : undefined;
+  useEffect(() => {
+    if (!ouvertureRevelee) return;
+    setTimeout(() => {
+      void fetch('/api/admin/packs/annonce', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ ouvertureId: ouvertureRevelee }),
+      }).catch(() => undefined);
+    }, SECOURS_ANNONCE_MS);
+  }, [ouvertureRevelee]);
 
   function reset() {
     setPhase('repos');
@@ -599,9 +618,7 @@ export function PackOpening({
             <dl className="mt-4 grid grid-cols-2 gap-x-3 gap-y-3 text-[16px]">
               <div>
                 <dt className="text-[13px] tracking-[0.12em] text-faint uppercase">Contenu</dt>
-                <dd className="mt-0.5 font-display text-[22px] leading-none font-black text-ink">
-                  1 carte
-                </dd>
+                <dd className="mt-0.5 font-display text-[22px] leading-none font-black text-ink">1 carte</dd>
               </div>
               {/* Deux lignes réservées pour « Pour qui » et le déclencheur : d'un
                   booster à l'autre, le bloc garde sa hauteur, et les taux dessous

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BoosterPack3D } from '@/components/BoosterPack3D';
 import { CardFrame } from '@/components/CardFrame';
 import { RailJoueurs } from '@/components/RailJoueurs';
@@ -26,6 +26,10 @@ import { COURBE_MESUREE } from '@/lib/spin/courbe';
  *
  * Deux ouvertures rapprochées se jouent l'une après l'autre, jamais l'une
  * sur l'autre : la file est le seul état, et sa tête est ce qui se joue.
+ *
+ * Quand la carte est révélée, l'overlay demande son annonce dans le tchat
+ * (`/api/overlay/annonce`) : le message tombe au moment où le stream la voit.
+ * Jamais en aperçu.
  */
 
 type Phase = 'surgit' | 'charge' | 'dechire' | 'eclate' | 'rail' | 'joueurs' | 'carte' | 'sort';
@@ -104,17 +108,50 @@ export function OverlayBooster({
 
   const actuel = file[0] ?? null;
   const suivante = useCallback(() => setFile((f) => f.slice(1)), []);
+  const annonce = useCallback(
+    (ouvertureId: string) => {
+      if (demo) return;
+      void fetch('/api/overlay/annonce', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ cle, ouvertureId }),
+      }).catch(() => undefined);
+    },
+    [cle, demo],
+  );
 
   return (
     <Scene largeur={1920} hauteur={1080}>
-      {actuel && <Ouverture key={actuel.id} booster={actuel} son={son} onFini={suivante} />}
+      {actuel && (
+        <Ouverture key={actuel.id} booster={actuel} son={son} onRevelee={() => annonce(actuel.id)} onFini={suivante} />
+      )}
     </Scene>
   );
 }
 
 /** Une ouverture, du surgissement à la sortie. Sa phase lui appartient. */
-function Ouverture({ booster, son, onFini }: { booster: BoosterOverlay; son: boolean; onFini: () => void }) {
+function Ouverture({
+  booster,
+  son,
+  onRevelee,
+  onFini,
+}: {
+  booster: BoosterOverlay;
+  son: boolean;
+  /** La carte est révélée : l'ouverture est finie, elle peut s'annoncer. */
+  onRevelee: () => void;
+  onFini: () => void;
+}) {
   const [phase, setPhase] = useState<Phase>('surgit');
+
+  // Une seule fois, à l'entrée dans la phase de la carte.
+  const revelee = useRef(onRevelee);
+  useEffect(() => {
+    revelee.current = onRevelee;
+  });
+  useEffect(() => {
+    if (phase === 'carte') revelee.current();
+  }, [phase]);
 
   // Le temps de chaque phase ; le rail, lui, dit quand il a fini.
   useEffect(() => {

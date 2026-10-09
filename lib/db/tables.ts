@@ -110,6 +110,7 @@ export const COLLECTIONS: Collection[] = [
       c('ouvertPar', 'ouvert_par', 'text'),
       c('openedAt', 'ouvert_le', 'ts'),
       c('idempotencyKey', 'cle_idempotence', 'text'),
+      c('annonceeA', 'annoncee_le', 'ts'),
     ],
   },
   {
@@ -315,7 +316,8 @@ create table if not exists ouvertures (
   chance double precision not null,
   ouvert_par text not null,
   ouvert_le timestamptz not null,
-  cle_idempotence text not null unique
+  cle_idempotence text not null unique,
+  annoncee_le timestamptz
 );
 
 create table if not exists cartes_en_attente (
@@ -431,6 +433,9 @@ alter table joueurs add column if not exists sessions_depuis timestamptz;
 -- Un booster cadeau : payé par quelqu'un qui n'est pas inscrit, redonné par la
 -- modération à un joueur de la ligue.
 alter table boosters_a_ouvrir add column if not exists donateur_twitch_id text;
+
+-- L'annonce d'une ouverture dans le tchat : une fois et une seule.
+alter table ouvertures add column if not exists annoncee_le timestamptz;
 
 -- Un rôle choisi à la main : la connexion Twitch n'y touche plus.
 alter table joueurs add column if not exists role_manuel boolean not null default false;

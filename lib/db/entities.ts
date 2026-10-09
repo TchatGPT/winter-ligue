@@ -154,6 +154,8 @@ export interface OuverturePack {
   openedAt: string;
   /** Rejoue la même réponse si la requête est renvoyée (double clic, reprise réseau). */
   idempotencyKey: string;
+  /** Quand elle a été annoncée dans le tchat — une fois et une seule (`annonceOuverture`). */
+  annonceeA?: string | null;
 }
 
 /**
