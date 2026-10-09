@@ -3,25 +3,16 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import { Medaille } from '@/components/EmblemePalier';
-import { EmblemeRarete } from '@/components/EmblemeRarete';
 import { NAV_ICONS } from '@/components/icons';
 import { SnowCap } from '@/components/SnowCap';
-import { RARITY_META } from '@/lib/domain/catalog';
-import { CHANCE, ECONOMY, PALIERS_CHANCE, poidsAvecChance, rarityPercent } from '@/lib/domain/rules';
-import type { PackDefinition, Rarity } from '@/lib/domain/types';
+import type { PackDefinition } from '@/lib/domain/types';
 
-const RARETES: Rarity[] = ['C', 'R', 'UR', 'L'];
 const rienAEcouter = () => () => {};
-
-const pourcent = (v: number) => `${v.toLocaleString('fr-FR', { maximumFractionDigits: v < 1 ? 2 : 1 })} %`;
-
-/** Le taux en chances, comme sur la page : « ≈ 8 sur 10 », « 1 sur 500 ». */
-const enChances = (v: number) =>
-  v <= 0 ? '—' : v >= 10 ? `≈ ${Math.round(v / 10)} sur 10` : `1 sur ${Math.round(100 / v).toLocaleString('fr-FR')}`;
 
 /**
  * Le badge « Tirage équitable », sous le nom d'un booster, et la fenêtre qu'il
- * ouvre : comment la carte est tirée, et ce que la chance y change.
+ * ouvre : trois phrases — rien n'est truqué, le tirage est enregistré avant
+ * l'animation, et ce que la chance y change.
  *
  * Ce n'est pas un tirage « provably fair » au sens des sites de caisses — une
  * graine publiée que chacun recalcule — et la fenêtre ne le prétend pas : elle
@@ -66,8 +57,6 @@ function FenetreEquitable({ pack, onClose }: { pack: PackDefinition; onClose: ()
   if (!navigateur) return null;
 
   const pourUnJoueur = pack.portee === 'JOUEUR';
-  const pousses = poidsAvecChance(pack.weights, CHANCE.max);
-  const chanceMax = PALIERS_CHANCE.at(-1)!.multiplicateur;
   const Bouclier = NAV_ICONS.shield;
 
   return createPortal(
@@ -86,100 +75,30 @@ function FenetreEquitable({ pack, onClose }: { pack: PackDefinition; onClose: ()
             <div>
               <p className="eyebrow">{pack.name}</p>
               <h2 className="equitable-titre">Tirage équitable</h2>
-              <p className="equitable-phrase">Rien n’est truqué : tout est aléatoire, aux taux affichés.</p>
             </div>
           </header>
 
-          <section className="equitable-bloc">
-            <h3>Tiré par le serveur, jamais à la main</h3>
-            <p>
-              Au moment de l’ouverture, le serveur tire la carte avec un générateur aléatoire cryptographique, le même
-              genre que celui des mots de passe : imprévisible, et que personne ne peut orienter.{' '}
-              <b>Ni la streameuse ni la modération ne choisissent</b> la carte, ni le joueur sur qui elle tombe.
-            </p>
-            <p>
-              L’animation ne fait que révéler un résultat déjà tiré : la recharger, la couper ou la revoir ne change
-              rien.
-            </p>
-          </section>
-
-          <section className="equitable-bloc">
-            <h3>Comment la carte est tirée</h3>
-            <ol className="equitable-etapes">
-              <li>
-                <b>La rareté</b>, selon les taux du booster ci-dessous.
-              </li>
-              <li>
-                <b>Une carte de cette rareté</b>, au hasard parmi celles du booster.
-              </li>
-              {!pourUnJoueur && (
-                <li>
-                  <b>Le ou les joueurs</b>, à parts égales parmi ceux qui peuvent recevoir la carte (jamais la
-                  streameuse).
-                </li>
+          <ul className="equitable-points">
+            <li>
+              <b>Rien n’est truqué.</b> La carte est tirée au hasard par le serveur. Personne ne la choisit, ni Lriaa ni
+              la modération.
+            </li>
+            <li>
+              <b>Enregistré avant l’animation.</b> Le tirage est stocké dès l’ouverture : l’animation ne fait que le
+              montrer.
+            </li>
+            <li>
+              {pourUnJoueur ? (
+                <>
+                  <b>Ton multiplicateur de chance</b> augmente tes chances d’avoir une carte rare.
+                </>
+              ) : (
+                <>
+                  <b>Mêmes chances pour tous :</b> sur ce booster, le multiplicateur de chance ne joue pas.
+                </>
               )}
-            </ol>
-          </section>
-
-          <section className="equitable-bloc">
-            <h3>{pourUnJoueur ? 'Les taux, et ce que la chance y change' : 'Les taux'}</h3>
-            <table className="equitable-taux">
-              <thead>
-                <tr>
-                  <th scope="col">Rareté</th>
-                  <th scope="col">Sans chance</th>
-                  {pourUnJoueur && <th scope="col">À ×{chanceMax}</th>}
-                </tr>
-              </thead>
-              <tbody>
-                {RARETES.filter((r) => pack.weights[r] > 0 || pousses[r] > 0).map((r) => (
-                  <tr key={r} style={{ ['--r' as string]: RARITY_META[r].color }}>
-                    <th scope="row">
-                      <span className="equitable-rarete">
-                        <EmblemeRarete rarity={r} className="equitable-embleme" />
-                        {RARITY_META[r].label}
-                      </span>
-                    </th>
-                    <td>
-                      <b>{pourcent(rarityPercent(pack.weights, r))}</b>
-                      <small>{enChances(rarityPercent(pack.weights, r))}</small>
-                    </td>
-                    {pourUnJoueur && (
-                      <td>
-                        <b>{pourcent(rarityPercent(pousses, r))}</b>
-                        <small>{enChances(rarityPercent(pousses, r))}</small>
-                      </td>
-                    )}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </section>
-
-          <section className="equitable-bloc">
-            <h3>La chance</h3>
-            {pourUnJoueur ? (
-              <p>
-                Ce booster s’ouvre pour un joueur : <b>son solde de flocons pousse les raretés hautes</b>, de ×1 à 0 ❄
-                jusqu’à ×{chanceMax} à {ECONOMY.soldeMax.toLocaleString('fr-FR')} ❄. Les flocons ne sont pas dépensés.
-                La commune cède sa place, rien d’autre ne change : le tirage reste aléatoire.
-              </p>
-            ) : (
-              <p>
-                Ce booster est celui de la ligue : <b>la chance n’y joue pas</b>. Tout le monde est à égalité, quels que
-                soient ses flocons.
-              </p>
-            )}
-          </section>
-
-          <section className="equitable-bloc">
-            <h3>Vérifié</h3>
-            <p>
-              Chaque ouverture est inscrite au journal : quand, quel booster, quelle carte, pour qui. Et à chaque
-              modification du site, des tests tirent chaque booster 120 000 fois pour vérifier que les taux annoncés
-              sont exactement ceux qui sortent.
-            </p>
-          </section>
+            </li>
+          </ul>
         </div>
       </div>
     </div>,
