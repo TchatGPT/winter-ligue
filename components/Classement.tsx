@@ -8,7 +8,7 @@ import { MedailleGlace } from '@/components/MedailleGlace';
 import { SnowCap } from '@/components/SnowCap';
 import { CardFrame } from '@/components/CardFrame';
 import { FicheCarte } from '@/components/FicheCarte';
-import { IconViseur } from '@/components/icons';
+import { IconActivision } from '@/components/icons';
 import { flakesShort } from '@/components/ui';
 import { RARITY_ORDER } from '@/lib/domain/rules';
 import type { RankingRow } from '@/lib/services/league';
@@ -349,7 +349,7 @@ function Rang({
   return <span className="num font-display text-[20px] font-black text-muted @min-[100rem]:text-[24px]">{rang}</span>;
 }
 
-/** Le pseudo Twitch, et dessous le pseudo en jeu (Warzone), derrière son viseur. */
+/** Le pseudo Twitch, et dessous le pseudo en jeu (Warzone), derrière le logo d'Activision. */
 function Pseudo({ row }: { row: RankingRow }) {
   return (
     <span className="block min-w-0">
@@ -367,8 +367,8 @@ function Pseudo({ row }: { row: RankingRow }) {
         )}
       </span>
       {row.activisionId && (
-        <span className="pseudo-jeu" title="Pseudo Warzone">
-          <IconViseur className="pseudo-jeu-icone" />
+        <span className="pseudo-jeu" title="Pseudo Warzone (identifiant Activision)">
+          <IconActivision className="pseudo-jeu-logo" />
           <span className="sr-only">Pseudo Warzone : </span>
           <span className="truncate" translate="no">
             {row.activisionId}
