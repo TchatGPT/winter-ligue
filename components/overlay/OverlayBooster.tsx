@@ -218,11 +218,6 @@ function Ouverture({
             </div>
             {dechire && (
               <>
-                <span
-                  className="ov-faisceau"
-                  style={{ ['--lueur' as string]: (RARITY_META[booster.pack.gemme] ?? RARITY_META.C).color }}
-                  aria-hidden="true"
-                />
                 <div className="ov-morceau ov-morceau-haut" style={{ clipPath: DECOUPE_HAUT }} aria-hidden="true">
                   <BoosterPack3D
                     name={booster.pack.nom}

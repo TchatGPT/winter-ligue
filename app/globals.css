@@ -9838,42 +9838,6 @@
   /* La lumière qui sort de l'ouverture : une nappe de la couleur de la rareté
      promise, posée sur la ligne de déchirure et plus large que le sachet —
      haute, elle filait sous le bandeau, qui la cachait. */
-  .ov-faisceau {
-    position: absolute;
-    top: -12%;
-    right: -14%;
-    left: -14%;
-    height: 30%;
-    pointer-events: none;
-    background: radial-gradient(
-      ellipse 50% 46% at 50% 62%,
-      color-mix(in srgb, var(--lueur) 35%, white) 0%,
-      color-mix(in srgb, var(--lueur) 80%, transparent) 30%,
-      color-mix(in srgb, var(--lueur) 30%, transparent) 55%,
-      transparent 75%
-    );
-    filter: blur(8px);
-    mix-blend-mode: screen;
-    opacity: 0;
-    transform-origin: 50% 100%;
-    animation: ov-faisceau 1s ease-out both;
-  }
-  @keyframes ov-faisceau {
-    0%,
-    22% {
-      opacity: 0;
-      transform: scaleY(0.3);
-    }
-    55% {
-      opacity: 1;
-      transform: scaleY(1);
-    }
-    100% {
-      opacity: 0.9;
-      transform: scaleY(1.15);
-    }
-  }
-
   /* Les éclats de neige : ils partent du sachet quand il surgit, et quand il éclate. */
   .ov-eclats {
     position: absolute;
@@ -10061,14 +10025,14 @@
        rapides et plus amples, et tout le nuage qui tourbillonne. */
     animation:
       ov-fumee-monte 1.6s ease-out 0.35s both,
-      ov-fumee-tourne 7s ease-in-out 0.35s infinite alternate;
+      ov-fumee-tourne 12s ease-in-out 0.35s infinite alternate;
   }
   @keyframes ov-fumee-tourne {
     from {
-      transform: rotate(-10deg) scale(0.96);
+      transform: rotate(-4deg) scale(0.98);
     }
     to {
-      transform: rotate(12deg) scale(1.08);
+      transform: rotate(5deg) scale(1.04);
     }
   }
   .ov-fumee .fumee-nappe {
@@ -15496,17 +15460,23 @@ a.adm-tuile:hover .adm-tuile-fleche {
    reste que sept secondes à l'écran : des nappes plus rapides et plus amples
    que sur le site, où la fumée dérive en quinze à vingt-trois secondes. */
 .ov-fumee {
-  --amp: 2.2;
+  --amp: 1.35;
 }
 .ov-fumee .fumee-nappe-1 {
-  --duree: 3.6s;
-  --retard: -1s;
+  --duree: 7s;
+  --retard: -2s;
 }
 .ov-fumee .fumee-nappe-2 {
-  --duree: 4.4s;
-  --retard: -2.6s;
+  --duree: 8.5s;
+  --retard: -5s;
 }
 .ov-fumee .fumee-nappe-3 {
-  --duree: 5.2s;
-  --retard: -0.4s;
+  --duree: 10s;
+  --retard: -1s;
+}
+/* Pendant la déchirure, le sachet est découpé (`clip-path`) : sa lueur floue,
+   tranchée net par la découpe, faisait un bloc qui dépassait du booster. */
+.ov-booster[data-phase='dechire'] .sachet-lueur,
+.ov-booster[data-phase='eclate'] .sachet-lueur {
+  display: none;
 }
