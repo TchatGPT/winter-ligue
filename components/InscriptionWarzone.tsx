@@ -3,7 +3,8 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useId, useState, useSyncExternalStore } from 'react';
 import { SnowCap } from '@/components/SnowCap';
-import { LONGUEUR_ACTIVISION, MOTIF_ACTIVISION } from '@/lib/domain/activision';
+import { LONGUEUR_ACTIVISION } from '@/lib/domain/activision';
+import { sansInvisibles } from '@/lib/domain/texte';
 
 /** Un modérateur qui ne joue pas peut fermer la fenêtre : on s'en souvient ici. */
 const CLE_SANS_JOUER = 'wl-modo-sans-jouer';
@@ -20,28 +21,19 @@ const ecouteStockage = (rappel: () => void) => {
   return () => window.removeEventListener('storage', rappel);
 };
 
-/** Ce qui ne va pas dans un pseudo, avant même de l'envoyer ; null s'il a la bonne forme. */
-function defautDu(pseudo: string): string | null {
-  if (pseudo.length < LONGUEUR_ACTIVISION.min) return null;
-  if (pseudo.length > LONGUEUR_ACTIVISION.max) return 'Quarante caractères au plus.';
-  if (!MOTIF_ACTIVISION.test(pseudo)) {
-    return 'Ce n’est pas la forme d’un pseudo Warzone : lettres, chiffres, « _ - . », espace, puis éventuellement #chiffres.';
-  }
-  return null;
-}
-
 type Etape = 'saisie' | 'verification' | 'inscrit';
 
 /**
  * L'inscription à la Winter Ligue : la fenêtre qui s'ouvre à la première
- * connexion, par-dessus la page, et ne se referme qu'une fois le pseudo
- * Warzone donné.
+ * connexion, par-dessus la page, et ne se referme qu'une fois le pseudo en
+ * jeu donné.
  *
- *  1. **Saisie** — le pseudo, copié-collé depuis le jeu, au caractère près :
- *     c'est lui que la modération cherche sur les captures de fin de game
- *     pour saisir les games.
+ *  1. **Saisie** — le pseudo tel qu'il s'affiche dans Warzone, au caractère
+ *     près : c'est lui que la modération cherche sur les captures de fin de
+ *     game pour saisir les games. Tout caractère est accepté ; seuls les
+ *     invisibles sont retirés, comme le fait le serveur.
  *  2. **Vérification** — le pseudo en grand, tel qu'il sera enregistré, et une
- *     case à cocher : « c'est exactement mon pseudo Warzone ».
+ *     case à cocher : « c'est exactement mon pseudo en jeu ».
  *  3. **Inscrit** — et l'on entre dans la ligue.
  *
  * Il ne se donne qu'une fois : ensuite, seule la modération le corrige. La
@@ -72,9 +64,9 @@ export function InscriptionWarzone({ pseudoTwitch, admin }: { pseudoTwitch: stri
 
   if (!ouverte) return null;
 
-  const pseudo = valeur.trim();
-  const defaut = defautDu(pseudo);
-  const pret = pseudo.length >= LONGUEUR_ACTIVISION.min && defaut === null;
+  const pseudo = sansInvisibles(valeur);
+  const tropLong = pseudo.length > LONGUEUR_ACTIVISION.max;
+  const pret = pseudo.length >= LONGUEUR_ACTIVISION.min && !tropLong;
 
   async function inscris() {
     setBusy(true);
@@ -130,12 +122,12 @@ export function InscriptionWarzone({ pseudoTwitch, admin }: { pseudoTwitch: stri
               Inscris-toi à la Winter Ligue
             </h2>
             <p className="insc-phrase">
-              Une seule étape : ton <b>pseudo Warzone</b>. C’est grâce à lui que la modération retrouve tes games sur
-              les captures de fin de partie, et les saisit pour toi.
+              Une seule étape : ton <b>pseudo en jeu</b> sur Warzone. C’est grâce à lui que la modération retrouve tes
+              games sur les captures de fin de partie, et les saisit pour toi.
             </p>
 
             <label className="insc-label" htmlFor={`${id}-pseudo`}>
-              Ton pseudo Warzone <span>(identifiant Activision)</span>
+              Ton pseudo en jeu <span>(Warzone)</span>
             </label>
             <input
               id={`${id}-pseudo`}
@@ -145,32 +137,27 @@ export function InscriptionWarzone({ pseudoTwitch, admin }: { pseudoTwitch: stri
                 setValeur(e.target.value);
                 setErreur(null);
               }}
-              maxLength={LONGUEUR_ACTIVISION.max + 10}
-              placeholder="Pseudo#1234567"
+              placeholder="Exactement comme en jeu"
               autoComplete="off"
               autoCapitalize="off"
               autoCorrect="off"
               spellCheck={false}
               autoFocus
               aria-describedby={`${id}-consigne`}
-              aria-invalid={defaut || erreur ? true : undefined}
+              aria-invalid={tropLong || erreur ? true : undefined}
             />
-            {(defaut || erreur) && (
+            {(tropLong || erreur) && (
               <p className="insc-erreur" role="alert">
-                {erreur ?? defaut}
+                {erreur ?? 'Soixante caractères au plus.'}
               </p>
             )}
 
             <div id={`${id}-consigne`} className="insc-consigne">
-              <p className="insc-consigne-titre">Copie-colle-le depuis Warzone, ne le tape pas de mémoire</p>
+              <p className="insc-consigne-titre">Exactement comme il s’affiche en jeu</p>
               <ul>
-                <li>
-                  Exactement comme dans le jeu : majuscules, chiffres, points, tirets, et le #numéro s’il y en a un.
-                </li>
-                <li>Pas un pseudo qui ressemble, pas ton pseudo Twitch : ton vrai pseudo Warzone.</li>
-                <li>
-                  Un pseudo faux, et la modération ne te retrouvera pas sur les captures : tes games ne compteront pas.
-                </li>
+                <li>Même orthographe, mêmes majuscules, mêmes symboles.</li>
+                <li>Pas un pseudo approchant, ni ton pseudo Twitch.</li>
+                <li>Sinon, la modération ne te retrouvera pas sur les captures : tes games ne compteront pas.</li>
               </ul>
             </div>
 
@@ -191,7 +178,7 @@ export function InscriptionWarzone({ pseudoTwitch, admin }: { pseudoTwitch: stri
           >
             <p className="eyebrow">Dernière vérification</p>
             <h2 id={`${id}-titre`} className="insc-titre">
-              C’est bien ton pseudo Warzone ?
+              C’est bien ton pseudo en jeu ?
             </h2>
             <p className="insc-phrase">Il sera enregistré exactement comme ceci :</p>
             <p className="insc-apercu" translate="no">
@@ -200,7 +187,7 @@ export function InscriptionWarzone({ pseudoTwitch, admin }: { pseudoTwitch: stri
             <label className="insc-case">
               <input type="checkbox" checked={certifie} onChange={(e) => setCertifie(e.target.checked)} />
               <span>
-                C’est <b>exactement</b> mon pseudo Warzone, copié-collé depuis le jeu.
+                C’est <b>exactement</b> mon pseudo en jeu sur Warzone.
               </span>
             </label>
             <p className="insc-note">

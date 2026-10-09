@@ -271,8 +271,8 @@ L'aiguillage est une fonction pure, `lib/domain/aiguillage.ts`, verrouillée par
 **Le pseudo Activision** (`Player.activisionId`) est la seule donnée qu'un joueur
 écrit sur son propre compte, **une seule fois**, à l'inscription : `PATCH /api/me`
 refuse dès qu'il est renseigné. `guard({ role: 'joueur' })`, schéma
-`monActivisionSchema` (lettres, chiffres, `_ - .`, espace, suffixe `#chiffres`
-facultatif ; jamais de `<`). La modération corrige celui d'un joueur par
+`monActivisionSchema` (tout caractère visible, de 1 à 60 ; les invisibles — contrôle,
+largeur nulle, sens de lecture — sont retirés, et React l'échappe à l'affichage). La modération corrige celui d'un joueur par
 `PATCH /api/players` (`admin`). Les deux passent par `transaction()` et
 laissent une trace au journal — seulement sur un vrai changement. Un nom déjà pris
 par un autre joueur est refusé (comparé sans suffixe, casse ni accents,

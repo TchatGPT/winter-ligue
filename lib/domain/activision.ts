@@ -1,13 +1,12 @@
 /**
- * Ce qu'un pseudo Warzone (identifiant Activision) peut contenir : lettres,
- * chiffres, `_ - .` et espace, puis le suffixe `#chiffres`, facultatif. Le
- * même motif sert au serveur (`activisionId`, `lib/api/schemas.ts`) et à la
- * fenêtre d'inscription, pour prévenir avant d'envoyer.
+ * Les bornes d'un pseudo en jeu (Warzone, identifiant Activision), une fois
+ * retirés ses caractères invisibles (`sansInvisibles`). Tout caractère visible
+ * est accepté — symboles, katakana… — : c'est le pseudo tel qu'il s'affiche
+ * en jeu, au caractère près, que la modération cherche sur les captures. Le
+ * serveur (`activisionId`, `lib/api/schemas.ts`) et la fenêtre d'inscription
+ * lisent les mêmes bornes.
  */
-export const MOTIF_ACTIVISION = /^[\p{L}\p{N}_\-. ]+(#\d{2,10})?$/u;
-
-/** Les bornes de sa longueur, après avoir retiré les espaces autour. */
-export const LONGUEUR_ACTIVISION = { min: 2, max: 40 } as const;
+export const LONGUEUR_ACTIVISION = { min: 1, max: 60 } as const;
 
 /**
  * La forme sous laquelle deux pseudos Activision se comparent.

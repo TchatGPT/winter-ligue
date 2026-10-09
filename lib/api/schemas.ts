@@ -8,9 +8,10 @@
 
 import { z } from 'zod';
 import { MANCHES_POSSIBLES } from '@/lib/domain/bataille';
-import { LONGUEUR_ACTIVISION, MOTIF_ACTIVISION } from '@/lib/domain/activision';
+import { LONGUEUR_ACTIVISION } from '@/lib/domain/activision';
 import { UTILISATIONS_MAX } from '@/lib/domain/codes';
 import { DUEL, ECONOMY, GAME_LIMITS } from '@/lib/domain/rules';
+import { sansInvisibles } from '@/lib/domain/texte';
 import { PACK_IDS } from '@/lib/domain/types';
 
 const packIds = PACK_IDS as unknown as [string, ...string[]];
@@ -18,17 +19,16 @@ const packIds = PACK_IDS as unknown as [string, ...string[]];
 export const uuid = z.string().uuid('Identifiant invalide.');
 
 /**
- * Un texte libre — une note de game. React l'échappe
- * à l'affichage ; on en retire en plus les caractères de contrôle et ceux qui
- * retournent le sens de lecture : ils servent à faire lire au journal autre
- * chose que ce qui y est écrit.
+ * Un texte libre — une note de game. React l'échappe à l'affichage ; on en
+ * retire en plus les caractères de contrôle et ceux qui retournent le sens de
+ * lecture (`sansInvisibles`) : ils servent à faire lire au journal autre chose
+ * que ce qui y est écrit.
  */
-const INVISIBLES = /[\p{Cc}\u200B-\u200F\u202A-\u202E\u2060-\u2069\uFEFF]/gu;
 export const texteLibre = (max: number) =>
   z
     .string()
     .max(max * 2)
-    .transform((t) => t.replace(INVISIBLES, '').trim())
+    .transform(sansInvisibles)
     .pipe(z.string().max(max));
 
 /** Pseudo : lettres, chiffres, tirets et underscores. Pas de HTML possible. */
@@ -40,15 +40,21 @@ export const pseudo = z
   .regex(/^[\p{L}\p{N}_\-. ]+$/u, 'Caractères non autorisés dans le pseudo.');
 
 /**
- * Pseudo Activision : le nom en jeu, avec ou sans son suffixe numérique
- * (« Pseudo#1234567 »). Le dièse est permis ici, et nulle part ailleurs.
+ * Pseudo en jeu (Warzone, identifiant Activision) : tel que le joueur l'écrit.
+ * Tout caractère visible est accepté — symboles, katakana… — ; on n'en retire
+ * que les invisibles, et la longueur reste bornée. React l'échappe à
+ * l'affichage.
  */
 export const activisionId = z
   .string()
-  .trim()
-  .min(LONGUEUR_ACTIVISION.min, 'Deux caractères minimum.')
-  .max(LONGUEUR_ACTIVISION.max, 'Quarante caractères maximum.')
-  .regex(MOTIF_ACTIVISION, 'Caractères non autorisés dans le pseudo Activision.');
+  .max(LONGUEUR_ACTIVISION.max * 2, 'Soixante caractères au plus.')
+  .transform(sansInvisibles)
+  .pipe(
+    z
+      .string()
+      .min(LONGUEUR_ACTIVISION.min, 'Écris ton pseudo en jeu.')
+      .max(LONGUEUR_ACTIVISION.max, 'Soixante caractères au plus.'),
+  );
 
 /** Le joueur renseigne son propre pseudo Activision. */
 export const monActivisionSchema = z.object({ activisionId });
@@ -69,13 +75,7 @@ export const gameSchema = z.object({
    * une donnée de jeu, comme les kills : elle ne sert qu'à la carte « Clone
    * kill du meilleur », qui la borne.
    */
-  meilleurKills: z
-    .number()
-    .int()
-    .min(GAME_LIMITS.minKills)
-    .max(GAME_LIMITS.maxKills)
-    .optional()
-    .nullable(),
+  meilleurKills: z.number().int().min(GAME_LIMITS.minKills).max(GAME_LIMITS.maxKills).optional().nullable(),
   /**
    * Ni multiplicateur ni bonus ne sont acceptés du client : ils ne peuvent
    * venir que d'une carte de pack, résolue côté serveur à la saisie.
