@@ -15333,3 +15333,78 @@ a.adm-tuile:hover .adm-tuile-fleche {
 .insc-fin {
   text-align: center;
 }
+
+/* ==========================================================================
+   L'ATTENTE D'UNE PAGE — components/Chargement.tsx
+   ==========================================================================
+   Des plaques vides, que traverse lentement un reflet. Elles n'apparaissent
+   qu'après 120 ms : une page rapide passe sans clignoter. */
+.chargement {
+  display: grid;
+  gap: 1rem;
+  animation: chargement-apparait 0.25s ease 0.12s both;
+}
+@keyframes chargement-apparait {
+  from {
+    opacity: 0;
+  }
+}
+.chargement-grille {
+  display: grid;
+  gap: 1rem;
+}
+@media (min-width: 1024px) {
+  .chargement-grille {
+    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  }
+}
+.chargement-plaque {
+  display: flex;
+  min-height: 9rem;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding: 1.6rem 1.5rem;
+  border-radius: var(--r-lg);
+  overflow: hidden;
+}
+.chargement-grille .chargement-plaque {
+  min-height: min(60dvh, 34rem);
+}
+.chargement[data-disposition='moderation'] .chargement-grille .chargement-plaque {
+  min-height: min(55dvh, 30rem);
+}
+.chargement-tete {
+  min-height: 0;
+  gap: 0.6rem;
+}
+.chargement-ligne {
+  position: relative;
+  display: block;
+  max-width: 100%;
+  height: 0.8rem;
+  overflow: hidden;
+  border-radius: var(--r-pilule);
+  background: rgb(255 255 255 / 0.07);
+}
+.chargement-titre {
+  height: 1.6rem;
+  background: rgb(255 255 255 / 0.1);
+}
+.chargement-ligne::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.09), transparent);
+  transform: translateX(-100%);
+  animation: chargement-reflet 1.4s ease-in-out infinite;
+}
+@keyframes chargement-reflet {
+  to {
+    transform: translateX(100%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .chargement-ligne::after {
+    animation: none;
+  }
+}

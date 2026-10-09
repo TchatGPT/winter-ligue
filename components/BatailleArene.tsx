@@ -18,8 +18,9 @@
  * le relais, et la même boucle écrit leurs variables CSS.
  */
 
+import dynamic from 'next/dynamic';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
-import { Course3D, type ControleCourse3D } from '@/components/duel3d/Course3D';
+import type { ControleCourse3D } from '@/components/duel3d/Course3D';
 import type { Donnees3D } from '@/components/duel3d/moteur';
 import {
   demarreRoulement,
@@ -33,6 +34,19 @@ import {
 import { flakes } from '@/components/ui';
 import type { Camp, Echange } from '@/lib/domain/bataille';
 import { avancee, ecritCourse, meneur, type Course, type GenreObstacle } from '@/lib/domain/course';
+
+/**
+ * La scène 3D (three.js, près de 600 Ko) se charge à part : la page des duels
+ * s'affiche sans l'attendre. `prechargeCourse3D` la fait venir dès que le
+ * navigateur souffle, bien avant le départ d'une course ; si elle arrive
+ * après, la course la rattrape, puisqu'elle suit l'horloge.
+ */
+const chargeCourse3D = () => import('@/components/duel3d/Course3D').then((m) => m.Course3D);
+const Course3D = dynamic(chargeCourse3D, { ssr: false, loading: () => <div className="course3d" /> });
+
+export function prechargeCourse3D(): void {
+  void chargeCourse3D();
+}
 
 export interface CampVueClient {
   id: string;

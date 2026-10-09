@@ -40,6 +40,7 @@ import {
   DELAI_DEPART_MS,
   DUREE_COURSE_MAX_MS,
   initiale,
+  prechargeCourse3D,
   type BatailleVueClient,
   type CampApercu,
 } from '@/components/BatailleArene';
@@ -416,6 +417,15 @@ export function Affrontements({
     const t = setTimeout(() => setMessage(null), message.kind === 'error' ? DUREE_ERREUR : DUREE_MESSAGE);
     return () => clearTimeout(t);
   }, [message]);
+  // La scène 3D, préchargée quand le navigateur a fini d'afficher la page.
+  useEffect(() => {
+    if ('requestIdleCallback' in window) {
+      const id = requestIdleCallback(prechargeCourse3D);
+      return () => cancelIdleCallback(id);
+    }
+    const t = setTimeout(prechargeCourse3D, 800);
+    return () => clearTimeout(t);
+  }, []);
   const [occupe, setOccupe] = useState(false);
 
   /** La mise du duel qu'on monte. */
