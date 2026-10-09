@@ -303,6 +303,13 @@ export function Regles({ maxGames, packs }: { maxGames: number; packs: PackDefin
           }
           droite={
             <>
+              <Encart titre="Rien n’est truqué">
+                <p>
+                  La carte est tirée <b>par le serveur</b>, au hasard, aux taux affichés sur la page Boosters, avant
+                  même l’animation. <b>Ni Lriaa ni la modération ne choisissent</b> la carte, ni le joueur sur qui elle
+                  tombe. Chaque ouverture est inscrite au journal.
+                </p>
+              </Encart>
               <Encart titre="Pour toi, ou au sort">
                 <p>
                   <b>Perso</b> et <b>Finisseur</b> s’ouvrent pour toi, et ne contiennent que des bonus. <b>Commu</b> et{' '}
@@ -481,6 +488,10 @@ export function Regles({ maxGames, packs }: { maxGames: number; packs: PackDefin
                 </li>
                 <li>Jamais pour Commu et Folie : là, tout le monde est à égalité.</li>
                 <li>Tes flocons ne sont pas dépensés : il suffit de les avoir.</li>
+                <li>
+                  Elle rend les cartes rares plus probables, jamais certaines : le tirage reste aléatoire, et c’est le
+                  serveur qui le fait.
+                </li>
               </Puces>
             </Encart>
           }
