@@ -86,7 +86,10 @@ export function FicheCarte({
           ✕
         </button>
 
-        <div className="min-h-0 overflow-y-auto px-5 pt-9 pb-6 sm:px-8">
+        {/* Sans barre de défilement : la carte qui penche et son halo débordent de
+            quelques pixels, et le faisaient apparaître pour rien. Sur un petit
+            écran, on fait défiler quand même, au doigt. */}
+        <div className="fiche-carte-corps min-h-0 overflow-y-auto px-5 pt-9 pb-6 sm:px-8">
           <div className="flex flex-col items-center gap-5 sm:flex-row sm:items-start">
             <div className="reveal relative w-[min(340px,72vw,calc((100dvh-9rem)*0.68))] shrink-0">
               {meta.holo && (

@@ -16,9 +16,9 @@ function borne(v: number): number {
  * à contre-sens sous le cadre. C'est ce décalage qui donne la profondeur : le
  * cadre est devant, la scène derrière.
  *
- * Au repos, la carte flotte doucement d'elle-même, sauf si le système demande
- * moins d'animations. Au toucher, la carte suit le doigt sans faire défiler la
- * page.
+ * Au repos, la carte se promène d'elle-même — elle penche, la scène glisse —
+ * sauf si le système demande moins d'animations. Au toucher, la carte suit le
+ * doigt sans faire défiler la page.
  */
 export function CarteInclinable({ children, className = '' }: { children: ReactNode; className?: string }) {
   const ref = useRef<HTMLDivElement>(null);

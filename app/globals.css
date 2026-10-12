@@ -15607,6 +15607,19 @@ a.adm-tuile:hover .adm-tuile-fleche {
   max-width: 32rem;
 }
 
+/* --mx / --my enregistrées : elles s'animent en douceur, et la carte se
+   promène d'elle-même au repos (`carte-3d-promene`). */
+@property --mx {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0.5;
+}
+@property --my {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0.5;
+}
+
 /* ---- La carte en relief (`CarteInclinable`) ----
    Le composant pose --mx / --my, la position du pointeur de 0 à 1. La carte
    penche vers lui, le reflet le suit, et l'illustration glisse à contre-sens
@@ -15632,8 +15645,8 @@ a.adm-tuile:hover .adm-tuile-fleche {
   transition: transform 0.08s linear;
 }
 .carte-3d .cadre-vecteur {
-  transform: scale(1.1)
-    translate(calc((var(--mx) - 0.5) * -5%), calc((var(--my) - 0.5) * -5%));
+  transform: scale(1.12)
+    translate(calc((var(--mx) - 0.5) * -9%), calc((var(--my) - 0.5) * -9%));
   transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.3, 1);
 }
 .carte-3d[data-actif] .cadre-vecteur {
@@ -15652,28 +15665,63 @@ a.adm-tuile:hover .adm-tuile-fleche {
     transparent 70%
   );
   mix-blend-mode: soft-light;
-  opacity: 0;
+  opacity: 0.7;
   pointer-events: none;
   transition: opacity 0.4s ease;
 }
 .carte-3d[data-actif] .carte-3d-reflet {
   opacity: 1;
 }
-@media (prefers-reduced-motion: no-preference) {
-  .carte-3d-flotte {
-    animation: carte-3d-flotte 6s ease-in-out infinite;
-  }
-  .carte-3d[data-actif] .carte-3d-flotte {
-    animation-play-state: paused;
+/* Au repos, la carte se promène d'elle-même : elle penche, le reflet glisse,
+   la scène bouge sous le cadre — le relief se voit sans la souris. Le
+   pointeur reprend la main dès qu'il passe dessus. Voulu même quand le
+   système demande moins d'animations (Windows sans effets d'animation le
+   demande d'office) : c'est la raison d'être de la fiche, et le mouvement
+   est lent ; il y est seulement deux fois moins ample. */
+.carte-3d:not([data-actif]) {
+  animation: carte-3d-promene 8s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .carte-3d:not([data-actif]) {
+    animation-name: carte-3d-promene-douce;
   }
 }
-@keyframes carte-3d-flotte {
+@keyframes carte-3d-promene-douce {
   0%,
   100% {
-    transform: rotateY(-6deg) rotateX(2deg) translateY(0);
+    --mx: 0.5;
+    --my: 0.5;
+  }
+  25% {
+    --mx: 0.67;
+    --my: 0.43;
   }
   50% {
-    transform: rotateY(6deg) rotateX(-2deg) translateY(-6px);
+    --mx: 0.5;
+    --my: 0.59;
+  }
+  75% {
+    --mx: 0.33;
+    --my: 0.43;
+  }
+}
+@keyframes carte-3d-promene {
+  0%,
+  100% {
+    --mx: 0.5;
+    --my: 0.5;
+  }
+  25% {
+    --mx: 0.84;
+    --my: 0.36;
+  }
+  50% {
+    --mx: 0.5;
+    --my: 0.68;
+  }
+  75% {
+    --mx: 0.16;
+    --my: 0.36;
   }
 }
 
@@ -15695,4 +15743,20 @@ a.adm-tuile:hover .adm-tuile-fleche {
 }
 .action-tuile:has(.action-tuile-ouvre:hover) .action-carte .cadre {
   transform: translateY(-3px) rotate(-2deg) scale(1.06);
+}
+
+/* Le corps de la fiche d'une carte défile sans barre : seuls la carte qui
+   penche et son halo dépassaient. Côte à côte, tout tient : il ne défile plus
+   du tout, la molette ne le décale pas pour rien. */
+.fiche-carte-corps {
+  overflow-x: hidden;
+  scrollbar-width: none;
+}
+@media (min-width: 640px) {
+  .fiche-carte-corps {
+    overflow-y: hidden;
+  }
+}
+.fiche-carte-corps::-webkit-scrollbar {
+  display: none;
 }
