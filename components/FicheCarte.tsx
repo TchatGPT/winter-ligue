@@ -5,7 +5,9 @@ import { createPortal } from 'react-dom';
 import { CardFrame } from '@/components/CardFrame';
 import { CarteInclinable } from '@/components/CarteInclinable';
 import { SnowCap } from '@/components/SnowCap';
-import { RarityChip, rarityMeta } from '@/components/ui';
+import { EmblemeRarete } from '@/components/EmblemeRarete';
+import { rarityMeta } from '@/components/ui';
+import type { Rarity } from '@/lib/domain/types';
 
 export interface CarteFiche {
   cardId: string;
@@ -39,11 +41,14 @@ const rienAEcouter = () => () => {};
 export function FicheCarte({
   carte,
   legende,
+  details = [],
   onClose,
 }: {
   carte: CarteFiche;
   /** Une ligne sous la description : « Carte active de Cristal », par exemple. */
   legende?: React.ReactNode;
+  /** Des précisions, une par ligne : « Quand → Prochaine game », « Au plus → 25 pts ». */
+  details?: { libelle: string; valeur: string }[];
   onClose: () => void;
 }) {
   // `document.body` n'existe pas au rendu serveur.
@@ -112,30 +117,34 @@ export function FicheCarte({
               </CarteInclinable>
             </div>
 
-            <div className="min-w-0 flex-1 text-center sm:pt-2 sm:pr-10 sm:text-left">
-              <p className="flex items-center justify-center gap-2 text-[13px] font-semibold text-muted sm:justify-start">
-                <RarityChip rarity={carte.rarity} />
+            {/* Ce que dit la carte, dans l'ordre où on le cherche : sa rareté, son
+                nom, ce qu'elle fait en deux mots, puis en clair, puis quand. */}
+            <div className="fiche-infos" style={{ ['--r' as string]: meta.color }}>
+              <span className="fiche-rarete">
+                <EmblemeRarete rarity={meta.code as Rarity} className="fiche-rarete-gemme" />
                 {meta.label}
-                {carte.nature === 'malus' && <span className="text-danger">· Malus</span>}
-              </p>
-              <h2
-                className="mt-2 font-display text-[30px] leading-none font-black"
-                style={{ color: meta.color }}
-              >
-                {carte.nom}
-              </h2>
-              {carte.action && (
-                <p className="mt-2 font-display text-[18px] leading-tight font-black tracking-wide text-ink uppercase">
-                  {carte.action}
-                </p>
+                {carte.nature === 'malus' && <span className="fiche-malus">Malus</span>}
+              </span>
+              <h2 className="fiche-nom">{carte.nom}</h2>
+              {carte.action && <p className="fiche-action">{carte.action}</p>}
+              <p className="fiche-desc">{carte.description}</p>
+              {(details.length > 0 || carte.resume) && (
+                <dl className="fiche-details">
+                  {details.map((d) => (
+                    <div key={d.libelle}>
+                      <dt>{d.libelle}</dt>
+                      <dd>{d.valeur}</dd>
+                    </div>
+                  ))}
+                  {carte.resume && details.length === 0 && (
+                    <div>
+                      <dt>En bref</dt>
+                      <dd className="num">{carte.resume}</dd>
+                    </div>
+                  )}
+                </dl>
               )}
-              <p className="mt-2 text-[15px] leading-relaxed text-ink-2">{carte.description}</p>
-              {carte.resume && (
-                <p className="num mt-3 inline-block rounded-full bg-white/10 px-3 py-1 text-[13px] font-semibold text-ink">
-                  {carte.resume}
-                </p>
-              )}
-              {legende && <p className="mt-4 text-[13px] text-muted">{legende}</p>}
+              {legende && <p className="fiche-legende">{legende}</p>}
             </div>
           </div>
         </div>

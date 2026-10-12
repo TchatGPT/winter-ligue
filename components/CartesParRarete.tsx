@@ -116,12 +116,10 @@ export function CartesParRarete({ cartes, booster }: { cartes: CarteSaison[]; bo
             nature: ouverte.nature,
             power: ouverte.power,
           }}
-          legende={
-            <>
-              Se joue : {MOMENTS[ouverte.moment].toLowerCase()}
-              {ouverte.impact !== null && ` · ${ouverte.impact} pts au plus`}.
-            </>
-          }
+          details={[
+            { libelle: 'Quand', valeur: MOMENTS[ouverte.moment] },
+            ...(ouverte.impact !== null ? [{ libelle: 'Au plus', valeur: `${ouverte.impact} pts` }] : []),
+          ]}
           onClose={() => setOuverte(null)}
         />
       )}

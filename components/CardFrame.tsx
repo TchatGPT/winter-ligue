@@ -1,4 +1,5 @@
 import { aUneIllustration, CardArt } from '@/components/CardArt';
+import { EmblemeRarete } from '@/components/EmblemeRarete';
 import { cardArt, getCard, RARITY_META } from '@/lib/domain/catalog';
 import type { Rarity } from '@/lib/domain/types';
 
@@ -79,12 +80,6 @@ export function CardFrame({
           </span>
         )}
 
-        {/*
-          La rareté, en toutes lettres, au bas de l'illustration.
-          Elle était en sigle dans un coin — « L », « PC » — et il fallait
-          connaître le code pour le lire. Voir `.cadre-sceau`.
-        */}
-        <span className="cadre-sceau">{meta.label}</span>
       </div>
 
       {/* Balise native et non `next/image` : l'image est déjà au bon format et
@@ -92,6 +87,13 @@ export function CardFrame({
           le navigateur ne la charge qu'une fois. */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img className="cadre-planche" src="/cadres/glace.webp" alt="" aria-hidden="true" />
+
+      {/* La rareté, en médaillon : à cheval sur la jointure de l'illustration et
+          du panneau, sa gemme et son nom. Voir `.cadre-sceau`. */}
+      <span className="cadre-sceau">
+        <EmblemeRarete rarity={meta.code as Rarity} className="cadre-sceau-gemme" />
+        {meta.label}
+      </span>
 
       {nature === 'malus' && <span className="cadre-malus">Malus</span>}
       {corner && <span className="cadre-coin">{corner}</span>}
@@ -106,7 +108,11 @@ export function CardFrame({
           elle se joue. */}
       <div className="cadre-texte">
         <h3 className="cadre-nom">{name}</h3>
-        {action && <p className="cadre-action">{action}</p>}
+        {action && (
+          <p className="cadre-action">
+            <span>{action}</span>
+          </p>
+        )}
         {description && <p className="cadre-desc">{description}</p>}
       </div>
     </div>

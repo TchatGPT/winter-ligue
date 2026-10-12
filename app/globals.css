@@ -8067,48 +8067,48 @@
    */
   .cadre-sceau {
     position: absolute;
-    right: 0;
-    bottom: 0;
-    left: 0;
-    z-index: 2;
-    padding: 4.6cqw 2.5cqw 2cqw;
+    left: 50%;
+    top: 73.5%;
+    z-index: 4;
+    display: inline-flex;
+    align-items: center;
+    gap: 1.1cqw;
+    padding: 0.9cqw 3cqw 0.9cqw 1.3cqw;
+    border-radius: 999px;
+    transform: translate(-50%, -50%);
+    /* La teinte de la rareté, en émail sombre, cerclée d'un liseré clair de
+       la même teinte : le médaillon se lit sur l'illustration comme sur le
+       métal du cadre. */
     background: linear-gradient(
       180deg,
-      transparent 0%,
-      rgb(4 9 18 / 0.62) 40%,
-      rgb(4 9 18 / 0.92) 100%
+      color-mix(in srgb, var(--r, #6f8db0) 62%, #101014) 0%,
+      color-mix(in srgb, var(--r, #6f8db0) 30%, #08080b) 100%
     );
-    /* La teinte de la rareté, éclaircie : sur le fond sombre, la commune et
-       la rare se lisaient mal à pleine saturation. */
-    color: color-mix(in srgb, var(--r, #6f8db0) 72%, var(--frost));
+    box-shadow:
+      0 0 0 0.45cqw color-mix(in srgb, var(--r, #6f8db0) 75%, var(--frost)),
+      inset 0 0.35cqw 0 rgb(255 255 255 / 0.22),
+      0 0.9cqw 1.8cqw rgb(0 0 0 / 0.5);
+    color: color-mix(in srgb, var(--r, #6f8db0) 28%, var(--frost));
     font-family: var(--font-display);
-    font-size: 4.6cqw;
+    font-size: 3.6cqw;
     font-weight: 900;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.16em;
     line-height: 1;
-    text-align: center;
     text-transform: uppercase;
-    /* Une ombre nette, plus de lueur : la lueur à la couleur de la rareté
-       floutait les lettres, à cette taille. */
-    text-shadow: 0 0.35cqw 0.5cqw rgb(0 0 0 / 0.9);
+    white-space: nowrap;
+    text-shadow: 0 0.3cqw 0.4cqw rgb(0 0 0 / 0.6);
   }
-
-  /* Un filet à la couleur de la rareté, sous le texte : il ferme la fenêtre
-     d'illustration par le bas et donne au sceau son assise. */
-  .cadre-sceau::after {
-    content: '';
-    position: absolute;
-    right: 22%;
-    bottom: 0.9cqw;
-    left: 22%;
-    height: 0.35cqw;
-    border-radius: 1cqw;
-    background: linear-gradient(
-      90deg,
-      transparent,
-      color-mix(in srgb, var(--r, #6f8db0) 85%, transparent),
-      transparent
-    );
+  .cadre-sceau-gemme {
+    width: 4.6cqw;
+    height: 4.6cqw;
+    flex: none;
+  }
+  /* Une vignette de quelques dizaines de pixels : le médaillon n'y serait
+     qu'une tache. La couleur du cadre dit déjà la rareté. */
+  @container (max-width: 130px) {
+    .cadre-sceau {
+      display: none;
+    }
   }
 
   /*
@@ -8149,31 +8149,36 @@
   .cadre-texte {
     position: absolute;
     left: 11%;
-    top: 76.2%;
+    top: 77%;
     width: 78%;
-    height: 16.6%;
+    height: 15.8%;
     z-index: 3;
     display: flex;
     flex-direction: column;
+    align-items: center;
     justify-content: center;
-    gap: 1cqw;
+    gap: 1.2cqw;
+    text-align: center;
     color: #131c2a;
   }
 
+  /* Le nom, centré et gravé dans le panneau : une encre sombre teintée de la
+     rareté, et un liseré clair dessous, comme une lettre en creux. */
   .cadre-nom {
+    max-width: 100%;
     font-family: var(--font-display);
-    font-size: 7.4cqw;
+    font-size: 8cqw;
     font-weight: 900;
-    line-height: 1.02;
-    color: #0b1320;
+    letter-spacing: 0.01em;
+    line-height: 1;
+    color: color-mix(in srgb, var(--r, #6f8db0) 22%, #121216);
+    text-shadow: 0 0.3cqw 0 rgb(255 255 255 / 0.7);
     overflow: hidden;
     display: -webkit-box;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
+    -webkit-line-clamp: 1;
+    line-clamp: 1;
     -webkit-box-orient: vertical;
   }
-
-
 
   /*
    * La description ne s'affiche qu'à partir de 400 px de carte.
@@ -8210,29 +8215,46 @@
   }
 
   /*
-   * L'intitulé de l'action, sous le nom : « Multiplicateur game », « Joker ».
-   *
-   * C'est lui qui dit ce que fait la carte, à toutes les tailles — la
-   * description, elle, ne tient que sur une grande carte. Une ligne, dans la
-   * teinte de la rareté assombrie pour rester lisible sur le panneau clair.
+   * L'intitulé de l'action, sous le nom : « Game ×2 », « Joker ». Centré
+   * entre deux filets à la couleur de la rareté, en petites capitales
+   * espacées : il dit ce que fait la carte, à toutes les tailles.
    */
   .cadre-action {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+    gap: 2cqw;
+    font-family: var(--font-display);
+    font-size: 4cqw;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    line-height: 1.15;
+    text-transform: uppercase;
+    color: color-mix(in srgb, var(--r, #6f8db0) 48%, #16161a);
+  }
+  .cadre-action > span {
     min-width: 0;
     overflow: hidden;
-    font-family: var(--font-display);
-    font-size: 4.8cqw;
-    font-weight: 800;
-    letter-spacing: 0.03em;
-    line-height: 1.15;
-    text-overflow: ellipsis;
-    text-transform: uppercase;
-    white-space: nowrap;
-    /* Plus sombre qu'avant (45 % de la teinte) : sur le panneau clair, l'or
-       de la légendaire tournait à l'olive pâle. */
-    color: color-mix(in srgb, var(--r, #6f8db0) 36%, #0b1424);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
   }
-
-
+  .cadre-action::before,
+  .cadre-action::after {
+    content: '';
+    flex: 0 1 12cqw;
+    min-width: 3cqw;
+    height: 0.35cqw;
+    border-radius: 1cqw;
+  }
+  .cadre-action::before {
+    background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--r, #6f8db0) 75%, #16161a));
+  }
+  .cadre-action::after {
+    background: linear-gradient(90deg, color-mix(in srgb, var(--r, #6f8db0) 75%, #16161a), transparent);
+  }
 
   .cadre-eteint {
     filter: grayscale(0.9) brightness(0.55);
@@ -15932,4 +15954,130 @@ a.adm-tuile:hover .adm-tuile-fleche {
   font-family: var(--font-display);
   font-size: 1.125rem;
   color: var(--ink);
+}
+
+/* ---- La fiche d'une carte : le panneau d'informations ----
+   La rareté en médaillon, comme sur la carte ; le nom en grand ; l'intitulé
+   à la couleur de la rareté ; la description dans un encadré ; les
+   précisions en lignes. */
+.fiche-infos {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+@media (min-width: 640px) {
+  .fiche-infos {
+    align-items: flex-start;
+    padding: 0.4rem 2.6rem 0 0;
+    text-align: left;
+  }
+}
+.fiche-rarete {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.3rem 0.85rem 0.3rem 0.4rem;
+  border-radius: var(--r-pilule);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--r) 62%, #101014) 0%,
+    color-mix(in srgb, var(--r) 30%, #08080b) 100%
+  );
+  box-shadow:
+    0 0 0 1.5px color-mix(in srgb, var(--r) 75%, var(--frost)),
+    inset 0 1px 0 rgb(255 255 255 / 0.22);
+  color: color-mix(in srgb, var(--r) 28%, var(--frost));
+  font-family: var(--font-display);
+  font-size: 0.8125rem;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.fiche-rarete-gemme {
+  width: 1.35rem;
+  height: 1.35rem;
+}
+.fiche-malus {
+  margin-left: 0.2rem;
+  color: var(--danger);
+}
+.fiche-nom {
+  margin-top: 0.9rem;
+  font-family: var(--font-display);
+  font-size: 2.6rem;
+  font-weight: 900;
+  line-height: 0.95;
+  letter-spacing: 0.01em;
+  color: var(--ink);
+  text-shadow: 0 2px 10px rgb(0 0 0 / 0.35);
+}
+.fiche-action {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.65rem;
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--r) 80%, var(--frost));
+}
+.fiche-action::before {
+  content: '';
+  width: 1.6rem;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--r);
+}
+.fiche-desc {
+  width: 100%;
+  margin-top: 1.1rem;
+  padding: 0.9rem 1rem;
+  border-radius: var(--r-md);
+  background: rgb(0 10 30 / 0.28);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.1),
+    inset 0 0 0 1px rgb(255 255 255 / 0.06);
+  font-size: 1rem;
+  line-height: 1.55;
+  color: var(--ink);
+  text-align: left;
+}
+.fiche-details {
+  width: 100%;
+  margin-top: 0.75rem;
+  display: grid;
+  gap: 0.35rem;
+}
+.fiche-details > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.45rem 0.2rem;
+  border-bottom: 1px solid rgb(255 255 255 / 0.1);
+}
+.fiche-details dt {
+  font-family: var(--font-display);
+  font-size: 0.8125rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+.fiche-details dd {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+.fiche-legende {
+  margin-top: 0.9rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--muted);
+  text-align: left;
 }
