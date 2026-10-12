@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { toResponse } from '@/lib/api/errors';
 import { fail, guard, ok } from '@/lib/api/respond';
-import { monActivisionSchema } from '@/lib/api/schemas';
+import { monActivisionSchema, passePseudoSchema } from '@/lib/api/schemas';
 import { playerIdOf } from '@/lib/auth/session';
 import { getStore } from '@/lib/db/store';
 import { activisionPris } from '@/lib/domain/activision';
@@ -82,6 +82,44 @@ export async function PATCH(request: Request): Promise<NextResponse> {
         'Ce pseudo Warzone est déjà celui d’un autre joueur. Vérifie-le, ou contacte la modération.',
       );
     }
+    return ok(resultat);
+  } catch (error) {
+    return toResponse(error);
+  }
+}
+
+/**
+ * Passer l'inscription sans donner son pseudo en jeu.
+ *
+ * La fenêtre ne s'ouvre qu'à la première connexion : une fois passée, elle ne
+ * revient plus, sur aucun appareil — c'est noté sur le compte, pas dans le
+ * navigateur. La modération peut renseigner le pseudo ensuite (Modération →
+ * Joueurs, « sans pseudo »).
+ */
+export async function POST(request: Request): Promise<NextResponse> {
+  const g = await guard(request, {
+    scope: 'me-activision-passe',
+    role: 'joueur',
+    limit: LIMITS.mutation,
+    schema: passePseudoSchema,
+  });
+  if (!g.ok) return g.response;
+
+  const playerId = playerIdOf(g.session);
+  if (!playerId) {
+    return fail('NON_AUTORISE', 'La session de modération n’a pas de profil joueur.');
+  }
+
+  try {
+    const resultat = await getStore().transaction((db) => {
+      const player = db.players.find((p) => p.id === playerId);
+      if (!player) throw new Error('Joueur introuvable.');
+      if (player.activisionId === null && !player.pseudoJeuPasseA) {
+        player.pseudoJeuPasseA = new Date().toISOString();
+        audit(db, playerId, 'ACTIVISION_PASSE', playerId, 'inscription passée sans pseudo en jeu');
+      }
+      return { passe: true };
+    });
     return ok(resultat);
   } catch (error) {
     return toResponse(error);

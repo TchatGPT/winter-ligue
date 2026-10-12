@@ -39,6 +39,12 @@ export interface Player {
    * ne ressemble pas toujours au pseudo en jeu.
    */
   activisionId: string | null;
+  /**
+   * Quand il a passé la fenêtre du pseudo en jeu sans le donner, ou nul. La
+   * fenêtre ne s'ouvre qu'à la première connexion : donné ou passé, elle ne
+   * revient plus, sur aucun appareil. La modération peut le renseigner ensuite.
+   */
+  pseudoJeuPasseA?: string | null;
   snowflakes: number;
   /**
    * Les subs que ce joueur a offerts à la chaîne, sur la saison.

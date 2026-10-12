@@ -647,6 +647,7 @@ function migrate(db: Partial<Database>): Database {
       creneauxBonus: p.creneauxBonus ?? 0,
       immuniseJusqua: p.immuniseJusqua ?? null,
       activisionId: p.activisionId ?? null,
+      pseudoJeuPasseA: p.pseudoJeuPasseA ?? null,
       sessionsDepuis: p.sessionsDepuis ?? null,
       roleManuel: p.roleManuel ?? false,
       cadeauDernier: p.cadeauDernier ?? null,

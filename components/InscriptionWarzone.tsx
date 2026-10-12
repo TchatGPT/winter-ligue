@@ -6,7 +6,11 @@ import { SnowCap } from '@/components/SnowCap';
 import { LONGUEUR_ACTIVISION } from '@/lib/domain/activision';
 import { sansInvisibles } from '@/lib/domain/texte';
 
-/** Un modérateur qui ne joue pas peut fermer la fenêtre : on s'en souvient ici. */
+/**
+ * L'ancienne mémoire, dans le navigateur, du modérateur qui ne joue pas. Le
+ * choix vit désormais sur le compte (`POST /api/me`) ; un navigateur qui s'en
+ * souvient encore le reporte une fois sur le compte, sans rien redemander.
+ */
 const CLE_SANS_JOUER = 'wl-modo-sans-jouer';
 
 const lisSansJouer = () => {
@@ -37,10 +41,11 @@ type Etape = 'saisie' | 'verification' | 'inscrit';
  *  3. **Inscrit** — et l'on entre dans la ligue.
  *
  * Il ne se donne qu'une fois : ensuite, seule la modération le corrige. La
- * mise en page ne pose la fenêtre que pour un joueur sans pseudo, jamais pour
- * la streameuse. Un modérateur qui ne joue pas peut la fermer.
+ * fenêtre ne s'ouvre qu'à la première connexion : la mise en page ne la pose
+ * que pour un joueur sans pseudo qui ne l'a pas passée, jamais pour la
+ * streameuse. Passée, c'est noté sur le compte : elle ne revient plus.
  */
-export function InscriptionWarzone({ pseudoTwitch, admin }: { pseudoTwitch: string; admin: boolean }) {
+export function InscriptionWarzone({ pseudoTwitch }: { pseudoTwitch: string; admin?: boolean }) {
   const router = useRouter();
   const id = useId();
   const [etape, setEtape] = useState<Etape>('saisie');
@@ -50,7 +55,13 @@ export function InscriptionWarzone({ pseudoTwitch, admin }: { pseudoTwitch: stri
   const [erreur, setErreur] = useState<string | null>(null);
   const [fermee, setFermee] = useState(false);
   const sansJouer = useSyncExternalStore(ecouteStockage, lisSansJouer, () => false);
-  const ouverte = !fermee && !(admin && sansJouer);
+  const ouverte = !fermee && !sansJouer;
+
+  // Un navigateur qui se souvient encore de l'ancien « je modère sans jouer » :
+  // on le reporte sur le compte, une fois, et la fenêtre ne reviendra plus.
+  useEffect(() => {
+    if (sansJouer) void passe();
+  }, [sansJouer]);
 
   // La page derrière ne défile pas tant que la fenêtre est ouverte.
   useEffect(() => {
@@ -164,7 +175,17 @@ export function InscriptionWarzone({ pseudoTwitch, admin }: { pseudoTwitch: stri
             <button type="submit" className="btn btn-ice insc-bouton" disabled={!pret}>
               Continuer
             </button>
-            {admin && <BoutonSansJouer onFerme={() => setFermee(true)} />}
+            <button
+              type="button"
+              className="insc-sans-jouer"
+              onClick={() => {
+                setFermee(true);
+                void passe();
+              }}
+            >
+              Passer sans entrer mon pseudo
+            </button>
+            <p className="insc-note text-center">La modération pourra l’ajouter pour toi plus tard.</p>
           </form>
         )}
 
@@ -231,22 +252,20 @@ export function InscriptionWarzone({ pseudoTwitch, admin }: { pseudoTwitch: stri
   );
 }
 
-/** Pour un modérateur qui ne joue pas : fermer, et ne plus la revoir sur cet appareil. */
-function BoutonSansJouer({ onFerme }: { onFerme: () => void }) {
-  return (
-    <button
-      type="button"
-      className="insc-sans-jouer"
-      onClick={() => {
-        try {
-          window.localStorage.setItem(CLE_SANS_JOUER, '1');
-        } catch {
-          // Navigation privée : la fenêtre reviendra à la prochaine visite.
-        }
-        onFerme();
-      }}
-    >
-      Je modère sans jouer : fermer
-    </button>
-  );
+/**
+ * Passe l'inscription : c'est noté sur le compte, et la fenêtre ne s'ouvrira
+ * plus, sur aucun appareil. Sans réponse du serveur, elle reviendra à la
+ * prochaine visite — rien n'est perdu.
+ */
+async function passe() {
+  try {
+    await fetch('/api/me', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ passe: true }),
+    });
+    window.localStorage.removeItem(CLE_SANS_JOUER);
+  } catch {
+    // Le serveur n'a pas répondu, ou le stockage est fermé : rien de grave.
+  }
 }

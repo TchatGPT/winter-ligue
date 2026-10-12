@@ -94,7 +94,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         return {
           enCours: evenementsActifs(db),
           inscription:
-            moi && moi.activisionId === null && !estLaStreameuse(moi, chaineDeLaLigue())
+            moi && moi.activisionId === null && !moi.pseudoJeuPasseA && !estLaStreameuse(moi, chaineDeLaLigue())
               ? { pseudo: moi.pseudo, admin: session.role === 'admin' }
               : null,
         };

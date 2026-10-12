@@ -70,6 +70,9 @@ export const activisionJoueurSchema = z.object({ playerId: uuid, activisionId: a
 
 export const rarity = z.enum(['C', 'R', 'UR', 'L']);
 
+/** Passer la fenêtre du pseudo en jeu sans le donner : rien d'autre à dire. */
+export const passePseudoSchema = z.object({ passe: z.literal(true) }).strict();
+
 export const gameSchema = z.object({
   playerId: uuid,
   kills: z.number().int().min(GAME_LIMITS.minKills).max(GAME_LIMITS.maxKills),
