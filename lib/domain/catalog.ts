@@ -148,7 +148,8 @@ export const CARDS: readonly CardDefinition[] = [
     effect: { kind: 'bonus_points', value: 8 },
     nature: 'bonus',
     power: 36,
-    packs: ['perso', 'commu', 'finisseur', 'folie'],
+    // Pas dans le Perso : sa rare y est le Joker.
+    packs: ['commu', 'finisseur', 'folie'],
     cible: 'HASARD',
   },
   {
