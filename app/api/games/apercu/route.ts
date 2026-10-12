@@ -5,7 +5,7 @@ import { uuid } from '@/lib/api/schemas';
 import type { Database, Game } from '@/lib/db/entities';
 import { getStore, newId } from '@/lib/db/store';
 import { GAME_LIMITS } from '@/lib/domain/rules';
-import { appliqueCartesEnAttente, regleCartesSansAttendre } from '@/lib/services/effects';
+import { appliqueCartesEnAttente, jokerDe, regleCartesSansAttendre } from '@/lib/services/effects';
 import { recomputeGame } from '@/lib/services/league';
 
 export const runtime = 'nodejs';
@@ -37,6 +37,8 @@ export interface ApercuLigne {
   score: number;
   /** La carte active du joueur, et ce qu'elle ferait sur cette game. */
   carte: { cardId: string; nom: string; points: number; resultat: string } | null;
+  /** Vrai s'il garde un Joker : l'écran propose alors de ne pas compter cette game. */
+  joker: boolean;
 }
 
 /**
@@ -56,6 +58,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     const db = structuredClone(lecture) as Database;
     const now = new Date().toISOString();
     return g.body.lignes.map((ligne): ApercuLigne => {
+      const joker = jokerDe(db, ligne.playerId) !== null;
       const game: Game = {
         id: newId(),
         playerId: ligne.playerId,
@@ -80,6 +83,7 @@ export async function POST(request: Request): Promise<NextResponse> {
         playerId: ligne.playerId,
         score: game.score,
         carte: carte ? { cardId: carte.cardId, nom: carte.nom, points: carte.points, resultat: carte.resultat } : null,
+        joker,
       };
     });
   });

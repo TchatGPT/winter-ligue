@@ -6723,6 +6723,34 @@
   transform: scale(1.06);
 }
 
+/* La carte active et le Joker, l'une sur l'autre : le Joker décalé, penché,
+   un peu plus bas. Celle qu'on survole passe devant. */
+.pile-cartes {
+  display: flex;
+  padding-right: 0.35rem;
+}
+.pile-carte {
+  position: relative;
+  display: block;
+  transition: transform 0.18s ease;
+}
+.pile-carte .cadre {
+  filter: drop-shadow(0 3px 6px rgb(0 0 0 / 0.45));
+}
+.pile-carte[data-quoi='joker'] {
+  margin-left: -20px;
+  transform: rotate(9deg) translateY(4px);
+}
+.pile-carte:hover,
+.pile-carte:focus-visible {
+  z-index: 1;
+  transform: translateY(-3px) scale(1.08);
+}
+.pile-carte[data-quoi='joker']:hover,
+.pile-carte[data-quoi='joker']:focus-visible {
+  transform: rotate(4deg) translateY(-3px) scale(1.08);
+}
+
 .tableau-verre-recherche {
   min-height: 40px;
   padding-block: 0.45rem;

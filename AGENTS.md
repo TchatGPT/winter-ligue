@@ -64,9 +64,15 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   Chaque delta de points passe par `applyPoints`, qui le journalise dans `game.applied`.
   **Une game ne porte jamais deux cartes** : une carte ne tombe que sur une game encore
   sans carte (`gamesSansCarte`).
-- Une carte se joue à l'un de trois moments (`momentDe`) : sur la prochaine game, sur
-  une game déjà jouée, ou tout de suite. `regleCartesSansAttendre()` est appelé après
-  chaque ouverture de booster et après chaque saisie de game.
+- Une carte se joue à l'un de quatre moments (`momentDe`) : sur la prochaine game, sur
+  une game déjà jouée, tout de suite, ou **gardée** (`GARDEE`). `regleCartesSansAttendre()`
+  est appelé après chaque ouverture de booster et après chaque saisie de game.
+- **Le Joker** (`kind: 'joker'`, Booster Perso) est gardé, jamais consommé de lui-même :
+  à la saisie d'une game, la modération peut le servir (`joker: true`, vérifié par
+  `jokerDe`). La game est alors passée (`skipped`) — ni points, ni flocons, ni carte
+  active, qui attend la suivante — et le Joker consommé (`utiliseJoker`). Un seul à la
+  fois : un second, tiré pendant qu'il en garde un, est consommé sans effet. Une game
+  annulée par un Joker ne se rétablit pas.
 - La streameuse n'est jamais bénéficiaire d'une carte : les tirages passent par
   `joueursEnLice()`.
 - Une ouverture d'un booster de la ligue a **deux tirages** : la carte, puis — selon sa

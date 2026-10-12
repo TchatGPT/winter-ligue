@@ -20,6 +20,8 @@ interface Ligne {
   assists: number | null;
   joueurId: string | null;
   confiance: number;
+  /** La modération sert le Joker du joueur : cette game ne comptera pas. */
+  joker?: boolean;
 }
 
 type Placement = 1 | 2 | 3 | null;
@@ -28,6 +30,8 @@ type Placement = 1 | 2 | 3 | null;
 interface Apercu {
   score: number;
   carte: { cardId: string; nom: string; points: number; resultat: string } | null;
+  /** Vrai s'il garde un Joker. */
+  joker: boolean;
 }
 type Message = { kind: 'error' | 'success' | 'info'; text: string } | null;
 
@@ -325,6 +329,9 @@ function FenetreIA({ joueurs, active, ferme }: { joueurs: Joueur[]; active: bool
             placement,
             meilleurKills: meilleurKillsDe(lignes),
             note: 'Saisie par capture',
+            // Le Joker ne part que si le serveur a dit qu'il en a un, et il
+            // le vérifie de nouveau.
+            joker: Boolean(ligne.joker && apercus[ligne.joueurId!]?.joker),
           }),
         });
         const charge = await reponse.json();
@@ -448,6 +455,7 @@ function FenetreIA({ joueurs, active, ferme }: { joueurs: Joueur[]; active: bool
                 {lignes.map((l, i) => {
                   const apercu = l.joueurId ? apercus[l.joueurId] : undefined;
                   const score = l.joueurId ? (apercu?.score ?? l.kills + placementPoints(placement)) : null;
+                  const jokerServi = Boolean(l.joker && apercu?.joker);
                   const couleur = l.confiance >= 0.9 ? 'text-aurora' : l.confiance >= 0.6 ? 'text-gold' : 'text-danger';
                   // La ligne de la streameuse : montrée pour qu'on voie qu'elle a
                   // été lue, mais sans choix de joueur, ni kills, ni score.
@@ -471,7 +479,9 @@ function FenetreIA({ joueurs, active, ferme }: { joueurs: Joueur[]; active: bool
                           className="field !py-1 text-sm"
                           style={{ maxWidth: 170 }}
                           value={l.joueurId ?? ''}
-                          onChange={(e) => modifie(i, { joueurId: e.target.value || null, confiance: e.target.value ? 1 : 0 })}
+                          onChange={(e) =>
+                            modifie(i, { joueurId: e.target.value || null, confiance: e.target.value ? 1 : 0, joker: false })
+                          }
                           aria-label={`Joueur pour ${l.lu}`}
                         >
                           <option value="">— non assigné —</option>
@@ -505,13 +515,35 @@ function FenetreIA({ joueurs, active, ferme }: { joueurs: Joueur[]; active: bool
                         </div>
                       </td>
                       <td className="text-right">
-                        <span className="num font-display text-lg font-bold text-gold">{score === null ? '—' : `${score} pts`}</span>
-                        {apercu?.carte && (
+                        {jokerServi ? (
+                          <span className="font-display text-lg font-bold text-violet">Ne compte pas</span>
+                        ) : (
+                          <span className="num font-display text-lg font-bold text-gold">
+                            {score === null ? '—' : `${score} pts`}
+                          </span>
+                        )}
+                        {apercu?.carte && !jokerServi && (
                           <span
                             className={`block text-[13px] leading-tight ${apercu.carte.points < 0 ? 'text-danger' : apercu.carte.points > 0 ? 'text-aurora' : 'text-faint'}`}
                             title={apercu.carte.resultat}
                           >
                             🃏 {apercu.carte.nom} · {apercu.carte.resultat}
+                          </span>
+                        )}
+                        {apercu?.joker && (
+                          <label className="mt-1 inline-flex cursor-pointer items-center gap-1.5 text-[13px] text-violet">
+                            <input
+                              type="checkbox"
+                              className="accent-current"
+                              checked={Boolean(l.joker)}
+                              onChange={(e) => modifie(i, { joker: e.target.checked })}
+                            />
+                            Jouer son Joker
+                          </label>
+                        )}
+                        {jokerServi && (
+                          <span className="block text-[13px] leading-tight text-faint">
+                            Ni points ni flocons{apercu?.carte ? ' · sa carte attend la game suivante' : ''}
                           </span>
                         )}
                       </td>
@@ -536,7 +568,8 @@ function FenetreIA({ joueurs, active, ferme }: { joueurs: Joueur[]; active: bool
             {busy === 'validation' ? 'Enregistrement…' : '✓ Valider toute l’équipe'}
           </button>
           <p className="mt-2 text-center text-[13px] text-faint">
-            La carte active d’un joueur est comptée dans son score et sera consommée par cette game.
+            La carte active d’un joueur est comptée dans son score et sera consommée par cette game. Un joueur
+            qui garde un Joker peut faire ne pas compter la sienne.
           </p>
         </div>
       )}

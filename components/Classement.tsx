@@ -11,7 +11,7 @@ import { FicheCarte } from '@/components/FicheCarte';
 import { IconActivision } from '@/components/icons';
 import { flakesShort } from '@/components/ui';
 import { RARITY_ORDER } from '@/lib/domain/rules';
-import type { RankingRow } from '@/lib/services/league';
+import type { CarteDuClassement, RankingRow } from '@/lib/services/league';
 
 /**
  * Le classement, dans le langage visuel du hero.
@@ -78,7 +78,7 @@ function valeur(row: RankingRow, cle: Cle): number | string {
       return row.pseudo.toLowerCase();
     case 'carte':
       // les cartes se classent par rareté ; sans carte, tout en bas
-      return row.carte ? RARITY_ORDER[row.carte.rarity] + 1 : 0;
+      return row.carte ? RARITY_ORDER[row.carte.rarity] + 1 : row.joker ? RARITY_ORDER[row.joker.rarity] + 1 : 0;
     case 'points':
       return row.totals.totalScore;
     case 'games':
@@ -120,8 +120,12 @@ export function Classement({
 }) {
   const [tri, setTri] = useState<{ cle: Cle; desc: boolean }>({ cle: 'rang', desc: false });
   const [recherche, setRecherche] = useState('');
-  /** La ligne dont on regarde la carte en grand, s'il y en a une. */
-  const [fiche, setFiche] = useState<RankingRow | null>(null);
+  /** La carte qu'on regarde en grand, s'il y en a une : la carte active, ou le Joker. */
+  const [fiche, setFiche] = useState<{ pseudo: string; carte: CarteDuClassement; joker: boolean } | null>(null);
+  const ouvre = (row: RankingRow, quoi: 'carte' | 'joker') => {
+    const carte = row[quoi];
+    if (carte) setFiche({ pseudo: row.pseudo, carte, joker: quoi === 'joker' });
+  };
 
   const visibles = useMemo(() => {
     const q = plat(recherche.trim());
@@ -147,13 +151,21 @@ export function Classement({
     <section className="glass tableau-verre @container relative" aria-label="Classement général">
       <SnowCap radius="var(--r-lg)" seed="classement" />
 
-      {fiche?.carte && (
+      {fiche && (
         <FicheCarte
           carte={fiche.carte}
           legende={
-            <>
-              Carte active de <strong className="text-ink">{fiche.pseudo}</strong> : elle tombera sur sa prochaine game.
-            </>
+            fiche.joker ? (
+              <>
+                Joker de <strong className="text-ink">{fiche.pseudo}</strong> : à la saisie d’une de ses games, la
+                modération pourra la faire ne pas compter.
+              </>
+            ) : (
+              <>
+                Carte active de <strong className="text-ink">{fiche.pseudo}</strong> : elle tombera sur sa prochaine
+                game.
+              </>
+            )
           }
           onClose={() => setFiche(null)}
         />
@@ -242,7 +254,7 @@ export function Classement({
                   {boostersPerso && <CompteurPerso row={row} moderation={boostersPerso} />}
                 </td>
                 <td>
-                  <CarteActive row={row} onOuvrir={() => setFiche(row)} />
+                  <CarteActive row={row} onOuvrir={(quoi) => ouvre(row, quoi)} />
                 </td>
                 <td className="num text-right text-ink">
                   {/* La taille sur le chiffre, pas sur la cellule : la règle des
@@ -286,9 +298,9 @@ export function Classement({
                 <span className="min-w-0 flex-1">
                   <Pseudo row={row} />
                   {boostersPerso && <CompteurPerso row={row} moderation={boostersPerso} />}
-                  {row.carte && (
+                  {(row.carte || row.joker) && (
                     <span className="mt-1.5 block">
-                      <CarteActive row={row} onOuvrir={() => setFiche(row)} />
+                      <CarteActive row={row} onOuvrir={(quoi) => ouvre(row, quoi)} />
                     </span>
                   )}
                 </span>
@@ -365,6 +377,7 @@ function Pseudo({ row }: { row: RankingRow }) {
             Immunisé
           </span>
         )}
+
       </span>
       {row.activisionId && (
         <span className="pseudo-jeu" title="Pseudo Warzone (identifiant Activision)">
@@ -459,13 +472,16 @@ function CompteurPerso({ row, moderation }: { row: RankingRow; moderation: Boost
  * sa silhouette et à sa couleur avant de lire quoi que ce soit. À côté, le nom
  * et l'effet en clair. Un clic l'ouvre en grand.
  */
-function CarteActive({ row, onOuvrir }: { row: RankingRow; onOuvrir: () => void }) {
-  if (!row.carte) return <span className="text-[13px] text-faint">—</span>;
-  const c = row.carte;
+function CarteActive({ row, onOuvrir }: { row: RankingRow; onOuvrir: (quoi: 'carte' | 'joker') => void }) {
+  // Une carte active et un Joker : les deux, l'une sur l'autre.
+  if (row.carte && row.joker) return <PileDeCartes carte={row.carte} joker={row.joker} onOuvrir={onOuvrir} />;
+  const quoi = row.carte ? 'carte' : 'joker';
+  const c = row.carte ?? row.joker;
+  if (!c) return <span className="text-[13px] text-faint">—</span>;
   return (
     <button
       type="button"
-      onClick={onOuvrir}
+      onClick={() => onOuvrir(quoi)}
       className="tableau-verre-carte-active flex min-w-0 items-center gap-3 text-left"
       title={`${c.nom} — ${c.description}`}
       aria-label={`Voir la carte ${c.nom}`}
@@ -486,6 +502,59 @@ function CarteActive({ row, onOuvrir }: { row: RankingRow; onOuvrir: () => void 
         <span className="block text-[13px] text-muted @min-[100rem]:text-[14px]">{c.resume}</span>
       </span>
     </button>
+  );
+}
+
+/**
+ * La carte active et le Joker, l'une sur l'autre, un peu décalées : on voit
+ * d'un coup d'œil qu'il en a deux, et chacune s'ouvre d'un clic.
+ */
+function PileDeCartes({
+  carte,
+  joker,
+  onOuvrir,
+}: {
+  carte: CarteDuClassement;
+  joker: CarteDuClassement;
+  onOuvrir: (quoi: 'carte' | 'joker') => void;
+}) {
+  return (
+    <span className="flex min-w-0 items-center gap-3">
+      <span className="pile-cartes shrink-0">
+        {(
+          [
+            ['carte', carte],
+            ['joker', joker],
+          ] as const
+        ).map(([quoi, c]) => (
+          <button
+            key={quoi}
+            type="button"
+            onClick={() => onOuvrir(quoi)}
+            className="pile-carte w-[46px] @min-[100rem]:w-[56px]"
+            data-quoi={quoi}
+            title={`${c.nom} — ${c.description}`}
+            aria-label={`Voir la carte ${c.nom}`}
+          >
+            <CardFrame
+              cardId={c.cardId}
+              name={c.nom}
+              description={c.description}
+              rarity={c.rarity}
+              glyph={c.glyph}
+              nature={c.nature}
+            />
+          </button>
+        ))}
+      </span>
+      <span className="min-w-0 leading-tight">
+        <span className="block truncate text-[14px] font-bold text-ink @min-[100rem]:text-[16px]">{carte.nom}</span>
+        <span className="block truncate text-[13px] text-ink-2 @min-[100rem]:text-[15px]">{carte.action}</span>
+        <span className="block truncate text-[13px] font-semibold text-violet @min-[100rem]:text-[14px]">
+          + {joker.nom}
+        </span>
+      </span>
+    </span>
   );
 }
 

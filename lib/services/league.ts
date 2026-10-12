@@ -16,7 +16,7 @@ import { getStore } from '@/lib/db/store';
 import { rank, scoreGame, totalsFor, type PlayerTotals, type ScoredGame } from '@/lib/domain/scoring';
 import { getCard, momentDe, resumeEffet } from '@/lib/domain/catalog';
 import { SEASON } from '@/lib/domain/rules';
-import type { Rarity } from '@/lib/domain/types';
+import type { CardDefinition, Rarity } from '@/lib/domain/types';
 
 /** Réécrit le score d'une game à partir de ses composantes. À appeler après toute modification. */
 export function recomputeGame(db: Database, game: Game): Game {
@@ -79,6 +79,20 @@ export function totalsOf(db: Database, playerId: string): PlayerTotals {
   return totalsFor(gamesOf(db, playerId).map(toScored));
 }
 
+/** Une carte, telle que le classement la montre. */
+export interface CarteDuClassement {
+  cardId: string;
+  nom: string;
+  glyph: string;
+  rarity: Rarity;
+  /** L'intitulé de l'action : « Multiplicateur game », « Joker »… */
+  action: string;
+  description: string;
+  resume: string;
+  nature: 'bonus' | 'malus';
+  power: number;
+}
+
 export interface RankingRow {
   rank: number;
   id: string;
@@ -92,19 +106,10 @@ export interface RankingRow {
   totals: PlayerTotals;
   /** Vrai tant que son immunité court : aucun malus ne touche ses games. */
   immunise: boolean;
+  /** Le Joker qu'il garde, s'il en a un : une de ses games pourra ne pas compter. */
+  joker: CarteDuClassement | null;
   /** La carte active : celle qui tombera sur sa prochaine game. */
-  carte: {
-    cardId: string;
-    nom: string;
-    glyph: string;
-    rarity: Rarity;
-    /** L'intitulé de l'action : « Multiplicateur game », « Joker »… */
-    action: string;
-    description: string;
-    resume: string;
-    nature: 'bonus' | 'malus';
-    power: number;
-  } | null;
+  carte: CarteDuClassement | null;
   /** Vrai pour les places qualificatives pour la finale. */
   finalist: boolean;
 }
@@ -130,6 +135,7 @@ export function classementDe(db: Database): RankingRow[] {
     snowflakes: player.snowflakes,
     totals,
     immunise: estImmunise(player),
+    joker: jokerDuJoueur(db, player.id),
     ...carteActive(db, player.id),
     finalist: position <= SEASON.finalistCount,
   }));
@@ -138,6 +144,34 @@ export function classementDe(db: Database): RankingRow[] {
 /** Classement complet, prêt à l'affichage. */
 export async function getRanking(): Promise<RankingRow[]> {
   return getStore().read((db) => classementDe(db));
+}
+
+/** Une carte du catalogue, telle que le classement la montre. */
+function vueCarte(card: CardDefinition): CarteDuClassement {
+  return {
+    cardId: card.id,
+    nom: card.name,
+    glyph: card.glyph,
+    rarity: card.rarity,
+    action: card.subtitle,
+    description: card.description,
+    resume: resumeEffet(card.effect),
+    nature: card.nature,
+    power: card.power,
+  };
+}
+
+/**
+ * Le Joker qu'il garde, s'il en a un. Lu ici plutôt que par `jokerDe`, pour ne
+ * pas faire dépendre le classement des effets, qui dépendent déjà de lui.
+ */
+function jokerDuJoueur(db: Database, playerId: string): CarteDuClassement | null {
+  for (const c of db.cartesEnAttente) {
+    if (c.joueurId !== playerId || c.consommeeA !== null) continue;
+    const carte = getCard(c.cardId);
+    if (carte !== null && momentDe(carte.effect) === 'GARDEE') return vueCarte(carte);
+  }
+  return null;
 }
 
 /**
@@ -151,28 +185,19 @@ function carteActive(db: Database, playerId: string): Pick<RankingRow, 'carte'> 
   const attente = db.cartesEnAttente
     .filter((c) => c.joueurId === playerId && c.consommeeA === null)
     .sort((a, b) => a.creeA.localeCompare(b.creeA));
+  // Le Joker n'est pas une carte active : il ne tombe sur rien de lui-même,
+  // et se lit à part (`joker`).
+  const tombantes = attente.filter((c) => {
+    const carte = getCard(c.cardId);
+    return carte === null || momentDe(carte.effect) !== 'GARDEE';
+  });
   const premiere =
-    attente.find((c) => {
+    tombantes.find((c) => {
       const carte = getCard(c.cardId);
       return carte !== null && momentDe(carte.effect) === 'PROCHAINE';
-    }) ?? attente[0];
+    }) ?? tombantes[0];
   const card = premiere ? getCard(premiere.cardId) : null;
-  return {
-    carte:
-      premiere && card
-        ? {
-            cardId: card.id,
-            nom: card.name,
-            glyph: card.glyph,
-            rarity: card.rarity,
-            action: card.subtitle,
-            description: card.description,
-            resume: resumeEffet(card.effect),
-            nature: card.nature,
-            power: card.power,
-          }
-        : null,
-  };
+  return { carte: premiere && card ? vueCarte(card) : null };
 }
 
 export interface LeagueOverview {

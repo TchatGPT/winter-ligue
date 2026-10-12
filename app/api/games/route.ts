@@ -6,9 +6,10 @@ import { fail, guard, ok } from '@/lib/api/respond';
 import { deleteGameSchema, gameSchema, updateGameSchema } from '@/lib/api/schemas';
 import type { Game } from '@/lib/db/entities';
 import { getStore, newId } from '@/lib/db/store';
+import { getCard } from '@/lib/domain/catalog';
 import { rewardForGame } from '@/lib/domain/economy';
 import { LIMITS } from '@/lib/security/ratelimit';
-import { appliqueCartesEnAttente, regleCartesSansAttendre } from '@/lib/services/effects';
+import { appliqueCartesEnAttente, jokerDe, regleCartesSansAttendre, utiliseJoker } from '@/lib/services/effects';
 import { gamesComptees, limiteDe, recomputeGame } from '@/lib/services/league';
 import { audit, credit } from '@/lib/services/ledger';
 import { verifieFinisseur } from '@/lib/services/packs';
@@ -31,6 +32,10 @@ export const dynamic = 'force-dynamic';
  *
  * Un membre de la modération qui joue peut saisir ses propres games : la
  * capture fait foi, le score se calcule ici, et le journal garde qui a saisi.
+ *
+ * Le Joker : si le joueur en garde un, la modération peut le servir sur cette
+ * game. Elle est enregistrée, passée — ni points, ni flocons, ni carte active,
+ * qui attend la game suivante — et le Joker est consommé.
  */
 export async function POST(request: Request): Promise<NextResponse> {
   const g = await guard(request, {
@@ -49,6 +54,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       if (estLaStreameuse(player, chaineDeLaLigue())) return { error: 'STREAMEUSE' as const };
 
       if (gamesComptees(db, player.id) >= limiteDe(db, player)) return { error: 'LIMITE' as const };
+      if (g.body.joker && !jokerDe(db, player.id)) return { error: 'JOKER' as const };
 
       const now = new Date().toISOString();
       const game: Game = {
@@ -65,6 +71,28 @@ export async function POST(request: Request): Promise<NextResponse> {
         applied: [],
       };
       db.games.push(game);
+
+      if (g.body.joker) {
+        // Le Joker : la game reste visible, mais ne compte pas. Rien d'autre ne
+        // se règle dessus.
+        game.skipped = true;
+        recomputeGame(db, game);
+        const joker = utiliseJoker(db, game)!;
+        audit(
+          db,
+          g.session?.sub ?? 'admin',
+          'GAME_JOKER',
+          player.id,
+          `${game.kills} kills — Joker joué : la game ne compte pas`,
+        );
+        return {
+          game,
+          reward: rewardForGame(0, null),
+          payout: 0,
+          cartes: [joker],
+          finisseur: false,
+        };
+      }
       recomputeGame(db, game);
 
       // La carte active de ce joueur tombe maintenant, et disparaît.
@@ -103,6 +131,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       if (result.error === 'STREAMEUSE') {
         return fail('CONFLIT', 'La streameuse ne joue pas dans la ligue : aucune game ne lui est attribuée.');
       }
+      if (result.error === 'JOKER') return fail('CONFLIT', 'Ce joueur n’a pas de Joker à jouer.');
       return result.error === 'JOUEUR'
         ? fail('INTROUVABLE', 'Joueur introuvable.')
         : fail('CONFLIT', 'Ce joueur a atteint sa limite de games pour la saison.');
@@ -133,6 +162,11 @@ export async function PATCH(request: Request): Promise<NextResponse> {
     const game = db.games.find((x) => x.id === g.body.gameId);
     if (!game) return null;
     if (g.body.skipped === false && game.skipped) {
+      // Une game qu'un Joker a annulée reste annulée : elle n'a rapporté ni
+      // flocons ni carte, la rétablir la ferait compter à moitié.
+      if (db.cartesEnAttente.some((c) => c.gameId === game.id && getCard(c.cardId)?.effect.kind === 'joker')) {
+        return 'JOKER' as const;
+      }
       const joueur = db.players.find((p) => p.id === game.playerId);
       if (joueur && gamesComptees(db, joueur.id) >= limiteDe(db, joueur)) return 'LIMITE' as const;
     }
@@ -144,6 +178,7 @@ export async function PATCH(request: Request): Promise<NextResponse> {
   });
 
   if (!updated) return fail('INTROUVABLE', 'Game introuvable.');
+  if (updated === 'JOKER') return fail('CONFLIT', 'Cette game a été annulée par un Joker : elle ne peut pas compter.');
   if (updated === 'LIMITE') return fail('CONFLIT', 'Ce joueur a déjà toutes ses games : celle-ci ne peut pas compter.');
   return ok(updated);
 }

@@ -363,9 +363,12 @@ export function Regles({ maxGames, packs }: { maxGames: number; packs: PackDefin
                   { titre: 'Sur ta prochaine game', texte: 'Le plus souvent. Une seule carte par game.' },
                   {
                     titre: 'Sur une game déjà jouée',
-                    texte: '« Pire game ×2 », « Meilleure game ×1,5 »…',
+                    texte: '« Fige ta meilleure game » : plus aucune carte ne la touche.',
                   },
-                  { titre: 'Tout de suite', texte: 'Les flocons, la game supplémentaire, l’immunité.' },
+                  {
+                    titre: 'Quand tu veux',
+                    texte: 'Le Joker : tu le gardes, et une de tes games ne compte pas. Un seul à la fois.',
+                  },
                 ]}
               />
             </Encart>

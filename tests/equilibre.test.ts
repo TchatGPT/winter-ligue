@@ -5,7 +5,13 @@ import { CARDS, cardsOfRarity, getCard, impactMax, momentDe, PACKS } from '@/lib
 import { GAME_LIMITS } from '@/lib/domain/rules';
 import { scoreGame } from '@/lib/domain/scoring';
 import { RARITIES, type CardEffect, type Placement } from '@/lib/domain/types';
-import { appliqueCartesEnAttente, gamesSansCarte, regleCartesSansAttendre } from '@/lib/services/effects';
+import {
+  appliqueCartesEnAttente,
+  gamesSansCarte,
+  jokerDe,
+  regleCartesSansAttendre,
+  utiliseJoker,
+} from '@/lib/services/effects';
 
 // Le catalogue n'a plus qu'une carte par rareté : les cartes retirées restent
 // trouvables par `getCard`, pour exercer chaque genre d'effet.
@@ -50,6 +56,57 @@ describe('les cartes sans plafond de points', () => {
       const e = card.effect;
       if ('cap' in e && e.cap !== undefined) expect(e.cap).toBeGreaterThan(0);
     }
+  });
+});
+
+describe('le Joker', () => {
+  it('se garde : ni une ouverture ni une game ne le consomment', () => {
+    const db = base('a');
+    pose(db, 'a', 'joker-givre', 1);
+    regleCartesSansAttendre(db, 'a');
+    const g = game(db, 'a', 7, 2);
+    const r = appliqueCartesEnAttente(db, g);
+    regleCartesSansAttendre(db, 'a');
+    expect(r.cartes).toHaveLength(0);
+    expect(g.score).toBe(7 + 15);
+    expect(jokerDe(db, 'a')?.cardId).toBe('joker-givre');
+  });
+
+  it('un seul à la fois : un second, tiré pendant qu’il en garde un, ne fait rien', () => {
+    const db = base('a');
+    pose(db, 'a', 'joker-givre', 1);
+    pose(db, 'a', 'joker-givre', 2);
+    regleCartesSansAttendre(db, 'a');
+    const jokers = db.cartesEnAttente.filter((c) => c.cardId === 'joker-givre');
+    expect(jokers[0].consommeeA).toBeNull();
+    expect(jokers[1].consommeeA).not.toBeNull();
+    expect(jokers[1].resultat).toMatch(/déjà un Joker/);
+    // Une fois le premier joué, on peut en retirer un.
+    utiliseJoker(db, game(db, 'a', 3));
+    expect(jokerDe(db, 'a')).toBeNull();
+    pose(db, 'a', 'joker-givre', 3);
+    regleCartesSansAttendre(db, 'a');
+    expect(jokerDe(db, 'a')).not.toBeNull();
+  });
+
+  it('joué, il se pose sur la game et laisse la carte active pour la suivante', () => {
+    const db = base('a');
+    pose(db, 'a', 'joker-givre', 1);
+    pose(db, 'a', 'percee', 2);
+    const annulee = game(db, 'a', 2);
+    annulee.skipped = true;
+    const joue = utiliseJoker(db, annulee);
+    expect(joue?.gameId).toBe(annulee.id);
+    expect(jokerDe(db, 'a')).toBeNull();
+    expect(enAttente(db, 'a').map((c) => c.cardId)).toEqual(['percee']);
+    const suivante = game(db, 'a', 5);
+    appliqueCartesEnAttente(db, suivante);
+    expect(suivante.score).toBe(5 + 8);
+  });
+
+  it('sans Joker, rien à jouer', () => {
+    const db = base('a');
+    expect(utiliseJoker(db, game(db, 'a', 4))).toBeNull();
   });
 });
 

@@ -483,6 +483,14 @@ export function regleCartesSansAttendre(db: Database, joueurId: string, now = ne
     if (!card) continue;
     const moment = momentDe(card.effect);
     if (moment === 'PROCHAINE') continue;
+    if (moment === 'GARDEE') {
+      // Un seul Joker à la fois : le plus ancien est gardé, un autre ne fait
+      // rien. Il est consommé tout de suite, pour qu'on lise pourquoi.
+      if (jokerDe(db, joueurId) !== pendante) {
+        faites.push(consomme(pendante, card, sansEffet('déjà un Joker en main : celui-ci ne fait rien'), now));
+      }
+      continue;
+    }
 
     const reglement =
       moment === 'INSTANT'
@@ -514,6 +522,31 @@ export function regleCartesSansAttendre(db: Database, joueurId: string, now = ne
   }
 
   return faites;
+}
+
+/* -------------------------------- Le Joker ------------------------------- */
+
+/** Le Joker que garde ce joueur, s'il en a un : le plus ancien. */
+export function jokerDe(db: Database, joueurId: string): CarteEnAttente | null {
+  return (
+    enAttenteDe(db, joueurId).find((c) => {
+      const card = getCard(c.cardId);
+      return card !== null && momentDe(card.effect) === 'GARDEE';
+    }) ?? null
+  );
+}
+
+/**
+ * Sert le Joker de ce joueur sur cette game : elle ne compte pas, et le Joker
+ * est consommé. À l'appelant de passer la game (`skipped`) : ni points, ni
+ * flocons, ni carte active — celle-ci attend la game suivante. Rend `null`
+ * s'il n'a pas de Joker.
+ */
+export function utiliseJoker(db: Database, game: Game, now = new Date()): CarteAppliquee | null {
+  const joker = jokerDe(db, game.playerId);
+  const card = joker ? getCard(joker.cardId) : null;
+  if (!joker || !card) return null;
+  return consomme(joker, card, sansEffet('Joker joué : cette game ne compte pas', game.id), now);
 }
 
 /** La game où un bonus rapporte le plus ; à égalité, la plus récente. */

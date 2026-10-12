@@ -42,6 +42,7 @@ const MOMENTS: Record<MomentCarte, string> = {
   PROCHAINE: 'Prochaine game',
   JOUEE: 'Game déjà jouée',
   INSTANT: 'Tout de suite',
+  GARDEE: 'Gardée, à jouer au choix',
 };
 
 export function CartesParRarete({ cartes }: { cartes: CarteSaison[] }) {

@@ -83,6 +83,11 @@ export const gameSchema = z.object({
    */
   meilleurKills: z.number().int().min(GAME_LIMITS.minKills).max(GAME_LIMITS.maxKills).optional().nullable(),
   /**
+   * La modération sert le Joker du joueur : la game ne compte pas. Le serveur
+   * vérifie qu'il en a un ; sinon, la saisie est refusée.
+   */
+  joker: z.boolean().optional(),
+  /**
    * Ni multiplicateur ni bonus ne sont acceptés du client : ils ne peuvent
    * venir que d'une carte de pack, résolue côté serveur à la saisie.
    */

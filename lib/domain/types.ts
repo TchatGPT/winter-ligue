@@ -107,10 +107,20 @@ export type CardEffect =
   /** « Game supplémentaire » : un créneau de game de plus, hors limite. */
   | { kind: 'game_supplementaire' }
   /** « Immunité » : pendant N heures, aucun malus ne touche ses games. */
-  | { kind: 'immunite'; heures: number };
+  | { kind: 'immunite'; heures: number }
+  /* -------------------------------- Gardée -------------------------------- */
+  /**
+   * « Joker » : le joueur le garde, et la modération peut, à la saisie d'une de
+   * ses games, la faire ne pas compter — le Joker est alors consommé. Un seul
+   * à la fois : un second, tiré pendant qu'il en garde un, ne fait rien.
+   */
+  | { kind: 'joker' };
 
-/** Quand une carte se joue. Voir {@link CardEffect}. */
-export type MomentCarte = 'PROCHAINE' | 'JOUEE' | 'INSTANT';
+/**
+ * Quand une carte se joue. Voir {@link CardEffect}. `GARDEE` : elle ne se joue
+ * pas d'elle-même, le joueur la garde jusqu'à ce qu'on s'en serve (le Joker).
+ */
+export type MomentCarte = 'PROCHAINE' | 'JOUEE' | 'INSTANT' | 'GARDEE';
 
 export interface CardDefinition {
   id: string;

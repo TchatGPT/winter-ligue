@@ -151,6 +151,20 @@ export const CARDS: readonly CardDefinition[] = [
     packs: ['perso', 'commu', 'finisseur', 'folie'],
     cible: 'HASARD',
   },
+  {
+    id: 'joker-givre',
+    name: 'Joker Givré',
+    subtitle: 'Joker',
+    rarity: 'R',
+    glyph: '🃏',
+    description:
+      'Garde-le : à la saisie d’une de tes games, la modération peut la faire ne pas compter. Un seul Joker à la fois.',
+    effect: { kind: 'joker' },
+    nature: 'bonus',
+    power: 40,
+    packs: ['perso'],
+    cible: 'HASARD',
+  },
   /* ============================== Ultra rare ============================ */
   {
     id: 'rempart-polaire',
@@ -234,6 +248,8 @@ export function momentDe(effect: CardEffect): MomentCarte {
     case 'game_supplementaire':
     case 'immunite':
       return 'INSTANT';
+    case 'joker':
+      return 'GARDEE';
     default:
       return 'PROCHAINE';
   }
@@ -274,6 +290,7 @@ export function impactMax(effect: CardEffect): number | null {
     case 'game_supplementaire':
     case 'immunite':
     case 'fige_meilleure':
+    case 'joker':
       return null;
   }
 }
@@ -320,6 +337,8 @@ export function resumeEffet(effect: CardEffect): string {
       return `immunité ${effect.heures} h`;
     case 'fige_meilleure':
       return 'meilleure game figée';
+    case 'joker':
+      return 'une game annulable';
   }
 }
 
