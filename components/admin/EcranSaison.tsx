@@ -26,7 +26,7 @@ export interface TwitchSubs {
 
 /** Ce que fait chaque abonnement, en clair. */
 const ABONNEMENTS: Record<string, string> = {
-  'channel.chat.notification': 'Les subs, resubs et subs offerts (sans les Prime)',
+  'channel.chat.notification': 'Les subs offerts et les subs T3',
   'channel.moderator.add': 'Un modo ajouté sur Twitch le devient ici',
   'channel.moderator.remove': 'Un modo retiré sur Twitch ne l’est plus ici',
 };
@@ -112,7 +112,7 @@ export function EcranSaison({
         titre={branche ? 'Twitch est branché' : 'Twitch n’est pas branché'}
         sousTitre={
           branche
-            ? 'Chaque sub payé arrive tout seul au compteur ; les subs Prime ne comptent pas. Les codes cadeaux s’annoncent dans le tchat.'
+            ? 'Les subs offerts par 5 ou plus et les subs T3 arrivent tout seuls au compteur ; rien d’autre ne compte. Les codes cadeaux s’annoncent dans le tchat.'
             : 'Sans ce branchement, Twitch ne dit pas quels subs sont Prime : ils comptent comme des subs payés.'
         }
         actions={

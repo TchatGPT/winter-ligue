@@ -68,26 +68,31 @@ describe('les subs de Twitch, au compteur de la saison', () => {
     expect(db.subsTwitch[0]).toMatchObject({ genre: 'cadeau', twitchId: 'tw-x', pseudo: 'X', nombre: 5, niveau: 1 });
   });
 
-  it('comptent chacun une seule fois, resubs compris, sans les Prime', () => {
+  it('ne comptent que les T3 et les cadeaux de cinq ou plus, chacun une seule fois', () => {
     const db = base();
-    const nouveau = annonce('sub', sub('1000'), 'tw-x');
+    const nouveau = annonce('sub', sub('3000'), 'tw-x');
     ajouteSubsTwitch(db, nouveau);
     ajouteSubsTwitch(db, nouveau); // renvoyé par Twitch
+    ajouteSubsTwitch(db, annonce('resub', resub('3000'), 'tw-x'));
+    // Rien de ceci ne compte : T1, T2, Prime, un cadeau de trois.
+    ajouteSubsTwitch(db, annonce('sub', sub('1000'), 'tw-x'));
     ajouteSubsTwitch(db, annonce('resub', resub('2000'), 'tw-x'));
     ajouteSubsTwitch(db, annonce('sub', sub('1000', true), 'tw-x'));
-    ajouteSubsTwitch(db, annonce('resub', resub('1000', true), 'tw-x'));
+    ajouteSubsTwitch(db, annonce('community_sub_gift', { id: 'cg', total: 3, sub_tier: '1000' }, 'tw-x'));
     expect(db.config.totalSubs).toBe(2);
     expect(db.subsTwitch.map((l) => l.genre)).toEqual(['sub', 'resub']);
   });
 
-  it('comptent encore par l’ancien branchement, tant que la streameuse n’a pas rebranché', () => {
+  it('comptent par l’ancien branchement avec la même règle, tant que la streameuse n’a pas rebranché', () => {
     const db = base();
-    ajouteSubsTwitch(db, {
-      id: 'ancien',
+    const ancien = (id: string, tier: string) => ({
+      id,
       type: 'channel.subscribe',
-      evenement: { user_id: 'tw-x', user_name: 'X', tier: '1000', is_gift: false },
+      evenement: { user_id: 'tw-x', user_name: 'X', tier, is_gift: false },
       maintenant: MAINTENANT,
     });
+    ajouteSubsTwitch(db, ancien('ancien-t1', '1000'));
+    ajouteSubsTwitch(db, ancien('ancien-t3', '3000'));
     expect(db.config.totalSubs).toBe(1);
   });
 });
@@ -107,11 +112,14 @@ describe('ce qu’un sub vaut à un joueur', () => {
     const db = base();
     ajouteSubsTwitch(db, annonce('community_sub_gift', { id: 'cg1', total: 10, sub_tier: '1000' }));
     expect(boostersPerso(db)).toHaveLength(2);
+    // Un cadeau de moins de cinq ne compte pas, ni ne s'additionne.
     ajouteSubsTwitch(db, annonce('community_sub_gift', { id: 'cg2', total: 3, sub_tier: '2000' }));
     expect(boostersPerso(db)).toHaveLength(2);
-    ajouteSubsTwitch(db, annonce('community_sub_gift', { id: 'cg3', total: 2, sub_tier: '1000' }));
+    ajouteSubsTwitch(db, annonce('community_sub_gift', { id: 'cg3', total: 7, sub_tier: '1000' }));
     expect(boostersPerso(db)).toHaveLength(3);
-    expect(joueur(db).subsOfferts).toBe(15);
+    ajouteSubsTwitch(db, annonce('community_sub_gift', { id: 'cg4', total: 5, sub_tier: '1000' }));
+    expect(boostersPerso(db)).toHaveLength(4);
+    expect(joueur(db).subsOfferts).toBe(22);
   });
 
   it('un sub T3 offert en vaut un chacun, sans compter dans les cinq', () => {
@@ -177,9 +185,11 @@ describe('le bilan des subs d’un joueur, pour sa fiche', () => {
     ajouteSubsTwitch(db, annonce('community_sub_gift', { id: 'cg1', total: 5, sub_tier: '1000' }));
     ajouteSubsTwitch(db, annonce('community_sub_gift', { id: 'cg2', total: 2, sub_tier: '3000' }));
     ajouteSubsTwitch(db, annonce('sub', sub('3000')));
+    ajouteSubsTwitch(db, annonce('resub', resub('3000')));
+    // Un resub T1 ne compte pas : il n'entre pas au bilan.
     ajouteSubsTwitch(db, annonce('resub', resub('1000')));
-    ajouteSubsTwitch(db, annonce('sub', sub('1000'), 'tw-x'));
-    expect(bilanDesSubs(db.subsTwitch, 'tw-joueur')).toEqual({ offerts: 7, niveau3: 3, siens: 2 });
+    ajouteSubsTwitch(db, annonce('sub', sub('3000'), 'tw-x'));
+    expect(bilanDesSubs(db.subsTwitch, 'tw-joueur')).toEqual({ offerts: 7, niveau3: 4, siens: 2 });
     expect(bilanDesSubs(db.subsTwitch, null)).toEqual({ offerts: 0, niveau3: 0, siens: 0 });
   });
 });

@@ -117,9 +117,11 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   du tchat (`channel.chat.notification`) — les seules qui disent si un sub est Prime —,
   et passent par `addSubs()`, comme la saisie de la modération. Un message ne compte
   qu'une fois : sa trace (`config.twitchVus`) s'écrit dans la même transaction que le
-  compteur. **Ce qui compte se décide dans `gesteDuMessage()`, nulle part ailleurs** : un
-  sub payé compte pour un, quel que soit son niveau — nouveau sub, resub partagé, sub
-  offert — ; les subs Prime ne comptent pas. Un T3, et cinq subs offerts (cumulés sur la
+  compteur. **Ce qui compte se décide dans `gesteDuMessage()`, nulle part ailleurs** : seuls
+  comptent les subs offerts par paquets d'au moins cinq (chacun compte pour un) et les
+  subs T3 (`compteSub`, décidé le 12/10/2026) ; un sub T1 ou T2 pris pour soi, un cadeau
+  de moins de cinq subs et les Prime ne comptent pas. Le registre se relit avec la même
+  règle. Un T3, et cinq subs offerts (cumulés sur la
   saison dans `subsOfferts`), valent en plus un Booster Perso à qui les paie : il est mis
   en file d'office s'il a un compte (`crediteBoostersPerso`), sinon à sa première
   connexion, d'après le registre (`rattacheCompteTwitch`). Payés par un non-inscrit, ils

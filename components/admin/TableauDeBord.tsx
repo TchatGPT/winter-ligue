@@ -553,7 +553,7 @@ export function TableauDeBord({
         ton="glace"
         surtitre="En direct de la chaîne"
         titre="Les subs"
-        sousTitre="Chaque sub payé fait avancer le compteur ; les subs Prime ne comptent pas."
+        sousTitre="Seuls comptent les subs offerts par 5 ou plus, et les subs T3."
         actions={
           <Recherche
             valeur={recherche}

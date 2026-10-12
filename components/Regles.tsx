@@ -594,7 +594,7 @@ export function Regles({ maxGames, packs }: { maxGames: number; packs: PackDefin
           droite={
             <Encart titre="Le Booster Perso">
               <p>
-                <b>1 sub T3</b>, ou <b>{PACKS_REGLES.persoTousLes} subs offerts</b> au fil de la saison : un Booster
+                <b>1 sub T3</b>, ou <b>{PACKS_REGLES.persoTousLes} subs offerts</b> (par paquets de 5 ou plus, cumulés sur la saison) : un Booster
                 Perso pour qui paie. S’il ne joue pas dans la ligue, la modération le donne à un joueur.
               </p>
             </Encart>

@@ -318,7 +318,7 @@ export function PackOpening({
           {[
             {
               titre: 'Un booster t’est dû',
-              texte: `Un sub T3, ou ${PACKS_REGLES.persoTousLes} subs offerts : un Booster Perso pour toi. Tous les ${palierDe('commu')} subs de la saison, un Booster Commu pour ceux que le sort désigne ; tous les ${palierDe('folie')}, un Booster Folie. Ta dernière game de la saison : le Booster Finisseur.`,
+              texte: `Un sub T3, ou ${PACKS_REGLES.persoTousLes} subs offerts : un Booster Perso pour toi. Tous les ${palierDe('commu')} subs comptés de la saison, un Booster Commu pour ceux que le sort désigne ; tous les ${palierDe('folie')}, un Booster Folie. Ta dernière game de la saison : le Booster Finisseur.`,
               detail: <CeQuiCompte />,
               icone: <GlaceSachet className="h-full w-full" />,
             },

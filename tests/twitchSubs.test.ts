@@ -45,20 +45,18 @@ const vaut = (evenement: Record<string, unknown>) => gesteDuMessage(TYPE_TCHAT, 
 const compte = (evenement: Record<string, unknown>) => vaut(evenement)?.nombre ?? 0;
 
 describe('ce que vaut une annonce du tchat', () => {
-  it('compte un nouveau sub pour un, quel que soit son niveau', () => {
-    for (const [tier, niveau] of [
-      ['1000', 1],
-      ['2000', 2],
-      ['3000', 3],
-    ] as const) {
-      expect(vaut(annonce('sub', { sub_tier: tier, is_prime: false, duration_months: 1 }))).toEqual({
-        genre: 'sub',
-        nombre: 1,
-        niveau,
-        twitchId: 'tw-alex',
-        pseudo: 'Alex',
-        anonyme: false,
-      });
+  it('compte un nouveau sub T3 pour un, et pas un T1 ni un T2', () => {
+    expect(vaut(annonce('sub', { sub_tier: '3000', is_prime: false, duration_months: 1 }))).toEqual({
+      genre: 'sub',
+      nombre: 1,
+      niveau: 3,
+      twitchId: 'tw-alex',
+      pseudo: 'Alex',
+      anonyme: false,
+    });
+    for (const tier of ['1000', '2000']) {
+      expect(vaut(annonce('sub', { sub_tier: tier, is_prime: false, duration_months: 1 }))).toBeNull();
+      expect(vaut(annonce('resub', { sub_tier: tier, is_prime: false, is_gift: false }))).toBeNull();
     }
   });
 
@@ -98,28 +96,26 @@ describe('ce que vaut une annonce du tchat', () => {
     expect(vaut(annonces[0])).toMatchObject({ genre: 'cadeau', nombre: 5, twitchId: 'tw-alex' });
   });
 
-  it('compte un sub offert à quelqu’un en particulier', () => {
-    expect(
-      vaut(
-        annonce('sub_gift', {
-          sub_tier: '2000',
-          duration_months: 1,
-          recipient_user_id: 'tw-r',
-          community_gift_id: null,
-        }),
-      ),
-    ).toMatchObject({ genre: 'cadeau', nombre: 1, niveau: 2 });
+  it('ne compte pas un sub offert seul, ni un cadeau de moins de cinq — sauf en T3', () => {
+    const seul = (tier: string) =>
+      vaut(annonce('sub_gift', { sub_tier: tier, duration_months: 1, recipient_user_id: 'tw-r', community_gift_id: null }));
+    expect(seul('2000')).toBeNull();
+    expect(seul('3000')).toMatchObject({ genre: 'cadeau', nombre: 1, niveau: 3 });
+    const masse = (total: number) => vaut(annonce('community_sub_gift', { id: 'cg', total, sub_tier: '1000' }));
+    expect(masse(4)).toBeNull();
+    expect(masse(5)).toMatchObject({ genre: 'cadeau', nombre: 5 });
+    expect(masse(10)).toMatchObject({ nombre: 10 });
   });
 
   it('compte un cadeau anonyme, sans nommer personne', () => {
     const geste = vaut(
       annonce(
         'community_sub_gift',
-        { id: 'cg2', total: 3, sub_tier: '1000', cumulative_total: null },
+        { id: 'cg2', total: 5, sub_tier: '1000', cumulative_total: null },
         { chatter_user_id: '274598607', chatter_user_name: 'AnAnonymousGifter', chatter_is_anonymous: true },
       ),
     );
-    expect(geste).toMatchObject({ genre: 'cadeau', nombre: 3, twitchId: null, pseudo: 'Anonyme', anonyme: true });
+    expect(geste).toMatchObject({ genre: 'cadeau', nombre: 5, twitchId: null, pseudo: 'Anonyme', anonyme: true });
   });
 
   it('borne un cadeau de masse et refuse un nombre farfelu', () => {
@@ -133,11 +129,11 @@ describe('ce que vaut une annonce du tchat', () => {
 
   it('ignore les subs d’une autre chaîne, en tchat partagé', () => {
     const ailleurs = { source_broadcaster_user_id: 'tw-autre-chaine' };
-    expect(vaut(annonce('sub', { sub_tier: '1000', is_prime: false }, ailleurs))).toBeNull();
-    expect(vaut(annonce('shared_chat_sub', { sub_tier: '1000', is_prime: false }, ailleurs))).toBeNull();
+    expect(vaut(annonce('sub', { sub_tier: '3000', is_prime: false }, ailleurs))).toBeNull();
+    expect(vaut(annonce('shared_chat_sub', { sub_tier: '3000', is_prime: false }, ailleurs))).toBeNull();
     // Venue de la chaîne elle-même, l'annonce compte.
     expect(
-      compte(annonce('sub', { sub_tier: '1000', is_prime: false }, { source_broadcaster_user_id: 'tw-chaine' })),
+      compte(annonce('sub', { sub_tier: '3000', is_prime: false }, { source_broadcaster_user_id: 'tw-chaine' })),
     ).toBe(1);
   });
 
@@ -162,7 +158,7 @@ describe('ce que vaut une annonce du tchat', () => {
 });
 
 describe('l’ancien branchement, jusqu’à ce que la streameuse rebranche', () => {
-  it('compte encore un nouveau sub et un cadeau, comme avant', () => {
+  it('compte un T3 et un cadeau de cinq, avec la même règle', () => {
     expect(
       gesteDuMessage('channel.subscribe', { user_id: 'a', user_name: 'A', tier: '3000', is_gift: false }),
     ).toMatchObject({
@@ -177,10 +173,13 @@ describe('l’ancien branchement, jusqu’à ce que la streameuse rebranche', ()
       genre: 'cadeau',
       nombre: 5,
     });
-    expect(gesteDuMessage('channel.subscription.gift', { total: 3, is_anonymous: true })).toMatchObject({
+    expect(gesteDuMessage('channel.subscription.gift', { total: 5, is_anonymous: true })).toMatchObject({
       twitchId: null,
       pseudo: 'Anonyme',
     });
+    // Un T1 pris pour soi, un cadeau de trois : rien.
+    expect(gesteDuMessage('channel.subscribe', { user_id: 'a', tier: '1000', is_gift: false })).toBeNull();
+    expect(gesteDuMessage('channel.subscription.gift', { user_id: 'a', total: 3, tier: '1000' })).toBeNull();
     expect(gesteDuMessage('channel.subscription.message', { user_id: 'a', tier: '1000' })).toBeNull();
   });
 });
@@ -192,7 +191,6 @@ describe('le niveau 3', () => {
     expect(boostersDuGeste(t3)).toBe(1);
     // Trois T3 offerts d'un coup : trois Boosters Perso pour celui qui offre.
     expect(boostersDuGeste(vaut(annonce('community_sub_gift', { id: 'cg', total: 3, sub_tier: '3000' }))!)).toBe(3);
-    expect(boostersDuGeste(vaut(annonce('sub', { sub_tier: '1000', is_prime: false }))!)).toBe(0);
     expect(boostersDuGeste({ niveau: 3, nombre: 2, anonyme: true })).toBe(0);
   });
 
@@ -200,8 +198,8 @@ describe('le niveau 3', () => {
     expect(recitDuGeste(vaut(annonce('sub', { sub_tier: '3000', is_prime: false }))!)).toBe(
       'sub T3 de Alex · vaut 1 Booster Perso',
     );
-    expect(recitDuGeste(vaut(annonce('resub', { sub_tier: '1000', is_prime: false, is_gift: false }))!)).toBe(
-      'resub T1 de Alex',
+    expect(recitDuGeste(vaut(annonce('resub', { sub_tier: '3000', is_prime: false, is_gift: false }))!)).toBe(
+      'resub T3 de Alex · vaut 1 Booster Perso',
     );
     expect(
       recitDuGeste({ genre: 'cadeau', nombre: 5, niveau: 1, twitchId: null, pseudo: 'Anonyme', anonyme: true }),
@@ -313,18 +311,8 @@ describe('le registre des subs', () => {
         premier: '2026-12-01T20:00:00.000Z',
         dernier: '2026-12-02T20:00:00.000Z',
       },
-      // À Boosters égaux, qui a payé le plus de subs passe devant.
-      {
-        twitchId: 'z',
-        pseudo: 'Zoé',
-        offerts: 4,
-        niveau3: 2,
-        boosters: 2,
-        donnes: 0,
-        restants: 2,
-        premier: '2026-12-02T08:00:00.000Z',
-        dernier: '2026-12-02T09:00:00.000Z',
-      },
+      // À Boosters et subs égaux, le plus récent passe devant. Les quatre
+      // subs offerts de Zoé ne comptent pas : moins de cinq d'un coup.
       {
         twitchId: 'y',
         pseudo: 'Yann',
@@ -335,6 +323,17 @@ describe('le registre des subs', () => {
         restants: 2,
         premier: '2026-12-01T22:00:00.000Z',
         dernier: '2026-12-02T11:00:00.000Z',
+      },
+      {
+        twitchId: 'z',
+        pseudo: 'Zoé',
+        offerts: 0,
+        niveau3: 2,
+        boosters: 2,
+        donnes: 0,
+        restants: 2,
+        premier: '2026-12-02T08:00:00.000Z',
+        dernier: '2026-12-02T08:00:00.000Z',
       },
     ]);
   });
@@ -358,17 +357,17 @@ describe('le registre des subs', () => {
     });
     const registre = [
       // Dans le désordre : c'est l'heure qui compte.
-      ligne('x3', 12, 'cadeau', 'x', 4, 1),
-      ligne('x1', 10, 'cadeau', 'x', 3, 1),
-      ligne('x2', 11, 'cadeau', 'x', 3, 2),
+      ligne('x3', 12, 'cadeau', 'x', 3, 1),
+      ligne('x1', 10, 'cadeau', 'x', 5, 1),
+      ligne('x2', 11, 'cadeau', 'x', 7, 2),
       ligne('y1', 10, 'resub', 'y', 1, 3),
       ligne('y2', 11, 'cadeau', 'y', 2, 3),
       ligne('z1', 10, 'sub', 'z', 1, 1),
       ligne('a1', 10, 'cadeau', null, 50, 1),
     ];
     const parLigne = boostersParLigne(registre);
-    // 3 puis 3 : le palier de cinq tombe sur la deuxième annonce ; 4 de plus font 10.
-    expect(Object.fromEntries(parLigne)).toEqual({ x1: 0, x2: 1, x3: 1, y1: 1, y2: 2, z1: 0, a1: 0 });
+    // 5 puis 7 : un booster chacune (12 subs) ; les 3 de plus ne comptent pas, moins de cinq d'un coup.
+    expect(Object.fromEntries(parLigne)).toEqual({ x1: 1, x2: 1, x3: 0, y1: 1, y2: 2, z1: 0, a1: 0 });
     // La réserve compte la même chose, en bloc.
     const reserve = persoEnAttente(registre, new Set());
     for (const p of reserve) {

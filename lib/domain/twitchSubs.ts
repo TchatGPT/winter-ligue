@@ -60,10 +60,26 @@ export function roleDuMessage(type: string): 'admin' | 'joueur' | null {
 
 /**
  * Ce qui compte pour un sub, et ce qui ne compte pas, tel que les joueurs le
- * lisent — sur la page des boosters et dans les règles.
+ * lisent — sur la page des boosters et dans les règles. Voir `compteSub`.
  */
-export const CE_QUI_COMPTE = ['Sub T1, T2 ou T3', 'Resub partagé dans le tchat', 'Chaque sub offert'] as const;
-export const CE_QUI_NE_COMPTE_PAS = ['Sub Prime, nouveau ou resub', 'Resub non partagé', 'Bits, follows et raids'] as const;
+export const CE_QUI_COMPTE = ['Subs offerts, par 5 ou plus', 'Sub T3, nouveau ou resub partagé'] as const;
+export const CE_QUI_NE_COMPTE_PAS = ['Sub T1 ou T2', 'Moins de 5 subs offerts', 'Sub Prime', 'Bits, follows et raids'] as const;
+
+/** Un cadeau de subs ne compte qu'à partir de ce nombre, offert d'un coup. */
+export const SUBS_OFFERTS_MIN = 5;
+
+/**
+ * Ce qui compte, décidé par l'organisation (12/10/2026) : les subs offerts par
+ * paquets d'au moins cinq, et les subs T3 — rien d'autre. Un sub T1 ou T2 pris
+ * pour soi ne compte pas, ni un cadeau de moins de cinq subs (sauf en T3).
+ *
+ * Compter, c'est avancer le compteur de la saison, entrer au registre, et
+ * valoir des Booster Perso : cinq subs offerts en valent un, un T3 aussi.
+ */
+export function compteSub(g: { genre: 'sub' | 'resub' | 'cadeau'; nombre: number; niveau: number }): boolean {
+  if (g.niveau === 3) return true;
+  return g.genre === 'cadeau' && g.nombre >= SUBS_OFFERTS_MIN;
+}
 
 /** Le plus qu'un seul message peut ajouter : un cadeau de masse, borné. */
 export const SUBS_PAR_MESSAGE_MAX = 1000;
@@ -131,6 +147,12 @@ function totalDe(v: unknown): number {
  * cadeau, un raid, une annonce, un message de modération…
  */
 export function gesteDuMessage(type: string, evenement: Evenement): GesteSub | null {
+  const geste = gesteBrut(type, evenement);
+  return geste && compteSub(geste) ? geste : null;
+}
+
+/** Le sub payé qu'annonce un message, avant de savoir s'il compte (`compteSub`). */
+function gesteBrut(type: string, evenement: Evenement): GesteSub | null {
   const e = evenement ?? {};
   if (type === TYPE_TCHAT) return gesteDuTchat(e);
 
@@ -287,7 +309,7 @@ export function bilanDesSubs(registre: readonly LigneSub[], twitchId: string | n
   const bilan: BilanSubs = { offerts: 0, niveau3: 0, siens: 0 };
   if (!twitchId) return bilan;
   for (const l of registre) {
-    if (l.twitchId !== twitchId) continue;
+    if (l.twitchId !== twitchId || !compteSub(l)) continue;
     if (l.genre === 'cadeau') bilan.offerts += l.nombre;
     else bilan.siens += l.nombre;
     if (l.niveau === 3) bilan.niveau3 += l.nombre;
@@ -311,7 +333,7 @@ export function boostersParLigne(registre: readonly LigneSub[]): Map<string, num
   const parLigne = new Map<string, number>();
   const ordre = [...registre].sort((a, b) => a.le.localeCompare(b.le) || a.id.localeCompare(b.id));
   for (const l of ordre) {
-    if (!l.twitchId) {
+    if (!l.twitchId || !compteSub(l)) {
       parLigne.set(l.id, 0);
       continue;
     }
@@ -357,7 +379,7 @@ export function persoEnAttente(
 ): PersoEnAttente[] {
   const parPersonne = new Map<string, PersoEnAttente>();
   for (const l of registre) {
-    if (!l.twitchId || inscrits.has(l.twitchId)) continue;
+    if (!l.twitchId || inscrits.has(l.twitchId) || !compteSub(l)) continue;
     const niveau3 = l.niveau === 3 ? l.nombre : 0;
     const offerts = l.niveau !== 3 && l.genre === 'cadeau' ? l.nombre : 0;
     if (niveau3 === 0 && offerts === 0) continue;
