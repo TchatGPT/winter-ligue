@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Database } from '@/lib/db/entities';
 import { emptyDatabase } from '@/lib/db/store';
-import { bilanDesSubs, TYPE_TCHAT } from '@/lib/domain/twitchSubs';
+import { bilanDesSubs, persoEnAttente, TYPE_TCHAT } from '@/lib/domain/twitchSubs';
 import { rattacheCompteTwitch } from '@/lib/services/comptes';
 import { donneBoosterCadeau } from '@/lib/services/packs';
 import { ajouteSubsTwitch, remetSubsAZero } from '@/lib/services/subs';
@@ -149,6 +149,21 @@ describe('ce qu’un sub vaut à un joueur', () => {
     });
     expect(boostersPerso(db)).toHaveLength(0);
     expect(db.config.totalSubs).toBe(6);
+  });
+
+  it('les subs offerts par un non-inscrit comptent pour les boosters de la ligue', () => {
+    // Le compteur de la saison ne regarde pas qui paie : cinquante subs offerts
+    // par quelqu'un qui n'a pas de compte ouvrent le Booster Commu comme les
+    // autres. Ce qui lui revient à lui va à la réserve des boosters cadeau.
+    const db = base();
+    for (let i = 0; i < 10; i += 1) {
+      ajouteSubsTwitch(db, annonce('community_sub_gift', { id: `cg${i}`, total: 5, sub_tier: '1000' }, 'tw-inconnu'));
+    }
+    expect(db.config.totalSubs).toBe(50);
+    expect(db.packsDus.filter((p) => p.packId === 'commu')).toHaveLength(1);
+    expect(boostersPerso(db)).toHaveLength(0);
+    const inscrits = new Set(db.players.map((p) => p.twitchId).filter((t): t is string => t !== null));
+    expect(persoEnAttente(db.subsTwitch, inscrits).length).toBeGreaterThan(0);
   });
 
   it('ne verse rien à la streameuse', () => {
