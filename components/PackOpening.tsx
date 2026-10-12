@@ -687,17 +687,19 @@ export function PackOpening({
         </section>
       </aside>
 
-      {/* ------------------------- Les cartes de la saison ------------------
-          Toutes les cartes du jeu, rangées par rareté : ce qu'on peut tirer,
-          quel que soit le booster. Elle ne suit plus la sélection de la
-          rangée — on cherche ce que fait une légendaire, pas ce que contient
-          un booster. */}
+      {/* ------------------------- Les cartes du booster -------------------
+          Les cartes du booster choisi dans la rangée, rangées par rareté : ce
+          qu'on peut en tirer, et rien d'autre. Toutes ne sortent pas de
+          partout — le Joker n'est que dans le Perso, Percée n'y est pas. */}
       <section className="glass relative overflow-hidden px-5 py-6 sm:px-6 xl:col-span-2">
         <SnowCap radius="var(--r-lg)" seed="cartes-saison" epaisseur={14} />
         <TitreGlace taille="bloc" eyebrow="Par rareté" className="mb-3">
-          Les cartes de la saison
+          {`Les cartes du ${pack.name}`}
         </TitreGlace>
-        <CartesParRarete cartes={saison} />
+        <CartesParRarete
+          cartes={saison.filter((c) => pack.cartes.some((x) => x.cardId === c.cardId))}
+          booster={pack.name}
+        />
       </section>
     </div>
   );

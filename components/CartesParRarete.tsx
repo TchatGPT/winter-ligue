@@ -45,14 +45,15 @@ const MOMENTS: Record<MomentCarte, string> = {
   GARDEE: 'Gardée, à jouer au choix',
 };
 
-export function CartesParRarete({ cartes }: { cartes: CarteSaison[] }) {
+export function CartesParRarete({ cartes, booster }: { cartes: CarteSaison[]; booster?: string }) {
   const malus = cartes.filter((c) => c.nature === 'malus').length;
   const [ouverte, setOuverte] = useState<CarteSaison | null>(null);
 
   return (
     <div className="space-y-8">
       <p className="text-[14px] text-muted">
-        {cartes.length} carte{cartes.length > 1 ? 's' : ''} cette saison, de la commune à la légendaire.
+        {cartes.length} carte{cartes.length > 1 ? 's' : ''} {booster ? `dans le ${booster}` : 'cette saison'}, de la
+        moins rare à la plus rare.
         {malus > 0 && ` ${malus} malus parmi elles, teinté${malus > 1 ? 's' : ''} de rouge.`} Plus la carte est
         rare, plus elle peut peser sur une game.
       </p>
