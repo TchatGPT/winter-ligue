@@ -15760,3 +15760,176 @@ a.adm-tuile:hover .adm-tuile-fleche {
 .fiche-carte-corps::-webkit-scrollbar {
   display: none;
 }
+
+/* ---- La saisie d'une game : une tuile par ligne lue ----
+   Le joueur et ses kills en tête, puis le détail du score — kills + top +
+   carte = total —, puis le Joker s'il en garde un. */
+.saisie-ligne {
+  padding: 0.75rem 0.9rem;
+  border-radius: var(--r-md);
+  background: rgb(0 10 30 / 0.24);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.1),
+    inset 0 0 0 1px rgb(255 255 255 / 0.06);
+}
+.saisie-ligne[data-etat='hors'],
+.saisie-ligne[data-etat='libre'] {
+  opacity: 0.6;
+}
+.saisie-ligne[data-etat='joker'] {
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.1),
+    inset 0 0 0 1.5px color-mix(in srgb, var(--r-r) 70%, transparent);
+}
+.saisie-ligne-tete {
+  display: grid;
+  grid-template-columns: minmax(0, 7.5rem) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+}
+.saisie-lu {
+  overflow: hidden;
+  font-size: 0.8125rem;
+  color: var(--muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.saisie-kills {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.saisie-kills-fixes {
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+@media (max-width: 520px) {
+  .saisie-ligne-tete {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .saisie-lu {
+    grid-column: 1 / -1;
+  }
+}
+
+.saisie-calcul {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.5rem;
+  margin-top: 0.7rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid rgb(255 255 255 / 0.1);
+  font-size: 0.875rem;
+  color: var(--ink-2);
+}
+.saisie-terme {
+  padding: 0.15rem 0.55rem;
+  border-radius: var(--r-pilule);
+  background: rgb(255 255 255 / 0.08);
+}
+.saisie-terme b {
+  color: var(--ink);
+}
+.saisie-terme[data-carte='bonus'] b {
+  color: var(--aurora);
+}
+.saisie-terme[data-carte='malus'] b {
+  color: var(--danger);
+}
+.saisie-op {
+  color: var(--faint);
+  font-weight: 700;
+}
+.saisie-total-ligne {
+  margin-left: auto;
+  font-family: var(--font-display);
+  font-size: 1.375rem;
+  font-weight: 900;
+  color: var(--gold);
+}
+.saisie-calcul[data-barre] .saisie-terme {
+  text-decoration: line-through;
+  opacity: 0.55;
+}
+.saisie-calcul[data-barre] .saisie-total-ligne {
+  color: var(--r-r);
+}
+.saisie-carte-detail {
+  margin-top: 0.35rem;
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+/* Le Joker : un bandeau aux couleurs des rares, et un vrai bouton. */
+.saisie-joker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem 1rem;
+  margin-top: 0.7rem;
+  padding: 0.7rem 0.85rem;
+  border-radius: var(--r-sm);
+  background: color-mix(in srgb, var(--r-r) 14%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--r-r) 45%, transparent);
+}
+.saisie-joker > div {
+  flex: 1 1 16rem;
+}
+.saisie-joker[data-joue] {
+  background: color-mix(in srgb, var(--r-r) 26%, transparent);
+}
+.saisie-joker-titre {
+  font-family: var(--font-display);
+  font-size: 0.9375rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.saisie-joker-texte {
+  margin-top: 0.15rem;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+.saisie-joker-bouton {
+  flex: none;
+  padding: 0.5rem 1rem;
+  border-radius: var(--r-pilule);
+  background: var(--r-r);
+  font-family: var(--font-display);
+  font-size: 0.875rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--nuit);
+  transition: filter 0.15s ease, transform 0.15s ease;
+}
+.saisie-joker-bouton:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+.saisie-joker-bouton[aria-pressed='true'] {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--r-r);
+  color: var(--ink);
+}
+
+.saisie-total {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.25rem 1rem;
+  margin-top: 0.75rem;
+  padding: 0.6rem 0.9rem;
+  border-radius: var(--r-sm);
+  background: rgb(255 255 255 / 0.06);
+  font-size: 0.875rem;
+  color: var(--ink-2);
+}
+.saisie-total strong {
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  color: var(--ink);
+}

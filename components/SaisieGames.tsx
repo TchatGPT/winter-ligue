@@ -363,6 +363,8 @@ function FenetreIA({ joueurs, active, ferme }: { joueurs: Joueur[]; active: bool
 
   const assignes = new Set((lignes ?? []).map((l) => l.joueurId).filter(Boolean));
   const doublons = (lignes ?? []).filter((l) => l.joueurId).length !== assignes.size;
+  const totalKills = (lignes ?? []).reduce((somme, l) => somme + l.kills, 0);
+  const jokersJoues = (lignes ?? []).filter((l) => l.joueurId && l.joker && apercus[l.joueurId]?.joker).length;
 
   return (
     <Fenetre titre="Saisie équipe — IA" large ferme={ferme}>
@@ -441,117 +443,26 @@ function FenetreIA({ joueurs, active, ferme }: { joueurs: Joueur[]; active: bool
       {lignes && lignes.length > 0 && (
         <div className="mt-5">
           <p className="label">Résultats</p>
-          <div className="scroll-x">
-            <table className="grid-table w-full sm:min-w-[520px]">
-              <thead>
-                <tr>
-                  <th className="hidden sm:table-cell">OCR</th>
-                  <th>Joueur</th>
-                  <th className="text-center">Élim.</th>
-                  <th className="text-right">Score</th>
-                </tr>
-              </thead>
-              <tbody>
-                {lignes.map((l, i) => {
-                  const apercu = l.joueurId ? apercus[l.joueurId] : undefined;
-                  const score = l.joueurId ? (apercu?.score ?? l.kills + placementPoints(placement)) : null;
-                  const jokerServi = Boolean(l.joker && apercu?.joker);
-                  const couleur = l.confiance >= 0.9 ? 'text-aurora' : l.confiance >= 0.6 ? 'text-gold' : 'text-danger';
-                  // La ligne de la streameuse : montrée pour qu'on voie qu'elle a
-                  // été lue, mais sans choix de joueur, ni kills, ni score.
-                  if (l.streameuse) {
-                    return (
-                      <tr key={`${l.lu}-${i}`} style={{ opacity: 0.6 }}>
-                        <td className="hidden text-sm text-muted sm:table-cell">{l.lu}</td>
-                        <td colSpan={3} className="text-sm text-muted">
-                          <span className="mb-1 block text-[13px] text-faint sm:hidden">{l.lu}</span>
-                          Streameuse — hors ligue, aucune game
-                        </td>
-                      </tr>
-                    );
-                  }
-                  return (
-                    <tr key={`${l.lu}-${i}`} style={l.joueurId ? undefined : { opacity: 0.5 }}>
-                      <td className="hidden text-sm text-muted sm:table-cell">{l.lu}</td>
-                      <td>
-                        <span className="mb-1 block text-[13px] text-faint sm:hidden">{l.lu}</span>
-                        <select
-                          className="field !py-1 text-sm"
-                          style={{ maxWidth: 170 }}
-                          value={l.joueurId ?? ''}
-                          onChange={(e) =>
-                            modifie(i, { joueurId: e.target.value || null, confiance: e.target.value ? 1 : 0, joker: false })
-                          }
-                          aria-label={`Joueur pour ${l.lu}`}
-                        >
-                          <option value="">— non assigné —</option>
-                          {joueurs.map((j) => (
-                            <option key={j.id} value={j.id}>
-                              {j.pseudo}
-                            </option>
-                          ))}
-                        </select>
-                        {l.joueurId && <span className={`mt-0.5 block text-[13px] ${couleur}`}>{Math.round(l.confiance * 100)} %</span>}
-                      </td>
-                      <td className="text-center">
-                        <div className="inline-flex items-center gap-1.5">
-                          <button
-                            type="button"
-                            className="btn btn-sm !min-h-0 !px-2.5 !py-0.5"
-                            onClick={() => modifie(i, { kills: Math.max(GAME_LIMITS.minKills, l.kills - 1) })}
-                            aria-label="Un kill de moins"
-                          >
-                            −
-                          </button>
-                          <span className="num min-w-[2ch] font-display text-xl font-bold text-ink">{l.kills}</span>
-                          <button
-                            type="button"
-                            className="btn btn-sm !min-h-0 !px-2.5 !py-0.5"
-                            onClick={() => modifie(i, { kills: Math.min(GAME_LIMITS.maxKills, l.kills + 1) })}
-                            aria-label="Un kill de plus"
-                          >
-                            +
-                          </button>
-                        </div>
-                      </td>
-                      <td className="text-right">
-                        {jokerServi ? (
-                          <span className="font-display text-lg font-bold text-violet">Ne compte pas</span>
-                        ) : (
-                          <span className="num font-display text-lg font-bold text-gold">
-                            {score === null ? '—' : `${score} pts`}
-                          </span>
-                        )}
-                        {apercu?.carte && !jokerServi && (
-                          <span
-                            className={`block text-[13px] leading-tight ${apercu.carte.points < 0 ? 'text-danger' : apercu.carte.points > 0 ? 'text-aurora' : 'text-faint'}`}
-                            title={apercu.carte.resultat}
-                          >
-                            🃏 {apercu.carte.nom} · {apercu.carte.resultat}
-                          </span>
-                        )}
-                        {apercu?.joker && (
-                          <label className="mt-1 inline-flex cursor-pointer items-center gap-1.5 text-[13px] text-violet">
-                            <input
-                              type="checkbox"
-                              className="accent-current"
-                              checked={Boolean(l.joker)}
-                              onChange={(e) => modifie(i, { joker: e.target.checked })}
-                            />
-                            Jouer son Joker
-                          </label>
-                        )}
-                        {jokerServi && (
-                          <span className="block text-[13px] leading-tight text-faint">
-                            Ni points ni flocons{apercu?.carte ? ' · sa carte attend la game suivante' : ''}
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+          <ul className="space-y-2.5">
+            {lignes.map((l, i) => (
+              <LigneResultat
+                key={`${l.lu}-${i}`}
+                ligne={l}
+                placement={placement}
+                apercu={l.joueurId ? apercus[l.joueurId] : undefined}
+                joueurs={joueurs}
+                onChange={(patch) => modifie(i, patch)}
+              />
+            ))}
+          </ul>
+
+          {/* Le total de l'escouade, toutes lignes lues : il doit tomber sur
+              celui de la capture. Un écart, c'est un kill mal lu. */}
+          <div className="saisie-total">
+            <span>
+              Élim. lues, toute l’escouade : <strong className="num">{totalKills}</strong>
+            </span>
+            <span className="text-faint">À comparer avec « Totaux escouade » sur la capture.</span>
           </div>
 
           {doublons && (
@@ -565,11 +476,12 @@ function FenetreIA({ joueurs, active, ferme }: { joueurs: Joueur[]; active: bool
             disabled={busy !== null || doublons || assignes.size === 0}
             onClick={valide}
           >
-            {busy === 'validation' ? 'Enregistrement…' : '✓ Valider toute l’équipe'}
+            {busy === 'validation'
+              ? 'Enregistrement…'
+              : `✓ Valider toute l’équipe${jokersJoues > 0 ? ` · ${jokersJoues} Joker${jokersJoues > 1 ? 's' : ''} joué${jokersJoues > 1 ? 's' : ''}` : ''}`}
           </button>
           <p className="mt-2 text-center text-[13px] text-faint">
-            La carte active d’un joueur est comptée dans son score et sera consommée par cette game. Un joueur
-            qui garde un Joker peut faire ne pas compter la sienne.
+            La carte active d’un joueur compte dans son score et sera consommée par cette game.
           </p>
         </div>
       )}
@@ -580,5 +492,159 @@ function FenetreIA({ joueurs, active, ferme }: { joueurs: Joueur[]; active: bool
         </div>
       )}
     </Fenetre>
+  );
+}
+
+/* ------------------------------ Une ligne -------------------------------- */
+
+/** Un texte sans espaces ni signe moins typographique, pour comparer deux écritures. */
+const plat = (texte: string) => texte.replace(/\s/g, '').replace(/−/g, '-');
+
+/** « +3 pts », « −4 pts », « 0 pt ». */
+function points(n: number): string {
+  if (n === 0) return '0 pt';
+  return `${n > 0 ? '+' : '−'}${Math.abs(n)} pt${Math.abs(n) > 1 ? 's' : ''}`;
+}
+
+/**
+ * Une ligne lue sur la capture : le joueur, ses kills, et le détail de son
+ * score — kills, top, carte — pour qu'une erreur de lecture saute aux yeux
+ * avant de valider. Le Joker, s'il en garde un, est un vrai choix, en clair.
+ */
+function LigneResultat({
+  ligne: l,
+  placement,
+  apercu,
+  joueurs,
+  onChange,
+}: {
+  ligne: Ligne;
+  placement: Placement;
+  apercu: Apercu | undefined;
+  joueurs: Joueur[];
+  onChange: (patch: Partial<Ligne>) => void;
+}) {
+  // La ligne de la streameuse : montrée pour qu'on voie qu'elle a été lue, et
+  // ses kills comptent dans le total de l'escouade, mais elle n'a pas de game.
+  if (l.streameuse) {
+    return (
+      <li className="saisie-ligne" data-etat="hors">
+        <div className="saisie-ligne-tete">
+          <span className="saisie-lu">{l.lu}</span>
+          <span className="text-sm text-muted">Streameuse — hors ligue, aucune game</span>
+          <span className="saisie-kills-fixes num">{l.kills} élim.</span>
+        </div>
+      </li>
+    );
+  }
+
+  const assigne = l.joueurId !== null;
+  const couleur = l.confiance >= 0.9 ? 'text-aurora' : l.confiance >= 0.6 ? 'text-gold' : 'text-danger';
+  const top = placementPoints(placement);
+  const carte = apercu?.carte ?? null;
+  const total = apercu?.score ?? l.kills + top;
+  const joker = Boolean(apercu?.joker);
+  const jokerJoue = joker && Boolean(l.joker);
+  const pseudo = joueurs.find((j) => j.id === l.joueurId)?.pseudo ?? '';
+
+  return (
+    <li className="saisie-ligne" data-etat={!assigne ? 'libre' : jokerJoue ? 'joker' : 'compte'}>
+      <div className="saisie-ligne-tete">
+        <span className="saisie-lu" title="Pseudo lu sur la capture">
+          {l.lu}
+        </span>
+        <div className="min-w-0">
+          <select
+            className="field !py-1 text-sm"
+            value={l.joueurId ?? ''}
+            onChange={(e) => onChange({ joueurId: e.target.value || null, confiance: e.target.value ? 1 : 0, joker: false })}
+            aria-label={`Joueur pour ${l.lu}`}
+          >
+            <option value="">— non assigné —</option>
+            {joueurs.map((j) => (
+              <option key={j.id} value={j.id}>
+                {j.pseudo}
+              </option>
+            ))}
+          </select>
+          {assigne && <span className={`mt-0.5 block text-[13px] ${couleur}`}>Lecture sûre à {Math.round(l.confiance * 100)} %</span>}
+        </div>
+        <div className="saisie-kills" role="group" aria-label="Éliminations">
+          <button
+            type="button"
+            className="btn btn-sm !min-h-0 !px-2.5 !py-0.5"
+            onClick={() => onChange({ kills: Math.max(GAME_LIMITS.minKills, l.kills - 1) })}
+            aria-label="Un kill de moins"
+          >
+            −
+          </button>
+          <span className="num min-w-[2ch] text-center font-display text-xl font-bold text-ink">{l.kills}</span>
+          <button
+            type="button"
+            className="btn btn-sm !min-h-0 !px-2.5 !py-0.5"
+            onClick={() => onChange({ kills: Math.min(GAME_LIMITS.maxKills, l.kills + 1) })}
+            aria-label="Un kill de plus"
+          >
+            +
+          </button>
+          <span className="text-[13px] text-faint">élim.</span>
+        </div>
+      </div>
+
+      {assigne && (
+        <>
+          {/* Le détail du score : chaque terme, puis le total. */}
+          <div className="saisie-calcul" data-barre={jokerJoue || undefined}>
+            <span className="saisie-terme">
+              <b className="num">{points(l.kills)}</b> {l.kills} kill{l.kills > 1 ? 's' : ''}
+            </span>
+            <span className="saisie-op">+</span>
+            <span className="saisie-terme">
+              <b className="num">{points(top)}</b> {placement === null ? 'pas top' : `Top ${placement}`}
+            </span>
+            {carte && (
+              <>
+                <span className="saisie-op">+</span>
+                <span className="saisie-terme" data-carte={carte.points < 0 ? 'malus' : 'bonus'} title={carte.resultat}>
+                  <b className="num">{points(carte.points)}</b> {carte.nom}
+                </span>
+              </>
+            )}
+            <span className="saisie-op">=</span>
+            <span className="saisie-total-ligne num">{jokerJoue ? '0 pt' : `${total} pts`}</span>
+          </div>
+          {/* Le détail de la carte, quand il dit plus que ses points : « ×2 sur 24 pts ». */}
+          {carte && !jokerJoue && plat(carte.resultat) !== plat(points(carte.points)) && (
+            <p className="saisie-carte-detail">
+              🃏 {carte.nom} : {carte.resultat}
+            </p>
+          )}
+
+          {/* Le Joker : un choix, pas une case qu'on rate. */}
+          {joker && (
+            <div className="saisie-joker" data-joue={jokerJoue || undefined}>
+              <div className="min-w-0">
+                <p className="saisie-joker-titre">
+                  🃏 {pseudo} a un Joker{jokerJoue ? ' — joué sur cette game' : ''}
+                </p>
+                <p className="saisie-joker-texte">
+                  {jokerJoue
+                    ? `Cette game ne comptera pas : 0 point, 0 flocon. Le Joker est consommé${carte ? `, et ${carte.nom} attend sa game suivante` : ''}.`
+                    : 'Le jouer annule cette game : elle ne comptera pas, et il pourra la rejouer. Sinon, il garde son Joker pour plus tard.'}
+                </p>
+              </div>
+              <button
+                type="button"
+                className="saisie-joker-bouton"
+                aria-pressed={jokerJoue}
+                onClick={() => onChange({ joker: !jokerJoue })}
+              >
+                {jokerJoue ? 'Ne pas jouer le Joker' : 'Jouer le Joker'}
+              </button>
+            </div>
+          )}
+        </>
+      )}
+    </li>
   );
 }
