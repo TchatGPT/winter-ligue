@@ -13,6 +13,7 @@ export const CARD_ART: Record<string, string> = {
   'joker-givre': '/cartes/joker-givre.webp',
   'ouragan-blanc': '/cartes/ouragan-blanc.webp',
   'permafrost': '/cartes/permafrost.webp',
+  'vent-porteur': '/cartes/vent-porteur.webp',
 };
 
 export const BOOSTER_ART: Record<string, string> = {
