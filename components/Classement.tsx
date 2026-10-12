@@ -505,6 +505,14 @@ function CarteActive({ row, onOuvrir }: { row: RankingRow; onOuvrir: (quoi: 'car
   );
 }
 
+/** La teinte d'une rareté, pour un texte : celle du Joker suit la sienne. */
+const TEINTE: Record<CarteDuClassement['rarity'], string> = {
+  C: 'text-r-c',
+  R: 'text-r-r',
+  UR: 'text-r-ur',
+  L: 'text-r-l',
+};
+
 /**
  * La carte active et le Joker, l'une sur l'autre, un peu décalées : on voit
  * d'un coup d'œil qu'il en a deux, et chacune s'ouvre d'un clic.
@@ -550,7 +558,7 @@ function PileDeCartes({
       <span className="min-w-0 leading-tight">
         <span className="block truncate text-[14px] font-bold text-ink @min-[100rem]:text-[16px]">{carte.nom}</span>
         <span className="block truncate text-[13px] text-ink-2 @min-[100rem]:text-[15px]">{carte.action}</span>
-        <span className="block truncate text-[13px] font-semibold text-violet @min-[100rem]:text-[14px]">
+        <span className={`block truncate text-[13px] font-semibold @min-[100rem]:text-[14px] ${TEINTE[joker.rarity]}`}>
           + {joker.nom}
         </span>
       </span>
