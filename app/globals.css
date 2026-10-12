@@ -15682,8 +15682,11 @@ a.adm-tuile:hover .adm-tuile-fleche {
 .carte-3d[data-actif] .carte-3d-corps {
   transition: transform 0.08s linear;
 }
+/* Juste assez grande pour glisser sans montrer de bord : à 1,12, la fiche
+   rognait le haut et le bas de l'image — le reflet d'Écho Lointain y
+   disparaissait. */
 .carte-3d .cadre-vecteur {
-  transform: scale(1.12)
+  transform: scale(1.08)
     translate(calc((var(--mx) - 0.5) * -9%), calc((var(--my) - 0.5) * -9%));
   transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.3, 1);
 }
