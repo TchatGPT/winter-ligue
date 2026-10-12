@@ -207,7 +207,21 @@ export const CARDS: readonly CardDefinition[] = [
     effect: { kind: 'bonus_points', value: 18 },
     nature: 'bonus',
     power: 76,
-    packs: ['perso', 'commu', 'finisseur', 'folie'],
+    // Pas dans le Perso : son ultra rare y est la Coulée de Neige.
+    packs: ['commu', 'finisseur', 'folie'],
+    cible: 'HASARD',
+  },
+  {
+    id: 'coulee-de-neige',
+    name: 'Coulée de Neige',
+    subtitle: '+50 flocons',
+    rarity: 'UR',
+    glyph: '🏔',
+    description: '+50 flocons, tout de suite.',
+    effect: { kind: 'snowflakes', value: 50 },
+    nature: 'bonus',
+    power: 60,
+    packs: ['perso'],
     cible: 'HASARD',
   },
   /* ============================== Légendaire ============================ */
