@@ -151,6 +151,21 @@ export const CARDS: readonly CardDefinition[] = [
     packs: ['perso'],
     cible: 'HASARD',
   },
+  {
+    // Une consolation, pas un gain : le prix d'un kill. Plus, elle ferait
+    // monter la chance de qui ouvre beaucoup de Boosters Perso.
+    id: 'bocal-de-givre',
+    name: 'Bocal de Givre',
+    subtitle: '+10 flocons',
+    rarity: 'C',
+    glyph: '🫙',
+    description: '+10 flocons, tout de suite.',
+    effect: { kind: 'snowflakes', value: 10 },
+    nature: 'bonus',
+    power: 4,
+    packs: ['perso'],
+    cible: 'HASARD',
+  },
   /* ============================== Rare ================================== */
   {
     id: 'percee',
