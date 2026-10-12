@@ -8170,7 +8170,9 @@
     font-size: 8cqw;
     font-weight: 900;
     letter-spacing: 0.01em;
-    line-height: 1;
+    /* Assez haut pour l'accent d'un É et la boucle d'un g : la boîte coupe ce
+       qui dépasse. */
+    line-height: 1.16;
     color: color-mix(in srgb, var(--r, #6f8db0) 22%, #121216);
     text-shadow: 0 0.3cqw 0 rgb(255 255 255 / 0.7);
     overflow: hidden;
@@ -8199,18 +8201,32 @@
     -webkit-box-orient: vertical;
   }
 
+  /* Sur une grande carte, la description a trois lignes : le nom et
+     l'intitulé se resserrent pour les lui laisser, et le texte prend toute la
+     hauteur du panneau clair (75,9 % → 94,2 % de la planche, mesuré). Deux
+     lignes coupaient « Un seul Joker à la fois » au milieu. */
   @container (min-width: 400px) {
     .cadre-desc {
       display: -webkit-box;
-      -webkit-line-clamp: 2;
-      line-clamp: 2;
-    }
-    .cadre-texte:has(.cadre-desc) .cadre-nom {
-      -webkit-line-clamp: 1;
-      line-clamp: 1;
+      -webkit-line-clamp: 3;
+      line-clamp: 3;
+      font-size: 3.15cqw;
+      line-height: 1.24;
     }
     .cadre-texte:has(.cadre-desc) {
-      gap: 0.8cqw;
+      top: 76.6%;
+      height: 17%;
+      gap: 0.7cqw;
+    }
+    .cadre-texte:has(.cadre-desc) .cadre-nom {
+      font-size: 6.6cqw;
+    }
+    .cadre-texte:has(.cadre-desc) .cadre-action {
+      font-size: 3.3cqw;
+    }
+    .cadre-texte:has(.cadre-desc) .cadre-action > span {
+      -webkit-line-clamp: 1;
+      line-clamp: 1;
     }
   }
 
