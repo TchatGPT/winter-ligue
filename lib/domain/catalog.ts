@@ -191,7 +191,8 @@ export const CARDS: readonly CardDefinition[] = [
     effect: { kind: 'bonus_points', value: 25 },
     nature: 'bonus',
     power: 94,
-    packs: ['perso', 'commu', 'finisseur', 'folie'],
+    // Pas dans le Perso : ses légendaires y sont Ouragan Blanc et Permafrost.
+    packs: ['commu', 'finisseur', 'folie'],
     cible: 'HASARD',
   },
   {
