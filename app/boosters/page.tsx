@@ -2,9 +2,10 @@ import { PackOpening, type JoueurOuverture, type PackVitrine } from '@/component
 import { getSession } from '@/lib/auth/session';
 import { exigeSession } from '@/lib/auth/acces';
 import { getStore } from '@/lib/db/store';
-import { CARDS, cartesDuPack, impactMax, momentDe } from '@/lib/domain/catalog';
+import { CARDS, cartesDuPack, getCard, impactMax, momentDe } from '@/lib/domain/catalog';
 import type { CarteSaison } from '@/components/CartesParRarete';
 import { chanceDe } from '@/lib/domain/rules';
+import { carteQuiAttend } from '@/lib/services/effects';
 import { fileDesPacks, joueursEnLice, resolvedPacks } from '@/lib/services/packs';
 
 export const dynamic = 'force-dynamic';
@@ -54,6 +55,9 @@ export default async function PacksPage(){
               avatarUrl: p.avatarUrl ?? null,
               snowflakes: p.snowflakes,
               chance: chanceDe(p.snowflakes),
+              // Sa carte en attente, s'il en a une : aucun booster ne s'ouvre
+              // pour lui tant qu'elle n'a pas joué.
+              attend: ((c) => (c ? (getCard(c.cardId)?.name ?? 'une carte') : null))(carteQuiAttend(db, p.id)),
             }),
           )
           .sort((a, b) => a.pseudo.localeCompare(b.pseudo, 'fr'))

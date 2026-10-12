@@ -118,6 +118,16 @@ function joue(
 const enAttente = (db: Database, joueurId: string) =>
   db.cartesEnAttente.filter((c) => c.joueurId === joueurId && c.consommeeA === null);
 
+
+/**
+ * Joue les cartes qui attendent, comme le ferait une game : il n'y a pas de
+ * stock de cartes, et un booster ne s'ouvre pour un joueur — ou ne tombe sur
+ * lui — qu'une fois sa carte précédente jouée.
+ */
+function joueLesCartes(db: Database) {
+  for (const c of db.cartesEnAttente) if (c.consommeeA === null) c.consommeeA = '2027-01-01T00:00:00.000Z';
+}
+
 describe('sur la prochaine game', () => {
   it('« Multiplicateur game » multiplie le score entier, kills et top', () => {
     // 10 kills et un Top 1 : 30 points. ×1,2 → +6.
@@ -485,6 +495,7 @@ describe('sur qui une carte tombe', () => {
     // rester vrai quelle que soit la carte.
     const db = ligue();
     for (let i = 0; i < 200; i += 1) {
+      joueLesCartes(db);
       const pack = (['perso', 'commu', 'folie', 'finisseur'] as const)[i % 4];
       const pourUnJoueur = pack === 'perso' || pack === 'finisseur';
       const o = ouvrePack(
@@ -531,6 +542,7 @@ describe('sur qui une carte tombe', () => {
     // Le Booster Folie réglé sur les légendaires : le malus de tête en sort.
     reglagePack(db, 'folie', { C: 0, R: 0, UR: 0, L: 100_000 });
     for (let i = 0; i < 60; i += 1) {
+      joueLesCartes(db);
       const o = ouvrePack(db, { packId: 'folie', idempotencyKey: `tete-${i}` }, 'test');
       const card = getCard(o.cardId)!;
       if (card.cible === 'TOUS') continue;

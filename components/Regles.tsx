@@ -360,7 +360,10 @@ export function Regles({ maxGames, packs }: { maxGames: number; packs: PackDefin
               <Etapes
                 vertical
                 etapes={[
-                  { titre: 'Sur ta prochaine game', texte: 'Le plus souvent. Une seule carte par game.' },
+                  {
+                    titre: 'Sur ta prochaine game',
+                    texte: 'Le plus souvent. Une seule carte par game, et une seule en attente : ton booster suivant s’ouvre quand elle a joué.',
+                  },
                   {
                     titre: 'Sur une game déjà jouée',
                     texte: '« Fige ta meilleure game » : plus aucune carte ne la touche.',

@@ -103,6 +103,8 @@ export interface JoueurOuverture {
   avatarUrl: string | null;
   snowflakes: number;
   chance: number;
+  /** Le nom de sa carte qui attend encore de jouer, s'il en a une : rien ne s'ouvre pour lui d'ici là. */
+  attend?: string | null;
 }
 
 /**
@@ -193,6 +195,7 @@ export function PackOpening({
           avatarUrl: j.avatarUrl,
           chance: j.chance,
           n: dusParJoueur.get(j.id) ?? 0,
+          attend: j.attend ?? null,
         }))
         .sort((a, b) => b.n - a.n || a.pseudo.localeCompare(b.pseudo, 'fr')),
     [joueurs, dusParJoueur],
@@ -416,7 +419,7 @@ export function PackOpening({
                 {aLaMain && (
                   <button
                     className={`btn btn-ice ${busy ? 'btn-lg min-h-[62px]' : 'btn-ouvrir'}`}
-                    disabled={busy || restants === 0}
+                    disabled={busy || restants === 0 || Boolean(pourUnJoueur && joueur?.attend)}
                     onClick={() => ouvre({ packId: pack.id, ...(pourUnJoueur ? { joueurId: choisi } : {}) })}
                   >
                     <span>
@@ -430,13 +433,17 @@ export function PackOpening({
                             ? pourUnJoueur
                               ? 'Aucun à ouvrir'
                               : 'Palier pas atteint'
-                            : pourUnJoueur && joueur
-                              ? `Ouvrir pour ${joueur.pseudo}`
-                              : 'Ouvrir'}
+                            : pourUnJoueur && joueur?.attend
+                              ? 'Sa carte attend encore'
+                              : pourUnJoueur && joueur
+                                ? `Ouvrir pour ${joueur.pseudo}`
+                                : 'Ouvrir'}
                     </span>
                     {!busy && (
                       <span className="btn-ouvrir-compte">
-                        {pourUnJoueur && !choisi
+                        {pourUnJoueur && joueur?.attend
+                          ? `${joueur.attend} n’a pas encore joué`
+                          : pourUnJoueur && !choisi
                           ? `${dus.length} à ouvrir`
                           : restants > 0
                             ? `${restants} restant${restants > 1 ? 's' : ''}`

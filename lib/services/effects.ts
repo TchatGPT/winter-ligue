@@ -524,6 +524,26 @@ export function regleCartesSansAttendre(db: Database, joueurId: string, now = ne
   return faites;
 }
 
+/* --------------------------- Pas de stock de cartes ---------------------- */
+
+/**
+ * La carte qui attend encore de jouer pour ce joueur, s'il en a une : une
+ * carte de prochaine game, ou une qui attend une game jouée à relever.
+ *
+ * Il n'y a jamais de stock de cartes : un joueur n'a qu'une carte en attente
+ * à la fois. Tant qu'elle n'a pas joué, aucun booster ne s'ouvre pour lui, et
+ * le sort d'un booster de la ligue ne tombe pas sur lui (`ouvrePack`). Le
+ * Joker n'en est pas une : il se garde, un seul, sans rien bloquer.
+ */
+export function carteQuiAttend(db: Database, joueurId: string): CarteEnAttente | null {
+  return (
+    enAttenteDe(db, joueurId).find((c) => {
+      const card = getCard(c.cardId);
+      return card !== null && momentDe(card.effect) !== 'GARDEE';
+    }) ?? null
+  );
+}
+
 /* -------------------------------- Le Joker ------------------------------- */
 
 /** Le Joker que garde ce joueur, s'il en a un : le plus ancien. */

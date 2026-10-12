@@ -11,6 +11,8 @@ export interface CandidatBooster {
   chance: number;
   /** Combien de boosters de ce type l'attendent. */
   n: number;
+  /** Sa carte qui attend encore de jouer : rien ne s'ouvre pour lui d'ici là. */
+  attend?: string | null;
 }
 
 /** La place que le panneau veut sous le champ ; s'il en manque, il s'ouvre au-dessus. */
@@ -284,7 +286,9 @@ export function ChoixJoueurBooster({
                 >
                   <Avatar c={c} />
                   <span className="choix-joueur-pseudo">{c.pseudo}</span>
-                  <span className="choix-joueur-chance num">chance {libelleMultiplicateur(c.chance)}</span>
+                  <span className="choix-joueur-chance num">
+                    {c.attend ? `carte en attente : ${c.attend}` : `chance ${libelleMultiplicateur(c.chance)}`}
+                  </span>
                   <span className="choix-joueur-nombre">
                     <strong>{c.n}</strong> à ouvrir
                   </span>

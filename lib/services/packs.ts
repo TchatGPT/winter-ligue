@@ -47,7 +47,7 @@ import {
   RARITIES,
   type Rarity,
 } from '@/lib/domain/types';
-import { gamesSansCarte, regleCartesSansAttendre } from './effects';
+import { carteQuiAttend, gamesSansCarte, regleCartesSansAttendre } from './effects';
 import { audit } from './ledger';
 import { aJoueToutesSesGames, gamesOf } from './league';
 
@@ -63,7 +63,8 @@ export class PackError extends Error {
       | 'JOUEUR_INTROUVABLE'
       | 'STREAMEUSE'
       | 'AUCUN_DU'
-      | 'AUCUN_BENEFICIAIRE',
+      | 'AUCUN_BENEFICIAIRE'
+      | 'CARTE_EN_ATTENTE',
   ) {
     super(message);
     this.name = 'PackError';
@@ -400,14 +401,16 @@ export function peutRecevoir(db: Database, player: Player): boolean {
 }
 
 /**
- * Ceux sur qui le sort peut tomber : les joueurs en lice qui peuvent encore
- * recevoir une carte. Si personne ne le peut, tous les joueurs en lice — un
- * booster s'ouvre toujours.
+ * Ceux sur qui le sort peut tomber : les joueurs en lice **sans carte en
+ * attente** — il n'y a jamais de stock de cartes (`carteQuiAttend`) —, et parmi
+ * eux ceux qui peuvent encore la recevoir. Si aucun ne le peut (une fin de
+ * saison), tous ceux sans carte en attente. Si tout le monde a une carte en
+ * attente, personne : le booster attend dans la file.
  */
 function bassin(db: Database): Player[] {
-  const enLice = joueursEnLice(db);
-  const prets = enLice.filter((p) => peutRecevoir(db, p));
-  return prets.length > 0 ? prets : enLice;
+  const libres = joueursEnLice(db).filter((p) => carteQuiAttend(db, p.id) === null);
+  const prets = libres.filter((p) => peutRecevoir(db, p));
+  return prets.length > 0 ? prets : libres;
 }
 
 /** Des joueurs, du premier au dernier du classement. */
@@ -446,15 +449,17 @@ function beneficiairesDe(db: Database, card: CardDefinition): Player[] {
   const enLice = joueursEnLice(db);
   if (enLice.length === 0) return [];
   const prets = bassin(db);
+  if (prets.length === 0) return [];
   switch (card.cible) {
     case 'TOUS':
-      return enLice;
+      // Toute la ligue, sauf qui a déjà une carte en attente : pas de stock.
+      return enLice.filter((p) => carteQuiAttend(db, p.id) === null);
     case 'HASARD':
       return [pick(prets)];
     case 'DEUX': {
-      // Deux joueurs distincts. À un seul joueur en lice, la carte n'a pas de
+      // Deux joueurs distincts. À un seul joueur libre, la carte n'a pas de
       // sens : on le dit plutôt que de faire jouer quelqu'un contre lui-même.
-      const parmi = prets.length >= 2 ? prets : enLice;
+      const parmi = prets;
       if (parmi.length < 2) return [];
       const premier = pick(parmi);
       const second = pick(parmi.filter((p) => p.id !== premier.id));
@@ -520,6 +525,15 @@ export function ouvrePack(db: Database, demande: DemandeOuverture, ouvertPar: st
         'STREAMEUSE',
       );
     }
+    // Pas de stock de cartes : tant que sa carte précédente n'a pas joué,
+    // aucun booster ne s'ouvre pour lui. Celui-ci reste dans la file.
+    const attend = carteQuiAttend(db, joueur.id);
+    if (attend) {
+      throw new PackError(
+        `${joueur.pseudo} a déjà une carte qui attend sa prochaine game (${getCard(attend.cardId)?.name ?? 'une carte'}) : ce booster s’ouvrira quand elle aura joué.`,
+        'CARTE_EN_ATTENTE',
+      );
+    }
     chance = chanceDe(joueur.snowflakes);
   }
 
@@ -531,7 +545,7 @@ export function ouvrePack(db: Database, demande: DemandeOuverture, ouvertPar: st
     throw new PackError(
       card.cible === 'DEUX'
         ? 'Il faut deux joueurs actifs pour cette carte.'
-        : 'Aucun joueur en lice pour recevoir la carte.',
+        : 'Aucun joueur libre pour recevoir la carte : chacun a déjà une carte qui attend sa prochaine game. Le booster reste dans la file.',
       'AUCUN_BENEFICIAIRE',
     );
   }

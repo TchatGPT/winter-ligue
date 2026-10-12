@@ -67,6 +67,11 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - Une carte se joue à l'un de quatre moments (`momentDe`) : sur la prochaine game, sur
   une game déjà jouée, tout de suite, ou **gardée** (`GARDEE`). `regleCartesSansAttendre()`
   est appelé après chaque ouverture de booster et après chaque saisie de game.
+- **Pas de stock de cartes** (décidé le 13/10/2026) : un joueur n'a jamais plus d'une
+  carte en attente (`carteQuiAttend` : prochaine game, ou game jouée à relever ; le Joker
+  n'en est pas une). Tant qu'elle n'a pas joué, aucun booster ne s'ouvre pour lui — il
+  reste dans la file (`CARTE_EN_ATTENTE`) — et le sort d'un booster de la ligue ne tombe
+  pas sur lui ; si tout le monde en a une, le booster attend.
 - **Le Joker** (`kind: 'joker'`, Booster Perso) est gardé, jamais consommé de lui-même :
   à la saisie d'une game, la modération peut le servir (`joker: true`, vérifié par
   `jokerDe`). La game est alors passée (`skipped`) — ni points, ni flocons, ni carte

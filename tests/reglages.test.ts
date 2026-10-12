@@ -62,6 +62,16 @@ function ligue(...ids: string[]): Database {
   return db;
 }
 
+
+/**
+ * Joue les cartes qui attendent, comme le ferait une game : il n'y a pas de
+ * stock de cartes, et un booster ne s'ouvre pour un joueur — ou ne tombe sur
+ * lui — qu'une fois sa carte précédente jouée.
+ */
+function joueLesCartes(db: Database) {
+  for (const c of db.cartesEnAttente) if (c.consommeeA === null) c.consommeeA = '2027-01-01T00:00:00.000Z';
+}
+
 describe('réglages de booster', () => {
   it('rend le catalogue tant que rien n’est réglé', () => {
     const db = base();
@@ -154,6 +164,7 @@ describe('ouvrir un booster', () => {
     const db = ligue('a');
     reglagePack(db, 'perso', seulement('L'));
     for (let i = 0; i < 25; i += 1) {
+      joueLesCartes(db);
       const o = ouvrePack(db, { packId: 'perso', joueurId: 'a', idempotencyKey: `k${i}` }, 'modo');
       expect(o.rarity).toBe('L');
     }
@@ -163,6 +174,7 @@ describe('ouvrir un booster', () => {
     const db = ligue('a');
     const permises = cartesDuPack('perso').map((c) => c.id);
     for (let i = 0; i < 200; i += 1) {
+      joueLesCartes(db);
       const o = ouvrePack(db, { packId: 'perso', joueurId: 'a', idempotencyKey: `k${i}` }, 'modo');
       expect(permises).toContain(o.cardId);
       expect(getCard(o.cardId)!.nature).toBe('bonus');
@@ -232,6 +244,7 @@ describe('ouvrir un booster', () => {
     const db = base();
     db.players.push(joueur('a', ECONOMY.soldeMax), joueur('b', ECONOMY.soldeMax));
     for (let i = 0; i < 20; i += 1) {
+      joueLesCartes(db);
       const o = ouvrePack(db, { packId: 'folie', idempotencyKey: `k${i}` }, 'modo');
       expect(o.chance).toBe(0);
       expect(o.joueurId).toBeNull();
@@ -257,6 +270,7 @@ describe('ouvrir un booster', () => {
     reglagePack(db, 'commu', seulement('R'));
     let paires = 0;
     for (let i = 0; i < 60; i += 1) {
+      joueLesCartes(db);
       const o = ouvrePack(db, { packId: 'commu', idempotencyKey: `k${i}` }, 'modo');
       if (getCard(o.cardId)!.cible !== 'DEUX') continue;
       paires += 1;
@@ -288,6 +302,7 @@ describe('ouvrir un booster', () => {
     reglagePack(db, 'folie', seulement('UR'));
     let vus = 0;
     for (let i = 0; i < 60; i += 1) {
+      joueLesCartes(db);
       const o = ouvrePack(db, { packId: 'folie', idempotencyKey: `k${i}` }, 'modo');
       if (getCard(o.cardId)!.cible !== 'TETE') continue;
       vus += 1;
