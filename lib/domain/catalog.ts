@@ -141,11 +141,12 @@ export const CARDS: readonly CardDefinition[] = [
   {
     id: 'chocolat-chaud',
     name: 'Chocolat Chaud',
-    subtitle: '+5 pts bonus',
+    subtitle: '+10 pts si Top 3',
     rarity: 'C',
     glyph: '☕',
-    description: '+5 points sur ta prochaine game.',
-    effect: { kind: 'bonus_points', value: 5 },
+    // Se mérite : rien si la game finit hors du Top 3.
+    description: '+10 points sur ta prochaine game, si tu finis dans le Top 3.',
+    effect: { kind: 'bonus_top', top: 3, value: 10 },
     nature: 'bonus',
     power: 12,
     packs: ['perso'],
