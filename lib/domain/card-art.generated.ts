@@ -7,6 +7,7 @@
  */
 
 export const CARD_ART: Record<string, string> = {
+  'chocolat-chaud': '/cartes/chocolat-chaud.webp',
   'joker-givre': '/cartes/joker-givre.webp',
   'ouragan-blanc': '/cartes/ouragan-blanc.webp',
   'permafrost': '/cartes/permafrost.webp',

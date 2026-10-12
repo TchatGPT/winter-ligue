@@ -134,7 +134,21 @@ export const CARDS: readonly CardDefinition[] = [
     effect: { kind: 'bonus_points', value: 3 },
     nature: 'bonus',
     power: 8,
-    packs: ['perso', 'commu', 'finisseur'],
+    // Pas dans le Perso : sa commune y est le Chocolat Chaud.
+    packs: ['commu', 'finisseur'],
+    cible: 'HASARD',
+  },
+  {
+    id: 'chocolat-chaud',
+    name: 'Chocolat Chaud',
+    subtitle: '+5 pts bonus',
+    rarity: 'C',
+    glyph: '☕',
+    description: '+5 points sur ta prochaine game.',
+    effect: { kind: 'bonus_points', value: 5 },
+    nature: 'bonus',
+    power: 12,
+    packs: ['perso'],
     cible: 'HASARD',
   },
   /* ============================== Rare ================================== */
