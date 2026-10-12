@@ -1,4 +1,8 @@
+'use client';
+
+import { useState } from 'react';
 import { CardFrame } from '@/components/CardFrame';
+import { FicheCarte } from '@/components/FicheCarte';
 import { RarityChip, rarityMeta } from '@/components/ui';
 import type { MomentCarte, Rarity } from '@/lib/domain/types';
 
@@ -12,6 +16,9 @@ import type { MomentCarte, Rarity } from '@/lib/domain/types';
  *
  * Une tuile par carte : **l'action** en titre, le nom de la carte, ce qu'elle
  * fait en clair, puis quand elle se joue. Les malus sont teintés de rouge.
+ *
+ * Toute la tuile s'ouvre : la carte vient en grand, en relief
+ * (`FicheCarte`, `CarteInclinable`).
  */
 
 export interface CarteSaison {
@@ -39,6 +46,7 @@ const MOMENTS: Record<MomentCarte, string> = {
 
 export function CartesParRarete({ cartes }: { cartes: CarteSaison[] }) {
   const malus = cartes.filter((c) => c.nature === 'malus').length;
+  const [ouverte, setOuverte] = useState<CarteSaison | null>(null);
 
   return (
     <div className="space-y-8">
@@ -67,6 +75,12 @@ export function CartesParRarete({ cartes }: { cartes: CarteSaison[] }) {
             <ul className="actions-grille">
               {lot.map((c) => (
                 <li key={c.cardId} className="action-tuile" data-nature={c.nature}>
+                  <button
+                    type="button"
+                    className="action-tuile-ouvre"
+                    aria-label={`Voir ${c.name} en grand`}
+                    onClick={() => setOuverte(c)}
+                  />
                   <span className="action-carte" aria-hidden="true">
                     <CardFrame cardId={c.cardId} name={c.name} rarity={c.rarity} glyph={c.glyph} nature={c.nature} />
                   </span>
@@ -87,6 +101,28 @@ export function CartesParRarete({ cartes }: { cartes: CarteSaison[] }) {
           </section>
         );
       })}
+
+      {ouverte && (
+        <FicheCarte
+          carte={{
+            cardId: ouverte.cardId,
+            nom: ouverte.name,
+            action: ouverte.action,
+            rarity: ouverte.rarity,
+            glyph: ouverte.glyph,
+            description: ouverte.description.replace(/^MALUS : /, ''),
+            nature: ouverte.nature,
+            power: ouverte.power,
+          }}
+          legende={
+            <>
+              Se joue : {MOMENTS[ouverte.moment].toLowerCase()}
+              {ouverte.impact !== null && ` · ${ouverte.impact} pts au plus`}.
+            </>
+          }
+          onClose={() => setOuverte(null)}
+        />
+      )}
     </div>
   );
 }

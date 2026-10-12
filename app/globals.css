@@ -15578,3 +15578,93 @@ a.adm-tuile:hover .adm-tuile-fleche {
 .equitable {
   max-width: 32rem;
 }
+
+/* ---- La carte en relief (`CarteInclinable`) ----
+   Le composant pose --mx / --my, la position du pointeur de 0 à 1. La carte
+   penche vers lui, le reflet le suit, et l'illustration glisse à contre-sens
+   sous le cadre : le cadre devant, la scène derrière. Hors couche, pour passer
+   devant `.cadre-vecteur`. */
+.carte-3d {
+  --mx: 0.5;
+  --my: 0.5;
+  perspective: 900px;
+  touch-action: none;
+}
+.carte-3d-flotte {
+  transform-style: preserve-3d;
+}
+.carte-3d-corps {
+  position: relative;
+  transform-style: preserve-3d;
+  transform: rotateX(calc((0.5 - var(--my)) * 22deg)) rotateY(calc((var(--mx) - 0.5) * 26deg));
+  transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.3, 1);
+  will-change: transform;
+}
+.carte-3d[data-actif] .carte-3d-corps {
+  transition: transform 0.08s linear;
+}
+.carte-3d .cadre-vecteur {
+  transform: scale(1.1)
+    translate(calc((var(--mx) - 0.5) * -5%), calc((var(--my) - 0.5) * -5%));
+  transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+.carte-3d[data-actif] .cadre-vecteur {
+  transition: transform 0.08s linear;
+}
+/* Le reflet : une lumière douce sous le pointeur, découpée aux coins arrondis
+   de la carte (30 px sur une planche de 900 × 1326). */
+.carte-3d-reflet {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  border-radius: 3.4% / 2.3%;
+  background: radial-gradient(
+    55% 45% at calc(var(--mx) * 100%) calc(var(--my) * 100%),
+    rgb(255 255 255 / 0.32),
+    transparent 70%
+  );
+  mix-blend-mode: soft-light;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+}
+.carte-3d[data-actif] .carte-3d-reflet {
+  opacity: 1;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .carte-3d-flotte {
+    animation: carte-3d-flotte 6s ease-in-out infinite;
+  }
+  .carte-3d[data-actif] .carte-3d-flotte {
+    animation-play-state: paused;
+  }
+}
+@keyframes carte-3d-flotte {
+  0%,
+  100% {
+    transform: rotateY(-6deg) rotateX(2deg) translateY(0);
+  }
+  50% {
+    transform: rotateY(6deg) rotateX(-2deg) translateY(-6px);
+  }
+}
+
+/* Les tuiles des cartes de la saison s'ouvrent en grand : toute la tuile est
+   le bouton, et la vignette se soulève au survol. */
+.action-tuile-ouvre {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  cursor: zoom-in;
+}
+.action-tuile-ouvre:focus-visible {
+  outline: 2px solid var(--r, var(--aurora));
+  outline-offset: -2px;
+}
+.action-tuile:has(.action-tuile-ouvre:hover) {
+  background: rgb(255 255 255 / 0.06);
+}
+.action-tuile:has(.action-tuile-ouvre:hover) .action-carte .cadre {
+  transform: translateY(-3px) rotate(-2deg) scale(1.06);
+}

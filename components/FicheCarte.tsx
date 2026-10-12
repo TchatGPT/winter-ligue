@@ -3,6 +3,7 @@
 import { useEffect, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import { CardFrame } from '@/components/CardFrame';
+import { CarteInclinable } from '@/components/CarteInclinable';
 import { SnowCap } from '@/components/SnowCap';
 import { RarityChip, rarityMeta } from '@/components/ui';
 
@@ -87,7 +88,7 @@ export function FicheCarte({
 
         <div className="min-h-0 overflow-y-auto px-5 pt-9 pb-6 sm:px-8">
           <div className="flex flex-col items-center gap-5 sm:flex-row sm:items-start">
-            <div className="reveal relative w-[240px] max-w-[70vw] shrink-0">
+            <div className="reveal relative w-[min(340px,72vw,calc((100dvh-9rem)*0.68))] shrink-0">
               {meta.holo && (
                 <span
                   className="reveal-halo"
@@ -95,14 +96,17 @@ export function FicheCarte({
                   aria-hidden="true"
                 />
               )}
-              <CardFrame
-                cardId={carte.cardId}
-                name={carte.nom}
-                description={carte.description}
-                rarity={carte.rarity}
-                glyph={carte.glyph}
-                nature={carte.nature}
-              />
+              {/* La carte se penche sous le pointeur, l'illustration en profondeur. */}
+              <CarteInclinable>
+                <CardFrame
+                  cardId={carte.cardId}
+                  name={carte.nom}
+                  description={carte.description}
+                  rarity={carte.rarity}
+                  glyph={carte.glyph}
+                  nature={carte.nature}
+                />
+              </CarteInclinable>
             </div>
 
             <div className="min-w-0 flex-1 text-center sm:pt-2 sm:pr-10 sm:text-left">
