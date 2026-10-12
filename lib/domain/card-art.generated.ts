@@ -10,6 +10,7 @@ export const CARD_ART: Record<string, string> = {
   'bocal-de-givre': '/cartes/bocal-de-givre.webp',
   'chocolat-chaud': '/cartes/chocolat-chaud.webp',
   'coulee-de-neige': '/cartes/coulee-de-neige.webp',
+  'echo-lointain': '/cartes/echo-lointain.webp',
   'joker-givre': '/cartes/joker-givre.webp',
   'ouragan-blanc': '/cartes/ouragan-blanc.webp',
   'permafrost': '/cartes/permafrost.webp',

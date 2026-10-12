@@ -167,6 +167,22 @@ export const CARDS: readonly CardDefinition[] = [
     packs: ['perso'],
     cible: 'HASARD',
   },
+  {
+    // Copie, en petit : l'écart avec le meilleur tueur de la partie — celui
+    // de la capture, coéquipiers et streameuse compris —, deux kills au plus.
+    id: 'echo-lointain',
+    name: 'Écho Lointain',
+    subtitle: 'Clone kill du meilleur',
+    rarity: 'C',
+    glyph: '🏔',
+    description:
+      'Sur ta prochaine game, +1 point par kill qui te sépare du meilleur tueur de ta partie, jusqu’à +2.',
+    effect: { kind: 'clone_kills', cap: 2 },
+    nature: 'bonus',
+    power: 6,
+    packs: ['perso'],
+    cible: 'HASARD',
+  },
   /* ============================== Rare ================================== */
   {
     id: 'percee',
