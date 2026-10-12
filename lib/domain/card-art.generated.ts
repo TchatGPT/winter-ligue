@@ -7,7 +7,7 @@
  */
 
 export const CARD_ART: Record<string, string> = {
-
+  'permafrost': '/cartes/permafrost.webp',
 };
 
 export const BOOSTER_ART: Record<string, string> = {

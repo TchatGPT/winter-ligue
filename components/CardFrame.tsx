@@ -1,5 +1,5 @@
 import { aUneIllustration, CardArt } from '@/components/CardArt';
-import { getCard, RARITY_META } from '@/lib/domain/catalog';
+import { cardArt, getCard, RARITY_META } from '@/lib/domain/catalog';
 import type { Rarity } from '@/lib/domain/types';
 
 /**
@@ -57,6 +57,9 @@ export function CardFrame({
   // le catalogue : la carte le porte partout où elle s'affiche, sans que
   // chaque écran ait à le passer.
   const action = getCard(cardId)?.subtitle;
+  // Une illustration peinte, déposée dans `public/cartes/`, passe avant le
+  // dessin : elle remplit la fenêtre, le cadre et le cartouche restent.
+  const peinte = cardArt(cardId);
 
   return (
     <div
@@ -65,7 +68,10 @@ export function CardFrame({
       style={{ ['--r' as string]: meta.color }}
     >
       <div className="cadre-fenetre">
-        {aUneIllustration(cardId) ? (
+        {peinte ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img className="cadre-vecteur" src={peinte} alt="" aria-hidden="true" decoding="async" />
+        ) : aUneIllustration(cardId) ? (
           <CardArt cardId={cardId} className="cadre-vecteur" />
         ) : (
           <span className="cadre-glyphe" aria-hidden="true">
