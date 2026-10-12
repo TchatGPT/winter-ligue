@@ -2,10 +2,10 @@ import { describe, expect, it, vi } from 'vitest';
 import type { Database, Game, Player } from '@/lib/db/entities';
 import { emptyDatabase } from '@/lib/db/store';
 import { CARDS, cardsOfRarity, getCard, impactMax, momentDe, PACKS } from '@/lib/domain/catalog';
-import { CARD_IMPACT_CAP, GAME_LIMITS, IMPACT_PAR_RARETE } from '@/lib/domain/rules';
+import { GAME_LIMITS } from '@/lib/domain/rules';
 import { scoreGame } from '@/lib/domain/scoring';
 import { RARITIES, type CardEffect, type Placement } from '@/lib/domain/types';
-import { appliqueCartesEnAttente, regleCartesSansAttendre } from '@/lib/services/effects';
+import { appliqueCartesEnAttente, gamesSansCarte, regleCartesSansAttendre } from '@/lib/services/effects';
 
 // Le catalogue n'a plus qu'une carte par rareté : les cartes retirées restent
 // trouvables par `getCard`, pour exercer chaque genre d'effet.
@@ -29,54 +29,26 @@ const WORST_CASE_KILLS = GAME_LIMITS.maxKills;
 /** La carte à deux : ce que l'un gagne, l'autre le perd. */
 const aDeux = (effect: CardEffect) => effect.kind === 'echange';
 
-describe('le budget de chaque rareté', () => {
-  it('aucune carte ne dépasse le budget de sa rareté, même au pire cas', () => {
-    const offenders: string[] = [];
-
-    for (const card of CARDS) {
-      const impact = impactMax(card.effect);
-      if (impact !== null && impact > IMPACT_PAR_RARETE[card.rarity]) {
-        offenders.push(`${card.name} (${impact} pts pour ${IMPACT_PAR_RARETE[card.rarity]})`);
-      }
-    }
-
-    // Les actions viennent des roues de la Summer Ligue, pas leur force : une
-    // commune qui pèserait quinze points referait les roues.
-    expect(offenders).toEqual([]);
-  });
-
-  it('monte avec la rareté, et s’arrête au plafond d’une bonne game', () => {
-    for (let i = 1; i < RARITIES.length; i += 1) {
-      expect(IMPACT_PAR_RARETE[RARITIES[i]]).toBeGreaterThan(IMPACT_PAR_RARETE[RARITIES[i - 1]]);
-    }
-    expect(IMPACT_PAR_RARETE.L).toBe(CARD_IMPACT_CAP);
-    expect(CARD_IMPACT_CAP).toBeGreaterThanOrEqual(15);
-    expect(CARD_IMPACT_CAP).toBeLessThanOrEqual(35);
-  });
-
-  it('garde la commune à moins de la moitié du plafond', () => {
-    // C'est la demande : des cartes « beaucoup moins fortes », sauf en haut.
-    expect(IMPACT_PAR_RARETE.C).toBeLessThanOrEqual(CARD_IMPACT_CAP / 2);
-    // Et les deux du haut pèsent vraiment.
-    for (const rarity of ['UR', 'L'] as const) {
-      expect(IMPACT_PAR_RARETE[rarity]).toBeGreaterThan(CARD_IMPACT_CAP / 2);
+describe('les cartes sans plafond de points', () => {
+  it('la Game ×2 double kills et top, quelle que soit la game', () => {
+    for (const [kills, placement] of [
+      [GAME_LIMITS.maxKills, 1],
+      [12, 2],
+      [0, null],
+    ] as [number, Placement][]) {
+      const db = base('a');
+      pose(db, 'a', 'ouragan-blanc', 1);
+      const g = game(db, 'a', kills, placement);
+      const avant = g.score;
+      appliqueCartesEnAttente(db, g);
+      expect(g.score).toBe(avant * 2);
     }
   });
 
-  it('borne tous les multiplicateurs et toutes les copies, sans exception', () => {
+  it('les cartes plafonnées ont un plafond positif', () => {
     for (const card of CARDS) {
       const e = card.effect;
-      if (
-        e.kind === 'multiplicateur_game' ||
-        e.kind === 'diviseur_game' ||
-        e.kind === 'multiplie_jouee' ||
-        e.kind === 'clone_kills' ||
-        e.kind === 'echange' ||
-        e.kind === 'releve_pire'
-      ) {
-        expect(e.cap).toBeGreaterThan(0);
-        expect(e.cap).toBeLessThanOrEqual(IMPACT_PAR_RARETE[card.rarity]);
-      }
+      if ('cap' in e && e.cap !== undefined) expect(e.cap).toBeGreaterThan(0);
     }
   });
 });
@@ -143,6 +115,40 @@ describe('les malus ne transfèrent jamais', () => {
     for (const card of CARDS.filter((c) => c.cible === 'DEUX')) {
       expect(aDeux(card.effect)).toBe(true);
     }
+  });
+});
+
+describe('la game figée', () => {
+  it('fige la meilleure game libre, tout de suite, sans en changer le score', () => {
+    const db = base('a');
+    const petite = game(db, 'a', 4);
+    const grosse = game(db, 'a', 15, 1);
+    pose(db, 'a', 'permafrost', 1);
+    regleCartesSansAttendre(db, 'a');
+    expect(enAttente(db, 'a')).toHaveLength(0);
+    const figee = db.cartesEnAttente.find((c) => c.cardId === 'permafrost')!;
+    expect(figee.gameId).toBe(grosse.id);
+    expect(grosse.score).toBe(15 + 20);
+    // Plus aucune carte ne peut la toucher : elle n'est plus libre.
+    expect(gamesSansCarte(db, 'a').map((g) => g.id)).toEqual([petite.id]);
+  });
+
+  it('passe à la deuxième meilleure si la meilleure est figée, puis à la troisième', () => {
+    const db = base('a');
+    const g1 = game(db, 'a', 20);
+    const g2 = game(db, 'a', 12);
+    const g3 = game(db, 'a', 6);
+    for (let minute = 1; minute <= 3; minute += 1) pose(db, 'a', 'permafrost', minute);
+    regleCartesSansAttendre(db, 'a');
+    const figees = db.cartesEnAttente.filter((c) => c.cardId === 'permafrost').map((c) => c.gameId);
+    expect(figees).toEqual([g1.id, g2.id, g3.id]);
+  });
+
+  it('attend une game jouée avant de se poser', () => {
+    const db = base('a');
+    pose(db, 'a', 'permafrost', 1);
+    regleCartesSansAttendre(db, 'a');
+    expect(enAttente(db, 'a')).toHaveLength(1);
   });
 });
 
@@ -296,11 +302,9 @@ describe('une seule carte par game', () => {
     expect(enAttente(db, 'a')).toHaveLength(0);
   });
 
-  it('ne fait jamais bouger une game de plus que le budget de la rareté', () => {
+  it('ne fait jamais sortir une game de ses bornes', () => {
     for (const card of CARDS) {
       if (momentDe(card.effect) !== 'PROCHAINE' || card.cible === 'DEUX') continue;
-      // Le pire cas de chaque carte : la game la plus haute pour les
-      // multiplicateurs, la plus basse pour les jokers et les petites games.
       for (const [kills, placement] of [
         [WORST_CASE_KILLS, 1],
         [0, null],
@@ -309,9 +313,9 @@ describe('une seule carte par game', () => {
         const db = base('a');
         pose(db, 'a', card.id, 1);
         const g = game(db, 'a', kills, placement);
-        const avant = g.score;
         appliqueCartesEnAttente(db, g, { meilleurKills: WORST_CASE_KILLS });
-        expect(Math.abs(g.score - avant)).toBeLessThanOrEqual(IMPACT_PAR_RARETE[card.rarity]);
+        expect(g.bonusPoints).toBeLessThanOrEqual(GAME_LIMITS.maxBonusPoints);
+        expect(g.bonusPoints).toBeGreaterThanOrEqual(GAME_LIMITS.minBonusPoints);
       }
     }
   });

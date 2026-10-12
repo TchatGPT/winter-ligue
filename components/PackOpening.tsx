@@ -331,7 +331,7 @@ export function PackOpening({
             {
               titre: 'La carte se joue',
               texte:
-                'Le plus souvent sur ta prochaine game : elle s’y applique, puis disparaît. Certaines relèvent une game déjà jouée, ou donnent tout de suite des flocons, une game de plus, une immunité. Jamais plus de 25 points sur une game.',
+                'Le plus souvent sur ta prochaine game : elle s’y applique, puis disparaît. Certaines relèvent une game déjà jouée, ou donnent tout de suite des flocons, une game de plus, une immunité.',
               icone: <GlaceEpees className="h-full w-full" />,
             },
           ].map((etape: { titre: string; texte: string; detail?: React.ReactNode; icone: React.ReactNode }, i) => (

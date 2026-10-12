@@ -4,7 +4,7 @@ import { Medaille } from '@/components/EmblemePalier';
 import { NAV_ICONS, type NavIconName } from '@/components/icons';
 import { ReglesSommaire, type SujetRegles } from '@/components/ReglesSommaire';
 import { RarityChip } from '@/components/ui';
-import { RARITY_META } from '@/lib/domain/catalog';
+import { CARDS, RARITY_META } from '@/lib/domain/catalog';
 import {
   CADEAU_DU_JOUR,
   CHANCE,
@@ -13,7 +13,6 @@ import {
   DUEL,
   ECONOMY,
   EVENEMENTS_SUBS,
-  IMPACT_PAR_RARETE,
   PACKS_REGLES,
   PALIERS_CHANCE,
   PLACEMENT_POINTS,
@@ -149,7 +148,6 @@ export function Regles({ maxGames, packs }: { maxGames: number; packs: PackDefin
   const avalanche = EVENEMENTS_SUBS.find((e) => e.kind === 'FLOCONS_DOUBLES');
   const tempete = EVENEMENTS_SUBS.find((e) => e.kind === 'COMMU_ACCELERE');
   const chanceMax = PALIERS_CHANCE.at(-1)!.multiplicateur;
-  const carteMax = Math.max(...RARETES.map((r) => IMPACT_PAR_RARETE[r]));
 
   // L'exemple de la chance : la légendaire du Booster Perso, sans et avec.
   const perso = pack('perso');
@@ -214,7 +212,7 @@ export function Regles({ maxGames, packs }: { maxGames: number; packs: PackDefin
             detail={`Top 2 +${PLACEMENT_POINTS['2']} · Top 3 +${PLACEMENT_POINTS['3']}`}
           />
           <i aria-hidden="true">+</i>
-          <Tuile valeur={`±${carteMax}`} nom="Ta carte, au plus" detail="un bonus ou un malus" />
+          <Tuile valeur="+ / −" nom="Ta carte" detail="un bonus ou un malus" />
           <i aria-hidden="true">=</i>
           <Tuile valeur="Score" nom="de la game" ton="or" />
         </div>
@@ -341,16 +339,21 @@ export function Regles({ maxGames, packs }: { maxGames: number; packs: PackDefin
       'layers',
       'var(--violet)',
       <>
-        <ul className="rgs-raretes" aria-label="Ce qu’une carte fait bouger au plus, selon sa rareté">
-          {RARETES.map((r) => (
-            <li key={r} style={{ ['--teinte' as string]: RARITY_META[r].color }}>
-              <RarityChip rarity={r} />
-              <b>{IMPACT_PAR_RARETE[r]} pts</b>
-              <span>{RARITY_META[r].label}</span>
-            </li>
-          ))}
+        <ul className="rgs-raretes" aria-label="Les cartes de chaque rareté">
+          {RARETES.map((r) => {
+            const n = CARDS.filter((c) => c.rarity === r).length;
+            return (
+              <li key={r} style={{ ['--teinte' as string]: RARITY_META[r].color }}>
+                <RarityChip rarity={r} />
+                <b>
+                  {n} carte{n > 1 ? 's' : ''}
+                </b>
+                <span>{RARITY_META[r].label}</span>
+              </li>
+            );
+          })}
         </ul>
-        <p className="rgs-sous-note">Au plus, ce qu’une carte fait gagner ou perdre sur une game, selon sa rareté.</p>
+        <p className="rgs-sous-note">Plus une carte est rare, plus elle est forte.</p>
         <Duo
           gauche={
             <Encart titre="Quand elle se joue">

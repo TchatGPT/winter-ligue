@@ -350,8 +350,9 @@ export function FicheJoueur({ fiche, subs }: { fiche: DonneesFiche; subs: BilanS
                                 <span key={`${effet.cardId}-${i}`} data-malus={effet.points < 0 ? '' : undefined}>
                                   {carte.name}
                                   <b>
-                                    {effet.points > 0 ? '+' : ''}
-                                    {effet.points}
+                                    {carte.effect.kind === 'fige_meilleure'
+                                      ? 'figée'
+                                      : `${effet.points > 0 ? '+' : ''}${effet.points}`}
                                   </b>
                                 </span>
                               );

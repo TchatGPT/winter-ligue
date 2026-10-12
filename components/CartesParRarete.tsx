@@ -1,6 +1,5 @@
 import { CardFrame } from '@/components/CardFrame';
 import { RarityChip, rarityMeta } from '@/components/ui';
-import { IMPACT_PAR_RARETE } from '@/lib/domain/rules';
 import type { MomentCarte, Rarity } from '@/lib/domain/types';
 
 /**
@@ -63,7 +62,6 @@ export function CartesParRarete({ cartes }: { cartes: CarteSaison[] }) {
               <span className="rarete-compte">
                 {lot.length} carte{lot.length > 1 ? 's' : ''}
               </span>
-              <span className="rarete-impact">jusqu’à {IMPACT_PAR_RARETE[rarete]} pts sur une game</span>
             </header>
 
             <ul className="actions-grille">

@@ -94,11 +94,10 @@ export const RARITY_META: Record<
  *
  * ## Ce qui a changé par rapport aux roues
  *
- * La force. Une roue pouvait échanger deux games entières ou doubler un score
- * sans limite ; ici chaque carte tient dans le budget de sa rareté
- * (`IMPACT_PAR_RARETE`) : quatre points pour une commune, vingt-cinq pour une
- * légendaire — une bonne game, jamais plus. Un test le vérifie carte par
- * carte, au pire cas.
+ * Il n'y a pas de plafond de points par rareté : une carte pèse ce que dit son
+ * effet — la Game ×2 double une game, quelle qu'elle soit. Plus une carte est
+ * rare, plus elle est forte (`power`, testé). Une game reste bornée
+ * (`GAME_LIMITS`), et ne porte jamais deux cartes.
  *
  * ## Les règles des malus
  *
@@ -180,6 +179,33 @@ export const CARDS: readonly CardDefinition[] = [
     packs: ['perso', 'commu', 'finisseur', 'folie'],
     cible: 'HASARD',
   },
+  {
+    id: 'ouragan-blanc',
+    name: 'Ouragan Blanc',
+    subtitle: 'Game ×2',
+    rarity: 'L',
+    glyph: '🌀',
+    description: 'Ta prochaine game compte double : kills et top ×2.',
+    effect: { kind: 'multiplicateur_game', value: 2 },
+    nature: 'bonus',
+    power: 98,
+    packs: ['perso'],
+    cible: 'HASARD',
+  },
+  {
+    id: 'permafrost',
+    name: 'Permafrost',
+    subtitle: 'Fige ta meilleure game',
+    rarity: 'L',
+    glyph: '🧊',
+    description:
+      'Ta meilleure game est figée : plus aucune carte ne peut la toucher. Si elle l’est déjà, c’est la suivante.',
+    effect: { kind: 'fige_meilleure' },
+    nature: 'bonus',
+    power: 90,
+    packs: ['perso'],
+    cible: 'HASARD',
+  },
 ];
 
 const CARD_INDEX = new Map(CARDS.map((c) => [c.id, c]));
@@ -202,6 +228,7 @@ export function momentDe(effect: CardEffect): MomentCarte {
   switch (effect.kind) {
     case 'releve_pire':
     case 'multiplie_jouee':
+    case 'fige_meilleure':
       return 'JOUEE';
     case 'snowflakes':
     case 'game_supplementaire':
@@ -218,9 +245,9 @@ const SCORE_MAX = GAME_LIMITS.maxKills + PLACEMENT_POINTS['1'];
 /**
  * Ce qu'une carte peut faire bouger sur une game, au pire cas, en points.
  *
- * Rend `null` pour ce qui ne touche pas au score : les flocons, le créneau de
- * game, l'immunité. C'est la mesure que les tests comparent au budget de la
- * rareté (`IMPACT_PAR_RARETE`).
+ * Rend `null` pour ce qui ne touche pas au score — les flocons, le créneau de
+ * game, l'immunité, la game figée — et pour un multiplicateur sans plafond, qui
+ * suit la game : la page des boosters n'annonce alors pas de « au plus ».
  */
 export function impactMax(effect: CardEffect): number | null {
   switch (effect.kind) {
@@ -231,7 +258,8 @@ export function impactMax(effect: CardEffect): number | null {
     case 'petite_game':
       return Math.abs(effect.value);
     case 'multiplicateur_game':
-      return Math.min(effect.cap, Math.round(SCORE_MAX * (effect.value - 1)));
+      // Sans plafond, la carte suit la game : pas de « au plus » à annoncer.
+      return effect.cap === undefined ? null : Math.min(effect.cap, Math.round(SCORE_MAX * (effect.value - 1)));
     case 'diviseur_game':
       return Math.min(effect.cap, Math.round(SCORE_MAX * (1 - 1 / effect.value)));
     case 'multiplie_jouee':
@@ -245,6 +273,7 @@ export function impactMax(effect: CardEffect): number | null {
     case 'flocons_doubles':
     case 'game_supplementaire':
     case 'immunite':
+    case 'fige_meilleure':
       return null;
   }
 }
@@ -262,7 +291,9 @@ export function resumeEffet(effect: CardEffect): string {
     case 'malus_points':
       return `−${effect.value} pts`;
     case 'multiplicateur_game':
-      return `score ×${fr(effect.value)}, max +${effect.cap}`;
+      return effect.cap === undefined
+        ? `game ×${fr(effect.value)}`
+        : `score ×${fr(effect.value)}, max +${effect.cap}`;
     case 'diviseur_game':
       return `score ÷${fr(effect.value)}, max −${effect.cap}`;
     case 'clone_kills':
@@ -287,6 +318,8 @@ export function resumeEffet(effect: CardEffect): string {
       return '+1 game';
     case 'immunite':
       return `immunité ${effect.heures} h`;
+    case 'fige_meilleure':
+      return 'meilleure game figée';
   }
 }
 

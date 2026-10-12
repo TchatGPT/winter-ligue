@@ -3,7 +3,6 @@ import { type Database, type Game, type Player } from '@/lib/db/entities';
 import { emptyDatabase } from '@/lib/db/store';
 import { getCard } from '@/lib/domain/catalog';
 import {
-  CARD_IMPACT_CAP,
   EVENEMENTS_SUBS,
   FACTEURS_EVENEMENTS,
   GAME_LIMITS,
@@ -282,7 +281,7 @@ describe('les cartes pendant un blizzard', () => {
   it('reste sous les bornes d’une game, même sur la carte la plus forte', () => {
     const renforcee = partie(enCours(), 'etoile-du-nord', 5);
     expect(renforcee.bonusPoints).toBe(
-      Math.round(CARD_IMPACT_CAP * FACTEURS_EVENEMENTS.CARTES_RENFORCEES),
+      Math.round(annonce('etoile-du-nord') * FACTEURS_EVENEMENTS.CARTES_RENFORCEES),
     );
     expect(renforcee.bonusPoints).toBeLessThanOrEqual(GAME_LIMITS.maxBonusPoints);
   });

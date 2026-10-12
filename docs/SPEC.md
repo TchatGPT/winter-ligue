@@ -336,8 +336,8 @@ taux affiché sous le sachet serait devenu faux.
 chaîne sans borne serait invérifiable, et l'attente à l'écran aussi.
 
 L'effet sur le taux global de légendaires est négligeable — 0,08 % × 20 % —
-précisément parce que le jeton est rare. La carte obtenue reste soumise à
-`CARD_IMPACT_CAP` comme toutes les autres, donc l'invariant anti-pay-to-win tient.
+précisément parce que le jeton est rare. La carte obtenue reste une carte
+comme les autres, sur une seule game.
 
 ### Le seul endroit où l'affichage s'écarte des taux
 

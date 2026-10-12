@@ -149,7 +149,8 @@ function demande(effect: CardEffect, game: Game, contexte: ContexteGame): Demand
     case 'malus_points':
       return { points: -effect.value, resultat: pts(-effect.value) };
     case 'multiplicateur_game': {
-      const points = Math.min(effect.cap, Math.round(nu * (effect.value - 1)));
+      const double = Math.round(nu * (effect.value - 1));
+      const points = effect.cap === undefined ? double : Math.min(effect.cap, double);
       return points > 0
         ? { points, resultat: `×${fr(effect.value)} sur ${nu} pts → ${pts(points)}` }
         : { points: 0, resultat: 'game à 0 point, sans effet' };
@@ -304,6 +305,24 @@ function regleEchange(
 function regleSurJouee(db: Database, pendante: CarteEnAttente, card: CardDefinition): Reglement {
   const effect = card.effect;
   const attend: Reglement = { points: 0, resultat: '', facteurFlocons: 1, regle: false, gameId: null };
+  if (effect.kind === 'fige_meilleure') {
+    // La meilleure game encore sans carte ; à égalité, la plus récente. La
+    // carte s'y pose sans en changer le score : elle prend la place, et plus
+    // aucune autre ne peut la toucher.
+    const libres = gamesSansCarte(db, pendante.joueurId);
+    if (libres.length === 0) return attend;
+    const meilleure = [...libres].sort((a, b) => b.score - a.score)[0];
+    // Inscrite sur la game, à zéro point : elle s'y voit, et la game n'est
+    // plus libre.
+    applyPoints(db, meilleure, card, pendante.ouvertureId, 0);
+    return {
+      points: 0,
+      resultat: `meilleure game figée (${meilleure.score} pts) : plus aucune carte ne peut la toucher`,
+      facteurFlocons: 1,
+      regle: true,
+      gameId: meilleure.id,
+    };
+  }
   if (effect.kind !== 'releve_pire' && effect.kind !== 'multiplie_jouee') return attend;
 
   // Il faut deux games pour dire laquelle est la pire, ou la meilleure.

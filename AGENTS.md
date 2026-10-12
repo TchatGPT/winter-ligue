@@ -51,10 +51,12 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   carte doit pouvoir sortir de chaque booster qui tire sa rareté — un test le vérifie.
 - Les taux de rareté sont dans `RARITY_WEIGHTS_BASE` et dans `PACKS[].weights`.
   Toute table doit sommer **exactement** à 100 000 — un test le vérifie.
-- **Une carte pèse ce que sa rareté autorise** : `IMPACT_PAR_RARETE`, de 6 points pour
-  une commune à `CARD_IMPACT_CAP` (25 points) pour une légendaire, au pire cas. Quatre
-  raretés : commune, rare, ultra rare, légendaire (peu commune et super rare ont été
-  fondues dans commune et rare). Aucun malus parmi les communes. Un
+- **Pas de plafond de points par rareté** (retiré le 12/10/2026, à la demande de
+  l'organisation) : une carte pèse ce que dit son effet — la « Game ×2 » double une game,
+  quelle qu'elle soit — et plus elle est rare, plus elle est forte (`power`, testé). Une
+  game reste bornée par `GAME_LIMITS`. Quatre raretés : commune, rare, ultra rare,
+  légendaire (peu commune et super rare ont été fondues dans commune et rare). Aucun
+  malus parmi les communes. Un
   malus retire des points, il n'en donne jamais à l'attaquant, ne tombe que sur la
   prochaine game de sa cible, et ne supprime, ne vole ni ne copie jamais la game
   d'autrui. `tests/equilibre.test.ts` verrouille ces règles.

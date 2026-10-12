@@ -190,11 +190,10 @@ méritent la même vigilance :
   rétroactivement toute la saison. Le score d'une game ne dépend plus que de la game.
   Seule exception, bornée : la carte « Game supplémentaire » ajoute un créneau de game,
   trois au plus par joueur et par saison.
-- **Une carte pèse ce que sa rareté autorise.** Les actions des cartes reprennent celles
-  des roues de la Summer Ligue, pas leur force : `IMPACT_PAR_RARETE` fixe ce qu'une
-  carte peut faire bouger sur une game, de 4 points pour une commune à 25 pour une
-  légendaire, et `tests/equilibre.test.ts` le vérifie carte par carte, au pire cas. Une
-  game ne porte jamais deux cartes. Un malus ne tombe que sur la prochaine game d'un
+- **Pas de plafond de points par rareté** (retiré le 12/10/2026, à la demande de
+  l'organisation) : une carte pèse ce que dit son effet — la « Game ×2 » double une game,
+  quelle qu'elle soit. Une game reste bornée par `GAME_LIMITS` (±80 points de cartes), et
+  ne porte jamais deux cartes. Un malus ne tombe que sur la prochaine game d'un
   joueur tiré au sort ou de la tête du classement ; il ne transfère rien, et la game
   d'autrui n'est jamais supprimée, volée ni copiée. La streameuse n'est jamais tirée.
 

@@ -154,8 +154,7 @@ export const PACKS_REGLES = {
    * 2 — et un par sub de niveau 3, voir `packsPersoAcquis`.
    *
    * C'est la seule chose qu'un sub achète à quelqu'un en particulier, et elle
-   * est bornée deux fois : le pack ne contient que des bonus, et chacun est
-   * plafonné à `CARD_IMPACT_CAP` sur une seule game.
+   * est bornée : le pack ne contient que des bonus, sur une seule game.
    */
   persoTousLes: 5,
 } as const;
@@ -585,36 +584,6 @@ export function rarityPercent(weights: Record<Rarity, number>, rarity: Rarity): 
 }
 
 /* ------------------------------- Les cartes ------------------------------ */
-
-/**
- * Plafond d'impact d'une carte, en points.
- *
- * Une game moyenne vaut environ 25 points. Une carte au-delà de ce plafond
- * volerait une part visible du classement en un tirage — c'est exactement ce
- * qui rendait certaines roues de la Summer Ligue insupportables. Un test
- * vérifie qu'aucune carte ne le dépasse.
- */
-export const CARD_IMPACT_CAP = 25;
-
-/**
- * Le budget de chaque rareté : ce qu'une carte peut faire bouger sur une game,
- * au pire cas, dans un sens comme dans l'autre.
- *
- * Les actions reprennent celles des roues de la Summer Ligue, mais pas leur
- * force : là-bas un ×2 ou un échange de games pouvait valoir cinquante points
- * d'un coup. Ici une commune pèse quatre points, et seules les trois raretés
- * du haut pèsent vraiment — sans jamais dépasser `CARD_IMPACT_CAP`, une bonne
- * game.
- *
- * Un test vérifie chaque carte contre le budget de sa rareté, et que les
- * budgets montent avec elle.
- */
-export const IMPACT_PAR_RARETE: Record<Rarity, number> = {
-  C: 6,
-  R: 15,
-  UR: 20,
-  L: CARD_IMPACT_CAP,
-};
 
 /**
  * Les derniers du classement, pour les cartes qui leur donnent un coup de

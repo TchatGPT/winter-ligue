@@ -5,7 +5,7 @@ import { EventailBoosters } from '@/components/EventailBoosters';
 import { SnowCap } from '@/components/SnowCap';
 import { IconJauge, IconPack, IconSnowflake, IconSwords, IconTrophy, IconTwitch } from '@/components/icons';
 import { GEMME_DU_PACK, PACKS, packArt } from '@/lib/domain/catalog';
-import { CADEAU_DU_JOUR, CARD_IMPACT_CAP, CHANCE, ECONOMY, PLACEMENT_POINTS, SEASON } from '@/lib/domain/rules';
+import { CADEAU_DU_JOUR, CHANCE, ECONOMY, PLACEMENT_POINTS, SEASON } from '@/lib/domain/rules';
 
 /**
  * L'accueil, quand on n'est pas connecté.
@@ -171,7 +171,7 @@ export function Accueil({ twitchEnabled, devLogin }: { twitchEnabled: boolean; d
         chiffre: String(PACKS.length),
         legende: 'boosters, ouverts en live',
         titre: 'Les subs font tomber des boosters',
-        children: `Chacun donne une carte qui change une game : jusqu’à ${CARD_IMPACT_CAP} points, bonus ou malus.`,
+        children: 'Chacun donne une carte qui change une game, en bonus ou en malus.',
       },
     },
     {

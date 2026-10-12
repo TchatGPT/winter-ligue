@@ -43,8 +43,8 @@ export type CibleCarte = 'TOUS' | 'HASARD' | 'DEUX' | 'TETE' | 'QUEUE';
  *
  * Les actions reprennent celles des roues de la Summer Ligue — le
  * multiplicateur, le clone de kills, le joker, la game supplémentaire,
- * l'immunité — mais ramenées à l'échelle de la Winter : une carte pèse ce que
- * sa rareté autorise (`IMPACT_PAR_RARETE`), jamais davantage.
+ * l'immunité. Il n'y a pas de plafond de points par rareté : une carte pèse
+ * ce que dit son effet, et plus elle est rare, plus elle est forte.
  *
  * Trois moments, selon le genre (`momentDe`) :
  *
@@ -69,8 +69,8 @@ export type CardEffect =
   | { kind: 'bonus_points'; value: number }
   /** « −N pts à un joueur ». */
   | { kind: 'malus_points'; value: number }
-  /** « Multiplicateur game » : le score entier (kills + top) multiplié, plafonné en points. */
-  | { kind: 'multiplicateur_game'; value: number; cap: number }
+  /** « Multiplicateur game » : le score entier (kills + top) multiplié, plafonné en points s'il a un `cap`. */
+  | { kind: 'multiplicateur_game'; value: number; cap?: number }
   /** « Une game ÷ N » : le score entier divisé, la perte plafonnée en points. */
   | { kind: 'diviseur_game'; value: number; cap: number }
   /** « Clone kill du meilleur » : les kills du meilleur tueur de la partie, plafonné. */
@@ -94,6 +94,13 @@ export type CardEffect =
   | { kind: 'releve_pire'; cap: number }
   /** « Pire game ×2 », « Meilleure game ×1,5 » : une game jouée multipliée, plafonné. */
   | { kind: 'multiplie_jouee'; cible: 'pire' | 'meilleure'; value: number; cap: number }
+  /**
+   * « Fige ta meilleure game » : la carte se pose sur la meilleure game encore
+   * sans carte, sans en changer le score. Une game ne portant jamais deux
+   * cartes, plus aucune — malus de fin de saison, échange — ne peut la
+   * toucher. Si la meilleure en porte déjà une, c'est la suivante.
+   */
+  | { kind: 'fige_meilleure' }
   /* ------------------------------ Tout de suite --------------------------- */
   /** Des flocons, dans l'instant. Aucune incidence au classement. */
   | { kind: 'snowflakes'; value: number }
