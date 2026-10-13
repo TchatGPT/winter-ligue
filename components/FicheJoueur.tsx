@@ -100,8 +100,6 @@ export function FicheJoueur({ fiche, subs }: { fiche: DonneesFiche; subs: BilanS
   }, [chronologie, filtre, tri]);
   const visibles = tout ? lignes : lignes.slice(0, GAMES_VISIBLES);
 
-  // Une barre par créneau de la saison : les games jouées, puis les créneaux à venir.
-  const aVenir = Math.max(0, fiche.creneaux - chronologie.length);
 
   const ONGLETS: { cle: Onglet; nom: string; compte?: number }[] = [
     { cle: 'games', nom: 'Games', compte: chronologie.length },
@@ -206,67 +204,78 @@ export function FicheJoueur({ fiche, subs }: { fiche: DonneesFiche; subs: BilanS
             </p>
           ) : (
             <>
-              <div className="profil-resume">
-                {([1, 2, 3] as const).map((n) => (
-                  <span key={n} className="profil-resume-podium">
-                    <Rang position={n} id={`resume-${n}`} className="h-6 w-6" />
-                    <b>{n === 1 ? t.top1 : n === 2 ? t.top2 : t.top3}</b> Top {n}
-                  </span>
-                ))}
-                <span>
-                  Meilleure <b>{t.bestScore}</b>
-                </span>
-                <span>
-                  Moins bonne <b>{t.worstScore}</b>
-                </span>
-                <span>
-                  Moyenne <b>{decimal(t.averageScore)}</b>
-                </span>
-              </div>
-
-              {/* La saison en barres : un créneau par barre, la moyenne en pointillés. */}
-              <figure className="profil-courbe">
-                <div
-                  className="profil-courbe-barres"
-                  style={{ ['--moyenne' as string]: t.averageScore / meilleure } as CSSProperties}
-                  role="img"
-                  aria-label={`Ses ${chronologie.length} games sur ${fiche.creneaux}, de la première à la dernière : ${chronologie.map((g) => g.score).join(', ')} points.`}
+              {/* Quatre chiffres, en tuiles, comme ceux des duels. */}
+              <dl className="profil-trio profil-quatuor">
+                <Chiffre nom="Games" precision={restantes > 0 ? `${restantes} à jouer` : 'saison terminée'}>
+                  {t.countedGames}
+                  <small>/{fiche.creneaux}</small>
+                </Chiffre>
+                <Chiffre nom="Moyenne" precision="points par game">
+                  {decimal(t.averageScore)}
+                </Chiffre>
+                <Chiffre nom="Meilleure" precision={`la moins bonne : ${t.worstScore} pt${Math.abs(t.worstScore) > 1 ? 's' : ''}`}>
+                  {t.bestScore}
+                </Chiffre>
+                <Chiffre
+                  nom="Podiums"
+                  precision={
+                    <span className="profil-podiums">
+                      {([1, 2, 3] as const).map((n) => (
+                        <span key={n}>
+                          <Rang position={n} id={`podium-${n}`} className="h-5 w-5" />
+                          <b>{n === 1 ? t.top1 : n === 2 ? t.top2 : t.top3}</b>
+                        </span>
+                      ))}
+                    </span>
+                  }
                 >
-                  {chronologie.map((g) => (
-                    <span
-                      key={g.id}
-                      title={`#${numeroDe.get(g.id)} · ${g.score} pts · ${g.kills} kills${g.placement && g.placement <= 3 ? ` · Top ${g.placement}` : ''}`}
-                      data-top={g.placement !== null && g.placement <= 3 ? g.placement : undefined}
-                      data-passee={g.skipped ? '' : undefined}
-                      style={{ ['--part' as string]: Math.max(0.03, g.score / meilleure) } as CSSProperties}
-                    />
-                  ))}
-                  {Array.from({ length: aVenir }, (_, i) => (
-                    <span key={`a-venir-${i}`} data-a-venir="" />
-                  ))}
-                  <i className="profil-courbe-moyenne" aria-hidden="true" />
-                </div>
-                <figcaption>
-                  <span>
-                    <i data-legende="1" /> Top 1
-                  </span>
-                  <span>
-                    <i data-legende="2" /> Top 2
-                  </span>
-                  <span>
-                    <i data-legende="3" /> Top 3
-                  </span>
-                  <span>
-                    <i data-legende="autre" /> Hors top 3
-                  </span>
-                  <span>
-                    <i data-legende="moyenne" /> Moyenne
-                  </span>
-                  <span className="ml-auto">Game 1 → {fiche.creneaux}</span>
-                </figcaption>
-              </figure>
+                  {t.top1 + t.top2 + t.top3}
+                </Chiffre>
+              </dl>
 
-              {/* Les réglages du tableau : quoi montrer, dans quel ordre. */}
+              {/* La saison en barres, une par game jouée : à partir de trois, elle
+                  dit quelque chose. Plus de rangée de créneaux vides. */}
+              {chronologie.length >= 3 && (
+                <figure className="profil-courbe">
+                  <div
+                    className="profil-courbe-barres"
+                    style={{ ['--moyenne' as string]: t.averageScore / meilleure } as CSSProperties}
+                    role="img"
+                    aria-label={`Ses ${chronologie.length} games, de la première à la dernière : ${chronologie.map((g) => g.score).join(', ')} points.`}
+                  >
+                    {chronologie.map((g) => (
+                      <span
+                        key={g.id}
+                        title={`Game ${numeroDe.get(g.id)} · ${g.score} pts · ${g.kills} kills${g.placement && g.placement <= 3 ? ` · Top ${g.placement}` : ''}`}
+                        data-top={g.placement !== null && g.placement <= 3 ? g.placement : undefined}
+                        data-passee={g.skipped ? '' : undefined}
+                        style={{ ['--part' as string]: Math.max(0.03, g.score / meilleure) } as CSSProperties}
+                      />
+                    ))}
+                    <i className="profil-courbe-moyenne" aria-hidden="true" />
+                  </div>
+                  <figcaption>
+                    <span>
+                      <i data-legende="1" /> Top 1
+                    </span>
+                    <span>
+                      <i data-legende="2" /> Top 2
+                    </span>
+                    <span>
+                      <i data-legende="3" /> Top 3
+                    </span>
+                    <span>
+                      <i data-legende="autre" /> Hors top 3
+                    </span>
+                    <span>
+                      <i data-legende="moyenne" /> Moyenne
+                    </span>
+                    <span className="ml-auto">Game 1 → {chronologie.length}</span>
+                  </figcaption>
+                </figure>
+              )}
+
+              {/* Les réglages de la liste : quoi montrer, dans quel ordre. */}
               <div className="profil-reglages">
                 <div className="segment" role="group" aria-label="Quelles games montrer">
                   {(
@@ -295,55 +304,47 @@ export function FicheJoueur({ fiche, subs }: { fiche: DonneesFiche; subs: BilanS
                 </div>
               </div>
 
+              {/* Une tuile par game : le score en grand, le classement, les kills,
+                  la carte jouée dessus. */}
               {lignes.length === 0 ? (
                 <p className="profil-vide">Aucune game ne correspond.</p>
               ) : (
-                <div className="profil-tableau" role="table" aria-label="Ses games">
-                  <div className="profil-tableau-tete" role="row">
-                    <span role="columnheader">#</span>
-                    <span role="columnheader">Date</span>
-                    <span role="columnheader">Classement</span>
-                    <span role="columnheader">Kills</span>
-                    <span role="columnheader">Carte</span>
-                    <span role="columnheader">Score</span>
-                  </div>
+                <ul className="profil-games">
                   {visibles.map((g) => {
                     const top = g.placement !== null && g.placement <= 3 ? g.placement : null;
                     return (
-                      <div
+                      <li
                         key={g.id}
-                        className="profil-ligne"
-                        role="row"
+                        className="profil-game"
                         data-top={top ?? undefined}
                         data-passee={g.skipped ? '' : undefined}
-                        style={{ ['--part' as string]: Math.max(0.03, g.score / meilleure) } as CSSProperties}
                       >
-                        <span role="cell" className="profil-ligne-numero">
-                          {numeroDe.get(g.id)}
+                        <span className="profil-game-score num">
+                          <b>{g.score}</b>
+                          <small>pts</small>
                         </span>
-                        <span role="cell" className="profil-ligne-date">
-                          {shortDateTime(g.playedAt)}
-                          {g.skipped && <em>passée</em>}
+                        <span className="profil-game-milieu">
+                          <span className="profil-game-titre">
+                            {top ? (
+                              <>
+                                <Rang position={top} id={`game-${g.id}`} className="h-5 w-5" />
+                                Top {top}
+                              </>
+                            ) : (
+                              'Hors top 3'
+                            )}
+                            <span className="profil-game-kills">
+                              · {g.kills} kill{g.kills > 1 ? 's' : ''}
+                            </span>
+                          </span>
+                          <span className="profil-game-date">
+                            Game {numeroDe.get(g.id)} · {shortDateTime(g.playedAt)}
+                            {g.skipped && ' · ne compte pas'}
+                          </span>
                         </span>
-                        <span role="cell" className="profil-ligne-top">
-                          {top ? (
-                            <>
-                              <Rang position={top} id={`ligne-${g.id}`} className="h-6 w-6" />
-                              Top {top}
-                            </>
-                          ) : (
-                            <span className="text-faint">—</span>
-                          )}
-                        </span>
-                        <span role="cell" className="profil-ligne-kills">
-                          <b>{g.kills}</b>
-                          <small> kill{g.kills > 1 ? 's' : ''}</small>
-                        </span>
-                        <span role="cell" className="profil-ligne-cartes">
-                          {g.applied.length === 0 ? (
-                            <span className="text-faint">—</span>
-                          ) : (
-                            g.applied.map((effet, i) => {
+                        {g.applied.length > 0 && (
+                          <span className="profil-game-cartes">
+                            {g.applied.map((effet, i) => {
                               const carte = getCard(effet.cardId);
                               if (!carte) return null;
                               return (
@@ -356,19 +357,13 @@ export function FicheJoueur({ fiche, subs }: { fiche: DonneesFiche; subs: BilanS
                                   </b>
                                 </span>
                               );
-                            })
-                          )}
-                        </span>
-                        <span role="cell" className="profil-ligne-score">
-                          <i aria-hidden="true">
-                            <i />
-                          </i>
-                          <b>{g.score}</b>
-                        </span>
-                      </div>
+                            })}
+                          </span>
+                        )}
+                      </li>
                     );
                   })}
-                </div>
+                </ul>
               )}
               {lignes.length > GAMES_VISIBLES && (
                 <button type="button" className="btn profil-tout" onClick={() => setTout((v) => !v)}>

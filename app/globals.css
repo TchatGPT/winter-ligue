@@ -16114,3 +16114,151 @@ a.adm-tuile:hover .adm-tuile-fleche {
   color: var(--muted);
   text-align: left;
 }
+
+/* ---- Fiche joueur, onglet Games ----
+   Quatre tuiles de chiffres, les barres des games jouées seulement, puis une
+   tuile par game : le score en grand, le classement, la carte jouée. */
+.profil-quatuor {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+@media (min-width: 768px) {
+  .profil-quatuor {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+.profil-quatuor dd small {
+  margin-left: 0.15rem;
+  font-size: 0.55em;
+  color: var(--muted);
+}
+.profil-podiums {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+.profil-podiums > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+.profil-podiums b {
+  color: var(--ink);
+}
+/* Peu de games : des barres de largeur raisonnable, alignées à gauche. */
+.profil-courbe-barres > span {
+  max-width: 2.6rem;
+}
+
+.profil-games {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 21rem), 1fr));
+  gap: 0.6rem;
+}
+.profil-game {
+  --accent: var(--ice);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.4rem 0.9rem;
+  padding: 0.7rem 0.95rem 0.7rem 0.85rem;
+  border-radius: var(--r-md);
+  background: rgb(0 10 30 / 0.26);
+  box-shadow:
+    inset 3px 0 0 var(--accent),
+    inset 0 1px 2px rgb(0 8 24 / 0.45),
+    inset 0 -1px 0 rgb(255 255 255 / 0.12);
+}
+.profil-game[data-top='1'] {
+  --accent: var(--gold);
+  background: color-mix(in srgb, var(--gold) 8%, rgb(0 10 30 / 0.26));
+}
+.profil-game[data-top='2'] {
+  --accent: var(--noel-acier-clair);
+}
+.profil-game[data-top='3'] {
+  --accent: var(--r-ur);
+}
+.profil-game[data-passee] {
+  opacity: 0.5;
+}
+.profil-game-score {
+  display: flex;
+  min-width: 3.4rem;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1;
+}
+.profil-game-score b {
+  font-family: var(--font-display);
+  font-size: 1.9rem;
+  font-weight: 900;
+  color: var(--ink);
+}
+.profil-game[data-top='1'] .profil-game-score b {
+  color: var(--gold);
+}
+.profil-game-score small {
+  margin-top: 0.15rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+.profil-game-milieu {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.profil-game-titre {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.profil-game-kills {
+  font-family: var(--font-sans, inherit);
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ink-2);
+}
+.profil-game-date {
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+.profil-game-cartes {
+  display: flex;
+  grid-column: 1 / -1;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+.profil-game-cartes > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.2rem 0.65rem;
+  border-radius: var(--r-pilule);
+  background: color-mix(in srgb, var(--aurora) 12%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--aurora) 35%, transparent);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+.profil-game-cartes > span b {
+  color: var(--aurora);
+}
+.profil-game-cartes > span[data-malus] {
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--danger) 35%, transparent);
+}
+.profil-game-cartes > span[data-malus] b {
+  color: var(--danger);
+}
