@@ -59,6 +59,9 @@ export const activisionId = z
 /** Annoncer une ouverture dans le tchat, depuis l'écran qui l'a ouverte. */
 export const annonceOuvertureSchema = z.object({ ouvertureId: uuid });
 
+/** Jouer un Verglas gardé par un joueur, sur la victime qu'il a choisie. */
+export const verglasSchema = z.object({ carteId: uuid, cibleId: uuid }).strict();
+
 /** Une carte révélée à l'écran — ou, sans ouverture, le rattrapage de ce qui traîne. */
 export const revelationSchema = z.object({ ouvertureId: uuid.optional() }).strict();
 

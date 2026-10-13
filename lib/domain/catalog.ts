@@ -265,6 +265,22 @@ export const CARDS: readonly CardDefinition[] = [
     cible: 'HASARD',
   },
   {
+    // Un malus que le joueur garde, et dont il choisit la victime : la
+    // modération le joue pour lui. Décidé par l'organisation le 13/10/2026.
+    id: 'plaque-verglas',
+    name: 'Verglas',
+    subtitle: '−20 pts au joueur de ton choix',
+    rarity: 'UR',
+    glyph: '🧊',
+    description:
+      'MALUS : garde-la. La modération la joue pour toi : −20 points sur la prochaine game du joueur que tu choisis.',
+    effect: { kind: 'malus_choisi', value: 20 },
+    nature: 'malus',
+    power: 74,
+    packs: ['perso'],
+    cible: 'HASARD',
+  },
+  {
     id: 'joker-givre',
     name: 'Joker Givré',
     subtitle: 'Joker',
@@ -354,7 +370,26 @@ export const CARDS: readonly CardDefinition[] = [
   },
 ];
 
-const CARD_INDEX = new Map(CARDS.map((c) => [c.id, c]));
+/**
+ * Le coup du Verglas, posé sur sa victime quand la modération le joue : −20 pts
+ * sur sa prochaine game. Il ne sort d'aucun booster (il n'est pas dans
+ * `CARDS`) ; `getCard` le connaît, pour le régler et l'afficher.
+ */
+export const COUP_DE_VERGLAS: CardDefinition = {
+  id: 'plaque-verglas-coup',
+  name: 'Verglas',
+  subtitle: '−20 pts',
+  rarity: 'UR',
+  glyph: '🧊',
+  description: 'MALUS : −20 points sur ta prochaine game. Un joueur te l’a envoyé.',
+  effect: { kind: 'malus_points', value: 20 },
+  nature: 'malus',
+  power: 74,
+  packs: ['perso'],
+  cible: 'HASARD',
+};
+
+const CARD_INDEX = new Map([...CARDS, COUP_DE_VERGLAS].map((c) => [c.id, c]));
 
 /**
  * Combien de joueurs une carte d'un booster de la ligue fait tirer au sort :
@@ -382,6 +417,7 @@ export function momentDe(effect: CardEffect): MomentCarte {
     case 'immunite':
       return 'INSTANT';
     case 'joker':
+    case 'malus_choisi':
       return 'GARDEE';
     default:
       return 'PROCHAINE';
@@ -402,6 +438,7 @@ export function impactMax(effect: CardEffect): number | null {
   switch (effect.kind) {
     case 'bonus_points':
     case 'malus_points':
+    case 'malus_choisi':
     case 'plancher':
     case 'bonus_top':
     case 'petite_game':
@@ -478,6 +515,8 @@ export function resumeEffet(effect: CardEffect): string {
       return 'meilleure game figée';
     case 'supprime_pire':
       return 'pire game supprimée';
+    case 'malus_choisi':
+      return `−${effect.value} pts au joueur choisi`;
     case 'joker':
       return 'une game annulable';
   }

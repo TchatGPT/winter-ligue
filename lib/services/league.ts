@@ -91,6 +91,13 @@ export interface CarteDuClassement {
   resume: string;
   nature: 'bonus' | 'malus';
   power: number;
+  /** Le genre de son effet : « joker », « malus_choisi »… */
+  genre: string;
+}
+
+/** Une carte gardée : l'identifiant de l'exemplaire, pour la jouer. */
+export interface CarteGardee extends CarteDuClassement {
+  id: string;
 }
 
 export interface RankingRow {
@@ -106,8 +113,12 @@ export interface RankingRow {
   totals: PlayerTotals;
   /** Vrai tant que son immunité court : aucun malus ne touche ses games. */
   immunise: boolean;
-  /** Le Joker qu'il garde, s'il en a un : une de ses games pourra ne pas compter. */
-  joker: CarteDuClassement | null;
+  /**
+   * Les cartes qu'il garde, de la plus ancienne à la plus récente : un Joker
+   * (une de ses games pourra ne pas compter), des Verglas (la modération les
+   * jouera pour lui, sur le joueur qu'il choisit).
+   */
+  gardees: CarteGardee[];
   /** La carte active : celle qui tombera sur sa prochaine game. */
   carte: CarteDuClassement | null;
   /** Vrai pour les places qualificatives pour la finale. */
@@ -135,7 +146,7 @@ export function classementDe(db: Database): RankingRow[] {
     snowflakes: player.snowflakes,
     totals,
     immunise: estImmunise(player),
-    joker: jokerDuJoueur(db, player.id),
+    gardees: gardeesDuJoueur(db, player.id),
     ...carteActive(db, player.id),
     finalist: position <= SEASON.finalistCount,
   }));
@@ -158,20 +169,19 @@ function vueCarte(card: CardDefinition): CarteDuClassement {
     resume: resumeEffet(card.effect),
     nature: card.nature,
     power: card.power,
+    genre: card.effect.kind,
   };
 }
 
-/**
- * Le Joker qu'il garde, s'il en a un. Lu ici plutôt que par `jokerDe`, pour ne
- * pas faire dépendre le classement des effets, qui dépendent déjà de lui.
- */
-function jokerDuJoueur(db: Database, playerId: string): CarteDuClassement | null {
-  for (const c of db.cartesEnAttente) {
-    if (c.joueurId !== playerId || c.consommeeA !== null) continue;
-    const carte = getCard(c.cardId);
-    if (carte !== null && momentDe(carte.effect) === 'GARDEE') return vueCarte(carte);
-  }
-  return null;
+/** Les cartes qu'il garde, de la plus ancienne à la plus récente. */
+function gardeesDuJoueur(db: Database, playerId: string): CarteGardee[] {
+  return db.cartesEnAttente
+    .filter((c) => c.joueurId === playerId && c.consommeeA === null)
+    .sort((a, b) => a.creeA.localeCompare(b.creeA))
+    .flatMap((c) => {
+      const carte = getCard(c.cardId);
+      return carte !== null && momentDe(carte.effect) === 'GARDEE' ? [{ ...vueCarte(carte), id: c.id }] : [];
+    });
 }
 
 /**

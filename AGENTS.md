@@ -79,6 +79,13 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   (`annonceeA`). Rouvrir pour le même joueur la règle d'abord ; passé deux minutes, la
   page des boosters de la modération rattrape ce qui traîne. Une carte de flocons ne
   compte jamais comme carte en attente.
+- **Le Verglas** (`kind: 'malus_choisi'`, ultra rare du Booster Perso, décidé par
+  l'organisation le 13/10/2026) est la seule exception aux règles des malus : il sort d'un
+  booster ouvert pour un joueur, qui le garde et **choisit sa victime**. La modération le
+  joue depuis la fiche de la carte au classement (`/api/admin/cartes/verglas`,
+  `joueVerglas`) : son coup (`COUP_DE_VERGLAS`, −20 pts, hors de `CARDS`) tombe sur la
+  prochaine game de la victime, l'immunité le pare. Jamais sur soi ; un membre de la
+  modération ne joue pas le Verglas qu'il garde.
 - **Le Grand Dégel** (`kind: 'supprime_pire'`, légendaire du Booster Perso) passe la pire
   game encore sans carte du joueur — la sienne, jamais celle d'un autre : elle ne compte
   plus, son créneau est rendu, ses flocons restent. Comme une game annulée par un Joker,

@@ -178,7 +178,8 @@ describe('ouvrir un booster', () => {
       joueLesCartes(db);
       const o = ouvrePack(db, { packId: 'perso', joueurId: 'a', idempotencyKey: `k${i}` }, 'modo');
       expect(permises).toContain(o.cardId);
-      expect(getCard(o.cardId)!.nature).toBe('bonus');
+      // Sauf le Verglas, qu'on garde pour l'envoyer à un autre (décidé le 13/10/2026).
+      if (getCard(o.cardId)!.effect.kind !== 'malus_choisi') expect(getCard(o.cardId)!.nature).toBe('bonus');
       expect(o.beneficiaires).toEqual(['a']);
     }
   });

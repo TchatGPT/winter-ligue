@@ -12,7 +12,7 @@ import { IconActivision } from '@/components/icons';
 import { flakesShort } from '@/components/ui';
 import { RARITY_ORDER } from '@/lib/domain/rules';
 import { memeTexte } from '@/lib/domain/texte';
-import type { CarteDuClassement, RankingRow } from '@/lib/services/league';
+import type { CarteDuClassement, CarteGardee, RankingRow } from '@/lib/services/league';
 
 /**
  * Le classement, dans le langage visuel du hero.
@@ -79,7 +79,7 @@ function valeur(row: RankingRow, cle: Cle): number | string {
       return row.pseudo.toLowerCase();
     case 'carte':
       // les cartes se classent par rareté ; sans carte, tout en bas
-      return row.carte ? RARITY_ORDER[row.carte.rarity] + 1 : row.joker ? RARITY_ORDER[row.joker.rarity] + 1 : 0;
+      return row.carte ? RARITY_ORDER[row.carte.rarity] + 1 : row.gardees[0] ? RARITY_ORDER[row.gardees[0].rarity] + 1 : 0;
     case 'points':
       return row.totals.totalScore;
     case 'games':
@@ -121,12 +121,9 @@ export function Classement({
 }) {
   const [tri, setTri] = useState<{ cle: Cle; desc: boolean }>({ cle: 'rang', desc: false });
   const [recherche, setRecherche] = useState('');
-  /** La carte qu'on regarde en grand, s'il y en a une : la carte active, ou le Joker. */
-  const [fiche, setFiche] = useState<{ pseudo: string; carte: CarteDuClassement; joker: boolean } | null>(null);
-  const ouvre = (row: RankingRow, quoi: 'carte' | 'joker') => {
-    const carte = row[quoi];
-    if (carte) setFiche({ pseudo: row.pseudo, carte, joker: quoi === 'joker' });
-  };
+  /** La carte qu'on regarde en grand, s'il y en a une : la carte active, ou une carte gardée. */
+  const [fiche, setFiche] = useState<{ row: RankingRow; carte: CarteDuClassement | CarteGardee } | null>(null);
+  const ouvre = (row: RankingRow, carte: CarteDuClassement | CarteGardee) => setFiche({ row, carte });
 
   const visibles = useMemo(() => {
     const q = plat(recherche.trim());
@@ -156,17 +153,32 @@ export function Classement({
         <FicheCarte
           carte={fiche.carte}
           legende={
-            fiche.joker ? (
+            fiche.carte.genre === 'joker' ? (
               <>
-                Joker de <strong className="text-ink">{fiche.pseudo}</strong> : à la saisie d’une de ses games, la
+                Joker de <strong className="text-ink">{fiche.row.pseudo}</strong> : à la saisie d’une de ses games, la
                 modération pourra la faire ne pas compter.
+              </>
+            ) : fiche.carte.genre === 'malus_choisi' ? (
+              <>
+                Verglas de <strong className="text-ink">{fiche.row.pseudo}</strong> : il choisit sa victime, la
+                modération le joue pour lui.
               </>
             ) : (
               <>
-                Carte active de <strong className="text-ink">{fiche.pseudo}</strong> : elle tombera sur sa prochaine
-                game.
+                Carte active de <strong className="text-ink">{fiche.row.pseudo}</strong> : elle tombera sur sa
+                prochaine game.
               </>
             )
+          }
+          action={
+            boostersPerso && fiche.carte.genre === 'malus_choisi' && 'id' in fiche.carte ? (
+              <JouerVerglas
+                carteId={fiche.carte.id}
+                porteur={fiche.row}
+                joueurs={rows}
+                onFait={() => setFiche(null)}
+              />
+            ) : undefined
           }
           onClose={() => setFiche(null)}
         />
@@ -255,7 +267,7 @@ export function Classement({
                   {boostersPerso && <CompteurPerso row={row} moderation={boostersPerso} />}
                 </td>
                 <td>
-                  <CarteActive row={row} onOuvrir={(quoi) => ouvre(row, quoi)} />
+                  <CarteActive row={row} onOuvrir={(c) => ouvre(row, c)} />
                 </td>
                 <td className="num text-right text-ink">
                   {/* La taille sur le chiffre, pas sur la cellule : la règle des
@@ -299,9 +311,9 @@ export function Classement({
                 <span className="min-w-0 flex-1">
                   <Pseudo row={row} />
                   {boostersPerso && <CompteurPerso row={row} moderation={boostersPerso} />}
-                  {(row.carte || row.joker) && (
+                  {(row.carte || row.gardees.length > 0) && (
                     <span className="mt-1.5 block">
-                      <CarteActive row={row} onOuvrir={(quoi) => ouvre(row, quoi)} />
+                      <CarteActive row={row} onOuvrir={(c) => ouvre(row, c)} />
                     </span>
                   )}
                 </span>
@@ -473,16 +485,22 @@ function CompteurPerso({ row, moderation }: { row: RankingRow; moderation: Boost
  * sa silhouette et à sa couleur avant de lire quoi que ce soit. À côté, le nom
  * et l'effet en clair. Un clic l'ouvre en grand.
  */
-function CarteActive({ row, onOuvrir }: { row: RankingRow; onOuvrir: (quoi: 'carte' | 'joker') => void }) {
-  // Une carte active et un Joker : les deux, l'une sur l'autre.
-  if (row.carte && row.joker) return <PileDeCartes carte={row.carte} joker={row.joker} onOuvrir={onOuvrir} />;
-  const quoi = row.carte ? 'carte' : 'joker';
-  const c = row.carte ?? row.joker;
+function CarteActive({
+  row,
+  onOuvrir,
+}: {
+  row: RankingRow;
+  onOuvrir: (carte: CarteDuClassement | CarteGardee) => void;
+}) {
+  // La carte active, puis les cartes gardées : plusieurs, l'une sur l'autre.
+  const cartes: (CarteDuClassement | CarteGardee)[] = [...(row.carte ? [row.carte] : []), ...row.gardees];
+  if (cartes.length >= 2) return <PileDeCartes cartes={cartes} onOuvrir={onOuvrir} />;
+  const c = cartes[0];
   if (!c) return <span className="text-[13px] text-faint">—</span>;
   return (
     <button
       type="button"
-      onClick={() => onOuvrir(quoi)}
+      onClick={() => onOuvrir(c)}
       className="tableau-verre-carte-active flex min-w-0 items-center gap-3 text-left"
       title={`${c.nom} — ${c.description}`}
       aria-label={`Voir la carte ${c.nom}`}
@@ -509,7 +527,7 @@ function CarteActive({ row, onOuvrir }: { row: RankingRow; onOuvrir: (quoi: 'car
   );
 }
 
-/** La teinte d'une rareté, pour un texte : celle du Joker suit la sienne. */
+/** La teinte d'une rareté, pour un texte : celle d'une carte gardée suit la sienne. */
 const TEINTE: Record<CarteDuClassement['rarity'], string> = {
   C: 'text-r-c',
   R: 'text-r-r',
@@ -518,33 +536,27 @@ const TEINTE: Record<CarteDuClassement['rarity'], string> = {
 };
 
 /**
- * La carte active et le Joker, l'une sur l'autre, un peu décalées : on voit
- * d'un coup d'œil qu'il en a deux, et chacune s'ouvre d'un clic.
+ * Plusieurs cartes, l'une sur l'autre, un peu décalées : on voit d'un coup
+ * d'œil qu'il en a plusieurs, et chacune s'ouvre d'un clic.
  */
 function PileDeCartes({
-  carte,
-  joker,
+  cartes,
   onOuvrir,
 }: {
-  carte: CarteDuClassement;
-  joker: CarteDuClassement;
-  onOuvrir: (quoi: 'carte' | 'joker') => void;
+  cartes: (CarteDuClassement | CarteGardee)[];
+  onOuvrir: (carte: CarteDuClassement | CarteGardee) => void;
 }) {
+  const [premiere, ...autres] = cartes;
   return (
     <span className="flex min-w-0 items-center gap-3">
       <span className="pile-cartes shrink-0">
-        {(
-          [
-            ['carte', carte],
-            ['joker', joker],
-          ] as const
-        ).map(([quoi, c]) => (
+        {cartes.map((c, i) => (
           <button
-            key={quoi}
+            key={'id' in c ? c.id : `active-${c.cardId}`}
             type="button"
-            onClick={() => onOuvrir(quoi)}
+            onClick={() => onOuvrir(c)}
             className="pile-carte w-[46px] @min-[100rem]:w-[56px]"
-            data-quoi={quoi}
+            data-quoi={i === 0 ? 'carte' : 'joker'}
             title={`${c.nom} — ${c.description}`}
             aria-label={`Voir la carte ${c.nom}`}
           >
@@ -560,13 +572,112 @@ function PileDeCartes({
         ))}
       </span>
       <span className="min-w-0 leading-tight">
-        <span className="block truncate text-[14px] font-bold text-ink @min-[100rem]:text-[16px]">{carte.nom}</span>
-        <span className="block truncate text-[13px] text-ink-2 @min-[100rem]:text-[15px]">{carte.action}</span>
-        <span className={`block truncate text-[13px] font-semibold @min-[100rem]:text-[14px] ${TEINTE[joker.rarity]}`}>
-          + {joker.nom}
-        </span>
+        <span className="block truncate text-[14px] font-bold text-ink @min-[100rem]:text-[16px]">{premiere.nom}</span>
+        <span className="block truncate text-[13px] text-ink-2 @min-[100rem]:text-[15px]">{premiere.action}</span>
+        {autres.map((c) => (
+          <span
+            key={'id' in c ? c.id : c.cardId}
+            className={`block truncate text-[13px] font-semibold @min-[100rem]:text-[14px] ${TEINTE[c.rarity]}`}
+          >
+            + {c.nom}
+          </span>
+        ))}
       </span>
     </span>
+  );
+}
+
+/**
+ * Jouer un Verglas, depuis sa fiche : le joueur a choisi sa victime, la
+ * modération la sélectionne et valide. Le serveur revérifie tout.
+ */
+function JouerVerglas({
+  carteId,
+  porteur,
+  joueurs,
+  onFait,
+}: {
+  carteId: string;
+  porteur: RankingRow;
+  joueurs: RankingRow[];
+  onFait: () => void;
+}) {
+  const router = useRouter();
+  const [ouvert, setOuvert] = useState(false);
+  const [cible, setCible] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [erreur, setErreur] = useState<string | null>(null);
+  const victimes = joueurs
+    .filter((j) => j.id !== porteur.id)
+    .sort((a, b) => a.pseudo.localeCompare(b.pseudo, 'fr'));
+  const choisi = victimes.find((j) => j.id === cible);
+
+  async function joue() {
+    if (!choisi) return;
+    setBusy(true);
+    setErreur(null);
+    try {
+      const reponse = await fetch('/api/admin/cartes/verglas', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ carteId, cibleId: choisi.id }),
+      });
+      const charge = await reponse.json();
+      if (!charge.ok) {
+        setErreur(charge.error?.message ?? 'Refusé.');
+        return;
+      }
+      router.refresh();
+      onFait();
+    } catch {
+      setErreur('Le serveur n’a pas répondu.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (!ouvert) {
+    return (
+      <button type="button" className="btn btn-ice" onClick={() => setOuvert(true)}>
+        Consommer la carte
+      </button>
+    );
+  }
+  return (
+    <div className="verglas-jeu">
+      <label className="verglas-label" htmlFor="verglas-cible">
+        Sur qui {porteur.pseudo} joue-t-il son Verglas ?
+      </label>
+      <select
+        id="verglas-cible"
+        className="field"
+        value={cible}
+        onChange={(e) => setCible(e.target.value)}
+        disabled={busy}
+      >
+        <option value="">— choisir un joueur —</option>
+        {victimes.map((j) => (
+          <option key={j.id} value={j.id}>
+            {j.pseudo}
+          </option>
+        ))}
+      </select>
+      {choisi && (
+        <p className="verglas-recap">
+          <strong>{choisi.pseudo}</strong> perdra <strong className="text-danger">20 points</strong> sur sa prochaine
+          game. L’immunité le protège.
+        </p>
+      )}
+      {erreur && <p className="text-[13px] text-danger">{erreur}</p>}
+      <div className="flex flex-wrap gap-2">
+        <button type="button" className="btn" disabled={busy} onClick={() => setOuvert(false)}>
+          Annuler
+        </button>
+        <button type="button" className="btn btn-ice" disabled={!choisi || busy} onClick={joue}>
+          {busy ? 'Envoi…' : `Valider −20 pts${choisi ? ` à ${choisi.pseudo}` : ''}`}
+        </button>
+      </div>
+    </div>
   );
 }
 

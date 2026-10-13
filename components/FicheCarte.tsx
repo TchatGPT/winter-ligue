@@ -43,6 +43,7 @@ export function FicheCarte({
   carte,
   legende,
   details = [],
+  action,
   onClose,
 }: {
   carte: CarteFiche;
@@ -50,6 +51,8 @@ export function FicheCarte({
   legende?: React.ReactNode;
   /** Des précisions, une par ligne : « Quand → Prochaine game », « Au plus → 25 pts ». */
   details?: { libelle: string; valeur: string }[];
+  /** Une action sous la légende : jouer un Verglas, pour la modération. */
+  action?: React.ReactNode;
   onClose: () => void;
 }) {
   // `document.body` n'existe pas au rendu serveur.
@@ -146,6 +149,7 @@ export function FicheCarte({
                 </dl>
               )}
               {legende && <p className="fiche-legende">{legende}</p>}
+              {action && <div className="fiche-action-zone">{action}</div>}
             </div>
           </div>
         </div>

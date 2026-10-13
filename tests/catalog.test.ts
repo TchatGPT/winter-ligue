@@ -94,8 +94,11 @@ describe('les boosters', () => {
   });
 
   it('ne contiennent que des bonus quand ils s’ouvrent pour un joueur', () => {
+    // Sauf le Verglas, qu'on garde pour l'envoyer à un autre (décidé le 13/10/2026).
     for (const pack of PACKS.filter((p) => p.portee === 'JOUEUR')) {
-      for (const card of cartesDuPack(pack.id)) expect(card.nature).toBe('bonus');
+      for (const card of cartesDuPack(pack.id)) {
+        if (card.effect.kind !== 'malus_choisi') expect(card.nature).toBe('bonus');
+      }
     }
   });
 

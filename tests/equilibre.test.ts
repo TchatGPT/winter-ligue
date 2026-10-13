@@ -8,6 +8,7 @@ import { RARITIES, type CardEffect, type Placement } from '@/lib/domain/types';
 import {
   appliqueCartesEnAttente,
   gamesSansCarte,
+  joueVerglas,
   jokerDe,
   regleCartesSansAttendre,
   utiliseJoker,
@@ -171,7 +172,7 @@ describe('les malus ne transfèrent jamais', () => {
     // mouvement — la victime perd ET l'autre gagne — et c'est ce qui rend
     // l'interaction insupportable des deux côtés.
     for (const card of malus.filter((c) => !aDeux(c.effect))) {
-      expect(['malus_points', 'diviseur_game']).toContain(card.effect.kind);
+      expect(['malus_points', 'diviseur_game', 'malus_choisi']).toContain(card.effect.kind);
     }
   });
 
@@ -181,7 +182,10 @@ describe('les malus ne transfèrent jamais', () => {
     for (const card of CARDS.filter((c) => momentDe(c.effect) === 'JOUEE')) {
       expect(card.nature).toBe('bonus');
     }
-    for (const card of malus) expect(momentDe(card.effect)).toBe('PROCHAINE');
+    // Le Verglas se garde ; son coup, lui, tombe sur la prochaine game.
+    for (const card of malus) {
+      expect(momentDe(card.effect)).toBe(card.effect.kind === 'malus_choisi' ? 'GARDEE' : 'PROCHAINE');
+    }
   });
 
   it('aucune carte ne copie, ne vole ni ne supprime la game d’autrui', () => {
@@ -206,11 +210,13 @@ describe('les malus ne transfèrent jamais', () => {
     }
   });
 
-  it('ne sort jamais d’un booster ouvert pour quelqu’un', () => {
-    // Ce qu'on ouvre pour soi ne peut pas se retourner contre soi.
+  it('ne sort d’un booster ouvert pour quelqu’un que pour être envoyé, jamais contre lui', () => {
+    // Ce qu'on ouvre pour soi ne peut pas se retourner contre soi. La seule
+    // exception, décidée par l'organisation le 13/10/2026 : le Verglas, que
+    // le joueur garde et envoie au joueur de son choix.
     const pourUnJoueur = PACKS.filter((p) => p.portee === 'JOUEUR').map((p) => p.id);
     expect(pourUnJoueur.length).toBeGreaterThan(0);
-    for (const card of malus) {
+    for (const card of malus.filter((c) => c.effect.kind !== 'malus_choisi')) {
       for (const pack of pourUnJoueur) expect(card.packs).not.toContain(pack);
     }
   });
@@ -225,6 +231,36 @@ describe('les malus ne transfèrent jamais', () => {
     for (const card of CARDS.filter((c) => c.cible === 'DEUX')) {
       expect(aDeux(card.effect)).toBe(true);
     }
+  });
+});
+
+describe('le Verglas', () => {
+  it('se garde, puis tombe sur la prochaine game de la victime choisie', () => {
+    const db = base('a', 'b');
+    pose(db, 'a', 'plaque-verglas', 1);
+    regleCartesSansAttendre(db, 'a');
+    const garde = enAttente(db, 'a')[0];
+    expect(garde.cardId).toBe('plaque-verglas');
+    // Une game de A ne le consomme pas.
+    appliqueCartesEnAttente(db, game(db, 'a', 5));
+    expect(enAttente(db, 'a')).toHaveLength(1);
+
+    const victime = db.players.find((p) => p.id === 'b')!;
+    const r = joueVerglas(db, garde.id, victime);
+    expect(typeof r).not.toBe('string');
+    expect(enAttente(db, 'a')).toHaveLength(0);
+    const g = game(db, 'b', 30, 1);
+    appliqueCartesEnAttente(db, g);
+    expect(g.score).toBe(30 + 20 - 20);
+  });
+
+  it('ne se joue pas sur soi-même, ni deux fois', () => {
+    const db = base('a', 'b');
+    pose(db, 'a', 'plaque-verglas', 1);
+    const garde = enAttente(db, 'a')[0];
+    expect(joueVerglas(db, garde.id, db.players.find((p) => p.id === 'a')!)).toBe('CIBLE');
+    joueVerglas(db, garde.id, db.players.find((p) => p.id === 'b')!);
+    expect(joueVerglas(db, garde.id, db.players.find((p) => p.id === 'b')!)).toBe('CARTE');
   });
 });
 

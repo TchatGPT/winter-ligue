@@ -29,7 +29,7 @@ import 'server-only';
 
 import type { CarteEnAttente, Database, Game, Player } from '@/lib/db/entities';
 import { newId } from '@/lib/db/store';
-import { getCard, momentDe } from '@/lib/domain/catalog';
+import { COUP_DE_VERGLAS, getCard, momentDe } from '@/lib/domain/catalog';
 import { rewardForGame } from '@/lib/domain/economy';
 import { CRENEAUX_BONUS, GAME_LIMITS, placementPoints } from '@/lib/domain/rules';
 import type { CardDefinition, CardEffect } from '@/lib/domain/types';
@@ -602,8 +602,10 @@ export function regleCartesSansAttendre(
     if (moment === 'PROCHAINE') continue;
     if (moment === 'GARDEE') {
       // Un seul Joker à la fois : le plus ancien est gardé, un autre ne fait
-      // rien. Il est consommé tout de suite, pour qu'on lise pourquoi.
-      if (jokerDe(db, joueurId) !== pendante) {
+      // rien. Il est consommé tout de suite, pour qu'on lise pourquoi. Les
+      // autres cartes gardées (le Verglas) s'accumulent : chacune attend
+      // que la modération la joue.
+      if (card.effect.kind === 'joker' && jokerDe(db, joueurId) !== pendante) {
         faites.push(consomme(pendante, card, sansEffet('déjà un Joker en main : celui-ci ne fait rien'), now));
       }
       continue;
@@ -672,9 +674,41 @@ export function jokerDe(db: Database, joueurId: string): CarteEnAttente | null {
   return (
     enAttenteDe(db, joueurId).find((c) => {
       const card = getCard(c.cardId);
-      return card !== null && momentDe(card.effect) === 'GARDEE';
+      return card !== null && card.effect.kind === 'joker';
     }) ?? null
   );
+}
+
+export type RefusVerglas = 'CARTE' | 'CIBLE';
+
+/**
+ * Joue un Verglas gardé par un joueur, sur la victime qu'il a choisie : le
+ * Verglas est consommé, et son coup (`COUP_DE_VERGLAS`, −20 pts) est posé sur
+ * la victime — il tombera sur sa prochaine game, et l'immunité le pare. À la
+ * route de vérifier que la victime est en lice et n'est pas lui.
+ */
+export function joueVerglas(
+  db: Database,
+  carteId: string,
+  cible: Player,
+  now = new Date(),
+): CarteAppliquee | RefusVerglas {
+  const pendante = db.cartesEnAttente.find((c) => c.id === carteId && c.consommeeA === null);
+  const card = pendante ? getCard(pendante.cardId) : null;
+  if (!pendante || !card || card.effect.kind !== 'malus_choisi') return 'CARTE';
+  if (cible.id === pendante.joueurId) return 'CIBLE';
+  db.cartesEnAttente.push({
+    id: newId(),
+    joueurId: cible.id,
+    cardId: COUP_DE_VERGLAS.id,
+    ouvertureId: pendante.ouvertureId,
+    creeA: now.toISOString(),
+    consommeeA: null,
+    gameId: null,
+    resultat: null,
+    paireId: null,
+  });
+  return consomme(pendante, card, sansEffet(`joué sur ${cible.pseudo} : −${card.effect.value} pts sur sa prochaine game`), now);
 }
 
 /**

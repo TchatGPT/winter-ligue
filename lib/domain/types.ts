@@ -131,7 +131,14 @@ export type CardEffect =
    * ses games, la faire ne pas compter — le Joker est alors consommé. Un seul
    * à la fois : un second, tiré pendant qu'il en garde un, ne fait rien.
    */
-  | { kind: 'joker' };
+  | { kind: 'joker' }
+  /**
+   * « −N pts au joueur de ton choix » : le joueur la garde ; la modération la
+   * joue pour lui, sur le joueur qu'il désigne (décidé par l'organisation le
+   * 13/10/2026). La victime reçoit le coup sur sa prochaine game
+   * (`COUP_DE_VERGLAS`), et l'immunité le pare.
+   */
+  | { kind: 'malus_choisi'; value: number };
 
 /**
  * Quand une carte se joue. Voir {@link CardEffect}. `GARDEE` : elle ne se joue
