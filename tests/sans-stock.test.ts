@@ -82,9 +82,15 @@ describe('pas de stock de cartes', () => {
     const db = ligue('a');
     reglagePack(db, 'perso', seulement('UR'));
     // Coulée de Neige (flocons) ou Joker Givré : ni l'une ni l'autre n'attend.
-    for (let i = 0; i < 20; i += 1) {
-      ouvrePack(db, { packId: 'perso', joueurId: 'a', idempotencyKey: `k${i}` }, 'modo');
-      expect(carteQuiAttend(db, 'a')).toBeNull();
+    // Écho Lointain, elle, attend la prochaine game.
+    for (let i = 0; i < 40; i += 1) {
+      const o = ouvrePack(db, { packId: 'perso', joueurId: 'a', idempotencyKey: `k${i}` }, 'modo');
+      if (o.cardId === 'echo-lointain') {
+        expect(carteQuiAttend(db, 'a')?.cardId).toBe('echo-lointain');
+        joue(db, 'a');
+      } else {
+        expect(carteQuiAttend(db, 'a')).toBeNull();
+      }
     }
   });
 

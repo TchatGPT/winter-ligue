@@ -73,8 +73,12 @@ export type CardEffect =
   | { kind: 'multiplicateur_game'; value: number; cap?: number }
   /** « Une game ÷ N » : le score entier divisé, la perte plafonnée en points. */
   | { kind: 'diviseur_game'; value: number; cap: number }
-  /** « Clone kill du meilleur » : les kills du meilleur tueur de la partie, plafonné. */
-  | { kind: 'clone_kills'; cap: number }
+  /**
+   * « Clone kill du meilleur » : la game compte comme si le joueur avait fait
+   * les kills du meilleur tueur de la partie — plafonné s'il a un `cap`. S'il
+   * est lui-même le meilleur tueur, la carte s'annule.
+   */
+  | { kind: 'clone_kills'; cap?: number }
   /** « Joker » : la game vaut au moins N points. */
   | { kind: 'plancher'; value: number }
   /** « +N pts à partir du Top X » : seulement si la game finit dans le Top. */

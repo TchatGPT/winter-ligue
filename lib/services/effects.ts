@@ -167,8 +167,8 @@ function demande(effect: CardEffect, game: Game, contexte: ContexteGame): Demand
         return { points: 0, resultat: 'meilleur tueur de la partie inconnu, sans effet' };
       }
       const ecart = meilleur - game.kills;
-      if (ecart <= 0) return { points: 0, resultat: 'déjà le meilleur tueur de la partie, sans effet' };
-      const points = Math.min(effect.cap, ecart);
+      if (ecart <= 0) return { points: 0, resultat: 'meilleur tueur de la partie lui-même : carte annulée' };
+      const points = effect.cap === undefined ? ecart : Math.min(effect.cap, ecart);
       return { points, resultat: `${meilleur} kills du meilleur contre ${game.kills} → ${pts(points)}` };
     }
     case 'plancher': {

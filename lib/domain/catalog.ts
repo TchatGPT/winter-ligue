@@ -167,22 +167,6 @@ export const CARDS: readonly CardDefinition[] = [
     packs: ['perso'],
     cible: 'HASARD',
   },
-  {
-    // Copie, en petit : l'écart avec le meilleur tueur de la partie — celui
-    // de la capture, coéquipiers et streameuse compris —, deux kills au plus.
-    id: 'echo-lointain',
-    name: 'Écho Lointain',
-    subtitle: 'Clone kill du meilleur',
-    rarity: 'C',
-    glyph: '🏔',
-    description:
-      'Sur ta prochaine game, +1 point par kill qui te sépare du meilleur tueur de ta partie, jusqu’à +2.',
-    effect: { kind: 'clone_kills', cap: 2 },
-    nature: 'bonus',
-    power: 6,
-    packs: ['perso'],
-    cible: 'HASARD',
-  },
   /* ============================== Rare ================================== */
   {
     id: 'percee',
@@ -250,6 +234,23 @@ export const CARDS: readonly CardDefinition[] = [
     effect: { kind: 'joker' },
     nature: 'bonus',
     power: 70,
+    packs: ['perso'],
+    cible: 'HASARD',
+  },
+  {
+    // Les kills du meilleur tueur de la partie — celui de la capture,
+    // coéquipiers et streameuse compris —, lus à la saisie. S'il l'est
+    // lui-même, la carte s'annule.
+    id: 'echo-lointain',
+    name: 'Écho Lointain',
+    subtitle: 'Clone kill du meilleur',
+    rarity: 'UR',
+    glyph: '🏔',
+    description:
+      'Ta prochaine game compte comme si tu avais fait les kills du meilleur tueur de ta partie. Si c’est toi, la carte s’annule.',
+    effect: { kind: 'clone_kills' },
+    nature: 'bonus',
+    power: 72,
     packs: ['perso'],
     cible: 'HASARD',
   },
@@ -356,7 +357,8 @@ export function impactMax(effect: CardEffect): number | null {
     case 'multiplie_jouee':
       return Math.min(effect.cap, Math.round(SCORE_MAX * (effect.value - 1)));
     case 'clone_kills':
-      return Math.min(effect.cap, GAME_LIMITS.maxKills);
+      // Sans plafond, elle suit la partie : pas de « au plus » à annoncer.
+      return effect.cap === undefined ? null : Math.min(effect.cap, GAME_LIMITS.maxKills);
     case 'echange':
     case 'releve_pire':
       return effect.cap;
@@ -389,7 +391,7 @@ export function resumeEffet(effect: CardEffect): string {
     case 'diviseur_game':
       return `score ÷${fr(effect.value)}, max −${effect.cap}`;
     case 'clone_kills':
-      return `kills du meilleur, max +${effect.cap}`;
+      return effect.cap === undefined ? 'kills du meilleur' : `kills du meilleur, max +${effect.cap}`;
     case 'plancher':
       return `au moins ${effect.value} pts`;
     case 'bonus_top':

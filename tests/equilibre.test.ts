@@ -59,6 +59,27 @@ describe('les cartes sans plafond de points', () => {
   });
 });
 
+describe('Écho Lointain', () => {
+  it('compte la game avec les kills du meilleur tueur de la partie, sans plafond', () => {
+    const db = base('a');
+    pose(db, 'a', 'echo-lointain', 1);
+    const g = game(db, 'a', 3, 2);
+    appliqueCartesEnAttente(db, g, { meilleurKills: 17 });
+    // 3 kills + Top 2, et les 14 kills qui le séparaient du meilleur.
+    expect(g.score).toBe(17 + 15);
+  });
+
+  it('s’annule si le joueur est lui-même le meilleur tueur', () => {
+    const db = base('a');
+    pose(db, 'a', 'echo-lointain', 1);
+    const g = game(db, 'a', 12);
+    const r = appliqueCartesEnAttente(db, g, { meilleurKills: 12 });
+    expect(g.score).toBe(12);
+    expect(r.cartes[0].resultat).toMatch(/annulée/);
+    expect(enAttente(db, 'a')).toHaveLength(0);
+  });
+});
+
 describe('le Joker', () => {
   it('se garde : ni une ouverture ni une game ne le consomment', () => {
     const db = base('a');
