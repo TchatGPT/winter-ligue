@@ -18,6 +18,8 @@ export const CARD_ART: Record<string, string> = {
   'luge': '/cartes/luge.webp',
   'ouragan-blanc': '/cartes/ouragan-blanc.webp',
   'permafrost': '/cartes/permafrost.webp',
+  'plaque-verglas-coup': '/cartes/plaque-verglas-coup.webp',
+  'plaque-verglas': '/cartes/plaque-verglas.webp',
   'vent-porteur': '/cartes/vent-porteur.webp',
 };
 
