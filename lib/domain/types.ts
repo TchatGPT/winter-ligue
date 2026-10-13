@@ -111,6 +111,13 @@ export type CardEffect =
    * toucher. Si la meilleure en porte déjà une, c'est la suivante.
    */
   | { kind: 'fige_meilleure' }
+  /**
+   * « Supprime ta pire game » : la pire game encore sans carte du joueur ne
+   * compte plus (elle est passée), et son créneau est rendu. Seulement la
+   * sienne, jamais celle d'un autre ; une game qui porte une carte — figée,
+   * relevée, frappée d'un malus — n'est pas touchée.
+   */
+  | { kind: 'supprime_pire' }
   /* ------------------------------ Tout de suite --------------------------- */
   /** Des flocons, dans l'instant. Aucune incidence au classement. */
   | { kind: 'snowflakes'; value: number }

@@ -79,6 +79,10 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   (`annonceeA`). Rouvrir pour le même joueur la règle d'abord ; passé deux minutes, la
   page des boosters de la modération rattrape ce qui traîne. Une carte de flocons ne
   compte jamais comme carte en attente.
+- **Le Grand Dégel** (`kind: 'supprime_pire'`, légendaire du Booster Perso) passe la pire
+  game encore sans carte du joueur — la sienne, jamais celle d'un autre : elle ne compte
+  plus, son créneau est rendu, ses flocons restent. Comme une game annulée par un Joker,
+  elle ne se rétablit pas.
 - **Le Joker** (`kind: 'joker'`, Booster Perso) est gardé, jamais consommé de lui-même :
   à la saisie d'une game, la modération peut le servir (`joker: true`, vérifié par
   `jokerDe`). La game est alors passée (`skipped`) — ni points, ni flocons, ni carte

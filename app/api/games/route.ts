@@ -162,9 +162,14 @@ export async function PATCH(request: Request): Promise<NextResponse> {
     const game = db.games.find((x) => x.id === g.body.gameId);
     if (!game) return null;
     if (g.body.skipped === false && game.skipped) {
-      // Une game qu'un Joker a annulée reste annulée : elle n'a rapporté ni
-      // flocons ni carte, la rétablir la ferait compter à moitié.
-      if (db.cartesEnAttente.some((c) => c.gameId === game.id && getCard(c.cardId)?.effect.kind === 'joker')) {
+      // Une game qu'un Joker a annulée, ou qu'un Grand Dégel a supprimée,
+      // reste hors du compte : la rétablir rendrait la carte sans effet.
+      if (
+        db.cartesEnAttente.some((c) => {
+          const genre = getCard(c.cardId)?.effect.kind;
+          return c.gameId === game.id && (genre === 'joker' || genre === 'supprime_pire');
+        })
+      ) {
         return 'JOKER' as const;
       }
       const joueur = db.players.find((p) => p.id === game.playerId);
@@ -178,7 +183,7 @@ export async function PATCH(request: Request): Promise<NextResponse> {
   });
 
   if (!updated) return fail('INTROUVABLE', 'Game introuvable.');
-  if (updated === 'JOKER') return fail('CONFLIT', 'Cette game a été annulée par un Joker : elle ne peut pas compter.');
+  if (updated === 'JOKER') return fail('CONFLIT', 'Cette game a été annulée par une carte (Joker ou Grand Dégel) : elle ne peut pas compter.');
   if (updated === 'LIMITE') return fail('CONFLIT', 'Ce joueur a déjà toutes ses games : celle-ci ne peut pas compter.');
   return ok(updated);
 }

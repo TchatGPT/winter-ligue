@@ -353,6 +353,8 @@ export function FicheJoueur({ fiche, subs }: { fiche: DonneesFiche; subs: BilanS
                                   <b>
                                     {carte.effect.kind === 'fige_meilleure'
                                       ? 'figée'
+                                      : carte.effect.kind === 'supprime_pire'
+                                        ? 'supprimée'
                                       : carte.effect.kind === 'clone_kills' && effet.points === 0
                                         ? 'kills clonés'
                                         : `${effet.points > 0 ? '+' : ''}${effet.points}`}

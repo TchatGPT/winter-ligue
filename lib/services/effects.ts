@@ -370,6 +370,23 @@ function regleEchange(
 function regleSurJouee(db: Database, pendante: CarteEnAttente, card: CardDefinition): Reglement {
   const effect = card.effect;
   const attend: Reglement = { points: 0, resultat: '', facteurFlocons: 1, regle: false, gameId: null };
+  if (effect.kind === 'supprime_pire') {
+    // La pire game encore sans carte ; à égalité, la plus ancienne. La carte
+    // s'y inscrit, puis la game est passée : elle ne compte plus, son créneau
+    // est rendu. Ses flocons, déjà versés, restent.
+    const libres = gamesSansCarte(db, pendante.joueurId);
+    if (libres.length === 0) return attend;
+    const pire = [...libres].sort((a, b) => a.score - b.score || a.playedAt.localeCompare(b.playedAt))[0];
+    applyPoints(db, pire, card, pendante.ouvertureId, 0);
+    pire.skipped = true;
+    return {
+      points: 0,
+      resultat: `pire game (${pire.score} pts) supprimée : elle ne compte plus, son créneau est rendu`,
+      facteurFlocons: 1,
+      regle: true,
+      gameId: pire.id,
+    };
+  }
   if (effect.kind === 'fige_meilleure') {
     // La meilleure game encore sans carte ; à égalité, la plus récente. La
     // carte s'y pose sans en changer le score : elle prend la place, et plus

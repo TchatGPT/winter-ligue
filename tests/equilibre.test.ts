@@ -228,6 +228,35 @@ describe('les malus ne transfèrent jamais', () => {
   });
 });
 
+describe('le Grand Dégel', () => {
+  it('supprime la pire game libre, qui ne compte plus, et rend son créneau', () => {
+    const db = base('a');
+    const bonne = game(db, 'a', 12, 1);
+    const pire = game(db, 'a', 2);
+    const figee = game(db, 'a', 0);
+    // La game à 0 point porte déjà une carte : elle n'est pas touchée.
+    pose(db, 'a', 'permafrost', 1);
+    figee.applied.push({ id: 'x', cardId: 'permafrost', ouvertureId: 'o', points: 0, at: '' });
+    regleCartesSansAttendre(db, 'a');
+    pose(db, 'a', 'grand-degel', 2);
+    regleCartesSansAttendre(db, 'a');
+    expect(pire.skipped).toBe(true);
+    expect(bonne.skipped).toBe(false);
+    expect(figee.skipped).toBe(false);
+    expect(enAttente(db, 'a')).toHaveLength(0);
+  });
+
+  it('attend une game à supprimer', () => {
+    const db = base('a');
+    pose(db, 'a', 'grand-degel', 1);
+    regleCartesSansAttendre(db, 'a');
+    expect(enAttente(db, 'a')).toHaveLength(1);
+    const g = game(db, 'a', 5);
+    regleCartesSansAttendre(db, 'a');
+    expect(g.skipped).toBe(true);
+  });
+});
+
 describe('la game figée', () => {
   it('fige la meilleure game libre, tout de suite, sans en changer le score', () => {
     const db = base('a');

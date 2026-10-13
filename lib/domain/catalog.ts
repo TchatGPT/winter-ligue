@@ -324,6 +324,21 @@ export const CARDS: readonly CardDefinition[] = [
     cible: 'HASARD',
   },
   {
+    // Sa propre pire game, jamais celle d'un autre : elle ne compte plus, et
+    // son créneau est rendu. Se règle dès qu'il y a une game à supprimer.
+    id: 'grand-degel',
+    name: 'Grand Dégel',
+    subtitle: 'Supprime ta pire game',
+    rarity: 'L',
+    glyph: '🌊',
+    description: 'Ta pire game est supprimée, tout de suite : elle ne compte plus, et tu peux la rejouer.',
+    effect: { kind: 'supprime_pire' },
+    nature: 'bonus',
+    power: 92,
+    packs: ['perso'],
+    cible: 'HASARD',
+  },
+  {
     id: 'permafrost',
     name: 'Permafrost',
     subtitle: 'Fige ta meilleure game',
@@ -360,6 +375,7 @@ export function momentDe(effect: CardEffect): MomentCarte {
     case 'releve_pire':
     case 'multiplie_jouee':
     case 'fige_meilleure':
+    case 'supprime_pire':
       return 'JOUEE';
     case 'snowflakes':
     case 'game_supplementaire':
@@ -410,6 +426,7 @@ export function impactMax(effect: CardEffect): number | null {
     case 'game_supplementaire':
     case 'immunite':
     case 'fige_meilleure':
+    case 'supprime_pire':
     case 'joker':
       return null;
   }
@@ -459,6 +476,8 @@ export function resumeEffet(effect: CardEffect): string {
       return `immunité ${effect.heures} h`;
     case 'fige_meilleure':
       return 'meilleure game figée';
+    case 'supprime_pire':
+      return 'pire game supprimée';
     case 'joker':
       return 'une game annulable';
   }
