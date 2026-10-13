@@ -7,7 +7,7 @@ import { CouronneGlace } from '@/components/CouronneGlace';
 import { MedailleGlace } from '@/components/MedailleGlace';
 import { SnowCap } from '@/components/SnowCap';
 import { flakes } from '@/components/ui';
-import { getCard } from '@/lib/domain/catalog';
+import { getCard, getPack } from '@/lib/domain/catalog';
 import { CHANCE, ECONOMY, libelleMultiplicateur, PACKS_REGLES } from '@/lib/domain/rules';
 import type { BilanSubs } from '@/lib/domain/twitchSubs';
 import { decimal, shortDateTime } from '@/lib/format';
@@ -447,10 +447,13 @@ export function FicheJoueur({ fiche, subs }: { fiche: DonneesFiche; subs: BilanS
               {p.packsDus.length === 0 ? (
                 <p className="profil-note">Rien en attente : ses boosters sont ouverts à l’antenne.</p>
               ) : (
+                // Un badge par type de booster, avec son nombre : vingt-trois
+                // « Booster perso » à la suite ne disaient rien de plus qu'un 23.
                 <ul className="profil-a-ouvrir">
-                  {p.packsDus.map((b) => (
-                    <li key={b.id} className="profil-badge" title={b.raison}>
-                      Booster {b.pack}
+                  {parType(p.packsDus).map(([pack, n]) => (
+                    <li key={pack} className="profil-badge">
+                      {getPack(pack)?.name ?? `Booster ${pack}`}
+                      <span className="profil-badge-n num">{n}</span>
                     </li>
                   ))}
                 </ul>
@@ -500,4 +503,11 @@ export function FicheJoueur({ fiche, subs }: { fiche: DonneesFiche; subs: BilanS
       )}
     </div>
   );
+}
+
+/** Les boosters à ouvrir, comptés par type, dans l'ordre où ils sont arrivés. */
+function parType(dus: { pack: string }[]): [string, number][] {
+  const n = new Map<string, number>();
+  for (const d of dus) n.set(d.pack, (n.get(d.pack) ?? 0) + 1);
+  return [...n];
 }

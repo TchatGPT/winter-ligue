@@ -3104,6 +3104,20 @@
     flex-wrap: wrap;
     gap: 0.4rem;
   }
+  /* Le nombre de boosters d'un type, en pastille au bout de son badge. */
+  .profil-badge-n {
+    display: inline-grid;
+    min-width: 1.5rem;
+    height: 1.5rem;
+    place-items: center;
+    margin-right: -0.4rem;
+    padding: 0 0.4rem;
+    border-radius: var(--r-pilule);
+    background: var(--ice);
+    color: var(--nuit);
+    font-size: 0.8125rem;
+    font-weight: 800;
+  }
   .profil-cartes {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(6.5rem, 1fr));
