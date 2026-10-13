@@ -10,3 +10,15 @@ const INVISIBLES = /[\p{Cc}​-‏‪-‮⁠-⁩﻿]/gu;
 export function sansInvisibles(texte: string): string {
   return texte.replace(INVISIBLES, '').trim();
 }
+
+/** Un texte réduit à ce qu'il dit : sans casse, sans espaces, le signe moins typographique ramené au trait. */
+const ramene = (texte: string) => texte.toLowerCase().replace(/\s/g, '').replace(/−/g, '-');
+
+/**
+ * Deux textes disent-ils la même chose ? « Game ×1,2 » et « game ×1,2 » :
+ * oui. Sert à ne pas écrire deux fois l'intitulé d'une carte et son résumé
+ * quand ils tombent pareil.
+ */
+export function memeTexte(a: string | null | undefined, b: string | null | undefined): boolean {
+  return ramene(a ?? '') === ramene(b ?? '');
+}

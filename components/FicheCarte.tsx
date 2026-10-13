@@ -7,6 +7,7 @@ import { CarteInclinable } from '@/components/CarteInclinable';
 import { SnowCap } from '@/components/SnowCap';
 import { EmblemeRarete } from '@/components/EmblemeRarete';
 import { rarityMeta } from '@/components/ui';
+import { memeTexte } from '@/lib/domain/texte';
 import type { Rarity } from '@/lib/domain/types';
 
 export interface CarteFiche {
@@ -128,7 +129,7 @@ export function FicheCarte({
               <h2 className="fiche-nom">{carte.nom}</h2>
               {carte.action && <p className="fiche-action">{carte.action}</p>}
               <p className="fiche-desc">{carte.description}</p>
-              {(details.length > 0 || carte.resume) && (
+              {(details.length > 0 || (carte.resume && !memeTexte(carte.resume, carte.action))) && (
                 <dl className="fiche-details">
                   {details.map((d) => (
                     <div key={d.libelle}>
@@ -136,7 +137,7 @@ export function FicheCarte({
                       <dd>{d.valeur}</dd>
                     </div>
                   ))}
-                  {carte.resume && details.length === 0 && (
+                  {carte.resume && details.length === 0 && !memeTexte(carte.resume, carte.action) && (
                     <div>
                       <dt>En bref</dt>
                       <dd className="num">{carte.resume}</dd>

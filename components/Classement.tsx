@@ -11,6 +11,7 @@ import { FicheCarte } from '@/components/FicheCarte';
 import { IconActivision } from '@/components/icons';
 import { flakesShort } from '@/components/ui';
 import { RARITY_ORDER } from '@/lib/domain/rules';
+import { memeTexte } from '@/lib/domain/texte';
 import type { CarteDuClassement, RankingRow } from '@/lib/services/league';
 
 /**
@@ -499,7 +500,10 @@ function CarteActive({ row, onOuvrir }: { row: RankingRow; onOuvrir: (quoi: 'car
       <span className="min-w-0 leading-tight">
         <span className="block truncate text-[14px] font-bold text-ink @min-[100rem]:text-[16px]">{c.nom}</span>
         <span className="block truncate text-[13px] text-ink-2 @min-[100rem]:text-[15px]">{c.action}</span>
-        <span className="block text-[13px] text-muted @min-[100rem]:text-[14px]">{c.resume}</span>
+        {/* Le résumé, s'il dit plus que l'intitulé : « Game ×1,2 » deux fois ne disait rien de plus. */}
+        {!memeTexte(c.resume, c.action) && (
+          <span className="block text-[13px] text-muted @min-[100rem]:text-[14px]">{c.resume}</span>
+        )}
       </span>
     </button>
   );
