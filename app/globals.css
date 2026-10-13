@@ -3216,9 +3216,6 @@
     width: 4px;
     background: var(--r, var(--faint));
   }
-  .action-tuile[data-nature='malus'] {
-    background: color-mix(in srgb, var(--danger) 9%, rgb(0 10 30 / 0.24));
-  }
   .action-carte {
     display: block;
     width: 58px;
@@ -3235,9 +3232,6 @@
     line-height: 1.15;
     text-transform: uppercase;
     color: var(--ink);
-  }
-  .action-tuile[data-nature='malus'] .action-titre {
-    color: var(--danger);
   }
   .action-nom {
     display: flex;
@@ -3292,11 +3286,6 @@
     color: var(--aurora);
   }
 
-  .action-pied > span[data-genre='malus'] {
-    background: color-mix(in srgb, var(--danger) 85%, transparent);
-    color: var(--nuit);
-    text-transform: uppercase;
-  }
 
   /* --------------------------------------------------------------------------
      LES DUELS DE FLOCONS
@@ -16055,10 +16044,6 @@ a.adm-tuile:hover .adm-tuile-fleche {
   width: 1.35rem;
   height: 1.35rem;
 }
-.fiche-malus {
-  margin-left: 0.2rem;
-  color: var(--danger);
-}
 .fiche-nom {
   margin-top: 0.9rem;
   font-family: var(--font-display);
@@ -16378,48 +16363,3 @@ a.adm-tuile:hover .adm-tuile-fleche {
   color: var(--ink-2);
 }
 
-/* ---- Une carte malus, sur la carte même ----
-   Le médaillon de rareté porte un segment rouge « MALUS », la fenêtre de
-   l'illustration un liseré rouge et une ombre rouge qui monte des bords,
-   l'intitulé passe au rouge. Sur une vignette, où le médaillon se cache, le
-   liseré suffit à le dire. */
-.cadre-sceau-malus {
-  margin-left: 0.6cqw;
-  margin-right: -2.2cqw;
-  padding: 0.7cqw 1.8cqw;
-  border-radius: 999px;
-  background: var(--danger);
-  color: #1c0505;
-  letter-spacing: 0.12em;
-  text-shadow: none;
-}
-.cadre[data-malus] .cadre-sceau {
-  box-shadow:
-    0 0 0 0.45cqw color-mix(in srgb, var(--danger) 80%, var(--frost)),
-    inset 0 0.35cqw 0 rgb(255 255 255 / 0.22),
-    0 0.9cqw 1.8cqw rgb(0 0 0 / 0.5);
-}
-.cadre[data-malus] .cadre-fenetre::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  border-radius: inherit;
-  pointer-events: none;
-  box-shadow:
-    inset 0 0 0 0.7cqw color-mix(in srgb, var(--danger) 75%, transparent),
-    inset 0 0 9cqw color-mix(in srgb, var(--danger) 45%, transparent);
-}
-.cadre[data-malus] .cadre-action {
-  color: color-mix(in srgb, var(--danger) 70%, #1c0505);
-}
-.cadre[data-malus] .cadre-action::before {
-  background: linear-gradient(90deg, transparent, var(--danger));
-}
-.cadre[data-malus] .cadre-action::after {
-  background: linear-gradient(90deg, var(--danger), transparent);
-}
-/* Une tuile de malus : son liseré passe au rouge. */
-.action-tuile[data-nature='malus']::before {
-  background: var(--danger);
-}

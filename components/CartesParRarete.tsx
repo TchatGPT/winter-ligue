@@ -15,7 +15,7 @@ import type { MomentCarte, Rarity } from '@/lib/domain/types';
  * une légendaire », pas « que contient ce booster ».
  *
  * Une tuile par carte : **l'action** en titre, le nom de la carte, ce qu'elle
- * fait en clair, puis quand elle se joue. Les malus sont teintés de rouge.
+ * fait en clair, puis quand elle se joue.
  *
  * Toute la tuile s'ouvre : la carte vient en grand, en relief
  * (`FicheCarte`, `CarteInclinable`).
@@ -46,7 +46,6 @@ const MOMENTS: Record<MomentCarte, string> = {
 };
 
 export function CartesParRarete({ cartes, booster }: { cartes: CarteSaison[]; booster?: string }) {
-  const malus = cartes.filter((c) => c.nature === 'malus').length;
   const [ouverte, setOuverte] = useState<CarteSaison | null>(null);
 
   return (
@@ -54,7 +53,7 @@ export function CartesParRarete({ cartes, booster }: { cartes: CarteSaison[]; bo
       <p className="text-[14px] text-muted">
         {cartes.length} carte{cartes.length > 1 ? 's' : ''} {booster ? `dans le ${booster}` : 'cette saison'}, de la
         moins rare à la plus rare.
-        {malus > 0 && ` ${malus} malus parmi elles, teinté${malus > 1 ? 's' : ''} de rouge.`} Plus la carte est
+        Plus la carte est
         rare, plus elle peut peser sur une game.
       </p>
 
@@ -92,7 +91,6 @@ export function CartesParRarete({ cartes, booster }: { cartes: CarteSaison[]; bo
                     <p className="action-nom">{c.name}</p>
                     <p className="action-texte">{c.description.replace(/^MALUS : /, '')}</p>
                     <p className="action-pied">
-                      {c.nature === 'malus' && <span data-genre="malus">Malus</span>}
                       <span>{MOMENTS[c.moment]}</span>
                       {c.impact !== null && (
                         <span>{c.nature === 'malus' ? `−${c.impact} pts` : `${c.impact} pts au plus`}</span>

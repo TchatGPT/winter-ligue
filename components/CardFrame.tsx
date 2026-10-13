@@ -66,7 +66,6 @@ export function CardFrame({
     <div
       className={`cadre ${dimmed ? 'cadre-eteint' : ''}`}
       data-r={meta.code}
-      data-malus={nature === 'malus' || undefined}
       style={{ ['--r' as string]: meta.color }}
     >
       <div className="cadre-fenetre">
@@ -94,8 +93,6 @@ export function CardFrame({
       <span className="cadre-sceau">
         <EmblemeRarete rarity={meta.code as Rarity} className="cadre-sceau-gemme" />
         {meta.label}
-        {/* Un malus le dit dans le médaillon même, en rouge : on ne le rate pas. */}
-        {nature === 'malus' && <span className="cadre-sceau-malus">Malus</span>}
       </span>
       {corner && <span className="cadre-coin">{corner}</span>}
 

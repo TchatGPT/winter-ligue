@@ -366,9 +366,11 @@ describe('cohérence du jeu de cartes', () => {
     expect(new Set(CARDS.map((c) => c.name)).size).toBe(CARDS.length);
   });
 
-  it('dit « MALUS » sur chaque malus qui retire des points', () => {
+  it('dit en clair ce que retire chaque malus', () => {
+    // Plus de badge « MALUS » (abandonné le 13/10/2026) : la description dit
+    // les points qu'elle retire.
     for (const card of CARDS.filter((c) => c.nature === 'malus' && !aDeux(c.effect))) {
-      expect(card.description.startsWith('MALUS')).toBe(true);
+      expect(card.description).toMatch(/−\d+ points|÷/);
     }
   });
 });

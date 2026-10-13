@@ -127,7 +127,6 @@ export function FicheCarte({
               <span className="fiche-rarete">
                 <EmblemeRarete rarity={meta.code as Rarity} className="fiche-rarete-gemme" />
                 {meta.label}
-                {carte.nature === 'malus' && <span className="fiche-malus">Malus</span>}
               </span>
               <h2 className="fiche-nom">{carte.nom}</h2>
               {carte.action && <p className="fiche-action">{carte.action}</p>}
