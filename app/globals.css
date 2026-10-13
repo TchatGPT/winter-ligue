@@ -16349,3 +16349,230 @@ a.adm-tuile:hover .adm-tuile-fleche {
     grid-column: 2;
   }
 }
+
+/* ---- Accueil : le présentoir des boosters ----
+   Quatre sachets côte à côte. Celui qu'on ouvre laisse sortir ses cartes en
+   éventail par le haut : elles naissent derrière lui (il reste devant), et
+   tournent autour d'un point loin sous elles, ce qui les range en arc. */
+.pres {
+  --lb: clamp(4.4rem, 19vw, 8.5rem);
+  --lc: clamp(5rem, 21vw, 8.5rem);
+  grid-area: fan;
+  position: relative;
+  padding-top: calc(var(--lc) * 1.3);
+}
+.pres-rangee {
+  display: flex;
+  justify-content: center;
+  gap: clamp(0.5rem, 2.6vw, 2rem);
+}
+.pres-booster {
+  position: relative;
+  display: flex;
+  width: var(--lb);
+  flex-direction: column;
+  align-items: center;
+  transition: opacity 0.3s ease;
+}
+.pres-booster[data-actif] {
+  z-index: 5;
+}
+/* Un sachet ouvert : les autres s'effacent un peu. */
+.pres[data-ouvert] .pres-booster:not([data-actif]) {
+  opacity: 0.5;
+}
+.pres-zone {
+  position: relative;
+  width: 100%;
+}
+.pres-sachet {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+.pres-sachet:hover {
+  transform: translateY(-5px);
+}
+.pres-booster[data-actif] .pres-sachet {
+  transform: translateY(8px);
+}
+.pres-sachet:focus-visible {
+  outline: 2px solid var(--aurora);
+  outline-offset: 4px;
+}
+.pres-nom {
+  margin-top: 0.7rem;
+  font-family: var(--font-display);
+  font-size: clamp(0.75rem, 0.6rem + 0.5vw, 0.95rem);
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  line-height: 1.1;
+  text-align: center;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.pres-accroche {
+  margin-top: 0.2rem;
+  font-size: 0.75rem;
+  line-height: 1.3;
+  text-align: center;
+  color: var(--muted);
+}
+@media (max-width: 639px) {
+  .pres-accroche {
+    display: none;
+  }
+}
+
+/* L'éventail : un point au quart haut du sachet, d'où les cartes s'élèvent. */
+.pres-cartes {
+  --angle: min(9deg, calc(72deg / var(--n)));
+  position: absolute;
+  top: 22%;
+  left: 50%;
+  z-index: 0;
+  width: 0;
+  height: 0;
+  translate: var(--decalage, 0px) 0;
+}
+.pres-carte {
+  position: absolute;
+  bottom: 0;
+  left: calc(var(--lc) / -2);
+  width: var(--lc);
+  transform-origin: 50% 210%;
+  rotate: calc(var(--d) * var(--angle));
+  animation: pres-sortie 0.6s cubic-bezier(0.2, 0.9, 0.3, 1) backwards;
+  animation-delay: calc(var(--k) * 45ms);
+  transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+/* Survolée, la carte sort un peu plus du sachet et passe devant les autres. */
+.pres-carte:hover {
+  z-index: 20;
+  transform: translateY(-14%) scale(1.05);
+}
+.pres-carte .cadre {
+  filter: drop-shadow(0 6px 10px rgb(0 0 0 / 0.45));
+}
+/* Chaque carte se promène à son rythme : à l'unisson, elles battraient comme un seul objet. */
+.pres-carte .carte-3d {
+  animation-delay: calc(var(--k) * -0.9s);
+}
+/* Elles montent à la verticale, sans tourner : leur place dans l'arc reste
+   celle de la fin, et l'éventail se mesure juste dès le premier instant. */
+@keyframes pres-sortie {
+  from {
+    opacity: 0;
+    translate: 0 70%;
+  }
+}
+.pres-indice {
+  max-width: 40rem;
+  margin: 1.1rem auto 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  text-align: center;
+  color: var(--muted);
+}
+.pres-indice b {
+  color: var(--ink);
+}
+.pres-indice span {
+  display: block;
+  color: var(--faint);
+}
+
+/* ---- Accueil : la ligue en quatre étapes ---- */
+.acc-etapes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
+  gap: 1rem;
+}
+@media (min-width: 1280px) {
+  .acc-etapes {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+.acc-etape {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding: 1.4rem 1.25rem 1.25rem;
+  border-radius: var(--r-lg);
+  background: linear-gradient(
+    160deg,
+    color-mix(in srgb, var(--teinte) 14%, rgb(16 34 64 / 0.8)),
+    rgb(10 22 44 / 0.84)
+  );
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.14),
+    inset 0 0 0 1px color-mix(in srgb, var(--teinte) 28%, transparent),
+    0 18px 40px rgb(0 0 0 / 0.35);
+}
+.acc-etape-tete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.acc-etape-numero {
+  font-family: var(--font-display);
+  font-size: 2.6rem;
+  font-weight: 900;
+  line-height: 1;
+  color: color-mix(in srgb, var(--teinte) 78%, var(--frost));
+}
+.acc-etape-icone {
+  display: grid;
+  width: 2.75rem;
+  height: 2.75rem;
+  place-items: center;
+  border-radius: var(--r-pilule);
+  background: color-mix(in srgb, var(--teinte) 18%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--teinte) 45%, transparent);
+  color: color-mix(in srgb, var(--teinte) 85%, var(--frost));
+}
+.acc-etape h3 {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  line-height: 1.1;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.acc-etape > p {
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+.acc-etape-chiffres {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.45rem;
+  margin-top: auto;
+  padding-top: 0.4rem;
+}
+.acc-etape-chiffres li {
+  padding: 0.5rem 0.65rem;
+  border-radius: var(--r-sm);
+  background: rgb(0 10 30 / 0.32);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.06);
+}
+.acc-etape-chiffres b {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 900;
+  color: color-mix(in srgb, var(--teinte) 75%, var(--frost));
+}
+.acc-etape-chiffres span {
+  display: block;
+  font-size: 0.75rem;
+  line-height: 1.3;
+  color: var(--muted);
+}
