@@ -36,14 +36,54 @@ export function sansTagClan(nom: string): string {
   return nom.replace(/^\s*\[[^\]]*\]\s*_?\s*/, '').trim();
 }
 
-/** Minuscules, sans le suffixe « #1234 », sans rien d'autre que lettres et chiffres. */
+/**
+ * Les sosies : des caractères d'autres alphabets qui imitent une lettre
+ * latine, très prisés des pseudos en jeu — « 亅 乇 乇 メ ヨ » se lit « JEEメヨ ».
+ * Le modèle qui lit la capture, lui, écrit ce qu'il croit voir (« J モモメヨ ») :
+ * chaque sosie est ramené à une même lettre, des deux côtés de la comparaison.
+ */
+const SOSIES: Readonly<Record<string, string>> = {
+  卂: 'a',
+  乃: 'b',
+  匚: 'c',
+  刀: 'd',
+  乇: 'e',
+  モ: 'e',
+  千: 'f',
+  卄: 'h',
+  丨: 'i',
+  亅: 'j',
+  '」': 'j',
+  丿: 'j',
+  长: 'k',
+  ㄥ: 'l',
+  爪: 'm',
+  几: 'n',
+  ㄖ: 'o',
+  卩: 'p',
+  尺: 'r',
+  丂: 's',
+  ㄒ: 't',
+  ㄩ: 'u',
+  山: 'w',
+  乂: 'x',
+  ㄚ: 'y',
+  乙: 'z',
+};
+
+/**
+ * Minuscules, sans le suffixe « #1234 », sans espaces ni ponctuation. Toutes
+ * les écritures restent — un pseudo en katakana n'est pas vide —, les formes
+ * pleine chasse sont ramenées aux normales, les accents retirés, et les
+ * sosies ramenés à leur lettre.
+ */
 export function normalise(nom: string): string {
-  return sansTagClan(nom)
-    .replace(/#\d+$/, '')
-    .toLowerCase()
+  return [...sansTagClan(nom).replace(/#\d+$/, '').normalize('NFKC').toLowerCase()]
+    .map((c) => SOSIES[c] ?? c)
+    .join('')
     .normalize('NFD')
     .replace(/[̀-ͯ]/g, '')
-    .replace(/[^a-z0-9]/g, '');
+    .replace(/[^\p{L}\p{N}]/gu, '');
 }
 
 /** Distance de Levenshtein, sur des chaînes courtes. */

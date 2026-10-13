@@ -15854,6 +15854,17 @@ a.adm-tuile:hover .adm-tuile-fleche {
   align-items: center;
   gap: 0.4rem;
 }
+/* Le contrôle des kills : vert s'ils tombent juste, or sinon. */
+.saisie-controle {
+  margin-top: 0.45rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--gold);
+}
+.saisie-controle[data-ok] {
+  font-weight: 500;
+  color: var(--aurora);
+}
 /* Les kills d'après la carte (Écho Lointain), à côté de ceux lus sur la capture. */
 .saisie-kills-carte {
   padding: 0.1rem 0.5rem;

@@ -33,8 +33,10 @@ const Lecture = z.object({
     z.object({
       /** Le pseudo tel qu'il est écrit sur l'écran, marque de clan comprise. */
       lu: z.string(),
-      /** Les éliminations directes (colonne ÉLIM.). */
+      /** Les éliminations directes : la colonne ÉLIM., seule. */
       kills: z.number().int().min(0).max(200),
+      /** La colonne ÉLIM./ASSIST., si elle existe : elle sert à vérifier les kills. */
+      elimAssist: z.number().int().min(0).max(400).nullable(),
       /** La colonne ASSIST., si elle existe. */
       assists: z.number().int().min(0).max(200).nullable(),
       /** L'identifiant du joueur de la ligue reconnu, ou null. */
@@ -49,6 +51,12 @@ export interface Proposition {
   lu: string;
   kills: number;
   assists: number | null;
+  /**
+   * Les kills que donnent les deux autres colonnes : ÉLIM./ASSIST. moins
+   * ASSIST. Ils doivent tomber sur ÉLIM. ; sinon, un chiffre a été mal lu, et
+   * l'écran le dit. Nul si la capture n'a pas ces colonnes.
+   */
+  attendu: number | null;
   joueurId: string | null;
   /** De 0 à 1 : 1 quand le modèle et la comparaison de noms sont d'accord. */
   confiance: number;
@@ -92,11 +100,13 @@ ${liste}
 La streameuse, ${streameuse.pseudo}${streameuse.activisionId ? ` (pseudo en jeu : ${streameuse.activisionId})` : ''}, joue dans l'escouade mais n'est PAS dans la ligue : mets toujours joueurId à null pour sa ligne.
 
 Lis le tableau des joueurs de l'escouade. Les colonnes, de gauche à droite, sont en général : NOM | SCORE | ÉLIM./ASSIST. | ÉLIM. | ASSIST. Certaines captures n'ont qu'une colonne ÉLIM.
-- Ignore SCORE et ÉLIM./ASSIST.
-- kills = la colonne ÉLIM. (les éliminations directes). Si seule une colonne ÉLIM./ASSIST. existe, kills = cette valeur moins ASSIST. quand ASSIST. existe, sinon cette valeur.
+- Ignore SCORE.
+- kills = la colonne ÉLIM. seule (les éliminations directes) : jamais ÉLIM./ASSIST., jamais ASSIST. Si seule une colonne ÉLIM./ASSIST. existe, kills = cette valeur moins ASSIST. quand ASSIST. existe, sinon cette valeur.
+- elimAssist = la colonne ÉLIM./ASSIST. si elle existe, sinon null. Elle sert à vérifier : ÉLIM. doit valoir ÉLIM./ASSIST. moins ASSIST.
 - assists = la colonne ASSIST. si elle existe, sinon null.
 - Retourne toutes les lignes de joueurs, y compris celles grisées (joueur déconnecté), sauf la ligne « TOTAUX ESCOUADE ».
-- Ce qui est entre crochets devant un pseudo est une marque de clan, pas le pseudo : « [VI]LD » se lit « LD ». Recopie quand même le nom complet dans « lu ».
+- Ce qui est entre crochets devant un pseudo est une marque de clan, pas le pseudo : « [VI]LD » se lit « LD », « [ # ]亅乇乇メヨ » se lit « 亅乇乇メヨ ». Ne t'en sers jamais pour reconnaître un joueur. Recopie quand même le nom complet dans « lu ».
+- Les pseudos peuvent être écrits avec des caractères d'autres alphabets qui imitent des lettres : recopie-les tels quels.
 - Pour chaque ligne, cherche le joueur de la ligue qui correspond, en priorité par son pseudo en jeu, puis par son pseudo ou sa chaîne Twitch. Mets son id dans joueurId, ou null si aucun ne convient. Ne devine pas.
 - placement : 1, 2 ou 3 si la capture montre clairement que l'escouade a fini première, deuxième ou troisième (« VICTOIRE », « #1 », « 2e »…), sinon null.`;
 }
@@ -142,10 +152,12 @@ export async function analyseCapture(
   const connus = new Set(joueurs.map((j) => j.id));
   const propositions: Proposition[] = lecture.joueurs.map((ligne) => {
     const kills = Math.min(GAME_LIMITS.maxKills, Math.max(GAME_LIMITS.minKills, ligne.kills));
+    const attendu =
+      ligne.elimAssist !== null && ligne.assists !== null ? Math.max(0, ligne.elimAssist - ligne.assists) : null;
     // La streameuse d'abord : sa ligne est reconnue par son nom, et n'est
     // jamais attribuée — quoi qu'en dise le modèle.
     if (correspond(ligne.lu, [streameuse]).joueurId !== null) {
-      return { streameuse: true, lu: ligne.lu, kills, assists: ligne.assists, joueurId: null, confiance: 0 };
+      return { streameuse: true, lu: ligne.lu, kills, assists: ligne.assists, attendu, joueurId: null, confiance: 0 };
     }
     // Le modèle propose un id ; la comparaison de noms le confirme ou le
     // remplace. Un id qui n'est pas dans la liste est ignoré : il n'a pas
@@ -164,7 +176,7 @@ export async function analyseCapture(
       joueurId = parNom.joueurId;
       confiance = parNom.confiance;
     }
-    return { streameuse: false, lu: ligne.lu, kills, assists: ligne.assists, joueurId, confiance };
+    return { streameuse: false, lu: ligne.lu, kills, assists: ligne.assists, attendu, joueurId, confiance };
   });
 
   return { placement: lecture.placement, propositions, modele: nomModele };

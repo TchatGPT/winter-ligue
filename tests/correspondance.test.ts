@@ -57,6 +57,19 @@ describe('correspond', () => {
     expect(correspond('Lriaa', JOUEURS).confiance).toBeLessThan(SEUIL_CONFIANCE);
   });
 
+  it('reconnaît un pseudo en caractères sosies, lu autrement sur la capture', () => {
+    // Le pseudo enregistré imite « JEEX3 » avec des idéogrammes ; le modèle
+    // lit des katakana qui leur ressemblent, derrière une marque de clan.
+    const jeex: JoueurConnu = { id: 'j', pseudo: 'Jeex3', activisionId: '亅 乇 乇 メ ヨ', twitchLogin: 'jeex3' };
+    expect(correspond('[ # ]J モモメヨ', [...JOUEURS, jeex])).toEqual({ joueurId: 'j', confiance: 1 });
+    expect(correspond('[#]」モモメヨ', [...JOUEURS, jeex]).joueurId).toBe('j');
+  });
+
+  it('garde les écritures non latines au lieu de les effacer', () => {
+    expect(normalise('メヨ')).toBe('メヨ');
+    expect(normalise('ＡＢＣ')).toBe('abc');
+  });
+
   it('ne plante pas sur un nom vide', () => {
     expect(correspond('   ', JOUEURS)).toEqual({ joueurId: null, confiance: 0 });
   });

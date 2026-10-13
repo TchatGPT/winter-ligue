@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { SnowCap } from '@/components/SnowCap';
 import { Notice } from '@/components/ui';
+import { sansTagClan } from '@/lib/domain/correspondance';
 import { GAME_LIMITS, placementPoints } from '@/lib/domain/rules';
 
 interface Joueur {
@@ -20,6 +21,8 @@ interface Ligne {
   assists: number | null;
   joueurId: string | null;
   confiance: number;
+  /** ÉLIM./ASSIST. moins ASSIST., lus sur la capture : ils doivent tomber sur les kills. */
+  attendu?: number | null;
   /** La modération sert le Joker du joueur : cette game ne comptera pas. */
   joker?: boolean;
 }
@@ -171,6 +174,13 @@ function ChoixTop({ valeur, onChange, disabled }: { valeur: Placement; onChange:
  * capture, la streameuse et les coéquipiers hors ligue compris. C'est ce que
  * la carte « Clone kill du meilleur » copie.
  */
+/** Le meilleur tueur de la partie, toutes lignes lues : son nom, sans marque de clan, et ses kills. */
+function meilleurTueurDe(lignes: { lu: string; kills: number }[]): { nom: string; kills: number } | null {
+  if (lignes.length === 0) return null;
+  const tete = lignes.reduce((a, b) => (b.kills > a.kills ? b : a));
+  return { nom: sansTagClan(tete.lu) || tete.lu, kills: tete.kills };
+}
+
 function meilleurKillsDe(lignes: { kills: number }[]): number | null {
   if (lignes.length === 0) return null;
   return Math.max(...lignes.map((l) => l.kills));
@@ -454,6 +464,7 @@ function FenetreIA({ joueurs, active, ferme }: { joueurs: Joueur[]; active: bool
                 placement={placement}
                 apercu={l.joueurId ? apercus[l.joueurId] : undefined}
                 joueurs={joueurs}
+                meilleur={meilleurTueurDe(lignes)}
                 onChange={(patch) => modifie(i, patch)}
               />
             ))}
@@ -519,12 +530,15 @@ function LigneResultat({
   placement,
   apercu,
   joueurs,
+  meilleur,
   onChange,
 }: {
   ligne: Ligne;
   placement: Placement;
   apercu: Apercu | undefined;
   joueurs: Joueur[];
+  /** Le meilleur tueur de la partie : Écho Lointain copie ses kills. */
+  meilleur: { nom: string; kills: number } | null;
   onChange: (patch: Partial<Ligne>) => void;
 }) {
   // La ligne de la streameuse : montrée pour qu'on voie qu'elle a été lue, et
@@ -533,7 +547,9 @@ function LigneResultat({
     return (
       <li className="saisie-ligne" data-etat="hors">
         <div className="saisie-ligne-tete">
-          <span className="saisie-lu">{l.lu}</span>
+          <span className="saisie-lu" title={`Lu sur la capture : ${l.lu}`}>
+            {sansTagClan(l.lu) || l.lu}
+          </span>
           <span className="text-sm text-muted">Streameuse — hors ligue, aucune game</span>
           <span className="saisie-kills-fixes num">{l.kills} élim.</span>
         </div>
@@ -557,8 +573,8 @@ function LigneResultat({
   return (
     <li className="saisie-ligne" data-etat={!assigne ? 'libre' : jokerJoue ? 'joker' : 'compte'}>
       <div className="saisie-ligne-tete">
-        <span className="saisie-lu" title="Pseudo lu sur la capture">
-          {l.lu}
+        <span className="saisie-lu" title={`Lu sur la capture : ${l.lu}`}>
+          {sansTagClan(l.lu) || l.lu}
         </span>
         <div className="min-w-0">
           <select
@@ -605,6 +621,15 @@ function LigneResultat({
         </div>
       </div>
 
+      {/* Le contrôle : ÉLIM. = ÉLIM./ASSIST. − ASSIST., recalculé à chaque − / +. */}
+      {l.attendu !== null && l.attendu !== undefined && (
+        <p className="saisie-controle" data-ok={l.attendu === l.kills ? '' : undefined}>
+          {l.attendu === l.kills
+            ? `✓ Élim. vérifiées : ${l.kills} = élim./assist. − assist.`
+            : `⚠ Élim./assist. − assist. donne ${l.attendu}, pas ${l.kills} : vérifie sur la capture.`}
+        </p>
+      )}
+
       {assigne && (
         <>
           {/* Le détail du score : chaque terme, puis le total. */}
@@ -627,11 +652,22 @@ function LigneResultat({
             <span className="saisie-op">=</span>
             <span className="saisie-total-ligne num">{jokerJoue ? '0 pt' : `${total} pts`}</span>
           </div>
-          {/* Le détail de la carte, quand il dit plus que ses points : « ×2 sur 24 pts ». */}
-          {carte && !jokerJoue && plat(carte.resultat) !== plat(points(carte.points)) && (
+          {/* Le détail de la carte, quand il dit plus que ses points : « ×2 sur 24 pts ».
+              Écho Lointain nomme le meilleur tueur dont elle copie les kills. */}
+          {carte && !jokerJoue && carte.cardId === 'echo-lointain' && meilleur ? (
             <p className="saisie-carte-detail">
-              🃏 {carte.nom} : {carte.resultat}
+              🃏 {clone
+                ? `${carte.nom} copie les ${meilleur.kills} kills de ${meilleur.nom}, meilleur tueur de la partie : ${l.kills} → ${kills} kills.`
+                : `${carte.nom} : meilleur tueur de la partie lui-même (${l.kills} kills), ${points(carte.points)} de consolation.`}
             </p>
+          ) : (
+            carte &&
+            !jokerJoue &&
+            plat(carte.resultat) !== plat(points(carte.points)) && (
+              <p className="saisie-carte-detail">
+                🃏 {carte.nom} : {carte.resultat}
+              </p>
+            )
           )}
 
           {/* Le Joker : un choix, pas une case qu'on rate. */}
