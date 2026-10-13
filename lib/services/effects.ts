@@ -190,13 +190,19 @@ function demande(effect: CardEffect, game: Game, contexte: ContexteGame): Demand
       return game.kills < effect.moinsDe
         ? { points: effect.value, resultat: `${game.kills} kill${game.kills > 1 ? 's' : ''} → ${pts(effect.value)}` }
         : { points: 0, resultat: `${game.kills} kills, sans effet` };
-    case 'kills_min':
-      return game.kills >= effect.min
-        ? { points: effect.value, resultat: `${game.kills} kills → ${pts(effect.value)}` }
+    case 'kills_paliers': {
+      const paliers = Math.floor(game.kills / effect.par);
+      const points = Math.min(effect.cap, paliers * effect.value);
+      return points > 0
+        ? {
+            points,
+            resultat: `${game.kills} kills, ${paliers} palier${paliers > 1 ? 's' : ''} de ${effect.par} → ${pts(points)}`,
+          }
         : {
             points: 0,
-            resultat: `${game.kills} kill${game.kills > 1 ? 's' : ''}, moins de ${effect.min} : sans effet`,
+            resultat: `${game.kills} kill${game.kills > 1 ? 's' : ''}, moins de ${effect.par} : sans effet`,
           };
+    }
     default:
       return null;
   }

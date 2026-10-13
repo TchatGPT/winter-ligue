@@ -195,14 +195,14 @@ export const CARDS: readonly CardDefinition[] = [
     cible: 'HASARD',
   },
   {
-    // Se mérite : rien sous 5 kills.
+    // Une boule de plus tous les 5 kills : rien en dessous, +6 au plus.
     id: 'bonhomme-de-neige',
     name: 'Bonhomme de Neige',
-    subtitle: '+3 pts dès 5 kills',
+    subtitle: '+2 pts par 5 kills',
     rarity: 'C',
     glyph: '⛄',
-    description: '+3 points sur ta prochaine game, si tu fais au moins 5 kills.',
-    effect: { kind: 'kills_min', min: 5, value: 3 },
+    description: '+2 points sur ta prochaine game par tranche de 5 kills, jusqu’à +6.',
+    effect: { kind: 'kills_paliers', par: 5, value: 2, cap: 6 },
     nature: 'bonus',
     power: 10,
     packs: ['perso'],
@@ -389,8 +389,9 @@ export function impactMax(effect: CardEffect): number | null {
     case 'plancher':
     case 'bonus_top':
     case 'petite_game':
-    case 'kills_min':
       return Math.abs(effect.value);
+    case 'kills_paliers':
+      return effect.cap;
     case 'multiplicateur_game':
       // Sans plafond, la carte suit la game : pas de « au plus » à annoncer.
       return effect.cap === undefined ? null : Math.min(effect.cap, Math.round(SCORE_MAX * (effect.value - 1)));
@@ -440,8 +441,8 @@ export function resumeEffet(effect: CardEffect): string {
       return `+${effect.value} pts si Top ${effect.top}`;
     case 'petite_game':
       return `+${effect.value} pts sous ${effect.moinsDe} kills`;
-    case 'kills_min':
-      return `+${effect.value} pts dès ${effect.min} kills`;
+    case 'kills_paliers':
+      return `+${effect.value} pts par ${effect.par} kills, max +${effect.cap}`;
     case 'flocons_doubles':
       return 'flocons ×2';
     case 'echange':

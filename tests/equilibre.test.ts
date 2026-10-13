@@ -60,16 +60,20 @@ describe('les cartes sans plafond de points', () => {
 });
 
 describe('les communes qui se méritent', () => {
-  it('le Bonhomme de Neige ne donne ses 3 points qu’à partir de 5 kills', () => {
-    const db = base('a', 'b');
-    pose(db, 'a', 'bonhomme-de-neige', 1);
-    pose(db, 'b', 'bonhomme-de-neige', 1);
-    const peu = game(db, 'a', 4);
-    const assez = game(db, 'b', 5);
-    appliqueCartesEnAttente(db, peu);
-    appliqueCartesEnAttente(db, assez);
-    expect(peu.score).toBe(4);
-    expect(assez.score).toBe(5 + 3);
+  it('le Bonhomme de Neige donne 2 points par tranche de 5 kills, jusqu’à 6', () => {
+    for (const [kills, bonus] of [
+      [4, 0],
+      [5, 2],
+      [12, 4],
+      [17, 6],
+      [25, 6],
+    ] as const) {
+      const db = base('a');
+      pose(db, 'a', 'bonhomme-de-neige', 1);
+      const g = game(db, 'a', kills);
+      appliqueCartesEnAttente(db, g);
+      expect(g.score).toBe(kills + bonus);
+    }
   });
 
   it('la Luge ne donne ses 15 points que sur un Top 1', () => {
