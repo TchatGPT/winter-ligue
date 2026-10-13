@@ -39,6 +39,8 @@ export interface ApercuLigne {
   carte: { cardId: string; nom: string; points: number; resultat: string } | null;
   /** Vrai s'il garde un Joker : l'écran propose alors de ne pas compter cette game. */
   joker: boolean;
+  /** Les kills de la game, carte comprise : Écho Lointain les remplace par ceux du meilleur. */
+  kills: number;
 }
 
 /**
@@ -84,6 +86,7 @@ export async function POST(request: Request): Promise<NextResponse> {
         score: game.score,
         carte: carte ? { cardId: carte.cardId, nom: carte.nom, points: carte.points, resultat: carte.resultat } : null,
         joker,
+        kills: game.kills,
       };
     });
   });

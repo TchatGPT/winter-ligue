@@ -236,6 +236,7 @@ function regleSurGame(
   }
 
   if (effect.kind === 'echange') return regleEchange(db, pendante, card, effect, game, now);
+  if (effect.kind === 'clone_kills') return regleClone(db, pendante, card, effect, game, contexte);
 
   const voulu = demande(effect, game, contexte);
   if (!voulu) return sansEffet('sans effet sur une game', game.id);
@@ -246,6 +247,52 @@ function regleSurGame(
   // demande : on le dit.
   const resultat = points === voulu.points ? voulu.resultat : `${voulu.resultat}, renforcé : ${pts(points)}`;
   return { points, resultat, facteurFlocons: 1, regle: true, gameId: game.id };
+}
+
+/**
+ * « Clone kill du meilleur » : la game prend les kills du meilleur tueur de la
+ * partie — ses kills changent, pas un bonus à côté. Le classement, la
+ * moyenne de kills et les flocons de la game les comptent donc comme les
+ * siens. La carte s'inscrit sur la game, à zéro point de bonus, et le
+ * résultat garde les kills d'avant. Meilleur tueur lui-même : sa consolation,
+ * en points de bonus.
+ */
+function regleClone(
+  db: Database,
+  pendante: CarteEnAttente,
+  card: CardDefinition,
+  effect: Extract<CardEffect, { kind: 'clone_kills' }>,
+  game: Game,
+  contexte: ContexteGame,
+): Reglement {
+  const meilleur = contexte.meilleurKills;
+  if (meilleur === null || meilleur === undefined) {
+    return sansEffet('meilleur tueur de la partie inconnu, sans effet', game.id);
+  }
+  const ecart = meilleur - game.kills;
+  if (ecart <= 0) {
+    if (!effect.consolation) return sansEffet('déjà le meilleur tueur de la partie, sans effet', game.id);
+    const points = applyPoints(db, game, card, pendante.ouvertureId, effect.consolation);
+    return {
+      points,
+      resultat: `meilleur tueur de la partie lui-même → ${pts(points)}`,
+      facteurFlocons: 1,
+      regle: true,
+      gameId: game.id,
+    };
+  }
+  const gain = effect.cap === undefined ? ecart : Math.min(effect.cap, ecart);
+  const avant = game.kills;
+  game.kills = Math.min(GAME_LIMITS.maxKills, avant + gain);
+  // Inscrite sur la game, à zéro point de bonus : le score suit les kills.
+  applyPoints(db, game, card, pendante.ouvertureId, 0);
+  return {
+    points: game.kills - avant,
+    resultat: `${avant} → ${game.kills} kills, ceux du meilleur tueur de la partie`,
+    facteurFlocons: 1,
+    regle: true,
+    gameId: game.id,
+  };
 }
 
 /**

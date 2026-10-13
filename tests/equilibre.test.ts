@@ -65,7 +65,9 @@ describe('Écho Lointain', () => {
     pose(db, 'a', 'echo-lointain', 1);
     const g = game(db, 'a', 3, 2);
     appliqueCartesEnAttente(db, g, { meilleurKills: 17 });
-    // 3 kills + Top 2, et les 14 kills qui le séparaient du meilleur.
+    // Ses kills deviennent ceux du meilleur : 17 kills, plus le Top 2.
+    expect(g.kills).toBe(17);
+    expect(g.bonusPoints).toBe(0);
     expect(g.score).toBe(17 + 15);
   });
 

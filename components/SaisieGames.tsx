@@ -32,6 +32,8 @@ interface Apercu {
   carte: { cardId: string; nom: string; points: number; resultat: string } | null;
   /** Vrai s'il garde un Joker. */
   joker: boolean;
+  /** Les kills de la game, carte comprise. */
+  kills?: number;
 }
 type Message = { kind: 'error' | 'success' | 'info'; text: string } | null;
 
@@ -546,6 +548,10 @@ function LigneResultat({
   const total = apercu?.score ?? l.kills + top;
   const joker = Boolean(apercu?.joker);
   const jokerJoue = joker && Boolean(l.joker);
+  // Écho Lointain remplace les kills par ceux du meilleur tueur : le calcul
+  // montre les kills d'après la carte, et la carte sans points à côté.
+  const kills = apercu?.kills ?? l.kills;
+  const clone = kills !== l.kills;
   const pseudo = joueurs.find((j) => j.id === l.joueurId)?.pseudo ?? '';
 
   return (
@@ -597,7 +603,7 @@ function LigneResultat({
           {/* Le détail du score : chaque terme, puis le total. */}
           <div className="saisie-calcul" data-barre={jokerJoue || undefined}>
             <span className="saisie-terme">
-              <b className="num">{points(l.kills)}</b> {l.kills} kill{l.kills > 1 ? 's' : ''}
+              <b className="num">{points(kills)}</b> {kills} kill{kills > 1 ? 's' : ''}
             </span>
             <span className="saisie-op">+</span>
             <span className="saisie-terme">
@@ -607,7 +613,7 @@ function LigneResultat({
               <>
                 <span className="saisie-op">+</span>
                 <span className="saisie-terme" data-carte={carte.points < 0 ? 'malus' : 'bonus'} title={carte.resultat}>
-                  <b className="num">{points(carte.points)}</b> {carte.nom}
+                  {!clone && <b className="num">{points(carte.points)}</b>} {carte.nom}
                 </span>
               </>
             )}
