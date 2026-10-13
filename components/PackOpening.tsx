@@ -262,6 +262,12 @@ export function PackOpening({
   const ouvertureRevelee = phase === 'reveal' ? ouverture?.id : undefined;
   useEffect(() => {
     if (!ouvertureRevelee) return;
+    // La carte est à l'écran : ses flocons peuvent se voir, tout de suite.
+    void fetch('/api/admin/packs/revelee', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ ouvertureId: ouvertureRevelee }),
+    }).catch(() => undefined);
     setTimeout(() => {
       void fetch('/api/admin/packs/annonce', {
         method: 'POST',
@@ -270,6 +276,17 @@ export function PackOpening({
       }).catch(() => undefined);
     }, SECOURS_ANNONCE_MS);
   }, [ouvertureRevelee]);
+
+  // En arrivant, la modération règle ce qui attend sa révélation depuis trop
+  // longtemps : une ouverture interrompue, un onglet fermé.
+  useEffect(() => {
+    if (!aLaMain) return;
+    void fetch('/api/admin/packs/revelee', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: '{}',
+    }).catch(() => undefined);
+  }, [aLaMain]);
 
   function reset() {
     setPhase('repos');

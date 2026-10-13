@@ -74,10 +74,11 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   pas sur lui ; si tout le monde en a une, le booster attend.
 - **Rien ne se voit avant la carte** : une carte qui se règle tout de suite (flocons) ou
   sur une game jouée (Permafrost) ne se règle qu'une fois son ouverture révélée à l'écran
-  (`annonceeA`, posé par `annonceOuverture` : l'overlay, ou l'écran de qui ouvre neuf
-  secondes après) — sinon le solde spoilerait l'ouverture. Rouvrir pour le même joueur la
-  règle d'abord ; passé deux minutes, elle se règle d'elle-même au premier passage. Une
-  carte de flocons ne compte jamais comme carte en attente.
+  — sinon le solde spoilerait l'ouverture. L'écran de qui ouvre la règle au moment où la
+  carte apparaît (`/api/admin/packs/revelee`), l'annonce dans le tchat aussi
+  (`annonceeA`). Rouvrir pour le même joueur la règle d'abord ; passé deux minutes, la
+  page des boosters de la modération rattrape ce qui traîne. Une carte de flocons ne
+  compte jamais comme carte en attente.
 - **Le Joker** (`kind: 'joker'`, Booster Perso) est gardé, jamais consommé de lui-même :
   à la saisie d'une game, la modération peut le servir (`joker: true`, vérifié par
   `jokerDe`). La game est alors passée (`skipped`) — ni points, ni flocons, ni carte

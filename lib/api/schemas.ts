@@ -59,6 +59,9 @@ export const activisionId = z
 /** Annoncer une ouverture dans le tchat, depuis l'écran qui l'a ouverte. */
 export const annonceOuvertureSchema = z.object({ ouvertureId: uuid });
 
+/** Une carte révélée à l'écran — ou, sans ouverture, le rattrapage de ce qui traîne. */
+export const revelationSchema = z.object({ ouvertureId: uuid.optional() }).strict();
+
 /** Annoncer une ouverture dans le tchat, depuis l'overlay OBS : sa clé fait foi. */
 export const annonceOverlaySchema = z.object({ cle: z.string().max(80), ouvertureId: uuid });
 
