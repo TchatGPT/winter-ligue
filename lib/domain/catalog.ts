@@ -273,7 +273,7 @@ export const CARDS: readonly CardDefinition[] = [
     rarity: 'UR',
     glyph: '🧊',
     description:
-      'MALUS : garde-la. La modération la joue pour toi : −20 points sur la prochaine game du joueur que tu choisis.',
+      'MALUS : −20 points sur la prochaine game du joueur de ton choix. Tu la gardes, et la modération l’envoie quand tu désignes ta cible.',
     effect: { kind: 'malus_choisi', value: 20 },
     nature: 'malus',
     power: 74,
@@ -381,7 +381,7 @@ export const COUP_DE_VERGLAS: CardDefinition = {
   subtitle: '−20 pts',
   rarity: 'UR',
   glyph: '🧊',
-  description: 'MALUS : −20 points sur ta prochaine game. Un joueur te l’a envoyé.',
+  description: 'MALUS : −20 points sur ta prochaine game, envoyé par un autre joueur.',
   effect: { kind: 'malus_points', value: 20 },
   nature: 'malus',
   power: 74,

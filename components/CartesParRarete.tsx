@@ -42,7 +42,7 @@ const MOMENTS: Record<MomentCarte, string> = {
   PROCHAINE: 'Prochaine game',
   JOUEE: 'Game déjà jouée',
   INSTANT: 'Tout de suite',
-  GARDEE: 'Gardée, à jouer au choix',
+  GARDEE: 'Se garde, se joue au choix',
 };
 
 export function CartesParRarete({ cartes, booster }: { cartes: CarteSaison[]; booster?: string }) {
@@ -94,7 +94,9 @@ export function CartesParRarete({ cartes, booster }: { cartes: CarteSaison[]; bo
                     <p className="action-pied">
                       {c.nature === 'malus' && <span data-genre="malus">Malus</span>}
                       <span>{MOMENTS[c.moment]}</span>
-                      {c.impact !== null && <span>{c.impact} pts au plus</span>}
+                      {c.impact !== null && (
+                        <span>{c.nature === 'malus' ? `−${c.impact} pts` : `${c.impact} pts au plus`}</span>
+                      )}
                     </p>
                   </div>
                 </li>
