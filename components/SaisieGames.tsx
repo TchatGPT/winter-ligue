@@ -5,6 +5,8 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { SnowCap } from '@/components/SnowCap';
 import { Notice } from '@/components/ui';
+import { CardFrame } from '@/components/CardFrame';
+import { getCard, RARITY_META } from '@/lib/domain/catalog';
 import { sansTagClan } from '@/lib/domain/correspondance';
 import { GAME_LIMITS, placementPoints } from '@/lib/domain/rules';
 
@@ -511,9 +513,6 @@ function FenetreIA({ joueurs, active, ferme }: { joueurs: Joueur[]; active: bool
 
 /* ------------------------------ Une ligne -------------------------------- */
 
-/** Un texte sans espaces ni signe moins typographique, pour comparer deux écritures. */
-const plat = (texte: string) => texte.replace(/\s/g, '').replace(/−/g, '-');
-
 /** « +3 pts », « −4 pts », « 0 pt ». */
 function points(n: number): string {
   if (n === 0) return '0 pt';
@@ -652,22 +651,21 @@ function LigneResultat({
             <span className="saisie-op">=</span>
             <span className="saisie-total-ligne num">{jokerJoue ? '0 pt' : `${total} pts`}</span>
           </div>
-          {/* Le détail de la carte, quand il dit plus que ses points : « ×2 sur 24 pts ».
-              Écho Lointain nomme le meilleur tueur dont elle copie les kills. */}
-          {carte && !jokerJoue && carte.cardId === 'echo-lointain' && meilleur ? (
-            <p className="saisie-carte-detail">
-              🃏 {clone
-                ? `${carte.nom} copie les ${meilleur.kills} kills de ${meilleur.nom}, meilleur tueur de la partie : ${l.kills} → ${kills} kills.`
-                : `${carte.nom} : meilleur tueur de la partie lui-même (${l.kills} kills), ${points(carte.points)} de consolation.`}
-            </p>
-          ) : (
-            carte &&
-            !jokerJoue &&
-            plat(carte.resultat) !== plat(points(carte.points)) && (
-              <p className="saisie-carte-detail">
-                🃏 {carte.nom} : {carte.resultat}
-              </p>
-            )
+          {/* La carte jouée sur cette game, en clair : ce qu'elle est, ce qu'elle
+              fait, et ce qu'elle donne ici. Écho Lointain nomme le meilleur
+              tueur dont elle copie les kills. */}
+          {carte && !jokerJoue && (
+            <CarteDeLaGame
+              cardId={carte.cardId}
+              donne={clone ? `${l.kills} → ${kills} kills` : points(carte.points)}
+              ici={
+                carte.cardId === 'echo-lointain' && meilleur
+                  ? clone
+                    ? `Elle copie les ${meilleur.kills} kills de ${meilleur.nom}, meilleur tueur de la partie.`
+                    : `Meilleur tueur de la partie lui-même (${l.kills} kills) : ${points(carte.points)} de consolation.`
+                  : carte.resultat
+              }
+            />
           )}
 
           {/* Le Joker : un choix, pas une case qu'on rate. */}
@@ -696,5 +694,32 @@ function LigneResultat({
         </>
       )}
     </li>
+  );
+}
+
+/**
+ * La carte active d'un joueur, dans sa ligne de saisie : sa vignette, son nom
+ * et sa rareté, ce qu'elle fait en général, puis ce qu'elle fait sur cette
+ * game — et, en grand, ce qu'elle lui donne.
+ */
+function CarteDeLaGame({ cardId, donne, ici }: { cardId: string; donne: string; ici: string }) {
+  const def = getCard(cardId);
+  if (!def) return null;
+  const meta = RARITY_META[def.rarity];
+  return (
+    <div className="saisie-carte" style={{ ['--r' as string]: meta.color }}>
+      <span className="saisie-carte-vignette" aria-hidden="true">
+        <CardFrame cardId={def.id} name={def.name} rarity={def.rarity} glyph={def.glyph} nature={def.nature} />
+      </span>
+      <div className="min-w-0">
+        <p className="saisie-carte-titre">
+          {def.name}
+          <span>{meta.label}</span>
+        </p>
+        <p className="saisie-carte-desc">{def.description}</p>
+        <p className="saisie-carte-ici">Sur cette game : {ici}</p>
+      </div>
+      <span className="saisie-carte-donne num">{donne}</span>
+    </div>
   );
 }
