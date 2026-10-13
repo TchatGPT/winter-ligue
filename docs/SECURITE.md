@@ -397,6 +397,13 @@ active — c'est l'étape suivante.
 L'ancienne ligne unique `league_state` est gardée comme sauvegarde ; vider les
 tables la fait reverser au démarrage suivant.
 
+**La Data API de Supabase (PostgREST)** n'expose qu'un schéma vide, `api_ferme`
+(créé le 13/10/2026, aucun droit pour `anon` ni `authenticated`, rien dedans). Désactivée,
+elle pointait vers un schéma fictif (`pg_pgrst_no_exposed_schemas`) et écrivait une
+erreur toutes les 32 secondes dans les journaux Postgres. Ne rien créer dans
+`api_ferme`, et ne pas y ajouter `public` : tout ce qui y serait deviendrait lisible
+par l'API publique.
+
 **La lecture des captures** (`POST /api/admin/games/analyse`, `admin`) envoie
 l'image à l'API Anthropic **depuis le serveur** : la clé `ANTHROPIC_API_KEY` ne
 quitte jamais le serveur, et la CSP (`connect-src 'self'`) interdirait de toute
