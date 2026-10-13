@@ -344,8 +344,9 @@ function FenetreIA({ joueurs, active, ferme }: { joueurs: Joueur[]; active: bool
     setBusy(null);
     router.refresh();
     if (echecs.length === 0) {
+      // Tout est passé : la fenêtre se ferme, le classement se met à jour derrière.
       efface();
-      setMessage({ kind: 'success', text: `${faites} game${faites > 1 ? 's' : ''} enregistrée${faites > 1 ? 's' : ''}.` });
+      ferme();
     } else {
       // Les games passées sont passées : on ne garde que les lignes en échec,
       // pour qu'elles ne soient pas saisies deux fois.
