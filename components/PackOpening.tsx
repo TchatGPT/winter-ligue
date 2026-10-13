@@ -9,6 +9,7 @@ import { prechargeSons, reveilleSon } from '@/components/bruitage';
 import { RailJoueurs } from '@/components/RailJoueurs';
 import { RailPack, type CarteRailPack } from '@/components/RailPack';
 import { CartesParRarete, type CarteSaison } from '@/components/CartesParRarete';
+import { CarteInclinable } from '@/components/CarteInclinable';
 import { DestinCarte } from '@/components/DestinCarte';
 import { CardTile, Notice, flakes, rarityMeta } from '@/components/ui';
 import { packArt } from '@/lib/domain/catalog';
@@ -567,14 +568,18 @@ export function PackOpening({
                   <span className="fumee-nappe fumee-nappe-3" />
                 </div>
                 <div className="reveal relative">
-                  <CardTile
-                    cardId={ouverture.cardId}
-                    name={ouverture.nom}
-                    description={ouverture.description}
-                    rarity={ouverture.rarity}
-                    glyph={ouverture.glyph}
-                    nature={ouverture.nature}
-                  />
+                  {/* Le même relief que la fiche d'une carte : elle se promène
+                      d'elle-même, et suit la souris. */}
+                  <CarteInclinable>
+                    <CardTile
+                      cardId={ouverture.cardId}
+                      name={ouverture.nom}
+                      description={ouverture.description}
+                      rarity={ouverture.rarity}
+                      glyph={ouverture.glyph}
+                      nature={ouverture.nature}
+                    />
+                  </CarteInclinable>
                 </div>
               </div>
 
