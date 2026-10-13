@@ -12,6 +12,7 @@ export const CARD_ART: Record<string, string> = {
   'chocolat-chaud': '/cartes/chocolat-chaud.webp',
   'coulee-de-neige': '/cartes/coulee-de-neige.webp',
   'echo-lointain': '/cartes/echo-lointain.webp',
+  'grand-degel': '/cartes/grand-degel.webp',
   'joker-givre': '/cartes/joker-givre.webp',
   'lanterne-givree': '/cartes/lanterne-givree.webp',
   'luge': '/cartes/luge.webp',
