@@ -15,6 +15,8 @@ export interface CartePresentee {
   rarity: Rarity;
   glyph: string;
   nature: 'bonus' | 'malus';
+  /** L'illustration peinte, si elle existe : la scène 3D la pose sur la carte. */
+  art?: string | null;
 }
 
 export interface BoosterPresente {

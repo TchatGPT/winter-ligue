@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react';
-import { PresentoirBoosters, type BoosterPresente } from '@/components/PresentoirBoosters';
+import { Accueil3D } from '@/components/accueil3d/Accueil3D';
+import type { BoosterPresente } from '@/components/PresentoirBoosters';
 import { IconPack, IconSnowflake, IconTrophy, IconTwitch } from '@/components/icons';
-import { cartesDuPack, GEMME_DU_PACK, PACKS, packArt, RARITY_META } from '@/lib/domain/catalog';
+import { cardArt, cartesDuPack, GEMME_DU_PACK, PACKS, packArt, RARITY_META } from '@/lib/domain/catalog';
 import {
   CADEAU_DU_JOUR,
   CHANCE,
@@ -161,6 +162,7 @@ export function Accueil({ twitchEnabled, devLogin }: { twitchEnabled: boolean; d
         rarity: c.rarity,
         glyph: c.glyph,
         nature: c.nature,
+        art: cardArt(c.id),
       })),
   }));
 
@@ -169,47 +171,46 @@ export function Accueil({ twitchEnabled, devLogin }: { twitchEnabled: boolean; d
 
   return (
     <div className="accueil">
-      {/* ---- Le hero : le nom, une phrase, l'entrée. Centré. ---- */}
-      <section className="acc-hero" aria-labelledby="accueil-titre">
-        <p className="eyebrow">
-          {SEASON.edition} · du {debut} au {fin}
-        </p>
-        <h1 id="accueil-titre" className="hero-titre acc-titre">
-          <span className="glace" data-text="Winter">
-            Winter
-          </span>{' '}
-          <em className="glace" data-text="Ligue">
-            Ligue
-          </em>
-        </h1>
-        <p className="acc-hero-lead">
-          La ligue Warzone de l’hiver, en direct sur Twitch. Joue tes games, grimpe au classement, ouvre des boosters
-          et défie les autres joueurs.
-        </p>
-        <div className="acc-hero-actions">
-          {rejoindre}
-          <a href="#ligue" className="btn btn-lg no-underline">
-            Comment ça marche
-          </a>
-        </div>
-        {!twitchEnabled && (
-          <p className="acc-hero-note">
-            La connexion Twitch ouvre bientôt.
-            {devLogin ? ' La connexion de développement reste ouverte en local.' : ''}
-          </p>
-        )}
-      </section>
-
-      {/* ---- Les boosters : la vitrine ---- */}
-      <section className="acc-section" aria-labelledby="boosters-titre">
-        <TeteDeSection id="boosters-titre" sur="Les boosters" titre="Ce que tu peux tirer">
-          Choisis un booster : ses cartes en sortent. Survole-les pour lire ce qu’elles font.
-        </TeteDeSection>
-        <PresentoirBoosters boosters={boosters} />
-      </section>
+      {/* ---- L'arrivée, en trois dimensions : la nuit polaire, les boosters. ---- */}
+      <Accueil3D
+        boosters={boosters}
+        enTete={
+          <>
+            <p className="eyebrow">
+              {SEASON.edition} · du {debut} au {fin}
+            </p>
+            <h1 id="accueil-titre" className="hero-titre acc-titre">
+              <span className="glace" data-text="Winter">
+                Winter
+              </span>{' '}
+              <em className="glace" data-text="Ligue">
+                Ligue
+              </em>
+            </h1>
+            <p className="acc-hero-lead">
+              La ligue Warzone de l’hiver, en direct sur Twitch. Joue tes games, grimpe au classement, ouvre des
+              boosters et défie les autres joueurs.
+            </p>
+            {!twitchEnabled && (
+              <p className="acc-hero-note">
+                La connexion Twitch ouvre bientôt.
+                {devLogin ? ' La connexion de développement reste ouverte en local.' : ''}
+              </p>
+            )}
+          </>
+        }
+        actions={
+          <>
+            {rejoindre}
+            <a href="#ligue" className="btn btn-lg no-underline">
+              Comment ça marche
+            </a>
+          </>
+        }
+      />
 
       {/* ---- Comment ça marche, en quatre étapes ---- */}
-      <section id="ligue" className="acc-section" aria-labelledby="ligue-titre">
+      <section id="ligue" className="acc-section acc-sous-3d" aria-labelledby="ligue-titre" data-pas-3d="">
         <TeteDeSection id="ligue-titre" sur="Comment ça marche" titre="La ligue en quatre étapes" />
         <ol className="acc-etapes">
           <Etape
@@ -279,7 +280,7 @@ export function Accueil({ twitchEnabled, devLogin }: { twitchEnabled: boolean; d
       </section>
 
       {/* ---- L'appel final ---- */}
-      <section className="acc-fin" aria-label="Rejoindre la ligue">
+      <section className="acc-fin acc-sous-3d" aria-label="Rejoindre la ligue" data-pas-3d="">
         <p className="acc-fin-titre">{avantLaSaison ? `Coup d’envoi le ${debut}.` : `En jeu jusqu’au ${fin}.`}</p>
         <p className="acc-fin-texte">Un compte Twitch suffit. Ton pseudo Warzone, et c’est parti.</p>
         {rejoindre}
