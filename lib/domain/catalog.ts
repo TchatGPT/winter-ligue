@@ -182,14 +182,13 @@ export const CARDS: readonly CardDefinition[] = [
     cible: 'HASARD',
   },
   {
-    // Un filet, pas un gain : elle ne fait rien sur une game à 5 pts ou plus.
     id: 'lanterne-givree',
     name: 'Lanterne Givrée',
-    subtitle: 'Au moins 5 pts',
+    subtitle: '+5 pts bonus',
     rarity: 'C',
     glyph: '🏮',
-    description: 'Ta prochaine game vaut au moins 5 points, même ratée.',
-    effect: { kind: 'plancher', value: 5 },
+    description: '+5 points sur ta prochaine game.',
+    effect: { kind: 'bonus_points', value: 5 },
     nature: 'bonus',
     power: 6,
     packs: ['perso'],
