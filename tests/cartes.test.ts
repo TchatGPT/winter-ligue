@@ -5,7 +5,12 @@ import { CARDS, getCard, momentDe, resumeEffet } from '@/lib/domain/catalog';
 import { CRENEAUX_BONUS, SEASON, tailleDeLaQueue } from '@/lib/domain/rules';
 import { scoreGame } from '@/lib/domain/scoring';
 import type { Placement } from '@/lib/domain/types';
-import { appliqueCartesEnAttente, gamesSansCarte, regleCartesSansAttendre } from '@/lib/services/effects';
+import {
+  appliqueCartesEnAttente,
+  gamesSansCarte,
+  regleApresRevelation,
+  regleCartesSansAttendre,
+} from '@/lib/services/effects';
 import { limiteDe } from '@/lib/services/league';
 import {
   joueursEnLice,
@@ -510,6 +515,9 @@ describe('sur qui une carte tombe', () => {
 
       const posees = db.cartesEnAttente.filter((c) => c.ouvertureId === o.id);
       expect(posees).toHaveLength(o.beneficiaires.length);
+      // La carte révélée à l'écran, ce qui attendait la révélation se règle.
+      o.annonceeA = new Date().toISOString();
+      regleApresRevelation(db, o.id);
       // Ce qui se règle tout de suite est réglé ; un malus n'est jamais réglé
       // à l'ouverture, il attend la prochaine game.
       for (const c of posees) {

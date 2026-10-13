@@ -4,6 +4,7 @@ import { getStore } from '@/lib/db/store';
 import { messageOuverture } from '@/lib/domain/annonceBooster';
 import { getCard, getPack, RARITY_META } from '@/lib/domain/catalog';
 import { audit } from '@/lib/services/ledger';
+import { regleApresRevelation } from '@/lib/services/effects';
 import { joueursEnLice } from '@/lib/services/packs';
 import { annonceDansLeTchat } from '@/lib/services/twitchChat';
 
@@ -27,11 +28,16 @@ export async function annonceOuverture(ouvertureId: string, acteur: string): Pro
   const prise = await getStore().transaction((db) => {
     const o = db.ouvertures.find((x) => x.id === ouvertureId);
     if (!o) return { etat: 'introuvable' as const };
-    if (o.annonceeA || Date.now() - Date.parse(o.openedAt) > FRAICHEUR_MS) return { etat: 'deja' as const };
+    if (o.annonceeA || Date.now() - Date.parse(o.openedAt) > FRAICHEUR_MS) {
+      regleApresRevelation(db, o.id);
+      return { etat: 'deja' as const };
+    }
     const pack = getPack(o.packId);
     const card = getCard(o.cardId);
     if (!pack || !card) return { etat: 'introuvable' as const };
     o.annonceeA = new Date().toISOString();
+    // La carte est à l'écran : ce qu'elle verse peut se voir, maintenant.
+    regleApresRevelation(db, o.id);
 
     const touteLaLigue =
       o.joueurId === null && card.cible === 'TOUS' && o.beneficiaires.length >= joueursEnLice(db).length;

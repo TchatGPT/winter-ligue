@@ -19,6 +19,7 @@ import {
   verifieFinisseur,
   verifieTable,
 } from '@/lib/services/packs';
+import { regleApresRevelation } from '@/lib/services/effects';
 
 // Le catalogue n'a plus qu'une carte par rareté : ces tests ouvrent les
 // boosters tels qu'ils étaient, pour tirer une carte de flocons, une carte à
@@ -221,6 +222,10 @@ describe('ouvrir un booster', () => {
       const effet = getCard(o.cardId)!.effect;
       if (effet.kind !== 'snowflakes') continue;
 
+      // Rien n'est versé avant que la carte soit révélée : le solde spoilerait.
+      expect(db.players[0].snowflakes).toBe(0);
+      o.annonceeA = new Date().toISOString();
+      regleApresRevelation(db, o.id);
       expect(db.players[0].snowflakes).toBe(effet.value);
       expect(db.ledger).toHaveLength(1);
       expect(db.ledger[0].reason).toBe('CARTE');

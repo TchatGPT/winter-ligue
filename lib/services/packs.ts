@@ -525,6 +525,9 @@ export function ouvrePack(db: Database, demande: DemandeOuverture, ouvertPar: st
         'STREAMEUSE',
       );
     }
+    // On rouvre pour lui : la carte d'avant a été vue. Ce qui attendait sa
+    // révélation se règle d'abord, et ne bloque pas la suite.
+    regleCartesSansAttendre(db, joueur.id, new Date(), true);
     // Pas de stock de cartes : tant que sa carte précédente n'a pas joué,
     // aucun booster ne s'ouvre pour lui. Celui-ci reste dans la file.
     const attend = carteQuiAttend(db, joueur.id);

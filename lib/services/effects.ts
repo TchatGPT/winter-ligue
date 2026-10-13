@@ -525,7 +525,42 @@ export function appliqueCartesEnAttente(
  *     game : un bonus tombe sur la game sans carte où il rapporte le plus, un
  *     malus sur la plus récente.
  */
-export function regleCartesSansAttendre(db: Database, joueurId: string, now = new Date()): CarteAppliquee[] {
+/**
+ * Le temps laissé à l'écran pour révéler une carte. Passé ce délai, ce qui
+ * attendait la révélation se règle quand même : un onglet fermé en pleine
+ * ouverture ne garde pas les flocons de quelqu'un pour toujours.
+ */
+const DELAI_REVELATION_MS = 2 * 60_000;
+
+/**
+ * La carte vient d'un booster dont l'ouverture n'est pas encore révélée à
+ * l'écran ? Ses flocons — ou la game qu'elle fige — ne doivent pas se voir
+ * avant la carte : le solde d'un joueur ne spoile pas son ouverture. Une
+ * carte posée sans ouverture (à la main) n'attend rien.
+ */
+function pasEncoreRevelee(db: Database, pendante: CarteEnAttente, now: Date): boolean {
+  const o = db.ouvertures.find((x) => x.id === pendante.ouvertureId);
+  if (!o || o.annonceeA) return false;
+  return now.getTime() - Date.parse(o.openedAt) < DELAI_REVELATION_MS;
+}
+
+/**
+ * Règle ce qu'une ouverture laissait en suspens, une fois sa carte révélée
+ * (`annonceeA` posé par `annonceOuverture`) : les flocons, la game figée.
+ */
+export function regleApresRevelation(db: Database, ouvertureId: string, now = new Date()): CarteAppliquee[] {
+  const o = db.ouvertures.find((x) => x.id === ouvertureId);
+  if (!o) return [];
+  return o.beneficiaires.flatMap((id) => regleCartesSansAttendre(db, id, now));
+}
+
+export function regleCartesSansAttendre(
+  db: Database,
+  joueurId: string,
+  now = new Date(),
+  /** Sans attendre la révélation : on rouvre pour lui, la carte d'avant a été vue. */
+  forcer = false,
+): CarteAppliquee[] {
   const joueur = db.players.find((p) => p.id === joueurId);
   if (!joueur) return [];
   const faites: CarteAppliquee[] = [];
@@ -543,6 +578,8 @@ export function regleCartesSansAttendre(db: Database, joueurId: string, now = ne
       }
       continue;
     }
+    // Pas avant que la carte soit révélée à l'écran : le solde spoilerait.
+    if (!forcer && pasEncoreRevelee(db, pendante, now)) continue;
 
     const reglement =
       moment === 'INSTANT'
@@ -591,7 +628,9 @@ export function carteQuiAttend(db: Database, joueurId: string): CarteEnAttente |
   return (
     enAttenteDe(db, joueurId).find((c) => {
       const card = getCard(c.cardId);
-      return card !== null && momentDe(card.effect) !== 'GARDEE';
+      // Ni le Joker, qui se garde, ni une carte qui se règle tout de suite :
+      // si elle attend, c'est sa révélation, l'affaire de quelques secondes.
+      return card !== null && momentDe(card.effect) !== 'GARDEE' && momentDe(card.effect) !== 'INSTANT';
     }) ?? null
   );
 }

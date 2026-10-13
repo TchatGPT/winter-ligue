@@ -187,9 +187,11 @@ function carteActive(db: Database, playerId: string): Pick<RankingRow, 'carte'> 
     .sort((a, b) => a.creeA.localeCompare(b.creeA));
   // Le Joker n'est pas une carte active : il ne tombe sur rien de lui-même,
   // et se lit à part (`joker`).
+  // Une carte qui se règle tout de suite non plus : si elle attend encore,
+  // c'est sa révélation, et la montrer ici la spoilerait.
   const tombantes = attente.filter((c) => {
     const carte = getCard(c.cardId);
-    return carte === null || momentDe(carte.effect) !== 'GARDEE';
+    return carte === null || (momentDe(carte.effect) !== 'GARDEE' && momentDe(carte.effect) !== 'INSTANT');
   });
   const premiere =
     tombantes.find((c) => {

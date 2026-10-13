@@ -4,7 +4,7 @@ import { emptyDatabase } from '@/lib/db/store';
 import { getCard } from '@/lib/domain/catalog';
 import { WEIGHT_TOTAL } from '@/lib/domain/rules';
 import type { Rarity } from '@/lib/domain/types';
-import { carteQuiAttend } from '@/lib/services/effects';
+import { carteQuiAttend, regleApresRevelation } from '@/lib/services/effects';
 import { ouvrePack, PackError, reglagePack } from '@/lib/services/packs';
 
 /**
@@ -56,6 +56,29 @@ function joue(db: Database, joueurId: string) {
 }
 
 describe('pas de stock de cartes', () => {
+  it('ne verse les flocons d’une carte qu’une fois révélée, sans bloquer le booster suivant', () => {
+    const db = ligue('a');
+    reglagePack(db, 'perso', seulement('UR'));
+    for (let i = 0; i < 40; i += 1) {
+      const o = ouvrePack(db, { packId: 'perso', joueurId: 'a', idempotencyKey: `r${i}` }, 'modo');
+      if (o.cardId !== 'coulee-de-neige') {
+        o.annonceeA = new Date().toISOString();
+        regleApresRevelation(db, o.id);
+        joue(db, 'a');
+        continue;
+      }
+      // Tirée, pas encore révélée : rien sur le solde.
+      expect(db.players[0].snowflakes).toBe(0);
+      // Elle ne bloque pas le booster suivant, qui la règle d'abord : on
+      // rouvre pour lui, la carte d'avant a été vue.
+      expect(carteQuiAttend(db, 'a')).toBeNull();
+      ouvrePack(db, { packId: 'perso', joueurId: 'a', idempotencyKey: `r${i}-suite` }, 'modo');
+      expect(db.players[0].snowflakes).toBeGreaterThanOrEqual(50);
+      return;
+    }
+    throw new Error('aucune Coulée de Neige en 40 ouvertures');
+  });
+
   it('refuse un booster Perso tant que la carte précédente n’a pas joué', () => {
     const db = ligue('a');
     reglagePack(db, 'perso', seulement('R'));
@@ -85,6 +108,9 @@ describe('pas de stock de cartes', () => {
     // Écho Lointain, elle, attend la prochaine game.
     for (let i = 0; i < 40; i += 1) {
       const o = ouvrePack(db, { packId: 'perso', joueurId: 'a', idempotencyKey: `k${i}` }, 'modo');
+      // La carte révélée à l'écran : ce qui se règle tout de suite se règle.
+      o.annonceeA = new Date().toISOString();
+      regleApresRevelation(db, o.id);
       if (o.cardId === 'echo-lointain') {
         expect(carteQuiAttend(db, 'a')?.cardId).toBe('echo-lointain');
         joue(db, 'a');

@@ -43,7 +43,11 @@ export function DestinCarte({ o }: { o: Destin }) {
 
       {o.enAttente > 0 && (
         <p className={o.effets.length > 0 ? 'mt-1.5' : undefined}>
-          {o.moment === 'GARDEE' ? (
+          {o.moment === 'INSTANT' ? (
+            <>
+              Pour <strong>{qui}</strong> : versé dès la carte révélée.
+            </>
+          ) : o.moment === 'GARDEE' ? (
             <>
               <strong>{qui}</strong> garde son Joker : à la saisie d’une de ses games, la modération pourra la
               faire ne pas compter.
