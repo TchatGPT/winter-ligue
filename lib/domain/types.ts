@@ -76,9 +76,10 @@ export type CardEffect =
   /**
    * « Clone kill du meilleur » : la game compte comme si le joueur avait fait
    * les kills du meilleur tueur de la partie — plafonné s'il a un `cap`. S'il
-   * est lui-même le meilleur tueur, la carte s'annule.
+   * est lui-même le meilleur tueur, il reçoit sa `consolation` en points, ou
+   * rien s'il n'y en a pas.
    */
-  | { kind: 'clone_kills'; cap?: number }
+  | { kind: 'clone_kills'; cap?: number; consolation?: number }
   /** « Joker » : la game vaut au moins N points. */
   | { kind: 'plancher'; value: number }
   /** « +N pts à partir du Top X » : seulement si la game finit dans le Top. */

@@ -69,13 +69,13 @@ describe('Écho Lointain', () => {
     expect(g.score).toBe(17 + 15);
   });
 
-  it('s’annule si le joueur est lui-même le meilleur tueur', () => {
+  it('donne +10 points si le joueur est lui-même le meilleur tueur', () => {
     const db = base('a');
     pose(db, 'a', 'echo-lointain', 1);
     const g = game(db, 'a', 12);
     const r = appliqueCartesEnAttente(db, g, { meilleurKills: 12 });
-    expect(g.score).toBe(12);
-    expect(r.cartes[0].resultat).toMatch(/annulée/);
+    expect(g.score).toBe(12 + 10);
+    expect(r.cartes[0].resultat).toMatch(/meilleur tueur de la partie lui-même/);
     expect(enAttente(db, 'a')).toHaveLength(0);
   });
 });

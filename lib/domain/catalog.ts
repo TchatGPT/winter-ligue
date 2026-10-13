@@ -240,15 +240,15 @@ export const CARDS: readonly CardDefinition[] = [
   {
     // Les kills du meilleur tueur de la partie — celui de la capture,
     // coéquipiers et streameuse compris —, lus à la saisie. S'il l'est
-    // lui-même, la carte s'annule.
+    // lui-même, une consolation fixe : être le meilleur ne coûte pas la carte.
     id: 'echo-lointain',
     name: 'Écho Lointain',
     subtitle: 'Clone kill du meilleur',
     rarity: 'UR',
     glyph: '🏔',
     description:
-      'Ta prochaine game compte comme si tu avais fait les kills du meilleur tueur de ta partie. Si c’est toi, la carte s’annule.',
-    effect: { kind: 'clone_kills' },
+      'Ta prochaine game compte comme si tu avais fait les kills du meilleur tueur de ta partie. Si c’est toi : +10 points.',
+    effect: { kind: 'clone_kills', consolation: 10 },
     nature: 'bonus',
     power: 72,
     packs: ['perso'],
