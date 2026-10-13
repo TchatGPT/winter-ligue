@@ -1,10 +1,21 @@
 'use client';
 
-import { type CSSProperties, useLayoutEffect, useRef, useState } from 'react';
+import { type CSSProperties, useState } from 'react';
 import { BoosterPack3D } from '@/components/BoosterPack3D';
 import { CardFrame } from '@/components/CardFrame';
 import { CarteInclinable } from '@/components/CarteInclinable';
+import { RARITY_META } from '@/lib/domain/catalog';
 import type { Rarity } from '@/lib/domain/types';
+
+export interface CartePresentee {
+  cardId: string;
+  name: string;
+  subtitle: string;
+  description: string;
+  rarity: Rarity;
+  glyph: string;
+  nature: 'bonus' | 'malus';
+}
 
 export interface BoosterPresente {
   id: string;
@@ -14,126 +25,116 @@ export interface BoosterPresente {
   gradient: [string, string];
   art: string | null;
   gemme: Rarity | null;
-  cartes: { cardId: string; name: string; rarity: string; glyph: string; nature: 'bonus' | 'malus' }[];
+  cartes: CartePresentee[];
 }
 
 /**
- * Les boosters de l'accueil, en présentoir.
+ * La vitrine des boosters de l'accueil.
  *
- * Quatre sachets côte à côte. Un clic sur l'un en fait sortir ses cartes, en
- * éventail par le haut : elles dépassent du sachet, qui reste devant. On les
- * survole — chacune penche et se soulève (`CarteInclinable`) —, on ne clique
- * pas dessus : elles montrent ce qu'on peut tirer, rien de plus. Un second
- * clic referme le sachet.
- *
- * L'éventail est centré sur son sachet, puis ramené dans le présentoir s'il en
- * déborde : celui du bout de la rangée ne sort pas de l'écran.
+ * À gauche, les quatre boosters en onglets. À droite, une scène : le booster
+ * choisi en grand, et ses cartes qui en sortent en éventail, le sachet devant.
+ * On les survole — chacune se soulève et penche en relief (`CarteInclinable`)
+ * —, on ne clique pas dessus ; la légende sous la scène dit celle qu'on
+ * regarde. Le premier booster est ouvert d'office : la scène n'est jamais vide.
  */
 export function PresentoirBoosters({ boosters }: { boosters: BoosterPresente[] }) {
-  const [ouvert, setOuvert] = useState<string | null>(null);
-  const presentoir = useRef<HTMLDivElement>(null);
-  const eventail = useRef<HTMLDivElement>(null);
-  const [decalage, setDecalage] = useState(0);
-  const actif = boosters.find((b) => b.id === ouvert) ?? null;
-
-  // L'éventail ne sort pas du présentoir : mesuré une fois posé, et à chaque
-  // changement de taille de la fenêtre.
-  useLayoutEffect(() => {
-    const ajuste = () => {
-      const cadre = presentoir.current?.getBoundingClientRect();
-      const cartes = eventail.current;
-      if (!cadre || !cartes) {
-        setDecalage(0);
-        return;
-      }
-      let gauche = Infinity;
-      let droite = -Infinity;
-      for (const c of Array.from(cartes.children)) {
-        const r = c.getBoundingClientRect();
-        gauche = Math.min(gauche, r.left);
-        droite = Math.max(droite, r.right);
-      }
-      setDecalage((avant) => {
-        const g = gauche - avant;
-        const d = droite - avant;
-        if (g < cadre.left) return cadre.left - g;
-        if (d > cadre.right) return cadre.right - d;
-        return 0;
-      });
-    };
-    ajuste();
-    window.addEventListener('resize', ajuste);
-    return () => window.removeEventListener('resize', ajuste);
-  }, [ouvert]);
+  const [choisi, setChoisi] = useState(boosters[0]?.id ?? '');
+  const [survol, setSurvol] = useState<string | null>(null);
+  const booster = boosters.find((b) => b.id === choisi) ?? boosters[0];
+  if (!booster) return null;
+  const n = booster.cartes.length;
+  const carte = booster.cartes.find((c) => c.cardId === survol) ?? null;
 
   return (
-    <div ref={presentoir} className="pres" data-ouvert={ouvert ?? undefined}>
-      <ul className="pres-rangee">
+    <div className="vit">
+      <div className="vit-onglets" role="tablist" aria-label="Les boosters">
         {boosters.map((b) => {
-          const estOuvert = b.id === ouvert;
-          const n = b.cartes.length;
+          const actif = b.id === booster.id;
           return (
-            <li key={b.id} className="pres-booster" data-actif={estOuvert || undefined}>
-              <div className="pres-zone">
-                {estOuvert && (
-                  <div
-                    ref={eventail}
-                    className="pres-cartes"
-                    style={{ ['--n' as string]: n, ['--decalage' as string]: `${decalage}px` } as CSSProperties}
-                    aria-label={`Les ${n} cartes du ${b.nom}`}
-                  >
-                    {b.cartes.map((c, k) => (
-                      <div
-                        key={c.cardId}
-                        className="pres-carte"
-                        style={{ ['--k' as string]: k, ['--d' as string]: k - (n - 1) / 2 } as CSSProperties}
-                      >
-                        <CarteInclinable>
-                          <CardFrame
-                            cardId={c.cardId}
-                            name={c.name}
-                            rarity={c.rarity}
-                            glyph={c.glyph}
-                            nature={c.nature}
-                          />
-                        </CarteInclinable>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                <button
-                  type="button"
-                  className="pres-sachet"
-                  aria-pressed={estOuvert}
-                  aria-label={estOuvert ? `Refermer le ${b.nom}` : `Voir les cartes du ${b.nom}`}
-                  onClick={() => setOuvert(estOuvert ? null : b.id)}
-                >
-                  <BoosterPack3D
-                    name={b.nom}
-                    cardCount={n}
-                    gradient={b.gradient}
-                    art={b.art}
-                    rarete={b.gemme}
-                    vignette
-                  />
-                </button>
-              </div>
-              <p className="pres-nom">{b.nom}</p>
-              <p className="pres-accroche">{b.accroche}</p>
-            </li>
+            <button
+              key={b.id}
+              type="button"
+              role="tab"
+              aria-selected={actif}
+              aria-controls="vit-scene"
+              className="vit-onglet"
+              style={{ ['--t' as string]: RARITY_META[b.gemme ?? 'C'].color } as CSSProperties}
+              onClick={() => {
+                setChoisi(b.id);
+                setSurvol(null);
+              }}
+            >
+              <span className="vit-onglet-sachet" aria-hidden="true">
+                <BoosterPack3D name={b.nom} cardCount={b.cartes.length} gradient={b.gradient} art={b.art} rarete={b.gemme} vignette />
+              </span>
+              <span className="vit-onglet-texte">
+                <b>{b.nom}</b>
+                <small>{b.accroche}</small>
+              </span>
+              <span className="vit-onglet-n num" aria-label={`${b.cartes.length} cartes`}>
+                {b.cartes.length}
+              </span>
+            </button>
           );
         })}
-      </ul>
-      <p className="pres-indice" aria-live="polite">
-        {actif ? (
-          <>
-            <b>{actif.nom}</b> · {actif.cartes.length} cartes · {actif.declencheur}{' '}
-            <span>Survole-les, clique encore pour refermer.</span>
-          </>
-        ) : (
-          'Clique sur un booster pour voir ses cartes.'
-        )}
-      </p>
+      </div>
+
+      <div id="vit-scene" className="vit-scene" role="tabpanel" aria-label={`Les cartes du ${booster.nom}`}>
+        <div className="vit-zone">
+          {/* La clé relance la sortie des cartes à chaque booster choisi. */}
+          <div key={booster.id} className="vit-eventail" style={{ ['--n' as string]: n } as CSSProperties}>
+            {booster.cartes.map((c, k) => (
+              <div
+                key={c.cardId}
+                className="vit-carte"
+                data-survol={c.cardId === survol || undefined}
+                style={{ ['--k' as string]: k, ['--d' as string]: k - (n - 1) / 2 } as CSSProperties}
+                onPointerEnter={() => setSurvol(c.cardId)}
+                onPointerLeave={() => setSurvol((s) => (s === c.cardId ? null : s))}
+              >
+                <CarteInclinable>
+                  <CardFrame cardId={c.cardId} name={c.name} rarity={c.rarity} glyph={c.glyph} nature={c.nature} />
+                </CarteInclinable>
+              </div>
+            ))}
+          </div>
+          <div className="vit-sachet" aria-hidden="true">
+            <BoosterPack3D
+              name={booster.nom}
+              cardCount={n}
+              gradient={booster.gradient}
+              art={booster.art}
+              rarete={booster.gemme}
+              vignette
+            />
+          </div>
+        </div>
+
+        {/* La légende : la carte survolée, sinon le booster. Hauteur fixe : rien ne saute. */}
+        <div className="vit-legende" aria-live="polite">
+          {carte ? (
+            <>
+              <p className="vit-legende-sur" style={{ color: RARITY_META[carte.rarity].color }}>
+                {RARITY_META[carte.rarity].label}
+              </p>
+              <p className="vit-legende-titre">
+                {carte.name} <span>· {carte.subtitle}</span>
+              </p>
+              <p className="vit-legende-texte">{carte.description}</p>
+            </>
+          ) : (
+            <>
+              <p className="vit-legende-sur">
+                {n} carte{n > 1 ? 's' : ''}
+              </p>
+              <p className="vit-legende-titre">{booster.nom}</p>
+              <p className="vit-legende-texte">
+                {booster.declencheur} <span>Survole une carte pour la lire.</span>
+              </p>
+            </>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
