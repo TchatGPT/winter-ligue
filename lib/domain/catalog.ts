@@ -167,6 +167,48 @@ export const CARDS: readonly CardDefinition[] = [
     packs: ['perso'],
     cible: 'HASARD',
   },
+  {
+    // Se mérite : rien hors du Top 1.
+    id: 'luge',
+    name: 'Luge',
+    subtitle: '+15 pts si Top 1',
+    rarity: 'C',
+    glyph: '🛷',
+    description: '+15 points sur ta prochaine game, si tu fais Top 1.',
+    effect: { kind: 'bonus_top', top: 1, value: 15 },
+    nature: 'bonus',
+    power: 14,
+    packs: ['perso'],
+    cible: 'HASARD',
+  },
+  {
+    // Un filet, pas un gain : elle ne fait rien sur une game à 5 pts ou plus.
+    id: 'lanterne-givree',
+    name: 'Lanterne Givrée',
+    subtitle: 'Au moins 5 pts',
+    rarity: 'C',
+    glyph: '🏮',
+    description: 'Ta prochaine game vaut au moins 5 points, même ratée.',
+    effect: { kind: 'plancher', value: 5 },
+    nature: 'bonus',
+    power: 6,
+    packs: ['perso'],
+    cible: 'HASARD',
+  },
+  {
+    // Se mérite : rien sous 5 kills.
+    id: 'bonhomme-de-neige',
+    name: 'Bonhomme de Neige',
+    subtitle: '+3 pts dès 5 kills',
+    rarity: 'C',
+    glyph: '⛄',
+    description: '+3 points sur ta prochaine game, si tu fais au moins 5 kills.',
+    effect: { kind: 'kills_min', min: 5, value: 3 },
+    nature: 'bonus',
+    power: 10,
+    packs: ['perso'],
+    cible: 'HASARD',
+  },
   /* ============================== Rare ================================== */
   {
     id: 'percee',
@@ -348,6 +390,7 @@ export function impactMax(effect: CardEffect): number | null {
     case 'plancher':
     case 'bonus_top':
     case 'petite_game':
+    case 'kills_min':
       return Math.abs(effect.value);
     case 'multiplicateur_game':
       // Sans plafond, la carte suit la game : pas de « au plus » à annoncer.
@@ -398,6 +441,8 @@ export function resumeEffet(effect: CardEffect): string {
       return `+${effect.value} pts si Top ${effect.top}`;
     case 'petite_game':
       return `+${effect.value} pts sous ${effect.moinsDe} kills`;
+    case 'kills_min':
+      return `+${effect.value} pts dès ${effect.min} kills`;
     case 'flocons_doubles':
       return 'flocons ×2';
     case 'echange':

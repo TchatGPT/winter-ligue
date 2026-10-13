@@ -59,6 +59,32 @@ describe('les cartes sans plafond de points', () => {
   });
 });
 
+describe('les communes qui se méritent', () => {
+  it('le Bonhomme de Neige ne donne ses 3 points qu’à partir de 5 kills', () => {
+    const db = base('a', 'b');
+    pose(db, 'a', 'bonhomme-de-neige', 1);
+    pose(db, 'b', 'bonhomme-de-neige', 1);
+    const peu = game(db, 'a', 4);
+    const assez = game(db, 'b', 5);
+    appliqueCartesEnAttente(db, peu);
+    appliqueCartesEnAttente(db, assez);
+    expect(peu.score).toBe(4);
+    expect(assez.score).toBe(5 + 3);
+  });
+
+  it('la Luge ne donne ses 15 points que sur un Top 1', () => {
+    const db = base('a', 'b');
+    pose(db, 'a', 'luge', 1);
+    pose(db, 'b', 'luge', 1);
+    const top1 = game(db, 'a', 3, 1);
+    const top2 = game(db, 'b', 3, 2);
+    appliqueCartesEnAttente(db, top1);
+    appliqueCartesEnAttente(db, top2);
+    expect(top1.score).toBe(3 + 20 + 15);
+    expect(top2.score).toBe(3 + 15);
+  });
+});
+
 describe('Écho Lointain', () => {
   it('compte la game avec les kills du meilleur tueur de la partie, sans plafond', () => {
     const db = base('a');

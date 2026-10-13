@@ -86,6 +86,8 @@ export type CardEffect =
   | { kind: 'bonus_top'; top: 1 | 2 | 3; value: number }
   /** « +N pts petites games » : seulement sous un nombre de kills. */
   | { kind: 'petite_game'; moinsDe: number; value: number }
+  /** « +N pts dès X kills » : seulement si la game atteint ce nombre de kills. Elle se mérite. */
+  | { kind: 'kills_min'; min: number; value: number }
   /** Les flocons de la game sont doublés. Aucune incidence au classement. */
   | { kind: 'flocons_doubles' }
   /**
