@@ -595,6 +595,13 @@ function LigneResultat({
             +
           </button>
           <span className="text-[13px] text-faint">élim.</span>
+          {/* Le − / + règle les kills lus sur la capture ; la carte les change
+              ensuite. On montre ce qu'elle en fait, sans toucher à ce qu'on envoie. */}
+          {clone && (
+            <span className="saisie-kills-carte num" title={`Avec ${carte?.nom ?? 'la carte'} : ${kills} kills`}>
+              → {kills}
+            </span>
+          )}
         </div>
       </div>
 
