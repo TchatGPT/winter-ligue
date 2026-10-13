@@ -16335,31 +16335,298 @@ a.adm-tuile:hover .adm-tuile-fleche {
   }
 }
 
-/* Jouer un Verglas, dans la fiche de la carte (modération). */
+/* Lancer un Verglas (modération) : le bouton dans la fiche, puis sa fenêtre. */
 .fiche-action-zone {
   width: 100%;
   margin-top: 1rem;
 }
-.verglas-jeu {
-  display: grid;
-  gap: 0.6rem;
-  padding: 0.85rem 0.95rem;
-  border-radius: var(--r-md);
-  background: color-mix(in srgb, var(--danger) 10%, rgb(0 10 30 / 0.3));
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--danger) 35%, transparent);
-  text-align: left;
+.verglas-fenetre {
+  max-width: 46rem;
 }
-.verglas-label {
+.verglas-tete {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 2.1rem 4rem 1rem 1.5rem;
+}
+.verglas-vignette {
+  width: 4.5rem;
+  aspect-ratio: 5 / 6;
+  flex: none;
+  border-radius: 12px;
+  object-fit: cover;
+  box-shadow:
+    0 0 0 2px var(--r-ur),
+    var(--lift-2);
+}
+.verglas-surtitre {
   font-family: var(--font-display);
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   font-weight: 800;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
+  color: var(--r-ur);
+}
+.verglas-titre {
+  font-family: var(--font-display);
+  font-size: clamp(1.6rem, 4vw, 2.1rem);
+  font-weight: 900;
+  line-height: 1.05;
   color: var(--ink);
 }
-.verglas-recap {
-  font-size: 0.875rem;
-  line-height: 1.45;
+.verglas-sous-titre {
+  margin-top: 0.3rem;
+  font-size: 0.95rem;
+  line-height: 1.4;
   color: var(--ink-2);
+}
+
+/* Le coup : porteur → victime. */
+.verglas-coup {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0 1.5rem;
+  padding: 0.9rem 1rem;
+  border-radius: var(--r-md);
+  background: rgb(0 10 30 / 0.32);
+  box-shadow: inset 0 0 0 1px var(--glass-edge);
+}
+.verglas-camp {
+  display: grid;
+  justify-items: center;
+  gap: 0.3rem;
+  min-width: 0;
+  text-align: center;
+}
+.verglas-camp-pseudo {
+  max-width: 100%;
+  overflow: hidden;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink);
+}
+.verglas-camp-role {
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.verglas-fleche {
+  display: grid;
+  justify-items: center;
+  gap: 0.35rem;
+  width: clamp(5rem, 16vw, 9rem);
+}
+.verglas-fleche-valeur {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 900;
+  color: var(--ice);
+}
+.verglas-fleche-trait {
+  position: relative;
+  width: 100%;
+  height: 3px;
+  border-radius: var(--r-pilule);
+  background: linear-gradient(90deg, transparent, var(--ice) 45%, var(--frost));
+  opacity: 0.35;
+  transition: opacity 0.25s ease;
+}
+.verglas-fleche-trait::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: -2px;
+  width: 10px;
+  height: 10px;
+  border-top: 3px solid var(--frost);
+  border-right: 3px solid var(--frost);
+  border-radius: 2px;
+  transform: translateY(-50%) rotate(45deg);
+}
+.verglas-coup[data-pret] .verglas-fleche-trait {
+  opacity: 1;
+}
+.verglas-avatar {
+  display: grid;
+  width: 2.4rem;
+  height: 2.4rem;
+  flex: none;
+  place-items: center;
+  border-radius: var(--r-pilule);
+  object-fit: cover;
+  background: color-mix(in srgb, var(--ice) 22%, var(--fond));
+  color: var(--ice);
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 800;
+}
+.verglas-avatar-grand {
+  width: 3.4rem;
+  height: 3.4rem;
+  font-size: 1.35rem;
+  box-shadow: 0 0 0 2px var(--glass-edge-lit);
+}
+.verglas-avatar-vide {
+  background: transparent;
+  box-shadow: inset 0 0 0 2px var(--glass-edge);
+  color: var(--muted);
+}
+
+/* La liste des victimes possibles, en tuiles. */
+.verglas-liste-zone {
+  display: grid;
+  min-height: 0;
+  flex: 1 1 auto;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 0.75rem;
+  padding: 1rem 1.5rem 0;
+}
+.verglas-grille {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(12.5rem, 1fr));
+  align-content: start;
+  gap: 0.5rem;
+  min-height: 7rem;
+  max-height: 22rem;
+  overflow-y: auto;
+  padding: 2px 4px 0.75rem 2px;
+}
+.verglas-tuile {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: var(--r-sm);
+  background: rgb(255 255 255 / 0.05);
+  box-shadow: inset 0 0 0 1px var(--glass-hi-soft);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    box-shadow 0.15s ease;
+}
+.verglas-tuile:hover:not(:disabled) {
+  background: rgb(255 255 255 / 0.1);
+}
+.verglas-tuile[aria-pressed='true'] {
+  background: color-mix(in srgb, var(--ice) 22%, transparent);
+  box-shadow: inset 0 0 0 2px var(--ice);
+}
+.verglas-tuile:focus-visible {
+  outline: 2px solid var(--frost);
+  outline-offset: 2px;
+}
+.verglas-tuile-pseudo {
+  display: block;
+  overflow: hidden;
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink);
+}
+.verglas-tuile-infos {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.verglas-tuile-tag {
+  margin-left: auto;
+  flex: none;
+  padding: 0.1rem 0.45rem;
+  border-radius: var(--r-pilule);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gold);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gold) 50%, transparent);
+}
+.verglas-vide {
+  padding: 1.5rem 0;
+  text-align: center;
+  color: var(--muted);
+}
+.verglas-pied {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  padding: 0.9rem 1.5rem 1.4rem;
+  border-top: 1px solid var(--glass-hi-soft);
+}
+.verglas-pied-texte {
+  min-width: 0;
+  flex: 1 1 14rem;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  color: var(--ink-2);
+}
+
+/* Envoyé : la confirmation. */
+.verglas-fait {
+  display: grid;
+  justify-items: center;
+  gap: 0.75rem;
+  padding: 2.5rem 1.5rem 2rem;
+  text-align: center;
+}
+.verglas-fait-art {
+  width: 7rem;
+  aspect-ratio: 5 / 6;
+  border-radius: 14px;
+  object-fit: cover;
+  box-shadow:
+    0 0 0 2px var(--r-ur),
+    var(--lift-2);
+}
+.verglas-fait-cible {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.verglas-fait-pseudo {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: var(--ink);
+}
+.verglas-fait-texte {
+  margin-bottom: 0.5rem;
+  color: var(--ink-2);
+}
+.verglas-fait-texte strong {
+  color: var(--ice);
+}
+
+@media (max-width: 520px) {
+  .verglas-tete {
+    padding: 2rem 3.5rem 0.75rem 1rem;
+  }
+  .verglas-vignette {
+    width: 3.4rem;
+  }
+  .verglas-coup {
+    margin: 0 1rem;
+    padding: 0.75rem 0.5rem;
+  }
+  .verglas-liste-zone {
+    padding: 0.75rem 1rem 0;
+  }
+  .verglas-grille {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .verglas-pied {
+    padding: 0.75rem 1rem 1.1rem;
+  }
 }
 

@@ -8,6 +8,7 @@ import { MedailleGlace } from '@/components/MedailleGlace';
 import { SnowCap } from '@/components/SnowCap';
 import { CardFrame } from '@/components/CardFrame';
 import { FicheCarte } from '@/components/FicheCarte';
+import { LancerVerglas } from '@/components/LancerVerglas';
 import { IconActivision } from '@/components/icons';
 import { flakesShort } from '@/components/ui';
 import { RARITY_ORDER } from '@/lib/domain/rules';
@@ -124,6 +125,8 @@ export function Classement({
   /** La carte qu'on regarde en grand, s'il y en a une : la carte active, ou une carte gardée. */
   const [fiche, setFiche] = useState<{ row: RankingRow; carte: CarteDuClassement | CarteGardee } | null>(null);
   const ouvre = (row: RankingRow, carte: CarteDuClassement | CarteGardee) => setFiche({ row, carte });
+  /** Le Verglas que la modération lance, s'il y en a un : sa fenêtre remplace la fiche. */
+  const [verglas, setVerglas] = useState<{ carteId: string; porteur: RankingRow } | null>(null);
 
   const visibles = useMemo(() => {
     const q = plat(recherche.trim());
@@ -172,15 +175,29 @@ export function Classement({
           }
           action={
             boostersPerso && fiche.carte.genre === 'malus_choisi' && 'id' in fiche.carte ? (
-              <JouerVerglas
-                carteId={fiche.carte.id}
-                porteur={fiche.row}
-                joueurs={rows}
-                onFait={() => setFiche(null)}
-              />
+              <button
+                type="button"
+                className="btn btn-ice w-full"
+                onClick={() => {
+                  if (!('id' in fiche.carte)) return;
+                  setVerglas({ carteId: fiche.carte.id, porteur: fiche.row });
+                  setFiche(null);
+                }}
+              >
+                Lancer le Verglas…
+              </button>
             ) : undefined
           }
           onClose={() => setFiche(null)}
+        />
+      )}
+
+      {verglas && (
+        <LancerVerglas
+          carteId={verglas.carteId}
+          porteur={verglas.porteur}
+          joueurs={rows}
+          onClose={() => setVerglas(null)}
         />
       )}
 
@@ -584,100 +601,6 @@ function PileDeCartes({
         ))}
       </span>
     </span>
-  );
-}
-
-/**
- * Jouer un Verglas, depuis sa fiche : le joueur a choisi sa victime, la
- * modération la sélectionne et valide. Le serveur revérifie tout.
- */
-function JouerVerglas({
-  carteId,
-  porteur,
-  joueurs,
-  onFait,
-}: {
-  carteId: string;
-  porteur: RankingRow;
-  joueurs: RankingRow[];
-  onFait: () => void;
-}) {
-  const router = useRouter();
-  const [ouvert, setOuvert] = useState(false);
-  const [cible, setCible] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [erreur, setErreur] = useState<string | null>(null);
-  const victimes = joueurs
-    .filter((j) => j.id !== porteur.id)
-    .sort((a, b) => a.pseudo.localeCompare(b.pseudo, 'fr'));
-  const choisi = victimes.find((j) => j.id === cible);
-
-  async function joue() {
-    if (!choisi) return;
-    setBusy(true);
-    setErreur(null);
-    try {
-      const reponse = await fetch('/api/admin/cartes/verglas', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ carteId, cibleId: choisi.id }),
-      });
-      const charge = await reponse.json();
-      if (!charge.ok) {
-        setErreur(charge.error?.message ?? 'Refusé.');
-        return;
-      }
-      router.refresh();
-      onFait();
-    } catch {
-      setErreur('Le serveur n’a pas répondu.');
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  if (!ouvert) {
-    return (
-      <button type="button" className="btn btn-ice" onClick={() => setOuvert(true)}>
-        Consommer la carte
-      </button>
-    );
-  }
-  return (
-    <div className="verglas-jeu">
-      <label className="verglas-label" htmlFor="verglas-cible">
-        Sur qui {porteur.pseudo} joue-t-il son Verglas ?
-      </label>
-      <select
-        id="verglas-cible"
-        className="field"
-        value={cible}
-        onChange={(e) => setCible(e.target.value)}
-        disabled={busy}
-      >
-        <option value="">— choisir un joueur —</option>
-        {victimes.map((j) => (
-          <option key={j.id} value={j.id}>
-            {j.pseudo}
-          </option>
-        ))}
-      </select>
-      {choisi && (
-        <p className="verglas-recap">
-          <strong>{choisi.pseudo}</strong> perdra <strong className="text-danger">20 points</strong> sur sa prochaine
-          game. L’immunité le protège.
-        </p>
-      )}
-      {erreur && <p className="text-[13px] text-danger">{erreur}</p>}
-      <div className="flex flex-wrap gap-2">
-        <button type="button" className="btn" disabled={busy} onClick={() => setOuvert(false)}>
-          Annuler
-        </button>
-        <button type="button" className="btn btn-ice" disabled={!choisi || busy} onClick={joue}>
-          {busy ? 'Envoi…' : `Valider −20 pts${choisi ? ` à ${choisi.pseudo}` : ''}`}
-        </button>
-      </div>
-    </div>
   );
 }
 
