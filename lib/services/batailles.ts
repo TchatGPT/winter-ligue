@@ -88,7 +88,7 @@ function verifieSoldePasPlein(db: Database, joueurId: string): void {
   const joueur = db.players.find((p) => p.id === joueurId);
   if (joueur && joueur.snowflakes >= ECONOMY.soldeMax) {
     throw new BatailleError(
-      `Ton solde est plein (${ECONOMY.soldeMax.toLocaleString('fr-FR')} ❄) : les duels reviennent quand tu repasses dessous.`,
+      `Ton solde est plein (${ECONOMY.soldeMax.toLocaleString('fr-FR')} ❄) : ta chance est au maximum, tu n’as plus rien à gagner en duel.`,
       'SOLDE_PLEIN',
     );
   }

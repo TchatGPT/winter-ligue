@@ -33,7 +33,7 @@ export interface EtatCadeau {
   dejaPris: boolean;
   /**
    * Son solde est plein (`ECONOMY.soldeMax`) : le cadeau est fermé jusqu'à ce
-   * qu'il repasse dessous — décidé par l'organisation le 13/10/2026.
+   * qu'il repasse dessous, s'il y repasse — décidé par l'organisation le 13/10/2026.
    */
   plein: boolean;
   /** La série s'il le prend aujourd'hui — ou celle du jour, s'il l'a pris. */
@@ -83,7 +83,7 @@ export function prendsCadeauDuJour(
   }
   if (etat.plein) {
     throw new CadeauError(
-      `Ton solde est plein (${ECONOMY.soldeMax.toLocaleString('fr-FR')} ❄) : le cadeau du jour revient quand tu repasses dessous.`,
+      `Ton solde est plein (${ECONOMY.soldeMax.toLocaleString('fr-FR')} ❄) : ta chance est au maximum, le cadeau du jour ne t’apporterait rien.`,
       'SOLDE_PLEIN',
     );
   }

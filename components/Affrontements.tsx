@@ -933,8 +933,9 @@ export function Affrontements({
               {joueur && plein && (
                 <div className="duels-avis">
                   <p>
-                    <strong>Ton solde est plein : {flakes(soldeMax)} ❄.</strong> Les duels reviennent quand tu repasses
-                    dessous.
+                    <strong>Ton solde est plein : {flakes(soldeMax)} ❄.</strong> Ta chance est au maximum,{' '}
+                    <strong className="text-aurora">{libelleMultiplicateur(chanceDe(soldeMax))}</strong> : tu n’as plus
+                    rien à gagner en duel.
                   </p>
                 </div>
               )}
