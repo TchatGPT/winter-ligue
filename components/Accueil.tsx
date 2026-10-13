@@ -1,20 +1,11 @@
-import type { ReactNode } from 'react';
-import { Accueil3D } from '@/components/accueil3d/Accueil3D';
-import type { BoosterPresente } from '@/components/PresentoirBoosters';
-import { IconPack, IconSnowflake, IconTrophy, IconTwitch } from '@/components/icons';
-import { cardArt, cartesDuPack, GEMME_DU_PACK, PACKS, packArt, RARITY_META } from '@/lib/domain/catalog';
-import {
-  CADEAU_DU_JOUR,
-  CHANCE,
-  DEFAULT_MAX_GAMES_PER_PLAYER,
-  ECONOMY,
-  PACKS_REGLES,
-  PLACEMENT_POINTS,
-  RARITY_WEIGHTS_BASE,
-  SEASON,
-  SUB_MILESTONES,
-} from '@/lib/domain/rules';
-import { RARITIES } from '@/lib/domain/types';
+import type { CSSProperties, ReactNode } from 'react';
+import { BoosterPack3D } from '@/components/BoosterPack3D';
+import { Diaporama, type Diapositive } from '@/components/Diaporama';
+import { EventailBoosters } from '@/components/EventailBoosters';
+import { SnowCap } from '@/components/SnowCap';
+import { IconJauge, IconPack, IconSnowflake, IconSwords, IconTrophy, IconTwitch } from '@/components/icons';
+import { GEMME_DU_PACK, PACKS, packArt } from '@/lib/domain/catalog';
+import { CADEAU_DU_JOUR, CHANCE, ECONOMY, PLACEMENT_POINTS, SEASON } from '@/lib/domain/rules';
 
 /**
  * L'accueil, quand on n'est pas connecté.
@@ -22,15 +13,14 @@ import { RARITIES } from '@/lib/domain/types';
  * Rien de la ligue n'est visible sans compte : ni classement, ni joueurs, ni
  * duels en cours. La page dit l'essentiel, et le montre :
  *
- *  - le hero, centré : le nom, une phrase, l'entrée par Twitch ;
- *  - la vitrine des boosters : un onglet par booster, ses cartes en éventail,
- *    à survoler (`PresentoirBoosters`) ;
- *  - « comment ça marche », en quatre étapes : jouer, les subs et les
- *    boosters, les cartes, les flocons ;
- *  - l'appel final.
- *
- * Tout tient dans une même colonne (`.accueil`, 76rem au plus) : les bords
- * s'alignent d'une section à l'autre, même sur un très grand écran.
+ *  - le hero, à même le ciel des boosters : le nom, une phrase, l'entrée par
+ *    Twitch, et les quatre boosters distribués en éventail à l'arrivée, qui
+ *    suivent la souris ;
+ *  - puis la ligue en cinq dalles de glace (`Diaporama`), qu'on tire du doigt
+ *    ou à la souris : le classement, les flocons, les boosters, la chance,
+ *    les duels. Chacune porte un grand nombre taillé dans la glace, une
+ *    légende, un titre et une phrase ; derrière le paquet, des nappes
+ *    d'aurore que le verre floute et dont il se colore.
  *
  * Le détail est dans les règles, une fois connecté. Toutes les valeurs
  * viennent de `lib/domain/rules` et du catalogue : la page ne peut pas dire
@@ -64,65 +54,67 @@ function jourDe(iso: string): string {
   return `${jour === 1 ? '1er' : jour} ${MOIS[d.getUTCMonth()]}`;
 }
 
-/** « 1 000 », « 83 % », « 15,5 % ». */
-const nombre = (n: number) => n.toLocaleString('fr-FR');
-const pourcent = (poids: number) => `${(poids / 1000).toLocaleString('fr-FR', { maximumFractionDigits: 1 })} %`;
-
 /**
- * Une étape de « comment ça marche » : son numéro, son titre, une phrase, puis
- * les chiffres qui comptent, en lignes — le libellé à gauche, la valeur à
- * droite.
+ * Une dalle de la ligue, taillée dans la glace : le givre sur la face, son
+ * épaisseur, le thème en haut, au cœur un grand nombre en glace et sa
+ * légende, puis le titre et la phrase. La lumière prise dans la glace est à
+ * la couleur de la dalle (`teinte`).
  */
-function Etape({
+function Dalle({
   numero,
+  total,
   teinte,
+  eyebrow,
   icone,
+  chiffre,
+  flocon = false,
+  legende,
   titre,
   children,
-  chiffres,
 }: {
   numero: number;
+  total: number;
   /** Une couleur du thème : `var(--gold)`… */
   teinte: string;
+  eyebrow: string;
   icone: ReactNode;
+  /** Le nombre, en grand : « +20 », « ×4 ». */
+  chiffre: string;
+  /** Un flocon après le nombre. */
+  flocon?: boolean;
+  legende: string;
   titre: string;
   children: ReactNode;
-  chiffres: { quoi: string; valeur: string }[];
 }) {
+  const deux = (x: number) => String(x).padStart(2, '0');
   return (
-    <li className="acc-etape" style={{ ['--teinte' as string]: teinte }}>
-      <div className="acc-etape-tete">
-        <span className="acc-etape-icone" aria-hidden="true">
+    <article className="carte-glace" style={{ ['--teinte' as string]: teinte } as CSSProperties}>
+      <span className="carte-glace-givre" aria-hidden="true" />
+      <span className="carte-glace-epaisseur" aria-hidden="true" />
+      <SnowCap radius="30px" seed={`dalle-${numero}`} epaisseur={14} />
+      <header className="carte-glace-tete">
+        <span className="carte-glace-icone" aria-hidden="true">
           {icone}
         </span>
-        <span className="acc-etape-numero" aria-hidden="true">
-          {String(numero).padStart(2, '0')}
+        <p className="eyebrow">{eyebrow}</p>
+        <span className="carte-glace-num" aria-hidden="true">
+          {deux(numero)}/{deux(total)}
         </span>
+      </header>
+      <div className="carte-glace-coeur">
+        <p className="carte-glace-chiffre">
+          <b className="glace" data-text={chiffre}>
+            {chiffre}
+          </b>
+          {flocon && <IconSnowflake />}
+        </p>
+        <p className="carte-glace-legende">{legende}</p>
       </div>
-      <h3>{titre}</h3>
-      <p>{children}</p>
-      <dl className="acc-etape-chiffres">
-        {chiffres.map((c) => (
-          <div key={c.quoi}>
-            <dt>{c.quoi}</dt>
-            <dd className="num">{c.valeur}</dd>
-          </div>
-        ))}
-      </dl>
-    </li>
-  );
-}
-
-/** Un titre de section, au même gabarit partout. */
-function TeteDeSection({ id, sur, titre, children }: { id: string; sur: string; titre: string; children?: ReactNode }) {
-  return (
-    <header className="acc-tete">
-      <p className="eyebrow">{sur}</p>
-      <h2 id={id} className="acc-tete-titre">
-        {titre}
-      </h2>
-      {children && <p className="acc-tete-texte">{children}</p>}
-    </header>
+      <div className="carte-glace-texte">
+        <h3>{titre}</h3>
+        <p>{children}</p>
+      </div>
+    </article>
   );
 }
 
@@ -141,149 +133,174 @@ export function Accueil({ twitchEnabled, devLogin }: { twitchEnabled: boolean; d
     </a>
   );
 
-  // Les boosters de la vitrine, avec leurs cartes : celles du catalogue, que
-  // le serveur tire vraiment, de la commune à la légendaire.
-  const boosters: BoosterPresente[] = PACKS.map((p) => ({
-    id: p.id,
-    nom: p.name,
-    accroche: p.tagline,
-    declencheur: p.declencheur,
-    gradient: p.gradient,
-    art: packArt(p.id),
-    gemme: GEMME_DU_PACK[p.id] ?? null,
-    cartes: cartesDuPack(p.id)
-      .slice()
-      .sort((a, b) => RARITIES.indexOf(a.rarity) - RARITIES.indexOf(b.rarity) || a.power - b.power)
-      .map((c) => ({
-        cardId: c.id,
-        name: c.name,
-        subtitle: c.subtitle,
-        description: c.description,
-        rarity: c.rarity,
-        glyph: c.glyph,
-        nature: c.nature,
-        art: cardArt(c.id),
-      })),
-  }));
+  const DALLES: { cle: string; titre: string; dalle: Omit<Parameters<typeof Dalle>[0], 'numero' | 'total'> }[] = [
+    {
+      cle: 'classement',
+      titre: 'Le classement',
+      dalle: {
+        teinte: 'var(--gold)',
+        eyebrow: 'Le classement',
+        icone: <IconTrophy className="h-5 w-5" />,
+        chiffre: `+${PLACEMENT_POINTS['1']}`,
+        legende: 'le Top 1 · +1 par kill',
+        titre: 'Chaque kill compte',
+        children: `Tes kills et tes Top 3 font ton score. Les ${SEASON.finalistCount} premiers jouent la finale.`,
+      },
+    },
+    {
+      cle: 'flocons',
+      titre: 'Les flocons',
+      dalle: {
+        teinte: 'var(--ice)',
+        eyebrow: 'Les flocons',
+        icone: <IconSnowflake className="h-5 w-5" />,
+        chiffre: `+${ECONOMY.perKill}`,
+        flocon: true,
+        legende: 'flocons par kill',
+        titre: 'Tes games rapportent des flocons',
+        children: `+${ECONOMY.perPlacement['1']} le Top 1, +${CADEAU_DU_JOUR.parJour} chaque jour. Ils ne s’achètent pas.`,
+      },
+    },
+    {
+      cle: 'boosters',
+      titre: 'Les boosters',
+      dalle: {
+        teinte: 'var(--violet)',
+        eyebrow: 'Les boosters',
+        icone: <IconPack className="h-5 w-5" />,
+        chiffre: String(PACKS.length),
+        legende: 'boosters, ouverts en live',
+        titre: 'Les subs font tomber des boosters',
+        children: 'Chacun donne une carte qui change une game, en bonus ou en malus.',
+      },
+    },
+    {
+      cle: 'chance',
+      titre: 'La chance',
+      dalle: {
+        teinte: 'var(--aurora)',
+        eyebrow: 'La chance',
+        icone: <IconJauge className="h-5 w-5" />,
+        chiffre: `×${1 + CHANCE.max}`,
+        legende: 'de chance, au plus',
+        titre: 'Garde tes flocons, tire plus haut',
+        children: 'Plus ta réserve est grosse, plus tes boosters sortent des cartes rares.',
+      },
+    },
+    {
+      cle: 'duels',
+      titre: 'Les duels',
+      dalle: {
+        teinte: 'color-mix(in srgb, var(--live) 55%, var(--violet))',
+        eyebrow: 'Les duels',
+        icone: <IconSwords className="h-5 w-5" />,
+        chiffre: '×2',
+        legende: 'ta mise, si tu gagnes',
+        titre: 'Mise tes flocons en duel',
+        children: 'La même mise des deux côtés, une chance sur deux : le gagnant rafle tout.',
+      },
+    },
+  ];
 
-  const commu = SUB_MILESTONES.find((m) => m.packId === 'commu')?.every;
-  const folie = SUB_MILESTONES.find((m) => m.packId === 'folie')?.every;
+  const DIAPOS: Diapositive[] = DALLES.map(({ cle, titre, dalle }, i) => ({
+    cle,
+    titre,
+    contenu: <Dalle numero={i + 1} total={DALLES.length} {...dalle} />,
+  }));
 
   return (
     <div className="accueil">
-      {/* ---- L'arrivée, en trois dimensions : la nuit polaire, les boosters. ---- */}
-      <Accueil3D
-        boosters={boosters}
-        enTete={
-          <>
-            <p className="eyebrow">
-              {SEASON.edition} · du {debut} au {fin}
-            </p>
-            <h1 id="accueil-titre" className="hero-titre acc-titre">
-              <span className="glace" data-text="Winter">
-                Winter
-              </span>{' '}
-              <em className="glace" data-text="Ligue">
-                Ligue
-              </em>
-            </h1>
-            <p className="acc-hero-lead">
-              La ligue Warzone de l’hiver, en direct sur Twitch. Joue tes games, grimpe au classement, ouvre des
-              boosters et défie les autres joueurs.
-            </p>
-            {!twitchEnabled && (
-              <p className="acc-hero-note">
-                La connexion Twitch ouvre bientôt.
-                {devLogin ? ' La connexion de développement reste ouverte en local.' : ''}
-              </p>
-            )}
-          </>
-        }
-        actions={
-          <>
+      {/* ---- Le hero, à même le ciel : le nom, une phrase, l'entrée, et les
+              quatre boosters distribués en éventail dans leur fumée. ---- */}
+      <section className="acc-hero" aria-labelledby="accueil-titre">
+        <div className="acc-hero-texte">
+          <p className="eyebrow">
+            {SEASON.edition} · du {debut} au {fin}
+          </p>
+          <h1 id="accueil-titre" className="hero-titre acc-titre">
+            <span className="glace" data-text="Winter">
+              Winter
+            </span>{' '}
+            <em className="glace" data-text="Ligue">
+              Ligue
+            </em>
+          </h1>
+          <p className="acc-hero-lead">
+            La ligue Warzone de l’hiver, en direct sur Twitch. Joue, grimpe au classement, ouvre des boosters et défie
+            les autres joueurs.
+          </p>
+          <div className="acc-hero-actions">
             {rejoindre}
             <a href="#ligue" className="btn btn-lg no-underline">
               Comment ça marche
             </a>
-          </>
-        }
-      />
+          </div>
+          {!twitchEnabled && (
+            <p className="acc-hero-note">
+              La connexion Twitch ouvre bientôt.
+              {devLogin ? ' La connexion de développement reste ouverte en local.' : ''}
+            </p>
+          )}
+        </div>
 
-      {/* ---- Comment ça marche, en quatre étapes ---- */}
-      <section id="ligue" className="acc-section acc-sous-3d" aria-labelledby="ligue-titre" data-pas-3d="">
-        <TeteDeSection id="ligue-titre" sur="Comment ça marche" titre="La ligue en quatre étapes" />
-        <ol className="acc-etapes">
-          <Etape
-            numero={1}
-            teinte="var(--gold)"
-            icone={<IconTrophy className="h-5 w-5" />}
-            titre="Joue tes games"
-            chiffres={[
-              { quoi: 'Par kill', valeur: '+1 pt' },
-              { quoi: 'Top 1 · 2 · 3', valeur: `+${PLACEMENT_POINTS['1']} · ${PLACEMENT_POINTS['2']} · ${PLACEMENT_POINTS['3']}` },
-              { quoi: 'Games dans la saison', valeur: String(DEFAULT_MAX_GAMES_PER_PLAYER) },
-              { quoi: 'Qualifiés en finale', valeur: String(SEASON.finalistCount) },
-            ]}
-          >
-            En live sur Twitch. La modération saisit chaque game depuis la capture de fin de partie : tes kills et ton
-            top font ton score.
-          </Etape>
-
-          <Etape
-            numero={2}
-            teinte="var(--violet)"
-            icone={<IconPack className="h-5 w-5" />}
-            titre="Les subs, des boosters"
-            chiffres={[
-              { quoi: 'Booster Perso', valeur: `T3 ou ${PACKS_REGLES.persoTousLes} offerts` },
-              { quoi: 'Booster Commu', valeur: `${commu ?? '?'} subs` },
-              { quoi: 'Booster Folie', valeur: `${folie ?? '?'} subs` },
-              { quoi: 'Booster Finisseur', valeur: 'dernière game' },
-            ]}
-          >
-            Ouverts à l’antenne par la streameuse. Le Perso est pour qui a payé ; le Commu et le Folie tombent sur des
-            joueurs tirés au sort.
-          </Etape>
-
-          <Etape
-            numero={3}
-            teinte="var(--aurora)"
-            icone={
-              <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8">
-                <rect x="5" y="3" width="14" height="18" rx="2" />
-                <path d="m12 8 1.4 2.6L16 12l-2.6 1.4L12 16l-1.4-2.6L8 12l2.6-1.4z" />
-              </svg>
-            }
-            titre="Une carte, une game"
-            chiffres={RARITIES.map((r) => ({ quoi: RARITY_META[r].label, valeur: pourcent(RARITY_WEIGHTS_BASE[r]) }))}
-          >
-            Chaque booster donne une carte : des points, une game ×2, un Joker… Elle joue sur ta prochaine game, puis
-            disparaît. Une à la fois.
-          </Etape>
-
-          <Etape
-            numero={4}
-            teinte="var(--ice)"
-            icone={<IconSnowflake className="h-5 w-5" />}
-            titre="Les flocons, ta chance"
-            chiffres={[
-              { quoi: 'Par kill', valeur: `+${ECONOMY.perKill} ❄` },
-              { quoi: 'Top 1', valeur: `+${nombre(ECONOMY.perPlacement['1'])} ❄` },
-              { quoi: 'Cadeau du jour', valeur: `+${CADEAU_DU_JOUR.parJour} ❄` },
-              { quoi: 'Chance aux boosters', valeur: `jusqu’à ×${1 + CHANCE.max}` },
-            ]}
-          >
-            Plus ta réserve est grosse, plus tes boosters sortent des cartes rares. Mise-les en duel : le gagnant rafle
-            tout. Ils ne s’achètent pas.
-          </Etape>
-        </ol>
+        <EventailBoosters>
+          <div className="acc-eventail-cadre">
+            <div className="acc-eventail-fumee fumee" data-pack="finisseur" data-niveau="4">
+              <span className="fumee-nappe fumee-nappe-1" />
+              <span className="fumee-nappe fumee-nappe-2" />
+              <span className="fumee-nappe fumee-nappe-3" />
+            </div>
+          </div>
+          {PACKS.map((p, i) => (
+            <div
+              key={p.id}
+              className="acc-eventail-sachet"
+              // La place dans l'arc (-1,5 à gauche, +1,5 à droite) et le rang
+              // de distribution, du premier au dernier.
+              style={
+                {
+                  ['--o' as string]: i - 1.5,
+                  ['--o-abs' as string]: Math.abs(i - 1.5),
+                  ['--rang' as string]: i,
+                } as CSSProperties
+              }
+            >
+              <div className="acc-eventail-parallaxe">
+                <BoosterPack3D
+                  name={p.name}
+                  cardCount={1}
+                  gradient={p.gradient}
+                  art={packArt(p.id)}
+                  rarete={GEMME_DU_PACK[p.id]}
+                  vignette
+                />
+              </div>
+            </div>
+          ))}
+        </EventailBoosters>
       </section>
 
-      {/* ---- L'appel final ---- */}
-      <section className="acc-fin acc-sous-3d" aria-label="Rejoindre la ligue" data-pas-3d="">
-        <p className="acc-fin-titre">{avantLaSaison ? `Coup d’envoi le ${debut}.` : `En jeu jusqu’au ${fin}.`}</p>
-        <p className="acc-fin-texte">Un compte Twitch suffit. Ton pseudo Warzone, et c’est parti.</p>
-        {rejoindre}
+      {/* ---- La ligue, en cinq dalles de glace ---- */}
+      <section id="ligue" className="acc-ligue" aria-labelledby="ligue-titre">
+        <header className="acc-ligue-tete">
+          <p className="eyebrow">Comment ça marche</p>
+          <h2 id="ligue-titre" className="titre-glace titre-glace-page">
+            <span className="glace" data-text="La ligue en cinq cartes">
+              La ligue en cinq cartes
+            </span>
+          </h2>
+          <p className="acc-ligue-indice">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M8 9 5 12l3 3M16 9l3 3-3 3M5 12h14" />
+            </svg>
+            Fais glisser les cartes
+          </p>
+        </header>
+        <Diaporama label="La ligue en cinq cartes" diapositives={DIAPOS} />
+        <div className="acc-ligue-fin">
+          {rejoindre}
+          <p>{avantLaSaison ? `Coup d’envoi le ${debut}.` : `En jeu jusqu’au ${fin}.`}</p>
+        </div>
       </section>
     </div>
   );
