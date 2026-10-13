@@ -668,8 +668,10 @@ export function Affrontements({
     solde !== null && miseValide ? Math.max(0, Math.min(mise * 2, soldeMax - (solde - mise)) - mise) : mise;
   const gainPerdu = miseValide ? mise - gainReel : 0;
   const chance = solde !== null ? chanceDe(solde) : null;
-  /** On ne peut pas miser du tout : pas de joueur derrière la session, ou plus assez de flocons. */
-  const bloque = !joueur || solde === null || solde < miseMin;
+  /** Solde plein : ni lancer ni relever de duel tant qu'il n'est pas repassé dessous. */
+  const plein = solde !== null && solde >= soldeMax;
+  /** On ne peut pas miser du tout : pas de joueur derrière la session, plus assez de flocons, ou un solde plein. */
+  const bloque = !joueur || solde === null || solde < miseMin || plein;
   /** On peut régler une mise : un joueur, des flocons, rien en cours. */
   const peutMiser = !bloque && !occupe;
   const changeMise = (valeur: number) => setMise(Math.min(plafond, Math.max(miseMin, valeur)));
@@ -840,10 +842,10 @@ export function Affrontements({
                       <button
                         type="button"
                         className="btn btn-ice"
-                        disabled={occupe || !joueur || solde === null || manque > 0}
+                        disabled={occupe || !joueur || solde === null || manque > 0 || plein}
                         onClick={() => releve(b)}
                       >
-                        {manque > 0 ? `Il te manque ${flakes(manque)} ❄` : 'Relever le défi'}
+                        {plein ? 'Solde plein' : manque > 0 ? `Il te manque ${flakes(manque)} ❄` : 'Relever le défi'}
                       </button>
                     </div>
                   </li>
@@ -926,6 +928,14 @@ export function Affrontements({
                   <a href="/connexion" className="btn btn-ice no-underline">
                     Se reconnecter
                   </a>
+                </div>
+              )}
+              {joueur && plein && (
+                <div className="duels-avis">
+                  <p>
+                    <strong>Ton solde est plein : {flakes(soldeMax)} ❄.</strong> Les duels reviennent quand tu repasses
+                    dessous.
+                  </p>
                 </div>
               )}
               {joueur && solde !== null && solde < miseMin && (

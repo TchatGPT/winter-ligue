@@ -12,14 +12,14 @@ import 'server-only';
 
 import type { Database } from '@/lib/db/entities';
 import { jourDeParis, jourDuCycle, montantDuJour, serieDuJour } from '@/lib/domain/cadeauDuJour';
-import { CADEAU_DU_JOUR } from '@/lib/domain/rules';
+import { CADEAU_DU_JOUR, ECONOMY } from '@/lib/domain/rules';
 import { credit } from './ledger';
 import { gamesOf } from './league';
 
 export class CadeauError extends Error {
   constructor(
     message: string,
-    readonly code: 'DEJA_PRIS' | 'PAS_ENCORE_JOUE' | 'JOUEUR_INTROUVABLE',
+    readonly code: 'DEJA_PRIS' | 'PAS_ENCORE_JOUE' | 'JOUEUR_INTROUVABLE' | 'SOLDE_PLEIN',
   ) {
     super(message);
     this.name = 'CadeauError';
@@ -31,6 +31,11 @@ export interface EtatCadeau {
   eligible: boolean;
   /** Il l'a déjà pris aujourd'hui. */
   dejaPris: boolean;
+  /**
+   * Son solde est plein (`ECONOMY.soldeMax`) : le cadeau est fermé jusqu'à ce
+   * qu'il repasse dessous — décidé par l'organisation le 13/10/2026.
+   */
+  plein: boolean;
   /** La série s'il le prend aujourd'hui — ou celle du jour, s'il l'a pris. */
   serie: number;
   /** Le rang du jour dans la semaine, de 1 à 7. */
@@ -51,6 +56,7 @@ export function etatCadeau(db: Readonly<Database>, joueurId: string, now = new D
   return {
     eligible: gamesOf(db as Database, joueurId).some((g) => !g.skipped),
     dejaPris,
+    plein: joueur.snowflakes >= ECONOMY.soldeMax,
     serie,
     jour: jourDuCycle(serie),
     montant: montantDuJour(serie),
@@ -74,6 +80,12 @@ export function prendsCadeauDuJour(
   if (etat.dejaPris) throw new CadeauError('Tu as déjà pris ton cadeau aujourd’hui : reviens demain.', 'DEJA_PRIS');
   if (!etat.eligible) {
     throw new CadeauError('Le cadeau du jour s’ouvre après ta première game dans la ligue.', 'PAS_ENCORE_JOUE');
+  }
+  if (etat.plein) {
+    throw new CadeauError(
+      `Ton solde est plein (${ECONOMY.soldeMax.toLocaleString('fr-FR')} ❄) : le cadeau du jour revient quand tu repasses dessous.`,
+      'SOLDE_PLEIN',
+    );
   }
 
   const aujourdhui = jourDeParis(now);

@@ -33,13 +33,14 @@ import {
   score,
 } from '@/lib/domain/bataille';
 import { secureInt } from '@/lib/domain/rng';
-import { DUEL } from '@/lib/domain/rules';
+import { DUEL, ECONOMY } from '@/lib/domain/rules';
 import { credit, debit } from '@/lib/services/ledger';
 
 export class BatailleError extends Error {
   constructor(
     message: string,
     readonly code:
+      | 'SOLDE_PLEIN'
       | 'MISE_INVALIDE'
       | 'MANCHES_INVALIDES'
       | 'BATAILLE_INCONNUE'
@@ -78,6 +79,21 @@ export function verifieAttente(db: Database, hoteId: string): void {
   }
 }
 
+/**
+ * À solde plein (`ECONOMY.soldeMax`), on ne lance ni ne relève de duel —
+ * décidé par l'organisation le 13/10/2026. Un duel déjà lancé se joue
+ * normalement.
+ */
+function verifieSoldePasPlein(db: Database, joueurId: string): void {
+  const joueur = db.players.find((p) => p.id === joueurId);
+  if (joueur && joueur.snowflakes >= ECONOMY.soldeMax) {
+    throw new BatailleError(
+      `Ton solde est plein (${ECONOMY.soldeMax.toLocaleString('fr-FR')} ❄) : les duels reviennent quand tu repasses dessous.`,
+      'SOLDE_PLEIN',
+    );
+  }
+}
+
 export function creeBataille(db: Database, hoteId: string, mise: number, manches: number): Bataille {
   if (!(MANCHES_POSSIBLES as readonly number[]).includes(manches)) {
     throw new BatailleError('Un duel se joue en une seule manche.', 'MANCHES_INVALIDES');
@@ -89,6 +105,7 @@ export function creeBataille(db: Database, hoteId: string, mise: number, manches
     );
   }
 
+  verifieSoldePasPlein(db, hoteId);
   // Lève si le solde est insuffisant : la transaction est alors annulée.
   debit(db, hoteId, mise, 'MISE_BATAILLE', null);
 
@@ -147,6 +164,7 @@ export function rejointBataille(db: Database, joueurId: string, batailleId: stri
     );
   }
 
+  verifieSoldePasPlein(db, joueurId);
   debit(db, joueurId, bataille.mise, 'MISE_BATAILLE', bataille.id);
   bataille.adversaireId = joueurId;
   return resout(db, bataille);

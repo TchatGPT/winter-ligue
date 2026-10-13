@@ -200,13 +200,25 @@ describe('résoudre un duel', () => {
 
   it('ne dépasse jamais le plafond de flocons', () => {
     // Ce qui déborde est perdu, et le grand livre écrit ce qui a été versé.
-    const db = base({ hote: ECONOMY.soldeMax, autre: ECONOMY.soldeMax });
-    const b = creeBataille(db, 'hote', DUEL.miseMax, 1);
+    // Juste sous le plafond : à solde plein, on ne joue pas.
+    const depart = ECONOMY.soldeMax - 1_000;
+    const db = base({ hote: depart, autre: depart });
+    const b = creeBataille(db, 'hote', 10_000, 1);
     rejointBataille(db, 'autre', b.id);
     expect(solde(db, b.vainqueurId!)).toBe(ECONOMY.soldeMax);
     for (const id of ['hote', 'autre']) {
-      expect(mouvements(db, id)).toBe(solde(db, id) - ECONOMY.soldeMax);
+      expect(mouvements(db, id)).toBe(solde(db, id) - depart);
     }
+  });
+
+  it('ne se lance ni ne se relève à solde plein', () => {
+    const db = base({ hote: ECONOMY.soldeMax, autre: DEPART, plein: ECONOMY.soldeMax });
+    expect(() => creeBataille(db, 'hote', MISE, 1)).toThrow(BatailleError);
+    const b = creeBataille(db, 'autre', MISE, 1);
+    expect(() => rejointBataille(db, 'plein', b.id)).toThrow(BatailleError);
+    expect(b.statut).toBe('ATTENTE');
+    expect(solde(db, 'hote')).toBe(ECONOMY.soldeMax);
+    expect(solde(db, 'plein')).toBe(ECONOMY.soldeMax);
   });
 });
 

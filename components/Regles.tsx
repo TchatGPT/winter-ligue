@@ -439,7 +439,8 @@ export function Regles({ maxGames, packs }: { maxGames: number; packs: PackDefin
               <Puces>
                 <li>Tout le monde commence la saison à 0 ❄.</li>
                 <li>
-                  Le solde plafonne à <b>{nombre(ECONOMY.soldeMax)} ❄</b> : au-delà, c’est perdu.
+                  Le solde plafonne à <b>{nombre(ECONOMY.soldeMax)} ❄</b> : au-delà, c’est perdu. Solde plein, le
+                  cadeau du jour et les duels sont fermés jusqu’à ce que tu repasses dessous.
                 </li>
                 {avalanche && (
                   <li>

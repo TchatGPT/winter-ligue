@@ -41,7 +41,7 @@ export function CadeauDuJour({ etat, variante }: { etat: EtatCadeau; variante: '
     text: string;
   } | null>(null);
 
-  const dispo = etat.eligible && !etat.dejaPris;
+  const dispo = etat.eligible && !etat.dejaPris && !etat.plein;
 
   useEffect(() => {
     if (!ouvert) return;
@@ -93,7 +93,9 @@ export function CadeauDuJour({ etat, variante }: { etat: EtatCadeau; variante: '
 
   const aide = !etat.eligible
     ? 'Après ta première game'
-    : etat.dejaPris
+    : etat.plein
+      ? 'Solde plein : revient quand tu repasses sous le plafond'
+      : etat.dejaPris
       ? `Pris · série de ${etat.serie} jour${etat.serie > 1 ? 's' : ''} — reviens demain`
       : `+${num(etat.montant)} ❄ · jour ${etat.jour} sur ${CADEAU_DU_JOUR.cycle}`;
 

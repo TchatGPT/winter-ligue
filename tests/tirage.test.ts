@@ -110,7 +110,10 @@ describe('l’ouverture d’un booster de la file', () => {
   it('ne s’ouvre que si un booster est dû, et jamais deux fois le même', () => {
     const db = ligue();
     ouvreProchainDu(db, { packId: 'perso', joueurId: 'riche', idempotencyKey: 'a' }, 'test');
+    // Pas de stock de cartes : la première carte joue avant qu'on rouvre.
+    for (const c of db.cartesEnAttente) c.consommeeA ??= '2027-01-01T00:00:00.000Z';
     ouvreProchainDu(db, { packId: 'perso', joueurId: 'riche', idempotencyKey: 'b' }, 'test');
+    for (const c of db.cartesEnAttente) c.consommeeA ??= '2027-01-01T00:00:00.000Z';
     expect(() => ouvreProchainDu(db, { packId: 'perso', joueurId: 'riche', idempotencyKey: 'c' }, 'test')).toThrow(
       PackError,
     );
