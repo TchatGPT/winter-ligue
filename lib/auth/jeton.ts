@@ -15,10 +15,10 @@ import 'server-only';
  * revient au moins une fois par mois ne se reconnecte plus. Elle a duré douze
  * heures, et chacun refaisait « Se connecter avec Twitch » tous les jours.
  *
- * La prolongation garde la date d'émission (`iat`) : « Se déconnecter », qui
- * révoque tout jeton émis avant elle, révoque aussi ceux qu'on a prolongés
- * depuis. Et elle s'arrête six mois après la connexion : une fois par
- * semestre, chacun repasse par Twitch.
+ * La prolongation garde la date d'émission (`iat`) : une révocation
+ * (`sessions_depuis`), qui refuse tout jeton émis avant elle, refuse aussi ceux
+ * qu'on a prolongés depuis. Et elle s'arrête six mois après la connexion : une
+ * fois par semestre, chacun repasse par Twitch.
  *
  * Le rôle ne dépend pas de cette durée : il se relit en base à chaque requête,
  * et la base suit la chaîne Twitch en direct (`channel.moderator.add/remove`,

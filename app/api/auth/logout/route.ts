@@ -1,27 +1,24 @@
 import { NextResponse } from 'next/server';
-import { clearSessionCookie, playerIdOf } from '@/lib/auth/session';
+import { clearSessionCookie } from '@/lib/auth/session';
 import { guard, ok } from '@/lib/api/respond';
-import { getStore } from '@/lib/db/store';
 import { LIMITS } from '@/lib/security/ratelimit';
 
 export const runtime = 'nodejs';
 
 /**
- * Déconnexion : le cookie est effacé, **et** tous les jetons du joueur sont
- * révoqués — la date posée ici fait refuser toute session émise avant elle,
- * sur tous ses appareils. Un cookie copié ailleurs ne survit pas.
+ * Déconnexion de **cet appareil** : son cookie est effacé, les sessions des
+ * autres appareils restent ouvertes. Elle a révoqué tous les jetons du joueur,
+ * sur tous ses appareils : se déconnecter sur le PC déconnectait aussi le
+ * téléphone, qui retombait sur l'accueil sans comprendre pourquoi (décidé par
+ * l'organisation le 14/10/2026).
+ *
+ * `sessions_depuis` reste lu par `getSession()` : une date déjà posée garde son
+ * effet. Rien ne s'écrit au journal : la modération le lit, et d'où chacun se
+ * connecte ne la regarde pas.
  */
 export async function POST(request: Request): Promise<NextResponse> {
   const g = await guard(request, { scope: 'logout', limit: LIMITS.mutation });
   if (!g.ok) return g.response;
-
-  const joueurId = playerIdOf(g.session);
-  if (joueurId) {
-    await getStore().transaction((db) => {
-      const joueur = db.players.find((p) => p.id === joueurId);
-      if (joueur) joueur.sessionsDepuis = new Date().toISOString();
-    });
-  }
   await clearSessionCookie();
   return ok({ deconnecte: true });
 }

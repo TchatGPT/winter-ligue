@@ -11,8 +11,9 @@ import 'server-only';
  * Le jeton ne contient qu'un identifiant et un rôle, et le rôle du jeton ne
  * sert à rien : à chaque requête, `getSession()` relit en base le rôle, l'état
  * et la date de révocation du joueur. Un admin rétrogradé perd ses droits
- * à la requête suivante, un compte désactivé est dehors, et « Se déconnecter »
- * révoque tous les jetons déjà émis — pas seulement le cookie de ce navigateur.
+ * à la requête suivante, et un compte désactivé est dehors. « Se déconnecter »
+ * ne ferme que la session de l'appareil où l'on clique : chaque appareil a la
+ * sienne.
  */
 
 import { cookies } from 'next/headers';

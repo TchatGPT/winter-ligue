@@ -90,8 +90,11 @@ de débiter ou de consommer une seconde fois.
   révocation du joueur (`Store.etatSession`, une ligne lue par sa clé, mise en cache le
   temps d'une requête). Un admin rétrogradé perd ses droits à la requête suivante,
   un compte désactivé est dehors. Décision pure : `lib/domain/revocation.ts`, testée.
-- **Se déconnecter révoque** : la déconnexion pose `joueurs.sessions_depuis`, et tout
-  jeton émis avant est refusé, sur tous les appareils — un cookie copié ne survit pas.
+- **Se déconnecter ne ferme que cet appareil** (décidé le 14/10/2026) : le cookie est
+  effacé, les autres appareils restent connectés. Révoquer tous les appareils posait
+  `joueurs.sessions_depuis` : se déconnecter sur le PC déconnectait le téléphone. La date
+  reste lue — une révocation déjà posée garde son effet —, mais plus rien ne l'écrit.
+  Contre un cookie volé, la modération désactive le compte.
 - **Il n'y a pas de mot de passe.** Twitch est la seule porte : l'entrée par mot de passe
   et sa session « de secours », sans joueur, ont été retirées une fois Twitch branché. Un
   ancien jeton de secours ne désigne aucun compte : `getSession()` le refuse.
@@ -305,8 +308,8 @@ il vaut à la requête suivante.
 **Les sessions** durent trente jours depuis la dernière visite, six mois au plus
 depuis la connexion : le proxy prolonge le cookie une fois par jour au plus
 (`lib/auth/jeton.ts`), en vérifiant la signature seule. La prolongation garde la
-date d'émission du jeton, si bien que « Se déconnecter » révoque aussi les jetons
-prolongés ; compte désactivé, rôle et révocation restent décidés par
+date d'émission du jeton, si bien qu'une révocation (`sessions_depuis`) refuse aussi
+les jetons prolongés ; compte désactivé, rôle et révocation restent décidés par
 `getSession()`, contre la base, à chaque requête.
 En cas d'échec de l'appel, le rôle accordé est `joueur` : rien ne s'accorde par
 défaut. Les rôles ne se choisissent plus à la main, et plus personne ne
