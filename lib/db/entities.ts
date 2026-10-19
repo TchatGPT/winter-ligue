@@ -190,6 +190,12 @@ export interface CarteEnAttente {
    * deux. Nul pour une carte ordinaire.
    */
   paireId: string | null;
+  /**
+   * Des points comptés au total du joueur hors de toute game : le coup d'un
+   * Verglas (−20). Nul, ou absent, pour une carte ordinaire, dont les points
+   * sont dans la game qu'elle a touchée.
+   */
+  points?: number | null;
 }
 
 export interface LedgerEntry {

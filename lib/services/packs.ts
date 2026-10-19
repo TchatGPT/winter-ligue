@@ -49,7 +49,7 @@ import {
 } from '@/lib/domain/types';
 import { carteQuiAttend, gamesSansCarte, regleCartesSansAttendre } from './effects';
 import { audit } from './ledger';
-import { aJoueToutesSesGames, gamesOf } from './league';
+import { aJoueToutesSesGames, gamesOf, pointsHorsGame } from './league';
 
 export class PackError extends Error {
   constructor(
@@ -418,7 +418,7 @@ function classes(db: Database, joueurs: Player[]): Player[] {
   return rank(
     joueurs.map((player) => ({
       player,
-      totals: totalsFor(db.games.filter((g) => g.playerId === player.id)),
+      totals: totalsFor(db.games.filter((g) => g.playerId === player.id), pointsHorsGame(db, player.id)),
     })),
   ).map((r) => r.player);
 }

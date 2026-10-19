@@ -83,6 +83,8 @@ export interface ScoredGame {
 
 export interface PlayerTotals {
   totalScore: number;
+  /** Les points comptés hors de toute game, déjà dans `totalScore` : un Verglas reçu (−20). */
+  horsGame: number;
   countedGames: number;
   totalKills: number;
   top1: number;
@@ -97,9 +99,10 @@ export interface PlayerTotals {
 
 /**
  * Agrège les games d'un joueur. Les games passées (`skipped`) sont exclues du
- * total mais restent visibles dans l'historique.
+ * total mais restent visibles dans l'historique. `horsGame` s'ajoute au total
+ * seulement : la moyenne, la meilleure et la pire game restent celles des games.
  */
-export function totalsFor(games: readonly ScoredGame[]): PlayerTotals {
+export function totalsFor(games: readonly ScoredGame[], horsGame = 0): PlayerTotals {
   const counted = games.filter((g) => !g.skipped);
   const empty = counted.length === 0;
 
@@ -122,7 +125,8 @@ export function totalsFor(games: readonly ScoredGame[]): PlayerTotals {
   }
 
   return {
-    totalScore: round2(totalScore),
+    totalScore: round2(totalScore + horsGame),
+    horsGame,
     countedGames: counted.length,
     totalKills,
     top1,

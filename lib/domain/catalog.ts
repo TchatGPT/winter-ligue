@@ -172,12 +172,12 @@ export const CARDS: readonly CardDefinition[] = [
     id: 'luge',
     name: 'Luge',
     subtitle: '+15 pts si Top 1',
-    rarity: 'C',
+    rarity: 'R',
     glyph: '🛷',
     description: '+15 points sur ta prochaine game, si tu fais Top 1.',
     effect: { kind: 'bonus_top', top: 1, value: 15 },
     nature: 'bonus',
-    power: 14,
+    power: 30,
     packs: ['perso'],
     cible: 'HASARD',
   },
@@ -273,7 +273,7 @@ export const CARDS: readonly CardDefinition[] = [
     rarity: 'UR',
     glyph: '🧊',
     description:
-      '−20 points sur la prochaine game du joueur de ton choix. Tu la gardes, et la modération l’envoie quand tu désignes ta cible.',
+      '−20 points au total du joueur de ton choix. Tu la gardes, et la modération l’envoie quand tu désignes ta cible.',
     effect: { kind: 'malus_choisi', value: 20 },
     nature: 'malus',
     power: 74,
@@ -371,9 +371,10 @@ export const CARDS: readonly CardDefinition[] = [
 ];
 
 /**
- * Le coup du Verglas, posé sur sa victime quand la modération le joue : −20 pts
- * sur sa prochaine game. Il ne sort d'aucun booster (il n'est pas dans
- * `CARDS`) ; `getCard` le connaît, pour le régler et l'afficher.
+ * Le coup du Verglas, reçu par sa victime quand la modération le joue : −20 pts
+ * sur son total, tout de suite, hors de toute game (`CarteEnAttente.points`).
+ * Il ne sort d'aucun booster (il n'est pas dans `CARDS`) ; `getCard` le
+ * connaît, pour l'afficher.
  */
 export const COUP_DE_VERGLAS: CardDefinition = {
   id: 'plaque-verglas-coup',
@@ -381,7 +382,7 @@ export const COUP_DE_VERGLAS: CardDefinition = {
   subtitle: '−20 pts',
   rarity: 'UR',
   glyph: '🧊',
-  description: '−20 points sur ta prochaine game, envoyé par un autre joueur.',
+  description: '−20 points sur ton total, envoyé par un autre joueur.',
   effect: { kind: 'malus_points', value: 20 },
   nature: 'malus',
   power: 74,

@@ -683,9 +683,11 @@ export type RefusVerglas = 'CARTE' | 'CIBLE';
 
 /**
  * Joue un Verglas gardé par un joueur, sur la victime qu'il a choisie : le
- * Verglas est consommé, et son coup (`COUP_DE_VERGLAS`, −20 pts) est posé sur
- * la victime — il tombera sur sa prochaine game, et l'immunité le pare. À la
- * route de vérifier que la victime est en lice et n'est pas lui.
+ * Verglas est consommé, et la victime perd tout de suite 20 points sur son
+ * total, hors de toute game — son coup (`COUP_DE_VERGLAS`) s'inscrit chez elle,
+ * déjà réglé, avec ses points (`points`). L'immunité le pare : le coup
+ * s'inscrit, sans points. À la route de vérifier que la victime est en lice et
+ * n'est pas lui.
  */
 export function joueVerglas(
   db: Database,
@@ -697,18 +699,33 @@ export function joueVerglas(
   const card = pendante ? getCard(pendante.cardId) : null;
   if (!pendante || !card || card.effect.kind !== 'malus_choisi') return 'CARTE';
   if (cible.id === pendante.joueurId) return 'CIBLE';
+  const valeur = card.effect.value;
+  const pare = estImmunise(cible, now);
+  const porteur = db.players.find((p) => p.id === pendante.joueurId)?.pseudo ?? 'un joueur';
   db.cartesEnAttente.push({
     id: newId(),
     joueurId: cible.id,
     cardId: COUP_DE_VERGLAS.id,
     ouvertureId: pendante.ouvertureId,
     creeA: now.toISOString(),
-    consommeeA: null,
+    consommeeA: now.toISOString(),
     gameId: null,
-    resultat: null,
+    resultat: pare
+      ? `Verglas de ${porteur}, paré par l’immunité`
+      : `Verglas de ${porteur} : −${valeur} pts sur le total`,
     paireId: null,
+    points: pare ? 0 : -valeur,
   });
-  return consomme(pendante, card, sansEffet(`joué sur ${cible.pseudo} : −${card.effect.value} pts sur sa prochaine game`), now);
+  return consomme(
+    pendante,
+    card,
+    sansEffet(
+      pare
+        ? `joué sur ${cible.pseudo}, paré par son immunité`
+        : `joué sur ${cible.pseudo} : −${valeur} pts sur son total`,
+    ),
+    now,
+  );
 }
 
 /**

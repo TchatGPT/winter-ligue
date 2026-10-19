@@ -149,10 +149,10 @@ export function LancerVerglas({
             </div>
             <p className="verglas-fait-texte">
               {envoye.immunise ? (
-                <>Son immunité le parera : sa prochaine game ne perdra rien.</>
+                <>Son immunité l’a paré : son total ne bouge pas.</>
               ) : (
                 <>
-                  <strong>−20 points</strong> sur sa prochaine game.
+                  <strong>−20 points</strong> sur son total.
                 </>
               )}
             </p>
@@ -171,8 +171,8 @@ export function LancerVerglas({
                 <p className="verglas-surtitre">Ultra rare · Verglas</p>
                 <h2 className="verglas-titre">Lancer le Verglas</h2>
                 <p className="verglas-sous-titre">
-                  Choisis la victime de <strong>{porteur.pseudo}</strong> : elle perdra 20 points sur sa prochaine
-                  game.
+                  Choisis la victime de <strong>{porteur.pseudo}</strong> : elle perd 20 points sur son total, tout
+                  de suite.
                 </p>
               </div>
             </header>

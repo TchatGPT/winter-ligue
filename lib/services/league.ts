@@ -76,7 +76,16 @@ function toScored(game: Game): ScoredGame {
 }
 
 export function totalsOf(db: Database, playerId: string): PlayerTotals {
-  return totalsFor(gamesOf(db, playerId).map(toScored));
+  return totalsFor(gamesOf(db, playerId).map(toScored), pointsHorsGame(db, playerId));
+}
+
+/** Les points d'un joueur comptés hors de toute game : les Verglas qu'il a reçus. */
+export function pointsHorsGame(db: Database, playerId: string): number {
+  let points = 0;
+  for (const c of db.cartesEnAttente) {
+    if (c.joueurId === playerId && c.consommeeA !== null && typeof c.points === 'number') points += c.points;
+  }
+  return points;
 }
 
 /** Une carte, telle que le classement la montre. */
@@ -132,7 +141,7 @@ export function classementDe(db: Database): RankingRow[] {
   const active = db.players.filter((p) => p.active && !estLaStreameuse(p, chaine));
   const entries = active.map((player) => ({
     player,
-    totals: totalsFor(db.games.filter((g) => g.playerId === player.id).map(toScored)),
+    totals: totalsFor(db.games.filter((g) => g.playerId === player.id).map(toScored), pointsHorsGame(db, player.id)),
   }));
 
   return rank(entries).map(({ rank: position, player, totals }) => ({

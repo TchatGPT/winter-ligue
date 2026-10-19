@@ -135,8 +135,9 @@ export type CardEffect =
   /**
    * « −N pts au joueur de ton choix » : le joueur la garde ; la modération la
    * joue pour lui, sur le joueur qu'il désigne (décidé par l'organisation le
-   * 13/10/2026). La victime reçoit le coup sur sa prochaine game
-   * (`COUP_DE_VERGLAS`), et l'immunité le pare.
+   * 13/10/2026). La victime perd N points sur son total, tout de suite, hors
+   * de toute game (`COUP_DE_VERGLAS`, décidé le 19/10/2026) ; l'immunité le
+   * pare.
    */
   | { kind: 'malus_choisi'; value: number };
 

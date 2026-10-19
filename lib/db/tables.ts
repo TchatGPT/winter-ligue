@@ -128,6 +128,7 @@ export const COLLECTIONS: Collection[] = [
       c('gameId', 'game_id', 'text'),
       c('resultat', 'resultat', 'text'),
       c('paireId', 'paire_id', 'text'),
+      c('points', 'points', 'int'),
     ],
   },
   {
@@ -451,6 +452,9 @@ update joueurs set role = 'admin' where role = 'moderateur';
 
 -- Les liens d'overlay OBS : en changer la génération les révoque tous.
 alter table saison add column if not exists overlay_generation integer not null default 1;
+
+-- Des points hors de toute game : le coup d'un Verglas, sur le total.
+alter table cartes_en_attente add column if not exists points integer;
 
 -- Les messages de Twitch déjà comptés : un message renvoyé ne compte qu'une fois.
 alter table saison add column if not exists twitch_vus jsonb not null default '[]';

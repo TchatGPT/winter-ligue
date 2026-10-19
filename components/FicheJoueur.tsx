@@ -151,7 +151,16 @@ export function FicheJoueur({ fiche, subs }: { fiche: DonneesFiche; subs: BilanS
         </div>
 
         <dl className="profil-chiffres">
-          <Chiffre nom="Points" precision={aJoue ? `moyenne ${decimal(t.averageScore)}` : 'aucune game'}>
+          <Chiffre
+            nom="Points"
+            precision={
+              t.horsGame !== 0
+                ? `dont ${t.horsGame} de Verglas`
+                : aJoue
+                  ? `moyenne ${decimal(t.averageScore)}`
+                  : 'aucune game'
+            }
+          >
             {t.totalScore}
           </Chiffre>
           <Chiffre nom="Rang" precision={classe ? (rang.finaliste ? 'en finale' : 'hors finale') : '—'}>

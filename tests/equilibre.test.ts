@@ -5,6 +5,7 @@ import { CARDS, cardsOfRarity, getCard, impactMax, momentDe, PACKS } from '@/lib
 import { GAME_LIMITS } from '@/lib/domain/rules';
 import { scoreGame } from '@/lib/domain/scoring';
 import { RARITIES, type CardEffect, type Placement } from '@/lib/domain/types';
+import { totalsOf } from '@/lib/services/league';
 import {
   appliqueCartesEnAttente,
   gamesSansCarte,
@@ -182,7 +183,7 @@ describe('les malus ne transfèrent jamais', () => {
     for (const card of CARDS.filter((c) => momentDe(c.effect) === 'JOUEE')) {
       expect(card.nature).toBe('bonus');
     }
-    // Le Verglas se garde ; son coup, lui, tombe sur la prochaine game.
+    // Le Verglas se garde ; son coup, lui, tombe sur le total, sans game.
     for (const card of malus) {
       expect(momentDe(card.effect)).toBe(card.effect.kind === 'malus_choisi' ? 'GARDEE' : 'PROCHAINE');
     }
@@ -235,7 +236,7 @@ describe('les malus ne transfèrent jamais', () => {
 });
 
 describe('le Verglas', () => {
-  it('se garde, puis tombe sur la prochaine game de la victime choisie', () => {
+  it('se garde, puis retire 20 points au total de la victime, tout de suite', () => {
     const db = base('a', 'b');
     pose(db, 'a', 'plaque-verglas', 1);
     regleCartesSansAttendre(db, 'a');
@@ -245,13 +246,34 @@ describe('le Verglas', () => {
     appliqueCartesEnAttente(db, game(db, 'a', 5));
     expect(enAttente(db, 'a')).toHaveLength(1);
 
+    const avant = game(db, 'b', 30, 1);
+    const totalAvant = totalsOf(db, 'b').totalScore;
     const victime = db.players.find((p) => p.id === 'b')!;
     const r = joueVerglas(db, garde.id, victime);
     expect(typeof r).not.toBe('string');
     expect(enAttente(db, 'a')).toHaveLength(0);
+    // Tout de suite, sur le total : aucune game n'est touchée, rien n'attend.
+    expect(totalsOf(db, 'b').totalScore).toBe(totalAvant - 20);
+    expect(totalsOf(db, 'b').horsGame).toBe(-20);
+    expect(avant.applied).toHaveLength(0);
+    expect(enAttente(db, 'b')).toHaveLength(0);
+    // Sa game suivante n'est pas touchée non plus.
     const g = game(db, 'b', 30, 1);
     appliqueCartesEnAttente(db, g);
-    expect(g.score).toBe(30 + 20 - 20);
+    expect(g.score).toBe(30 + 20);
+    // La moyenne reste celle des games.
+    expect(totalsOf(db, 'b').averageScore).toBe(50);
+  });
+
+  it('est paré par l’immunité', () => {
+    const db = base('a', 'b');
+    pose(db, 'a', 'plaque-verglas', 1);
+    const garde = enAttente(db, 'a')[0];
+    const victime = db.players.find((p) => p.id === 'b')!;
+    victime.immuniseJusqua = new Date(Date.now() + 3_600_000).toISOString();
+    joueVerglas(db, garde.id, victime);
+    expect(totalsOf(db, 'b').totalScore).toBe(0);
+    expect(enAttente(db, 'a')).toHaveLength(0);
   });
 
   it('ne se joue pas sur soi-même, ni deux fois', () => {

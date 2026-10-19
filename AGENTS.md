@@ -83,8 +83,10 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   l'organisation le 13/10/2026) est la seule exception aux règles des malus : il sort d'un
   booster ouvert pour un joueur, qui le garde et **choisit sa victime**. La modération le
   joue depuis la fiche de la carte au classement (`/api/admin/cartes/verglas`,
-  `joueVerglas`) : son coup (`COUP_DE_VERGLAS`, −20 pts, hors de `CARDS`) tombe sur la
-  prochaine game de la victime, l'immunité le pare. Jamais sur soi ; un membre de la
+  `joueVerglas`) : la victime perd 20 points sur son **total**, tout de suite, hors de
+  toute game (décidé le 19/10/2026) — son coup (`COUP_DE_VERGLAS`, hors de `CARDS`)
+  s'inscrit chez elle, déjà réglé, avec ses points (`CarteEnAttente.points`), que
+  `pointsHorsGame()` ajoute au total. L'immunité le pare. Jamais sur soi ; un membre de la
   modération ne joue pas le Verglas qu'il garde.
 - **Le Grand Dégel** (`kind: 'supprime_pire'`, légendaire du Booster Perso) passe la pire
   game encore sans carte du joueur — la sienne, jamais celle d'un autre : elle ne compte
