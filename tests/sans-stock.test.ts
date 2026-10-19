@@ -83,7 +83,8 @@ describe('pas de stock de cartes', () => {
     const db = ligue('a');
     reglagePack(db, 'perso', seulement('R'));
     const premiere = ouvrePack(db, { packId: 'perso', joueurId: 'a', idempotencyKey: 'k1' }, 'modo');
-    expect(getCard(premiere.cardId)!.id).toBe('vent-porteur');
+    // Une rare du Perso (Luge, Vent Porteur) : elle attend la prochaine game.
+    expect(getCard(premiere.cardId)!.rarity).toBe('R');
     expect(carteQuiAttend(db, 'a')).not.toBeNull();
 
     let refus: unknown = null;
