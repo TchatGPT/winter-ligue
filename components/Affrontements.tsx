@@ -1,14 +1,17 @@
 'use client';
 
 /**
- * Le salon des duels : jouer d'un côté, les résultats de l'autre.
+ * Le salon des duels, en trois plaques.
  *
- * À gauche, tout ce qui sert à jouer : les défis ouverts en tête — ceux des
- * autres, à relever d'un clic, puis les siens, à annuler —, et dessous le
- * panneau pour lancer le sien : l'affiche, la mise en boutons rapides, ce
- * qu'elle rapporte ou coûte, le bouton. À droite, les résultats, sur toute la
- * hauteur. Sur un ordinateur, le salon tient dans l'écran et ses listes
- * défilent dans leur plaque ; sur un téléphone, tout s'empile dans cet ordre.
+ * « Lance ton duel » : le solde et la chance aux boosters qu'il porte, la mise
+ * en boutons rapides, ce qu'elle rapporte ou coûte, le bouton — et dessous ses
+ * duels en attente, avec de quoi les annuler. « Duels à rejoindre » : ceux des
+ * autres seulement, triés par mise ou par date, avec ce qui est à sa portée.
+ * Les résultats, enfin. Sur un ordinateur, les trois plaques se partagent la
+ * largeur et tiennent dans l'écran, pied compris : les listes défilent dans
+ * leur plaque, qu'il y ait deux duels ou cinquante (refait le 20/10/2026).
+ * Sur un téléphone, tout s'empile : les duels à rejoindre, le lancement, les
+ * résultats.
  *
  * Un duel joué ne se rejoue pas, et ne se saute pas : la course se voit une
  * fois, en direct, jusqu'au bout — la fenêtre ne se ferme pas avant. Une fois
@@ -165,6 +168,9 @@ function bilanDe(b: BatailleVueClient, moiId: string | null): { gagne: boolean; 
  * cent flocons, et viser 500 demandait de la précision.
  */
 const MISES_RAPIDES: readonly number[] = [100, 500, 1_000, 5_000, 10_000];
+
+/** Une mise rapide en court, pour une plaque étroite : « 1k », « 10k ». */
+const miseCourte = (v: number) => (v >= 1_000 ? `${v / 1_000}k` : String(v));
 
 /** Le pas des boutons − et + : il grandit avec la mise. */
 function pasDe(mise: number): number {
@@ -435,8 +441,10 @@ export function Affrontements({
   const [onglet, setOnglet] = useState<Onglet>('recents');
   /** Toute la liste des résultats, sur un écran étroit (voir `RESULTATS_REPLIES`). */
   const [tousResultats, setTousResultats] = useState(false);
-  /** Tous les défis à relever, sur un écran étroit (voir `DEFIS_REPLIES`). */
+  /** Tous les duels à rejoindre, sur un écran étroit (voir `DEFIS_REPLIES`). */
   const [tousDefis, setTousDefis] = useState(false);
+  /** L'ordre des duels à rejoindre : les plus grosses mises, ou les plus récents. */
+  const [tri, setTri] = useState<'mises' | 'recents'>('mises');
 
   const [fenetre, setFenetre] = useState<Fenetre | null>(null);
   /** Les courses de mes duels relevés, en attente d'une fenêtre libre. */
@@ -588,7 +596,7 @@ export function Affrontements({
       '/api/affrontements',
       { mise },
       (b) =>
-        `Ton défi de ${flakes(b.mise)} ❄ est lancé : la course s’ouvrira ici dès qu’un joueur le relèvera. Tu peux l’annuler jusque-là.`,
+        `Ton duel de ${flakes(b.mise)} ❄ est lancé : la course s’ouvrira ici dès qu’un joueur le rejoindra. Tu peux l’annuler jusque-là.`,
     );
   };
 
@@ -603,7 +611,7 @@ export function Affrontements({
     agit(
       '/api/affrontements/annuler',
       { batailleId: b.id },
-      () => `Défi annulé : ta mise de ${flakes(b.mise)} ❄ t’est rendue.`,
+      () => `Duel annulé : ta mise de ${flakes(b.mise)} ❄ t’est rendue.`,
     );
 
   function ferme() {
@@ -640,17 +648,20 @@ export function Affrontements({
   /* ------------------------------ Les listes ----------------------------- */
 
   const ouverts = etat.batailles.filter((b) => b.statut === 'ATTENTE');
-  /** Les défis des autres, à relever : les plus grosses mises en tête. */
-  const aRelever = ouverts.filter((b) => b.hoteId !== etat.moiId).sort((a, b) => b.mise - a.mise);
   /**
-   * Mes défis en attente — `DUEL.enAttenteMax` au plus, le serveur le vérifie.
-   * Ils sont en tête de la liste des défis ouverts, avec de quoi les annuler :
-   * un défi lancé se voit là où les autres le voient.
+   * Les duels des autres, à rejoindre : les plus grosses mises en tête, ou les
+   * plus récents. Les siens n'y sont pas : ils attendent sous le bouton qui
+   * les a lancés, avec de quoi les annuler.
    */
+  const aRejoindre = ouverts
+    .filter((b) => b.hoteId !== etat.moiId)
+    .sort((a, b) =>
+      tri === 'mises' ? b.mise - a.mise || b.creeeA.localeCompare(a.creeeA) : b.creeeA.localeCompare(a.creeeA),
+    );
+  /** Mes duels en attente — `DUEL.enAttenteMax` au plus, le serveur le vérifie. */
   const mesDefis = joueur
     ? ouverts.filter((b) => b.hoteId === etat.moiId).sort((a, b) => a.creeeA.localeCompare(b.creeeA))
     : [];
-  const defisOuverts = [...mesDefis, ...aRelever];
   const complet = mesDefis.length >= DUEL.enAttenteMax;
   const jouees = etat.batailles.filter((b) => b.statut === 'TERMINEE');
   const miens = jouees.filter((b) => joueur && b.camps.some((c) => c.id === etat.moiId));
@@ -675,6 +686,8 @@ export function Affrontements({
   /** On peut régler une mise : un joueur, des flocons, rien en cours. */
   const peutMiser = !bloque && !occupe;
   const changeMise = (valeur: number) => setMise(Math.min(plafond, Math.max(miseMin, valeur)));
+  /** Les duels à rejoindre que son solde permet de relever. */
+  const aPortee = solde === null || plein ? 0 : aRejoindre.filter((b) => b.mise <= solde).length;
 
   /** Une seule alerte à la fois, la plus bloquante d'abord. */
   const alerte =
@@ -684,9 +697,7 @@ export function Affrontements({
         ? `La mise va de ${flakes(miseMin)} à ${flakes(miseMax)} ❄.`
         : !abordable
           ? `Il te manque ${flakes(mise - solde)} ❄ pour cette mise.`
-          : complet
-            ? `Tu as déjà ${DUEL.enAttenteMax} défis en attente : attends qu’on les relève, ou annules-en un.`
-            : gainPerdu > 0
+          : gainPerdu > 0
               ? `Ton solde est plafonné à ${flakes(soldeMax)} ❄ : ${flakes(gainPerdu)} ❄ du gain seraient perdus.`
               : null;
 
@@ -747,330 +758,317 @@ export function Affrontements({
 
   return (
     <div className="duels-salon">
-      {/* =========================== Jouer ===========================
-          Relever un défi, ou lancer le sien : tout ce qui sert à jouer, dans
-          une colonne. Sur un ordinateur, la zone des défis a une hauteur fixe
-          — la liste défile dedans — : le panneau de lancement ne bouge pas,
-          qu'il y ait un défi ou vingt. */}
-      <div className="duels-jouer">
-        {/* ---- Les défis des autres : qui, combien, et son bouton ---- */}
-        <section
-          className="glass duels-panneau duels-defis"
-          aria-labelledby="defis-titre"
-          data-vide={defisOuverts.length === 0 ? '' : undefined}
-        >
-          <SnowCap radius="var(--r-lg)" seed="duels-rejoindre" epaisseur={16} />
-          <header className="duels-panneau-tete">
-            <div>
-              <p className="eyebrow">Défis ouverts</p>
-              <h2 id="defis-titre">
-                Duels à rejoindre
-                <span className="duels-compte" data-actif={defisOuverts.length > 0 ? '' : undefined}>
-                  {defisOuverts.length}
-                </span>
-              </h2>
-            </div>
-          </header>
-
-          {defisOuverts.length === 0 ? (
-            <div className="duels-vide">
-              <span className="duels-vide-icone" aria-hidden="true">
-                <IconSwords className="h-5 w-5" />
+      {/* ========================= Les duels à rejoindre =========================
+          Ceux des autres, en attente d'un adversaire : qui, combien, et son
+          bouton. Sur un ordinateur, au milieu et sur toute la hauteur : la
+          liste défile dans sa plaque, qu'il y en ait deux ou cinquante. */}
+      <section
+        className="glass duels-panneau duels-defis"
+        aria-labelledby="defis-titre"
+        data-vide={aRejoindre.length === 0 ? '' : undefined}
+      >
+        <SnowCap radius="var(--r-lg)" seed="duels-rejoindre" epaisseur={16} />
+        <header className="duels-panneau-tete">
+          <div>
+            <p className="eyebrow">
+              {aRejoindre.length === 0
+                ? 'Aucun adversaire en attente'
+                : joueur && solde !== null && !plein
+                  ? `${aPortee} à ta portée`
+                  : 'En attente d’un adversaire'}
+            </p>
+            <h2 id="defis-titre">
+              Duels à rejoindre
+              <span className="duels-compte" data-actif={aRejoindre.length > 0 ? '' : undefined}>
+                {aRejoindre.length}
               </span>
-              <p>
-                <b>Personne n’attend d’adversaire.</b> Lance le premier défi : il s’affichera ici pour les autres
-                joueurs.
-              </p>
+            </h2>
+          </div>
+          {aRejoindre.length > 1 && (
+            <div className="segment duels-tri" role="group" aria-label="Trier les duels à rejoindre">
+              <button type="button" aria-pressed={tri === 'mises'} onClick={() => setTri('mises')}>
+                Grosses mises
+              </button>
+              <button type="button" aria-pressed={tri === 'recents'} onClick={() => setTri('recents')}>
+                Récents
+              </button>
             </div>
-          ) : (
-            <ul className="duels-defis-liste" data-tout={tousDefis ? '' : undefined}>
-              {/* Les miens d'abord, en pointillés : ils attendent qu'on les relève. */}
-              {mesDefis.map((b) => (
-                <li key={b.id} className="duels-defi" data-mien="">
+          )}
+        </header>
+
+        {aRejoindre.length === 0 ? (
+          <div className="duels-vide">
+            <span className="duels-vide-icone" aria-hidden="true">
+              <IconSwords className="h-5 w-5" />
+            </span>
+            <p>
+              <b>Personne n’attend d’adversaire.</b> Lance le premier duel : il s’affichera ici pour les autres
+              joueurs.
+            </p>
+          </div>
+        ) : (
+          <ul className="duels-defis-liste" data-tout={tousDefis ? '' : undefined}>
+            {aRejoindre.map((b) => {
+              const hote = b.camps[0];
+              const manque = solde !== null && solde < b.mise ? b.mise - solde : 0;
+              return (
+                <li key={b.id} className="duels-defi" data-hors-portee={manque > 0 || plein ? '' : undefined}>
                   <span className="orbe orbe-sm" aria-hidden="true">
-                    {initiale(moi)}
+                    {hote ? initiale(hote) : '?'}
                   </span>
                   <div className="duels-defi-qui">
-                    <b>Ton défi</b>
-                    <small>
-                      <span className="duels-defi-verbe">en attente d’un adversaire · </span>
-                      <span className="whitespace-nowrap">{shortDateTime(b.creeeA)}</span>
+                    <b>{hote?.pseudo ?? '?'}</b>
+                    <small data-manque={manque > 0 ? '' : undefined}>
+                      {manque > 0 ? `il te manque ${flakes(manque)}\u00a0❄` : `${flakes(pot(b))}\u00a0❄ au gagnant`}
+                      <span className="duels-defi-date"> · {shortDateTime(b.creeeA)}</span>
                     </small>
                   </div>
                   <div className="duels-defi-mise">
                     <strong>
                       {flakes(b.mise)} <span className="text-ice">❄</span>
                     </strong>
-                    <small>{flakes(pot(b))}&nbsp;❄ au gagnant</small>
                   </div>
                   <div className="duels-defi-action">
                     <button
                       type="button"
-                      className="btn btn-ghost"
-                      disabled={occupe}
-                      onClick={() => annule(b)}
-                      title="Annuler ce défi : ta mise t’est rendue"
+                      className="btn btn-ice"
+                      disabled={occupe || !joueur || solde === null || manque > 0 || plein}
+                      onClick={() => releve(b)}
                     >
-                      Annuler
+                      {plein ? 'Solde plein' : 'Rejoindre'}
                     </button>
                   </div>
                 </li>
-              ))}
-              {aRelever.map((b) => {
-                const hote = b.camps[0];
-                const manque = solde !== null && solde < b.mise ? b.mise - solde : 0;
-                return (
-                  <li key={b.id} className="duels-defi">
-                    <span className="orbe orbe-sm" aria-hidden="true">
-                      {hote ? initiale(hote) : '?'}
-                    </span>
-                    <div className="duels-defi-qui">
-                      <b>{hote?.pseudo ?? '?'}</b>
-                      <small>
-                        {/* Étroit, la date seule : le verbe y faisait passer la ligne à trois. */}
-                        <span className="duels-defi-verbe">te défie · </span>
-                        <span className="whitespace-nowrap">{shortDateTime(b.creeeA)}</span>
-                      </small>
-                    </div>
-                    <div className="duels-defi-mise">
-                      <strong>
-                        {flakes(b.mise)} <span className="text-ice">❄</span>
-                      </strong>
-                      <small>{flakes(pot(b))}&nbsp;❄ au gagnant</small>
-                    </div>
-                    <div className="duels-defi-action">
-                      <button
-                        type="button"
-                        className="btn btn-ice"
-                        disabled={occupe || !joueur || solde === null || manque > 0 || plein}
-                        onClick={() => releve(b)}
-                      >
-                        {plein ? 'Solde plein' : manque > 0 ? `Il te manque ${flakes(manque)} ❄` : 'Relever le défi'}
-                      </button>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-          {/* Sur un écran étroit, les trois premiers ; la suite se déplie. Sur
-              un ordinateur, la liste défile dans sa zone. */}
-          {defisOuverts.length > DEFIS_REPLIES && !tousDefis && (
-            <button type="button" className="btn btn-ghost duels-defis-plus" onClick={() => setTousDefis(true)}>
-              Voir les {defisOuverts.length} défis
-            </button>
-          )}
-        </section>
+              );
+            })}
+          </ul>
+        )}
+        {/* Sur un écran étroit, les trois premiers ; la suite se déplie. Sur
+            un ordinateur, la liste défile dans sa plaque. */}
+        {aRejoindre.length > DEFIS_REPLIES && !tousDefis && (
+          <button type="button" className="btn btn-ghost duels-defis-plus" onClick={() => setTousDefis(true)}>
+            Voir les {aRejoindre.length} duels
+          </button>
+        )}
+      </section>
 
-        {/* ---- Lancer le sien ----
-            En haut le solde et la chance aux boosters qu'il porte ; au milieu
-            l'affiche ; en bas la mise, ce qu'elle rapporte ou coûte, et le
-            bouton. */}
-        <section className="glass duels-panneau duels-lancer" aria-labelledby="lancer-titre">
-          <SnowCap radius="var(--r-lg)" seed="duels-lancer" epaisseur={18} />
-          <header className="duels-panneau-tete">
-            <div>
-              <p className="eyebrow">Nouveau défi</p>
-              <h2 id="lancer-titre">Lance ton défi</h2>
-            </div>
-            {solde !== null && chance !== null && (
-              <div className="duels-solde">
-                <p>
-                  <span>Ton solde</span>
-                  <strong>
-                    {flakes(solde)} <span className="text-ice">❄</span>
-                  </strong>
-                </p>
-                <div className="jauge-chance" aria-hidden="true">
-                  <span style={{ width: `${(chance / CHANCE.max) * 100}%` }} />
-                </div>
-                <small>
-                  Chance aux boosters <b>{libelleMultiplicateur(chance)}</b> : miser, c’est la risquer.
-                </small>
-              </div>
-            )}
-          </header>
+      {/* ============================ Lance ton duel ============================
+          Le solde et la chance aux boosters qu'il porte ; la mise, ce qu'elle
+          rapporte ou coûte, et le bouton ; dessous, ses duels en attente, avec
+          de quoi les annuler. */}
+      <section className="glass duels-panneau duels-lancer" aria-labelledby="lancer-titre">
+        <SnowCap radius="var(--r-lg)" seed="duels-lancer" epaisseur={18} />
+        <header className="duels-panneau-tete">
+          <div>
+            <p className="eyebrow">Nouveau duel</p>
+            <h2 id="lancer-titre">Lance ton duel</h2>
+          </div>
+        </header>
 
-          {/* L'affiche : toi, l'adversaire, et ce que le gagnant rafle. */}
-          <div className="duels-affiche" aria-hidden="true">
-            <div className="duels-camp">
-              <span className="orbe">{initiale(moi)}</span>
-              <b>{moi.pseudo}</b>
-            </div>
-            <div className="duels-pot">
-              <small>Le gagnant rafle</small>
+        {solde !== null && chance !== null && (
+          <div className="duels-solde" title="Miser, c’est risquer ta chance aux boosters : elle suit ton solde.">
+            <p className="duels-solde-montant">
+              <span>Ton solde</span>
               <strong>
-                {miseValide ? flakes(mise * 2) : '—'} <span className="text-ice">❄</span>
+                {flakes(solde)} <span className="text-ice">❄</span>
               </strong>
-              <small>les deux mises</small>
-            </div>
-            <div className="duels-camp">
-              <span className="orbe" data-inconnu="">
-                ?
+            </p>
+            <div className="duels-solde-chance">
+              <span>
+                Chance<span className="duels-solde-boosters"> aux boosters</span>{' '}
+                <b>{libelleMultiplicateur(chance)}</b>
               </span>
-              <b>Adversaire</b>
+              <div className="jauge-chance" aria-hidden="true">
+                <span style={{ width: `${(chance / CHANCE.max) * 100}%` }} />
+              </div>
             </div>
           </div>
+        )}
 
-          {/* On ne peut pas miser — la session s'est perdue, ou il n'y a plus
-              assez de flocons : l'avis prend la place du réglage et du bouton,
-              qui ne seraient que grisés. */}
-          {bloque ? (
-            <>
-              {/* La session s'est perdue en route — expirée, ou sans joueur derrière
-                elle. On le dit, et on donne de quoi repartir. */}
-              {!joueur && (
-                <div className="duels-avis">
-                  <p>
-                    <strong>Ta session ne permet pas de jouer.</strong> Elle a expiré, ou elle n’est rattachée à aucun
-                    joueur.
-                  </p>
-                  <a href="/connexion" className="btn btn-ice no-underline">
-                    Se reconnecter
-                  </a>
-                </div>
-              )}
-              {joueur && plein && (
-                <div className="duels-avis">
-                  <p>
-                    <strong>Ton solde est plein : {flakes(soldeMax)} ❄.</strong> Ta chance est au maximum,{' '}
-                    <strong className="text-aurora">{libelleMultiplicateur(chanceDe(soldeMax))}</strong> : tu n’as plus
-                    rien à gagner en duel.
-                  </p>
-                </div>
-              )}
-              {joueur && solde !== null && solde < miseMin && (
-                <div className="duels-avis">
-                  <p>
-                    <strong>Tu n’as plus assez de flocons.</strong> Il en faut au moins {flakes(miseMin)} pour miser :
-                    ils se gagnent à chaque game saisie, et avec le cadeau du jour.
-                    {mesDefis.length > 0 && ' Annuler un de tes défis en attente te rend sa mise.'}
-                  </p>
-                </div>
-              )}
-            </>
-          ) : (
-            <>
-              {/* La mise : des mises rapides, puis le montant exact entre − et +, et à
-              côté ce qu'elle rapporte ou coûte, au flocon près, avec le solde qui
-              en résulte. Une grille plutôt qu'un formulaire en colonne : sur un
-              ordinateur, le montant et ses issues tiennent sur une ligne. */}
-              <div className="duels-reglage" data-inactif={peutMiser ? undefined : ''}>
-                <p className="eyebrow duels-reglage-titre" id="mise-titre">
-                  Ta mise
+        {bloque ? (
+          <>
+            {/* La session s'est perdue en route — expirée, ou sans joueur derrière
+              elle. On le dit, et on donne de quoi repartir. */}
+            {!joueur && (
+              <div className="duels-avis">
+                <p>
+                  <strong>Ta session ne permet pas de jouer.</strong> Elle a expiré, ou elle n’est rattachée à aucun
+                  joueur.
                 </p>
-                <div className="duels-mise-rapide" role="group" aria-labelledby="mise-titre">
-                  {MISES_RAPIDES.map((v) => (
-                    <button
-                      key={v}
-                      type="button"
-                      aria-pressed={mise === v}
-                      disabled={!peutMiser || v > plafond}
-                      onClick={() => changeMise(v)}
-                    >
-                      {flakes(v)}
-                    </button>
-                  ))}
-                  <button
-                    type="button"
-                    aria-pressed={mise === plafond && !MISES_RAPIDES.includes(plafond)}
-                    disabled={!peutMiser}
-                    onClick={() => changeMise(plafond)}
-                    title={`Tout miser : ${flakes(plafond)} ❄`}
-                  >
-                    Max
-                  </button>
-                </div>
-                <div className="duels-mise-champ">
-                  <button
-                    type="button"
-                    aria-label="Miser moins"
-                    data-sens="moins"
-                    disabled={!peutMiser || !miseValide || mise <= miseMin}
-                    onClick={() => changeMise(mise - pasDe(mise - 1))}
-                  >
-                    −
-                  </button>
-                  <label>
-                    <span className="sr-only">Mise exacte en flocons</span>
-                    <input
-                      type="number"
-                      inputMode="numeric"
-                      className="num"
-                      min={miseMin}
-                      max={miseMax}
-                      value={Number.isFinite(mise) ? mise : ''}
-                      disabled={!peutMiser}
-                      onChange={(e) => setMise(Math.floor(Number(e.target.value)))}
-                    />
-                    <span aria-hidden="true">❄</span>
-                  </label>
-                  <button
-                    type="button"
-                    aria-label="Miser plus"
-                    data-sens="plus"
-                    disabled={!peutMiser || !miseValide || mise >= plafond}
-                    onClick={() => changeMise(mise + pasDe(mise))}
-                  >
-                    +
-                  </button>
-                </div>
-                <div className="duels-issues">
-                  <div data-issue="gain">
-                    <span>Si tu gagnes</span>
-                    <strong>{miseValide ? `+${flakes(gainReel)}\u00a0❄` : '—'}</strong>
-                    {miseValide && solde !== null && abordable && (
-                      <small>solde {flakes(solde + gainReel)}&nbsp;❄</small>
-                    )}
-                  </div>
-                  <div data-issue="perte">
-                    <span>Si tu perds</span>
-                    <strong>{miseValide ? `−${flakes(mise)}\u00a0❄` : '—'}</strong>
-                    {miseValide && solde !== null && abordable && <small>solde {flakes(solde - mise)}&nbsp;❄</small>}
-                  </div>
-                </div>
+                <a href="/connexion" className="btn btn-ice no-underline">
+                  Se reconnecter
+                </a>
               </div>
-
-              {alerte && (
-                <p className="duels-alerte" role="status">
-                  {alerte}
+            )}
+            {joueur && plein && (
+              <div className="duels-avis">
+                <p>
+                  <strong>Ton solde est plein : {flakes(soldeMax)} ❄.</strong> Ta chance est au maximum,{' '}
+                  <strong className="text-aurora">{libelleMultiplicateur(chanceDe(soldeMax))}</strong> : tu n’as plus
+                  rien à gagner en duel.
                 </p>
-              )}
-            </>
-          )}
-
-          {/* Le pied : le bouton, puis ses défis en attente — ou, s'il n'y en a
-              pas, ce qu'il advient d'un défi lancé. */}
-          {(!bloque || mesDefis.length > 0) && (
-            <div className="duels-lancer-pied">
-              {!bloque && (
+              </div>
+            )}
+            {joueur && solde !== null && solde < miseMin && (
+              <div className="duels-avis">
+                <p>
+                  <strong>Tu n’as plus assez de flocons.</strong> Il en faut au moins {flakes(miseMin)} pour miser :
+                  ils se gagnent à chaque game saisie, et avec le cadeau du jour.
+                  {mesDefis.length > 0 && ' Annuler un de tes duels en attente te rend sa mise.'}
+                </p>
+              </div>
+            )}
+          </>
+        ) : (
+          <>
+            {/* La mise : des mises rapides, puis le montant exact entre − et +, et à
+            côté ce qu'elle rapporte ou coûte, au flocon près, avec le solde qui
+            en résulte. Une grille plutôt qu'un formulaire en colonne : sur un
+            ordinateur, le montant et ses issues tiennent sur une ligne. */}
+            <div className="duels-reglage" data-inactif={peutMiser ? undefined : ''}>
+              <p className="eyebrow duels-reglage-titre" id="mise-titre">
+                Ta mise
+              </p>
+              <div className="duels-mise-rapide" role="group" aria-labelledby="mise-titre">
+                {MISES_RAPIDES.map((v) => (
+                  <button
+                    key={v}
+                    type="button"
+                    aria-pressed={mise === v}
+                    disabled={!peutMiser || v > plafond}
+                    onClick={() => changeMise(v)}
+                  >
+                    <span className="mise-longue">{flakes(v)}</span>
+                    <span className="mise-courte">{miseCourte(v)}</span>
+                  </button>
+                ))}
                 <button
                   type="button"
-                  className="btn btn-ice btn-ouvrir w-full"
-                  disabled={!peutJouer || complet}
-                  onClick={ouvreAuxJoueurs}
+                  aria-pressed={mise === plafond && !MISES_RAPIDES.includes(plafond)}
+                  disabled={!peutMiser}
+                  onClick={() => changeMise(plafond)}
+                  title={`Tout miser : ${flakes(plafond)} ❄`}
                 >
-                  <IconSwords className="h-5 w-5" /> Lancer le défi
+                  Max
                 </button>
-              )}
-              {/* Ce qu'il advient d'un défi lancé, et combien en attendent déjà —
-                  c'est ce compte qui dit pourquoi on ne peut plus en lancer. */}
-              <p>
-                Il s’affiche dans les défis ouverts, et la course part dès qu’un joueur le relève.
-                {mesDefis.length > 0 && (
-                  <>
-                    {' '}
-                    <b className="text-ink">
-                      {mesDefis.length} / {DUEL.enAttenteMax}
-                    </b>{' '}
-                    en attente.
-                  </>
-                )}
-              </p>
+              </div>
+              <div className="duels-mise-champ">
+                <button
+                  type="button"
+                  aria-label="Miser moins"
+                  data-sens="moins"
+                  disabled={!peutMiser || !miseValide || mise <= miseMin}
+                  onClick={() => changeMise(mise - pasDe(mise - 1))}
+                >
+                  −
+                </button>
+                <label>
+                  <span className="sr-only">Mise exacte en flocons</span>
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    className="num"
+                    min={miseMin}
+                    max={miseMax}
+                    value={Number.isFinite(mise) ? mise : ''}
+                    disabled={!peutMiser}
+                    onChange={(e) => setMise(Math.floor(Number(e.target.value)))}
+                  />
+                  <span aria-hidden="true">❄</span>
+                </label>
+                <button
+                  type="button"
+                  aria-label="Miser plus"
+                  data-sens="plus"
+                  disabled={!peutMiser || !miseValide || mise >= plafond}
+                  onClick={() => changeMise(mise + pasDe(mise))}
+                >
+                  +
+                </button>
+              </div>
+              <div className="duels-issues">
+                <div data-issue="gain">
+                  <span>Si tu gagnes</span>
+                  <strong>{miseValide ? `+${flakes(gainReel)}\u00a0❄` : '—'}</strong>
+                  {miseValide && solde !== null && abordable && (
+                    <small>solde {flakes(solde + gainReel)}&nbsp;❄</small>
+                  )}
+                </div>
+                <div data-issue="perte">
+                  <span>Si tu perds</span>
+                  <strong>{miseValide ? `−${flakes(mise)}\u00a0❄` : '—'}</strong>
+                  {miseValide && solde !== null && abordable && <small>solde {flakes(solde - mise)}&nbsp;❄</small>}
+                </div>
+              </div>
             </div>
-          )}
-        </section>
-      </div>
+
+            {alerte && (
+              <p className="duels-alerte" role="status">
+                {alerte}
+              </p>
+            )}
+          </>
+        )}
+
+        {!bloque && (
+          <button
+            type="button"
+            className="btn btn-ice btn-ouvrir duels-lancer-bouton"
+            disabled={!peutJouer || complet}
+            onClick={ouvreAuxJoueurs}
+            title={
+              complet
+                ? `${DUEL.enAttenteMax} duels en attente au plus : attends qu’on en rejoigne un, ou annules-en un.`
+                : undefined
+            }
+          >
+            {/* Complet, le bouton le dit lui-même : la liste dessous montre les trois. */}
+            {complet ? (
+              `${DUEL.enAttenteMax} duels en attente`
+            ) : (
+              <>
+                <IconSwords className="h-5 w-5" /> Lancer le duel
+              </>
+            )}
+          </button>
+        )}
+
+        {mesDefis.length > 0 ? (
+          <div className="duels-attente">
+            <p className="duels-attente-titre">
+              Tes duels en attente
+              <b>
+                {mesDefis.length} / {DUEL.enAttenteMax}
+              </b>
+            </p>
+            <ul>
+              {mesDefis.map((b) => (
+                <li key={b.id}>
+                  <strong>
+                    {flakes(b.mise)} <span className="text-ice">❄</span>
+                  </strong>
+                  <small>lancé le {shortDateTime(b.creeeA)}</small>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-ghost"
+                    disabled={occupe}
+                    onClick={() => annule(b)}
+                    title="Annuler ce duel : ta mise t’est rendue"
+                  >
+                    Annuler
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : (
+          !bloque && (
+            <p className="duels-lancer-note">
+              Il apparaît chez les autres joueurs ; la course part dès que l’un d’eux le rejoint.
+            </p>
+          )
+        )}
+      </section>
 
       {/* ============================ Les résultats ============================
           Le vainqueur d'abord, toujours ; et pour un duel qu'on a joué, ce

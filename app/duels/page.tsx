@@ -1,6 +1,6 @@
 import { Affrontements } from '@/components/Affrontements';
 import { EnTetePage } from '@/components/EnTetePage';
-import { flakes } from '@/components/ui';
+import { ReglesDuel } from '@/components/ReglesDuel';
 import { exigeSession } from '@/lib/auth/acces';
 import { getSession, playerIdOf } from '@/lib/auth/session';
 import { getStore } from '@/lib/db/store';
@@ -20,10 +20,10 @@ export const metadata = { title: 'Duels' };
  * serveur dans une seule transaction — la page ne fait que rejouer un
  * résultat déjà acquis.
  *
- * En tête, le titre et les règles sur une ligne : quatre mots qu'on lit d'un
- * regard. Dessous, le salon (voir `Affrontements`) : à gauche ce qui sert à
- * jouer — les défis à relever, puis le sien à lancer —, à droite les
- * résultats. Sur un ordinateur, la page tient dans l'écran.
+ * En tête, le titre et le déroulé d'un duel en quatre étapes (`ReglesDuel`).
+ * Dessous, le salon (voir `Affrontements`) : lancer son duel, rejoindre ceux
+ * des autres, les résultats. Sur un ordinateur, la page tient dans l'écran,
+ * pied compris, en trois colonnes.
  */
 export default async function DuelsPage() {
   await exigeSession();
@@ -43,26 +43,7 @@ export default async function DuelsPage() {
   return (
     <div className="duels-page">
       <EnTetePage icone="swords" eyebrow="Duel de flocons" titre="Les duels">
-        <ul className="duels-regles" aria-label="Les règles du duel">
-          <li>
-            <b>Même mise</b>
-            <span>
-              de {flakes(DUEL.miseMin)} à {flakes(DUEL.miseMax)} ❄, des deux côtés
-            </span>
-          </li>
-          <li>
-            <b>Une manche</b>
-            <span>chacun pousse sa boule de neige</span>
-          </li>
-          <li>
-            <b>Le premier qui tombe</b>
-            <span>a perdu — une chance sur deux</span>
-          </li>
-          <li>
-            <b>Tout ou rien</b>
-            <span>le gagnant rafle les deux mises</span>
-          </li>
-        </ul>
+        <ReglesDuel />
       </EnTetePage>
 
       <Affrontements
