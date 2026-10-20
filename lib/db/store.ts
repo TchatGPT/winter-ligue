@@ -114,6 +114,33 @@ const OVERLAY_LOT = 5;
 /** Ce qui défile au second tirage : soixante pseudos suffisent à une bande. */
 const JOUEURS_OVERLAY = 60;
 
+/** La naissance de ce serveur : un démarrage à froid se lit à son âge. */
+const NEE_A = Date.now();
+
+/** Au-delà, une opération sur la base se signale dans les journaux de Vercel (`[perf]`). */
+const LENTE_MS = { lecture: 300, transaction: 800, attente: 500 };
+
+/**
+ * Ce que la base coûte à ce serveur, sans rien lire des données : de quoi
+ * distinguer un démarrage à froid d'une file d'attente qui s'allonge, ou d'une
+ * base devenue lourde à charger. Lue par `/api/sante`.
+ */
+export interface Sonde {
+  base: 'postgres' | 'fichier';
+  /** Depuis quand ce serveur tourne, et si cette sonde est la première à toucher la base. */
+  instance: { ageS: number; neuve: boolean };
+  /** Cette sonde : son attente dans la file, puis un aller-retour (`select 1`). */
+  attenteMs: number;
+  allerRetourMs: number;
+  /** Le démarrage de ce serveur : la connexion (poignée de main chiffrée comprise), puis le schéma et le catalogue. */
+  demarrage: { connexionMs: number | null; schemaMs: number | null };
+  /** Les chargements de la base pour les pages : le dernier, le plus long, et ce qu'il a ramené. */
+  lectures: { nombre: number; derniereMs: number | null; maxMs: number; lignes: number | null };
+  transactions: { nombre: number; derniereMs: number | null; maxMs: number };
+  /** La plus longue attente dans la file depuis le démarrage. */
+  attenteMaxMs: number;
+}
+
 export interface Store {
   /** Lecture seule. Retourne une copie défensive : muter le résultat ne change rien. */
   read<T>(fn: (db: Readonly<Database>) => T): Promise<T>;
@@ -140,6 +167,8 @@ export interface Store {
   journal(combien: number): Promise<AuditEntry[]>;
   /** Les derniers subs comptés depuis Twitch, le plus récent en tête. */
   subsTwitch(combien: number): Promise<SubTwitch[]>;
+  /** Ce que coûte la base à ce serveur : voir `Sonde`. */
+  sonde(): Promise<Sonde>;
 }
 
 class JsonFileStore implements Store {
@@ -220,6 +249,21 @@ class JsonFileStore implements Store {
   async subsTwitch(combien: number): Promise<SubTwitch[]> {
     const db = await this.load();
     return db.subsTwitch.slice(-Math.max(1, combien)).reverse();
+  }
+
+  async sonde(): Promise<Sonde> {
+    const debut = performance.now();
+    await this.load();
+    return {
+      base: 'fichier',
+      instance: { ageS: Math.round((Date.now() - NEE_A) / 1000), neuve: false },
+      attenteMs: 0,
+      allerRetourMs: Math.round(performance.now() - debut),
+      demarrage: { connexionMs: null, schemaMs: null },
+      lectures: { nombre: 0, derniereMs: null, maxMs: 0, lignes: null },
+      transactions: { nombre: 0, derniereMs: null, maxMs: 0 },
+      attenteMaxMs: 0,
+    };
   }
 
   async fluxOverlay(depuis: string): Promise<FluxOverlay> {
@@ -377,6 +421,19 @@ class PostgresStore implements Store {
   private file: Promise<unknown> = Promise.resolve();
   /** Avance à chaque transaction : c'est la clé de `chargeDuRendu`. */
   private generation = 0;
+  /** Ce que la base coûte à ce serveur depuis son démarrage : voir `Sonde`. */
+  private readonly mesures = {
+    connexionMs: null as number | null,
+    schemaMs: null as number | null,
+    lectures: 0,
+    lectureMs: null as number | null,
+    lectureMaxMs: 0,
+    lignes: null as number | null,
+    transactions: 0,
+    transactionMs: null as number | null,
+    transactionMaxMs: 0,
+    attenteMaxMs: 0,
+  };
 
   constructor(url: string) {
     this.sql = postgres(versModeTransaction(url), {
@@ -408,7 +465,12 @@ class PostgresStore implements Store {
 
   /** Exécute `f` quand la connexion est libre ; un échec ne bloque pas la suite. */
   private enFile<T>(f: () => Promise<T>): Promise<T> {
-    const tour = this.file.then(f, f);
+    const demande = performance.now();
+    const lance = () => {
+      this.noteAttente(performance.now() - demande);
+      return f();
+    };
+    const tour = this.file.then(lance, lance);
     this.file = tour.then(
       () => undefined,
       () => undefined,
@@ -416,12 +478,22 @@ class PostgresStore implements Store {
     return tour;
   }
 
+  /** L'attente d'une opération dans la file : une file qui s'allonge se voit dans les journaux. */
+  private noteAttente(ms: number): void {
+    if (ms > this.mesures.attenteMaxMs) this.mesures.attenteMaxMs = Math.round(ms);
+    if (ms > LENTE_MS.attente) console.warn(`[perf] attente dans la file de la base : ${Math.round(ms)} ms`);
+  }
+
   /** Crée les tables et verse l'ancienne ligne unique, une fois par instance. */
   private prepare(): Promise<void> {
     this.pret ??= (async () => {
+      const debut = performance.now();
       // Le schéma est déjà celui du code : rien à créer, rien à sécuriser de plus.
+      // C'est aussi la première requête du serveur : elle ouvre la connexion.
       const [pose] = await this.sql<{ empreinte: string | null }[]>`
         select obj_description(to_regclass('public.saison'), 'pg_class') as empreinte`;
+      const connexionMs = Math.round(performance.now() - debut);
+      this.mesures.connexionMs = connexionMs;
       if (pose?.empreinte !== EMPREINTE_SCHEMA) await this.appliqueSchema();
 
       // Le catalogue n'est qu'une copie du code : son échec ne doit jamais
@@ -440,6 +512,13 @@ class PostgresStore implements Store {
             : undefined,
         )
         .catch((error) => console.error('[base] catalogue', error));
+
+      const schemaMs = Math.round(performance.now() - debut) - connexionMs;
+      this.mesures.schemaMs = schemaMs;
+      console.info(
+        `[perf] serveur démarré il y a ${Math.round((Date.now() - NEE_A) / 1000)} s : ` +
+          `connexion à la base ${connexionMs} ms, schéma et catalogue ${schemaMs} ms`,
+      );
     })().catch((error) => {
       // On retentera à l'appel suivant plutôt que de garder l'échec en cache.
       this.pret = null;
@@ -490,7 +569,18 @@ class PostgresStore implements Store {
   chargeDirect(): Promise<Partial<Database>> {
     return this.enFile(async () => {
       await this.prepare();
-      return chargeBase(this.sql);
+      const debut = performance.now();
+      const base = await chargeBase(this.sql);
+      const ms = Math.round(performance.now() - debut);
+      let lignes = 0;
+      for (const valeur of Object.values(base)) if (Array.isArray(valeur)) lignes += valeur.length;
+      const m = this.mesures;
+      m.lectures += 1;
+      m.lectureMs = ms;
+      m.lectureMaxMs = Math.max(m.lectureMaxMs, ms);
+      m.lignes = lignes;
+      if (ms > LENTE_MS.lecture) console.warn(`[perf] chargement de la base : ${ms} ms pour ${lignes} lignes`);
+      return base;
     });
   }
 
@@ -505,6 +595,7 @@ class PostgresStore implements Store {
     // d'attendre son propre tour.
     return this.enFile(async () => {
       await this.prepare();
+      const debut = performance.now();
       const resultat = await this.sql.begin(async (tx) => {
         await tx`select 1 from saison where id = 1 for update`;
         const db = migrate(await chargeBase(tx));
@@ -514,7 +605,37 @@ class PostgresStore implements Store {
         return { valeur };
       });
       this.generation += 1;
+      const ms = Math.round(performance.now() - debut);
+      const m = this.mesures;
+      m.transactions += 1;
+      m.transactionMs = ms;
+      m.transactionMaxMs = Math.max(m.transactionMaxMs, ms);
+      if (ms > LENTE_MS.transaction) console.warn(`[perf] écriture dans la base : ${ms} ms`);
       return resultat.valeur;
+    });
+  }
+
+  async sonde(): Promise<Sonde> {
+    // Avant la première opération du serveur, la base n'est pas encore jointe :
+    // cette sonde paiera le démarrage, et le dira.
+    const neuve = this.pret === null;
+    const demande = performance.now();
+    return this.enFile(async () => {
+      const attenteMs = Math.round(performance.now() - demande);
+      await this.prepare();
+      const debut = performance.now();
+      await this.sql`select 1`;
+      const m = this.mesures;
+      return {
+        base: 'postgres',
+        instance: { ageS: Math.round((Date.now() - NEE_A) / 1000), neuve },
+        attenteMs,
+        allerRetourMs: Math.round(performance.now() - debut),
+        demarrage: { connexionMs: m.connexionMs, schemaMs: m.schemaMs },
+        lectures: { nombre: m.lectures, derniereMs: m.lectureMs, maxMs: m.lectureMaxMs, lignes: m.lignes },
+        transactions: { nombre: m.transactions, derniereMs: m.transactionMs, maxMs: m.transactionMaxMs },
+        attenteMaxMs: m.attenteMaxMs,
+      };
     });
   }
 

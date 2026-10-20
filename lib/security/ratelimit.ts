@@ -95,6 +95,8 @@ export const LIMITS = {
   code: { limit: 10, windowMs: 10 * 60_000 },
   /** Messages de Twitch : un cadeau de masse arrive d'un coup, un message par destinataire. */
   eventsub: { limit: 1200, windowMs: 60_000 },
+  /** La sonde de santé : de quoi mesurer, pas de quoi charger la base. */
+  sante: { limit: 30, windowMs: 60_000 },
 } as const;
 
 /** Remet à zéro le compteur d'une clé (après une connexion réussie). */

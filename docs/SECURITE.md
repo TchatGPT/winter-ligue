@@ -175,6 +175,12 @@ juste après la remise à zéro d'une fenêtre :
 | Lectures d'API | 240 / min / IP |
 | Messages de Twitch (EventSub) | 1 200 / min / IP |
 | Codes cadeaux | 10 / 10 min / IP |
+| Sonde de santé (`/api/sante`) | 30 / min / IP |
+
+**La sonde de santé** (`GET /api/sante`) est publique, pour mesurer un démarrage à froid
+sans session. Elle ne lit aucune donnée — un `select 1` — et ne rend que des durées (âge
+du serveur, connexion à la base, chargements, attente dans la file) et un nombre de
+lignes : rien de la ligue, rien d'un joueur.
 
 ### 11. Équilibre de l'économie
 
