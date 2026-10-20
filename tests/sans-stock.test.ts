@@ -13,9 +13,10 @@ import { ouvrePack, PackError, reglagePack } from '@/lib/services/packs';
  * pour lui, et le sort d'un booster de la ligue ne tombe pas sur lui. Le Joker,
  * qui se garde, ne bloque rien.
  *
- * Sur le vrai catalogue : les rares du Perso (Luge, Vent Porteur, Feu de
- * Camp) et la commune du Commu (Congère) attendent une game ; les ultra rares
- * du Perso (Coulée de Neige, Joker Givré) n'attendent rien.
+ * Sur le vrai catalogue : les rares du Perso (Vent Porteur, Luge, Lanterne
+ * Givrée) et la Congère attendent la prochaine game ; parmi les ultra rares
+ * du Perso, Coulée de Neige, Joker Givré et Verglas n'attendent rien, Écho
+ * Lointain attend la prochaine game et le Feu de Camp une game à relever.
  */
 
 function seulement(rarity: Rarity): Record<Rarity, number> {
@@ -105,15 +106,16 @@ describe('pas de stock de cartes', () => {
   it('ne bloque rien avec une carte qui se règle tout de suite, ni avec le Joker', () => {
     const db = ligue('a');
     reglagePack(db, 'perso', seulement('UR'));
-    // Coulée de Neige (flocons) ou Joker Givré : ni l'une ni l'autre n'attend.
-    // Écho Lointain, elle, attend la prochaine game.
+    // Coulée de Neige (flocons), Joker Givré ou Verglas (gardés) : aucune
+    // n'attend. Écho Lointain attend la prochaine game ; le Feu de Camp, sans
+    // game jouée, une game à relever.
     for (let i = 0; i < 40; i += 1) {
       const o = ouvrePack(db, { packId: 'perso', joueurId: 'a', idempotencyKey: `k${i}` }, 'modo');
       // La carte révélée à l'écran : ce qui se règle tout de suite se règle.
       o.annonceeA = new Date().toISOString();
       regleApresRevelation(db, o.id);
-      if (o.cardId === 'echo-lointain') {
-        expect(carteQuiAttend(db, 'a')?.cardId).toBe('echo-lointain');
+      if (o.cardId === 'echo-lointain' || o.cardId === 'feu-de-camp') {
+        expect(carteQuiAttend(db, 'a')?.cardId).toBe(o.cardId);
         joue(db, 'a');
       } else {
         expect(carteQuiAttend(db, 'a')).toBeNull();
