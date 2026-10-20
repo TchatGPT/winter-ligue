@@ -2,13 +2,18 @@ import { describe, expect, it } from 'vitest';
 import type { Camp } from '@/lib/domain/bataille';
 import {
   avancee,
+  avanceeApresLigne,
   CHUTE_AU_PLUS_TARD,
   CHUTE_AU_PLUS_TOT,
   ECART_OBSTACLES,
   ecritCourse,
   meneur,
   OBSTACLES_PAR_COULOIR,
+  RAFALE_IMPACT,
 } from '@/lib/domain/course';
+
+/** Les fins où le perdant court jusqu'au bout : la boule de neige, la rafale. */
+const auBout = (type: string) => type === 'boule' || type === 'rafale';
 
 /**
  * Ce qui verrouille la course du duel.
@@ -30,8 +35,8 @@ describe('ecritCourse', () => {
         // Le vainqueur passe la ligne ; le perdant tombe avant — ou, quand il
         // court jusqu'au bout, ne l'atteint pas.
         expect(avancee(c.couloirs[vainqueur].allure, 1)).toBeCloseTo(1, 6);
-        if (c.chute.type === 'boule') expect(avancee(c.couloirs[c.perdant].allure, 1)).toBeLessThan(1);
-        expect(c.chute.position).toBeLessThanOrEqual((c.chute.type === 'boule' ? 0.95 : 0.9) + 1e-9);
+        if (auBout(c.chute.type)) expect(avancee(c.couloirs[c.perdant].allure, 1)).toBeLessThan(1);
+        expect(c.chute.position).toBeLessThanOrEqual((auBout(c.chute.type) ? 0.95 : 0.9) + 1e-9);
       }
     }
   });
@@ -44,7 +49,7 @@ describe('ecritCourse', () => {
   it('fait tomber le perdant tard, dans la fenêtre prévue', () => {
     for (const graine of graines) {
       const { chute } = ecritCourse(graine, 'hote');
-      if (chute.type === 'boule') continue;
+      if (auBout(chute.type)) continue;
       expect(chute.instant).toBeGreaterThanOrEqual(CHUTE_AU_PLUS_TOT);
       expect(chute.instant).toBeLessThanOrEqual(CHUTE_AU_PLUS_TARD);
       expect(chute.position).toBeGreaterThanOrEqual(0.4);
@@ -59,6 +64,34 @@ describe('ecritCourse', () => {
       expect(c.chute.enTete).toBe(false);
       expect(c.chute.position).toBeGreaterThanOrEqual(0.86 - 1e-9);
       expect(c.chute.position).toBeCloseTo(avancee(c.couloirs[c.perdant].allure, 1), 9);
+    }
+  });
+
+  it('dans la rafale, mène le perdant jusqu’au bout, et le fauche avant la ligne', () => {
+    const rafales = graines.map((g) => ecritCourse(g, 'hote')).filter((c) => c.chute.type === 'rafale');
+    expect(rafales.length).toBeGreaterThan(40);
+    for (const c of rafales) {
+      const aLArrivee = avancee(c.couloirs[c.perdant].allure, 1);
+      expect(c.chute.instant).toBe(1);
+      expect(c.chute.enTete).toBe(false);
+      expect(aLArrivee).toBeGreaterThanOrEqual(0.82 - 1e-9);
+      // Il pile net, à peine plus loin, et tombe bien avant la ligne.
+      expect(c.chute.position).toBeGreaterThan(aLArrivee);
+      expect(c.chute.position - aLArrivee).toBeLessThanOrEqual(0.03);
+      expect(c.chute.position).toBeLessThan(0.91);
+      expect(c.chute.position).toBeCloseTo(avanceeApresLigne(aLArrivee, RAFALE_IMPACT), 9);
+    }
+  });
+
+  it('dans la rafale, ne fait jamais reculer ni passer la ligne au perdant', () => {
+    for (const depart of [0.82, 0.85, 0.87]) {
+      let avant = depart;
+      for (let i = 1; i <= 60; i += 1) {
+        const p = avanceeApresLigne(depart, i / 10);
+        expect(p).toBeGreaterThanOrEqual(avant);
+        expect(p).toBeLessThan(1);
+        avant = p;
+      }
     }
   });
 
@@ -105,7 +138,7 @@ describe('le suspense', () => {
   });
 
   it('fait tomber celui qui menait à peu près une fois sur deux', () => {
-    const chutes = graines.map((g) => ecritCourse(g, 'hote')).filter((c) => c.chute.type !== 'boule');
+    const chutes = graines.map((g) => ecritCourse(g, 'hote')).filter((c) => !auBout(c.chute.type));
     const enTete = chutes.filter((c) => c.chute.enTete).length;
     expect(enTete / chutes.length).toBeGreaterThan(0.38);
     expect(enTete / chutes.length).toBeLessThan(0.62);
@@ -120,14 +153,14 @@ describe('le suspense', () => {
   it('tire toutes les façons de perdre, et toutes les fêtes', () => {
     const courses = graines.map((g) => ecritCourse(g, 'hote'));
     expect([...new Set(courses.map((c) => c.chute.type))].sort()).toEqual(
-      ['boule', 'eclate', 'essouffle', 'glisse', 'rocher'],
+      ['boule', 'eclate', 'essouffle', 'glisse', 'rafale', 'rocher'],
     );
-    expect([...new Set(courses.map((c) => c.fete))].sort()).toEqual(['danse', 'grimpe', 'rafale', 'saute']);
+    expect([...new Set(courses.map((c) => c.fete))].sort()).toEqual(['danse', 'grimpe', 'saute']);
   });
 
-  it('finit en rafale à peu près une fois sur quatre', () => {
-    const rafales = graines.filter((g) => ecritCourse(g, 'hote').fete === 'rafale').length;
-    expect(rafales / graines.length).toBeGreaterThan(0.17);
-    expect(rafales / graines.length).toBeLessThan(0.33);
+  it('finit en rafale à peu près une fois sur cinq', () => {
+    const rafales = graines.filter((g) => ecritCourse(g, 'hote').chute.type === 'rafale').length;
+    expect(rafales / graines.length).toBeGreaterThan(0.13);
+    expect(rafales / graines.length).toBeLessThan(0.28);
   });
 });

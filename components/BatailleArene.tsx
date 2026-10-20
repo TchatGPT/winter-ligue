@@ -5,7 +5,9 @@
  *
  * Deux pères Noël, un par couloir, poussent chacun une boule qui grossit en
  * roulant. Elle passe les obstacles en tressautant — jusqu'à celui de trop.
- * Le premier qui tombe a perdu ; l'autre file jusqu'à la ligne et rafle le pot.
+ * Le premier qui tombe a perdu ; l'autre file jusqu'à la ligne et rafle le pot —
+ * ou, la ligne passée, se retourne et fauche le perdant d'une rafale de boules
+ * de neige, au fusil de glace.
  *
  * Tout est déjà décidé par le serveur. La course (`lib/domain/course.ts`) ne
  * fait que raconter un résultat acquis, sans le trahir : les deux couloirs se
@@ -35,7 +37,15 @@ import {
 } from '@/components/sonsDuel';
 import { flakes } from '@/components/ui';
 import type { Camp, Echange } from '@/lib/domain/bataille';
-import { avancee, ecritCourse, meneur, type Course, type GenreObstacle } from '@/lib/domain/course';
+import {
+  avancee,
+  avanceeApresLigne,
+  ecritCourse,
+  meneur,
+  RAFALE_IMPACT,
+  type Course,
+  type GenreObstacle,
+} from '@/lib/domain/course';
 
 /**
  * La scène 3D (three.js, près de 600 Ko) se charge à part : la page des duels
@@ -96,6 +106,12 @@ const HATE = 1.9;
  */
 const IMPACT_BOULE = 1.1;
 const FIN_BOULE = 2.2;
+/**
+ * La rafale : la ligne passée, le vainqueur se retourne, dégaine et tire ; le
+ * perdant, qui court encore, tombe à `RAFALE_IMPACT` (voir `lib/domain/course`),
+ * et le verdict tombe à cet instant-ci.
+ */
+const FIN_RAFALE = 2.4;
 /** De part et d'autre d'un obstacle, la fenêtre où la boule tressaute. */
 const AVANT_BOSSE = 0.012;
 const APRES_BOSSE = 0.05;
@@ -115,7 +131,7 @@ export const DELAI_DEPART_MS = 3500;
  * découvert en retard se rejoue du début : il n'y a plus personne avec qui
  * être synchrone.
  */
-export const DUREE_COURSE_MAX_MS = Math.ceil(DUREE + FIN_BOULE * 1000 + 400);
+export const DUREE_COURSE_MAX_MS = Math.ceil(DUREE + Math.max(FIN_BOULE, FIN_RAFALE) * 1000 + 400);
 
 /**
  * L'avancée de la course à `e` millisecondes du départ : calculée de l'heure,
@@ -123,10 +139,12 @@ export const DUREE_COURSE_MAX_MS = Math.ceil(DUREE + FIN_BOULE * 1000 + 400);
  * même chose, et un écran en retard rattrape l'autre.
  */
 function temps(course: Course, e: number) {
-  const boule = course.chute.type === 'boule';
-  const chuteA = boule ? Infinity : course.chute.instant * DUREE;
+  // La boule de neige et la rafale : le perdant court jusqu'au bout, et tombe
+  // après la ligne de l'autre.
+  const auBout = course.chute.instant >= 1;
+  const chuteA = auBout ? Infinity : course.chute.instant * DUREE;
   const u = e <= chuteA ? e / DUREE : course.chute.instant + ((e - chuteA) * HATE) / DUREE;
-  const ligneA = boule ? DUREE : chuteA + ((1 - course.chute.instant) * DUREE) / HATE;
+  const ligneA = auBout ? DUREE : chuteA + ((1 - course.chute.instant) * DUREE) / HATE;
   return { u: Math.max(0, Math.min(1, u)), tombe: e >= chuteA, apres: (e - ligneA) / 1000 };
 }
 
@@ -316,7 +334,7 @@ function Couloir({
       data-etat={etat}
       data-chute={
         course && course.perdant === camp
-          ? course.chute.type === 'boule' || course.chute.type === 'essouffle'
+          ? course.chute.type === 'boule' || course.chute.type === 'rafale' || course.chute.type === 'essouffle'
             ? 'glisse'
             : course.chute.type
           : undefined
@@ -451,12 +469,13 @@ export function ArenePreparation({
 /* La course                                                                  */
 /* -------------------------------------------------------------------------- */
 
-/** `lancer` : la ligne passée, le vainqueur se retourne, boule de neige en main. */
+/** `lancer` : la ligne passée, le vainqueur se retourne, boule de neige — ou fusil de glace — en main. */
 type Phase = 'compte' | 'course' | 'lancer' | 'chute' | 'fini';
 
 /** Ce que dit la chute, selon ce qui l'a causée. */
 function recitChute(course: Course, nom: string): string {
   if (course.chute.type === 'boule') return `${nom} se prend une boule de neige en pleine face !`;
+  if (course.chute.type === 'rafale') return `${nom} se prend une rafale de boules de neige !`;
   if (course.chute.type === 'essouffle') return `${nom} s’écroule, à bout de souffle !`;
   if (course.chute.type === 'eclate') return `La boule de ${nom} éclate !`;
   if (course.chute.type === 'glisse') return `${nom} glisse sur la glace !`;
@@ -569,6 +588,8 @@ export function BatailleArene({
     let image = 0;
     /** La boule de neige en pleine face : le lancer est-il parti ? */
     const boule = course.chute.type === 'boule';
+    /** La rafale : le perdant court encore pendant que l'autre dégaine. */
+    const rafale = course.chute.type === 'rafale';
     let lance = false;
     let secondes = Number.NaN;
 
@@ -602,7 +623,12 @@ export function BatailleArene({
 
       for (const camp of CAMPS) {
         const perd = course.perdant === camp;
-        const p = perd && tombe ? course.chute.position : avancee(course.couloirs[camp].allure, t.u);
+        const p =
+          perd && tombe
+            ? course.chute.position
+            : perd && rafale && t.u >= 1
+              ? avanceeApresLigne(avancee(course.couloirs[camp].allure, 1), t.apres)
+              : avancee(course.couloirs[camp].allure, t.u);
         pose(camp, p, perd && tombe);
         if (perd && tombe) continue;
         roule[camp].regle(p);
@@ -624,20 +650,23 @@ export function BatailleArene({
         }
       }
 
-      if (t.u >= 1 && boule) {
-        // La ligne passée : il se retourne, lance, et la boule touche l'autre.
+      if (t.u >= 1 && (boule || rafale)) {
+        // La ligne passée : il se retourne, lance — ou dégaine et tire —, et
+        // l'autre tombe. Sous la rafale, le perdant court encore : sa boule
+        // gronde jusqu'à ce qu'il tombe.
         if (!lance) {
           lance = true;
-          roule.hote.arrete();
-          roule.adversaire.arrete();
+          roule[course.vainqueur].arrete();
+          if (boule) roule[course.perdant].arrete();
           setPhase('lancer');
         }
-        if (!tombe && t.apres >= IMPACT_BOULE) {
+        if (!tombe && t.apres >= (boule ? IMPACT_BOULE : RAFALE_IMPACT)) {
           tombe = true;
+          roule[course.perdant].arrete();
           sonFracas();
           setPhase('chute');
         }
-        if (t.apres < FIN_BOULE) {
+        if (t.apres < (boule ? FIN_BOULE : FIN_RAFALE)) {
           image = requestAnimationFrame(pas);
           return;
         }
@@ -665,18 +694,20 @@ export function BatailleArene({
   // La scène 3D suit l'état de chaque camp : course, lancer, chute, victoire.
   useEffect(() => {
     if (!course) return;
-    const boule = course.chute.type === 'boule';
+    const rafale = course.chute.type === 'rafale';
+    const auBout = course.chute.instant >= 1;
     for (const camp of CAMPS) {
       let etat: 'course' | 'depart' | 'lancer' | 'chute' | 'victoire';
       if (phase === 'compte') {
         etat = 'depart';
       } else if (course.perdant === camp) {
-        // Battu d'un rien, il s'arrête juste après la ligne — et attend la boule.
-        etat = phase === 'course' ? 'course' : phase === 'lancer' ? 'depart' : 'chute';
+        // Battu d'un rien, il s'arrête juste après la ligne — et attend la
+        // boule ; sous la rafale, il court encore, jusqu'à ce qu'elle le fauche.
+        etat = phase === 'course' ? 'course' : phase === 'lancer' ? (rafale ? 'course' : 'depart') : 'chute';
       } else if (phase === 'fini') {
         etat = 'victoire';
       } else {
-        etat = boule && phase !== 'course' ? 'lancer' : 'course';
+        etat = auBout && phase !== 'course' ? 'lancer' : 'course';
       }
       controle.current?.etat(camp, etat);
     }
@@ -753,7 +784,8 @@ export function BatailleArene({
         )}
         {phase === 'lancer' && (
           <p className="font-display text-lg font-black tracking-wide text-ink uppercase sm:text-xl">
-            {noms[course.vainqueur]} passe la ligne… et se retourne !
+            {noms[course.vainqueur]} passe la ligne…{' '}
+            {course.chute.type === 'rafale' ? 'et dégaine son fusil de glace !' : 'et se retourne !'}
           </p>
         )}
         {phase === 'chute' && (

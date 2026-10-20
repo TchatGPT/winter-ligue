@@ -4894,11 +4894,13 @@
    * scène prend la hauteur que laisse l'écran, une fois gardée la place de
    * l'enjeu, du récit et du pied — les pères Noël s'y voient en grand —, et la
    * fenêtre s'élargit avec elle jusqu'à un cadre de cinéma, 2,4 pour 1, sans
-   * dépasser l'écran. Sur une tablette ou un téléphone, rien ne change.
+   * dépasser l'écran — un peu en deçà, pour garder de l'air autour (réduite
+   * d'un sixième le même jour : elle mangeait tout l'écran). Sur une tablette
+   * ou un téléphone, rien ne change.
    */
   @media (min-width: 1024px) {
     .fenetre-duel {
-      --scene-h: clamp(240px, calc(100dvh - 24.5rem), 1000px);
+      --scene-h: clamp(240px, calc((100dvh - 24.5rem) * 0.86), 860px);
       width: min(100%, max(60rem, calc(var(--scene-h) * 2.4 + 4rem)));
       max-width: none;
     }

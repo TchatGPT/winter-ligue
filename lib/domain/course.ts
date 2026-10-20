@@ -22,12 +22,11 @@
  * ## Pas toujours la même fin
  *
  * La façon de perdre est tirée, elle aussi : percuter un obstacle, glisser sur
- * la glace, voir sa boule éclater, s'asseoir à bout de souffle — ou aller jusqu'au bout et, battu d'un rien, se prendre la
- * boule de neige du vainqueur en pleine face. Et le vainqueur ne fête pas
- * toujours de la même façon : il saute, il danse, il grimpe sur sa boule — ou
- * il dégaine son fusil de glace, une AK-47 taillée dans la glace, et tire en
- * l'air trois rafales de boules de neige. Le vainqueur, lui, ne change pas :
- * c'est le serveur qui l'a tiré.
+ * la glace, voir sa boule éclater, s'asseoir à bout de souffle — ou aller
+ * jusqu'au bout et, battu d'un rien, se prendre la boule de neige du vainqueur
+ * en pleine face, ou la rafale de son fusil de glace. Et le vainqueur ne fête
+ * pas toujours de la même façon : il saute, il danse, ou il grimpe sur sa
+ * boule. Le vainqueur, lui, ne change pas : c'est le serveur qui l'a tiré.
  */
 
 import type { Camp } from './bataille';
@@ -40,37 +39,53 @@ import type { Camp } from './bataille';
  *  - `eclate` : sa boule éclate toute seule ;
  *  - `essouffle` : il s'assoit dans la neige, à bout de souffle ;
  *  - `boule` : il va jusqu'au bout, battu d'un rien, et le vainqueur, la ligne
- *    passée, se retourne et lui envoie une boule de neige en pleine face.
+ *    passée, se retourne et lui envoie une boule de neige en pleine face ;
+ *  - `rafale` : il va jusqu'au bout, juste derrière ; le vainqueur passe la
+ *    ligne, se retourne, dégaine son fusil de glace — une AK-47 taillée dans
+ *    la glace — et le fauche d'une rafale de boules de neige avant qu'il ne
+ *    l'atteigne (décidé le 20/10/2026).
  */
-export type Chute = 'rocher' | 'glisse' | 'eclate' | 'essouffle' | 'boule';
+export type Chute = 'rocher' | 'glisse' | 'eclate' | 'essouffle' | 'boule' | 'rafale';
+
+/** Comment le vainqueur fête sa victoire, la ligne passée : il saute, il danse, ou il grimpe sur sa boule. */
+export type Fete = 'saute' | 'danse' | 'grimpe';
 
 /**
- * Comment le vainqueur fête sa victoire, la ligne passée : il saute, il danse,
- * il grimpe sur sa boule, ou il tire des rafales de boules de neige avec son
- * fusil de glace (`rafale`, ajoutée le 20/10/2026).
- */
-export type Fete = 'saute' | 'danse' | 'grimpe' | 'rafale';
-
-/**
- * Les issues et leur poids : la boule de neige en pleine face, une fois sur
- * quatre. (Se faire écraser par sa propre boule a été retiré : on ne
- * l'aimait pas.)
+ * Les issues et leur poids : la boule de neige en pleine face, un peu moins
+ * d'une fois sur cinq ; la rafale, une fois sur cinq. (Se faire écraser par sa
+ * propre boule a été retiré : on ne l'aimait pas.)
  */
 const ISSUES: readonly [Chute, number][] = [
-  ['rocher', 19],
-  ['glisse', 19],
-  ['eclate', 18],
-  ['essouffle', 19],
-  ['boule', 25],
+  ['rocher', 16],
+  ['glisse', 16],
+  ['eclate', 15],
+  ['essouffle', 15],
+  ['boule', 18],
+  ['rafale', 20],
 ];
 
-/** Les fêtes et leur poids : la rafale, une fois sur quatre. */
 const FETES: readonly [Fete, number][] = [
-  ['saute', 30],
-  ['danse', 25],
-  ['grimpe', 20],
-  ['rafale', 25],
+  ['saute', 40],
+  ['danse', 35],
+  ['grimpe', 25],
 ];
+
+/**
+ * La rafale : l'instant où elle fauche le perdant, en secondes après que le
+ * vainqueur a passé la ligne. Il faut à celui-ci le temps de se retourner, de
+ * dégainer, d'épauler et de tirer ; l'arène fait tomber le perdant à cet
+ * instant, et la scène 3D cale ses coups dessus.
+ */
+export const RAFALE_IMPACT = 1.25;
+
+/**
+ * La rafale : l'avancée du perdant, `apres` secondes après que le vainqueur a
+ * passé la ligne. Il le voit dégainer, et pile net : quelques pas encore, à
+ * peine un mètre — la rafale le fauche sur place.
+ */
+export function avanceeApresLigne(depart: number, apres: number): number {
+  return depart + 0.03 * (1 - Math.exp(-Math.max(0, apres) / 0.35));
+}
 
 /** Tire une valeur selon ses poids, avec un nombre de 0 à 1. */
 function pioche<T>(poids: readonly [T, number][], r: number): T {
@@ -189,6 +204,13 @@ export function ecritCourse(graine: string, vainqueur: Camp): Course {
     instant = 1;
     duPerdant.elan = entre(0.86, 0.95);
     position = avancee(duPerdant, 1);
+  } else if (type === 'rafale') {
+    // Il court jusqu'au bout, derrière — assez loin pour que l'autre, retourné,
+    // le vise de profil —, pile net en le voyant dégainer, et tombe là où la
+    // rafale le fauche.
+    instant = 1;
+    duPerdant.elan = entre(0.82, 0.87);
+    position = avanceeApresLigne(avancee(duPerdant, 1), RAFALE_IMPACT);
   } else {
     // La chute : tard, et une fois sur deux pour celui qui menait.
     instant = entre(CHUTE_AU_PLUS_TOT, CHUTE_AU_PLUS_TARD);
@@ -241,7 +263,7 @@ export function ecritCourse(graine: string, vainqueur: Camp): Course {
   return {
     vainqueur,
     perdant,
-    chute: { type, instant, position, enTete: type !== 'boule' && position > avancee(duVainqueur, instant) },
+    chute: { type, instant, position, enTete: instant < 1 && position > avancee(duVainqueur, instant) },
     fete: pioche(FETES, rnd()),
     couloirs,
   };

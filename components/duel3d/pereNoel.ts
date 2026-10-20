@@ -19,12 +19,12 @@ import type { Fusil3D } from './fusil';
  *
  *  - perdre : en avant sur un obstacle, en arrière sur la glace, écrasé par sa
  *    propre boule, assis à bout de souffle, ou à la renverse, une boule de neige
- *    en pleine face — et sonné sous trois étoiles ;
- *  - gagner : sauter de joie, danser en tournoyant, grimper sur sa boule — ou
- *    y grimper pour dégainer son fusil de glace par-dessus l'épaule, l'épauler,
- *    et tirer trois rafales de boules de neige en l'air (`rafale`, voir
- *    `./fusil`) ;
- *  - lancer : la ligne passée, se retourner, armer, lancer, et rire.
+ *    — ou une rafale — en pleine face, et sonné sous trois étoiles ;
+ *  - gagner : sauter de joie, danser en tournoyant, grimper sur sa boule ;
+ *  - lancer : la ligne passée, se retourner, armer, lancer, et rire — ou,
+ *    fusil de glace en main (`rafale`, voir `./fusil`), se retourner vers le
+ *    perdant, dégainer par-dessus l'épaule, épauler, armer, et le faucher d'une
+ *    rafale de boules de neige ; vainqueur, il lève l'arme au ciel.
  */
 
 export type EtatCoureur = 'depart' | 'course' | 'chute' | 'victoire' | 'lancer';
@@ -38,30 +38,29 @@ export interface GesteFusil {
 const RIEN: GesteFusil = { tirs: 0, arme: false };
 
 /*
- * La rafale, seconde par seconde : il saute sur sa boule — de là-haut, rien ne
- * masque l'arme ni ne se met en travers de ses tirs —, va chercher l'arme dans
- * son dos, la fait passer par-dessus l'épaule, la cale, l'arme, et tire trois
- * rafales en l'air. Une fois sur sa boule, les instants se comptent de là.
+ * La rafale, seconde par seconde, depuis que le vainqueur a passé la ligne : il
+ * se retourne vers le perdant, va chercher l'arme dans son dos, la fait passer
+ * par-dessus l'épaule, la cale, l'arme, et tire. Les coups sont calés sur
+ * `RAFALE_IMPACT` (lib/domain/course) : le troisième touche le perdant à
+ * l'instant où l'arène le fait tomber (voir le vol des boules, dans le moteur).
  */
-/** Le saut sur la boule. */
-const RAFALE_SAUT = 0.5;
+/** Il se retourne vers le perdant. */
+const RAFALE_TOUR = 0.3;
 /** La main part chercher l'arme ; l'arme apparaît dans son dos. */
-const RAFALE_PRISE = 0.2;
+const RAFALE_PRISE = 0.3;
 /** L'arme a passé l'épaule. */
-const RAFALE_EPAULE = 0.55;
+const RAFALE_EPAULE = 0.6;
 /** Calée contre l'épaule. */
-const RAFALE_CALEE = 0.7;
+const RAFALE_CALEE = 0.72;
 /** Le levier d'armement, tiré : « clac-clac ». */
-const RAFALE_ARMEE = 0.62;
+const RAFALE_ARMEE = 0.64;
+/** Le premier coup, et le nombre de coups de la rafale. */
+export const RAFALE_PREMIER_COUP = 0.8;
+const RAFALE_COUPS = 8;
 /** Entre deux coups : la cadence d'une AK, 700 coups par minute. */
-const CADENCE = 0.085;
-const RAFALES: readonly { debut: number; coups: number }[] = [
-  { debut: 0.9, coups: 6 },
-  { debut: 1.85, coups: 6 },
-  { debut: 2.8, coups: 9 },
-];
-/** La visée, au-dessus de l'horizon : il tire en l'air, et l'arme se voit encore de profil. */
-const ELEVATION = 0.6;
+export const CADENCE_RAFALE = 0.085;
+/** L'arme levée au ciel, le perdant à terre. */
+const ELEVATION_VICTOIRE = 1.15;
 /** La moufle, au bout du bras tendu : la distance de l'épaule à son centre. */
 const PORTEE_MOUFLE = 0.47;
 
@@ -104,6 +103,8 @@ export interface PereNoel3D {
     fete: Fete;
     /** Pour grimper sur sa boule : l'écart jusqu'à elle, et la hauteur de son sommet. */
     dessus: { dx: number; hauteur: number };
+    /** La rafale : le perdant, que vise le fusil, dans le repère du monde. */
+    cibleTir?: THREE.Vector3;
   }): GesteFusil;
 }
 
@@ -303,6 +304,10 @@ export function creePereNoel(tenue: Tenue, fusil?: Fusil3D): PereNoel3D {
     bras.push(epaule);
   }
   if (fusil) {
+    // Porté à gauche — retourné vers le perdant, c'est le flanc que la caméra
+    // voit —, et retourné comme dans un miroir : son flanc droit, levier,
+    // culasse et éjection, reste tourné vers elle.
+    fusil.groupe.scale.z = -1;
     fusil.groupe.visible = false;
     corps.add(fusil.groupe);
   }
@@ -356,11 +361,11 @@ export function creePereNoel(tenue: Tenue, fusil?: Fusil3D): PereNoel3D {
   const borne = (k: number) => Math.min(1, Math.max(0, k));
 
   /* ------------------------------ La rafale -------------------------------- */
-  // Dans le repère du corps : le creux de l'épaule droite, où la crosse se
-  // cale ; la main au repos ; la poignée, quand l'arme pend dans son dos.
-  const POCHE = new THREE.Vector3(0.2, 0.3, 0.5);
-  const REPOS = new THREE.Vector3(0.12, -0.19, 0.4);
-  const DANS_LE_DOS = new THREE.Vector3(-0.3, 0.52, 0.44);
+  // Dans le repère du corps, côté gauche : le creux de l'épaule, où la crosse
+  // se cale ; la main au repos ; la poignée, quand l'arme pend dans son dos.
+  const POCHE = new THREE.Vector3(0.2, 0.3, -0.5);
+  const REPOS = new THREE.Vector3(0.12, -0.19, -0.4);
+  const DANS_LE_DOS = new THREE.Vector3(-0.3, 0.52, -0.44);
   /** L'arme, la bouche en bas et en arrière, pendue dans son dos (un tour plein, pour passer par-dessus l'épaule). */
   const ANGLE_DOS = Math.PI * 2 - 2.1;
   const poigneeCible = new THREE.Vector3();
@@ -397,6 +402,54 @@ export function creePereNoel(tenue: Tenue, fusil?: Fusil3D): PereNoel3D {
     return sortie.copy(f.poignee).applyAxisAngle(AXE_Z, f.groupe.rotation.z).add(f.groupe.position);
   }
 
+  /**
+   * Le fusil en main, `d` secondes après le début du geste : la main va le
+   * chercher dans son dos, il passe par-dessus l'épaule, puis se cale contre
+   * elle, levé de `elevation` — et recule à chaque coup, de `recul` (0 à 1).
+   * Laisse dans `poigneeCible` l'endroit où la main le tient.
+   */
+  function fusilEnMain(f: Fusil3D, d: number, elevation: number, recul: number) {
+    if (d < RAFALE_PRISE) {
+      // L'arme apparaît dans son dos, pendue, la bouche en bas.
+      const k = lisse(borne(d / RAFALE_PRISE));
+      poigneeCible.lerpVectors(REPOS, DANS_LE_DOS, k);
+      poseFusil(f, f.poignee, poigneeCible, ANGLE_DOS);
+      f.groupe.visible = d > RAFALE_PRISE * 0.55;
+    } else if (d < RAFALE_EPAULE) {
+      // Par-dessus l'épaule : la poignée suit un arc, de son dos jusqu'à
+      // l'épaule, pendant que le canon tourne de l'arrière vers l'avant.
+      const k = lisse((d - RAFALE_PRISE) / (RAFALE_EPAULE - RAFALE_PRISE));
+      const angle = ANGLE_DOS + (elevation + 0.18 - ANGLE_DOS) * k;
+      poseFusil(f, f.talon, POCHE, elevation + 0.18);
+      poigneeDe(f, passeEpaule);
+      poigneeCible.lerpVectors(DANS_LE_DOS, passeEpaule, k);
+      poigneeCible.y += Math.sin(Math.PI * k) * 0.22;
+      poseFusil(f, f.poignee, poigneeCible, angle);
+      f.groupe.visible = true;
+    } else {
+      // Calée contre l'épaule : un léger dépassement, puis le recul de chaque
+      // coup, qui la repousse dans l'épaule et relève le canon.
+      const k = borne((d - RAFALE_EPAULE) / (RAFALE_CALEE - RAFALE_EPAULE));
+      const angle = elevation + 0.18 * (1 - lisse(k)) + 0.07 * recul;
+      poseFusil(f, f.talon, POCHE, angle);
+      f.groupe.position.addScaledVector(axe.set(Math.cos(angle), Math.sin(angle), 0), -0.035 * recul);
+      poigneeDe(f, poigneeCible);
+      f.groupe.visible = true;
+    }
+  }
+
+  /**
+   * Le cap vers le perdant — l'angle dont il se tourne — et l'élévation du
+   * canon pour le viser, d'après sa position dans le monde. Le fusil se tient
+   * à hauteur d'épaule, un peu plus d'un mètre au-dessus de la neige.
+   */
+  function viseDe(point: THREE.Vector3 | undefined): { cap: number; elevation: number } {
+    if (!point) return { cap: Math.PI, elevation: 0.04 };
+    const dx = point.x - racine.position.x;
+    const dz = point.z - racine.position.z;
+    return { cap: Math.atan2(-dz, dx), elevation: Math.atan2(point.y - 1.05, Math.hypot(dx, dz) || 1) + 0.04 };
+  }
+
   function anime({
     t,
     dt,
@@ -408,6 +461,7 @@ export function creePereNoel(tenue: Tenue, fusil?: Fusil3D): PereNoel3D {
     mode,
     fete,
     dessus,
+    cibleTir,
   }: Parameters<PereNoel3D['anime']>[0]) {
     let penche = -0.1;
     let hauteur = 0;
@@ -429,7 +483,7 @@ export function creePereNoel(tenue: Tenue, fusil?: Fusil3D): PereNoel3D {
     /** La rafale : le fusil en main, ou pas. */
     let rafale = false;
     let geste = RIEN;
-    if (etat !== 'victoire' || fete !== 'rafale') {
+    if (!fusil || mode !== 'rafale' || (etat !== 'lancer' && etat !== 'victoire')) {
       tirsVus = 0;
       armeVue = false;
       if (fusil) fusil.groupe.visible = false;
@@ -445,6 +499,31 @@ export function creePereNoel(tenue: Tenue, fusil?: Fusil3D): PereNoel3D {
       hauteur = Math.abs(Math.sin(foulee)) * 0.05 + saut * 0.2;
       penche = -0.3 - saut * 0.1;
       flotte = 0.95 + Math.sin(foulee) * 0.18;
+    } else if (etat === 'lancer' && mode === 'rafale' && fusil) {
+      // Il se retourne vers le perdant, dégaine, épaule, arme — et tire.
+      visees = false;
+      rafale = true;
+      const vise = viseDe(cibleTir);
+      tourne = vise.cap * lisse(borne(depuis / RAFALE_TOUR));
+      const partis =
+        depuis < RAFALE_PREMIER_COUP
+          ? 0
+          : Math.min(RAFALE_COUPS, Math.floor((depuis - RAFALE_PREMIER_COUP) / CADENCE_RAFALE) + 1);
+      const dernier = partis > 0 ? RAFALE_PREMIER_COUP + (partis - 1) * CADENCE_RAFALE : -1;
+      const armee = !armeVue && depuis >= RAFALE_ARMEE;
+      if (armee) armeVue = true;
+      if (partis > tirsVus || armee) {
+        geste = { tirs: Math.max(0, partis - tirsVus), arme: armee };
+        tirsVus = partis;
+      }
+      const recul = dernier < 0 ? 0 : Math.exp(-(depuis - dernier) / 0.05);
+      penche = 0.04 + 0.06 * recul;
+      jambe = 0.2;
+      // L'autre bras, tendu vers l'avant : il soutient l'arme.
+      brasZ = [1.15, 0.3];
+      brasX = 0.25;
+      flotte = 1 + recul * 0.25;
+      fusilEnMain(fusil, depuis, vise.elevation, recul);
     } else if (etat === 'lancer') {
       // Il se retourne, arme le bras au-dessus de la tête, lance — et rit.
       visees = false;
@@ -486,7 +565,7 @@ export function creePereNoel(tenue: Tenue, fusil?: Fusil3D): PereNoel3D {
         brasZ = [1.1 + Math.sin(t * 18) * 0.5 * (1 - k), 1.1 - Math.sin(t * 18) * 0.5 * (1 - k)];
         etoilesX = -1.0 + avance;
         etoilesY = 0.48;
-      } else if (mode === 'boule') {
+      } else if (mode === 'boule' || mode === 'rafale') {
         // À la renverse, la neige plein la figure.
         masque.visible = true;
         rotation = 1.45 * e;
@@ -513,87 +592,28 @@ export function creePereNoel(tenue: Tenue, fusil?: Fusil3D): PereNoel3D {
         etoiles.position.set(etoilesX, etoilesY + Math.sin(t * 5) * 0.03, 0);
       }
     } else {
-      // La victoire, de trois façons.
+      // La victoire, de trois façons — ou, le perdant fauché, l'arme au ciel.
       visees = false;
-      if (fete === 'danse') {
+      if (mode === 'rafale' && fusil) {
+        // Toujours tourné vers lui, il lève son fusil au ciel, et rebondit de joie.
+        rafale = true;
+        const vise = viseDe(cibleTir);
+        tourne = vise.cap;
+        const k = lisse(borne(depuis / 0.4));
+        hauteur = k >= 1 ? Math.abs(Math.sin(t * 6.5)) * 0.08 : 0;
+        jambe = 0.2;
+        penche = 0.06;
+        // L'autre bras bat l'air, le poing levé.
+        brasZ = [2.7 + Math.sin(t * 13) * 0.2, 0.3];
+        brasX = 0.35;
+        fusilEnMain(fusil, RAFALE_CALEE, THREE.MathUtils.lerp(vise.elevation, ELEVATION_VICTOIRE, k), 0);
+      } else if (fete === 'danse') {
         tourne = t * 5.5;
         hauteur = Math.abs(Math.sin(t * 10)) * 0.14;
         jambe = Math.sin(t * 10) * 0.3;
         brasZ = [1.45, 1.45];
         brasX = 1.25 + Math.sin(t * 10) * 0.15;
         penche = 0.05;
-      } else if (fete === 'rafale' && fusil) {
-        // D'abord le saut sur la boule, comme pour la grimper.
-        const s = borne(depuis / RAFALE_SAUT);
-        avance = dessus.dx * lisse(s);
-        hauteur = dessus.hauteur * lisse(s) + Math.sin(Math.PI * s) * 0.55;
-        const d = depuis - RAFALE_SAUT;
-        if (d < 0) {
-          jambe = -0.5;
-          brasZ = [2.75, 2.75];
-          brasX = 0.62;
-          penche = 0.04;
-          fusil.groupe.visible = false;
-        } else {
-          // Les coups partis depuis qu'il est là-haut, et l'instant du dernier.
-          let partis = 0;
-          let dernier = -1;
-          for (const r of RAFALES) {
-            if (d < r.debut) break;
-            const n = Math.min(r.coups, Math.floor((d - r.debut) / CADENCE) + 1);
-            partis += n;
-            dernier = r.debut + (n - 1) * CADENCE;
-          }
-          const armee = !armeVue && d >= RAFALE_ARMEE;
-          if (armee) armeVue = true;
-          if (partis > tirsVus || armee) {
-            geste = { tirs: Math.max(0, partis - tirsVus), arme: armee };
-            tirsVus = partis;
-          }
-          rafale = true;
-          // Le recul : le coup repousse l'arme dans l'épaule et relève le canon ;
-          // il s'en remet en quelques centièmes.
-          const recul = dernier < 0 ? 0 : Math.exp(-(d - dernier) / 0.05);
-          const finRafales = RAFALES[RAFALES.length - 1];
-          const apres = d - (finRafales.debut + finRafales.coups * CADENCE);
-          penche = 0.06 + 0.06 * recul;
-          jambe = 0.18;
-          if (apres > 0.3) hauteur += Math.abs(Math.sin(t * 6)) * 0.05;
-          // L'autre bras, levé : le poing qui bat pendant les rafales.
-          const tire = dernier >= 0 && d - dernier < 0.2;
-          brasZ = [0.3, tire ? 2.65 + Math.sin(t * 16) * 0.22 : 2.85];
-          brasX = 0.32;
-          flotte = 0.9 + recul * 0.25;
-
-          if (d < RAFALE_PRISE) {
-            // La main part chercher l'arme dans le dos ; l'arme y apparaît,
-            // pendue, la bouche en bas.
-            const k = lisse(borne(d / RAFALE_PRISE));
-            poigneeCible.lerpVectors(REPOS, DANS_LE_DOS, k);
-            poseFusil(fusil, fusil.poignee, poigneeCible, ANGLE_DOS);
-            fusil.groupe.visible = d > RAFALE_PRISE * 0.55;
-          } else if (d < RAFALE_EPAULE) {
-            // Par-dessus l'épaule : la poignée suit un arc, de son dos jusqu'à
-            // l'épaule, pendant que le canon tourne de l'arrière vers le ciel.
-            const k = lisse((d - RAFALE_PRISE) / (RAFALE_EPAULE - RAFALE_PRISE));
-            const angle = ANGLE_DOS + (ELEVATION + 0.18 - ANGLE_DOS) * k;
-            poseFusil(fusil, fusil.talon, POCHE, ELEVATION + 0.18);
-            poigneeDe(fusil, passeEpaule);
-            poigneeCible.lerpVectors(DANS_LE_DOS, passeEpaule, k);
-            poigneeCible.y += Math.sin(Math.PI * k) * 0.22;
-            poseFusil(fusil, fusil.poignee, poigneeCible, angle);
-            fusil.groupe.visible = true;
-          } else {
-            // Calée contre l'épaule : un léger dépassement, puis le recul de
-            // chaque coup, qui la repousse dans l'épaule et relève le canon.
-            const k = borne((d - RAFALE_EPAULE) / (RAFALE_CALEE - RAFALE_EPAULE));
-            const angle = ELEVATION + 0.18 * (1 - lisse(k)) + 0.07 * recul;
-            poseFusil(fusil, fusil.talon, POCHE, angle);
-            fusil.groupe.position.addScaledVector(axe.set(Math.cos(angle), Math.sin(angle), 0), -0.035 * recul);
-            poigneeDe(fusil, poigneeCible);
-            fusil.groupe.visible = true;
-          }
-        }
       } else if (fete === 'grimpe') {
         // Il saute sur sa boule, et s'y tient, bras au ciel.
         const k = borne(depuis / 0.5);
@@ -641,8 +661,8 @@ export function creePereNoel(tenue: Tenue, fusil?: Fusil3D): PereNoel3D {
       bras[0].rotation.set(brasX, 0, brasZ[1]);
       bras[0].scale.y = 1;
       bras[1].scale.y = 1;
-      // La rafale : la main droite tient la poignée, où qu'elle soit.
-      if (rafale) tendVers(bras[1], poigneeCible);
+      // La rafale : la main gauche tient la poignée, où qu'elle soit.
+      if (rafale) tendVers(bras[0], poigneeCible);
     }
     return geste;
   }

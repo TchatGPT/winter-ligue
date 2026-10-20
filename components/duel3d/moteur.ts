@@ -1,10 +1,10 @@
 import * as THREE from 'three';
-import type { Chute, Fete } from '../../lib/domain/course';
+import { RAFALE_IMPACT, type Chute, type Fete } from '../../lib/domain/course';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { AXE, creeDecor, creeObstacle, LONGUEUR, palette, type GenreObstacle3D } from './decor';
 import { creeFusilDeGlace } from './fusil';
 import { couleur, texCernes, texEcorce, texGrain, texOmbre } from './matieres';
-import { creePereNoel, type EtatCoureur, type PereNoel3D } from './pereNoel';
+import { CADENCE_RAFALE, creePereNoel, RAFALE_PREMIER_COUP, type EtatCoureur, type PereNoel3D } from './pereNoel';
 
 /**
  * Le moteur de la course en trois dimensions.
@@ -15,9 +15,9 @@ import { creePereNoel, type EtatCoureur, type PereNoel3D } from './pereNoel';
  * scène : les pères Noël et leurs boules qui grossissent, la caméra qui suit
  * la course, les façons de perdre — la boule qui éclate, celle qui revient
  * écraser son pousseur, le souffle court, la boule de neige lancée en pleine
- * face par le vainqueur —, les confettis à l'arrivée, la rafale du fusil de
- * glace — ses boules de neige, ses douilles, le givre de sa bouche —, et le
- * nom de chaque joueur au-dessus de sa tête.
+ * face par le vainqueur, ou la rafale de son fusil de glace, ses douilles et
+ * le givre de sa bouche —, les confettis à l'arrivée, et le nom de chaque
+ * joueur au-dessus de sa tête.
  *
  * Aucune dépendance à React : il se construit sur une toile, et se détruit
  * entièrement — géométries, matières, textures, contexte WebGL.
@@ -53,20 +53,26 @@ export interface Options3D {
 /** La boule part petite et finit plus grosse que lui. */
 const rayonBoule = (p: number) => 0.2 + 0.5 * p;
 
+interface Cadrage {
+  hausse: number;
+  recul: number;
+  recentre: number;
+  devant: number;
+}
+
 /**
  * Comment la caméra cadre chaque fête, la ligne passée : de combien elle lève
  * le regard (`hausse`), recule ou s'approche (`recul`, en part de sa
  * distance), se recentre sur le couloir du vainqueur (`recentre`), et lui
- * laisse de place devant (`devant`). Sur sa boule, il se tient bien plus haut ;
- * pour la rafale, elle s'approche — il faut reconnaître l'arme — et garde
- * devant lui le ciel où montent ses boules de neige.
+ * laisse de place devant (`devant`). Sur sa boule, il se tient bien plus haut.
  */
-const CADRAGES: Record<Fete, { hausse: number; recul: number; recentre: number; devant: number }> = {
+const CADRAGES: Record<Fete, Cadrage> = {
   saute: { hausse: 0.4, recul: 0, recentre: 0.3, devant: 0.3 },
   danse: { hausse: 0.3, recul: 0, recentre: 0.3, devant: 0.3 },
   grimpe: { hausse: 1, recul: 0.08, recentre: 0.5, devant: 0.3 },
-  rafale: { hausse: 1.9, recul: -0.25, recentre: 0.7, devant: 1.8 },
 };
+/** La rafale : le vainqueur, l'arme au ciel, et derrière lui le perdant fauché. */
+const CADRAGE_RAFALE: Cadrage = { hausse: 0.5, recul: -0.04, recentre: 0.15, devant: -1.4 };
 
 interface Coureur {
   camp: Camp3D;
@@ -190,7 +196,7 @@ export function creeMoteur(toile: HTMLCanvasElement, donnees: Donnees3D, options
   /** La boule n'éclate que si c'est elle, ou l'obstacle, qui fait tomber. */
   const eclateALaChute = mode === 'rocher' || mode === 'glisse' || mode === 'eclate';
   /** Le fusil de glace, pour le vainqueur d'une course qui finit en rafale. */
-  const fusil = vainqueur !== null && donnees.fete === 'rafale' ? creeFusilDeGlace() : null;
+  const fusil = vainqueur !== null && mode === 'rafale' ? creeFusilDeGlace() : null;
 
   const coureurs: Record<Camp3D, Coureur> = {} as Record<Camp3D, Coureur>;
   for (const camp of ['hote', 'adversaire'] as Camp3D[]) {
@@ -258,16 +264,22 @@ export function creeMoteur(toile: HTMLCanvasElement, donnees: Donnees3D, options
 
   /* ------------------------------ La rafale -------------------------------- */
   // Les boules de neige du fusil de glace, ses douilles, le givre de sa bouche.
-  const VITESSE_BALLE = 5.3;
   const RAYON_BALLE = 0.07;
-  const balles: { m: THREE.Mesh; v: THREE.Vector3; vie: number }[] = [];
+  /**
+   * Le vol d'une boule de neige, de la bouche du fusil au perdant : calé pour
+   * que le troisième coup le touche à l'instant où l'arène le fait tomber.
+   */
+  const VOL_RAFALE = RAFALE_IMPACT - RAFALE_PREMIER_COUP - 2 * CADENCE_RAFALE;
+  const tirs: { m: THREE.Mesh; depart: THREE.Vector3; arrivee: THREE.Vector3; t: number; court: boolean }[] = [];
   const douilles: { m: THREE.Mesh; v: THREE.Vector3; spin: THREE.Vector3; vie: number }[] = [];
   const bouffees: { m: THREE.Mesh; v: THREE.Vector3; vie: number; duree: number; taille: number }[] = [];
   const geoBalle = new THREE.SphereGeometry(1, 14, 10);
   const geoDouille = new THREE.CylinderGeometry(0.011, 0.011, 0.042, 8);
-  const quat = new THREE.Quaternion();
   const axeTir = new THREE.Vector3();
   const flanc = new THREE.Vector3();
+  /** Le perdant, que vise le fusil : sa poitrine. */
+  const cibleTir = new THREE.Vector3();
+  let coups = 0;
   let dernierTir = -Infinity;
   let prochaineVolute = 0;
 
@@ -283,23 +295,34 @@ export function creeMoteur(toile: HTMLCanvasElement, donnees: Donnees3D, options
     bouffees.push({ m, v: v.clone(), vie: duree, duree, taille });
   }
 
-  /** Un coup du fusil de glace : la boule de neige part, la douille saute, la bouche givre. */
+  /**
+   * Un coup du fusil de glace : une boule de neige file vers le perdant — la
+   * première tombe court, dans la neige à ses pieds —, la douille saute, la
+   * bouche givre. Les axes se lisent sur la matrice : le fusil est retourné
+   * comme dans un miroir (voir `creePereNoel`).
+   */
   function tire() {
-    if (!fusil) return;
+    if (!fusil || !perdant) return;
     fusil.bouche.getWorldPosition(tmp);
-    fusil.groupe.getWorldQuaternion(quat);
-    axeTir.set(1, 0, 0).applyQuaternion(quat);
-    // La boule de neige, un peu dispersée : la rafale s'ouvre en gerbe.
+    axeTir.setFromMatrixColumn(fusil.groupe.matrixWorld, 0).normalize();
+    const arrivee = new THREE.Vector3();
+    coureurs[perdant].santa.visage.getWorldPosition(arrivee);
+    const court = coups === 0;
+    if (court) {
+      arrivee.lerp(tmp, 0.2);
+      arrivee.y = RAYON_BALLE;
+    } else {
+      arrivee.x += (Math.random() - 0.5) * 0.3;
+      arrivee.y -= 0.1 + Math.random() * 0.35;
+      arrivee.z += (Math.random() - 0.5) * 0.3;
+    }
+    coups += 1;
     const balle = new THREE.Mesh(geoBalle, neigeBoule);
     balle.scale.setScalar(RAYON_BALLE);
     balle.castShadow = true;
     balle.position.copy(tmp);
     scene.add(balle);
-    const v = axeTir.clone().multiplyScalar(VITESSE_BALLE);
-    v.x += (Math.random() - 0.5) * 0.7;
-    v.y += (Math.random() - 0.5) * 0.7;
-    v.z += (Math.random() - 0.5) * 0.6;
-    balles.push({ m: balle, v, vie: 3 });
+    tirs.push({ m: balle, depart: tmp.clone(), arrivee, t: 0, court });
     // Le givre de la bouche : des éclats de glace qui jaillissent devant, et
     // une bouffée de neige. Pas d'éclair : c'est de la glace qui tire.
     for (let i = 0; i < 6; i += 1) {
@@ -320,9 +343,10 @@ export function creeMoteur(toile: HTMLCanvasElement, donnees: Donnees3D, options
       });
     }
     bouffee(tmp, axeTir.clone().multiplyScalar(0.8), 0.15, 0.22);
-    // La douille, éjectée sur la droite, qui tournoie et tombe dans la neige.
+    // La douille, éjectée par le flanc tourné vers la caméra, qui tournoie et
+    // tombe dans la neige.
     fusil.ejection.getWorldPosition(tmp);
-    flanc.set(0, 0, 1).applyQuaternion(quat);
+    flanc.setFromMatrixColumn(fusil.groupe.matrixWorld, 2).normalize();
     const d = new THREE.Mesh(geoDouille, fusil.glace);
     d.castShadow = true;
     d.position.copy(tmp);
@@ -400,7 +424,14 @@ export function creeMoteur(toile: HTMLCanvasElement, donnees: Donnees3D, options
       c.roule += ((c.p - c.pAvant) * LONGUEUR) / r;
       c.pAvant = c.p;
 
-      c.santa.racine.position.set(c.x, 0, c.z);
+      // La rafale : le vainqueur fait un pas vers le couloir du perdant, pour le
+      // viser de profil — la caméra voit l'arme de côté, pas en enfilade.
+      let decale = 0;
+      if (fusil && perdant && c.camp === vainqueur && (c.etat === 'lancer' || c.etat === 'victoire')) {
+        const k = c.etat === 'victoire' ? 1 : Math.min(1, c.depuis / 0.4);
+        decale = (AXE[perdant] - AXE[c.camp]) * 0.45 * k * k * (3 - 2 * k);
+      }
+      c.santa.racine.position.set(c.x, 0, c.z + decale);
       const hausse = c.saut * 0.32;
       c.boule.scale.setScalar(r);
       c.boule.position.set(bouleX, r + hausse, c.z);
@@ -408,10 +439,14 @@ export function creeMoteur(toile: HTMLCanvasElement, donnees: Donnees3D, options
       c.ombreBoule.visible = c.boule.visible;
       c.ombreBoule.position.set(bouleX, 0.012, c.z);
       c.ombreBoule.scale.setScalar(r * (2.5 - c.saut * 0.6));
-      c.ombrePied.position.set(c.x + (c.etat === 'chute' ? 0.5 : 0.05), 0.011, c.z);
+      c.ombrePied.position.set(c.x + (c.etat === 'chute' ? 0.5 : 0.05), 0.011, c.z + decale);
       c.ombrePied.scale.set(c.etat === 'chute' ? 1.9 : 1.05, 1, c.etat === 'chute' ? 1.1 : 0.9);
 
       cible.set(bouleX - r * 0.78, r * 1.55 + hausse, c.z);
+      if (fusil && perdant && c.camp === vainqueur) {
+        coureurs[perdant].santa.visage.getWorldPosition(cibleTir);
+        cibleTir.y -= 0.3;
+      }
       const geste = c.santa.anime({
         t,
         dt,
@@ -423,6 +458,7 @@ export function creeMoteur(toile: HTMLCanvasElement, donnees: Donnees3D, options
         mode,
         fete: donnees.fete ?? 'saute',
         dessus: { dx: bouleX - c.x, hauteur: 2 * r },
+        cibleTir: fusil && perdant && c.camp === vainqueur ? cibleTir : undefined,
       });
       if (geste.arme) options.geste?.('arme');
       for (let i = 0; i < geste.tirs; i += 1) {
@@ -450,7 +486,7 @@ export function creeMoteur(toile: HTMLCanvasElement, donnees: Donnees3D, options
 
     // La boule de neige du vainqueur : elle part de sa moufle, file en cloche
     // vers le visage de l'autre, et s'y écrase.
-    if (vainqueur && perdant && coureurs[vainqueur].etat === 'lancer') {
+    if (mode === 'boule' && vainqueur && perdant && coureurs[vainqueur].etat === 'lancer') {
       const lanceur = coureurs[vainqueur];
       if (!lance && lanceur.depuis >= 0.56) {
         lance = true;
@@ -543,18 +579,19 @@ export function creeMoteur(toile: HTMLCanvasElement, donnees: Donnees3D, options
       }
     }
 
-    // Les boules de neige du fusil : elles montent, retombent, et s'écrasent dans la neige.
-    for (let i = balles.length - 1; i >= 0; i -= 1) {
-      const bl = balles[i];
-      bl.vie -= dt;
-      bl.v.y -= 9.8 * dt;
-      bl.m.position.addScaledVector(bl.v, dt);
-      bl.m.rotation.x += dt * 10;
-      const auSol = bl.m.position.y <= RAYON_BALLE;
-      if (auSol || bl.vie <= 0) {
-        if (auSol) eclate(bl.m.position.x, RAYON_BALLE, bl.m.position.z, 0.22, 5, 1.4);
-        scene.remove(bl.m);
-        balles.splice(i, 1);
+    // Les boules de neige de la rafale filent jusqu'au perdant, et s'écrasent
+    // sur lui — ou dans la neige, pour la première.
+    for (let i = tirs.length - 1; i >= 0; i -= 1) {
+      const b = tirs[i];
+      b.t = Math.min(1, b.t + dt / VOL_RAFALE);
+      b.m.position.lerpVectors(b.depart, b.arrivee, b.t);
+      // En cloche : par-dessus la boule que le perdant pousse devant lui.
+      b.m.position.y += Math.sin(Math.PI * b.t) * (b.court ? 0.2 : 0.42);
+      b.m.rotation.x += dt * 12;
+      if (b.t >= 1) {
+        eclate(b.arrivee.x, Math.max(RAYON_BALLE, b.arrivee.y), b.arrivee.z, b.court ? 0.26 : 0.32, b.court ? 6 : 8, b.court ? 1.6 : 2);
+        scene.remove(b.m);
+        tirs.splice(i, 1);
       }
     }
     // Les douilles rebondissent, s'arrêtent, fondent.
@@ -608,7 +645,7 @@ export function creeMoteur(toile: HTMLCanvasElement, donnees: Donnees3D, options
     // La fête : la caméra se tourne vers le vainqueur (voir `CADRAGES`).
     const enFete = vainqueur !== null && coureurs[vainqueur].etat === 'victoire';
     ouverture += ((enFete ? 1 : 0) - ouverture) * (1 - Math.exp(-dt * 1.6));
-    const cadrage = CADRAGES[donnees.fete ?? 'saute'];
+    const cadrage = mode === 'rafale' ? CADRAGE_RAFALE : CADRAGES[donnees.fete ?? 'saute'];
     vise += ouverture * cadrage.devant;
     vise = THREE.MathUtils.clamp(vise, 1.8, LONGUEUR - 0.2 + ouverture * 2.5);
     centre += (vise - centre) * (1 - Math.exp(-dt * 2.6));
