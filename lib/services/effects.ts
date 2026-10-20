@@ -754,3 +754,129 @@ function meilleureCible(effect: CardEffect, libres: Game[]): Game {
   }
   return meilleure;
 }
+
+/* ---------------------- Corriger une game déjà saisie --------------------- */
+
+/**
+ * Les genres dont les points sur une game se relisent de ses kills et de son
+ * placement : ceux de `demande`, sauf « Clone kill du meilleur » — elle a
+ * remplacé les kills de la game, les corriger n'aurait pas de sens sûr.
+ */
+const RECALCULABLES = new Set<CardEffect['kind']>([
+  'bonus_points',
+  'malus_points',
+  'multiplicateur_game',
+  'diviseur_game',
+  'plancher',
+  'bonus_top',
+  'petite_game',
+  'kills_paliers',
+]);
+
+/** Les cartes consommées sur cette game, quel que soit ce qu'elles y ont fait. */
+function cartesSurLaGame(db: Database, game: Game): CarteEnAttente[] {
+  return db.cartesEnAttente.filter((c) => c.gameId === game.id && c.consommeeA !== null);
+}
+
+/**
+ * Les cartes d'une game qui empêchent de corriger ses kills ou son placement :
+ * celles qui ont changé ses kills (« Clone kill du meilleur »), ou qui la lient
+ * à la game d'un autre joueur (l'échange). La modération la supprime alors, et
+ * la ressaisit.
+ */
+export function cartesQuiFigentLaGame(db: Database, game: Game): string[] {
+  return cartesSurLaGame(db, game)
+    .map((c) => getCard(c.cardId))
+    .filter((card): card is CardDefinition => card !== null && ['clone_kills', 'echange'].includes(card.effect.kind))
+    .map((card) => card.name);
+}
+
+/**
+ * Relit les cartes d'une game dont on vient de corriger les kills ou le
+ * placement (`avant` : ce qu'ils valaient). Une carte de prochaine game
+ * reprend les points que sa règle donne à la game corrigée — la Luge d'une
+ * game passée en Top 1 rapporte ses 15 points, celle d'une game qui n'y est
+ * plus les perd —, avec la même majoration qu'à sa saisie (un évènement
+ * « cartes renforcées »). Un malus paré par l'immunité reste paré. Les autres
+ * cartes — une game jouée relevée, figée, supprimée, un Joker — gardent ce
+ * qu'elles avaient donné. Le cumul reste dans les bornes de `GAME_LIMITS`, et
+ * le score est réécrit. Rend ce qui a changé, carte par carte.
+ */
+export function recalculeCartesDeLaGame(
+  db: Database,
+  game: Game,
+  avant: Pick<Game, 'kills' | 'placement'>,
+): { nom: string; avant: number; apres: number }[] {
+  const changements: { nom: string; avant: number; apres: number }[] = [];
+  const ancienne: Game = { ...game, kills: avant.kills, placement: avant.placement };
+
+  for (const pendante of cartesSurLaGame(db, game)) {
+    const card = getCard(pendante.cardId);
+    if (!card || !RECALCULABLES.has(card.effect.kind) || momentDe(card.effect) !== 'PROCHAINE') continue;
+    const index = game.applied.findIndex((a) => a.cardId === card.id && a.ouvertureId === pendante.ouvertureId);
+    const entree = index >= 0 ? game.applied[index] : null;
+    const pointsAvant = entree?.points ?? 0;
+    // Un malus qui n'a rien retiré avait été paré : il le reste.
+    if (card.nature === 'malus' && !entree) continue;
+
+    const demandeAvant = demande(card.effect, ancienne, {})?.points ?? 0;
+    const voulu = demande(card.effect, game, {});
+    const demandeApres = voulu?.points ?? 0;
+    // La majoration d'un évènement « cartes renforcées », telle qu'à la saisie.
+    const majoration = demandeAvant !== 0 && pointsAvant !== 0 ? pointsAvant / demandeAvant : 1;
+    const pointsApres = Math.round(demandeApres * majoration);
+    if (pointsApres === pointsAvant) continue;
+
+    if (pointsApres === 0) {
+      if (index >= 0) game.applied.splice(index, 1);
+    } else if (entree) {
+      entree.points = pointsApres;
+    } else {
+      game.applied.push({
+        id: newId(),
+        cardId: card.id,
+        ouvertureId: pendante.ouvertureId,
+        points: pointsApres,
+        at: new Date().toISOString(),
+      });
+    }
+    pendante.resultat = `${voulu?.resultat ?? 'sans effet'} (game corrigée)`;
+    changements.push({ nom: card.name, avant: pointsAvant, apres: pointsApres });
+  }
+
+  const cumul = game.applied.reduce((n, a) => n + a.points, 0);
+  game.bonusPoints = Math.max(GAME_LIMITS.minBonusPoints, Math.min(GAME_LIMITS.maxBonusPoints, cumul));
+  recomputeGame(db, game);
+  return changements;
+}
+
+/**
+ * Rend au joueur les cartes consommées sur une game qu'on supprime : une
+ * carte qui attendait une game revient en attente, et tombera sur la
+ * suivante ; un Joker revient en main. Jamais deux cartes en attente, ni deux
+ * Jokers : si le joueur en a déjà une, celle de la game supprimée est perdue,
+ * et le dit. À appeler avant de retirer la game.
+ */
+export function rendCartesDeLaGame(db: Database, game: Game): { rendues: string[]; perdues: string[] } {
+  const rendues: string[] = [];
+  const perdues: string[] = [];
+  for (const pendante of cartesSurLaGame(db, game)) {
+    const card = getCard(pendante.cardId);
+    if (!card) continue;
+    const libre =
+      momentDe(card.effect) === 'GARDEE'
+        ? card.effect.kind !== 'joker' || jokerDe(db, pendante.joueurId) === null
+        : carteQuiAttend(db, pendante.joueurId) === null;
+    pendante.gameId = null;
+    if (libre) {
+      pendante.consommeeA = null;
+      pendante.resultat = null;
+      rendues.push(card.name);
+    } else {
+      pendante.resultat = `${pendante.resultat ?? 'jouée'} — sa game a été supprimée`;
+      perdues.push(card.name);
+    }
+  }
+  return { rendues, perdues };
+}
+

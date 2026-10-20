@@ -11,6 +11,7 @@ import { rewardForGame } from '@/lib/domain/economy';
 import { LIMITS } from '@/lib/security/ratelimit';
 import { appliqueCartesEnAttente, jokerDe, regleCartesSansAttendre, utiliseJoker } from '@/lib/services/effects';
 import { gamesComptees, limiteDe, recomputeGame } from '@/lib/services/league';
+import { corrigeGame, supprimeGame, type Correction } from '@/lib/services/corrections';
 import { audit, credit } from '@/lib/services/ledger';
 import { verifieFinisseur } from '@/lib/services/packs';
 import { facteurGain } from '@/lib/services/evenements';
@@ -143,7 +144,13 @@ export async function POST(request: Request): Promise<NextResponse> {
 }
 
 /**
- * Passe une game (elle ne compte plus) ou modifie sa note.
+ * Corrige une game — ses kills, son placement —, la passe (elle ne compte
+ * plus) ou modifie sa note.
+ *
+ * Une correction réécrit le score, relit les cartes de la game et ajuste ses
+ * flocons (`corrigeGame`) : la capture était mal lue, la game doit valoir ce
+ * qu'elle aurait valu. Un membre de la modération peut corriger ses propres
+ * games, comme il les saisit : le score se calcule ici.
  *
  * Rétablir une game passée la fait compter de nouveau : on vérifie donc la
  * limite, comme à la saisie — sinon, passer puis rétablir aurait permis de
@@ -161,6 +168,17 @@ export async function PATCH(request: Request): Promise<NextResponse> {
   const updated = await getStore().transaction((db) => {
     const game = db.games.find((x) => x.id === g.body.gameId);
     if (!game) return null;
+    let correction: Correction | null = null;
+    if (g.body.kills !== undefined || g.body.placement !== undefined) {
+      const r = corrigeGame(db, g.session?.sub ?? 'admin', game.id, {
+        kills: g.body.kills ?? game.kills,
+        placement: g.body.placement !== undefined ? g.body.placement : game.placement,
+      });
+      if (r === 'INTROUVABLE') return null;
+      if ('refus' in r) return r;
+      correction = r;
+    }
+    if (g.body.skipped === undefined && g.body.note === undefined) return { game, correction };
     if (g.body.skipped === false && game.skipped) {
       // Une game qu'un Joker a annulée, ou qu'un Grand Dégel a supprimée,
       // reste hors du compte : la rétablir rendrait la carte sans effet.
@@ -179,16 +197,21 @@ export async function PATCH(request: Request): Promise<NextResponse> {
     if (g.body.note !== undefined) game.note = g.body.note ?? null;
     recomputeGame(db, game);
     audit(db, g.session?.sub ?? 'admin', 'GAME_MODIFIEE', game.playerId, game.id);
-    return game;
+    return { game, correction };
   });
 
   if (!updated) return fail('INTROUVABLE', 'Game introuvable.');
   if (updated === 'JOKER') return fail('CONFLIT', 'Cette game a été annulée par une carte (Joker ou Grand Dégel) : elle ne peut pas compter.');
   if (updated === 'LIMITE') return fail('CONFLIT', 'Ce joueur a déjà toutes ses games : celle-ci ne peut pas compter.');
+  if ('refus' in updated) return fail('CONFLIT', updated.refus);
   return ok(updated);
 }
 
-/** Supprime une game. Les flocons déjà versés ne sont pas repris. */
+/**
+ * Supprime une game saisie par erreur : elle quitte le classement, les
+ * flocons qu'elle a versés sont repris (jamais sous zéro), et sa carte est
+ * rendue au joueur (`supprimeGame`).
+ */
 export async function DELETE(request: Request): Promise<NextResponse> {
   const g = await guard(request, {
     scope: 'game-delete',
@@ -198,14 +221,8 @@ export async function DELETE(request: Request): Promise<NextResponse> {
   });
   if (!g.ok) return g.response;
 
-  const removed = await getStore().transaction((db) => {
-    const game = db.games.find((x) => x.id === g.body.gameId);
-    if (!game) return false;
-    db.games = db.games.filter((x) => x.id !== g.body.gameId);
-    audit(db, g.session?.sub ?? 'admin', 'GAME_SUPPRIMEE', game.playerId, game.id);
-    return true;
-  });
-
-  if (!removed) return fail('INTROUVABLE', 'Game introuvable.');
-  return ok({ supprimee: true });
+  const resultat = await getStore().transaction((db) => supprimeGame(db, g.session?.sub ?? 'admin', g.body.gameId));
+  if (resultat === 'INTROUVABLE') return fail('INTROUVABLE', 'Game introuvable.');
+  if ('refus' in resultat) return fail('CONFLIT', resultat.refus);
+  return ok({ supprimee: true, flocons: resultat.flocons, rendues: resultat.rendues, perdues: resultat.perdues });
 }

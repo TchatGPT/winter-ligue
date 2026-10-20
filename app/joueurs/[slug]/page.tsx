@@ -11,11 +11,20 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   return { title: profile ? profile.pseudo : 'Joueur inconnu' };
 }
 
-/** La fiche d'un joueur : voir `components/FicheJoueur`. */
+/**
+ * La fiche d'un joueur : voir `components/FicheJoueur`. La modération y
+ * corrige ou supprime une game mal saisie ; la route le revérifie.
+ */
 export default async function FicheJoueurPage({ params }: { params: Promise<{ slug: string }> }) {
-  await exigeSession();
+  const session = await exigeSession();
   const { slug } = await params;
   const fiche = await getFicheJoueur(slug);
   if (!fiche) notFound();
-  return <FicheJoueur fiche={fiche} subs={await subsDuJoueur(fiche.twitchId)} />;
+  return (
+    <FicheJoueur
+      fiche={fiche}
+      subs={await subsDuJoueur(fiche.twitchId)}
+      moderation={session.role === 'admin'}
+    />
+  );
 }

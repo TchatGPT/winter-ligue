@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { type CSSProperties, type ReactNode, useMemo, useState } from 'react';
 import { CardFrame } from '@/components/CardFrame';
+import { CorrectionGame, type GameACorriger } from '@/components/CorrectionGame';
 import { CouronneGlace } from '@/components/CouronneGlace';
 import { MedailleGlace } from '@/components/MedailleGlace';
 import { SnowCap } from '@/components/SnowCap';
@@ -60,8 +61,20 @@ function Chiffre({ nom, children, precision }: { nom: string; children: ReactNod
  *
  * Le grand livre n'est pas montré : la fiche est publique, `getFicheJoueur`
  * le retire côté serveur.
+ *
+ * Pour la modération, chaque game a son bouton « Corriger » : les kills et le
+ * placement d'une capture mal lue, ou la game à supprimer (`CorrectionGame`).
  */
-export function FicheJoueur({ fiche, subs }: { fiche: DonneesFiche; subs: BilanSubs }) {
+export function FicheJoueur({
+  fiche,
+  subs,
+  moderation = false,
+}: {
+  fiche: DonneesFiche;
+  subs: BilanSubs;
+  /** La session est celle d'un membre de la modération : les games se corrigent. */
+  moderation?: boolean;
+}) {
   const { profil: p, rang, duels } = fiche;
   const t = p.totals;
   const aJoue = t.countedGames > 0;
@@ -70,6 +83,8 @@ export function FicheJoueur({ fiche, subs }: { fiche: DonneesFiche; subs: BilanS
   const [filtre, setFiltre] = useState<Filtre>('toutes');
   const [tri, setTri] = useState<Tri>('recentes');
   const [tout, setTout] = useState(false);
+  /** La game qu'un membre de la modération corrige, s'il y en a une. */
+  const [aCorriger, setACorriger] = useState<GameACorriger | null>(null);
 
   const surtitre = fiche.streameuse
     ? 'Streameuse · hors classement'
@@ -327,6 +342,7 @@ export function FicheJoueur({ fiche, subs }: { fiche: DonneesFiche; subs: BilanS
                         className="profil-game"
                         data-top={top ?? undefined}
                         data-passee={g.skipped ? '' : undefined}
+                        data-moderation={moderation ? '' : undefined}
                       >
                         <span className="profil-game-score num">
                           <b>{g.score}</b>
@@ -351,6 +367,16 @@ export function FicheJoueur({ fiche, subs }: { fiche: DonneesFiche; subs: BilanS
                             {g.skipped && ' · ne compte pas'}
                           </span>
                         </span>
+                        {moderation && (
+                          <button
+                            type="button"
+                            className="btn btn-sm profil-game-corriger"
+                            onClick={() => setACorriger(g)}
+                            aria-label={`Corriger la game ${numeroDe.get(g.id)}`}
+                          >
+                            Corriger
+                          </button>
+                        )}
                         {g.applied.length > 0 && (
                           <span className="profil-game-cartes">
                             {g.applied.map((effet, i) => {
@@ -382,6 +408,15 @@ export function FicheJoueur({ fiche, subs }: { fiche: DonneesFiche; subs: BilanS
                 <button type="button" className="btn profil-tout" onClick={() => setTout((v) => !v)}>
                   {tout ? 'Montrer moins' : `Voir les ${lignes.length} games`}
                 </button>
+              )}
+              {aCorriger && (
+                <CorrectionGame
+                  key={aCorriger.id}
+                  game={aCorriger}
+                  numero={numeroDe.get(aCorriger.id) ?? 0}
+                  pseudo={p.pseudo}
+                  onClose={() => setACorriger(null)}
+                />
               )}
             </>
           )}

@@ -106,6 +106,13 @@ export const updateGameSchema = z.object({
   gameId: uuid,
   skipped: z.boolean().optional(),
   note: texteLibre(140).optional().nullable(),
+  /**
+   * Corriger une capture mal lue : les kills et le placement. Le score, les
+   * cartes de la game et ses flocons se recalculent sur le serveur
+   * (`corrigeGame`).
+   */
+  kills: z.number().int().min(GAME_LIMITS.minKills).max(GAME_LIMITS.maxKills).optional(),
+  placement: z.union([z.literal(1), z.literal(2), z.literal(3), z.null()]).optional(),
 });
 
 export const deleteGameSchema = z.object({ gameId: uuid });

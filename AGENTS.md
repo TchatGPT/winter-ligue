@@ -98,6 +98,14 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   active, qui attend la suivante — et le Joker consommé (`utiliseJoker`). Un seul à la
   fois : un second, tiré pendant qu'il en garde un, est consommé sans effet. Une game
   annulée par un Joker ne se rétablit pas.
+- **Une game se corrige ou se supprime** depuis la fiche du joueur, par la modération
+  (`CorrectionGame`, `PATCH` / `DELETE /api/games`, `lib/services/corrections.ts`) :
+  corrigée, son score se réécrit, ses cartes de prochaine game se relisent
+  (`recalculeCartesDeLaGame`) et ses flocons suivent — la différence passe au grand
+  livre (`adjust`, référencée par la game) ; supprimée, ses flocons sont repris (jamais
+  sous zéro) et sa carte est rendue (`rendCartesDeLaGame`), perdue si le joueur en a déjà
+  une en attente. Une game qui porte un Clone kill ou un échange ne se corrige pas : elle
+  se supprime, et se ressaisit.
 - La streameuse n'est jamais bénéficiaire d'une carte : les tirages passent par
   `joueursEnLice()`.
 - Une ouverture d'un booster de la ligue a **deux tirages** : la carte, puis — selon sa
