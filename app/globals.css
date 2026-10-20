@@ -165,6 +165,10 @@
   --noel-nez: #e58a7a;
   --noel-botte: #17202e;
   --noel-fourrure: #f6fbff;
+  /* Le fusil de glace de la rafale : la glace profonde (l'acier de l'arme), et
+     la glace givrée (son bois). */
+  --fusil-glace: #3197dc;
+  --fusil-givre: #84c9ee;
 
   /* Le décor 3D des duels (components/duel3d) : la neige, le ciel, les bois. */
   --decor-neige: #f3f8fd;

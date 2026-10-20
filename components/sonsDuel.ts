@@ -1,7 +1,8 @@
 'use client';
 
 /**
- * Les sons du duel : la neige qui roule, les bosses, le fracas, les grelots.
+ * Les sons du duel : la neige qui roule, les bosses, le fracas, les grelots —
+ * et le fusil de glace de la rafale, qu'on arme et qui tire.
  *
  * ## Pourquoi pas les sons des boosters
  *
@@ -181,6 +182,27 @@ export function sonGrelots(): void {
   });
   note(2093, t + 0.62, 0.9, 0.18, 'sine');
   note(2637, t + 0.62, 0.9, 0.14, 'sine');
+}
+
+/** Le fusil de glace qu'on arme : le levier tiré, puis relâché — « clac-clac ». */
+export function sonArme(): void {
+  const audio = contexte();
+  if (!audio) return;
+  const t = audio.currentTime;
+  bouffee(t, 0.03, 0.35, 'bandpass', 2600);
+  note(1900, t, 0.04, 0.07, 'triangle');
+  bouffee(t + 0.11, 0.035, 0.4, 'bandpass', 3200);
+  note(2400, t + 0.11, 0.04, 0.09, 'triangle');
+}
+
+/** Un coup du fusil de glace : un choc sourd, la neige chassée — « pof » —, et la glace qui claque. */
+export function sonTir(): void {
+  const audio = contexte();
+  if (!audio) return;
+  const t = audio.currentTime;
+  note(160, t, 0.09, 0.3, 'sine');
+  bouffee(t, 0.08, 0.42, 'lowpass', 1500);
+  bouffee(t, 0.02, 0.2, 'highpass', 4500);
 }
 
 /** La défaite : deux notes qui descendent. */

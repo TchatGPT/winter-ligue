@@ -211,6 +211,58 @@ export function texGrain(graine: number): THREE.CanvasTexture {
   return t;
 }
 
+/**
+ * La glace taillée : un bleu qui n'est pas égal — des nuages plus clairs ou
+ * plus profonds —, des fêlures blanches qui bifurquent, des bulles prises
+ * dedans. Elle se multiplie à la couleur de la matière : le fond, un peu
+ * sombre, la creuse ; les fêlures et les bulles l'éclairent.
+ */
+export function texGlace(graine: number): THREE.CanvasTexture {
+  const alea = hasard(graine);
+  const t = toile(512, 512, (ctx) => {
+    ctx.fillStyle = '#d2dbe2';
+    ctx.fillRect(0, 0, 512, 512);
+    for (let i = 0; i < 26; i += 1) {
+      const x = alea() * 512;
+      const y = alea() * 512;
+      const r = 40 + alea() * 120;
+      const d = ctx.createRadialGradient(x, y, 0, x, y, r);
+      d.addColorStop(0, alea() < 0.5 ? 'rgba(255,255,255,0.55)' : 'rgba(110,128,148,0.4)');
+      d.addColorStop(1, 'rgba(210,219,226,0)');
+      ctx.fillStyle = d;
+      ctx.fillRect(x - r, y - r, 2 * r, 2 * r);
+    }
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    for (let i = 0; i < 10; i += 1) {
+      let x = alea() * 512;
+      let y = alea() * 512;
+      let a = alea() * Math.PI * 2;
+      ctx.strokeStyle = `rgba(255,255,255,${0.55 + alea() * 0.4})`;
+      ctx.lineWidth = 2 + alea() * 3.5;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      const n = 6 + Math.floor(alea() * 8);
+      for (let k = 0; k < n; k += 1) {
+        a += (alea() - 0.5) * 0.9;
+        x += Math.cos(a) * (10 + alea() * 26);
+        y += Math.sin(a) * (10 + alea() * 26);
+        ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+    for (let i = 0; i < 160; i += 1) {
+      ctx.fillStyle = `rgba(255,255,255,${0.35 + alea() * 0.5})`;
+      ctx.beginPath();
+      ctx.arc(alea() * 512, alea() * 512, 0.6 + alea() * 1.8, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  });
+  t.wrapS = THREE.RepeatWrapping;
+  t.wrapT = THREE.RepeatWrapping;
+  return t;
+}
+
 /** Un flocon qui tombe : un disque doux, blanc. */
 export function texFlocon(): THREE.CanvasTexture {
   return toile(64, 64, (ctx) => {

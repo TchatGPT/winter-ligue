@@ -24,7 +24,10 @@
  * La façon de perdre est tirée, elle aussi : percuter un obstacle, glisser sur
  * la glace, voir sa boule éclater, s'asseoir à bout de souffle — ou aller jusqu'au bout et, battu d'un rien, se prendre la
  * boule de neige du vainqueur en pleine face. Et le vainqueur ne fête pas
- * toujours de la même façon : il saute, il danse, ou il grimpe sur sa boule. Le vainqueur, lui, ne change pas : c'est le serveur qui l'a tiré.
+ * toujours de la même façon : il saute, il danse, il grimpe sur sa boule — ou
+ * il dégaine son fusil de glace, une AK-47 taillée dans la glace, et tire en
+ * l'air trois rafales de boules de neige. Le vainqueur, lui, ne change pas :
+ * c'est le serveur qui l'a tiré.
  */
 
 import type { Camp } from './bataille';
@@ -41,8 +44,12 @@ import type { Camp } from './bataille';
  */
 export type Chute = 'rocher' | 'glisse' | 'eclate' | 'essouffle' | 'boule';
 
-/** Comment le vainqueur fête sa victoire, la ligne passée : il saute, il danse, ou il grimpe sur sa boule. */
-export type Fete = 'saute' | 'danse' | 'grimpe';
+/**
+ * Comment le vainqueur fête sa victoire, la ligne passée : il saute, il danse,
+ * il grimpe sur sa boule, ou il tire des rafales de boules de neige avec son
+ * fusil de glace (`rafale`, ajoutée le 20/10/2026).
+ */
+export type Fete = 'saute' | 'danse' | 'grimpe' | 'rafale';
 
 /**
  * Les issues et leur poids : la boule de neige en pleine face, une fois sur
@@ -57,10 +64,12 @@ const ISSUES: readonly [Chute, number][] = [
   ['boule', 25],
 ];
 
+/** Les fêtes et leur poids : la rafale, une fois sur quatre. */
 const FETES: readonly [Fete, number][] = [
-  ['saute', 40],
-  ['danse', 35],
-  ['grimpe', 25],
+  ['saute', 30],
+  ['danse', 25],
+  ['grimpe', 20],
+  ['rafale', 25],
 ];
 
 /** Tire une valeur selon ses poids, avec un nombre de 0 à 1. */

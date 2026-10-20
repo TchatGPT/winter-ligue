@@ -28,7 +28,9 @@ import {
   sonDefaite,
   sonDepart,
   sonFracas,
+  sonArme,
   sonGrelots,
+  sonTir,
   type Roulement,
 } from '@/components/sonsDuel';
 import { flakes } from '@/components/ui';
@@ -47,6 +49,9 @@ const Course3D = dynamic(chargeCourse3D, { ssr: false, loading: () => <div class
 export function prechargeCourse3D(): void {
   void chargeCourse3D();
 }
+
+/** Le fusil de glace de la rafale : le « clac-clac » quand il l'arme, un « pof » par coup. */
+const sonDuGeste = (geste: 'arme' | 'tir') => (geste === 'tir' ? sonTir() : sonArme());
 
 export interface CampVueClient {
   id: string;
@@ -705,6 +710,7 @@ export function BatailleArene({
               controle.current = c;
             }}
             onIndisponible={() => setEn3d(false)}
+            surGeste={sonDuGeste}
           />
         </div>
       ) : (

@@ -122,6 +122,12 @@ describe('le suspense', () => {
     expect([...new Set(courses.map((c) => c.chute.type))].sort()).toEqual(
       ['boule', 'eclate', 'essouffle', 'glisse', 'rocher'],
     );
-    expect([...new Set(courses.map((c) => c.fete))].sort()).toEqual(['danse', 'grimpe', 'saute']);
+    expect([...new Set(courses.map((c) => c.fete))].sort()).toEqual(['danse', 'grimpe', 'rafale', 'saute']);
+  });
+
+  it('finit en rafale à peu près une fois sur quatre', () => {
+    const rafales = graines.filter((g) => ecritCourse(g, 'hote').fete === 'rafale').length;
+    expect(rafales / graines.length).toBeGreaterThan(0.17);
+    expect(rafales / graines.length).toBeLessThan(0.33);
   });
 });

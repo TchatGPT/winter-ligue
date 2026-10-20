@@ -38,6 +38,7 @@ export function Course3D({
   noms,
   surControle,
   onIndisponible,
+  surGeste,
 }: {
   donnees: Donnees3D;
   noms: Record<Camp, { pseudo: string; moi: boolean }>;
@@ -45,15 +46,19 @@ export function Course3D({
   surControle: (controle: ControleCourse3D | null) => void;
   /** Appelé si la scène ne peut pas se construire : l'arène repasse en 2D. */
   onIndisponible: () => void;
+  /** Les gestes du fusil de glace, pour le son : armé, puis chaque coup. */
+  surGeste?: (geste: 'arme' | 'tir') => void;
 }) {
   const boite = useRef<HTMLDivElement>(null);
   const toile = useRef<HTMLCanvasElement>(null);
   const etiquettes = useRef<Record<Camp, HTMLDivElement | null>>({ hote: null, adversaire: null });
   const repli = useRef(onIndisponible);
   const relaie = useRef(surControle);
+  const geste = useRef(surGeste);
   useEffect(() => {
     repli.current = onIndisponible;
     relaie.current = surControle;
+    geste.current = surGeste;
   });
 
   useEffect(() => {
@@ -89,6 +94,7 @@ export function Course3D({
         if (vie.annule) return;
         const m = creeMoteur(el, donnees, {
           police,
+          geste: (g) => geste.current?.(g),
           etiquette: (camp, x, y, visible) => {
             const t = etiquettes.current[camp];
             if (!t) return;

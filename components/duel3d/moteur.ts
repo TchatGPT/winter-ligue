@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import type { Chute, Fete } from '../../lib/domain/course';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { AXE, creeDecor, creeObstacle, LONGUEUR, palette, type GenreObstacle3D } from './decor';
+import { creeFusilDeGlace } from './fusil';
 import { couleur, texCernes, texEcorce, texGrain, texOmbre } from './matieres';
 import { creePereNoel, type EtatCoureur, type PereNoel3D } from './pereNoel';
 
@@ -14,8 +15,9 @@ import { creePereNoel, type EtatCoureur, type PereNoel3D } from './pereNoel';
  * scène : les pères Noël et leurs boules qui grossissent, la caméra qui suit
  * la course, les façons de perdre — la boule qui éclate, celle qui revient
  * écraser son pousseur, le souffle court, la boule de neige lancée en pleine
- * face par le vainqueur —, les confettis à l'arrivée, et le nom de chaque
- * joueur au-dessus de sa tête.
+ * face par le vainqueur —, les confettis à l'arrivée, la rafale du fusil de
+ * glace — ses boules de neige, ses douilles, le givre de sa bouche —, et le
+ * nom de chaque joueur au-dessus de sa tête.
  *
  * Aucune dépendance à React : il se construit sur une toile, et se détruit
  * entièrement — géométries, matières, textures, contexte WebGL.
@@ -44,10 +46,27 @@ export interface Options3D {
   etiquette?: (camp: Camp3D, x: number, y: number, visible: boolean) => void;
   /** La police des inscriptions (le panneau d'arrivée). */
   police?: string;
+  /** Le fusil de glace de la rafale : armé, puis chaque coup. L'arène y met le son. */
+  geste?: (geste: 'arme' | 'tir') => void;
 }
 
 /** La boule part petite et finit plus grosse que lui. */
 const rayonBoule = (p: number) => 0.2 + 0.5 * p;
+
+/**
+ * Comment la caméra cadre chaque fête, la ligne passée : de combien elle lève
+ * le regard (`hausse`), recule ou s'approche (`recul`, en part de sa
+ * distance), se recentre sur le couloir du vainqueur (`recentre`), et lui
+ * laisse de place devant (`devant`). Sur sa boule, il se tient bien plus haut ;
+ * pour la rafale, elle s'approche — il faut reconnaître l'arme — et garde
+ * devant lui le ciel où montent ses boules de neige.
+ */
+const CADRAGES: Record<Fete, { hausse: number; recul: number; recentre: number; devant: number }> = {
+  saute: { hausse: 0.4, recul: 0, recentre: 0.3, devant: 0.3 },
+  danse: { hausse: 0.3, recul: 0, recentre: 0.3, devant: 0.3 },
+  grimpe: { hausse: 1, recul: 0.08, recentre: 0.5, devant: 0.3 },
+  rafale: { hausse: 1.9, recul: -0.25, recentre: 0.7, devant: 1.8 },
+};
 
 interface Coureur {
   camp: Camp3D;
@@ -165,9 +184,17 @@ export function creeMoteur(toile: HTMLCanvasElement, donnees: Donnees3D, options
     };
   };
 
+  const perdant = donnees.chute?.camp ?? null;
+  const vainqueur: Camp3D | null = perdant === null ? null : perdant === 'hote' ? 'adversaire' : 'hote';
+  const mode: Chute = donnees.chute?.type ?? 'rocher';
+  /** La boule n'éclate que si c'est elle, ou l'obstacle, qui fait tomber. */
+  const eclateALaChute = mode === 'rocher' || mode === 'glisse' || mode === 'eclate';
+  /** Le fusil de glace, pour le vainqueur d'une course qui finit en rafale. */
+  const fusil = vainqueur !== null && donnees.fete === 'rafale' ? creeFusilDeGlace() : null;
+
   const coureurs: Record<Camp3D, Coureur> = {} as Record<Camp3D, Coureur>;
   for (const camp of ['hote', 'adversaire'] as Camp3D[]) {
-    const santa = creePereNoel(tenue(camp));
+    const santa = creePereNoel(tenue(camp), camp === vainqueur && fusil ? fusil : undefined);
     scene.add(santa.racine);
     const boule = new THREE.Mesh(new THREE.SphereGeometry(1, 48, 32), neigeBoule);
     boule.castShadow = true;
@@ -194,12 +221,6 @@ export function creeMoteur(toile: HTMLCanvasElement, donnees: Donnees3D, options
       souffle: 0,
     };
   }
-  const perdant = donnees.chute?.camp ?? null;
-  const vainqueur: Camp3D | null = perdant === null ? null : perdant === 'hote' ? 'adversaire' : 'hote';
-  const mode: Chute = donnees.chute?.type ?? 'rocher';
-  /** La boule n'éclate que si c'est elle, ou l'obstacle, qui fait tomber. */
-  const eclateALaChute = mode === 'rocher' || mode === 'glisse' || mode === 'eclate';
-
   let projectile: Projectile | null = null;
   let lance = false;
   const souffles: { m: THREE.Mesh; v: THREE.Vector3; vie: number }[] = [];
@@ -235,6 +256,90 @@ export function creeMoteur(toile: HTMLCanvasElement, donnees: Donnees3D, options
     }
   }
 
+  /* ------------------------------ La rafale -------------------------------- */
+  // Les boules de neige du fusil de glace, ses douilles, le givre de sa bouche.
+  const VITESSE_BALLE = 5.3;
+  const RAYON_BALLE = 0.07;
+  const balles: { m: THREE.Mesh; v: THREE.Vector3; vie: number }[] = [];
+  const douilles: { m: THREE.Mesh; v: THREE.Vector3; spin: THREE.Vector3; vie: number }[] = [];
+  const bouffees: { m: THREE.Mesh; v: THREE.Vector3; vie: number; duree: number; taille: number }[] = [];
+  const geoBalle = new THREE.SphereGeometry(1, 14, 10);
+  const geoDouille = new THREE.CylinderGeometry(0.011, 0.011, 0.042, 8);
+  const quat = new THREE.Quaternion();
+  const axeTir = new THREE.Vector3();
+  const flanc = new THREE.Vector3();
+  let dernierTir = -Infinity;
+  let prochaineVolute = 0;
+
+  /** Une bouffée de neige poudreuse, qui gonfle et se dissipe. */
+  function bouffee(position: THREE.Vector3, v: THREE.Vector3, taille: number, duree: number) {
+    const m = new THREE.Mesh(
+      geoSouffle,
+      new THREE.MeshStandardMaterial({ color: pal.neige, roughness: 1, transparent: true, opacity: 0.8, depthWrite: false }),
+    );
+    m.position.copy(position);
+    m.scale.setScalar(taille * 0.3);
+    scene.add(m);
+    bouffees.push({ m, v: v.clone(), vie: duree, duree, taille });
+  }
+
+  /** Un coup du fusil de glace : la boule de neige part, la douille saute, la bouche givre. */
+  function tire() {
+    if (!fusil) return;
+    fusil.bouche.getWorldPosition(tmp);
+    fusil.groupe.getWorldQuaternion(quat);
+    axeTir.set(1, 0, 0).applyQuaternion(quat);
+    // La boule de neige, un peu dispersée : la rafale s'ouvre en gerbe.
+    const balle = new THREE.Mesh(geoBalle, neigeBoule);
+    balle.scale.setScalar(RAYON_BALLE);
+    balle.castShadow = true;
+    balle.position.copy(tmp);
+    scene.add(balle);
+    const v = axeTir.clone().multiplyScalar(VITESSE_BALLE);
+    v.x += (Math.random() - 0.5) * 0.7;
+    v.y += (Math.random() - 0.5) * 0.7;
+    v.z += (Math.random() - 0.5) * 0.6;
+    balles.push({ m: balle, v, vie: 3 });
+    // Le givre de la bouche : des éclats de glace qui jaillissent devant, et
+    // une bouffée de neige. Pas d'éclair : c'est de la glace qui tire.
+    for (let i = 0; i < 6; i += 1) {
+      const e = new THREE.Mesh(geoEclat, fusil.glace);
+      const taille = 0.012 + Math.random() * 0.014;
+      e.scale.setScalar(taille);
+      e.position.copy(tmp);
+      scene.add(e);
+      eclats.push({
+        m: e,
+        v: axeTir
+          .clone()
+          .multiplyScalar(2.2 + Math.random() * 2)
+          .add(new THREE.Vector3((Math.random() - 0.5) * 1.6, (Math.random() - 0.5) * 1.6, (Math.random() - 0.5) * 1.6)),
+        spin: new THREE.Vector3(Math.random() * 12, Math.random() * 12, Math.random() * 12),
+        vie: 0.3 + Math.random() * 0.15,
+        taille,
+      });
+    }
+    bouffee(tmp, axeTir.clone().multiplyScalar(0.8), 0.15, 0.22);
+    // La douille, éjectée sur la droite, qui tournoie et tombe dans la neige.
+    fusil.ejection.getWorldPosition(tmp);
+    flanc.set(0, 0, 1).applyQuaternion(quat);
+    const d = new THREE.Mesh(geoDouille, fusil.glace);
+    d.castShadow = true;
+    d.position.copy(tmp);
+    scene.add(d);
+    douilles.push({
+      m: d,
+      v: flanc
+        .clone()
+        .multiplyScalar(1.3 + Math.random() * 0.6)
+        .addScaledVector(axeTir, -0.4)
+        .add(new THREE.Vector3(0, 1.5 + Math.random() * 0.6, 0)),
+      spin: new THREE.Vector3(14 + Math.random() * 8, Math.random() * 6, 10 + Math.random() * 8),
+      vie: 1.8,
+    });
+    dernierTir = t;
+  }
+
   function fete(x: number, z: number) {
     for (let i = 0; i < 120; i += 1) {
       const m = new THREE.Mesh(geoConfetti, matsConfetti[i % matsConfetti.length]);
@@ -254,6 +359,8 @@ export function creeMoteur(toile: HTMLCanvasElement, donnees: Donnees3D, options
   const camera = new THREE.PerspectiveCamera(30, 2, 0.1, 220);
   let centre = 1.5;
   let recul = 1;
+  /** De 0 à 1 : la caméra s'ouvre sur la fête du vainqueur. */
+  let ouverture = 0;
   const regard = new THREE.Vector3();
   const tete = new THREE.Vector3();
   const cible = new THREE.Vector3();
@@ -305,7 +412,7 @@ export function creeMoteur(toile: HTMLCanvasElement, donnees: Donnees3D, options
       c.ombrePied.scale.set(c.etat === 'chute' ? 1.9 : 1.05, 1, c.etat === 'chute' ? 1.1 : 0.9);
 
       cible.set(bouleX - r * 0.78, r * 1.55 + hausse, c.z);
-      c.santa.anime({
+      const geste = c.santa.anime({
         t,
         dt,
         etat: c.etat,
@@ -317,6 +424,11 @@ export function creeMoteur(toile: HTMLCanvasElement, donnees: Donnees3D, options
         fete: donnees.fete ?? 'saute',
         dessus: { dx: bouleX - c.x, hauteur: 2 * r },
       });
+      if (geste.arme) options.geste?.('arme');
+      for (let i = 0; i < geste.tirs; i += 1) {
+        tire();
+        options.geste?.('tir');
+      }
 
       // À bout de souffle : de petites bouffées blanches, qui montent et fondent.
       if (c.etat === 'chute' && mode === 'essouffle' && c.depuis > 0.4) {
@@ -431,6 +543,61 @@ export function creeMoteur(toile: HTMLCanvasElement, donnees: Donnees3D, options
       }
     }
 
+    // Les boules de neige du fusil : elles montent, retombent, et s'écrasent dans la neige.
+    for (let i = balles.length - 1; i >= 0; i -= 1) {
+      const bl = balles[i];
+      bl.vie -= dt;
+      bl.v.y -= 9.8 * dt;
+      bl.m.position.addScaledVector(bl.v, dt);
+      bl.m.rotation.x += dt * 10;
+      const auSol = bl.m.position.y <= RAYON_BALLE;
+      if (auSol || bl.vie <= 0) {
+        if (auSol) eclate(bl.m.position.x, RAYON_BALLE, bl.m.position.z, 0.22, 5, 1.4);
+        scene.remove(bl.m);
+        balles.splice(i, 1);
+      }
+    }
+    // Les douilles rebondissent, s'arrêtent, fondent.
+    for (let i = douilles.length - 1; i >= 0; i -= 1) {
+      const d = douilles[i];
+      d.vie -= dt;
+      d.v.y -= 9.8 * dt;
+      d.m.position.addScaledVector(d.v, dt);
+      if (d.m.position.y < 0.012) {
+        d.m.position.y = 0.012;
+        d.v.y *= -0.3;
+        d.v.x *= 0.55;
+        d.v.z *= 0.55;
+        d.spin.multiplyScalar(0.6);
+      }
+      d.m.rotation.x += d.spin.x * dt;
+      d.m.rotation.y += d.spin.y * dt;
+      d.m.rotation.z += d.spin.z * dt;
+      if (d.vie < 0.5) d.m.scale.setScalar(Math.max(0.001, d.vie / 0.5));
+      if (d.vie <= 0) {
+        scene.remove(d.m);
+        douilles.splice(i, 1);
+      }
+    }
+    for (let i = bouffees.length - 1; i >= 0; i -= 1) {
+      const f = bouffees[i];
+      f.vie -= dt;
+      f.m.position.addScaledVector(f.v, dt);
+      f.m.scale.setScalar(f.taille * (0.3 + 0.7 * (1 - f.vie / f.duree)));
+      (f.m.material as THREE.MeshStandardMaterial).opacity = 0.8 * Math.max(0, f.vie / f.duree);
+      if (f.vie <= 0) {
+        scene.remove(f.m);
+        (f.m.material as THREE.Material).dispose();
+        bouffees.splice(i, 1);
+      }
+    }
+    // Le canon qui fume — de givre : quelques volutes après chaque rafale.
+    if (fusil && t - dernierTir > 0.25 && t - dernierTir < 2.6 && t >= prochaineVolute) {
+      prochaineVolute = t + 0.35;
+      fusil.bouche.getWorldPosition(tmp);
+      bouffee(tmp, new THREE.Vector3(0.12, 0.35, 0), 0.07, 0.9);
+    }
+
     // La caméra suit la course : les deux coureurs, puis celui qui court encore.
     const a = coureurs.hote;
     const b = coureurs.adversaire;
@@ -438,12 +605,23 @@ export function creeMoteur(toile: HTMLCanvasElement, donnees: Donnees3D, options
     if (a.etat === 'chute' && b.etat !== 'chute') vise = b.x + 1.2;
     else if (b.etat === 'chute' && a.etat !== 'chute') vise = a.x + 1.2;
     else vise = (a.x + b.x) / 2 + 1.3;
-    vise = THREE.MathUtils.clamp(vise, 1.8, LONGUEUR - 0.2);
+    // La fête : la caméra se tourne vers le vainqueur (voir `CADRAGES`).
+    const enFete = vainqueur !== null && coureurs[vainqueur].etat === 'victoire';
+    ouverture += ((enFete ? 1 : 0) - ouverture) * (1 - Math.exp(-dt * 1.6));
+    const cadrage = CADRAGES[donnees.fete ?? 'saute'];
+    vise += ouverture * cadrage.devant;
+    vise = THREE.MathUtils.clamp(vise, 1.8, LONGUEUR - 0.2 + ouverture * 2.5);
     centre += (vise - centre) * (1 - Math.exp(-dt * 2.6));
+    const zVainqueur = vainqueur === null ? 0 : AXE[vainqueur];
     // De côté et d'assez haut pour que les deux couloirs se lisent l'un au-dessus
     // de l'autre, un peu en avant pour voir les visages.
-    regard.set(centre + 0.2, 0.5, -0.1);
-    camera.position.set(regard.x + 1.2, regard.y + 5.8 * recul, regard.z + 7.7 * recul);
+    regard.set(
+      centre + 0.2,
+      0.5 + cadrage.hausse * ouverture,
+      -0.1 + (zVainqueur + 0.1) * cadrage.recentre * ouverture,
+    );
+    const eloigne = recul * (1 + cadrage.recul * ouverture);
+    camera.position.set(regard.x + 1.2, regard.y + 5.8 * eloigne, regard.z + 7.7 * eloigne);
     camera.lookAt(regard);
 
     soleil.position.set(centre - 11, 5.5, 5);
