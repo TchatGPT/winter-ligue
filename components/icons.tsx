@@ -256,6 +256,18 @@ export function IconCroix(props: IconProps) {
   );
 }
 
+/** Corriger — un crayon, sa mine en bas à gauche, la bague qui tient la gomme. */
+export function IconCrayon(props: IconProps) {
+  const corps = 'M15.6 4.4a2 2 0 0 1 2.8 0l1.2 1.2a2 2 0 0 1 0 2.8L9 19l-4.6 1 1-4.6L15.6 4.4Z';
+  return (
+    <Svg {...props}>
+      <Fond d={corps} />
+      <path d={corps} />
+      <path d="M13.8 6.2l4 4" />
+    </Svg>
+  );
+}
+
 /** Supprimer — une corbeille, son couvercle posé. */
 export function IconCorbeille(props: IconProps) {
   const cuve = 'M6 7h12l-.9 12.2a1.8 1.8 0 0 1-1.8 1.7H8.7a1.8 1.8 0 0 1-1.8-1.7L6 7Z';

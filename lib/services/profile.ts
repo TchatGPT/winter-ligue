@@ -13,6 +13,7 @@ import { getStore } from '@/lib/db/store';
 import { chanceDe, SEASON } from '@/lib/domain/rules';
 import { estLaStreameuse } from '@/lib/domain/streameuse';
 import { type BilanSubs, bilanDesSubs } from '@/lib/domain/twitchSubs';
+import { cartesJoueesSur } from './effects';
 import { classementDe, gamesOf, totalsOf } from './league';
 import {
   type OuvertureVue,
@@ -43,6 +44,7 @@ export interface ProfileView {
     playedAt: string;
     note: string | null;
     applied: { cardId: string; points: number }[];
+    cartes: ReturnType<typeof cartesJoueesSur>;
   }[];
   ledger: { delta: number; balanceAfter: number; reason: string; createdAt: string }[];
 }
@@ -78,6 +80,9 @@ function buildProfile(db: Database, playerId: string): ProfileView | null {
       playedAt: g.playedAt,
       note: g.note,
       applied: g.applied.map((a) => ({ cardId: a.cardId, points: a.points })),
+      // La carte jouée sur la game, même sans effet — une Luge hors du Top 1 —,
+      // et ce qu'elle deviendrait si la modération corrigeait la game.
+      cartes: cartesJoueesSur(db, g),
     })),
     ledger: db.ledger
       .filter((e) => e.playerId === playerId)

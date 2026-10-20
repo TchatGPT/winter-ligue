@@ -3,9 +3,10 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
+import { CardFrame } from '@/components/CardFrame';
+import { IconCorbeille } from '@/components/icons';
 import { SnowCap } from '@/components/SnowCap';
-import { flakes } from '@/components/ui';
-import { getCard } from '@/lib/domain/catalog';
+import { flakes, rarityMeta } from '@/components/ui';
 import { GAME_LIMITS, placementPoints } from '@/lib/domain/rules';
 import type { Placement } from '@/lib/domain/types';
 import { shortDateTime } from '@/lib/format';
@@ -21,7 +22,23 @@ export interface GameACorriger {
   skipped: boolean;
   playedAt: string;
   applied: { cardId: string; points: number }[];
+  /** Les cartes jouées sur la game, même sans effet, et ce qu'elles deviendraient à la correction. */
+  cartes?: {
+    cardId: string;
+    nom: string;
+    rarity: string;
+    glyph: string;
+    resultat: string;
+    correction: 'relue' | 'gardee' | 'bloque';
+  }[];
 }
+
+/** Ce que devient la carte si la game est corrigée. */
+const SUITE: Record<'relue' | 'gardee' | 'bloque', string> = {
+  relue: 'Corrigée, la game relit cette carte : ses points suivent les kills et le placement.',
+  gardee: 'Corrigée, la game garde ce que la carte lui a donné.',
+  bloque: 'Elle a changé les kills de la game : celle-ci ne se corrige pas. Supprime-la, puis ressaisis-la.',
+};
 
 const PLACEMENTS: { valeur: Placement; nom: string }[] = [
   { valeur: 1, nom: 'Top 1' },
@@ -86,7 +103,9 @@ export function CorrectionGame({
   const change = kills !== game.kills || placement !== enPlacement(game.placement);
   const nuAvant = game.kills + placementPoints(enPlacement(game.placement));
   const nuApres = killsValides ? kills + placementPoints(placement) : null;
-  const cartes = game.applied.map((a) => getCard(a.cardId)?.name).filter((n): n is string => Boolean(n));
+  const cartes = game.cartes ?? [];
+  /** Une carte a changé les kills de la game : elle ne se corrige pas. */
+  const bloquee = cartes.some((c) => c.correction === 'bloque');
 
   async function envoie(methode: 'PATCH' | 'DELETE') {
     setBusy(true);
@@ -235,17 +254,44 @@ export function CorrectionGame({
                 <small>
                   {game.skipped
                     ? 'Cette game ne compte pas : elle ne rapporte ni points ni flocons.'
-                    : cartes.length
-                      ? `${cartes.join(', ')} se recalcule sur la game corrigée ; ses flocons suivent.`
-                      : 'Ses flocons suivent : la différence est ajoutée, ou reprise.'}
+                    : 'Ses flocons suivent : la différence est ajoutée, ou reprise.'}
                 </small>
+              </div>
+
+              {/* La carte jouée sur la game — même sans effet —, ce qu'elle y a
+                  fait, et ce qu'elle deviendrait. */}
+              <div className="correction-cartes">
+                <span className="correction-libelle">
+                  {cartes.length > 1 ? 'Cartes jouées sur cette game' : 'Carte jouée sur cette game'}
+                </span>
+                {cartes.length === 0 ? (
+                  <p className="correction-sans-carte">Aucune carte n’a joué sur cette game.</p>
+                ) : (
+                  cartes.map((c) => (
+                    <div key={c.cardId} className="correction-carte" data-correction={c.correction}>
+                      <span className="correction-carte-vignette" aria-hidden="true">
+                        <CardFrame cardId={c.cardId} name={c.nom} rarity={c.rarity} glyph={c.glyph} largeur="46px" />
+                      </span>
+                      <div className="min-w-0">
+                        <p className="correction-carte-nom">
+                          {c.nom} <small>{rarityMeta(c.rarity).label}</small>
+                        </p>
+                        {c.resultat && <p className="correction-carte-effet">{c.resultat}</p>}
+                        <p className="correction-carte-suite">{SUITE[c.correction]}</p>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
 
               {supprimer && (
                 <div className="correction-alerte" role="alert">
                   <p>
-                    <b>Supprimer cette game ?</b> Elle quitte le classement, les flocons qu’elle a rapportés sont repris,
-                    et sa carte, s’il y en a une, revient au joueur.
+                    <b>Supprimer cette game ?</b> Elle quitte le classement, et les flocons qu’elle a rapportés sont
+                    repris.{' '}
+                    {cartes.length > 0
+                      ? `${cartes.map((c) => c.nom).join(', ')} revient au joueur, sauf s’il a déjà une carte en attente.`
+                      : 'Aucune carte n’avait joué dessus.'}
                   </p>
                 </div>
               )}
@@ -274,7 +320,7 @@ export function CorrectionGame({
                     disabled={busy}
                     onClick={() => setSupprimer(true)}
                   >
-                    Supprimer la game
+                    <IconCorbeille className="h-[18px] w-[18px]" /> Supprimer la game
                   </button>
                   <button type="button" className="btn" disabled={busy} onClick={onClose}>
                     Annuler
@@ -282,7 +328,7 @@ export function CorrectionGame({
                   <button
                     type="button"
                     className="btn btn-ice"
-                    disabled={busy || !change || !killsValides}
+                    disabled={busy || !change || !killsValides || bloquee}
                     onClick={() => envoie('PATCH')}
                   >
                     {busy ? 'Enregistrement…' : 'Enregistrer la correction'}

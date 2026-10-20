@@ -5,6 +5,7 @@ import { type CSSProperties, type ReactNode, useMemo, useState } from 'react';
 import { CardFrame } from '@/components/CardFrame';
 import { CorrectionGame, type GameACorriger } from '@/components/CorrectionGame';
 import { CouronneGlace } from '@/components/CouronneGlace';
+import { IconCrayon } from '@/components/icons';
 import { MedailleGlace } from '@/components/MedailleGlace';
 import { SnowCap } from '@/components/SnowCap';
 import { flakes } from '@/components/ui';
@@ -370,11 +371,12 @@ export function FicheJoueur({
                         {moderation && (
                           <button
                             type="button"
-                            className="btn btn-sm profil-game-corriger"
+                            className="profil-game-corriger"
                             onClick={() => setACorriger(g)}
                             aria-label={`Corriger la game ${numeroDe.get(g.id)}`}
+                            title="Corriger ou supprimer cette game"
                           >
-                            Corriger
+                            <IconCrayon className="h-[18px] w-[18px]" />
                           </button>
                         )}
                         {g.applied.length > 0 && (

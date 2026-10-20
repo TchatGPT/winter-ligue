@@ -779,16 +779,47 @@ function cartesSurLaGame(db: Database, game: Game): CarteEnAttente[] {
 }
 
 /**
- * Les cartes d'une game qui empêchent de corriger ses kills ou son placement :
- * celles qui ont changé ses kills (« Clone kill du meilleur »), ou qui la lient
- * à la game d'un autre joueur (l'échange). La modération la supprime alors, et
- * la ressaisit.
+ * Ce que devient une carte jouée sur une game qu'on corrige : **relue** sur la
+ * game corrigée (une carte de prochaine game qui se compte en kills et en
+ * top), **gardée** telle qu'elle a joué (une game jouée relevée, figée,
+ * supprimée, un Joker), ou **bloquante** — elle a changé les kills de la game
+ * (« Clone kill du meilleur ») ou la lie à celle d'un autre joueur
+ * (l'échange) : la game ne se corrige pas, elle se supprime et se ressaisit.
  */
+export function sortALaCorrection(cardId: string): 'relue' | 'gardee' | 'bloque' {
+  const card = getCard(cardId);
+  if (!card) return 'gardee';
+  if (card.effect.kind === 'clone_kills' || card.effect.kind === 'echange') return 'bloque';
+  return RECALCULABLES.has(card.effect.kind) && momentDe(card.effect) === 'PROCHAINE' ? 'relue' : 'gardee';
+}
+
+/** Les cartes d'une game qui empêchent de la corriger : voir `sortALaCorrection`. */
 export function cartesQuiFigentLaGame(db: Database, game: Game): string[] {
   return cartesSurLaGame(db, game)
-    .map((c) => getCard(c.cardId))
-    .filter((card): card is CardDefinition => card !== null && ['clone_kills', 'echange'].includes(card.effect.kind))
-    .map((card) => card.name);
+    .filter((c) => sortALaCorrection(c.cardId) === 'bloque')
+    .map((c) => getCard(c.cardId)?.name ?? c.cardId);
+}
+
+/** Les cartes jouées sur une game, et ce qu'elles y ont fait : pour la fiche du joueur. */
+export function cartesJoueesSur(
+  db: Database,
+  game: Game,
+): { cardId: string; nom: string; rarity: string; glyph: string; resultat: string; correction: 'relue' | 'gardee' | 'bloque' }[] {
+  return cartesSurLaGame(db, game).flatMap((c) => {
+    const card = getCard(c.cardId);
+    return card
+      ? [
+          {
+            cardId: card.id,
+            nom: card.name,
+            rarity: card.rarity,
+            glyph: card.glyph,
+            resultat: c.resultat ?? '',
+            correction: sortALaCorrection(card.id),
+          },
+        ]
+      : [];
+  });
 }
 
 /**
