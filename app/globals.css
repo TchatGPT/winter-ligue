@@ -8064,9 +8064,13 @@
    * n'est recouvert. Le dégradé qui l'assoit ne monte qu'au tiers de sa hauteur
    * — assez pour porter le texte, pas assez pour manger l'illustration.
    *
-   * Le nom complet plutôt que le sigle, et les lettres largement espacées : à
-   * cette taille, c'est l'espacement qui rend un petit texte lisible, pas la
-   * graisse.
+   * Le nom complet plutôt que le sigle, sur une pastille **pleine**, à la
+   * couleur de la rareté, et une encre de nuit dessus (20/10/2026). L'émail
+   * sombre d'avant, lettres claires très espacées, se lisait mal à toutes les
+   * raretés : sur la commune, du gris sur du gris. Ici, l'encre sombre sur la
+   * teinte claire passe 5,7:1 pour la rare, la plus sombre des quatre, et
+   * 12:1 pour la légendaire. La gemme garde sa médaille sombre : elle se
+   * détache sur la pastille.
    */
   .cadre-sceau {
     position: absolute;
@@ -8075,36 +8079,35 @@
     z-index: 4;
     display: inline-flex;
     align-items: center;
-    gap: 1.1cqw;
-    padding: 0.9cqw 3cqw 0.9cqw 1.3cqw;
+    gap: 1cqw;
+    padding: 0.6cqw 3cqw 0.6cqw 0.7cqw;
     border-radius: 999px;
     transform: translate(-50%, -50%);
-    /* La teinte de la rareté, en émail sombre, cerclée d'un liseré clair de
-       la même teinte : le médaillon se lit sur l'illustration comme sur le
-       métal du cadre. */
     background: linear-gradient(
       180deg,
-      color-mix(in srgb, var(--r, #6f8db0) 62%, #101014) 0%,
-      color-mix(in srgb, var(--r, #6f8db0) 30%, #08080b) 100%
+      color-mix(in srgb, var(--r, #6f8db0) 72%, var(--neige-1)) 0%,
+      var(--r, #6f8db0) 100%
     );
+    /* Un fin liseré sombre la sépare de l'illustration comme du panneau
+       clair, et une ombre de contact la pose sur la jointure. */
     box-shadow:
-      0 0 0 0.45cqw color-mix(in srgb, var(--r, #6f8db0) 75%, var(--frost)),
-      inset 0 0.35cqw 0 rgb(255 255 255 / 0.22),
-      0 0.9cqw 1.8cqw rgb(0 0 0 / 0.5);
-    color: color-mix(in srgb, var(--r, #6f8db0) 28%, var(--frost));
+      0 0 0 0.35cqw rgb(1 4 9 / 0.45),
+      inset 0 0.3cqw 0 rgb(255 255 255 / 0.55),
+      0 0.6cqw 1.2cqw rgb(0 0 0 / 0.45);
+    color: color-mix(in srgb, var(--r, #6f8db0) 16%, var(--bg-deep));
     font-family: var(--font-display);
-    font-size: 3.6cqw;
-    font-weight: 900;
-    letter-spacing: 0.16em;
+    font-size: 4.3cqw;
+    font-weight: 800;
+    letter-spacing: 0.06em;
     line-height: 1;
     text-transform: uppercase;
     white-space: nowrap;
-    text-shadow: 0 0.3cqw 0.4cqw rgb(0 0 0 / 0.6);
   }
   .cadre-sceau-gemme {
-    width: 4.6cqw;
-    height: 4.6cqw;
+    width: 5.6cqw;
+    height: 5.6cqw;
     flex: none;
+    filter: drop-shadow(0 0.2cqw 0.3cqw rgb(0 0 0 / 0.35));
   }
   /* Une vignette de quelques dizaines de pixels : le médaillon n'y serait
      qu'une tache. La couleur du cadre dit déjà la rareté. */
@@ -8235,8 +8238,10 @@
 
   /*
    * L'intitulé de l'action, sous le nom : « Game ×2 », « Joker ». Centré
-   * entre deux filets à la couleur de la rareté, en petites capitales
-   * espacées : il dit ce que fait la carte, à toutes les tailles.
+   * entre deux filets à la couleur de la rareté, en petites capitales peu
+   * espacées, d'une encre assez sombre pour se lire sur le panneau clair à
+   * toutes les tailles (resserré le 20/10/2026 : à 0,12 em d'espacement, les
+   * lettres se détachaient mal sur une carte du rail).
    */
   .cadre-action {
     display: flex;
@@ -8245,12 +8250,12 @@
     justify-content: center;
     gap: 2cqw;
     font-family: var(--font-display);
-    font-size: 4cqw;
+    font-size: 4.1cqw;
     font-weight: 800;
-    letter-spacing: 0.12em;
+    letter-spacing: 0.06em;
     line-height: 1.15;
     text-transform: uppercase;
-    color: color-mix(in srgb, var(--r, #6f8db0) 48%, #16161a);
+    color: color-mix(in srgb, var(--r, #6f8db0) 40%, #16161a);
   }
   .cadre-action > span {
     min-width: 0;
@@ -16019,30 +16024,32 @@ a.adm-tuile:hover .adm-tuile-fleche {
     text-align: left;
   }
 }
+/* La rareté, comme sur la carte : une pastille pleine à sa couleur, une
+   encre de nuit, des lettres peu espacées (voir `.cadre-sceau`). */
 .fiche-rarete {
   display: inline-flex;
   align-items: center;
-  gap: 0.45rem;
-  padding: 0.3rem 0.85rem 0.3rem 0.4rem;
+  gap: 0.4rem;
+  padding: 0.2rem 0.85rem 0.2rem 0.25rem;
   border-radius: var(--r-pilule);
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--r) 62%, #101014) 0%,
-    color-mix(in srgb, var(--r) 30%, #08080b) 100%
-  );
+  background: linear-gradient(180deg, color-mix(in srgb, var(--r) 72%, var(--neige-1)) 0%, var(--r) 100%);
   box-shadow:
-    0 0 0 1.5px color-mix(in srgb, var(--r) 75%, var(--frost)),
-    inset 0 1px 0 rgb(255 255 255 / 0.22);
-  color: color-mix(in srgb, var(--r) 28%, var(--frost));
+    0 0 0 1px rgb(1 4 9 / 0.4),
+    inset 0 1px 0 rgb(255 255 255 / 0.55),
+    0 2px 6px rgb(0 0 0 / 0.35);
+  color: color-mix(in srgb, var(--r) 16%, var(--bg-deep));
   font-family: var(--font-display);
-  font-size: 0.8125rem;
-  font-weight: 900;
-  letter-spacing: 0.16em;
+  font-size: 0.9375rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  line-height: 1.1;
   text-transform: uppercase;
 }
 .fiche-rarete-gemme {
-  width: 1.35rem;
-  height: 1.35rem;
+  width: 1.6rem;
+  height: 1.6rem;
+  flex: none;
+  filter: drop-shadow(0 1px 1.5px rgb(0 0 0 / 0.35));
 }
 .fiche-nom {
   margin-top: 0.9rem;
@@ -16054,17 +16061,21 @@ a.adm-tuile:hover .adm-tuile-fleche {
   color: var(--ink);
   text-shadow: 0 2px 10px rgb(0 0 0 / 0.35);
 }
+/* L'intitulé : presque blanc, à peine teinté de la rareté, et des lettres
+   peu espacées. À la couleur pleine de la rareté et très espacé, il passait
+   sous 4,5:1 sur le verre bleu — le gris de la commune surtout. Le filet,
+   lui, garde la couleur. */
 .fiche-action {
   display: flex;
   align-items: center;
   gap: 0.6rem;
   margin-top: 0.65rem;
   font-family: var(--font-display);
-  font-size: 1rem;
+  font-size: 1.125rem;
   font-weight: 800;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: color-mix(in srgb, var(--r) 80%, var(--frost));
+  color: color-mix(in srgb, var(--r) 28%, var(--ink));
 }
 .fiche-action::before {
   content: '';
