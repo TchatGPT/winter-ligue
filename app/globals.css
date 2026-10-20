@@ -4885,6 +4885,32 @@
   .fiche-carte {
     max-width: 44rem;
   }
+  /*
+   * La fenêtre de la course, sur un ordinateur (agrandie le 20/10/2026) : la
+   * scène prend la hauteur que laisse l'écran, une fois gardée la place de
+   * l'enjeu, du récit et du pied — les pères Noël s'y voient en grand —, et la
+   * fenêtre s'élargit avec elle jusqu'à un cadre de cinéma, 2,4 pour 1, sans
+   * dépasser l'écran. Sur une tablette ou un téléphone, rien ne change.
+   */
+  @media (min-width: 1024px) {
+    .fenetre-duel {
+      --scene-h: clamp(240px, calc(100dvh - 24.5rem), 1000px);
+      width: min(100%, max(60rem, calc(var(--scene-h) * 2.4 + 4rem)));
+      max-width: none;
+    }
+    .fenetre-duel .course3d {
+      height: var(--scene-h);
+      min-height: 0;
+      aspect-ratio: auto;
+    }
+    .fenetre-duel .arene-pot {
+      font-size: clamp(2.6rem, 5cqi, 3.6rem);
+    }
+    .fenetre-duel .arene-recit {
+      min-height: 100px;
+      margin-top: 0.9rem;
+    }
+  }
 
   /* ---- Le code cadeau : un lien discret sous le solde, ou une pastille dedans ---- */
   /* Le code cadeau dans le menu : une tuile qu'on voit, teintée de l'aurore

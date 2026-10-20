@@ -262,6 +262,9 @@ export function creeMoteur(toile: HTMLCanvasElement, donnees: Donnees3D, options
   function redimensionne(largeur: number, hauteur: number) {
     taille.l = Math.max(1, largeur);
     taille.h = Math.max(1, hauteur);
+    // La scène s'agrandit avec l'écran : sur un écran dense, au-delà de quatre
+    // millions de pixels, la finesse ne se voit plus — la lenteur, si.
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2, Math.sqrt(4_000_000 / (taille.l * taille.h))));
     renderer.setSize(taille.l, taille.h, false);
     camera.aspect = taille.l / taille.h;
     // Plus l'écran est étroit, plus la caméra recule, pour garder les deux couloirs.

@@ -201,6 +201,7 @@ function FenetreDuel({
   titre,
   ferme,
   fermable,
+  large,
   pied,
   children,
 }: {
@@ -211,6 +212,12 @@ function FenetreDuel({
    * Un duel ne se saute pas — il se regarde jusqu'au bout.
    */
   fermable: boolean;
+  /**
+   * La fenêtre de la course : sur un ordinateur, la scène prend la hauteur de
+   * l'écran et la fenêtre s'élargit avec elle (`.fenetre-duel`). Un message
+   * d'erreur garde la fenêtre ordinaire.
+   */
+  large: boolean;
   pied?: React.ReactNode;
   children: React.ReactNode;
 }) {
@@ -257,7 +264,7 @@ function FenetreDuel({
       <div
         ref={carte}
         tabIndex={-1}
-        className="fenetre-carte glass glass-reflet relative outline-none"
+        className={`fenetre-carte glass glass-reflet relative outline-none${large ? ' fenetre-duel' : ''}`}
         onClick={(e) => e.stopPropagation()}
       >
         {fermable && (
@@ -265,9 +272,13 @@ function FenetreDuel({
             ✕
           </button>
         )}
-        <div className="min-h-0 flex-1 overflow-y-auto px-4 pt-10 pb-6 sm:px-8">{children}</div>
+        <div className={`min-h-0 flex-1 overflow-y-auto px-4 pt-10 pb-6 sm:px-8${large ? ' lg:pt-6 lg:pb-4' : ''}`}>
+          {children}
+        </div>
         {pied && (
-          <footer className="relative flex flex-wrap justify-center gap-2 border-t border-white/15 px-4 py-4">
+          <footer
+            className={`relative flex flex-wrap justify-center gap-2 border-t border-white/15 px-4 py-4${large ? ' lg:py-3' : ''}`}
+          >
             {pied}
           </footer>
         )}
@@ -1152,6 +1163,7 @@ export function Affrontements({
           titre="L’arène du duel"
           ferme={ferme}
           fermable={fenetre.etat === 'erreur' || (fenetre.etat === 'duel' && fenetre.fini)}
+          large={fenetre.etat !== 'erreur'}
           pied={piedFenetre}
         >
           {contenuFenetre}

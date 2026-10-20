@@ -407,7 +407,7 @@ export function ArenePreparation({
     <div className="arene" aria-live="polite" aria-busy="true">
       <Enjeu mise={mise} />
       {en3d ? (
-        <div className="mt-6">
+        <div className="arene-scene mt-6 lg:mt-4">
           <Course3D
             donnees={donnees}
             noms={{
@@ -694,7 +694,7 @@ export function BatailleArene({
       <Enjeu mise={b.mise} />
 
       {en3d ? (
-        <div className="mt-6">
+        <div className="arene-scene mt-6 lg:mt-4">
           <Course3D
             donnees={donnees3d}
             noms={{
