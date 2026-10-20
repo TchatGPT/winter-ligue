@@ -15,8 +15,10 @@
  *
  * Un duel joué ne se rejoue pas, et ne se saute pas : la course se voit une
  * fois, en direct, jusqu'au bout — la fenêtre ne se ferme pas avant. Une fois
- * finie, le verdict reste le temps d'être lu, puis la fenêtre se ferme
- * d'elle-même et le résultat passe en tête du salon.
+ * finie, le verdict reste à l'écran jusqu'à ce que le joueur ferme la fenêtre
+ * lui-même : elle se fermait d'elle-même au bout de deux secondes et demie,
+ * trop vite pour le savourer (changé le 20/10/2026). Le solde du menu et le
+ * salon, eux, suivent dès la ligne d'arrivée.
  *
  * Celui qui a lancé le duel voit la course, lui aussi : dès que le sondage
  * apprend qu'on l'a relevé, l'arène s'ouvre chez lui et la course s'y joue de
@@ -35,6 +37,7 @@
  * ne servirait à rien.
  */
 
+import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import {
@@ -87,9 +90,6 @@ function departDe(b: BatailleVueClient): number | undefined {
   // avec qui être synchrone.
   return depart + DUREE_COURSE_MAX_MS < Date.now() ? Date.now() : depart;
 }
-
-/** Le temps de lire le verdict, avant que la fenêtre ne se ferme d'elle-même. */
-const DELAI_VERDICT = 2500;
 
 interface Charge {
   batailles: BatailleVueClient[];
@@ -405,6 +405,12 @@ export function Affrontements({
 }) {
   const [etat, setEtat] = useState<Charge>(initial);
   /**
+   * Le solde du menu est rendu par le serveur : après un geste qui fait bouger
+   * les flocons — un duel lancé ou annulé, une course arrivée —, la page se
+   * rafraîchit pour qu'il suive. Il fallait sinon recharger la page.
+   */
+  const router = useRouter();
+  /**
    * Le dernier message — un défi lancé, un duel joué, une erreur —, posé dans
    * un coin de l'écran (`Annonce`) : en tête du salon, il repoussait tout le
    * reste vers le bas.
@@ -498,6 +504,7 @@ export function Affrontements({
     if (manquees[0]) {
       const bilan = bilanDe(manquees[0], suivant.moiId);
       annonceBilan({ gagne: bilan.gagne, texte: `Pendant ton absence — ${bilan.texte}` });
+      router.refresh();
     }
     for (const b of nouvelles) {
       if (!courseFinie(b) && !aMontrer.current.some((x) => x.id === b.id)) aMontrer.current.push(b);
@@ -509,7 +516,7 @@ export function Affrontements({
         setFenetre(course);
       }
     }
-  }, [annonceBilan]);
+  }, [annonceBilan, router]);
 
   // Une lecture dès l'arrivée : un duel joué pendant l'absence s'annonce tout
   // de suite, sans attendre le premier sondage.
@@ -571,7 +578,13 @@ export function Affrontements({
 
     enCours.current = false;
     setOccupe(false);
+    // La course se joue dans la fenêtre : le salon et le solde du menu attendent
+    // la ligne d'arrivée (voir `marqueFini`) — rechargés tout de suite, ils
+    // diraient l'issue avant elle. Sur une erreur, ils se relisent quand même :
+    // un serveur qui n'a pas répondu a peut-être joué le duel.
+    if (resultat.ok && toujoursLa) return;
     void recharge();
+    router.refresh();
   }
 
   /** Un geste sans arène : ouvrir son duel, ou l'annuler. */
@@ -586,6 +599,9 @@ export function Affrontements({
     enCours.current = false;
     setOccupe(false);
     void recharge();
+    // La mise est partie, ou revenue : le solde du menu la suit — même sur une
+    // erreur, puisqu'un serveur qui n'a pas répondu a peut-être fait le geste.
+    router.refresh();
   }
 
   const ouvreAuxJoueurs = () => {
@@ -625,25 +641,16 @@ export function Affrontements({
     void recharge();
   }
 
+  /**
+   * La ligne d'arrivée passée. Le verdict reste à l'écran : c'est le joueur qui
+   * ferme la fenêtre (`ferme`), quand il l'a lu. Le salon et le solde du menu,
+   * eux, suivent tout de suite — l'issue est dite, ils ne gâchent plus rien.
+   */
   const marqueFini = useCallback(() => {
     setFenetre((f) => (f && f.etat === 'duel' ? { ...f, fini: true } : f));
-  }, []);
-
-  // La course finie, le verdict reste le temps d'être lu, puis la fenêtre se
-  // ferme d'elle-même et l'issue s'annonce dans un coin de l'écran.
-  const duelTermine = fenetre?.etat === 'duel' && fenetre.fini ? fenetre.bataille : null;
-  const moiId = etat.moiId;
-  useEffect(() => {
-    if (!duelTermine) return;
-    const t = setTimeout(() => {
-      const suivante = prochaineCourse(aMontrer.current);
-      fenetreLa.current = suivante !== null;
-      setFenetre(suivante);
-      annonceBilan(bilanDe(duelTermine, moiId));
-      void recharge();
-    }, DELAI_VERDICT);
-    return () => clearTimeout(t);
-  }, [duelTermine, moiId, recharge, annonceBilan]);
+    void recharge();
+    router.refresh();
+  }, [recharge, router]);
 
   /* ------------------------------ Les listes ----------------------------- */
 
@@ -741,8 +748,8 @@ export function Affrontements({
       />
     );
     // Pas de raccourci vers le résultat : la course se regarde jusqu'au bout.
-    // Finie, la fenêtre se ferme d'elle-même ; on peut seulement la fermer un
-    // peu plus tôt.
+    // Finie, la fenêtre reste ouverte sur le verdict : c'est au joueur de la
+    // fermer.
     piedFenetre = fenetre.fini ? (
       <button type="button" className="btn btn-ghost" onClick={ferme}>
         Fermer

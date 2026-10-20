@@ -171,6 +171,10 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   (`ajusteBoostersPerso`) ; plus de − / + dans Modération → Joueurs.
 - Les duels se jouent entre joueurs : il n'y a plus de bot. `CAMP_BOT` ne sert plus
   qu'à afficher les anciens duels.
+- **La fenêtre d'un duel ne se ferme qu'à la main** (décidé le 20/10/2026) : ni pendant
+  la course — un duel ne se saute pas —, ni d'elle-même une fois le verdict tombé. Le
+  solde du menu, rendu par le serveur, suit par `router.refresh()` dès la ligne
+  d'arrivée (`marqueFini`), jamais avant : il trahirait l'issue.
 - Les overlays OBS (`/overlay/…`) lisent par `Store.fluxOverlay`, jamais par `read()` :
   ils interrogent le serveur toutes les deux secondes pendant un live.
 - **Les illustrations passent par `npm run cartes`** (`scripts/index-art.mjs`, lancé aussi
