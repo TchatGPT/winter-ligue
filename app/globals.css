@@ -8064,13 +8064,12 @@
    * n'est recouvert. Le dégradé qui l'assoit ne monte qu'au tiers de sa hauteur
    * — assez pour porter le texte, pas assez pour manger l'illustration.
    *
-   * Le nom complet plutôt que le sigle, sur une pastille **pleine**, à la
-   * couleur de la rareté, et une encre de nuit dessus (20/10/2026). L'émail
-   * sombre d'avant, lettres claires très espacées, se lisait mal à toutes les
-   * raretés : sur la commune, du gris sur du gris. Ici, l'encre sombre sur la
-   * teinte claire passe 5,7:1 pour la rare, la plus sombre des quatre, et
-   * 12:1 pour la légendaire. La gemme garde sa médaille sombre : elle se
-   * détache sur la pastille.
+   * Le nom complet plutôt que le sigle, dans une **tuile des taux** en petit
+   * (20/10/2026) : le verre sombre teinté de la rareté, son liseré, la
+   * médaille hexagonale avec son ombre de contact, et le nom en clair, à la
+   * couleur de la rareté éclaircie — exactement comme `.taux-ligne` et
+   * `.taux-nom` sur la page des boosters. L'émail clair à encre sombre qui
+   * l'a précédé se lisait mal ; ici, le nom passe 8:1 sur son verre.
    */
   .cadre-sceau {
     position: absolute;
@@ -8079,35 +8078,32 @@
     z-index: 4;
     display: inline-flex;
     align-items: center;
-    gap: 1cqw;
-    padding: 0.6cqw 3cqw 0.6cqw 0.7cqw;
-    border-radius: 999px;
+    gap: 1.4cqw;
+    padding: 0.6cqw 3.4cqw 0.6cqw 0.8cqw;
+    border: 0.3cqw solid color-mix(in srgb, var(--r, #6f8db0) 48%, transparent);
+    border-radius: 3.4cqw;
     transform: translate(-50%, -50%);
-    background: linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--r, #6f8db0) 72%, var(--neige-1)) 0%,
-      var(--r, #6f8db0) 100%
-    );
-    /* Un fin liseré sombre la sépare de l'illustration comme du panneau
-       clair, et une ombre de contact la pose sur la jointure. */
+    background:
+      linear-gradient(100deg, color-mix(in srgb, var(--r, #6f8db0) 26%, transparent) 0%, transparent 72%),
+      rgb(4 12 28 / 0.88);
     box-shadow:
-      0 0 0 0.35cqw rgb(1 4 9 / 0.45),
-      inset 0 0.3cqw 0 rgb(255 255 255 / 0.55),
-      0 0.6cqw 1.2cqw rgb(0 0 0 / 0.45);
-    color: color-mix(in srgb, var(--r, #6f8db0) 16%, var(--bg-deep));
+      inset 0 0.3cqw 0 rgb(255 255 255 / 0.1),
+      0 0.8cqw 1.6cqw rgb(0 0 0 / 0.45);
+    color: color-mix(in srgb, var(--r, #6f8db0) 55%, var(--neige-1));
     font-family: var(--font-display);
     font-size: 4.3cqw;
-    font-weight: 800;
-    letter-spacing: 0.06em;
+    font-weight: 900;
+    letter-spacing: 0.05em;
     line-height: 1;
     text-transform: uppercase;
     white-space: nowrap;
   }
   .cadre-sceau-gemme {
-    width: 5.6cqw;
-    height: 5.6cqw;
+    width: 7cqw;
+    height: 7cqw;
     flex: none;
-    filter: drop-shadow(0 0.2cqw 0.3cqw rgb(0 0 0 / 0.35));
+    /* L'ombre de contact de la médaille, pas une lueur. */
+    filter: drop-shadow(0 0.6cqw 0.6cqw rgb(0 8 24 / 0.55));
   }
   /* Une vignette de quelques dizaines de pixels : le médaillon n'y serait
      qu'une tache. La couleur du cadre dit déjà la rareté. */
@@ -16024,32 +16020,36 @@ a.adm-tuile:hover .adm-tuile-fleche {
     text-align: left;
   }
 }
-/* La rareté, comme sur la carte : une pastille pleine à sa couleur, une
-   encre de nuit, des lettres peu espacées (voir `.cadre-sceau`). */
+/* La rareté comme une tuile des taux (`.taux-ligne`) : la médaille
+   hexagonale et son nom en clair, sur un verre sombre teinté de la rareté,
+   cerclé d'un liseré à sa couleur. */
 .fiche-rarete {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.2rem 0.85rem 0.2rem 0.25rem;
-  border-radius: var(--r-pilule);
-  background: linear-gradient(180deg, color-mix(in srgb, var(--r) 72%, var(--neige-1)) 0%, var(--r) 100%);
+  gap: 0.6rem;
+  padding: 0.3rem 1rem 0.3rem 0.35rem;
+  border: 1px solid color-mix(in srgb, var(--r) 42%, transparent);
+  border-radius: var(--r-sm);
+  background:
+    linear-gradient(100deg, color-mix(in srgb, var(--r) 24%, transparent) 0%, transparent 72%),
+    rgb(0 10 30 / 0.45);
   box-shadow:
-    0 0 0 1px rgb(1 4 9 / 0.4),
-    inset 0 1px 0 rgb(255 255 255 / 0.55),
-    0 2px 6px rgb(0 0 0 / 0.35);
-  color: color-mix(in srgb, var(--r) 16%, var(--bg-deep));
+    inset 0 1px 0 rgb(255 255 255 / 0.1),
+    0 2px 8px rgb(0 0 0 / 0.25);
+  color: color-mix(in srgb, var(--r) 55%, var(--neige-1));
   font-family: var(--font-display);
-  font-size: 0.9375rem;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  line-height: 1.1;
+  font-size: 1.05rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  line-height: 1;
   text-transform: uppercase;
 }
 .fiche-rarete-gemme {
-  width: 1.6rem;
-  height: 1.6rem;
+  width: 2.1rem;
+  height: 2.1rem;
   flex: none;
-  filter: drop-shadow(0 1px 1.5px rgb(0 0 0 / 0.35));
+  /* L'ombre de contact de la médaille, pas une lueur. */
+  filter: drop-shadow(0 3px 3px rgb(0 8 24 / 0.55));
 }
 .fiche-nom {
   margin-top: 0.9rem;
