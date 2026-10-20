@@ -530,6 +530,7 @@ function CarteActive({
           rarity={c.rarity}
           glyph={c.glyph}
           nature={c.nature}
+          largeur="56px"
         />
       </span>
       <span className="min-w-0 leading-tight">
@@ -584,6 +585,7 @@ function PileDeCartes({
               rarity={c.rarity}
               glyph={c.glyph}
               nature={c.nature}
+              largeur="56px"
             />
           </button>
         ))}

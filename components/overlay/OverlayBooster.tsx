@@ -5,7 +5,8 @@ import { BoosterPack3D } from '@/components/BoosterPack3D';
 import { CardFrame } from '@/components/CardFrame';
 import { EmblemeRarete } from '@/components/EmblemeRarete';
 import { RailJoueurs } from '@/components/RailJoueurs';
-import { RailPack, type CarteRailPack } from '@/components/RailPack';
+import { LARGEUR_RAIL, RailPack, type CarteRailPack } from '@/components/RailPack';
+import { prechargeGrande, prechargeRail } from '@/components/prechargeCartes';
 import { Scene } from '@/components/overlay/Scene';
 import { SnowCap } from '@/components/SnowCap';
 import { boosterDemo } from '@/components/overlay/demo';
@@ -93,7 +94,19 @@ export function OverlayBooster({
   const [file, setFile] = useState<BoosterOverlay[]>(() => (demo ? [boosterDemo(0)] : []));
 
   const surFlux = useCallback((_: unknown, nouveaux: { boosters: BoosterOverlay[] }) => {
-    if (nouveaux.boosters.length) setFile((f) => [...f, ...nouveaux.boosters]);
+    if (!nouveaux.boosters.length) return;
+    // La carte tirée se révèle en grand après le rail : son illustration se
+    // charge dès l'arrivée du booster, pendant qu'il surgit.
+    for (const b of nouveaux.boosters) prechargeGrande(b.carte.cardId);
+    setFile((f) => [...f, ...nouveaux.boosters]);
+  }, []);
+
+  // Les cartes des rails, prêtes avant le premier booster du live.
+  useEffect(() => {
+    prechargeRail(
+      CARDS.filter((c) => c.packs.length > 0).map((c) => c.id),
+      LARGEUR_RAIL,
+    );
   }, []);
   useFluxOverlay({ cle, depart, intervalle: 2000, actif: !demo, surFlux });
 

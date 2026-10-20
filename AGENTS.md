@@ -165,6 +165,17 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   qu'à afficher les anciens duels.
 - Les overlays OBS (`/overlay/…`) lisent par `Store.fluxOverlay`, jamais par `read()` :
   ils interrogent le serveur toutes les deux secondes pendant un live.
+- **Les illustrations passent par `npm run cartes`** (`scripts/index-art.mjs`, lancé aussi
+  avant chaque build) : l'index donne chaque image avec l'empreinte de son fichier
+  (`?v=…`), ce qui permet de la garder un an en cache (`next.config.ts`), et fait les
+  vignettes des cartes (200 et 480 px, `public/cartes/vignettes/`, à commiter avec
+  l'illustration). Une carte affichée en petit passe sa largeur à `CardFrame`
+  (`largeur`, au format `sizes`) : sans elle, c'est l'illustration entière de 1 000 px.
+  `tests/illustrations.test.ts` vérifie l'index et les vignettes.
+- **Un rail ne se relance jamais sur un rendu** : ses réglages sont les dépendances de
+  sa course (`useSpinAnimation`), et un tableau neuf à chaque rendu la relançait depuis
+  le début au premier `router.refresh()`. Valeurs stables seulement (`SANS_RELANCE`,
+  `useMemo`, `useState`).
 - Les couleurs viennent des variables CSS de `app/globals.css`, jamais codées en dur.
 - Avant de livrer : `npm run typecheck && npm test && npm run build`.
 

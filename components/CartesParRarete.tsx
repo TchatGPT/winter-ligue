@@ -83,7 +83,14 @@ export function CartesParRarete({ cartes, booster }: { cartes: CarteSaison[]; bo
                     onClick={() => setOuverte(c)}
                   />
                   <span className="action-carte" aria-hidden="true">
-                    <CardFrame cardId={c.cardId} name={c.name} rarity={c.rarity} glyph={c.glyph} nature={c.nature} />
+                    <CardFrame
+                      cardId={c.cardId}
+                      name={c.name}
+                      rarity={c.rarity}
+                      glyph={c.glyph}
+                      nature={c.nature}
+                      largeur="58px"
+                    />
                   </span>
 
                   <div className="min-w-0">

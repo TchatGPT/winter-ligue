@@ -1,6 +1,6 @@
 import { aUneIllustration, CardArt } from '@/components/CardArt';
 import { EmblemeRarete } from '@/components/EmblemeRarete';
-import { cardArt, getCard, RARITY_META } from '@/lib/domain/catalog';
+import { cardArt, cardVignettes, getCard, RARITY_META } from '@/lib/domain/catalog';
 import type { Rarity } from '@/lib/domain/types';
 
 /**
@@ -41,6 +41,14 @@ export interface CardFrameProps {
   dimmed?: boolean;
   /** Marque libre, posée en haut à droite de la fenêtre. */
   corner?: React.ReactNode;
+  /**
+   * La largeur à laquelle la carte s'affiche, au format de l'attribut `sizes` :
+   * « 58px », « (max-width: 640px) 31vw, 17vw ». Avec elle, le navigateur prend
+   * la plus petite image qui suffit — une vignette pour une carte de liste,
+   * l'illustration entière pour une grande. Sans elle, c'est l'illustration
+   * entière : c'est le bon choix pour une carte en grand.
+   */
+  largeur?: string;
 }
 
 export function CardFrame({
@@ -52,6 +60,7 @@ export function CardFrame({
   nature,
   dimmed,
   corner,
+  largeur,
 }: CardFrameProps) {
   const meta = RARITY_META[rarity as Rarity] ?? RARITY_META.C;
   // L'intitulé de l'action — « Multiplicateur game », « Joker » — se lit dans
@@ -61,6 +70,7 @@ export function CardFrame({
   // Une illustration peinte, déposée dans `public/cartes/`, passe avant le
   // dessin : elle remplit la fenêtre, le cadre et le cartouche restent.
   const peinte = cardArt(cardId);
+  const vignettes = largeur ? cardVignettes(cardId) : null;
 
   return (
     <div
@@ -71,7 +81,15 @@ export function CardFrame({
       <div className="cadre-fenetre">
         {peinte ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img className="cadre-vecteur" src={peinte} alt="" aria-hidden="true" decoding="async" />
+          <img
+            className="cadre-vecteur"
+            src={vignettes ? vignettes.moyenne : peinte}
+            srcSet={vignettes?.srcset}
+            sizes={vignettes ? largeur : undefined}
+            alt=""
+            aria-hidden="true"
+            decoding="async"
+          />
         ) : aUneIllustration(cardId) ? (
           <CardArt cardId={cardId} className="cadre-vecteur" />
         ) : (

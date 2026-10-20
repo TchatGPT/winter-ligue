@@ -194,6 +194,17 @@ const useEffetDeMiseEnPage = typeof window !== 'undefined' ? useLayoutEffect : u
 export const ATTR_FENETRE = 'data-rail-fenetre';
 export const ATTR_RUBAN = 'data-rail-ruban';
 
+/**
+ * Aucune colonne relancée : **un seul tableau**, pour tous les rendus.
+ *
+ * Les réglages sont les dépendances de la course. Un `[]` écrit en valeur par
+ * défaut est un tableau neuf à chaque rendu : le moindre rendu du parent —
+ * `router.refresh()` juste après le clic, l'overlay qui reçoit le booster
+ * suivant — annulait la course et la relançait depuis le début. Le rail
+ * partait, reculait d'un coup, puis repartait.
+ */
+export const SANS_RELANCE: readonly boolean[] = [];
+
 export interface ReglagesRail {
   /** Le bandeau : c'est lui qu'on mesure, et lui qui porte la géométrie. */
   cadre: RefObject<HTMLDivElement | null>;
@@ -210,9 +221,10 @@ export interface ReglagesRail {
    * Quelles colonnes le jeton Winter Spin a fait rejouer.
    *
    * Décidé par le serveur, jamais ici — le rail met en scène une relance déjà
-   * survenue, il ne la provoque pas.
+   * survenue, il ne la provoque pas. Un tableau stable d'un rendu à l'autre :
+   * il fait partie des dépendances de la course (voir `SANS_RELANCE`).
    */
-  relances?: boolean[];
+  relances?: readonly boolean[];
   /** La durée nominale d'une course, en ms. Zéro pour une révélation directe. */
   duree: number;
   /** La loi de mouvement. Deux sont en concurrence — voir `Courbe`. */
@@ -242,7 +254,7 @@ export function useSpinAnimation({
   cadre,
   bandes,
   tuiles,
-  relances = [],
+  relances = SANS_RELANCE,
   duree,
   courbe = COURBE_MESUREE,
   axe = 'y',

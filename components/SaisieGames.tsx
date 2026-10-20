@@ -709,7 +709,14 @@ function CarteDeLaGame({ cardId, donne, ici }: { cardId: string; donne: string; 
   return (
     <div className="saisie-carte" style={{ ['--r' as string]: meta.color }}>
       <span className="saisie-carte-vignette" aria-hidden="true">
-        <CardFrame cardId={def.id} name={def.name} rarity={def.rarity} glyph={def.glyph} nature={def.nature} />
+        <CardFrame
+          cardId={def.id}
+          name={def.name}
+          rarity={def.rarity}
+          glyph={def.glyph}
+          nature={def.nature}
+          largeur="46px"
+        />
       </span>
       <div className="min-w-0">
         <p className="saisie-carte-titre">

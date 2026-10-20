@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState } from 'react';
 import { CardFrame } from '@/components/CardFrame';
-import { ATTR_FENETRE, ATTR_RUBAN, useSpinAnimation } from '@/components/useSpinAnimation';
+import { ATTR_FENETRE, ATTR_RUBAN, SANS_RELANCE, useSpinAnimation } from '@/components/useSpinAnimation';
 import { RARITY_META } from '@/lib/domain/catalog';
 import { RARITY_ORDER } from '@/lib/domain/rules';
 import type { Rarity } from '@/lib/domain/types';
@@ -61,7 +61,7 @@ export function SpinReel({
   pool,
   poids,
   gagnantes,
-  relances = [],
+  relances = SANS_RELANCE,
   duree,
   courbe = COURBE_MESUREE,
   sourdine = false,
@@ -79,7 +79,7 @@ export function SpinReel({
    * Le rail met en scène une relance **déjà survenue** : il ne la provoque pas,
    * et un client qui mentirait ici ne changerait pas une carte.
    */
-  relances?: boolean[];
+  relances?: readonly boolean[];
   /** La durée nominale d'une course, en ms. Zéro pour une révélation directe. */
   duree: number;
   /** La loi de mouvement. Le banc `/dev/rail` sert à comparer les deux. */

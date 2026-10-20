@@ -476,7 +476,14 @@ export function FicheJoueur({ fiche, subs }: { fiche: DonneesFiche; subs: BilanS
               {p.ouvertures.map((o) => (
                 <li key={o.id}>
                   <span className="profil-carte">
-                    <CardFrame cardId={o.cardId} name={o.nom} rarity={o.rarity} glyph={o.glyph} nature={o.nature} />
+                    <CardFrame
+                      cardId={o.cardId}
+                      name={o.nom}
+                      rarity={o.rarity}
+                      glyph={o.glyph}
+                      nature={o.nature}
+                      largeur="120px"
+                    />
                   </span>
                   <b>{o.nom}</b>
                   <small>

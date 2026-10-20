@@ -6,7 +6,7 @@
  * envoyée par le navigateur n'est qu'un identifiant, jamais un effet.
  */
 
-import { BOOSTER_ART, CARD_ART } from './card-art.generated';
+import { BOOSTER_ART, CARD_ART, CARD_VIGNETTES } from './card-art.generated';
 import { GAME_LIMITS, PLACEMENT_POINTS, RARITY_ORDER, RARITY_WEIGHTS_BASE } from './rules';
 import type {
   CardDefinition,
@@ -533,6 +533,16 @@ export function resumeEffet(effect: CardEffect): string {
  */
 export function cardArt(id: string): string | null {
   return CARD_ART[id] ?? null;
+}
+
+/**
+ * Les vignettes de l'illustration d'une carte (200 et 480 px de large), et le
+ * `srcset` qui les propose avec l'illustration entière : une petite carte n'a
+ * pas à télécharger ni à décoder une image de 1 000 px. Null si la carte n'en a
+ * pas — elle garde alors son illustration entière.
+ */
+export function cardVignettes(id: string): { petite: string; moyenne: string; srcset: string } | null {
+  return CARD_VIGNETTES[id] ?? null;
 }
 
 /** Traitement de foil appliqué à chaque rareté. */

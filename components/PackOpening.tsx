@@ -7,7 +7,8 @@ import { RangeePacks } from '@/components/RangeePacks';
 import { SnowCap } from '@/components/SnowCap';
 import { prechargeSons, reveilleSon } from '@/components/bruitage';
 import { RailJoueurs } from '@/components/RailJoueurs';
-import { RailPack, type CarteRailPack } from '@/components/RailPack';
+import { LARGEUR_RAIL, RailPack, type CarteRailPack } from '@/components/RailPack';
+import { prechargeGrande, prechargeRail } from '@/components/prechargeCartes';
 import { CartesParRarete, type CarteSaison } from '@/components/CartesParRarete';
 import { CarteInclinable } from '@/components/CarteInclinable';
 import { DestinCarte } from '@/components/DestinCarte';
@@ -167,6 +168,17 @@ export function PackOpening({
     if (moderateur) void prechargeSons();
   }, [moderateur]);
 
+  // Les cartes de tous les rails, prêtes avant le premier clic. La liste tient
+  // dans une chaîne : un `router.refresh()` rend des tableaux neufs, pas des
+  // cartes nouvelles.
+  const cartesDesRails = useMemo(
+    () => [...new Set(packs.flatMap((p) => p.cartes.map((c) => c.cardId)))].join(' '),
+    [packs],
+  );
+  useEffect(() => {
+    if (aLaMain && cartesDesRails) prechargeRail(cartesDesRails.split(' '), LARGEUR_RAIL);
+  }, [aLaMain, cartesDesRails]);
+
   const pack = useMemo(() => packs.find((p) => p.id === selected) ?? packs[0], [packs, selected]);
   const busy = phase === 'demande' || phase === 'tirage' || phase === 'joueurs';
   const pourUnJoueur = pack?.portee === 'JOUEUR';
@@ -242,7 +254,9 @@ export function PackOpening({
         return;
       }
       // La carte est connue avant que le rail ne parte : il ne tire rien, il
-      // révèle.
+      // révèle. Son illustration entière se charge pendant qu'il tourne : la
+      // révélation la trouve prête.
+      prechargeGrande((payload.data as OuvertureTiree).cardId);
       setOuverture(payload.data as OuvertureTiree);
       setRangJoueur(0);
       setPhase('tirage');

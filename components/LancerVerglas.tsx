@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import { SnowCap } from '@/components/SnowCap';
-import { CARD_ART } from '@/lib/domain/card-art.generated';
+import { cardArt, cardVignettes } from '@/lib/domain/catalog';
 import type { RankingRow } from '@/lib/services/league';
 
 const rienAEcouter = () => () => {};
@@ -114,7 +114,9 @@ export function LancerVerglas({
   }
 
   if (!navigateur) return null;
-  const art = CARD_ART['plaque-verglas'];
+  // L'illustration en vignette : elle s'affiche en 4,5 et 7 rem.
+  const art = cardArt('plaque-verglas');
+  const vignettes = cardVignettes('plaque-verglas');
 
   return createPortal(
     <div
@@ -140,7 +142,7 @@ export function LancerVerglas({
           <div className="verglas-fait">
             {art && (
               // eslint-disable-next-line @next/next/no-img-element
-              <img className="verglas-fait-art" src={art} alt="" />
+              <img className="verglas-fait-art" src={art} srcSet={vignettes?.srcset} sizes="112px" alt="" />
             )}
             <p className="verglas-surtitre">Verglas envoyé</p>
             <div className="verglas-fait-cible">
@@ -165,7 +167,7 @@ export function LancerVerglas({
             <header className="verglas-tete">
               {art && (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img className="verglas-vignette" src={art} alt="" />
+                <img className="verglas-vignette" src={art} srcSet={vignettes?.srcset} sizes="72px" alt="" />
               )}
               <div className="min-w-0">
                 <p className="verglas-surtitre">Ultra rare · Verglas</p>

@@ -21,6 +21,14 @@ import { COURBE_MESUREE, RANG_GAGNANT } from '@/lib/spin/courbe';
  * qu'elle a posé et anime `translate3d` sur X.
  */
 
+/**
+ * La largeur d'une carte du rail, au format `sizes` : un peu moins d'un tiers
+ * de l'écran sur un téléphone, un sixième au-delà (mesurée : 118 px sur 390,
+ * 214 sur 1 440, 420 sur 2 560). Le navigateur y prend la vignette de 480 px,
+ * et l'illustration entière sur un très grand écran dense.
+ */
+export const LARGEUR_RAIL = '(max-width: 640px) 31vw, 17vw';
+
 export interface CarteRailPack {
   cardId: string;
   name: string;
@@ -67,6 +75,39 @@ export function RailPack({
     [bande],
   );
 
+  /*
+   * Les tuiles, rendues une fois avec la bande. Un rendu du parent pendant la
+   * course — `router.refresh()` juste après le clic — retrouve les mêmes
+   * éléments et n'a rien à recalculer : quarante cartes de moins à comparer
+   * au moment où le rail démarre.
+   */
+  const tuilesRendues = useMemo(
+    () =>
+      bande.map((carte, k) => {
+        const m = RARITY_META[carte.rarity as Rarity] ?? RARITY_META.C;
+        return (
+          <div
+            key={k}
+            className={`rail-carte${k === RANG_GAGNANT ? ' rail-carte-gagnante' : ''}`}
+            data-rang={RARITY_ORDER[carte.rarity as Rarity] ?? 0}
+            style={{ ['--r' as string]: m.color, ['--k' as string]: String(k) }}
+            aria-hidden="true"
+          >
+            <CardFrame
+              cardId={carte.cardId}
+              name={carte.name}
+              description={carte.description}
+              rarity={carte.rarity}
+              glyph={carte.glyph}
+              nature={carte.nature}
+              largeur={LARGEUR_RAIL}
+            />
+          </div>
+        );
+      }),
+    [bande],
+  );
+
   const rang = RARITY_ORDER[gagnante.rarity as Rarity] ?? 0;
 
   useSpinAnimation({
@@ -101,27 +142,7 @@ export function RailPack({
           style={{ ['--gagne' as string]: meta.color }}
         >
           <div className="rail-ruban" {...{ [ATTR_RUBAN]: '' }}>
-            {bande.map((carte, k) => {
-              const m = RARITY_META[carte.rarity as Rarity] ?? RARITY_META.C;
-              return (
-                <div
-                  key={k}
-                  className={`rail-carte${k === RANG_GAGNANT ? ' rail-carte-gagnante' : ''}`}
-                  data-rang={RARITY_ORDER[carte.rarity as Rarity] ?? 0}
-                  style={{ ['--r' as string]: m.color, ['--k' as string]: String(k) }}
-                  aria-hidden="true"
-                >
-                  <CardFrame
-                    cardId={carte.cardId}
-                    name={carte.name}
-                    description={carte.description}
-                    rarity={carte.rarity}
-                    glyph={carte.glyph}
-                    nature={carte.nature}
-                  />
-                </div>
-              );
-            })}
+            {tuilesRendues}
           </div>
         </div>
 
