@@ -236,6 +236,22 @@ export const CARDS: readonly CardDefinition[] = [
     packs: ['perso'],
     cible: 'HASARD',
   },
+  {
+    // La petite sœur du Grand Dégel : la pire game ne disparaît pas, elle
+    // remonte vers la moyenne du joueur, quinze points au plus. Il faut deux
+    // games pour avoir une pire et une moyenne : d'ici là, elle attend.
+    id: 'feu-de-camp',
+    name: 'Feu de Camp',
+    subtitle: 'Relève ta pire game',
+    rarity: 'R',
+    glyph: '🔥',
+    description: 'Ta pire game remonte vers ta moyenne, jusqu’à +15 points. Il te faut deux games jouées.',
+    effect: { kind: 'releve_pire', cap: 15 },
+    nature: 'bonus',
+    power: 40,
+    packs: ['perso'],
+    cible: 'HASARD',
+  },
   /* ============================== Ultra rare ============================ */
   {
     id: 'rempart-polaire',

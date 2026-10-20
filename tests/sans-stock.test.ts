@@ -13,9 +13,9 @@ import { ouvrePack, PackError, reglagePack } from '@/lib/services/packs';
  * pour lui, et le sort d'un booster de la ligue ne tombe pas sur lui. Le Joker,
  * qui se garde, ne bloque rien.
  *
- * Sur le vrai catalogue : la rare du Perso (Vent Porteur) et la commune du
- * Commu (Congère) attendent la prochaine game ; les ultra rares du Perso
- * (Coulée de Neige, Joker Givré) n'attendent rien.
+ * Sur le vrai catalogue : les rares du Perso (Luge, Vent Porteur, Feu de
+ * Camp) et la commune du Commu (Congère) attendent une game ; les ultra rares
+ * du Perso (Coulée de Neige, Joker Givré) n'attendent rien.
  */
 
 function seulement(rarity: Rarity): Record<Rarity, number> {

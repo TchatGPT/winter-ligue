@@ -286,6 +286,41 @@ describe('le Verglas', () => {
   });
 });
 
+describe('le Feu de Camp', () => {
+  it('remonte la pire game libre vers la moyenne, quinze points au plus', () => {
+    const db = base('a');
+    game(db, 'a', 40);
+    const pire = game(db, 'a', 4);
+    game(db, 'a', 46);
+    pose(db, 'a', 'feu-de-camp', 1);
+    regleCartesSansAttendre(db, 'a');
+    // Moyenne de 30 : il manque 26 points à la pire, la carte en donne 15.
+    expect(pire.score).toBe(4 + 15);
+    expect(enAttente(db, 'a')).toHaveLength(0);
+  });
+
+  it('ne dépasse pas la moyenne', () => {
+    const db = base('a');
+    game(db, 'a', 30);
+    const pire = game(db, 'a', 20);
+    pose(db, 'a', 'feu-de-camp', 1);
+    regleCartesSansAttendre(db, 'a');
+    expect(pire.score).toBe(25);
+  });
+
+  it('attend deux games, puis joue', () => {
+    const db = base('a');
+    const premiere = game(db, 'a', 10);
+    pose(db, 'a', 'feu-de-camp', 1);
+    regleCartesSansAttendre(db, 'a');
+    expect(enAttente(db, 'a')).toHaveLength(1);
+    game(db, 'a', 30);
+    regleCartesSansAttendre(db, 'a');
+    expect(premiere.score).toBe(20);
+    expect(enAttente(db, 'a')).toHaveLength(0);
+  });
+});
+
 describe('le Grand Dégel', () => {
   it('supprime la pire game libre, qui ne compte plus, et rend son créneau', () => {
     const db = base('a');
