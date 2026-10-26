@@ -149,11 +149,16 @@ export function Regles({ maxGames, packs }: { maxGames: number; packs: PackDefin
   const tempete = EVENEMENTS_SUBS.find((e) => e.kind === 'COMMU_ACCELERE');
   const chanceMax = PALIERS_CHANCE.at(-1)!.multiplicateur;
 
-  // L'exemple de la chance : la légendaire du Booster Perso, sans et avec.
+  // Ce que la chance change au Booster Perso : ses taux à trois soldes — rien,
+  // le palier ×2, le plafond.
   const perso = pack('perso');
   const uneSur = (w: Record<Rarity, number>) => (w.L > 0 ? Math.round(100_000 / w.L) : null);
-  const legendaireSans = perso ? uneSur(perso.weights) : null;
-  const legendaireAvec = perso ? uneSur(poidsAvecChance(perso.weights, CHANCE.max)) : null;
+  const palierDouble = PALIERS_CHANCE.find((p) => p.multiplicateur === 2);
+  const exemplesChance = perso
+    ? [PALIERS_CHANCE[0], palierDouble, PALIERS_CHANCE.at(-1)!]
+        .filter((p): p is { des: number; multiplicateur: number } => p !== undefined)
+        .map((p) => ({ ...p, weights: poidsAvecChance(perso.weights, Math.min(CHANCE.max, p.multiplicateur - 1)) }))
+    : [];
 
   const boosters: { id: string; quand: string; pourToi: boolean }[] = [
     { id: 'perso', quand: `1 sub T3, ou ${PACKS_REGLES.persoTousLes} subs offerts`, pourToi: true },
@@ -463,49 +468,74 @@ export function Regles({ maxGames, packs }: { maxGames: number; packs: PackDefin
       'rocket',
       'var(--gold)',
       <>
-        <div className="rgs-marches" role="img" aria-label="Le multiplicateur de chance selon ton solde de flocons">
-          {PALIERS_CHANCE.map((p) => (
-            <div key={p.des} style={{ ['--h' as string]: `${(p.multiplicateur / chanceMax) * 100}%` }}>
-              <b>×{p.multiplicateur.toLocaleString('fr-FR')}</b>
-              <span aria-hidden="true" />
-              <small>{p.des >= 1000 ? `${nombre(p.des / 1000)}k` : p.des}</small>
+        {/* Les paliers : un multiplicateur par seuil de solde, de la glace à l'or
+            à mesure qu'il monte. Le dernier, plein, est cerclé d'or. */}
+        <section className="rgs-encart" aria-labelledby="chance-paliers">
+          <h3 id="chance-paliers" className="rgs-encart-titre">
+            Ton multiplicateur, selon ton solde
+          </h3>
+          <ol className="rgs-chance-paliers">
+            {PALIERS_CHANCE.map((p) => (
+              <li
+                key={p.des}
+                style={{ ['--t' as string]: (p.multiplicateur - 1) / (chanceMax - 1) }}
+                data-plein={p.multiplicateur === chanceMax ? '' : undefined}
+              >
+                <b>×{p.multiplicateur.toLocaleString('fr-FR')}</b>
+                <span>{p.des === 0 ? 'dès 0 ❄' : `dès ${nombre(p.des)} ❄`}</span>
+              </li>
+            ))}
+          </ol>
+        </section>
+
+        {/* Ce que ça change, pour de vrai : les taux du Booster Perso à trois
+            soldes ; à côté, sur un grand écran, quand la chance compte. */}
+        <div className="rgs-chance-bas">
+        {exemplesChance.length > 0 && (
+          <section className="rgs-encart" aria-labelledby="chance-exemple">
+            <h3 id="chance-exemple" className="rgs-encart-titre">
+              Ce que ça change : le Booster Perso
+            </h3>
+            <div className="rgs-chances">
+              {exemplesChance.map((e, i) => (
+                <div key={e.des} className="rgs-chance" data-plein={i === exemplesChance.length - 1 ? '' : undefined}>
+                  <p className="rgs-chance-tete">
+                    <b>×{e.multiplicateur.toLocaleString('fr-FR')}</b>
+                    <span>{e.des === 0 ? 'Sans flocons' : `À ${nombre(e.des)} ❄`}</span>
+                  </p>
+                  <ul>
+                    {RARETES.map((r) => (
+                      <li key={r}>
+                        <RarityChip rarity={r} taille={16} />
+                        <span className="rgs-chance-nom">{RARITY_META[r].label}</span>
+                        <b>{pourcent(rarityPercent(e.weights, r))}</b>
+                      </li>
+                    ))}
+                  </ul>
+                  {uneSur(e.weights) && (
+                    <p className="rgs-chance-pied">
+                      Une légendaire sur <b>{nombre(uneSur(e.weights)!)}</b>
+                    </p>
+                  )}
+                </div>
+              ))}
             </div>
-          ))}
+          </section>
+        )}
+
+        <Encart titre="Quand elle compte">
+          <div className="rgs-chance-regles">
+            <p>
+              Pour les boosters ouverts <b>pour toi</b> : Perso et Finisseur.
+            </p>
+            <p>Jamais pour Commu et Folie : là, tout le monde est à égalité.</p>
+            <p>
+              Tes flocons ne sont <b>pas dépensés</b> : il suffit de les avoir.
+            </p>
+            <p>Les rares deviennent plus probables, jamais certaines : c’est le serveur qui tire.</p>
+          </div>
+        </Encart>
         </div>
-        <p className="rgs-sous-note">Ton multiplicateur selon ton solde de flocons (en milliers).</p>
-        <Duo
-          gauche={
-            legendaireSans && legendaireAvec ? (
-              <Ticket
-                titre="Un exemple : une légendaire du Booster Perso"
-                lignes={[
-                  { quoi: 'À 0 ❄ (×1)', vaut: `1 sur ${nombre(legendaireSans)}` },
-                  { quoi: `À ${nombre(ECONOMY.soldeMax)} ❄ (×${chanceMax})`, vaut: `1 sur ${nombre(legendaireAvec)}` },
-                ]}
-                total={{ quoi: 'Soit', vaut: `${chanceMax} fois plus souvent` }}
-              />
-            ) : (
-              <Encart titre="Ce que ça change">
-                <p>Les cartes rares sortent jusqu’à {chanceMax} fois plus souvent.</p>
-              </Encart>
-            )
-          }
-          droite={
-            <Encart titre="Quand elle compte">
-              <Puces>
-                <li>
-                  Pour les boosters ouverts <b>pour toi</b> : Perso et Finisseur.
-                </li>
-                <li>Jamais pour Commu et Folie : là, tout le monde est à égalité.</li>
-                <li>Tes flocons ne sont pas dépensés : il suffit de les avoir.</li>
-                <li>
-                  Elle rend les cartes rares plus probables, jamais certaines : le tirage reste aléatoire, et c’est le
-                  serveur qui le fait.
-                </li>
-              </Puces>
-            </Encart>
-          }
-        />
       </>,
     ),
 
