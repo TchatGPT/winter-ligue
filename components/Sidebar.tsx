@@ -4,7 +4,8 @@ import { getStore } from '@/lib/db/store';
 import { BottomNav, SidebarNav } from './NavTabs';
 import { SessionBadge } from './SessionBadge';
 import { etatCadeau } from '@/lib/services/cadeauDuJour';
-import { IconSnowflake } from './icons';
+import { LogoCristal, Marque } from './Logo';
+import { SEASON } from '@/lib/domain/rules';
 
 /** Largeur de la plaque, et la marge qui la décolle des bords de l'écran. */
 export const SIDEBAR_WIDTH = 270;
@@ -45,18 +46,8 @@ export async function Sidebar() {
       >
         <div className="menu-colonne">
           {/* ---- L'entête ---- */}
-          <Link href="/" className="menu-entete no-underline">
-            <span className="menu-logo grid h-11 w-11 shrink-0 place-items-center">
-              <IconSnowflake className="h-6 w-6" />
-            </span>
-            <span className="min-w-0 leading-none">
-              <span className="block font-display text-[22px] font-black tracking-tight">
-                <span className="givre-texte">WINTER</span> <em className="menu-titre-ligue">LIGUE</em>
-              </span>
-              <span className="mt-1.5 block text-[13px] tracking-[0.1em] whitespace-nowrap text-white/90 uppercase">
-                Call of Duty Warzone
-              </span>
-            </span>
+          <Link href="/" className="menu-entete no-underline" aria-label="Winter Ligue — accueil">
+            <Marque saison={SEASON.edition} />
           </Link>
           <span className="menu-separateur" aria-hidden="true" />
 
@@ -82,11 +73,9 @@ export async function Sidebar() {
       <header className="sticky top-0 z-30 px-3 pt-3 sm:px-5 sm:pt-4 lg:hidden">
         <div className="glass flex items-center gap-3 px-4 py-3">
           <Link href="/" className="flex min-w-0 items-center gap-2.5 no-underline">
-            <span className="menu-logo grid h-10 w-10 place-items-center">
-              <IconSnowflake className="h-5 w-5" />
-            </span>
+            <LogoCristal className="h-11 w-11 shrink-0" />
             <span className="truncate font-display text-xl font-black tracking-tight max-[519px]:sr-only">
-              <span className="givre-texte">WINTER</span> <em className="menu-titre-ligue">LIGUE</em>
+              <span className="marque-hiver">WINTER</span> <em className="menu-titre-ligue">LIGUE</em>
             </span>
           </Link>
 

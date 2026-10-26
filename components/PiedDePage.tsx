@@ -1,4 +1,5 @@
-import { IconClaude, IconSnowflake } from './icons';
+import { IconClaude } from './icons';
+import { LogoCristal } from './Logo';
 
 /**
  * Le pied de page, sous chaque page du site — jamais sur un overlay du stream,
@@ -97,12 +98,10 @@ export function PiedDePage({ barreMobile = false }: { barreMobile?: boolean }) {
       </div>
       <div className="pied-de-page-bande">
         <div className="pied-de-page-marque">
-          <span className="menu-logo grid h-10 w-10 shrink-0 place-items-center" aria-hidden="true">
-            <IconSnowflake className="h-5 w-5" />
-          </span>
+          <LogoCristal className="h-11 w-11 shrink-0" />
           <span>
             <span className="pied-de-page-nom">
-              <span className="givre-texte">Winter</span> <em className="menu-titre-ligue">Ligue</em>
+              <span className="marque-hiver">Winter</span> <em className="menu-titre-ligue">Ligue</em>
             </span>
             <span className="pied-de-page-droits">© 2026-2027 · Tous droits réservés</span>
           </span>
