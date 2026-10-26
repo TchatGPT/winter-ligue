@@ -184,7 +184,7 @@ export function Accueil({ twitchEnabled, devLogin }: { twitchEnabled: boolean; d
         chiffre: `×${1 + CHANCE.max}`,
         legende: 'de chance, au plus',
         titre: 'Garde tes flocons, tire plus haut',
-        children: 'Plus ta réserve est grosse, plus tes boosters sortent des cartes rares.',
+        children: 'Plus ta réserve est grosse, plus tu as de chances de tirer une carte rare.',
       },
     },
     {

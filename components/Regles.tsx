@@ -321,7 +321,7 @@ export function Regles({ maxGames, packs }: { maxGames: number; packs: PackDefin
               </Encart>
               <Encart titre="Bon à savoir">
                 <Puces>
-                  <li>Plus tu as de flocons, plus ton Perso et ton Finisseur sortent rare : voir « La chance ».</li>
+                  <li>Plus tu as de flocons, plus ton Perso et ton Finisseur ont de chances de sortir rare : voir « La chance ».</li>
                   <li>La modération peut offrir un Booster Perso à un autre joueur.</li>
                   {tempete && (
                     <li>
@@ -433,7 +433,7 @@ export function Regles({ maxGames, packs }: { maxGames: number; packs: PackDefin
                 </Link>
                 <a href="#regle-chance" className="no-underline">
                   <b>Augmenter ta chance</b>
-                  <span>Tes boosters sortent plus rare. Rien n’est dépensé.</span>
+                  <span>Plus de chances de tirer rare. Rien n’est dépensé.</span>
                 </a>
               </div>
               <p className="rgs-sous-note">Rien d’autre ne s’achète : ni carte, ni booster.</p>
@@ -464,7 +464,7 @@ export function Regles({ maxGames, packs }: { maxGames: number; packs: PackDefin
     sujet(
       'chance',
       'La chance',
-      'Plus tu as de flocons, plus tes boosters sortent de cartes rares.',
+      'Plus tu as de flocons, plus tu as de chances de tirer une carte rare — jamais à coup sûr.',
       'rocket',
       'var(--gold)',
       <>
