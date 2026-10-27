@@ -378,8 +378,10 @@ function regleEchange(
   const mesure = (g: Game) => (effect.sur === 'kills' ? g.kills : scoreNu(g));
   const quoi = effect.sur === 'kills' ? 'kills' : 'pts';
   // Ce que l'un reçoit, l'autre le cède : la somme est nulle, et chaque côté
-  // est borné par le plafond de la carte.
-  const ecart = Math.max(-effect.cap, Math.min(effect.cap, mesure(autreGame) - mesure(game)));
+  // est borné par le plafond de la carte — sans plafond, les games entières
+  // changent de mains.
+  const brut = mesure(autreGame) - mesure(game);
+  const ecart = effect.cap === undefined ? brut : Math.max(-effect.cap, Math.min(effect.cap, brut));
   if (ecart === 0) {
     autre.resultat = `égalité à ${mesure(game)} ${quoi}, sans effet`;
     return sansEffet(`égalité à ${mesure(game)} ${quoi}, sans effet`, game.id);

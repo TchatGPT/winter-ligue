@@ -665,6 +665,23 @@ describe('la carte à deux', () => {
     expect(gb.bonusPoints).toBe(-cap);
   });
 
+  it('sans plafond, échange les games entières : chacun repart avec le score de l’autre', () => {
+    const db = base('a', 'b');
+    pose(db, 'a', 'va-et-vient', 1, 'entier');
+    pose(db, 'b', 'va-et-vient', 1, 'entier');
+    const ga = game(db, 'a', 2);
+    appliqueCartesEnAttente(db, ga);
+    const gb = game(db, 'b', 18, 1);
+    const scoreA = ga.score;
+    const scoreB = gb.score;
+    appliqueCartesEnAttente(db, gb);
+    expect(ga.score).toBe(scoreB);
+    expect(gb.score).toBe(scoreA);
+    // À somme nulle, sans plafond même sur un écart de plus de vingt points.
+    expect(ga.bonusPoints + gb.bonusPoints).toBe(0);
+    expect(scoreB - scoreA).toBeGreaterThan(20);
+  });
+
   it('ne bouge rien sur une égalité', () => {
     const db = base('a', 'b');
     pose(db, 'a', 'chasse-croise', 1, 'paire');

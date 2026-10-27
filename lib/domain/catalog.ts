@@ -372,7 +372,7 @@ export const CARDS: readonly CardDefinition[] = [
   {
     id: 'tourbillon',
     name: 'Tourbillon',
-    subtitle: 'Échange de games',
+    subtitle: 'Échange de points',
     rarity: 'R',
     glyph: '🌀',
     description: 'Deux joueurs tirés au sort échangent le score de leur prochaine game, jusqu’à 12 points de part et d’autre.',
@@ -446,19 +446,6 @@ export const CARDS: readonly CardDefinition[] = [
     power: 43,
     packs: ['finisseur'],
     cible: 'HASARD',
-  },
-  {
-    id: 'va-et-vient',
-    name: 'Va-et-Vient',
-    subtitle: 'Échange de games',
-    rarity: 'R',
-    glyph: '🔄',
-    description: 'Deux joueurs tirés au sort échangent le score de leur prochaine game, jusqu’à 10 points de part et d’autre.',
-    effect: { kind: 'echange', sur: 'score', cap: 10 },
-    nature: 'malus',
-    power: 34,
-    packs: ['commu'],
-    cible: 'DEUX',
   },
   {
     id: 'grelon',
@@ -643,19 +630,6 @@ export const CARDS: readonly CardDefinition[] = [
     cible: 'HASARD',
   },
   {
-    id: 'tempete-croisee',
-    name: 'Tempête Croisée',
-    subtitle: 'Grand échange de games',
-    rarity: 'UR',
-    glyph: '🌪',
-    description: 'Deux joueurs tirés au sort échangent le score de leur prochaine game, jusqu’à 18 points de part et d’autre.',
-    effect: { kind: 'echange', sur: 'score', cap: 18 },
-    nature: 'malus',
-    power: 74,
-    packs: ['commu'],
-    cible: 'DEUX',
-  },
-  {
     id: 'coulee-noire',
     name: 'Coulée Noire',
     subtitle: '−12 pts à un joueur',
@@ -667,6 +641,19 @@ export const CARDS: readonly CardDefinition[] = [
     power: 67,
     packs: ['commu'],
     cible: 'HASARD',
+  },
+  {
+    id: 'va-et-vient',
+    name: 'Va-et-Vient',
+    subtitle: 'Échange de games',
+    rarity: 'UR',
+    glyph: '🔄',
+    description: 'Deux joueurs tirés au sort échangent leur prochaine game : chacun repart avec le score de l’autre.',
+    effect: { kind: 'echange', sur: 'score' },
+    nature: 'malus',
+    power: 74,
+    packs: ['commu'],
+    cible: 'DEUX',
   },
   /* ============================== Légendaire ============================ */
   {
@@ -728,11 +715,11 @@ export const CARDS: readonly CardDefinition[] = [
   {
     id: 'chaos-boreal',
     name: 'Chaos Boréal',
-    subtitle: 'Grand échange de games',
+    subtitle: 'Échange de games',
     rarity: 'L',
     glyph: '🎲',
-    description: 'Deux joueurs tirés au sort échangent le score de leur prochaine game, jusqu’à 25 points de part et d’autre.',
-    effect: { kind: 'echange', sur: 'score', cap: 25 },
+    description: 'Deux joueurs tirés au sort échangent leur prochaine game : chacun repart avec le score de l’autre.',
+    effect: { kind: 'echange', sur: 'score' },
     nature: 'malus',
     power: 93,
     packs: ['folie'],
@@ -867,6 +854,8 @@ export function impactMax(effect: CardEffect): number | null {
       // Sans plafond, elle suit la partie : pas de « au plus » à annoncer.
       return effect.cap === undefined ? null : Math.min(effect.cap, GAME_LIMITS.maxKills);
     case 'echange':
+      // Sans plafond, c'est la game entière qui change de mains.
+      return effect.cap ?? null;
     case 'releve_pire':
       return effect.cap;
     case 'snowflakes':
@@ -913,7 +902,9 @@ export function resumeEffet(effect: CardEffect): string {
     case 'flocons_doubles':
       return 'flocons ×2';
     case 'echange':
-      return `échange de ${effect.sur === 'kills' ? 'kills' : 'games'}, max ${effect.cap}`;
+      return effect.cap === undefined
+        ? `échange de ${effect.sur === 'kills' ? 'kills' : 'games'}`
+        : `échange de ${effect.sur === 'kills' ? 'kills' : 'points'}, max ${effect.cap}`;
     case 'releve_pire':
       return `pire game à la moyenne, max +${effect.cap}`;
     case 'multiplie_jouee':

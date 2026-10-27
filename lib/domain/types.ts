@@ -102,9 +102,11 @@ export type CardEffect =
   /**
    * La carte à deux : elle attend la prochaine game de **chacun** des deux
    * joueurs tirés au sort, et se règle quand la seconde est saisie. Ils
-   * échangent leurs kills, ou leur score entier, borné de chaque côté.
+   * échangent leurs kills, ou leur score, borné de chaque côté par `cap` —
+   * ou, sans `cap`, leurs games entières : chacun repart avec le score de
+   * l'autre (décidé par l'organisation le 27/10/2026).
    */
-  | { kind: 'echange'; sur: 'kills' | 'score'; cap: number }
+  | { kind: 'echange'; sur: 'kills' | 'score'; cap?: number }
   /* ------------------------ Sur une game déjà jouée ----------------------- */
   /** « Pire game ramenée à la moyenne », plafonné. */
   | { kind: 'releve_pire'; cap: number }
