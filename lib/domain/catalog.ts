@@ -181,6 +181,20 @@ export const CARDS: readonly CardDefinition[] = [
     packs: ['perso'],
     cible: 'HASARD',
   },
+  {
+    // Ajoutée le 27/10/2026 : la seule carte qui compare deux games du joueur.
+    id: 'marche-gelee',
+    name: 'Marche Gelée',
+    subtitle: '+5 pts si plus de kills',
+    rarity: 'C',
+    glyph: '👣',
+    description: '+5 points sur ta prochaine game, si tu y fais plus de kills qu’à ta game précédente.',
+    effect: { kind: 'progression_kills', value: 5 },
+    nature: 'bonus',
+    power: 10,
+    packs: ['perso'],
+    cible: 'HASARD',
+  },
   /* ============================== Rare ================================== */
   {
     id: 'percee',
@@ -461,6 +475,7 @@ export function impactMax(effect: CardEffect): number | null {
     case 'plancher':
     case 'bonus_top':
     case 'petite_game':
+    case 'progression_kills':
       return Math.abs(effect.value);
     case 'kills_paliers':
       return effect.cap;
@@ -516,6 +531,8 @@ export function resumeEffet(effect: CardEffect): string {
       return `+${effect.value} pts sous ${effect.moinsDe} kills`;
     case 'kills_paliers':
       return `+${effect.value} pts par ${effect.par} kills, max +${effect.cap}`;
+    case 'progression_kills':
+      return `+${effect.value} pts si plus de kills`;
     case 'flocons_doubles':
       return 'flocons ×2';
     case 'echange':

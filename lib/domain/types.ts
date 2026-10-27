@@ -91,6 +91,12 @@ export type CardEffect =
    * Elle se mérite — rien sous X kills — et grandit avec la game.
    */
   | { kind: 'kills_paliers'; par: number; value: number; cap: number }
+  /**
+   * « +N pts si plus de kills qu'à la game précédente » : la game doit battre
+   * les kills de la game jouée juste avant par le même joueur (une game passée
+   * ne compte pas). Sans game précédente, il suffit d'un kill.
+   */
+  | { kind: 'progression_kills'; value: number }
   /** Les flocons de la game sont doublés. Aucune incidence au classement. */
   | { kind: 'flocons_doubles' }
   /**

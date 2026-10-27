@@ -45,6 +45,39 @@ export interface ContexteGame {
    * streameuse et les coéquipiers hors ligue compris. Nul si on l'ignore.
    */
   meilleurKills?: number | null;
+  /**
+   * Les kills de la game jouée juste avant par le même joueur (voir
+   * `killsPrecedents`) : nul s'il n'en a pas joué.
+   */
+  killsPrecedents?: number | null;
+}
+
+/**
+ * Les kills de la game jouée juste avant celle-ci par le même joueur — une
+ * game passée ne compte pas —, ou `null` si c'est sa première. Pour la
+ * « Marche Gelée ».
+ */
+export function killsPrecedents(db: Database, game: Game): number | null {
+  const ordre = (g: Game) => [Date.parse(g.playedAt), Date.parse(g.createdAt)] as const;
+  const [jouee, creee] = ordre(game);
+  let precedente: Game | null = null;
+  for (const g of db.games) {
+    if (g.playerId !== game.playerId || g.id === game.id || g.skipped) continue;
+    const [j, c] = ordre(g);
+    if (j > jouee || (j === jouee && c >= creee)) continue;
+    if (!precedente) {
+      precedente = g;
+      continue;
+    }
+    const [pj, pc] = ordre(precedente);
+    if (j > pj || (j === pj && c > pc)) precedente = g;
+  }
+  return precedente ? precedente.kills : null;
+}
+
+/** Le contexte d'une game, complété de ce qui se lit en base : les kills de la game d'avant. */
+function contexteDe(db: Database, game: Game, contexte: ContexteGame = {}): ContexteGame {
+  return { ...contexte, killsPrecedents: killsPrecedents(db, game) };
 }
 
 export interface CarteAppliquee {
@@ -203,6 +236,13 @@ function demande(effect: CardEffect, game: Game, contexte: ContexteGame): Demand
             resultat: `${game.kills} kill${game.kills > 1 ? 's' : ''}, moins de ${effect.par} : sans effet`,
           };
     }
+    case 'progression_kills': {
+      // Sans game précédente, la marche part de zéro : il suffit d'un kill.
+      const avant = contexte.killsPrecedents ?? 0;
+      return game.kills > avant
+        ? { points: effect.value, resultat: `${game.kills} kills contre ${avant} → ${pts(effect.value)}` }
+        : { points: 0, resultat: `${game.kills} kills, pas plus que les ${avant} d’avant : sans effet` };
+    }
     default:
       return null;
   }
@@ -251,7 +291,7 @@ function regleSurGame(
   if (effect.kind === 'echange') return regleEchange(db, pendante, card, effect, game, now);
   if (effect.kind === 'clone_kills') return regleClone(db, pendante, card, effect, game, contexte);
 
-  const voulu = demande(effect, game, contexte);
+  const voulu = demande(effect, game, contexteDe(db, game, contexte));
   if (!voulu) return sansEffet('sans effet sur une game', game.id);
   if (voulu.points === 0) return sansEffet(voulu.resultat, game.id);
 
@@ -629,7 +669,7 @@ export function regleCartesSansAttendre(
       const libres = gamesSansCarte(db, joueurId);
       if (libres.length === 0) break;
 
-      const cible = card.nature === 'malus' ? libres[0] : meilleureCible(card.effect, libres);
+      const cible = card.nature === 'malus' ? libres[0] : meilleureCible(db, card.effect, libres);
       const reglement = regleSurGame(db, pendante, card, cible, {}, now);
       if (reglement.facteurFlocons > 1) {
         // Les flocons de cette game ont déjà été versés : on verse ce qui
@@ -742,11 +782,11 @@ export function utiliseJoker(db: Database, game: Game, now = new Date()): CarteA
 }
 
 /** La game où un bonus rapporte le plus ; à égalité, la plus récente. */
-function meilleureCible(effect: CardEffect, libres: Game[]): Game {
+function meilleureCible(db: Database, effect: CardEffect, libres: Game[]): Game {
   let meilleure = libres[0];
-  let gain = demande(effect, meilleure, {})?.points ?? 0;
+  let gain = demande(effect, meilleure, contexteDe(db, meilleure))?.points ?? 0;
   for (const game of libres.slice(1)) {
-    const g = demande(effect, game, {})?.points ?? 0;
+    const g = demande(effect, game, contexteDe(db, game))?.points ?? 0;
     if (g > gain) {
       meilleure = game;
       gain = g;
@@ -771,6 +811,7 @@ const RECALCULABLES = new Set<CardEffect['kind']>([
   'bonus_top',
   'petite_game',
   'kills_paliers',
+  'progression_kills',
 ]);
 
 /** Les cartes consommées sur cette game, quel que soit ce qu'elles y ont fait. */
@@ -850,8 +891,8 @@ export function recalculeCartesDeLaGame(
     // Un malus qui n'a rien retiré avait été paré : il le reste.
     if (card.nature === 'malus' && !entree) continue;
 
-    const demandeAvant = demande(card.effect, ancienne, {})?.points ?? 0;
-    const voulu = demande(card.effect, game, {});
+    const demandeAvant = demande(card.effect, ancienne, contexteDe(db, game))?.points ?? 0;
+    const voulu = demande(card.effect, game, contexteDe(db, game));
     const demandeApres = voulu?.points ?? 0;
     // La majoration d'un évènement « cartes renforcées », telle qu'à la saisie.
     const majoration = demandeAvant !== 0 && pointsAvant !== 0 ? pointsAvant / demandeAvant : 1;

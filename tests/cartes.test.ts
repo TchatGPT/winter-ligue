@@ -133,6 +133,51 @@ function joueLesCartes(db: Database) {
   for (const c of db.cartesEnAttente) if (c.consommeeA === null) c.consommeeA = '2027-01-01T00:00:00.000Z';
 }
 
+describe('« Marche Gelée » : plus de kills qu’à la game précédente', () => {
+  /** Une game sans carte, puis la Marche Gelée sur la suivante. */
+  function apres(avant: number | null, kills: number) {
+    const db = base('a');
+    if (avant !== null) game(db, 'a', avant);
+    const carte = pose(db, 'a', 'marche-gelee');
+    const g = game(db, 'a', kills);
+    appliqueCartesEnAttente(db, g, {}, MAINTENANT);
+    return { game: g, resultat: carte.resultat };
+  }
+
+  it('rapporte 5 points quand la game bat les kills de la précédente', () => {
+    expect(apres(4, 7).game.bonusPoints).toBe(5);
+    expect(apres(4, 5).game.bonusPoints).toBe(5);
+  });
+
+  it('ne fait rien à égalité ou en dessous', () => {
+    expect(apres(6, 6).game.bonusPoints).toBe(0);
+    const moins = apres(9, 3);
+    expect(moins.game.bonusPoints).toBe(0);
+    expect(moins.resultat).toContain('sans effet');
+  });
+
+  it('sans game précédente, il suffit d’un kill', () => {
+    expect(apres(null, 1).game.bonusPoints).toBe(5);
+    expect(apres(null, 0).game.bonusPoints).toBe(0);
+  });
+
+  it('ne compte pas une game passée comme précédente', () => {
+    const db = base('a');
+    game(db, 'a', 3);
+    const passee = game(db, 'a', 20);
+    passee.skipped = true;
+    pose(db, 'a', 'marche-gelee');
+    const g = game(db, 'a', 5);
+    appliqueCartesEnAttente(db, g, {}, MAINTENANT);
+    expect(g.bonusPoints).toBe(5);
+  });
+
+  it('se résume en une pastille', () => {
+    expect(resumeEffet(getCard('marche-gelee')!.effect)).toBe('+5 pts si plus de kills');
+    expect(momentDe(getCard('marche-gelee')!.effect)).toBe('PROCHAINE');
+  });
+});
+
 describe('sur la prochaine game', () => {
   it('« Multiplicateur game » multiplie le score entier, kills et top', () => {
     // 10 kills et un Top 1 : 30 points. ×1,2 → +6.
