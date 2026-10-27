@@ -59,7 +59,7 @@ function joue(db: Database, joueurId: string) {
 describe('pas de stock de cartes', () => {
   it('ne verse les flocons d’une carte qu’une fois révélée, sans bloquer le booster suivant', () => {
     const db = ligue('a');
-    reglagePack(db, 'perso', seulement('UR'));
+    reglagePack(db, 'perso', seulement('R'));
     for (let i = 0; i < 40; i += 1) {
       const o = ouvrePack(db, { packId: 'perso', joueurId: 'a', idempotencyKey: `r${i}` }, 'modo');
       if (o.cardId !== 'coulee-de-neige') {
@@ -83,11 +83,18 @@ describe('pas de stock de cartes', () => {
   it('refuse un booster Perso tant que la carte précédente n’a pas joué', () => {
     const db = ligue('a');
     reglagePack(db, 'perso', seulement('R'));
-    const premiere = ouvrePack(db, { packId: 'perso', joueurId: 'a', idempotencyKey: 'k1' }, 'modo');
-    // Une rare du Perso (Luge, Vent Porteur) : elle attend la prochaine game.
+    // Une rare du Perso qui attend la prochaine game (Luge, Vent Porteur,
+    // Lanterne) ; la Coulée de Neige, des flocons, se règle une fois révélée.
+    let premiere = ouvrePack(db, { packId: 'perso', joueurId: 'a', idempotencyKey: 'k1' }, 'modo');
+    for (let i = 0; premiere.cardId === 'coulee-de-neige' && i < 40; i += 1) {
+      premiere.annonceeA = new Date().toISOString();
+      regleApresRevelation(db, premiere.id);
+      premiere = ouvrePack(db, { packId: 'perso', joueurId: 'a', idempotencyKey: `k1-${i}` }, 'modo');
+    }
     expect(getCard(premiere.cardId)!.rarity).toBe('R');
     expect(carteQuiAttend(db, 'a')).not.toBeNull();
 
+    const ouvertes = db.ouvertures.length;
     let refus: unknown = null;
     try {
       ouvrePack(db, { packId: 'perso', joueurId: 'a', idempotencyKey: 'k2' }, 'modo');
@@ -96,7 +103,7 @@ describe('pas de stock de cartes', () => {
     }
     expect(refus).toBeInstanceOf(PackError);
     expect((refus as PackError).code).toBe('CARTE_EN_ATTENTE');
-    expect(db.ouvertures).toHaveLength(1);
+    expect(db.ouvertures).toHaveLength(ouvertes);
 
     // Sa carte a joué : le booster suivant s'ouvre.
     joue(db, 'a');

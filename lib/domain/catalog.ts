@@ -236,6 +236,21 @@ export const CARDS: readonly CardDefinition[] = [
     packs: ['perso'],
     cible: 'HASARD',
   },
+  {
+    // Passée d'ultra rare à rare le 27/10/2026 : la seule ultra rare qui ne
+    // touchait pas au score — cinquante flocons, cinq kills.
+    id: 'coulee-de-neige',
+    name: 'Coulée de Neige',
+    subtitle: '+50 flocons',
+    rarity: 'R',
+    glyph: '🏔',
+    description: '+50 flocons, tout de suite.',
+    effect: { kind: 'snowflakes', value: 50 },
+    nature: 'bonus',
+    power: 40,
+    packs: ['perso'],
+    cible: 'HASARD',
+  },
   /* ============================== Ultra rare ============================ */
   {
     id: 'rempart-polaire',
@@ -249,19 +264,6 @@ export const CARDS: readonly CardDefinition[] = [
     power: 76,
     // Pas dans le Perso : son ultra rare y est la Coulée de Neige.
     packs: ['commu', 'finisseur', 'folie'],
-    cible: 'HASARD',
-  },
-  {
-    id: 'coulee-de-neige',
-    name: 'Coulée de Neige',
-    subtitle: '+50 flocons',
-    rarity: 'UR',
-    glyph: '🏔',
-    description: '+50 flocons, tout de suite.',
-    effect: { kind: 'snowflakes', value: 50 },
-    nature: 'bonus',
-    power: 60,
-    packs: ['perso'],
     cible: 'HASARD',
   },
   {
