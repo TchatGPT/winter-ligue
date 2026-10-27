@@ -133,17 +133,27 @@ describe('pas de stock de cartes', () => {
   it('ne tire jamais un joueur qui a déjà une carte en attente, et attend si tous en ont une', () => {
     const db = ligue('a', 'b');
     reglagePack(db, 'commu', seulement('C'));
-    const un = ouvrePack(db, { packId: 'commu', idempotencyKey: 'k1' }, 'modo');
-    const deux = ouvrePack(db, { packId: 'commu', idempotencyKey: 'k2' }, 'modo');
-    // Les deux joueurs, chacun une fois.
-    expect([...un.beneficiaires, ...deux.beneficiaires].sort()).toEqual(['a', 'b']);
+    // Les communes du Commu tombent sur un joueur, sur les derniers, ou sur
+    // toute la ligue (des flocons) : jusqu'à ce que les deux joueurs aient une
+    // carte en attente, aucune ouverture ne tombe sur qui en a déjà une.
+    const attend = (id: string) => carteQuiAttend(db, id) !== null;
+    for (let i = 0; i < 60 && !(attend('a') && attend('b')); i += 1) {
+      const avant = ['a', 'b'].filter(attend);
+      const o = ouvrePack(db, { packId: 'commu', idempotencyKey: `k${i}` }, 'modo');
+      for (const id of o.beneficiaires) expect(avant).not.toContain(id);
+      o.annonceeA = new Date().toISOString();
+      regleApresRevelation(db, o.id);
+    }
+    expect(attend('a') && attend('b')).toBe(true);
 
-    expect(() => ouvrePack(db, { packId: 'commu', idempotencyKey: 'k3' }, 'modo')).toThrow(PackError);
-    expect(db.ouvertures).toHaveLength(2);
+    // Tous en ont une : le booster attend.
+    const ouvertes = db.ouvertures.length;
+    expect(() => ouvrePack(db, { packId: 'commu', idempotencyKey: 'plein' }, 'modo')).toThrow(PackError);
+    expect(db.ouvertures).toHaveLength(ouvertes);
 
     // Celui dont la carte a joué redevient tirable, et lui seul.
     joue(db, 'b');
-    const trois = ouvrePack(db, { packId: 'commu', idempotencyKey: 'k4' }, 'modo');
-    expect(trois.beneficiaires).toEqual(['b']);
+    const apres = ouvrePack(db, { packId: 'commu', idempotencyKey: 'apres' }, 'modo');
+    expect(apres.beneficiaires).toEqual(['b']);
   });
 });
