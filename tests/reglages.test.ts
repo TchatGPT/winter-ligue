@@ -219,7 +219,14 @@ describe('ouvrir un booster', () => {
     for (let essai = 0; essai < 400; essai += 1) {
       const db = ligue('a');
       reglagePack(db, 'commu', seulement('UR'));
-      const o = ouvrePack(db, { packId: 'commu', idempotencyKey: `k${essai}` }, 'modo');
+      // Une carte à deux ne s'ouvre pas dans une ligue d'un joueur : on retire.
+      let o;
+      try {
+        o = ouvrePack(db, { packId: 'commu', idempotencyKey: `k${essai}` }, 'modo');
+      } catch (e) {
+        if (e instanceof PackError) continue;
+        throw e;
+      }
       const effet = getCard(o.cardId)!.effect;
       if (effet.kind !== 'snowflakes') continue;
 
