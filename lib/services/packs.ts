@@ -66,7 +66,8 @@ export class PackError extends Error {
       | 'AUCUN_DU'
       | 'AUCUN_BENEFICIAIRE'
       | 'CARTE_EN_ATTENTE'
-      | 'FLOCONS_INSUFFISANTS',
+      | 'FLOCONS_INSUFFISANTS'
+      | 'CARTE_INCONNUE',
   ) {
     super(message);
     this.name = 'PackError';

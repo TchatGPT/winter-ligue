@@ -22,7 +22,7 @@ import { cache } from 'react';
 import { synchroniseCatalogue } from './lecture';
 import { chargeBase, empreintes, enregistreBase, lisJournal, lisSubsTwitch, SCHEMA_SQL, TABLES } from './tables';
 import { dirname, join } from 'node:path';
-import { DEFAULT_MAX_GAMES_PER_PLAYER, ECONOMY, EVENEMENT_KINDS, SEASON } from '@/lib/domain/rules';
+import { DEFAULT_MAX_GAMES_PER_PLAYER, ECONOMY, EVENEMENT_KINDS, PREFIXE_OUVERTURE_TEST, SEASON } from '@/lib/domain/rules';
 import type { AuditEntry, Database, PlayerRole, SubTwitch } from './entities';
 import type { Rarity } from '@/lib/domain/types';
 
@@ -275,8 +275,9 @@ class JsonFileStore implements Store {
     const db = await this.load();
     const pseudo = (id: string) => db.players.find((p) => p.id === id)?.pseudo ?? 'Joueur inconnu';
     const maintenant = new Date().toISOString();
+    // Une ouverture de la page de test n'est pas un tirage : le live ne la joue pas.
     const ouvertures = db.ouvertures
-      .filter((o) => o.openedAt > depuis)
+      .filter((o) => o.openedAt > depuis && !o.idempotencyKey.startsWith(PREFIXE_OUVERTURE_TEST))
       .sort((a, b) => a.openedAt.localeCompare(b.openedAt))
       .slice(0, OVERLAY_LOT);
     return {
@@ -684,9 +685,13 @@ class PostgresStore implements Store {
                      jsonb_array_length(o.beneficiaires) as nb
                 from ouvertures o
                where o.ouvert_le > ${depuis}::timestamptz
+                 and o.cle_idempotence not like ${PREFIXE_OUVERTURE_TEST + '%'}
                order by o.ouvert_le
                limit ${OVERLAY_LOT}) x), '[]'::json),
-          'joueurs', case when exists (select 1 from ouvertures where ouvert_le > ${depuis}::timestamptz)
+          'joueurs', case when exists (
+              select 1 from ouvertures
+               where ouvert_le > ${depuis}::timestamptz
+                 and cle_idempotence not like ${PREFIXE_OUVERTURE_TEST + '%'})
             then coalesce((
               select json_agg(x) from (
                 select pseudo, slug, twitch_login from joueurs

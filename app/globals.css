@@ -13447,6 +13447,10 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
     overflow: visible;
   }
+  /* Sept sections, avec la page de test : quatre colonnes, toujours deux rangées. */
+  .adm-nav:has(> :nth-child(7)) {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
   .adm-nav-lien {
     min-height: 54px;
     flex-direction: column;
@@ -13575,6 +13579,137 @@
   width: 46%;
   height: 46%;
   color: var(--neige-1);
+}
+
+/* ---- La page de test des cartes (components/admin/EcranTestCartes.tsx) ---- */
+.test-etat {
+  display: grid;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+  font-size: 0.9375rem;
+  color: var(--ink-2);
+}
+.test-etat strong {
+  color: var(--ink);
+}
+.test-rarete {
+  --teinte: var(--r-c);
+  margin-bottom: 1.5rem;
+}
+.test-rarete-titre {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--teinte) 45%, transparent);
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--teinte);
+}
+.test-rarete-titre span {
+  font-size: 0.875rem;
+  color: var(--faint);
+}
+.test-cartes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr));
+  gap: 1rem 0.8rem;
+}
+.test-carte {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.5rem 0.4rem 0.6rem;
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  text-align: center;
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    background-color 0.18s ease;
+}
+.test-carte:hover:not(:disabled),
+.test-carte:focus-visible {
+  transform: translateY(-2px);
+  background: var(--glass-1);
+}
+.test-carte[aria-pressed='true'] {
+  border-color: var(--teinte);
+  background: color-mix(in srgb, var(--teinte) 14%, transparent);
+}
+.test-carte:disabled {
+  cursor: not-allowed;
+  opacity: 0.35;
+}
+.test-carte-visuel {
+  display: block;
+  width: 100%;
+  max-width: 7rem;
+  margin-bottom: 0.3rem;
+}
+.test-carte b {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 0.875rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink);
+}
+.test-carte small {
+  font-size: 0.75rem;
+  line-height: 1.3;
+  color: var(--muted);
+}
+.test-carte .test-carte-moment {
+  color: var(--faint);
+}
+/* La carte choisie, collée au bas du panneau : le bouton qui la donne. */
+.test-choix {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.5rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--glass-edge-lit);
+  border-radius: var(--r-md);
+  /* Un fond plein : les cartes qui défilent dessous ne doivent pas se lire au travers. */
+  background: var(--fond);
+  box-shadow: var(--lift-2);
+}
+.test-choix-nom {
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  font-weight: 900;
+  color: var(--ink);
+}
+.test-choix-nom span {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--faint);
+}
+.test-choix-texte {
+  font-size: 0.875rem;
+  color: var(--ink-2);
+}
+@media (max-width: 40rem) {
+  .test-choix {
+    flex-wrap: wrap;
+  }
+  .test-choix > :first-child {
+    flex-basis: 100%;
+  }
+  .test-choix > .btn {
+    flex: 1;
+  }
 }
 
 /* Les dispositions. Sur un téléphone, une colonne, dans l'ordre des zones. */

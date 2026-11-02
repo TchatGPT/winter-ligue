@@ -34,9 +34,13 @@ export const SECTIONS: Section[] = [
   { href: '/admin/journal', label: 'Journal', icone: 'book' },
 ];
 
+/** La page de test : seuls les testeurs de la ligue la voient (`TESTEURS_CARTES`). */
+const SECTION_TEST: Section = { href: '/admin/test', label: 'Test des cartes', icone: 'layers' };
+
 /** La barre de la modération : son nom et ses sections. */
-export function BarreAdmin() {
+export function BarreAdmin({ testeur = false }: { testeur?: boolean }) {
   const chemin = usePathname();
+  const sections = testeur ? [...SECTIONS, SECTION_TEST] : SECTIONS;
   return (
     <header className="glass adm-barre">
       <p className="adm-barre-nom">
@@ -49,7 +53,7 @@ export function BarreAdmin() {
         Modération
       </p>
       <nav className="adm-nav" aria-label="Sections de la modération">
-        {SECTIONS.map((s) => {
+        {sections.map((s) => {
           const Icone = NAV_ICONS[s.icone];
           const actif = s.href === '/admin' ? chemin === s.href : chemin.startsWith(s.href);
           return (

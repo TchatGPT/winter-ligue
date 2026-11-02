@@ -204,6 +204,14 @@ export const adminConfigSchema = z.object({
 /** Le cadeau du jour : rien à envoyer, le serveur décide de tout. */
 export const cadeauDuJourSchema = z.object({}).strict();
 
+/** La page de test : une carte d'un booster, et une clé pour ne la donner qu'une fois. */
+export const carteDeTestSchema = z
+  .object({ packId: z.enum(packIds), cardId: z.string().trim().min(1).max(64), cle: uuid })
+  .strict();
+
+/** La page de test : retirer la carte qui attend sa game. Rien à envoyer. */
+export const retireCarteDeTestSchema = z.object({}).strict();
+
 /** Un Booster Perso acheté : rien qu'une clé, tirée par l'écran, pour ne pas acheter deux fois. */
 export const achatBoosterSchema = z.object({ cle: uuid }).strict();
 
