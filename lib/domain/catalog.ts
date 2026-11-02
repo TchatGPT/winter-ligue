@@ -474,6 +474,21 @@ export const CARDS: readonly CardDefinition[] = [
     packs: ['perso'],
     cible: 'HASARD',
   },
+  {
+    // Booster Perso, ajoutée le 02/11/2026, rare le jour même : plus dure à
+    // déclencher que la Piste Damée (Top 8), elle ne pouvait pas valoir plus.
+    id: 'cime-gelee',
+    name: 'Cime Gelée',
+    subtitle: '+10 pts si Top 6',
+    rarity: 'R',
+    glyph: '🏔',
+    description: '+10 points sur ta prochaine game, si tu fais Top 6.',
+    effect: { kind: 'bonus_top', top: 6, value: 10 },
+    nature: 'bonus',
+    power: 25,
+    packs: ['perso'],
+    cible: 'HASARD',
+  },
   /* ============================== Ultra rare ============================ */
   {
     id: 'rempart-polaire',
@@ -681,20 +696,6 @@ export const CARDS: readonly CardDefinition[] = [
     effect: { kind: 'multiplicateur_game', value: 1.8 },
     nature: 'bonus',
     power: 76,
-    packs: ['perso'],
-    cible: 'HASARD',
-  },
-  {
-    // Booster Perso, ajoutée le 02/11/2026.
-    id: 'cime-gelee',
-    name: 'Cime Gelée',
-    subtitle: '+10 pts si Top 6',
-    rarity: 'UR',
-    glyph: '🏔',
-    description: '+10 points sur ta prochaine game, si tu fais Top 6.',
-    effect: { kind: 'bonus_top', top: 6, value: 10 },
-    nature: 'bonus',
-    power: 62,
     packs: ['perso'],
     cible: 'HASARD',
   },
