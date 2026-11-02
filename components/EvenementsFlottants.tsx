@@ -9,13 +9,14 @@ import { EVENEMENTS_SUBS } from '@/lib/domain/rules';
  * Un segment par évènement, teinté de sa couleur : la médaille du bloc des
  * subs, le nom, ce qu'il fait en une phrase, et le temps qui reste, en grand.
  *
- * Il n'existe que quand quelque chose tourne. Sur très grand écran, l'accueil
- * retire sa hauteur (`HAUTEUR_BANDEAU_EVENEMENTS`) de celle de sa grille pour
- * tenir sans défiler. Composant serveur ; seul le compte à rebours vit dans le
- * navigateur.
+ * Il n'existe que quand quelque chose tourne. La modération retire sa hauteur
+ * (`HAUTEUR_BANDEAU_EVENEMENTS`) de celle de ses écrans ; l'accueil et les
+ * boosters gardent la leur et défilent d'autant — une Tempête dure quatre
+ * jours, ils s'écrasaient. Composant serveur ; seul le compte à rebours vit
+ * dans le navigateur.
  */
 
-/** La hauteur du bandeau et de sa marge, que l'accueil retire de la sienne. */
+/** La hauteur du bandeau et de sa marge, que les écrans de la modération retirent de la leur. */
 export const HAUTEUR_BANDEAU_EVENEMENTS = '84px';
 
 export function EvenementsFlottants({ evenements }: { evenements: EvenementActif[] }) {

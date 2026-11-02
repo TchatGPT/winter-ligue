@@ -7628,10 +7628,14 @@
  * le reste. Il devient un conteneur de taille : s'il manque de place, il range
  * ses explications au lieu de faire défiler la page. Sous 46 rem de haut, la
  * page défile, comme ailleurs.
+ *
+ * Le bandeau des évènements ne se retire plus de cette hauteur : une Tempête
+ * dure quatre jours, et les paliers, écrasés d'autant, se chevauchaient
+ * (02/11/2026). Tant qu'un évènement tourne, la page défile de sa hauteur.
  */
 @media (min-width: 150rem) {
   .grille-classement {
-    height: max(calc(100dvh - 187px - var(--bandeau-evts, 0px)), 46rem);
+    height: max(calc(100dvh - 187px), 46rem);
   }
   .grille-classement > :first-child {
     grid-template-rows: auto minmax(0, 1fr);
@@ -9694,9 +9698,11 @@
      les étapes sur une ligne, la scène dessous, sans défiler jusqu'aux taux.
      Sur un écran moins haut (2560 × 1305, celui d'un 1440p), les sachets se
      règlent aussi sur la hauteur : 913 px, c'est tout ce qui n'est pas eux, du
-     haut de la page au bas de la scène, mesuré sur la maquette — et le bandeau
-     des évènements quand il est là. Jamais sous 180 px de large : plus bas, la
-     page défile plutôt que de rendre les sachets illisibles. */
+     haut de la page au bas de la scène, mesuré sur la maquette. Le bandeau des
+     évènements n'y entre plus : une Tempête dure quatre jours, et les sachets
+     rapetissaient d'autant (02/11/2026) — la page défile de sa hauteur. Jamais
+     sous 180 px de large : plus bas, la page défile plutôt que de rendre les
+     sachets illisibles. */
   /* Quand la rangée défile (un téléphone), le premier et le dernier sachet
      doivent pouvoir venir au centre : c'est le sachet du centre qui est
      retenu. Sans ce rembourrage, le dernier n'y arrivait jamais, et son
@@ -9711,7 +9717,7 @@
         180px,
         min(
           calc((100cqw - 3 * var(--ecart) - 2 * var(--marge) - 10px) / 4),
-          calc((100svh - 913px - var(--bandeau-evts, 0px)) / 1.865)
+          calc((100svh - 913px) / 1.865)
         ),
         265px
       );
