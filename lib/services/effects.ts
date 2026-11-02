@@ -29,13 +29,13 @@ import 'server-only';
 
 import type { CarteEnAttente, Database, Game, Player } from '@/lib/db/entities';
 import { newId } from '@/lib/db/store';
-import { COUP_DE_VERGLAS, getCard, momentDe } from '@/lib/domain/catalog';
+import { COUP_DE_VERGLAS, getCard, momentDe, PACTE_SUBI } from '@/lib/domain/catalog';
 import { rewardForGame } from '@/lib/domain/economy';
 import { CRENEAUX_BONUS, GAME_LIMITS, placementPoints } from '@/lib/domain/rules';
 import type { CardDefinition, CardEffect } from '@/lib/domain/types';
 import { shortDateTime } from '@/lib/format';
 import { facteurCartes } from '@/lib/services/evenements';
-import { aJoueToutesSesGames, estImmunise, limiteDe, recomputeGame } from './league';
+import { aJoueToutesSesGames, estImmunise, gamesOf, limiteDe, recomputeGame } from './league';
 import { credit } from './ledger';
 
 /** Ce que la saisie sait de la partie, au-delà de la game elle-même. */
@@ -770,6 +770,88 @@ export function joueVerglas(
   );
 }
 
+export type RefusEchangeChoisi = 'CARTE' | 'TROP_TOT' | 'MA_GAME' | 'AUTRE_GAME';
+
+/** Les games jouées par un joueur, sans celles qu'un Joker a annulées. */
+export const gamesJouees = (db: Database, joueurId: string) =>
+  gamesOf(db, joueurId).filter((g) => !g.skipped).length;
+
+/**
+ * Joue un Pacte du Givre gardé par un joueur : une de ses games et une game
+ * d'un autre joueur, toutes deux encore sans carte, échangent leur score —
+ * chacune repart avec celui de l'autre, au grand livre des points de la game
+ * (`applyPoints`). Le Pacte est consommé sur sa game ; sur celle de l'autre,
+ * une trace (`PACTE_SUBI`) dit d'où vient l'échange, et en fait une game qui
+ * porte une carte. Il ne se joue qu'une fois `minGames` games jouées.
+ *
+ * Celui qui y perdrait est-il immunisé ? L'échange tombe, et le Pacte est
+ * perdu : le laisser gagner à l'autre créerait des points. À la route de
+ * vérifier que l'autre joueur est en lice.
+ */
+export function joueEchangeChoisi(
+  db: Database,
+  carteId: string,
+  maGameId: string,
+  autreGameId: string,
+  now = new Date(),
+): CarteAppliquee | RefusEchangeChoisi {
+  const pendante = db.cartesEnAttente.find((c) => c.id === carteId && c.consommeeA === null);
+  const card = pendante ? getCard(pendante.cardId) : null;
+  if (!pendante || !card || card.effect.kind !== 'echange_choisi') return 'CARTE';
+  if (gamesJouees(db, pendante.joueurId) < card.effect.minGames) return 'TROP_TOT';
+  const maGame = gamesSansCarte(db, pendante.joueurId).find((g) => g.id === maGameId);
+  if (!maGame) return 'MA_GAME';
+  const autreGame = db.games.find((g) => g.id === autreGameId && g.playerId !== pendante.joueurId);
+  if (!autreGame || !gamesSansCarte(db, autreGame.playerId).some((g) => g.id === autreGame.id)) return 'AUTRE_GAME';
+
+  const moi = db.players.find((p) => p.id === pendante.joueurId);
+  const lui = db.players.find((p) => p.id === autreGame.playerId);
+  const porteur = moi?.pseudo ?? 'un joueur';
+  const autre = lui?.pseudo ?? 'un joueur';
+  const ecart = scoreNu(autreGame) - scoreNu(maGame);
+  const perdant = ecart > 0 ? lui : ecart < 0 ? moi : undefined;
+  const pare = perdant !== undefined && estImmunise(perdant, now);
+
+  let points = 0;
+  let rendu = 0;
+  if (!pare && ecart !== 0) {
+    points = applyPoints(db, maGame, card, pendante.ouvertureId, ecart);
+    rendu = applyPoints(db, autreGame, PACTE_SUBI, pendante.ouvertureId, -ecart);
+  }
+  const echange = `${scoreNu(maGame)} pts contre ${scoreNu(autreGame)}`;
+  db.cartesEnAttente.push({
+    id: newId(),
+    joueurId: autreGame.playerId,
+    cardId: PACTE_SUBI.id,
+    ouvertureId: pendante.ouvertureId,
+    creeA: now.toISOString(),
+    consommeeA: now.toISOString(),
+    gameId: autreGame.id,
+    resultat: pare
+      ? `Pacte du Givre de ${porteur}, annulé : ${perdant?.pseudo} est immunisé`
+      : ecart === 0
+        ? `Pacte du Givre de ${porteur} : égalité, sans effet`
+        : `Pacte du Givre de ${porteur} : ${scoreNu(autreGame)} pts contre ${scoreNu(maGame)} → ${pts(rendu)}`,
+    paireId: null,
+  });
+  return consomme(
+    pendante,
+    card,
+    {
+      points,
+      resultat: pare
+        ? `échange avec ${autre} annulé : ${perdant?.pseudo} est immunisé`
+        : ecart === 0
+          ? `échange avec ${autre} : égalité, sans effet`
+          : `échange avec ${autre} : ${echange} → ${pts(points)}`,
+      facteurFlocons: 1,
+      regle: true,
+      gameId: maGame.id,
+    },
+    now,
+  );
+}
+
 /**
  * Sert le Joker de ce joueur sur cette game : elle ne compte pas, et le Joker
  * est consommé. À l'appelant de passer la game (`skipped`) : ni points, ni
@@ -832,7 +914,9 @@ function cartesSurLaGame(db: Database, game: Game): CarteEnAttente[] {
 export function sortALaCorrection(cardId: string): 'relue' | 'gardee' | 'bloque' {
   const card = getCard(cardId);
   if (!card) return 'gardee';
-  if (card.effect.kind === 'clone_kills' || card.effect.kind === 'echange') return 'bloque';
+  if (card.effect.kind === 'clone_kills' || card.effect.kind === 'echange' || card.effect.kind === 'echange_choisi') {
+    return 'bloque';
+  }
   return RECALCULABLES.has(card.effect.kind) && momentDe(card.effect) === 'PROCHAINE' ? 'relue' : 'gardee';
 }
 
@@ -929,7 +1013,8 @@ export function recalculeCartesDeLaGame(
  * carte qui attendait une game revient en attente, et tombera sur la
  * suivante ; un Joker revient en main. Jamais deux cartes en attente, ni deux
  * Jokers : si le joueur en a déjà une, celle de la game supprimée est perdue,
- * et le dit. À appeler avant de retirer la game.
+ * et le dit. Un Pacte du Givre — ou sa trace — ne revient jamais : il a déjà
+ * changé une game de chaque côté. À appeler avant de retirer la game.
  */
 export function rendCartesDeLaGame(db: Database, game: Game): { rendues: string[]; perdues: string[] } {
   const rendues: string[] = [];
@@ -938,9 +1023,11 @@ export function rendCartesDeLaGame(db: Database, game: Game): { rendues: string[
     const card = getCard(pendante.cardId);
     if (!card) continue;
     const libre =
-      momentDe(card.effect) === 'GARDEE'
-        ? card.effect.kind !== 'joker' || jokerDe(db, pendante.joueurId) === null
-        : carteQuiAttend(db, pendante.joueurId) === null;
+      card.effect.kind === 'echange_choisi'
+        ? false
+        : momentDe(card.effect) === 'GARDEE'
+          ? card.effect.kind !== 'joker' || jokerDe(db, pendante.joueurId) === null
+          : carteQuiAttend(db, pendante.joueurId) === null;
     pendante.gameId = null;
     if (libre) {
       pendante.consommeeA = null;

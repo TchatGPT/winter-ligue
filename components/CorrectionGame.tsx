@@ -7,7 +7,7 @@ import { CardFrame } from '@/components/CardFrame';
 import { IconCorbeille } from '@/components/icons';
 import { SnowCap } from '@/components/SnowCap';
 import { flakes, rarityMeta } from '@/components/ui';
-import { GAME_LIMITS, placementPoints } from '@/lib/domain/rules';
+import { GAME_LIMITS, placementPoints, TOPS } from '@/lib/domain/rules';
 import type { Placement } from '@/lib/domain/types';
 import { shortDateTime } from '@/lib/format';
 
@@ -41,13 +41,11 @@ const SUITE: Record<'relue' | 'gardee' | 'bloque', string> = {
 };
 
 const PLACEMENTS: { valeur: Placement; nom: string }[] = [
-  { valeur: 1, nom: 'Top 1' },
-  { valeur: 2, nom: 'Top 2' },
-  { valeur: 3, nom: 'Top 3' },
-  { valeur: null, nom: 'Hors top 3' },
+  ...TOPS.map((t) => ({ valeur: t, nom: `Top ${t}` })),
+  { valeur: null, nom: 'Pas top' },
 ];
 
-const enPlacement = (p: number | null): Placement => (p === 1 || p === 2 || p === 3 ? p : null);
+const enPlacement = (p: number | null): Placement => TOPS.find((t) => t === p) ?? null;
 const signe = (n: number) => (n > 0 ? `+${flakes(n)}` : `−${flakes(-n)}`);
 
 /**

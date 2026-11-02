@@ -31,7 +31,7 @@ export function floconsDeLaGame(db: Database, game: Game): number {
     .reduce((n, e) => n + e.delta, 0);
 }
 
-const top = (p: Placement) => (p === null ? 'hors top 3' : `Top ${p}`);
+const top = (p: Placement) => (p === null ? 'pas top' : `Top ${p}`);
 const signe = (n: number) => (n > 0 ? `+${n}` : `−${Math.abs(n)}`);
 
 export type Refus = 'INTROUVABLE' | { refus: string };

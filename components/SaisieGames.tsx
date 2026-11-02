@@ -9,6 +9,7 @@ import { CardFrame } from '@/components/CardFrame';
 import { getCard, RARITY_META } from '@/lib/domain/catalog';
 import { sansTagClan } from '@/lib/domain/correspondance';
 import { GAME_LIMITS, placementPoints } from '@/lib/domain/rules';
+import type { Placement } from '@/lib/domain/types';
 
 interface Joueur {
   id: string;
@@ -29,8 +30,6 @@ interface Ligne {
   joker?: boolean;
 }
 
-type Placement = 1 | 2 | 3 | null;
-
 /** Ce que le serveur annonce pour une ligne : le score, carte active comprise. */
 interface Apercu {
   score: number;
@@ -49,10 +48,14 @@ type Message = { kind: 'error' | 'success' | 'info'; text: string } | null;
  */
 const LARGEUR_MAX = 1568;
 
+/** Top 6, 8 et 10 ne rapportent rien d'eux-mêmes : ils servent aux cartes. */
 const TOPS: { valeur: Placement; libelle: string }[] = [
   { valeur: 1, libelle: 'Top 1' },
   { valeur: 2, libelle: 'Top 2' },
   { valeur: 3, libelle: 'Top 3' },
+  { valeur: 6, libelle: 'Top 6' },
+  { valeur: 8, libelle: 'Top 8' },
+  { valeur: 10, libelle: 'Top 10' },
   { valeur: null, libelle: 'Pas top' },
 ];
 
@@ -139,10 +142,10 @@ function Fenetre({
   );
 }
 
-/** Les quatre tuiles du classement, partagé par toute l'équipe. */
+/** Les tuiles du classement, partagé par toute l'équipe. */
 function ChoixTop({ valeur, onChange, disabled }: { valeur: Placement; onChange: (p: Placement) => void; disabled?: boolean }) {
   return (
-    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+    <div className="grid grid-cols-4 gap-2 sm:grid-cols-7">
       {TOPS.map((t) => {
         const actif = t.valeur === valeur;
         return (

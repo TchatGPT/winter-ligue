@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { guard, ok } from '@/lib/api/respond';
-import { uuid } from '@/lib/api/schemas';
+import { placementSchema, uuid } from '@/lib/api/schemas';
 import type { Database, Game } from '@/lib/db/entities';
 import { getStore, newId } from '@/lib/db/store';
 import { GAME_LIMITS } from '@/lib/domain/rules';
@@ -12,7 +12,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const apercuSchema = z.object({
-  placement: z.union([z.literal(1), z.literal(2), z.literal(3), z.null()]),
+  placement: placementSchema,
   /** Les kills du meilleur tueur de la partie, toutes lignes de la capture comprises. */
   meilleurKills: z
     .number()

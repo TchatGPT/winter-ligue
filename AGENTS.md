@@ -83,11 +83,22 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   l'organisation le 13/10/2026) est la seule exception aux règles des malus : il sort d'un
   booster ouvert pour un joueur, qui le garde et **choisit sa victime**. La modération le
   joue depuis la fiche de la carte au classement (`/api/admin/cartes/verglas`,
-  `joueVerglas`) : la victime perd 20 points sur son **total**, tout de suite, hors de
-  toute game (décidé le 19/10/2026) — son coup (`COUP_DE_VERGLAS`, hors de `CARDS`)
+  `joueVerglas`) : la victime perd 10 points (20 jusqu'au 02/11/2026) sur son **total**,
+  tout de suite, hors de toute game (décidé le 19/10/2026) — son coup (`COUP_DE_VERGLAS`, hors de `CARDS`)
   s'inscrit chez elle, déjà réglé, avec ses points (`CarteEnAttente.points`), que
   `pointsHorsGame()` ajoute au total. L'immunité le pare. Jamais sur soi ; un membre de la
   modération ne joue pas le Verglas qu'il garde.
+- **Le Pacte du Givre** (`kind: 'echange_choisi'`, légendaire du Booster Perso, décidé le
+  02/11/2026) est gardé, et ne se joue qu'à partir de la 30ᵉ game de son porteur. Il
+  choisit une de ses games et une game d'un autre joueur, toutes deux encore sans carte ;
+  la modération fait l'échange depuis la fiche de la carte au classement
+  (`/api/admin/cartes/echange`, `joueEchangeChoisi`) : chaque game repart avec le score de
+  l'autre. Sur la game de l'autre, une trace (`PACTE_SUBI`, hors de `CARDS`) la fige.
+  L'immunité de celui qui y perdrait fait tomber l'échange. Les deux games ne se
+  corrigent pas, et une game supprimée ne rend pas le Pacte.
+- **Les tops** : une game se saisit Top 1, 2, 3, 6, 8, 10 ou « pas top » (`TOPS`). Seuls
+  les Top 1 à 3 rapportent points et flocons ; Top 6, 8 et 10 servent aux cartes
+  (« +10 si Top 8 »). Un Top N veut dire « fini dans les N premiers ».
 - **Le Grand Dégel** (`kind: 'supprime_pire'`, légendaire du Booster Perso) passe la pire
   game encore sans carte du joueur — la sienne, jamais celle d'un autre : elle ne compte
   plus, son créneau est rendu, ses flocons restent. Comme une game annulée par un Joker,

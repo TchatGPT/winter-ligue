@@ -8,6 +8,7 @@ import { MedailleGlace } from '@/components/MedailleGlace';
 import { SnowCap } from '@/components/SnowCap';
 import { CardFrame } from '@/components/CardFrame';
 import { FicheCarte } from '@/components/FicheCarte';
+import { LancerPacte } from '@/components/LancerPacte';
 import { LancerVerglas } from '@/components/LancerVerglas';
 import { IconActivision } from '@/components/icons';
 import { flakesShort } from '@/components/ui';
@@ -127,6 +128,7 @@ export function Classement({
   const ouvre = (row: RankingRow, carte: CarteDuClassement | CarteGardee) => setFiche({ row, carte });
   /** Le Verglas que la modération lance, s'il y en a un : sa fenêtre remplace la fiche. */
   const [verglas, setVerglas] = useState<{ carteId: string; porteur: RankingRow } | null>(null);
+  const [pacte, setPacte] = useState<{ carteId: string; porteur: RankingRow } | null>(null);
 
   const visibles = useMemo(() => {
     const q = plat(recherche.trim());
@@ -166,6 +168,11 @@ export function Classement({
                 Verglas de <strong className="text-ink">{fiche.row.pseudo}</strong> : il choisit sa victime, la
                 modération le joue pour lui.
               </>
+            ) : fiche.carte.genre === 'echange_choisi' ? (
+              <>
+                Pacte du Givre de <strong className="text-ink">{fiche.row.pseudo}</strong> : il choisit une de ses
+                games et une game d’un autre joueur, la modération fait l’échange pour lui.
+              </>
             ) : (
               <>
                 Carte active de <strong className="text-ink">{fiche.row.pseudo}</strong> : elle tombera sur sa
@@ -186,6 +193,18 @@ export function Classement({
               >
                 Lancer le Verglas…
               </button>
+            ) : boostersPerso && fiche.carte.genre === 'echange_choisi' && 'id' in fiche.carte ? (
+              <button
+                type="button"
+                className="btn btn-ice w-full"
+                onClick={() => {
+                  if (!('id' in fiche.carte)) return;
+                  setPacte({ carteId: fiche.carte.id, porteur: fiche.row });
+                  setFiche(null);
+                }}
+              >
+                Jouer le Pacte…
+              </button>
             ) : undefined
           }
           onClose={() => setFiche(null)}
@@ -199,6 +218,10 @@ export function Classement({
           joueurs={rows}
           onClose={() => setVerglas(null)}
         />
+      )}
+
+      {pacte && (
+        <LancerPacte carteId={pacte.carteId} porteur={pacte.porteur} joueurs={rows} onClose={() => setPacte(null)} />
       )}
 
       <header className="relative flex flex-wrap items-end justify-between gap-x-6 gap-y-3 px-5 pt-7 pb-4 sm:px-7">

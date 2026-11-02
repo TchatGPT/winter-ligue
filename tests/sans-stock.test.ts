@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Database, Player } from '@/lib/db/entities';
 import { emptyDatabase } from '@/lib/db/store';
-import { getCard } from '@/lib/domain/catalog';
+import { getCard, momentDe } from '@/lib/domain/catalog';
 import { WEIGHT_TOTAL } from '@/lib/domain/rules';
 import type { Rarity } from '@/lib/domain/types';
 import { carteQuiAttend, regleApresRevelation } from '@/lib/services/effects';
@@ -113,15 +113,16 @@ describe('pas de stock de cartes', () => {
   it('ne bloque rien avec une carte qui se règle tout de suite, ni avec le Joker', () => {
     const db = ligue('a');
     reglagePack(db, 'perso', seulement('UR'));
-    // Coulée de Neige (flocons), Joker Givré ou Verglas (gardés) : aucune
-    // n'attend. Écho Lointain attend la prochaine game ; le Feu de Camp, sans
+    // Des flocons, ou une carte gardée (Joker, Verglas, Pacte) : aucune
+    // n'attend. Une carte de prochaine game l'attend ; le Feu de Camp, sans
     // game jouée, une game à relever.
     for (let i = 0; i < 40; i += 1) {
       const o = ouvrePack(db, { packId: 'perso', joueurId: 'a', idempotencyKey: `k${i}` }, 'modo');
       // La carte révélée à l'écran : ce qui se règle tout de suite se règle.
       o.annonceeA = new Date().toISOString();
       regleApresRevelation(db, o.id);
-      if (o.cardId === 'echo-lointain' || o.cardId === 'feu-de-camp') {
+      const moment = momentDe(getCard(o.cardId)!.effect);
+      if (moment === 'PROCHAINE' || moment === 'JOUEE') {
         expect(carteQuiAttend(db, 'a')?.cardId).toBe(o.cardId);
         joue(db, 'a');
       } else {

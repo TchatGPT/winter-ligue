@@ -32,6 +32,19 @@ export const PLACEMENT_POINTS: Record<'1' | '2' | '3', number> = {
   '3': 8,
 };
 
+/** Les tops qu'une game peut porter, dans l'ordre de la saisie. */
+export const TOPS: readonly Exclude<Placement, null>[] = [1, 2, 3, 6, 8, 10];
+
+/**
+ * Le top d'une position au classement de la partie : la position elle-même
+ * jusqu'à 3, puis le plus petit Top 6, 8 ou 10 qui la contient ; au-delà de
+ * 10, aucun.
+ */
+export function topDePosition(position: number | null): Placement {
+  if (position === null || !Number.isInteger(position) || position < 1) return null;
+  return TOPS.find((t) => position <= t) ?? null;
+}
+
 export function placementPoints(placement: Placement): number {
   if (placement === null) return 0;
   return PLACEMENT_POINTS[String(placement) as '1' | '2' | '3'] ?? 0;

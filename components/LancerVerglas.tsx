@@ -4,10 +4,16 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import { SnowCap } from '@/components/SnowCap';
-import { cardArt, cardVignettes } from '@/lib/domain/catalog';
+import { cardArt, cardVignettes, getCard } from '@/lib/domain/catalog';
 import type { RankingRow } from '@/lib/services/league';
 
 const rienAEcouter = () => () => {};
+
+/** Ce que le Verglas retire, lu sur la carte. */
+const PERTE = (() => {
+  const effet = getCard('plaque-verglas')?.effect;
+  return effet?.kind === 'malus_choisi' ? effet.value : 0;
+})();
 
 /** Sans accent ni casse, pour que « Boreal » trouve « Boréal ». */
 const plat = (s: string) =>
@@ -154,7 +160,7 @@ export function LancerVerglas({
                 <>Son immunité l’a paré : son total ne bouge pas.</>
               ) : (
                 <>
-                  <strong>−20 points</strong> sur son total.
+                  <strong>−{PERTE} points</strong> sur son total.
                 </>
               )}
             </p>
@@ -173,8 +179,8 @@ export function LancerVerglas({
                 <p className="verglas-surtitre">Ultra rare · Verglas</p>
                 <h2 className="verglas-titre">Lancer le Verglas</h2>
                 <p className="verglas-sous-titre">
-                  Choisis la victime de <strong>{porteur.pseudo}</strong> : elle perd 20 points sur son total, tout
-                  de suite.
+                  Choisis la victime de <strong>{porteur.pseudo}</strong> : elle perd {PERTE} points sur son total,
+                  tout de suite.
                 </p>
               </div>
             </header>
@@ -187,7 +193,7 @@ export function LancerVerglas({
                 <span className="verglas-camp-role">lance</span>
               </div>
               <div className="verglas-fleche" aria-hidden="true">
-                <span className="verglas-fleche-valeur">−20 pts</span>
+                <span className="verglas-fleche-valeur">−{PERTE} pts</span>
                 <span className="verglas-fleche-trait" />
               </div>
               <div className="verglas-camp">

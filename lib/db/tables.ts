@@ -288,7 +288,7 @@ create table if not exists games (
   id text primary key,
   joueur_id text not null references joueurs (id) on delete cascade deferrable initially deferred,
   kills integer not null,
-  top integer check (top in (1, 2, 3)),
+  top integer check (top in (1, 2, 3, 6, 8, 10)),
   bonus_cartes double precision not null default 0,
   score double precision not null,
   ignoree boolean not null default false,
@@ -458,6 +458,10 @@ alter table cartes_en_attente add column if not exists points integer;
 
 -- Les messages de Twitch déjà comptés : un message renvoyé ne compte qu'une fois.
 alter table saison add column if not exists twitch_vus jsonb not null default '[]';
+
+-- Les Top 6, 8 et 10 : ils ne rapportent rien, ils servent aux cartes.
+alter table games drop constraint if exists games_top_check;
+alter table games add constraint games_top_check check (top in (1, 2, 3, 6, 8, 10));
 
 -- Les resubs comptent : le registre les inscrit à part.
 alter table subs_twitch drop constraint if exists subs_twitch_genre_check;

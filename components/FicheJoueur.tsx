@@ -271,7 +271,7 @@ export function FicheJoueur({
                     {chronologie.map((g) => (
                       <span
                         key={g.id}
-                        title={`Game ${numeroDe.get(g.id)} · ${g.score} pts · ${g.kills} kills${g.placement && g.placement <= 3 ? ` · Top ${g.placement}` : ''}`}
+                        title={`Game ${numeroDe.get(g.id)} · ${g.score} pts · ${g.kills} kills${g.placement ? ` · Top ${g.placement}` : ''}`}
                         data-top={g.placement !== null && g.placement <= 3 ? g.placement : undefined}
                         data-passee={g.skipped ? '' : undefined}
                         style={{ ['--part' as string]: Math.max(0.03, g.score / meilleure) } as CSSProperties}
@@ -356,8 +356,10 @@ export function FicheJoueur({
                                 <Rang position={top} id={`game-${g.id}`} className="h-5 w-5" />
                                 Top {top}
                               </>
+                            ) : g.placement !== null ? (
+                              `Top ${g.placement}`
                             ) : (
-                              'Hors top 3'
+                              'Pas top'
                             )}
                             <span className="profil-game-kills">
                               · {g.kills} kill{g.kills > 1 ? 's' : ''}

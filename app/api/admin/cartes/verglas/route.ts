@@ -14,7 +14,7 @@ export const dynamic = 'force-dynamic';
 
 /**
  * Joue un Verglas : le joueur qui le garde a choisi sa victime, la modération
- * valide. La victime reçoit −20 pts sur sa prochaine game.
+ * valide. La victime perd les points de la carte sur son total, tout de suite.
  *
  * Le serveur vérifie tout : la carte est bien un Verglas encore gardé, la
  * victime est en lice (ni la streameuse, ni un compte inactif) et n'est pas

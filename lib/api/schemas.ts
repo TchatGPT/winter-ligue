@@ -18,6 +18,17 @@ const packIds = PACK_IDS as unknown as [string, ...string[]];
 
 export const uuid = z.string().uuid('Identifiant invalide.');
 
+/** Le top d'une game : Top 1, 2, 3, 6, 8, 10, ou aucun. */
+export const placementSchema = z.union([
+  z.literal(1),
+  z.literal(2),
+  z.literal(3),
+  z.literal(6),
+  z.literal(8),
+  z.literal(10),
+  z.null(),
+]);
+
 /**
  * Un texte libre — une note de game. React l'échappe à l'affichage ; on en
  * retire en plus les caractères de contrôle et ceux qui retournent le sens de
@@ -62,6 +73,9 @@ export const annonceOuvertureSchema = z.object({ ouvertureId: uuid });
 /** Jouer un Verglas gardé par un joueur, sur la victime qu'il a choisie. */
 export const verglasSchema = z.object({ carteId: uuid, cibleId: uuid }).strict();
 
+/** Jouer un Pacte du Givre : la carte, une game de son porteur, une game d'un autre. */
+export const echangeChoisiSchema = z.object({ carteId: uuid, maGameId: uuid, autreGameId: uuid }).strict();
+
 /** Une carte révélée à l'écran — ou, sans ouverture, le rattrapage de ce qui traîne. */
 export const revelationSchema = z.object({ ouvertureId: uuid.optional() }).strict();
 
@@ -83,7 +97,7 @@ export const gameSchema = z.object({
   playerId: uuid,
   kills: z.number().int().min(GAME_LIMITS.minKills).max(GAME_LIMITS.maxKills),
   /** 1, 2, 3 ou aucun classement. */
-  placement: z.union([z.literal(1), z.literal(2), z.literal(3), z.null()]),
+  placement: placementSchema,
   note: texteLibre(140).optional().nullable(),
   /**
    * Les kills du meilleur tueur de la partie, lus sur la même capture. C'est
@@ -112,7 +126,7 @@ export const updateGameSchema = z.object({
    * (`corrigeGame`).
    */
   kills: z.number().int().min(GAME_LIMITS.minKills).max(GAME_LIMITS.maxKills).optional(),
-  placement: z.union([z.literal(1), z.literal(2), z.literal(3), z.null()]).optional(),
+  placement: placementSchema.optional(),
 });
 
 export const deleteGameSchema = z.object({ gameId: uuid });

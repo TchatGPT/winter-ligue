@@ -83,7 +83,7 @@ export type CardEffect =
   /** « Joker » : la game vaut au moins N points. */
   | { kind: 'plancher'; value: number }
   /** « +N pts à partir du Top X » : seulement si la game finit dans le Top. */
-  | { kind: 'bonus_top'; top: 1 | 2 | 3; value: number }
+  | { kind: 'bonus_top'; top: Exclude<Placement, null>; value: number }
   /** « +N pts petites games » : seulement sous un nombre de kills. */
   | { kind: 'petite_game'; moinsDe: number; value: number }
   /**
@@ -147,7 +147,14 @@ export type CardEffect =
    * de toute game (`COUP_DE_VERGLAS`, décidé le 19/10/2026) ; l'immunité le
    * pare.
    */
-  | { kind: 'malus_choisi'; value: number };
+  | { kind: 'malus_choisi'; value: number }
+  /**
+   * « Échange de games » : le joueur la garde, et ne peut la jouer qu'une fois
+   * `minGames` games jouées. Il choisit une de ses games et une game d'un
+   * autre joueur, toutes deux encore sans carte : elles échangent leur score.
+   * La modération la joue pour lui (décidé par l'organisation le 02/11/2026).
+   */
+  | { kind: 'echange_choisi'; minGames: number };
 
 /**
  * Quand une carte se joue. Voir {@link CardEffect}. `GARDEE` : elle ne se joue
@@ -188,7 +195,12 @@ export interface CardDefinition {
   cible: CibleCarte;
 }
 
-export type Placement = 1 | 2 | 3 | null;
+/**
+ * Le top d'une game : Top 1, 2 ou 3, qui rapportent points et flocons, ou
+ * Top 6, 8 ou 10, qui ne rapportent rien d'eux-mêmes et servent aux cartes
+ * (ajoutés le 02/11/2026). Un Top N veut dire « fini dans les N premiers ».
+ */
+export type Placement = 1 | 2 | 3 | 6 | 8 | 10 | null;
 
 export interface PackDefinition {
   id: PackId;

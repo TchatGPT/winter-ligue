@@ -4,7 +4,8 @@ import Anthropic from '@anthropic-ai/sdk';
 import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod';
 import { z } from 'zod';
 import { correspond, type JoueurConnu } from '@/lib/domain/correspondance';
-import { GAME_LIMITS } from '@/lib/domain/rules';
+import { GAME_LIMITS, topDePosition } from '@/lib/domain/rules';
+import type { Placement } from '@/lib/domain/types';
 
 /**
  * La lecture d'une capture de fin de game par Claude.
@@ -27,8 +28,8 @@ export type MediaType = (typeof MEDIA_TYPES)[number];
 
 /** Ce que le modèle doit renvoyer, ligne par ligne. */
 const Lecture = z.object({
-  /** Le classement de l'escouade si le tableau le montre, sinon null. */
-  placement: z.union([z.literal(1), z.literal(2), z.literal(3), z.null()]),
+  /** La position de l'escouade si la capture la montre, sinon null. */
+  placement: z.number().int().min(1).max(200).nullable(),
   joueurs: z.array(
     z.object({
       /** Le pseudo tel qu'il est écrit sur l'écran, marque de clan comprise. */
@@ -63,7 +64,7 @@ export interface Proposition {
 }
 
 export interface Analyse {
-  placement: 1 | 2 | 3 | null;
+  placement: Placement;
   propositions: Proposition[];
   modele: string;
 }
@@ -108,7 +109,7 @@ Lis le tableau des joueurs de l'escouade. Les colonnes, de gauche à droite, son
 - Ce qui est entre crochets devant un pseudo est une marque de clan, pas le pseudo : « [VI]LD » se lit « LD », « [ # ]亅乇乇メヨ » se lit « 亅乇乇メヨ ». Ne t'en sers jamais pour reconnaître un joueur. Recopie quand même le nom complet dans « lu ».
 - Les pseudos peuvent être écrits avec des caractères d'autres alphabets qui imitent des lettres : recopie-les tels quels.
 - Pour chaque ligne, cherche le joueur de la ligue qui correspond, en priorité par son pseudo en jeu, puis par son pseudo ou sa chaîne Twitch. Mets son id dans joueurId, ou null si aucun ne convient. Ne devine pas.
-- placement : 1, 2 ou 3 si la capture montre clairement que l'escouade a fini première, deuxième ou troisième (« VICTOIRE », « #1 », « 2e »…), sinon null.`;
+- placement : la position de l'escouade si la capture la montre clairement (« VICTOIRE » = 1, « #1 », « 2e », « #7 »…), sinon null.`;
 }
 
 /**
@@ -179,5 +180,5 @@ export async function analyseCapture(
     return { streameuse: false, lu: ligne.lu, kills, assists: ligne.assists, attendu, joueurId, confiance };
   });
 
-  return { placement: lecture.placement, propositions, modele: nomModele };
+  return { placement: topDePosition(lecture.placement), propositions, modele: nomModele };
 }

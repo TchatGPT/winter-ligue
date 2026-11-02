@@ -2,14 +2,17 @@ import { describe, expect, it, vi } from 'vitest';
 import type { Database, Game, Player } from '@/lib/db/entities';
 import { emptyDatabase } from '@/lib/db/store';
 import { CARDS, cardsOfRarity, getCard, impactMax, momentDe, PACKS } from '@/lib/domain/catalog';
-import { GAME_LIMITS } from '@/lib/domain/rules';
+import { GAME_LIMITS, placementPoints, topDePosition } from '@/lib/domain/rules';
 import { scoreGame } from '@/lib/domain/scoring';
 import { RARITIES, type CardEffect, type Placement } from '@/lib/domain/types';
 import { totalsOf } from '@/lib/services/league';
 import {
   appliqueCartesEnAttente,
+  cartesQuiFigentLaGame,
   gamesSansCarte,
+  joueEchangeChoisi,
   joueVerglas,
+  rendCartesDeLaGame,
   jokerDe,
   regleCartesSansAttendre,
   utiliseJoker,
@@ -236,7 +239,7 @@ describe('les malus ne transfèrent jamais', () => {
 });
 
 describe('le Verglas', () => {
-  it('se garde, puis retire 20 points au total de la victime, tout de suite', () => {
+  it('se garde, puis retire 10 points au total de la victime, tout de suite', () => {
     const db = base('a', 'b');
     pose(db, 'a', 'plaque-verglas', 1);
     regleCartesSansAttendre(db, 'a');
@@ -253,8 +256,8 @@ describe('le Verglas', () => {
     expect(typeof r).not.toBe('string');
     expect(enAttente(db, 'a')).toHaveLength(0);
     // Tout de suite, sur le total : aucune game n'est touchée, rien n'attend.
-    expect(totalsOf(db, 'b').totalScore).toBe(totalAvant - 20);
-    expect(totalsOf(db, 'b').horsGame).toBe(-20);
+    expect(totalsOf(db, 'b').totalScore).toBe(totalAvant - 10);
+    expect(totalsOf(db, 'b').horsGame).toBe(-10);
     expect(avant.applied).toHaveLength(0);
     expect(enAttente(db, 'b')).toHaveLength(0);
     // Sa game suivante n'est pas touchée non plus.
@@ -283,6 +286,95 @@ describe('le Verglas', () => {
     expect(joueVerglas(db, garde.id, db.players.find((p) => p.id === 'a')!)).toBe('CIBLE');
     joueVerglas(db, garde.id, db.players.find((p) => p.id === 'b')!);
     expect(joueVerglas(db, garde.id, db.players.find((p) => p.id === 'b')!)).toBe('CARTE');
+  });
+});
+
+describe('les Top 6, 8 et 10', () => {
+  it('rangent une position dans le plus petit top qui la contient', () => {
+    expect([1, 2, 3, 4, 6, 7, 8, 9, 10, 11, null].map(topDePosition)).toEqual([1, 2, 3, 6, 6, 8, 8, 10, 10, null, null]);
+  });
+
+  it('ne rapportent rien d’eux-mêmes : seuls les Top 1 à 3 comptent au score', () => {
+    for (const top of [6, 8, 10] as const) expect(scoreGame({ kills: 5, placement: top, bonusPoints: 0 }).total).toBe(5);
+  });
+
+  it('servent aux cartes : « si Top 8 » paie un Top 6, pas un Top 10', () => {
+    for (const [top, attendu] of [[1, 10], [6, 10], [8, 10], [10, 0], [null, 0]] as const) {
+      const db = base('a');
+      pose(db, 'a', 'piste-damee', 1);
+      const g = game(db, 'a', 5, top);
+      appliqueCartesEnAttente(db, g);
+      expect(g.score - 5 - placementPoints(top)).toBe(attendu);
+    }
+  });
+});
+
+describe('le Pacte du Givre', () => {
+  /** Un porteur qui a joué `n` games, la dernière à `kills` kills. */
+  function porteur(db: Database, n: number, kills = 4): Game {
+    for (let i = 1; i < n; i += 1) game(db, 'a', 10);
+    return game(db, 'a', kills);
+  }
+
+  it('se garde, et ne se joue qu’à partir de la trentième game', () => {
+    const db = base('a', 'b');
+    pose(db, 'a', 'pacte-du-givre', 1);
+    regleCartesSansAttendre(db, 'a');
+    const garde = enAttente(db, 'a')[0];
+    expect(garde.cardId).toBe('pacte-du-givre');
+    const mienne = porteur(db, 29);
+    const sienne = game(db, 'b', 40, 1);
+    expect(joueEchangeChoisi(db, garde.id, mienne.id, sienne.id)).toBe('TROP_TOT');
+    const trentieme = game(db, 'a', 4);
+    expect(typeof joueEchangeChoisi(db, garde.id, trentieme.id, sienne.id)).not.toBe('string');
+  });
+
+  it('échange le score des deux games choisies, et les fige', () => {
+    const db = base('a', 'b');
+    pose(db, 'a', 'pacte-du-givre', 1);
+    const garde = enAttente(db, 'a')[0];
+    const mienne = porteur(db, 30, 4);
+    const sienne = game(db, 'b', 40, 1);
+    const r = joueEchangeChoisi(db, garde.id, mienne.id, sienne.id);
+    expect(typeof r).not.toBe('string');
+    const sienneNue = 40 + placementPoints(1);
+    expect(mienne.score).toBe(sienneNue);
+    expect(sienne.score).toBe(4);
+    expect(enAttente(db, 'a')).toHaveLength(0);
+    // Plus aucune carte ne s'y pose, et elles ne se corrigent pas.
+    expect(gamesSansCarte(db, 'a').some((g) => g.id === mienne.id)).toBe(false);
+    expect(gamesSansCarte(db, 'b').some((g) => g.id === sienne.id)).toBe(false);
+    expect(cartesQuiFigentLaGame(db, mienne)).not.toHaveLength(0);
+    expect(cartesQuiFigentLaGame(db, sienne)).not.toHaveLength(0);
+    // Supprimer l'une ne rend pas le Pacte.
+    expect(rendCartesDeLaGame(db, mienne).rendues).toHaveLength(0);
+    expect(enAttente(db, 'a')).toHaveLength(0);
+  });
+
+  it('refuse une game qui porte déjà une carte, et la sienne pour l’autre', () => {
+    const db = base('a', 'b');
+    pose(db, 'a', 'pacte-du-givre', 1);
+    const garde = enAttente(db, 'a')[0];
+    const mienne = porteur(db, 30);
+    const autreDeMoi = game(db, 'a', 9);
+    expect(joueEchangeChoisi(db, garde.id, mienne.id, autreDeMoi.id)).toBe('AUTRE_GAME');
+    const sienne = game(db, 'b', 20);
+    sienne.applied.push({ id: 'x', cardId: 'congere', ouvertureId: 'o', points: 4, at: sienne.createdAt });
+    expect(joueEchangeChoisi(db, garde.id, mienne.id, sienne.id)).toBe('AUTRE_GAME');
+    expect(enAttente(db, 'a')).toHaveLength(1);
+  });
+
+  it('tombe si celui qui y perdrait est immunisé', () => {
+    const db = base('a', 'b');
+    pose(db, 'a', 'pacte-du-givre', 1);
+    const garde = enAttente(db, 'a')[0];
+    const mienne = porteur(db, 30, 4);
+    const sienne = game(db, 'b', 40, 1);
+    db.players.find((p) => p.id === 'b')!.immuniseJusqua = new Date(Date.now() + 3_600_000).toISOString();
+    joueEchangeChoisi(db, garde.id, mienne.id, sienne.id);
+    expect(mienne.score).toBe(4);
+    expect(sienne.score).toBe(40 + placementPoints(1));
+    expect(enAttente(db, 'a')).toHaveLength(0);
   });
 });
 

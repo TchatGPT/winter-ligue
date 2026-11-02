@@ -127,13 +127,13 @@ export const CARDS: readonly CardDefinition[] = [
   {
     id: 'congere',
     name: 'Congère',
-    subtitle: '+3 pts bonus',
+    subtitle: '+4 pts bonus',
     rarity: 'C',
     glyph: '🌨',
-    description: '+3 points sur ta prochaine game.',
-    effect: { kind: 'bonus_points', value: 3 },
+    description: '+4 points sur ta prochaine game.',
+    effect: { kind: 'bonus_points', value: 4 },
     nature: 'bonus',
-    power: 8,
+    power: 9,
     // Dans le Perso aussi depuis le 20/10/2026, avec les autres communes.
     packs: ['perso', 'commu', 'finisseur'],
     cible: 'HASARD',
@@ -153,17 +153,16 @@ export const CARDS: readonly CardDefinition[] = [
     cible: 'HASARD',
   },
   {
-    // Une consolation, pas un gain : le prix d'un kill. Plus, elle ferait
-    // monter la chance de qui ouvre beaucoup de Boosters Perso.
+    // Quatre kills de flocons (+10 jusqu'au 02/11/2026).
     id: 'bocal-de-givre',
     name: 'Bocal de Givre',
-    subtitle: '+10 flocons',
+    subtitle: '+40 flocons',
     rarity: 'C',
     glyph: '🫙',
-    description: '+10 flocons, tout de suite.',
-    effect: { kind: 'snowflakes', value: 10 },
+    description: '+40 flocons, tout de suite.',
+    effect: { kind: 'snowflakes', value: 40 },
     nature: 'bonus',
-    power: 4,
+    power: 6,
     packs: ['perso'],
     cible: 'HASARD',
   },
@@ -273,6 +272,20 @@ export const CARDS: readonly CardDefinition[] = [
     packs: ['finisseur'],
     cible: 'HASARD',
   },
+  {
+    // Commune depuis le 02/11/2026 (rare jusque-là).
+    id: 'vent-porteur',
+    name: 'Vent Porteur',
+    subtitle: 'Game ×1,2',
+    rarity: 'C',
+    glyph: '🌬',
+    description: 'Ta prochaine game compte ×1,2 : kills et top.',
+    effect: { kind: 'multiplicateur_game', value: 1.2 },
+    nature: 'bonus',
+    power: 12,
+    packs: ['perso'],
+    cible: 'HASARD',
+  },
   /* ============================== Rare ================================== */
   {
     id: 'percee',
@@ -286,19 +299,6 @@ export const CARDS: readonly CardDefinition[] = [
     power: 36,
     // Pas dans le Perso : sa rare y est le Joker.
     packs: ['commu', 'finisseur', 'folie'],
-    cible: 'HASARD',
-  },
-  {
-    id: 'vent-porteur',
-    name: 'Vent Porteur',
-    subtitle: 'Game ×1,2',
-    rarity: 'R',
-    glyph: '🌬',
-    description: 'Ta prochaine game compte ×1,2 : kills et top.',
-    effect: { kind: 'multiplicateur_game', value: 1.2 },
-    nature: 'bonus',
-    power: 44,
-    packs: ['perso'],
     cible: 'HASARD',
   },
   {
@@ -318,13 +318,13 @@ export const CARDS: readonly CardDefinition[] = [
   {
     id: 'lanterne-givree',
     name: 'Lanterne Givrée',
-    subtitle: '+5 pts bonus',
+    subtitle: '+7 pts bonus',
     rarity: 'R',
     glyph: '🏮',
-    description: '+5 points sur ta prochaine game.',
-    effect: { kind: 'bonus_points', value: 5 },
+    description: '+7 points sur ta prochaine game.',
+    effect: { kind: 'bonus_points', value: 7 },
     nature: 'bonus',
-    power: 20,
+    power: 24,
     packs: ['perso'],
     cible: 'HASARD',
   },
@@ -460,6 +460,34 @@ export const CARDS: readonly CardDefinition[] = [
     packs: ['commu'],
     cible: 'HASARD',
   },
+  {
+    // Booster Perso, ajoutée le 02/11/2026.
+    id: 'souffle-polaire',
+    name: 'Souffle Polaire',
+    subtitle: 'Game ×1,5',
+    rarity: 'R',
+    glyph: '💨',
+    description: 'Ta prochaine game compte ×1,5 : kills et top.',
+    effect: { kind: 'multiplicateur_game', value: 1.5 },
+    nature: 'bonus',
+    power: 46,
+    packs: ['perso'],
+    cible: 'HASARD',
+  },
+  {
+    // Booster Perso, ajoutée le 02/11/2026.
+    id: 'piste-damee',
+    name: 'Piste Damée',
+    subtitle: '+10 pts si Top 8',
+    rarity: 'R',
+    glyph: '🎿',
+    description: '+10 points sur ta prochaine game, si tu fais Top 8.',
+    effect: { kind: 'bonus_top', top: 8, value: 10 },
+    nature: 'bonus',
+    power: 26,
+    packs: ['perso'],
+    cible: 'HASARD',
+  },
   /* ============================== Ultra rare ============================ */
   {
     id: 'rempart-polaire',
@@ -477,17 +505,18 @@ export const CARDS: readonly CardDefinition[] = [
   },
   {
     // Un malus que le joueur garde, et dont il choisit la victime : la
-    // modération le joue pour lui. Décidé par l'organisation le 13/10/2026.
+    // modération le joue pour lui. Décidé par l'organisation le 13/10/2026 ;
+    // −10 au lieu de −20 depuis le 02/11/2026.
     id: 'plaque-verglas',
     name: 'Verglas',
-    subtitle: '−20 pts au joueur de ton choix',
+    subtitle: '−10 pts au joueur de ton choix',
     rarity: 'UR',
     glyph: '🧊',
     description:
-      '−20 points au total du joueur de ton choix. Tu la gardes, et la modération l’envoie quand tu désignes ta cible.',
-    effect: { kind: 'malus_choisi', value: 20 },
+      '−10 points au total du joueur de ton choix. Tu la gardes, et la modération l’envoie quand tu désignes ta cible.',
+    effect: { kind: 'malus_choisi', value: 10 },
     nature: 'malus',
-    power: 74,
+    power: 64,
     packs: ['perso'],
     cible: 'HASARD',
   },
@@ -655,6 +684,48 @@ export const CARDS: readonly CardDefinition[] = [
     packs: ['commu'],
     cible: 'DEUX',
   },
+  {
+    // Booster Perso, ajoutée le 02/11/2026.
+    id: 'vortex-polaire',
+    name: 'Vortex Polaire',
+    subtitle: 'Game ×1,8',
+    rarity: 'UR',
+    glyph: '🌀',
+    description: 'Ta prochaine game compte ×1,8 : kills et top.',
+    effect: { kind: 'multiplicateur_game', value: 1.8 },
+    nature: 'bonus',
+    power: 76,
+    packs: ['perso'],
+    cible: 'HASARD',
+  },
+  {
+    // Booster Perso, ajoutée le 02/11/2026.
+    id: 'cime-gelee',
+    name: 'Cime Gelée',
+    subtitle: '+10 pts si Top 6',
+    rarity: 'UR',
+    glyph: '🏔',
+    description: '+10 points sur ta prochaine game, si tu fais Top 6.',
+    effect: { kind: 'bonus_top', top: 6, value: 10 },
+    nature: 'bonus',
+    power: 62,
+    packs: ['perso'],
+    cible: 'HASARD',
+  },
+  {
+    // Booster Perso, ajoutée le 02/11/2026.
+    id: 'coeur-de-glace',
+    name: 'Cœur de Glace',
+    subtitle: '+10 pts bonus',
+    rarity: 'UR',
+    glyph: '💎',
+    description: '+10 points sur ta prochaine game.',
+    effect: { kind: 'bonus_points', value: 10 },
+    nature: 'bonus',
+    power: 63,
+    packs: ['perso'],
+    cible: 'HASARD',
+  },
   /* ============================== Légendaire ============================ */
   {
     id: 'etoile-du-nord',
@@ -764,10 +835,24 @@ export const CARDS: readonly CardDefinition[] = [
     packs: ['commu'],
     cible: 'TETE',
   },
+  {
+    // Gardée, jouée par la modération sur les deux games choisies. Décidée le 02/11/2026.
+    id: 'pacte-du-givre',
+    name: 'Pacte du Givre',
+    subtitle: 'Échange de games',
+    rarity: 'L',
+    glyph: '🤝',
+    description: 'Tu la gardes. Dès ta 30e game, choisis une de tes games et une game d’un autre joueur : elles échangent leur score.',
+    effect: { kind: 'echange_choisi', minGames: 30 },
+    nature: 'bonus',
+    power: 94,
+    packs: ['perso'],
+    cible: 'HASARD',
+  },
 ];
 
 /**
- * Le coup du Verglas, reçu par sa victime quand la modération le joue : −20 pts
+ * Le coup du Verglas, reçu par sa victime quand la modération le joue : −10 pts
  * sur son total, tout de suite, hors de toute game (`CarteEnAttente.points`).
  * Il ne sort d'aucun booster (il n'est pas dans `CARDS`) ; `getCard` le
  * connaît, pour l'afficher.
@@ -775,18 +860,37 @@ export const CARDS: readonly CardDefinition[] = [
 export const COUP_DE_VERGLAS: CardDefinition = {
   id: 'plaque-verglas-coup',
   name: 'Verglas',
-  subtitle: '−20 pts',
+  subtitle: '−10 pts',
   rarity: 'UR',
   glyph: '🧊',
-  description: '−20 points sur ton total, envoyé par un autre joueur.',
-  effect: { kind: 'malus_points', value: 20 },
+  description: '−10 points sur ton total, envoyé par un autre joueur.',
+  effect: { kind: 'malus_points', value: 10 },
   nature: 'malus',
-  power: 74,
+  power: 64,
   packs: ['perso'],
   cible: 'HASARD',
 };
 
-const CARD_INDEX = new Map([...CARDS, COUP_DE_VERGLAS].map((c) => [c.id, c]));
+/**
+ * La trace d'un Pacte du Givre sur la game de l'autre joueur : elle y dit d'où
+ * vient l'échange, et en fait une game qui porte une carte — aucune autre ne
+ * s'y posera, et elle ne se corrige pas. Elle ne sort d'aucun booster.
+ */
+export const PACTE_SUBI: CardDefinition = {
+  id: 'pacte-du-givre-subi',
+  name: 'Pacte du Givre',
+  subtitle: 'Game échangée',
+  rarity: 'L',
+  glyph: '🤝',
+  description: 'Ta game a échangé son score avec celle d’un autre joueur, qui a joué un Pacte du Givre.',
+  effect: { kind: 'echange_choisi', minGames: 0 },
+  nature: 'malus',
+  power: 94,
+  packs: ['perso'],
+  cible: 'HASARD',
+};
+
+const CARD_INDEX = new Map([...CARDS, COUP_DE_VERGLAS, PACTE_SUBI].map((c) => [c.id, c]));
 
 /**
  * Combien de joueurs une carte d'un booster de la ligue fait tirer au sort :
@@ -815,6 +919,7 @@ export function momentDe(effect: CardEffect): MomentCarte {
       return 'INSTANT';
     case 'joker':
     case 'malus_choisi':
+    case 'echange_choisi':
       return 'GARDEE';
     default:
       return 'PROCHAINE';
@@ -865,6 +970,7 @@ export function impactMax(effect: CardEffect): number | null {
     case 'fige_meilleure':
     case 'supprime_pire':
     case 'joker':
+    case 'echange_choisi':
       return null;
   }
 }
@@ -923,6 +1029,8 @@ export function resumeEffet(effect: CardEffect): string {
       return `−${effect.value} pts au joueur choisi`;
     case 'joker':
       return 'une game annulable';
+    case 'echange_choisi':
+      return 'échange de games choisi';
   }
 }
 
