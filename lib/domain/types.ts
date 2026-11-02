@@ -15,8 +15,8 @@ export const RARITIES: readonly Rarity[] = ['C', 'R', 'UR', 'L'];
  * Les quatre packs.
  *
  *  - **perso** : pour le joueur qui a payé un sub T3, pris ou offert, ou offert cinq subs. Ouvert pour lui.
- *  - **commu** : tous les cinquante subs. La carte tombe sur tout le monde.
- *  - **folie** : tous les deux cents subs. Plus fort, toujours pour tout le monde.
+ *  - **commu** : tous les trente-cinq subs. La carte tombe sur tout le monde.
+ *  - **folie** : tous les cent cinquante subs. Plus fort, toujours pour tout le monde.
  *  - **finisseur** : pour le joueur qui a joué toutes ses games.
  */
 export type PackId = 'perso' | 'commu' | 'folie' | 'finisseur';

@@ -396,9 +396,9 @@ describe('on n’ouvre que ce qui est dû', () => {
     expect(db.ouvertures).toHaveLength(0);
   });
 
-  it('met un Booster Folie en file tous les deux cents subs', () => {
+  it('met un Booster Folie en file tous les cent cinquante subs', () => {
     const db = ligue('a', 'b');
-    addSubs(db, 199, 'modo');
+    addSubs(db, 149, 'modo');
     expect(fileDesPacks(db).filter((d) => d.packId === 'folie')).toHaveLength(0);
     addSubs(db, 1, 'modo');
     expect(fileDesPacks(db).filter((d) => d.packId === 'folie')).toHaveLength(1);

@@ -258,25 +258,25 @@ describe('économie de jeu', () => {
 
 describe('économie des subs', () => {
   it('met un booster en file à chaque multiple franchi', () => {
-    // 0 → 120 : deux Boosters Commu (50 et 100), rien d'autre.
-    expect(crossedMilestones(0, 120).map((m) => m.label)).toEqual(['Booster Commu', 'Booster Commu']);
+    // 0 → 100 : deux Boosters Commu (35 et 70), rien d'autre.
+    expect(crossedMilestones(0, 100).map((m) => m.label)).toEqual(['Booster Commu', 'Booster Commu']);
   });
 
   it('cumule les paliers quand un gros gift en franchit plusieurs', () => {
-    // 0 → 400 : 8 Boosters Commu, 2 Boosters Folie.
-    const labels = crossedMilestones(0, 400).map((m) => m.label);
+    // 0 → 300 : 8 Boosters Commu, 2 Boosters Folie.
+    const labels = crossedMilestones(0, 300).map((m) => m.label);
     expect(labels.filter((l) => l === 'Booster Commu')).toHaveLength(8);
     expect(labels.filter((l) => l === 'Booster Folie')).toHaveLength(2);
   });
 
   it('ne déclenche rien quand on reste dans le même intervalle', () => {
-    expect(crossedMilestones(6, 49)).toEqual([]);
+    expect(crossedMilestones(6, 34)).toEqual([]);
   });
 
   it('annonce le palier le plus proche', () => {
-    const next = nextMilestone(36);
+    const next = nextMilestone(50);
     expect(next?.milestone.label).toBe('Booster Commu');
-    expect(next?.remaining).toBe(14);
+    expect(next?.remaining).toBe(20);
   });
 
   it('ne verse jamais rien à un joueur nommé, ni de flocons', () => {
@@ -329,9 +329,9 @@ describe('le jeton Winter Spin', () => {
 describe('les paliers du compteur de subs', () => {
   it('montre les boosters de la ligue et les évènements, du plus petit palier au plus grand', () => {
     expect(paliersDuCompteur(36).map((p) => [p.label, p.every, p.remaining])).toEqual([
-      ['Booster Commu', 50, 14],
+      ['Booster Commu', 35, 34],
       ['Avalanche', 100, 64],
-      ['Booster Folie', 200, 164],
+      ['Booster Folie', 150, 114],
       ['Tempête de neige', 500, 464],
     ]);
   });
@@ -347,13 +347,13 @@ describe('la Tempête et le Booster Commu', () => {
   const commus = (from: number, to: number, depuis: number | null) =>
     crossedMilestones(from, to, depuis).filter((m) => m.packId === 'commu').length;
 
-  it('compte tous les 50 sans Tempête, tous les 20 pendant', () => {
-    expect(commus(500, 600, null)).toBe(2);
+  it('compte tous les 35 sans Tempête, tous les 20 pendant', () => {
+    expect(commus(500, 600, null)).toBe(3);
     expect(commus(500, 600, 500)).toBe(5);
   });
 
-  it('garde le palier de 50 jusqu’à la Tempête, et passe à 20 après, dans la même saisie', () => {
-    // 495 → 545 : le 500 tombe par la règle habituelle, puis 520 et 540.
-    expect(commus(495, 545, 500)).toBe(3);
+  it('garde le palier de 35 jusqu’à la Tempête, et passe à 20 après, dans la même saisie', () => {
+    // 485 → 545 : le 490 tombe par la règle habituelle, puis 520 et 540.
+    expect(commus(485, 545, 500)).toBe(3);
   });
 });

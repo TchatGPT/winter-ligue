@@ -124,15 +124,17 @@ export interface SubMilestone {
  * quelqu'un que le chat aurait choisi. Les subs ne versent pas de flocons.
  */
 export const SUB_MILESTONES: readonly SubMilestone[] = [
+  // Commu tous les 35 subs, Folie tous les 150 (décidé le 02/11/2026 ; 50 et
+  // 200 jusque-là).
   {
-    every: 50,
+    every: 35,
     kind: 'PACK',
     packId: 'commu',
     label: 'Booster Commu',
     description: 'Un Booster Commu à ouvrir à l’antenne : sa carte tombe sur ceux que le sort désigne.',
   },
   {
-    every: 200,
+    every: 150,
     kind: 'PACK',
     packId: 'folie',
     label: 'Booster Folie',
@@ -229,7 +231,7 @@ export const EVENEMENTS_SUBS: readonly EvenementSubs[] = [
     kind: 'COMMU_ACCELERE',
     dureeMinutes: 4 * 24 * 60,
     label: 'Tempête de neige',
-    description: `Pendant 4 jours, le Booster Commu tombe tous les ${COMMU_ACCELERE_TOUS_LES} subs au lieu de 50.`,
+    description: `Pendant 4 jours, le Booster Commu tombe tous les ${COMMU_ACCELERE_TOUS_LES} subs au lieu de ${SUB_MILESTONES[0].every}.`,
     resume: `Commu tous les ${COMMU_ACCELERE_TOUS_LES} subs`,
   },
 ];
@@ -383,7 +385,7 @@ export function nextMilestone(
  * franchissement — passer de 0 à 120 met donc deux Boosters Commu en file.
  *
  * Pendant une Tempête — `commuDepuis`, le total d'où elle compte —, le Booster
- * Commu ne suit plus ses multiples de 50 : il tombe tous les
+ * Commu ne suit plus ses multiples habituels : il tombe tous les
  * `COMMU_ACCELERE_TOUS_LES` subs comptés depuis ce total. Avant lui, la règle
  * habituelle.
  */
