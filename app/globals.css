@@ -7487,8 +7487,9 @@
   white-space: nowrap;
   color: var(--faint);
 }
-/* Ce qu'il reste, dans sa colonne, séparé du corps par un filet : le
-   nombre en grand, « subs restants » dessous, alignés à droite. */
+/* Ce qu'il reste, dans sa colonne : le nombre en grand, « subs restants »
+   dessous, alignés à droite. Sans filet (retiré le 02/11/2026) : l'écart
+   suffit à le séparer du corps. */
 .palier-compte {
   display: flex;
   min-width: 4.75rem;
@@ -7497,7 +7498,6 @@
   align-items: flex-end;
   gap: 3px;
   padding-left: 14px;
-  border-left: 1px solid color-mix(in srgb, var(--teinte) 22%, transparent);
 }
 .palier-compte strong {
   font-family: var(--font-display);
