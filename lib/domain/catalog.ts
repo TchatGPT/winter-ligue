@@ -611,6 +611,24 @@ export const CARDS: readonly CardDefinition[] = [
     packs: ['commu', 'folie'],
     cible: 'HASARD',
   },
+  {
+    // Les kills du meilleur tueur de la partie — celui de la capture,
+    // coéquipiers et streameuse compris —, lus à la saisie. S'il l'est
+    // lui-même, une consolation fixe : être le meilleur ne coûte pas la carte.
+    // Passée d'ultra rare à rare le 02/11/2026.
+    id: 'echo-lointain',
+    name: 'Écho Lointain',
+    subtitle: 'Clone kill du meilleur',
+    rarity: 'R',
+    glyph: '🏔',
+    description:
+      'Ta prochaine game compte comme si tu avais fait les kills du meilleur tueur de ta partie. Si c’est toi : +10 points.',
+    effect: { kind: 'clone_kills', consolation: 10 },
+    nature: 'bonus',
+    power: 57,
+    packs: ['perso'],
+    cible: 'HASARD',
+  },
   /* ============================== Ultra rare ============================ */
   {
     id: 'rempart-polaire',
@@ -654,23 +672,6 @@ export const CARDS: readonly CardDefinition[] = [
     effect: { kind: 'joker' },
     nature: 'bonus',
     power: 70,
-    packs: ['perso'],
-    cible: 'HASARD',
-  },
-  {
-    // Les kills du meilleur tueur de la partie — celui de la capture,
-    // coéquipiers et streameuse compris —, lus à la saisie. S'il l'est
-    // lui-même, une consolation fixe : être le meilleur ne coûte pas la carte.
-    id: 'echo-lointain',
-    name: 'Écho Lointain',
-    subtitle: 'Clone kill du meilleur',
-    rarity: 'UR',
-    glyph: '🏔',
-    description:
-      'Ta prochaine game compte comme si tu avais fait les kills du meilleur tueur de ta partie. Si c’est toi : +10 points.',
-    effect: { kind: 'clone_kills', consolation: 10 },
-    nature: 'bonus',
-    power: 72,
     packs: ['perso'],
     cible: 'HASARD',
   },
