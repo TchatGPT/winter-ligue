@@ -216,12 +216,15 @@ export function FenetreCadeauDuJour({
                 data-septieme={jour === CADEAU_DU_JOUR.cycle ? '' : undefined}
               >
                 <span className="cadeau-jour-case-jour">J{jour}</span>
-                <span
-                  className="cadeau-jour-case-montant num"
-                  aria-label={!fait && boosterDuJour(jour) ? 'Booster Perso' : undefined}
-                >
-                  {fait ? '✓' : boosterDuJour(jour) ? '🎁' : `+${num(montantDuJour(jour))}`}
-                </span>
+                {!fait && boosterDuJour(jour) ? (
+                  <span className="cadeau-jour-case-montant cadeau-jour-case-booster">
+                    Booster
+                    <br />
+                    Perso
+                  </span>
+                ) : (
+                  <span className="cadeau-jour-case-montant num">{fait ? '✓' : `+${num(montantDuJour(jour))}`}</span>
+                )}
               </li>
             );
           })}

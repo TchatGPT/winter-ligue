@@ -5173,9 +5173,11 @@
     background: color-mix(in srgb, var(--ice) 18%, transparent);
     color: var(--ice);
   }
+  /* Le septième jour, celui du Booster Perso, prend une colonne plus large :
+     son nom s'y écrit en entier. */
   .cadeau-jour-calendrier {
     display: grid;
-    grid-template-columns: repeat(7, minmax(0, 1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr)) minmax(0, 2fr);
     gap: 0.35rem;
     margin-top: 1rem;
   }
@@ -5209,6 +5211,22 @@
   }
   .cadeau-jour-case[data-septieme] .cadeau-jour-case-montant {
     color: var(--gold);
+  }
+  .cadeau-jour-case-booster {
+    font-family: var(--font-display);
+    font-size: 0.6875rem;
+    font-weight: 900;
+    line-height: 1.05;
+    letter-spacing: 0.02em;
+    text-align: center;
+    text-transform: uppercase;
+  }
+  /* Sous 352 px, le mot entier ne tiendrait plus dans sa case. */
+  @media (max-width: 22rem) {
+    .cadeau-jour-case-booster {
+      font-size: 0.5625rem;
+      letter-spacing: 0;
+    }
   }
   .cadeau-jour-case[data-fait] {
     background: color-mix(in srgb, var(--ice) 22%, transparent);
@@ -5257,6 +5275,9 @@
     }
     .cadeau-jour-case-montant {
       font-size: 1rem;
+    }
+    .cadeau-jour-case-booster {
+      font-size: 0.875rem;
     }
     .cadeau-jour-etat {
       margin-top: 1.4rem;
