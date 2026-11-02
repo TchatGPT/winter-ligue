@@ -88,7 +88,7 @@ Six échantillons dans `public/sons/`. Durées décodées :
 | ----------------------- | ------- | ------------------------ |
 | `box-opening-spin-tick` | 0,132 s | une dent du cliquet      |
 | `common`                | 0,784 s | le claquement d'un arrêt |
-| `spin-bait`             | 5,747 s | la montée du défilement  |
+| `spin-bait`             | 5,747 s | plus joué (trahissait la rareté) |
 | `rare`                  | 5,642 s | la fête, rare et +       |
 | `ultra_rare`            | 3,762 s | la fête, ultra rare      |
 | `legendary`             | 3,762 s | la fête, légendaire      |

@@ -13,7 +13,7 @@ const ETAPES = [
   {
     Icone: IconSnowflake,
     titre: 'Même mise',
-    detail: `de ${flakes(DUEL.miseMin)} à ${flakes(DUEL.miseMax)} ❄ chacun`,
+    detail: `${DUEL.mises.slice(0, -1).map(flakes).join(', ')} ou ${flakes(DUEL.miseMax)} ❄ chacun`,
   },
   { Icone: IconSwords, titre: 'La course', detail: 'chacun pousse sa boule de neige' },
   { Icone: IconImpact, titre: 'Une chance sur deux', detail: 'le premier qui tombe a perdu' },

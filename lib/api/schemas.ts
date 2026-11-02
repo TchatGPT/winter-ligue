@@ -153,7 +153,9 @@ export const adminPackSchema = z.object({
 /* ------------------------------- Batailles ------------------------------- */
 
 export const createBatailleSchema = z.object({
-  mise: z.number().int().min(DUEL.miseMin).max(DUEL.miseMax),
+  mise: z.number().int().refine((m) => (DUEL.mises as readonly number[]).includes(m), {
+    message: `La mise se choisit parmi ${DUEL.mises.map((m) => m.toLocaleString('fr-FR')).join(', ')} flocons.`,
+  }),
   // Toujours une seule manche. Le champ reste accepté, pour ne pas refuser
   // un écran resté ouvert, mais il ne peut valoir que 1.
   manches: z.literal(MANCHES_POSSIBLES[0]).default(MANCHES_POSSIBLES[0]),

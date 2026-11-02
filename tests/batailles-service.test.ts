@@ -22,7 +22,7 @@ import {
  * les erreurs d'affichage.
  */
 
-const MISE = 200;
+const MISE = 250;
 const DEPART = 5_000;
 
 function joueur(id: string, snowflakes: number): Player {
@@ -76,9 +76,17 @@ describe('créer un duel', () => {
     expect(b.vainqueurId).toBeNull();
   });
 
-  it('refuse une mise hors bornes ou fractionnaire', () => {
+  it('n’accepte que les quatre mises', () => {
+    for (const mise of DUEL.mises) {
+      // Un compte neuf par mise : trois duels en attente au plus.
+      const db = base();
+      expect(creeBataille(db, 'hote', mise, 1).mise).toBe(mise);
+    }
+  });
+
+  it('refuse toute autre mise, même dans les bornes', () => {
     const db = base();
-    for (const mise of [0, -50, DUEL.miseMin - 1, DUEL.miseMax + 1, 120.5, Number.NaN]) {
+    for (const mise of [0, -50, DUEL.miseMin - 1, 150, 750, DUEL.miseMax + 1, 5_000, 50_000, 120.5, Number.NaN]) {
       expect(() => creeBataille(db, 'hote', mise, 1)).toThrow(BatailleError);
     }
     expect(db.batailles).toHaveLength(0);
@@ -201,9 +209,9 @@ describe('résoudre un duel', () => {
   it('ne dépasse jamais le plafond de flocons', () => {
     // Ce qui déborde est perdu, et le grand livre écrit ce qui a été versé.
     // Juste sous le plafond : à solde plein, on ne joue pas.
-    const depart = ECONOMY.soldeMax - 1_000;
+    const depart = ECONOMY.soldeMax - 500;
     const db = base({ hote: depart, autre: depart });
-    const b = creeBataille(db, 'hote', 10_000, 1);
+    const b = creeBataille(db, 'hote', DUEL.miseMax, 1);
     rejointBataille(db, 'autre', b.id);
     expect(solde(db, b.vainqueurId!)).toBe(ECONOMY.soldeMax);
     for (const id of ['hote', 'autre']) {

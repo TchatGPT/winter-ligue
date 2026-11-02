@@ -426,20 +426,21 @@ export const RARITY_ORDER: Record<Rarity, number> = {
  * 100 000).
  *
  * Un pack ne donne qu'**une** carte. Le Perso tire à ces taux : une
- * légendaire sur cinq cents, une ultra rare sur soixante-dix-sept.
+ * légendaire sur cent, une ultra rare sur treize (proposés par la streameuse,
+ * appliqués le 02/11/2026 : à une sur cinq cents, la légendaire ne tombait
+ * presque jamais).
  *
- * Le calibrage, sur une saison de l'ordre de 4 000 subs (la Summer Ligue) :
- * environ 300 Perso, 80 Commu, 15 Finisseur et 7 Folie, soit une ou deux
- * légendaires et une dizaine d'ultra rares sur toute la saison. La légendaire
- * reste un évènement, et personne ne l'a pour une poignée de subs. Le Perso,
- * le seul qui s'obtient en offrant des subs, est volontairement le plus sobre
- * en légendaires : offrir davantage ne doit pas faire tirer mieux que jouer.
+ * Sur une saison de l'ordre de 300 Perso, cela fait trois légendaires et
+ * deux douzaines d'ultra rares, davantage avec la chance. La légendaire reste
+ * un évènement, et personne ne l'a pour une poignée de subs. Le Perso, le seul
+ * qui s'obtient en offrant des subs, reste le plus sobre en légendaires :
+ * offrir davantage ne doit pas faire tirer mieux que jouer.
  */
 export const RARITY_WEIGHTS_BASE: Record<Rarity, number> = {
-  C: 83_000, // 83 %
-  R: 15_500, // 15,5 %
-  UR: 1_300, // 1,3 %
-  L: 200, // 0,2 %
+  C: 80_000, // 80 %
+  R: 11_000, // 11 %
+  UR: 8_000, // 8 %
+  L: 1_000, // 1 %
 };
 
 /** Total attendu de n'importe quelle table de poids. */
@@ -455,8 +456,8 @@ export const WEIGHT_TOTAL = 100_000;
  *
  * Quinze paliers, de ×1 à 0 flocon à ×4 au plafond. En jouant toute la saison,
  * on finit vers ×2,5 ou ×3 ; ×3,5 et ×4 passent par les duels. Au Booster
- * Perso, ×4 fait passer la légendaire de 0,2 % à 0,8 % — une sur cent vingt-cinq —
- * et l'ultra rare de 1,3 % à 5,2 %. Un joueur riche tire mieux, il ne tire pas à
+ * Perso, ×4 fait passer la légendaire de 1 % à 4 % — une sur vingt-cinq —
+ * et l'ultra rare de 8 % à 32 %. Un joueur riche tire mieux, il ne tire pas à
  * coup sûr, et les flocons ne s'achètent pas : ils se gagnent en jouant.
  *
  * Les flocons ne sont **pas dépensés** : les mêmes servent à miser dans les
@@ -622,10 +623,16 @@ export const CRENEAUX_BONUS = {
  *
  * Une chance sur deux pour chacun, et l'espérance est nulle — le site ne
  * prend rien au passage.
+ *
+ * La mise se choisit parmi quatre montants, mille flocons au plus (décidé le
+ * 02/11/2026). Jusqu'à cinquante mille, trois victoires en « tout miser »
+ * menaient au plafond en une soirée : le duel doit pimenter une saison, pas
+ * la remplacer.
  */
 export const DUEL = {
+  mises: [100, 250, 500, 1_000],
   miseMin: 100,
-  miseMax: 50_000,
+  miseMax: 1_000,
   /**
    * Les duels qu'un joueur peut laisser en attente à la fois. Chacun est
    * annoncé sur le stream : sans borne, un joueur pouvait en lancer cinquante

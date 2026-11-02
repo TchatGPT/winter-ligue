@@ -152,8 +152,8 @@ describe('tables de raretés', () => {
   });
 
   it('garde la légendaire rare mais atteignable', () => {
-    // Une sur cinq cents au Booster Perso, sans chance.
-    expect(rarityPercent(RARITY_WEIGHTS_BASE, 'L')).toBeCloseTo(0.2, 5);
+    // Une sur cent au Booster Perso, sans chance.
+    expect(rarityPercent(RARITY_WEIGHTS_BASE, 'L')).toBeCloseTo(1, 5);
   });
 
   it('ne fait jamais du Perso, le booster qu’on obtient en offrant des subs, le meilleur en légendaires', () => {
@@ -210,9 +210,9 @@ describe('la chance', () => {
       expect(plein[rarity]).toBe(RARITY_WEIGHTS_BASE[rarity] * 4);
     }
     // La commune absorbe la différence, et il en reste : au Booster Perso,
-    // 32 % de communes et une légendaire sur cent vingt-cinq.
-    expect(plein.C).toBe(32_000);
-    expect(plein.L).toBe(800);
+    // 20 % de communes et une légendaire sur vingt-cinq.
+    expect(plein.C).toBe(20_000);
+    expect(plein.L).toBe(4_000);
     expect(poidsAvecChance(RARITY_WEIGHTS_BASE, CHANCE.max * 10)).toEqual(plein);
   });
 

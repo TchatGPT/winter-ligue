@@ -2,12 +2,10 @@
 
 import { type RefObject, useEffect, useLayoutEffect, useRef } from 'react';
 import {
-  appatPour,
   arreteTout,
   horlogeAudio,
   programme,
   programmeCrans,
-  programmeFin,
   reveilleSon,
   sonDeFete,
 } from '@/components/bruitage';
@@ -341,8 +339,7 @@ export function useSpinAnimation({
      * Les colonnes relancées par le jeton Winter Spin.
      *
      * Leur course dure deux fois plus, plus la pause : elles sont donc toujours
-     * les dernières à s'arrêter, ce qui tombe bien — l'appât résout au dernier
-     * claquement, et c'est celui de la relance qu'on veut qu'il souligne.
+     * les dernières à s'arrêter, et le cliquet suit la relance jusqu'au bout.
      *
      * Rien de tout cela n'est décidé ici : le serveur a déjà tiré le jeton et la
      * carte qui suit, dans la même transaction que le débit.
@@ -598,11 +595,9 @@ export function useSpinAnimation({
         // Chaque rouleau garde en revanche son claquement : c'est l'évènement
         // qu'on voit, et c'est lui qui fait des cinq arrêts cinq moments.
         for (let i = 0; i < courses.length; i += 1) programme('commun', arretDe(i));
-
-        // L'appât, sur une rare ou mieux seulement, est calé sur sa fin : ses
-        // 5,747 s doivent résoudre pile au dernier claquement, sinon la montée
-        // retombe dans le vide.
-        if (appatPour(rang)) programmeFin('appat', arretDe(dernier));
+        // Plus de montée avant l'arrêt : elle ne partait que pour une rare ou
+        // mieux, et trahissait la carte avant qu'elle ne se pose. Pendant la
+        // course, toutes les ouvertures sonnent pareil.
       }
 
       if (fete) programme(fete, arretDe(bandeMeilleure));

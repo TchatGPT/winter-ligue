@@ -551,7 +551,7 @@ export function Regles({ maxGames, packs }: { maxGames: number; packs: PackDefin
           etapes={[
             {
               titre: 'Tu lances un défi',
-              texte: `Avec ta mise, de ${nombre(DUEL.miseMin)} à ${nombre(DUEL.miseMax)} ❄.`,
+              texte: `Avec ta mise : ${DUEL.mises.slice(0, -1).map(nombre).join(', ')} ou ${nombre(DUEL.miseMax)} ❄.`,
             },
             { titre: 'Un joueur le relève', texte: 'Avec la même mise que toi.' },
             { titre: 'La course', texte: 'Le serveur tire le vainqueur : une chance sur deux chacun.' },

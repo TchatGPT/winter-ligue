@@ -101,8 +101,8 @@ interface Charge {
   maintenant?: string;
 }
 
-/** La mise proposée à l'arrivée. Le curseur et le champ font le reste. */
-const MISE_DEPART = 100;
+/** La mise proposée à l'arrivée. */
+const MISE_DEPART: number = DUEL.miseMin;
 
 /** Les résultats montrés d'emblée sur un écran étroit ; le reste se déplie. */
 const RESULTATS_REPLIES = 5;
@@ -163,21 +163,13 @@ function bilanDe(b: BatailleVueClient, moiId: string | null): { gagne: boolean; 
 /* ------------------------------------------------------------------------ */
 
 /**
- * Les mises qu'on joue le plus, d'un clic, plus « Max » : tout ce qu'on peut
- * se permettre. Un curseur de 100 à 50 000 les a précédées : un pixel y valait
- * cent flocons, et viser 500 demandait de la précision.
+ * Les quatre mises possibles, d'un clic. Ni « tout miser » ni montant libre
+ * depuis le 02/11/2026 : le serveur n'accepte que celles-là.
  */
-const MISES_RAPIDES: readonly number[] = [100, 500, 1_000, 5_000, 10_000];
+const MISES: readonly number[] = DUEL.mises;
 
-/** Une mise rapide en court, pour une plaque étroite : « 1k », « 10k ». */
+/** Une mise en court, pour une plaque étroite : « 1k ». */
 const miseCourte = (v: number) => (v >= 1_000 ? `${v / 1_000}k` : String(v));
-
-/** Le pas des boutons − et + : il grandit avec la mise. */
-function pasDe(mise: number): number {
-  if (mise < 1_000) return 100;
-  if (mise < 10_000) return 500;
-  return 1_000;
-}
 
 /* ------------------------------------------------------------------------ */
 /* La fenêtre de l'arène                                                     */
@@ -481,14 +473,12 @@ export function Affrontements({
   }, []);
 
   const moi: CampApercu = { pseudo: moiPseudo ?? 'Toi', bot: false };
-  const { min: miseMin, max: miseMax } = etat.bornes.mise;
+  const miseMin = MISES[0];
   const solde = etat.balance;
   const joueur = etat.moiId !== null;
-  const miseValide = Number.isInteger(mise) && mise >= miseMin && mise <= miseMax;
+  const miseValide = MISES.includes(mise);
   const abordable = solde !== null && solde >= mise;
   const peutJouer = joueur && miseValide && abordable && !occupe;
-  /** Le haut du curseur : ce qu'on peut se permettre, dans les bornes. */
-  const plafond = Math.max(miseMin, Math.min(miseMax, solde ?? miseMax));
 
   const recharge = useCallback(async () => {
     let suivant: Charge;
@@ -703,7 +693,6 @@ export function Affrontements({
   const bloque = !joueur || solde === null || solde < miseMin || plein;
   /** On peut régler une mise : un joueur, des flocons, rien en cours. */
   const peutMiser = !bloque && !occupe;
-  const changeMise = (valeur: number) => setMise(Math.min(plafond, Math.max(miseMin, valeur)));
   /** Les duels à rejoindre que son solde permet de relever. */
   const aPortee = solde === null || plein ? 0 : aRejoindre.filter((b) => b.mise <= solde).length;
 
@@ -712,7 +701,7 @@ export function Affrontements({
     !joueur || solde === null || solde < miseMin
       ? null
       : !miseValide
-        ? `La mise va de ${flakes(miseMin)} à ${flakes(miseMax)} ❄.`
+        ? `La mise se choisit parmi ${MISES.map(flakes).join(', ')} ❄.`
         : !abordable
           ? `Il te manque ${flakes(mise - solde)} ❄ pour cette mise.`
           : gainPerdu > 0
@@ -939,70 +928,25 @@ export function Affrontements({
           </>
         ) : (
           <>
-            {/* La mise : des mises rapides, puis le montant exact entre − et +, et à
-            côté ce qu'elle rapporte ou coûte, au flocon près, avec le solde qui
-            en résulte. Une grille plutôt qu'un formulaire en colonne : sur un
-            ordinateur, le montant et ses issues tiennent sur une ligne. */}
+            {/* La mise : les quatre montants possibles, et à côté ce qu'elle
+            rapporte ou coûte, au flocon près, avec le solde qui en résulte. */}
             <div className="duels-reglage" data-inactif={peutMiser ? undefined : ''}>
               <p className="eyebrow duels-reglage-titre" id="mise-titre">
                 Ta mise
               </p>
               <div className="duels-mise-rapide" role="group" aria-labelledby="mise-titre">
-                {MISES_RAPIDES.map((v) => (
+                {MISES.map((v) => (
                   <button
                     key={v}
                     type="button"
                     aria-pressed={mise === v}
-                    disabled={!peutMiser || v > plafond}
-                    onClick={() => changeMise(v)}
+                    disabled={!peutMiser || (solde !== null && v > solde)}
+                    onClick={() => setMise(v)}
                   >
                     <span className="mise-longue">{flakes(v)}</span>
                     <span className="mise-courte">{miseCourte(v)}</span>
                   </button>
                 ))}
-                <button
-                  type="button"
-                  aria-pressed={mise === plafond && !MISES_RAPIDES.includes(plafond)}
-                  disabled={!peutMiser}
-                  onClick={() => changeMise(plafond)}
-                  title={`Tout miser : ${flakes(plafond)} ❄`}
-                >
-                  Max
-                </button>
-              </div>
-              <div className="duels-mise-champ">
-                <button
-                  type="button"
-                  aria-label="Miser moins"
-                  data-sens="moins"
-                  disabled={!peutMiser || !miseValide || mise <= miseMin}
-                  onClick={() => changeMise(mise - pasDe(mise - 1))}
-                >
-                  −
-                </button>
-                <label>
-                  <span className="sr-only">Mise exacte en flocons</span>
-                  <input
-                    type="number"
-                    inputMode="numeric"
-                    className="num"
-                    min={miseMin}
-                    max={miseMax}
-                    value={Number.isFinite(mise) ? mise : ''}
-                    disabled={!peutMiser}
-                    onChange={(e) => setMise(Math.floor(Number(e.target.value)))}
-                  />
-                  <span aria-hidden="true">❄</span>
-                </label>
-                <button
-                  type="button"
-                  aria-label="Miser plus"
-                  data-sens="plus"
-                  disabled={!peutMiser || !miseValide || mise >= plafond}
-                  onClick={() => changeMise(mise + pasDe(mise))}
-                >
-                  +
-                </button>
               </div>
               <div className="duels-issues">
                 <div data-issue="gain">

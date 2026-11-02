@@ -1017,8 +1017,9 @@ export const PACKS: readonly PackDefinition[] = [
     gradient: ['#2f6f8f', '#10283a'],
     portee: 'TOUS',
     pourQui: 'ceux que le sort désigne',
-    // Une légendaire sur deux cents, une ultra rare sur quarante.
-    weights: { C: 75_000, R: 22_000, UR: 2_500, L: 500 },
+    // Une légendaire sur soixante-sept, une ultra rare sur quarante : un peu
+    // plus de légendaires qu'au Perso sans chance (02/11/2026).
+    weights: { C: 74_000, R: 22_000, UR: 2_500, L: 1_500 },
   },
   {
     id: 'folie',

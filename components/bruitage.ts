@@ -21,13 +21,12 @@
  *
  * ## Les échantillons
  *
- * Six fichiers dans `public/sons/`, durées décodées :
+ * Cinq fichiers dans `public/sons/`, durées décodées :
  *
  * | fichier                     | durée   | son utile | rôle                     |
  * | --------------------------- | ------- | --------- | ------------------------ |
  * | `box-opening-spin-tick`     | 0,132 s | **40 ms** | une dent du cliquet      |
  * | `common`                    | 0,784 s |           | le claquement d'un arrêt |
- * | `spin-bait`                 | 5,747 s |           | la montée, rare et +     |
  * | `rare`                      | 5,642 s |           | la fête, rare            |
  * | `ultra_rare`                | 3,762 s |           | la fête, ultra rare      |
  * | `legendary`                 | 3,762 s |           | la fête, légendaire      |
@@ -42,7 +41,6 @@ import { RARITY_ORDER } from '@/lib/domain/rules';
 
 const SONS = {
   cran: '/sons/box-opening-spin-tick.mp3',
-  appat: '/sons/spin-bait.mp3',
   commun: '/sons/common.mp3',
   rare: '/sons/rare.mp3',
   ultra: '/sons/ultra_rare.mp3',
@@ -56,7 +54,7 @@ export type NomSon = keyof typeof SONS;
  *
  * ## Ces nombres sont mesurés, pas estimés
  *
- * Les six fichiers ne sont pas au même niveau, et de très loin. Décodés puis
+ * Les fichiers ne sont pas au même niveau, et de très loin. Décodés puis
  * mesurés — RMS pondéré des 20 % de fenêtres les plus fortes, ce qui ignore les
  * silences de tête et de queue :
  *
@@ -64,7 +62,6 @@ export type NomSon = keyof typeof SONS;
  * | ------------ | ---------- | ---------- | ------------------ |
  * | `tick`       | −21,6 dBFS | −36,8 dBFS | −11,9 dB           |
  * | `common`     | −16,7      | −33,6      | −8,7               |
- * | `spin-bait`  | −20,9      | −31,5      | −6,6               |
  * | `rare`       | −9,4       | −26,5      | −1,6               |
  * | `legendary`  | −9,9       | −25,2      | −0,3               |
  * | `ultra_rare` | −6,3       | −24,9      | 0                  |
@@ -76,12 +73,14 @@ export type NomSon = keyof typeof SONS;
  * Chaque gain est le produit d'une **normalisation** vers `ultra_rare` et d'un
  * **écart de rôle** en décibels, seule partie discutable : le cliquet à −8 dB
  * parce qu'il revient trente-sept fois et doit être la texture, pas le sujet ;
- * l'appât à −6 parce qu'il passe sous tout ; le claquement à −4 ; les fanfares
- * à 0.
+ * le claquement à −4 ; les fanfares à 0.
+ *
+ * La montée (`spin-bait`) n'est plus jouée depuis le 02/11/2026 : elle ne
+ * partait que pour une rare ou mieux, pendant que le rail tournait encore, et
+ * annonçait donc la rareté avant la carte.
  */
 const NIVEAUX: Record<NomSon, number> = {
   cran: 0.44, // normalisé ×3,94, puis −8 dB de rôle
-  appat: 0.3, // ×2,14, −6 dB
   commun: 0.48, // ×2,72, −4 dB
   rare: 0.34, // ×1,20
   ultra: 0.28, // référence
@@ -285,31 +284,6 @@ export function programme(nom: NomSon, quand: number, gain = 1): void {
 }
 
 /**
- * Programme un son pour qu'il **se termine** à `quandFin`.
- *
- * C'est ce dont l'appât a besoin : ses 5,747 secondes doivent résoudre pile au
- * moment où la dernière bande s'immobilise, sans quoi la montée retombe dans le
- * vide ou se fait couper.
- *
- * Si le son est plus long que le temps restant, on ne le tronque pas par la fin
- * — ce serait couper exactement la résolution qu'on cherche — mais **par le
- * début** : il démarre tout de suite, à l'intérieur du tampon. La montée est
- * entamée en cours de route, et elle résout quand même à l'heure. C'est ce qui
- * arrive en mode rapide et en turbo, où la course est plus courte que l'appât.
- */
-export function programmeFin(nom: NomSon, quandFin: number, gain = 1): void {
-  const audio = contexte();
-  const tampon = tampons.get(nom);
-  const src = source(nom, gain);
-  if (!audio || !tampon || !src) return;
-
-  const debut = quandFin - tampon.duration;
-  const maintenant = audio.currentTime;
-  if (debut >= maintenant) src.start(debut);
-  else src.start(maintenant, Math.min(maintenant - debut, tampon.duration));
-}
-
-/**
  * Programme les dents du cliquet, toutes d'un coup.
  *
  * `instants` est en millisecondes depuis le départ de la bande, `t0` en secondes
@@ -363,19 +337,4 @@ export function sonDeFete(rang: number): NomSon | null {
   if (rang >= RARITY_ORDER.UR) return 'ultra';
   if (rang >= RARITY_ORDER.R) return 'rare';
   return null;
-}
-
-/**
- * L'appât — la montée de cinq secondes qui résout à l'arrêt — se joue-t-il
- * pour cette rareté ? Pour une rare ou mieux seulement.
- *
- * Il se jouait à chaque ouverture, pour ne rien laisser deviner avant l'arrêt.
- * Mais cette montée se lit comme le son d'une rareté, et une commune en avait
- * donc un : on l'entendait à chaque booster, sur des cartes qui n'avaient rien
- * à fêter. Elle annonce désormais une rare ou mieux, dans les dernières
- * secondes de la course, et la fanfare de la rareté la résout. Une commune
- * s'ouvre au cliquet et au claquement d'arrêt, sans plus.
- */
-export function appatPour(rang: number): boolean {
-  return rang >= RARITY_ORDER.R;
 }

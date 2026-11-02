@@ -98,9 +98,9 @@ export function creeBataille(db: Database, hoteId: string, mise: number, manches
   if (!(MANCHES_POSSIBLES as readonly number[]).includes(manches)) {
     throw new BatailleError('Un duel se joue en une seule manche.', 'MANCHES_INVALIDES');
   }
-  if (!Number.isInteger(mise) || mise < DUEL.miseMin || mise > DUEL.miseMax) {
+  if (!(DUEL.mises as readonly number[]).includes(mise)) {
     throw new BatailleError(
-      `La mise va de ${DUEL.miseMin} à ${DUEL.miseMax.toLocaleString('fr-FR')} flocons.`,
+      `La mise se choisit parmi ${DUEL.mises.map((m) => m.toLocaleString('fr-FR')).join(', ')} flocons.`,
       'MISE_INVALIDE',
     );
   }
