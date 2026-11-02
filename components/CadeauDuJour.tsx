@@ -41,7 +41,7 @@ export function CadeauDuJour({ etat, variante }: { etat: EtatCadeau; variante: '
     text: string;
   } | null>(null);
 
-  const dispo = etat.eligible && !etat.dejaPris && !etat.plein;
+  const dispo = !etat.dejaPris && !etat.plein;
 
   useEffect(() => {
     if (!ouvert) return;
@@ -96,11 +96,9 @@ export function CadeauDuJour({ etat, variante }: { etat: EtatCadeau; variante: '
     }
   }
 
-  const aide = !etat.eligible
-    ? 'Après ta première game'
-    : etat.plein
-      ? 'Solde plein : ta chance est au maximum'
-      : etat.dejaPris
+  const aide = etat.plein
+    ? 'Solde plein : ta chance est au maximum'
+    : etat.dejaPris
       ? `Pris · série de ${etat.serie} jour${etat.serie > 1 ? 's' : ''} — reviens demain`
       : `${cadeauCourt(etat.serie)} · jour ${etat.jour} sur ${CADEAU_DU_JOUR.cycle}`;
 
@@ -129,17 +127,15 @@ export function CadeauDuJour({ etat, variante }: { etat: EtatCadeau; variante: '
           <span className="min-w-0 flex-1 text-left">
             <span className="code-cadeau-titre">Cadeau du jour</span>
             <span className="code-cadeau-aide">{aide}</span>
-            {etat.eligible && (
-              <span className="cadeau-jour-semaine" aria-hidden="true">
-                {Array.from({ length: CADEAU_DU_JOUR.cycle }, (_, i) => (
-                  <i
-                    key={i}
-                    data-fait={estFait(etat, i + 1) ? '' : undefined}
-                    data-septieme={i === CADEAU_DU_JOUR.cycle - 1 ? '' : undefined}
-                  />
-                ))}
-              </span>
-            )}
+            <span className="cadeau-jour-semaine" aria-hidden="true">
+              {Array.from({ length: CADEAU_DU_JOUR.cycle }, (_, i) => (
+                <i
+                  key={i}
+                  data-fait={estFait(etat, i + 1) ? '' : undefined}
+                  data-septieme={i === CADEAU_DU_JOUR.cycle - 1 ? '' : undefined}
+                />
+              ))}
+            </span>
           </span>
           <span className="code-cadeau-fleche cadeau-jour-fleche" aria-hidden="true">
             ›
@@ -205,8 +201,8 @@ export function FenetreCadeauDuJour({
         <ol className="cadeau-jour-calendrier" aria-label="La semaine en cours">
           {Array.from({ length: CADEAU_DU_JOUR.cycle }, (_, i) => {
             const jour = i + 1;
-            const fait = etat.eligible && estFait(etat, jour);
-            const aujourdhui = etat.eligible && jour === etat.jour;
+            const fait = estFait(etat, jour);
+            const aujourdhui = jour === etat.jour;
             return (
               <li
                 key={jour}
@@ -231,9 +227,7 @@ export function FenetreCadeauDuJour({
         </ol>
 
         <div className="cadeau-jour-etat">
-          {!etat.eligible ? (
-            <p className="text-[14px] text-muted lg:text-[16px]">Le cadeau du jour s’ouvre après ta première game dans la ligue.</p>
-          ) : etat.dejaPris ? (
+          {etat.dejaPris ? (
             <>
               <p className="text-[14px] text-ink-2 lg:text-[16px]">
                 Pris aujourd’hui · série de <strong className="text-ink">{etat.serie}</strong> jour

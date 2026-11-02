@@ -674,9 +674,10 @@ export const DUEL = {
  * Boosters Perso : de quoi revenir, pas de quoi remplacer une bonne game ni
  * approcher le plafond sans duel.
  *
- * Réservé à qui a au moins une game : un compte qui ne joue jamais n'en
- * touche pas, et des comptes secondaires ne peuvent pas s'en servir pour
- * nourrir un compte principal en duel.
+ * Ouvert dès l'inscription, sans attendre de game (décidé le 02/11/2026). Il
+ * fallait une game avant, contre les comptes secondaires qui nourriraient un
+ * compte principal en duel : les mises plafonnées à mille flocons bornent ce
+ * risque.
  */
 export const CADEAU_DU_JOUR = {
   parJour: 40,

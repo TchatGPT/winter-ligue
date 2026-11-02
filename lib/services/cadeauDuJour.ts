@@ -15,13 +15,12 @@ import type { Database } from '@/lib/db/entities';
 import { boosterDuJour, jourDeParis, jourDuCycle, montantDuJour, serieDuJour } from '@/lib/domain/cadeauDuJour';
 import { CADEAU_DU_JOUR, ECONOMY } from '@/lib/domain/rules';
 import { credit } from './ledger';
-import { gamesOf } from './league';
 import { ajoutePackDu } from './packs';
 
 export class CadeauError extends Error {
   constructor(
     message: string,
-    readonly code: 'DEJA_PRIS' | 'PAS_ENCORE_JOUE' | 'JOUEUR_INTROUVABLE' | 'SOLDE_PLEIN',
+    readonly code: 'DEJA_PRIS' | 'JOUEUR_INTROUVABLE' | 'SOLDE_PLEIN',
   ) {
     super(message);
     this.name = 'CadeauError';
@@ -29,8 +28,6 @@ export class CadeauError extends Error {
 }
 
 export interface EtatCadeau {
-  /** Il y a droit : au moins une game saisie. */
-  eligible: boolean;
   /** Il l'a déjà pris aujourd'hui. */
   dejaPris: boolean;
   /**
@@ -61,7 +58,6 @@ export function etatCadeau(db: Readonly<Database>, joueurId: string, now = new D
     : serieDuJour(joueur.cadeauDernier ?? null, joueur.cadeauSerie ?? 0, aujourdhui);
   const booster = boosterDuJour(serie);
   return {
-    eligible: gamesOf(db as Database, joueurId).some((g) => !g.skipped),
     dejaPris,
     plein: !booster && joueur.snowflakes >= ECONOMY.soldeMax,
     serie,
@@ -74,7 +70,7 @@ export function etatCadeau(db: Readonly<Database>, joueurId: string, now = new D
 /**
  * Prend le cadeau du jour. À appeler dans une transaction.
  *
- * Une fois par jour, à Paris ; seulement avec au moins une game saisie. Le solde
+ * Une fois par jour, à Paris, dès l'inscription. Le solde
  * reste plafonné : ce qui dépasserait est perdu, et `recu` le dit. Le jour du
  * booster, rien au grand livre : un Booster Perso en file, à ouvrir comme ceux
  * des subs.
@@ -88,9 +84,6 @@ export function prendsCadeauDuJour(
   if (!joueur) throw new CadeauError('Joueur introuvable.', 'JOUEUR_INTROUVABLE');
   const etat = etatCadeau(db, joueurId, now)!;
   if (etat.dejaPris) throw new CadeauError('Tu as déjà pris ton cadeau aujourd’hui : reviens demain.', 'DEJA_PRIS');
-  if (!etat.eligible) {
-    throw new CadeauError('Le cadeau du jour s’ouvre après ta première game dans la ligue.', 'PAS_ENCORE_JOUE');
-  }
   if (etat.plein) {
     throw new CadeauError(
       `Ton solde est plein (${ECONOMY.soldeMax.toLocaleString('fr-FR')} ❄) : ta chance est au maximum, le cadeau du jour ne t’apporterait rien.`,

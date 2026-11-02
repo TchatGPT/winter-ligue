@@ -119,7 +119,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   récompense individuelle : c'est l'invariant anti-pay-to-win, et il est testé.
 - **Le cadeau du jour** verse 40 ❄ par jour et, le septième jour d'affilée, met un
   Booster Perso en file au lieu de flocons (`boosterDuJour`, décidé le 02/11/2026) ;
-  ce jour-là reste ouvert à solde plein.
+  ce jour-là reste ouvert à solde plein. Il s'ouvre dès l'inscription, sans game.
 - **Une carte n'a aucune valeur en flocons** : elle ne s'achète, ne s'échange ni ne se
   revend — ni cote, ni marché, ni collection, ni exemplaires en réserve. Elle se joue sur
   une game, puis disparaît.

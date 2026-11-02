@@ -8,7 +8,7 @@ import { rattacheCompteTwitch } from '@/lib/services/comptes';
 
 /**
  * Le cadeau du jour : une fois par jour à Paris, quarante flocons, un Booster
- * Perso le septième jour d'affilée, et seulement après une première game.
+ * Perso le septième jour d'affilée, dès l'inscription.
  */
 
 describe('le calendrier du cadeau', () => {
@@ -103,11 +103,11 @@ describe('prendre le cadeau du jour', () => {
     expect(prendsCadeauDuJour(db, id, new Date(T0.getTime() + 3 * JOUR)).serie).toBe(1);
   });
 
-  it('attend la première game', () => {
+  it('s’ouvre dès l’inscription, sans attendre de game', () => {
     const { db, id } = base(false);
-    expect(etatCadeau(db, id, T0)).toMatchObject({ eligible: false });
-    expect(() => prendsCadeauDuJour(db, id, T0)).toThrow(CadeauError);
-    expect(db.players[0].snowflakes).toBe(0);
+    expect(etatCadeau(db, id, T0)).toMatchObject({ dejaPris: false, jour: 1 });
+    expect(prendsCadeauDuJour(db, id, T0).recu).toBe(CADEAU_DU_JOUR.parJour);
+    expect(db.players[0].snowflakes).toBe(CADEAU_DU_JOUR.parJour);
   });
 
   it('fait démarrer un nouveau joueur à zéro flocon, sans ligne au grand livre', () => {
