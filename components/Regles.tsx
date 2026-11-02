@@ -375,7 +375,7 @@ export function Regles({ maxGames, packs }: { maxGames: number; packs: PackDefin
                   },
                   {
                     titre: 'Quand tu veux',
-                    texte: 'Le Joker : tu le gardes, et une de tes games ne compte pas. Un seul à la fois.',
+                    texte: 'Le Joker : tu le gardes, et une de tes games ne compte pas. Trois pour commencer, cinq au plus.',
                   },
                 ]}
               />

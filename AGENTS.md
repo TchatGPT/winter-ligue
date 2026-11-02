@@ -111,9 +111,12 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - **Le Joker** (`kind: 'joker'`, Booster Perso) est gardé, jamais consommé de lui-même :
   à la saisie d'une game, la modération peut le servir (`joker: true`, vérifié par
   `jokerDe`). La game est alors passée (`skipped`) — ni points, ni flocons, ni carte
-  active, qui attend la suivante — et le Joker consommé (`utiliseJoker`). Un seul à la
-  fois : un second, tiré pendant qu'il en garde un, est consommé sans effet. Une game
-  annulée par un Joker ne se rétablit pas.
+  active, qui attend la suivante — et le Joker consommé (`utiliseJoker`). Chaque joueur
+  en reçoit trois à son inscription (`donneJokersDeDepart`, `JOKERS`, décidé le
+  02/11/2026), et en garde cinq au plus : un sixième, tiré pendant qu'il en garde cinq,
+  est consommé sans effet ; redescendu sous cinq, il peut remonter. Le classement les
+  montre en une carte, avec leur nombre en pastille. Une game annulée par un Joker ne
+  se rétablit pas.
 - **Une game se corrige ou se supprime** depuis la fiche du joueur, par la modération
   (`CorrectionGame`, `PATCH` / `DELETE /api/games`, `lib/services/corrections.ts`) :
   corrigée, son score se réécrit, ses cartes de prochaine game se relisent

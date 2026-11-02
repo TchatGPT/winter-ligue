@@ -528,8 +528,9 @@ export function FicheJoueur({
                       largeur="120px"
                     />
                     {fois > 1 && (
-                      <span className="profil-carte-fois num" aria-label={`reçue ${fois} fois`}>
-                        ×{fois}
+                      <span className="pastille-nombre num" aria-label={`reçue ${fois} fois`}>
+                        <span className="pastille-x">×</span>
+                        {fois}
                       </span>
                     )}
                   </span>

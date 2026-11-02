@@ -731,3 +731,13 @@ export const CADEAU_DU_JOUR = {
   septiemeJour: 'perso',
   cycle: 7,
 } as const;
+
+/**
+ * Les Jokers (décidé le 02/11/2026) : chaque joueur en reçoit trois à son
+ * inscription, et en garde cinq au plus. Un Joker tiré quand il en a déjà
+ * cinq est consommé sans effet ; redescendu sous cinq, il peut remonter.
+ */
+export const JOKERS = {
+  depart: 3,
+  max: 5,
+} as const;

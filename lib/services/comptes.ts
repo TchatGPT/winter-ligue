@@ -3,6 +3,7 @@ import 'server-only';
 import type { Database, Player, PlayerRole, SubTwitch } from '@/lib/db/entities';
 import { newId } from '@/lib/db/store';
 import { ECONOMY } from '@/lib/domain/rules';
+import { donneJokersDeDepart } from '@/lib/services/effects';
 import { makeSlug } from '@/lib/services/league';
 import { audit, credit } from '@/lib/services/ledger';
 import { boostersCadeauDonnes, crediteBoostersPerso } from '@/lib/services/packs';
@@ -79,6 +80,8 @@ export function rattacheCompteTwitch(
   db.players.push(cree);
   // Rien à l'inscription aujourd'hui : on n'écrit pas une ligne à zéro.
   if (ECONOMY.welcomeGrant > 0) credit(db, cree.id, ECONOMY.welcomeGrant, 'INSCRIPTION', null);
+  // Trois Jokers pour commencer (`JOKERS.depart`).
+  donneJokersDeDepart(db, cree.id);
   if (cree.role !== 'joueur') {
     audit(db, 'twitch', 'ROLE_CHAINE', cree.id, `${cree.pseudo} : ${cree.role}`);
   }

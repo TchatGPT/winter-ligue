@@ -160,7 +160,8 @@ export function Classement({
           legende={
             fiche.carte.genre === 'joker' ? (
               <>
-                Joker de <strong className="text-ink">{fiche.row.pseudo}</strong> : à la saisie d’une de ses games, la
+                {nombreDeJokers(fiche.row) > 1 ? `${nombreDeJokers(fiche.row)} Jokers` : 'Joker'} de{' '}
+                <strong className="text-ink">{fiche.row.pseudo}</strong> : à la saisie d’une de ses games, la
                 modération pourra la faire ne pas compter.
               </>
             ) : fiche.carte.genre === 'malus_choisi' ? (
@@ -557,8 +558,16 @@ function CarteActive({
   onOuvrir: (carte: CarteDuClassement | CarteGardee) => void;
 }) {
   // La carte active, puis les cartes gardées : plusieurs, l'une sur l'autre.
-  const cartes: (CarteDuClassement | CarteGardee)[] = [...(row.carte ? [row.carte] : []), ...row.gardees];
-  if (cartes.length >= 2) return <PileDeCartes cartes={cartes} onOuvrir={onOuvrir} />;
+  // Les Jokers n'en font qu'une, posée en dernier : rien ne couvre la
+  // pastille de leur nombre.
+  const joker = row.gardees.find((c) => c.genre === 'joker');
+  const cartes: (CarteDuClassement | CarteGardee)[] = [
+    ...(row.carte ? [row.carte] : []),
+    ...row.gardees.filter((c) => c.genre !== 'joker'),
+    ...(joker ? [joker] : []),
+  ];
+  const jokers = nombreDeJokers(row);
+  if (cartes.length >= 2) return <PileDeCartes cartes={cartes} jokers={jokers} onOuvrir={onOuvrir} />;
   const c = cartes[0];
   if (!c) return <span className="text-[13px] text-faint">—</span>;
   return (
@@ -569,7 +578,7 @@ function CarteActive({
       title={`${c.nom} — ${c.description}`}
       aria-label={`Voir la carte ${c.nom}`}
     >
-      <span className="w-[46px] shrink-0 @min-[100rem]:w-[56px]">
+      <span className="relative w-[46px] shrink-0 @min-[100rem]:w-[56px]">
         <CardFrame
           cardId={c.cardId}
           name={c.nom}
@@ -579,6 +588,7 @@ function CarteActive({
           nature={c.nature}
           largeur="56px"
         />
+        {c.genre === 'joker' && <PastilleJokers nombre={jokers} />}
       </span>
       <span className="min-w-0 leading-tight">
         <span className="block truncate text-[14px] font-bold text-ink @min-[100rem]:text-[16px]">{c.nom}</span>
@@ -606,9 +616,12 @@ const TEINTE: Record<CarteDuClassement['rarity'], string> = {
  */
 function PileDeCartes({
   cartes,
+  jokers,
   onOuvrir,
 }: {
   cartes: (CarteDuClassement | CarteGardee)[];
+  /** Combien de Jokers il garde : la carte du Joker les porte en pastille. */
+  jokers: number;
   onOuvrir: (carte: CarteDuClassement | CarteGardee) => void;
 }) {
   const [premiere, ...autres] = cartes;
@@ -634,6 +647,7 @@ function PileDeCartes({
               nature={c.nature}
               largeur="56px"
             />
+            {c.genre === 'joker' && <PastilleJokers nombre={jokers} />}
           </button>
         ))}
       </span>
@@ -645,10 +659,25 @@ function PileDeCartes({
             key={'id' in c ? c.id : c.cardId}
             className={`block truncate text-[13px] font-semibold @min-[100rem]:text-[14px] ${TEINTE[c.rarity]}`}
           >
-            + {c.nom}
+            + {c.genre === 'joker' && jokers > 1 ? `${jokers} Jokers` : c.nom}
           </span>
         ))}
       </span>
+    </span>
+  );
+}
+
+/** Combien de Jokers garde ce joueur : trois à l'inscription, cinq au plus. */
+function nombreDeJokers(row: RankingRow): number {
+  return row.gardees.filter((c) => c.genre === 'joker').length;
+}
+
+/** Le nombre de Jokers, sur le coin de la carte : la seule carte du classement qui en porte un. */
+function PastilleJokers({ nombre }: { nombre: number }) {
+  return (
+    <span className="pastille-nombre num" data-taille="petite" aria-label={`${nombre} Joker${nombre > 1 ? 's' : ''}`}>
+      <span className="pastille-x">×</span>
+      {nombre}
     </span>
   );
 }

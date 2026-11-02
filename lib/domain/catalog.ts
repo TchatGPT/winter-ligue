@@ -650,7 +650,7 @@ export const CARDS: readonly CardDefinition[] = [
     rarity: 'UR',
     glyph: '🃏',
     description:
-      'Garde-le : à la saisie d’une de tes games, la modération peut la faire ne pas compter. Un seul Joker à la fois.',
+      'Garde-le : à la saisie d’une de tes games, la modération peut la faire ne pas compter. Jusqu’à 5 Jokers en main.',
     effect: { kind: 'joker' },
     nature: 'bonus',
     power: 70,

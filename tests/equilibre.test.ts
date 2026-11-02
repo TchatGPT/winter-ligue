@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { Database, Game, Player } from '@/lib/db/entities';
 import { emptyDatabase } from '@/lib/db/store';
 import { CARDS, cardsOfRarity, getCard, impactMax, momentDe, PACKS } from '@/lib/domain/catalog';
-import { GAME_LIMITS, placementPoints, topDePosition } from '@/lib/domain/rules';
+import { GAME_LIMITS, JOKERS, placementPoints, topDePosition } from '@/lib/domain/rules';
 import { scoreGame } from '@/lib/domain/scoring';
 import { RARITIES, type CardEffect, type Placement } from '@/lib/domain/types';
 import { totalsOf } from '@/lib/services/league';
@@ -13,7 +13,10 @@ import {
   joueEchangeChoisi,
   joueVerglas,
   rendCartesDeLaGame,
+  carteQuiAttend,
+  donneJokersDeDepart,
   jokerDe,
+  jokersDe,
   regleCartesSansAttendre,
   utiliseJoker,
 } from '@/lib/services/effects';
@@ -130,21 +133,31 @@ describe('le Joker', () => {
     expect(jokerDe(db, 'a')?.cardId).toBe('joker-givre');
   });
 
-  it('un seul à la fois : un second, tiré pendant qu’il en garde un, ne fait rien', () => {
+  it('cinq au plus : un sixième, tiré pendant qu’il en garde cinq, ne fait rien', () => {
     const db = base('a');
-    pose(db, 'a', 'joker-givre', 1);
-    pose(db, 'a', 'joker-givre', 2);
+    for (let i = 1; i <= 6; i++) pose(db, 'a', 'joker-givre', i);
     regleCartesSansAttendre(db, 'a');
     const jokers = db.cartesEnAttente.filter((c) => c.cardId === 'joker-givre');
-    expect(jokers[0].consommeeA).toBeNull();
-    expect(jokers[1].consommeeA).not.toBeNull();
-    expect(jokers[1].resultat).toMatch(/déjà un Joker/);
-    // Une fois le premier joué, on peut en retirer un.
+    expect(jokers.slice(0, 5).every((j) => j.consommeeA === null)).toBe(true);
+    expect(jokers[5].consommeeA).not.toBeNull();
+    expect(jokers[5].resultat).toMatch(/déjà 5 Jokers/);
+    expect(jokersDe(db, 'a')).toHaveLength(JOKERS.max);
+    // Un joué, il peut remonter à cinq.
     utiliseJoker(db, game(db, 'a', 3));
-    expect(jokerDe(db, 'a')).toBeNull();
-    pose(db, 'a', 'joker-givre', 3);
+    expect(jokersDe(db, 'a')).toHaveLength(4);
+    pose(db, 'a', 'joker-givre', 7);
     regleCartesSansAttendre(db, 'a');
-    expect(jokerDe(db, 'a')).not.toBeNull();
+    expect(jokersDe(db, 'a')).toHaveLength(5);
+  });
+
+  it('trois à l’inscription', () => {
+    const db = base('a');
+    donneJokersDeDepart(db, 'a');
+    expect(jokersDe(db, 'a')).toHaveLength(JOKERS.depart);
+    // Ils ne sortent d'aucun booster, et ne bloquent rien.
+    regleCartesSansAttendre(db, 'a');
+    expect(jokersDe(db, 'a')).toHaveLength(3);
+    expect(carteQuiAttend(db, 'a')).toBeNull();
   });
 
   it('joué, il se pose sur la game et laisse la carte active pour la suivante', () => {

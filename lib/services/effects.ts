@@ -31,7 +31,7 @@ import type { CarteEnAttente, Database, Game, Player } from '@/lib/db/entities';
 import { newId } from '@/lib/db/store';
 import { COUP_DE_VERGLAS, getCard, momentDe, PACTE_SUBI } from '@/lib/domain/catalog';
 import { rewardForGame } from '@/lib/domain/economy';
-import { CRENEAUX_BONUS, GAME_LIMITS, placementPoints } from '@/lib/domain/rules';
+import { CRENEAUX_BONUS, GAME_LIMITS, JOKERS, placementPoints } from '@/lib/domain/rules';
 import type { CardDefinition, CardEffect } from '@/lib/domain/types';
 import { shortDateTime } from '@/lib/format';
 import { facteurCartes } from '@/lib/services/evenements';
@@ -648,12 +648,14 @@ export function regleCartesSansAttendre(
     const moment = momentDe(card.effect);
     if (moment === 'PROCHAINE') continue;
     if (moment === 'GARDEE') {
-      // Un seul Joker à la fois : le plus ancien est gardé, un autre ne fait
-      // rien. Il est consommé tout de suite, pour qu'on lise pourquoi. Les
-      // autres cartes gardées (le Verglas) s'accumulent : chacune attend
+      // Cinq Jokers au plus : les plus anciens sont gardés, un de trop ne
+      // fait rien. Il est consommé tout de suite, pour qu'on lise pourquoi.
+      // Les autres cartes gardées (le Verglas) s'accumulent : chacune attend
       // que la modération la joue.
-      if (card.effect.kind === 'joker' && jokerDe(db, joueurId) !== pendante) {
-        faites.push(consomme(pendante, card, sansEffet('déjà un Joker en main : celui-ci ne fait rien'), now));
+      if (card.effect.kind === 'joker' && jokersDe(db, joueurId).indexOf(pendante) >= JOKERS.max) {
+        faites.push(
+          consomme(pendante, card, sansEffet(`déjà ${JOKERS.max} Jokers en main : celui-ci ne fait rien`), now),
+        );
       }
       continue;
     }
@@ -701,7 +703,7 @@ export function regleCartesSansAttendre(
  * Il n'y a jamais de stock de cartes : un joueur n'a qu'une carte en attente
  * à la fois. Tant qu'elle n'a pas joué, aucun booster ne s'ouvre pour lui, et
  * le sort d'un booster de la ligue ne tombe pas sur lui (`ouvrePack`). Le
- * Joker n'en est pas une : il se garde, un seul, sans rien bloquer.
+ * Joker n'en est pas une : il se garde, cinq au plus, sans rien bloquer.
  */
 export function carteQuiAttend(db: Database, joueurId: string): CarteEnAttente | null {
   return (
@@ -716,14 +718,38 @@ export function carteQuiAttend(db: Database, joueurId: string): CarteEnAttente |
 
 /* -------------------------------- Le Joker ------------------------------- */
 
-/** Le Joker que garde ce joueur, s'il en a un : le plus ancien. */
+/** Les Jokers que garde ce joueur, du plus ancien au plus récent. */
+export function jokersDe(db: Database, joueurId: string): CarteEnAttente[] {
+  return enAttenteDe(db, joueurId).filter((c) => {
+    const card = getCard(c.cardId);
+    return card !== null && card.effect.kind === 'joker';
+  });
+}
+
+/** Le Joker que sert la modération, s'il en a un : le plus ancien. */
 export function jokerDe(db: Database, joueurId: string): CarteEnAttente | null {
-  return (
-    enAttenteDe(db, joueurId).find((c) => {
-      const card = getCard(c.cardId);
-      return card !== null && card.effect.kind === 'joker';
-    }) ?? null
-  );
+  return jokersDe(db, joueurId)[0] ?? null;
+}
+
+/** L'ouverture que référencent les Jokers de départ : ils ne sortent d'aucun booster. */
+export const OUVERTURE_INSCRIPTION = 'inscription';
+
+/** Les Jokers d'un joueur qui s'inscrit (`JOKERS.depart`). */
+export function donneJokersDeDepart(db: Database, joueurId: string, now = new Date()): void {
+  for (let i = 0; i < JOKERS.depart; i++) {
+    db.cartesEnAttente.push({
+      id: newId(),
+      joueurId,
+      cardId: 'joker-givre',
+      ouvertureId: OUVERTURE_INSCRIPTION,
+      // Une milliseconde d'écart : l'ordre d'arrivée reste net.
+      creeA: new Date(now.getTime() + i).toISOString(),
+      consommeeA: null,
+      gameId: null,
+      resultat: null,
+      paireId: null,
+    });
+  }
 }
 
 export type RefusVerglas = 'CARTE' | 'CIBLE';
@@ -1016,9 +1042,9 @@ export function recalculeCartesDeLaGame(
 /**
  * Rend au joueur les cartes consommées sur une game qu'on supprime : une
  * carte qui attendait une game revient en attente, et tombera sur la
- * suivante ; un Joker revient en main. Jamais deux cartes en attente, ni deux
- * Jokers : si le joueur en a déjà une, celle de la game supprimée est perdue,
- * et le dit. Un Pacte du Givre — ou sa trace — ne revient jamais : il a déjà
+ * suivante ; un Joker revient en main. Jamais deux cartes en attente, ni plus
+ * de cinq Jokers : si le joueur n'a plus de place, celle de la game supprimée
+ * est perdue, et le dit. Un Pacte du Givre — ou sa trace — ne revient jamais : il a déjà
  * changé une game de chaque côté. À appeler avant de retirer la game.
  */
 export function rendCartesDeLaGame(db: Database, game: Game): { rendues: string[]; perdues: string[] } {
@@ -1031,7 +1057,7 @@ export function rendCartesDeLaGame(db: Database, game: Game): { rendues: string[
       card.effect.kind === 'echange_choisi'
         ? false
         : momentDe(card.effect) === 'GARDEE'
-          ? card.effect.kind !== 'joker' || jokerDe(db, pendante.joueurId) === null
+          ? card.effect.kind !== 'joker' || jokersDe(db, pendante.joueurId).length < JOKERS.max
           : carteQuiAttend(db, pendante.joueurId) === null;
     pendante.gameId = null;
     if (libre) {

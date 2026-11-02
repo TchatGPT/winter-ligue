@@ -757,7 +757,8 @@ export function cartesEnAttenteDe(db: Database, joueurId: string): CarteEnAttent
         nature: card?.nature ?? 'bonus',
         power: card?.power ?? 0,
         packId,
-        pack: getPack(packId)?.name ?? packId,
+        // Les Jokers de départ ne sortent d'aucun booster.
+        pack: ouverture ? (getPack(packId)?.name ?? packId) : 'Cadeau d’inscription',
         creeA: c.creeA,
       };
     });
