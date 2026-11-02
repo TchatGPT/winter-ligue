@@ -84,7 +84,7 @@ describe('pas de stock de cartes', () => {
     const db = ligue('a');
     reglagePack(db, 'perso', seulement('R'));
     // Une rare du Perso qui attend la prochaine game (Luge, Souffle Polaire,
-    // Piste Damée) ; celles qui se règlent tout de suite (flocons, points
+    // Rose des Glaces) ; celles qui se règlent tout de suite (flocons, points
     // bonus) se règlent une fois révélées.
     const tout = (id: string) => momentDe(getCard(id)!.effect) === 'INSTANT';
     let premiere = ouvrePack(db, { packId: 'perso', joueurId: 'a', idempotencyKey: 'k1' }, 'modo');
