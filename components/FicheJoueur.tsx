@@ -513,9 +513,11 @@ export function FicheJoueur({
           {p.ouvertures.length === 0 ? (
             <p className="profil-vide">Aucune carte reçue pour l’instant.</p>
           ) : (
+            // Une carte par sorte, la dernière reçue en tête : la pastille dit
+            // combien de fois elle est tombée, la date dit quand pour la dernière.
             <ul className="profil-cartes">
-              {p.ouvertures.map((o) => (
-                <li key={o.id}>
+              {parCarte(p.ouvertures).map(({ derniere: o, fois }) => (
+                <li key={o.cardId}>
                   <span className="profil-carte">
                     <CardFrame
                       cardId={o.cardId}
@@ -525,6 +527,11 @@ export function FicheJoueur({
                       nature={o.nature}
                       largeur="120px"
                     />
+                    {fois > 1 && (
+                      <span className="profil-carte-fois num" aria-label={`reçue ${fois} fois`}>
+                        ×{fois}
+                      </span>
+                    )}
                   </span>
                   <b>{o.nom}</b>
                   <small>
@@ -559,6 +566,20 @@ export function FicheJoueur({
       )}
     </div>
   );
+}
+
+/**
+ * Les cartes reçues, une par sorte : la plus récente de chacune, et combien de
+ * fois elle est tombée. L'ordre reste celui de la liste, la plus récente en tête.
+ */
+function parCarte<T extends { cardId: string }>(ouvertures: T[]): { derniere: T; fois: number }[] {
+  const sortes = new Map<string, { derniere: T; fois: number }>();
+  for (const o of ouvertures) {
+    const deja = sortes.get(o.cardId);
+    if (deja) deja.fois += 1;
+    else sortes.set(o.cardId, { derniere: o, fois: 1 });
+  }
+  return [...sortes.values()];
 }
 
 /** Les boosters à ouvrir, comptés par type, dans l'ordre où ils sont arrivés. */

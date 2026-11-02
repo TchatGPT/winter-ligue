@@ -3225,9 +3225,30 @@
     text-align: center;
   }
   .profil-carte {
+    position: relative;
     display: block;
     width: 100%;
     max-width: 7.5rem;
+  }
+  /* Reçue plusieurs fois : une pastille sur le coin de la carte. */
+  .profil-carte-fois {
+    position: absolute;
+    top: -0.45rem;
+    right: -0.45rem;
+    z-index: 1;
+    display: inline-grid;
+    min-width: 1.75rem;
+    height: 1.75rem;
+    place-items: center;
+    padding: 0 0.45rem;
+    border-radius: var(--r-pilule);
+    background: var(--ice);
+    box-shadow:
+      0 0 0 2px var(--nuit),
+      0 4px 10px -4px rgb(0 8 24 / 0.8);
+    color: var(--nuit);
+    font-size: 0.8125rem;
+    font-weight: 800;
   }
   .profil-cartes b {
     max-width: 100%;

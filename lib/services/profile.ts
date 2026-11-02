@@ -67,7 +67,8 @@ function buildProfile(db: Database, playerId: string): ProfileView | null {
     ouvertures: [...db.ouvertures]
       .filter((o) => o.joueurId === playerId || o.beneficiaires.includes(playerId))
       .sort((a, b) => b.openedAt.localeCompare(a.openedAt))
-      .slice(0, 24)
+      // Toutes : la fiche les regroupe par carte, et compte combien de fois
+      // chacune est tombée.
       .map((o) => vueOuverture(db, o)),
     totals: totalsOf(db, playerId),
     games: gamesOf(db, playerId).map((g) => ({
