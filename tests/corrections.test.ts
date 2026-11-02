@@ -147,26 +147,26 @@ describe('corriger une game', () => {
 describe('supprimer une game', () => {
   it('reprend ses flocons, rend sa carte, et la retire', () => {
     const db = ligue('a');
-    pose(db, 'a', 'lanterne-givree');
+    pose(db, 'a', 'baton-de-marche');
     const g = saisis(db, 'a', 12, 1);
     expect(carteQuiAttend(db, 'a')).toBeNull();
     const r = supprimeGame(db, 'modo', g.id);
     if (typeof r === 'string' || 'refus' in r) throw new Error('refusée');
     expect(db.games).toHaveLength(0);
     expect(solde(db, 'a')).toBe(0);
-    expect(r.rendues).toEqual(['Lanterne Givrée']);
+    expect(r.rendues).toEqual(['Bâton de Marche']);
     // La carte attend la prochaine game, comme si de rien n'était.
-    expect(carteQuiAttend(db, 'a')?.cardId).toBe('lanterne-givree');
+    expect(carteQuiAttend(db, 'a')?.cardId).toBe('baton-de-marche');
   });
 
   it('perd la carte si le joueur en a déjà une autre en attente : jamais deux', () => {
     const db = ligue('a');
-    pose(db, 'a', 'lanterne-givree');
+    pose(db, 'a', 'baton-de-marche');
     const g = saisis(db, 'a', 12, 1);
     pose(db, 'a', 'luge');
     const r = supprimeGame(db, 'modo', g.id);
     if (typeof r === 'string' || 'refus' in r) throw new Error('refusée');
-    expect(r.perdues).toEqual(['Lanterne Givrée']);
+    expect(r.perdues).toEqual(['Bâton de Marche']);
     expect(carteQuiAttend(db, 'a')?.cardId).toBe('luge');
   });
 

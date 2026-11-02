@@ -505,6 +505,11 @@ function regleInstant(
       credit(db, joueur.id, effect.value, 'CARTE', pendante.ouvertureId);
       return sansEffet(`+${fr(effect.value)} flocons`);
     }
+    case 'bonus_total': {
+      // Hors de toute game : `pointsHorsGame()` les ajoute au total.
+      pendante.points = effect.value;
+      return sansEffet(`${pts(effect.value)} bonus sur le total`);
+    }
     case 'game_supplementaire': {
       if (joueur.creneauxBonus >= CRENEAUX_BONUS.max) {
         credit(db, joueur.id, CRENEAUX_BONUS.floconsDeRepli, 'CARTE', pendante.ouvertureId);

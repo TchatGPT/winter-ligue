@@ -15,6 +15,20 @@ import type { CardDefinition, PackId, Rarity } from '@/lib/domain/types';
  */
 export const CARTES_RETIREES: readonly CardDefinition[] = [
   {
+    // La Marche Gelée du 27/10 au 02/11/2026, avant de devenir « +5 pts bonus ».
+    id: 'marche-gelee-v1',
+    name: 'Marche Gelée',
+    subtitle: '+5 pts si plus de kills',
+    rarity: 'C',
+    glyph: '👣',
+    description: '+5 points sur ta prochaine game, si tu y fais plus de kills qu’à ta game précédente.',
+    effect: { kind: 'progression_kills', value: 5 },
+    nature: 'bonus',
+    power: 10,
+    packs: ['perso'],
+    cible: 'HASARD',
+  },
+  {
     id: 'boule-de-neige',
     name: 'Boule de Neige',
     subtitle: '+4 pts petites games',

@@ -315,6 +315,11 @@ export function Classement({
                   <span className="font-display text-[26px] leading-none font-black @min-[100rem]:text-[34px]">
                     {row.totals.totalScore}
                   </span>
+                  {row.totals.horsGame !== 0 && (
+                    <span className="mt-1 block text-[12px] whitespace-nowrap text-muted @min-[100rem]:text-[13px]">
+                      dont <Bonus points={row.totals.horsGame} /> bonus
+                    </span>
+                  )}
                 </td>
                 <td className="num text-right text-ink-2">{row.totals.countedGames}</td>
                 <td className="tableau-verre-secondaire num text-right text-ink-2">{row.totals.averageScore}</td>
@@ -362,6 +367,11 @@ export function Classement({
                     {row.totals.totalScore}
                   </span>
                   <span className="block text-[13px] tracking-[0.12em] text-faint uppercase">points</span>
+                  {row.totals.horsGame !== 0 && (
+                    <span className="block text-[12px] whitespace-nowrap text-muted">
+                      <Bonus points={row.totals.horsGame} /> bonus
+                    </span>
+                  )}
                 </span>
               </summary>
               <dl className="tableau-verre-detail grid grid-cols-3 gap-x-3 gap-y-2 px-4 pt-2.5 pb-3.5 text-[13px]">
@@ -412,6 +422,20 @@ function Rang({
   if (rang === 2 || rang === 3)
     return <MedailleGlace rang={rang} className={`mx-auto ${taille}`} id={`medaille-${rang}-${ou}`} />;
   return <span className="num font-display text-[20px] font-black text-muted @min-[100rem]:text-[24px]">{rang}</span>;
+}
+
+/**
+ * Les points bonus : ceux du total qui ne viennent d'aucune game — les cartes
+ * « +N pts bonus », moins un Verglas reçu. Déjà comptés dans les points : le
+ * tableau et la liste étroite les écrivent sous eux.
+ */
+function Bonus({ points }: { points: number }) {
+  if (points === 0) return <span className="text-faint">—</span>;
+  return (
+    <b className={points > 0 ? 'text-ice' : 'text-danger'} title="Points bonus, déjà comptés dans les points">
+      {points > 0 ? `+${points}` : `−${-points}`}
+    </b>
+  );
 }
 
 /** Le pseudo Twitch, et dessous le pseudo en jeu (Warzone), derrière le logo d'Activision. */

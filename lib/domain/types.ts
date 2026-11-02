@@ -127,6 +127,12 @@ export type CardEffect =
    */
   | { kind: 'supprime_pire' }
   /* ------------------------------ Tout de suite --------------------------- */
+  /**
+   * « +N pts bonus » : N points ajoutés au total du joueur, tout de suite,
+   * hors de toute game (`CarteEnAttente.points`), une fois la carte révélée
+   * (décidé le 02/11/2026). Le classement les montre à part, en bonus.
+   */
+  | { kind: 'bonus_total'; value: number }
   /** Des flocons, dans l'instant. Aucune incidence au classement. */
   | { kind: 'snowflakes'; value: number }
   /** « Game supplémentaire » : un créneau de game de plus, hors limite. */

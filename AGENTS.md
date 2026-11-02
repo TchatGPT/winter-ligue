@@ -88,6 +88,10 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   s'inscrit chez elle, déjà réglé, avec ses points (`CarteEnAttente.points`), que
   `pointsHorsGame()` ajoute au total. L'immunité le pare. Jamais sur soi ; un membre de la
   modération ne joue pas le Verglas qu'il garde.
+- **Les points bonus** (`kind: 'bonus_total'`, décidé le 02/11/2026) : les cartes « +N pts
+  bonus » ajoutent N points au **total**, tout de suite après leur révélation, hors de
+  toute game (`CarteEnAttente.points`, comme le coup du Verglas). Le classement les écrit
+  sous les points (« dont +N bonus », `totals.horsGame`), où ils sont déjà comptés.
 - **Le Pacte du Givre** (`kind: 'echange_choisi'`, légendaire du Booster Perso, décidé le
   02/11/2026) est gardé, et ne se joue qu'à partir de la 30ᵉ game de son porteur. Il
   choisit une de ses games et une game d'un autre joueur, toutes deux encore sans carte ;

@@ -130,8 +130,8 @@ export const CARDS: readonly CardDefinition[] = [
     subtitle: '+4 pts bonus',
     rarity: 'C',
     glyph: '🌨',
-    description: '+4 points sur ta prochaine game.',
-    effect: { kind: 'bonus_points', value: 4 },
+    description: '+4 points bonus sur ton total, tout de suite.',
+    effect: { kind: 'bonus_total', value: 4 },
     nature: 'bonus',
     power: 9,
     // Dans le Perso aussi depuis le 20/10/2026, avec les autres communes.
@@ -181,14 +181,14 @@ export const CARDS: readonly CardDefinition[] = [
     cible: 'HASARD',
   },
   {
-    // Ajoutée le 27/10/2026 : la seule carte qui compare deux games du joueur.
+    // Ajoutée le 27/10/2026 ; +5 pts bonus sans condition depuis le 02/11/2026.
     id: 'marche-gelee',
     name: 'Marche Gelée',
-    subtitle: '+5 pts si plus de kills',
+    subtitle: '+5 pts bonus',
     rarity: 'C',
     glyph: '👣',
-    description: '+5 points sur ta prochaine game, si tu y fais plus de kills qu’à ta game précédente.',
-    effect: { kind: 'progression_kills', value: 5 },
+    description: '+5 points bonus sur ton total, tout de suite.',
+    effect: { kind: 'bonus_total', value: 5 },
     nature: 'bonus',
     power: 10,
     packs: ['perso'],
@@ -321,8 +321,8 @@ export const CARDS: readonly CardDefinition[] = [
     subtitle: '+7 pts bonus',
     rarity: 'R',
     glyph: '🏮',
-    description: '+7 points sur ta prochaine game.',
-    effect: { kind: 'bonus_points', value: 7 },
+    description: '+7 points bonus sur ton total, tout de suite.',
+    effect: { kind: 'bonus_total', value: 7 },
     nature: 'bonus',
     power: 24,
     packs: ['perso'],
@@ -719,8 +719,8 @@ export const CARDS: readonly CardDefinition[] = [
     subtitle: '+10 pts bonus',
     rarity: 'UR',
     glyph: '💎',
-    description: '+10 points sur ta prochaine game.',
-    effect: { kind: 'bonus_points', value: 10 },
+    description: '+10 points bonus sur ton total, tout de suite.',
+    effect: { kind: 'bonus_total', value: 10 },
     nature: 'bonus',
     power: 63,
     packs: ['perso'],
@@ -914,6 +914,7 @@ export function momentDe(effect: CardEffect): MomentCarte {
     case 'supprime_pire':
       return 'JOUEE';
     case 'snowflakes':
+    case 'bonus_total':
     case 'game_supplementaire':
     case 'immunite':
       return 'INSTANT';
@@ -939,6 +940,7 @@ const SCORE_MAX = GAME_LIMITS.maxKills + PLACEMENT_POINTS['1'];
 export function impactMax(effect: CardEffect): number | null {
   switch (effect.kind) {
     case 'bonus_points':
+    case 'bonus_total':
     case 'malus_points':
     case 'malus_choisi':
     case 'plancher':
@@ -985,6 +987,8 @@ export function resumeEffet(effect: CardEffect): string {
   switch (effect.kind) {
     case 'bonus_points':
       return `+${effect.value} pts`;
+    case 'bonus_total':
+      return `+${effect.value} pts bonus`;
     case 'malus_points':
       return `−${effect.value} pts`;
     case 'multiplicateur_game':

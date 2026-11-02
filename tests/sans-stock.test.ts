@@ -83,10 +83,12 @@ describe('pas de stock de cartes', () => {
   it('refuse un booster Perso tant que la carte précédente n’a pas joué', () => {
     const db = ligue('a');
     reglagePack(db, 'perso', seulement('R'));
-    // Une rare du Perso qui attend la prochaine game (Luge, Vent Porteur,
-    // Lanterne) ; la Coulée de Neige, des flocons, se règle une fois révélée.
+    // Une rare du Perso qui attend la prochaine game (Luge, Souffle Polaire,
+    // Piste Damée) ; celles qui se règlent tout de suite (flocons, points
+    // bonus) se règlent une fois révélées.
+    const tout = (id: string) => momentDe(getCard(id)!.effect) === 'INSTANT';
     let premiere = ouvrePack(db, { packId: 'perso', joueurId: 'a', idempotencyKey: 'k1' }, 'modo');
-    for (let i = 0; premiere.cardId === 'coulee-de-neige' && i < 40; i += 1) {
+    for (let i = 0; tout(premiere.cardId) && i < 40; i += 1) {
       premiere.annonceeA = new Date().toISOString();
       regleApresRevelation(db, premiere.id);
       premiere = ouvrePack(db, { packId: 'perso', joueurId: 'a', idempotencyKey: `k1-${i}` }, 'modo');

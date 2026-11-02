@@ -133,12 +133,12 @@ function joueLesCartes(db: Database) {
   for (const c of db.cartesEnAttente) if (c.consommeeA === null) c.consommeeA = '2027-01-01T00:00:00.000Z';
 }
 
-describe('« Marche Gelée » : plus de kills qu’à la game précédente', () => {
+describe('l’ancienne « Marche Gelée » : plus de kills qu’à la game précédente', () => {
   /** Une game sans carte, puis la Marche Gelée sur la suivante. */
   function apres(avant: number | null, kills: number) {
     const db = base('a');
     if (avant !== null) game(db, 'a', avant);
-    const carte = pose(db, 'a', 'marche-gelee');
+    const carte = pose(db, 'a', 'marche-gelee-v1');
     const g = game(db, 'a', kills);
     appliqueCartesEnAttente(db, g, {}, MAINTENANT);
     return { game: g, resultat: carte.resultat };
@@ -166,15 +166,31 @@ describe('« Marche Gelée » : plus de kills qu’à la game précédente', () 
     game(db, 'a', 3);
     const passee = game(db, 'a', 20);
     passee.skipped = true;
-    pose(db, 'a', 'marche-gelee');
+    pose(db, 'a', 'marche-gelee-v1');
     const g = game(db, 'a', 5);
     appliqueCartesEnAttente(db, g, {}, MAINTENANT);
     expect(g.bonusPoints).toBe(5);
   });
 
   it('se résume en une pastille', () => {
-    expect(resumeEffet(getCard('marche-gelee')!.effect)).toBe('+5 pts si plus de kills');
-    expect(momentDe(getCard('marche-gelee')!.effect)).toBe('PROCHAINE');
+    expect(resumeEffet(getCard('marche-gelee-v1')!.effect)).toBe('+5 pts si plus de kills');
+    expect(momentDe(getCard('marche-gelee-v1')!.effect)).toBe('PROCHAINE');
+  });
+});
+
+describe('les points bonus', () => {
+  it('s’ajoutent au total tout de suite, hors de toute game', () => {
+    for (const [id, points] of [['congere', 4], ['marche-gelee', 5], ['lanterne-givree', 7], ['coeur-de-glace', 10]] as const) {
+      const db = base('a');
+      const g = game(db, 'a', 8);
+      const carte = pose(db, 'a', id);
+      regleCartesSansAttendre(db, 'a', MAINTENANT);
+      expect(carte.consommeeA).not.toBeNull();
+      expect(carte.points).toBe(points);
+      expect(g.bonusPoints).toBe(0);
+      expect(momentDe(getCard(id)!.effect)).toBe('INSTANT');
+      expect(resumeEffet(getCard(id)!.effect)).toBe(`+${points} pts bonus`);
+    }
   });
 });
 
@@ -467,7 +483,7 @@ describe('quand toutes les games sont jouées', () => {
 
   it('s’arrête quand il n’y a plus de game sans carte', () => {
     const { db } = finisseur();
-    for (const id of ['congere', 'poudreuse', 'percee']) pose(db, 'a', id);
+    for (const id of ['baton-de-marche', 'poudreuse', 'percee']) pose(db, 'a', id);
     const faites = regleCartesSansAttendre(db, 'a', MAINTENANT);
     expect(faites).toHaveLength(2);
     expect(enAttente(db, 'a')).toHaveLength(1);
@@ -587,7 +603,7 @@ describe('sur qui une carte tombe', () => {
     // Les autres ont encore des games à jouer : un créneau de plus chacun.
     for (const p of db.players) if (p.id !== 'alpha') p.creneauxBonus = 2;
     const alpha = db.players.find((p) => p.id === 'alpha')!;
-    pose(db, 'alpha', 'congere');
+    pose(db, 'alpha', 'baton-de-marche');
     regleCartesSansAttendre(db, 'alpha', MAINTENANT);
     expect(peutRecevoir(db, alpha)).toBe(false);
     expect(peutRecevoir(db, db.players.find((p) => p.id === 'bravo')!)).toBe(true);

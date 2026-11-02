@@ -170,8 +170,10 @@ export function FicheJoueur({
           <Chiffre
             nom="Points"
             precision={
-              t.horsGame !== 0
-                ? `dont ${t.horsGame} de Verglas`
+              t.horsGame > 0
+                ? `dont +${t.horsGame} pts bonus`
+                : t.horsGame < 0
+                  ? `dont −${-t.horsGame} de Verglas`
                 : aJoue
                   ? `moyenne ${decimal(t.averageScore)}`
                   : 'aucune game'
