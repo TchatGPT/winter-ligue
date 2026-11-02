@@ -139,20 +139,6 @@ export const CARDS: readonly CardDefinition[] = [
     cible: 'HASARD',
   },
   {
-    id: 'chocolat-chaud',
-    name: 'Chocolat Chaud',
-    subtitle: '+10 pts si Top 3',
-    rarity: 'C',
-    glyph: '☕',
-    // Se mérite : rien si la game finit hors du Top 3.
-    description: '+10 points sur ta prochaine game, si tu finis dans le Top 3.',
-    effect: { kind: 'bonus_top', top: 3, value: 10 },
-    nature: 'bonus',
-    power: 12,
-    packs: ['perso'],
-    cible: 'HASARD',
-  },
-  {
     // Quatre kills de flocons (+10 jusqu'au 02/11/2026).
     id: 'bocal-de-givre',
     name: 'Bocal de Givre',
@@ -485,6 +471,21 @@ export const CARDS: readonly CardDefinition[] = [
     effect: { kind: 'bonus_top', top: 8, value: 10 },
     nature: 'bonus',
     power: 26,
+    packs: ['perso'],
+    cible: 'HASARD',
+  },
+  {
+    // Rare depuis le 02/11/2026 (commune jusque-là).
+    id: 'chocolat-chaud',
+    name: 'Chocolat Chaud',
+    subtitle: '+10 pts si Top 3',
+    rarity: 'R',
+    glyph: '☕',
+    // Se mérite : rien si la game finit hors du Top 3.
+    description: '+10 points sur ta prochaine game, si tu finis dans le Top 3.',
+    effect: { kind: 'bonus_top', top: 3, value: 10 },
+    nature: 'bonus',
+    power: 22,
     packs: ['perso'],
     cible: 'HASARD',
   },
