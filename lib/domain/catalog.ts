@@ -365,12 +365,12 @@ export const CARDS: readonly CardDefinition[] = [
   },
   {
     // Booster Perso, ajoutée le 02/11/2026 ; « Piste Damée » jusqu'au jour même
-    // (l'identifiant reste, les tirages en base y renvoient). Huit branches, Top 8.
+    // (l'identifiant reste, les tirages en base y renvoient).
     id: 'piste-damee',
-    name: 'Rose des Glaces',
+    name: 'Piste Étoilée',
     subtitle: '+10 pts si Top 8',
     rarity: 'R',
-    glyph: '🧭',
+    glyph: '🎿',
     description: '+10 points sur ta prochaine game, si tu fais Top 8.',
     effect: { kind: 'bonus_top', top: 8, value: 10 },
     nature: 'bonus',
@@ -380,7 +380,7 @@ export const CARDS: readonly CardDefinition[] = [
   },
   {
     // Booster Perso, ajoutée le 02/11/2026, rare le jour même : plus dure à
-    // déclencher que la Rose des Glaces (Top 8), elle ne pouvait pas valoir plus.
+    // déclencher que la Piste Étoilée (Top 8), elle ne pouvait pas valoir plus.
     id: 'cime-gelee',
     name: 'Cime Gelée',
     subtitle: '+10 pts si Top 6',
