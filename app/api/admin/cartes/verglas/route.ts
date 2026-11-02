@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { toResponse } from '@/lib/api/errors';
 import { fail, guard, ok } from '@/lib/api/respond';
 import { verglasSchema } from '@/lib/api/schemas';
-import { playerIdOf } from '@/lib/auth/session';
 import { getStore } from '@/lib/db/store';
 import { LIMITS } from '@/lib/security/ratelimit';
 import { joueVerglas } from '@/lib/services/effects';
@@ -18,9 +17,9 @@ export const dynamic = 'force-dynamic';
  *
  * Le serveur vérifie tout : la carte est bien un Verglas encore gardé, la
  * victime est en lice (ni la streameuse, ni un compte inactif) et n'est pas
- * le joueur lui-même. Un membre de la modération ne joue pas le Verglas qu'il
- * garde lui-même : un autre le fait pour lui. Le journal garde qui a joué
- * quoi, sur qui.
+ * le joueur lui-même. Un membre de la modération peut jouer le Verglas qu'il
+ * garde (décidé le 02/11/2026) : la carte est sortie d'un tirage du serveur,
+ * et le journal garde qui a joué quoi, sur qui.
  */
 export async function POST(request: Request): Promise<NextResponse> {
   const g = await guard(request, {
@@ -30,13 +29,11 @@ export async function POST(request: Request): Promise<NextResponse> {
     schema: verglasSchema,
   });
   if (!g.ok) return g.response;
-  const moi = playerIdOf(g.session);
 
   try {
     const resultat = await getStore().transaction((db) => {
       const carte = db.cartesEnAttente.find((c) => c.id === g.body.carteId);
       if (!carte) return 'CARTE' as const;
-      if (moi && carte.joueurId === moi) return 'SOI' as const;
       const cible = joueursEnLice(db).find((p) => p.id === g.body.cibleId);
       if (!cible) return 'CIBLE' as const;
       const joue = joueVerglas(db, carte.id, cible);
@@ -46,9 +43,6 @@ export async function POST(request: Request): Promise<NextResponse> {
       return joue;
     });
     if (resultat === 'CARTE') return fail('INTROUVABLE', 'Ce Verglas n’est plus en main : il a déjà été joué.');
-    if (resultat === 'SOI') {
-      return fail('CONFLIT', 'Tu ne joues pas un Verglas que tu gardes toi-même : un autre membre de la modération le fera.');
-    }
     if (resultat === 'CIBLE') return fail('CONFLIT', 'Ce joueur ne peut pas recevoir ce Verglas.');
     return ok(resultat);
   } catch (error) {

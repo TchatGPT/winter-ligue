@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { toResponse } from '@/lib/api/errors';
 import { fail, guard, ok } from '@/lib/api/respond';
 import { echangeChoisiSchema } from '@/lib/api/schemas';
-import { playerIdOf } from '@/lib/auth/session';
 import type { Database } from '@/lib/db/entities';
 import { getStore } from '@/lib/db/store';
 import { getCard } from '@/lib/domain/catalog';
@@ -71,8 +70,9 @@ export async function GET(request: Request): Promise<NextResponse> {
  *
  * Le serveur vérifie tout : la carte est bien un Pacte encore gardé, son
  * porteur a assez de games, les deux games sont encore sans carte, l'autre
- * joueur est en lice. Un membre de la modération ne joue pas le Pacte qu'il
- * garde lui-même. Le journal garde qui a joué quoi, sur quelles games.
+ * joueur est en lice. Un membre de la modération peut jouer le Pacte qu'il
+ * garde (décidé le 02/11/2026) ; le journal garde qui a joué quoi, sur
+ * quelles games.
  */
 export async function POST(request: Request): Promise<NextResponse> {
   const g = await guard(request, {
@@ -82,13 +82,11 @@ export async function POST(request: Request): Promise<NextResponse> {
     schema: echangeChoisiSchema,
   });
   if (!g.ok) return g.response;
-  const moi = playerIdOf(g.session);
 
   try {
     const resultat = await getStore().transaction((db) => {
       const carte = db.cartesEnAttente.find((c) => c.id === g.body.carteId);
       if (!carte) return 'CARTE' as const;
-      if (moi && carte.joueurId === moi) return 'SOI' as const;
       const autreGame = db.games.find((x) => x.id === g.body.autreGameId);
       if (!autreGame || !joueursEnLice(db).some((p) => p.id === autreGame.playerId)) return 'AUTRE_GAME' as const;
       const joue = joueEchangeChoisi(db, carte.id, g.body.maGameId, g.body.autreGameId);
@@ -105,9 +103,6 @@ export async function POST(request: Request): Promise<NextResponse> {
       return joue;
     });
     if (resultat === 'CARTE') return fail('INTROUVABLE', 'Ce Pacte du Givre n’est plus en main : il a déjà été joué.');
-    if (resultat === 'SOI') {
-      return fail('CONFLIT', 'Tu ne joues pas un Pacte que tu gardes toi-même : un autre membre de la modération le fera.');
-    }
     if (resultat === 'TROP_TOT') return fail('CONFLIT', 'Ce joueur n’a pas encore assez de games pour jouer son Pacte.');
     if (resultat === 'MA_GAME') return fail('CONFLIT', 'Cette game du porteur porte déjà une carte, ou n’est plus là.');
     if (resultat === 'AUTRE_GAME') return fail('CONFLIT', 'Cette game de l’autre joueur ne peut pas être échangée.');

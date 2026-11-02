@@ -3,11 +3,16 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
+import { CardFrame } from '@/components/CardFrame';
 import { SnowCap } from '@/components/SnowCap';
+import { getCard } from '@/lib/domain/catalog';
 import { shortDateTime } from '@/lib/format';
 import type { RankingRow } from '@/lib/services/league';
 
 const rienAEcouter = () => () => {};
+
+/** La carte elle-même, pour l'en-tête de la fenêtre. */
+const PACTE = getCard('pacte-du-givre');
 
 /** Une game qu'on peut choisir : encore sans carte. */
 interface GameChoisissable {
@@ -56,10 +61,12 @@ function TuileGame({
  * Jouer un Pacte du Givre, pour la modération : une fenêtre à part, ouverte
  * depuis la fiche de la carte au classement.
  *
- * Trois choix, dans l'ordre où le joueur les donne : une de ses games, l'autre
- * joueur, une game de cet autre joueur — seulement des games encore sans
- * carte. En bas, ce que l'échange va donner, et un seul bouton. Le serveur
- * revérifie tout (`/api/admin/cartes/echange`).
+ * Le porteur échange une de ses games contre une game d'un autre joueur : les
+ * deux games changent de main, chacune repart avec le score de l'autre. Trois
+ * choix, dans l'ordre où le joueur les donne : une de ses games, l'autre
+ * joueur — dans une liste déroulante —, une game de cet autre joueur ;
+ * seulement des games encore sans carte. En bas, ce que l'échange va donner,
+ * et un seul bouton. Le serveur revérifie tout (`/api/admin/cartes/echange`).
  */
 export function LancerPacte({
   carteId,
@@ -172,14 +179,28 @@ export function LancerPacte({
         </button>
 
         <header className="verglas-tete">
-          <span className="pacte-glyphe" aria-hidden="true">
-            🤝
-          </span>
+          {PACTE ? (
+            <span className="pacte-carte" aria-hidden="true">
+              <CardFrame
+                cardId={PACTE.id}
+                name={PACTE.name}
+                rarity={PACTE.rarity}
+                glyph={PACTE.glyph}
+                nature={PACTE.nature}
+                largeur="96px"
+              />
+            </span>
+          ) : (
+            <span className="pacte-glyphe" aria-hidden="true">
+              🤝
+            </span>
+          )}
           <div className="min-w-0">
             <p className="verglas-surtitre">Légendaire · Pacte du Givre</p>
             <h2 className="verglas-titre">Jouer le Pacte</h2>
             <p className="verglas-sous-titre">
-              Une game de <strong>{porteur.pseudo}</strong> et une game d’un autre joueur échangent leur score.
+              <strong>{porteur.pseudo}</strong> échange une de ses games contre une game d’un autre joueur : chacune
+              prend la place de l’autre.
             </p>
           </div>
         </header>
@@ -208,7 +229,7 @@ export function LancerPacte({
           <>
             <div className="pacte-zone">
               <section>
-                <h3 className="pacte-etape">1. Une game de {porteur.pseudo}</h3>
+                <h3 className="pacte-etape">1. La game de {porteur.pseudo} à céder</h3>
                 {choix.miennes.length === 0 ? (
                   <p className="verglas-vide">Aucune game sans carte.</p>
                 ) : (
@@ -227,36 +248,35 @@ export function LancerPacte({
               </section>
 
               <section>
-                <h3 className="pacte-etape">2. L’autre joueur</h3>
-                <ul className="verglas-grille pacte-grille">
-                  {autres.map((j) => (
-                    <li key={j.id}>
-                      <button
-                        type="button"
-                        className="verglas-tuile"
-                        aria-pressed={j.id === autreId}
-                        disabled={busy}
-                        onClick={() => {
-                          setAutreId(j.id === autreId ? null : j.id);
-                          setAutreGame(null);
-                        }}
-                      >
-                        <span className="min-w-0">
-                          <span className="verglas-tuile-pseudo">{j.pseudo}</span>
-                          <span className="verglas-tuile-infos num">
-                            #{j.rank} · {j.totals.totalScore} pts
-                          </span>
-                        </span>
-                        {j.immunise && <span className="verglas-tuile-tag">Immunisé</span>}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
+                <h3 className="pacte-etape">
+                  <label htmlFor="pacte-autre">2. Le joueur avec qui échanger</label>
+                </h3>
+                {autres.length === 0 ? (
+                  <p className="verglas-vide">Aucun autre joueur n’a de game sans carte.</p>
+                ) : (
+                  <select
+                    id="pacte-autre"
+                    className="field pacte-joueur"
+                    value={autreId ?? ''}
+                    disabled={busy}
+                    onChange={(e) => {
+                      setAutreId(e.target.value || null);
+                      setAutreGame(null);
+                    }}
+                  >
+                    <option value="">Choisis un joueur…</option>
+                    {autres.map((j) => (
+                      <option key={j.id} value={j.id}>
+                        {j.pseudo} — #{j.rank} · {j.totals.totalScore} pts{j.immunise ? ' · immunisé' : ''}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </section>
 
               {autre && (
                 <section>
-                  <h3 className="pacte-etape">3. Une game de {autre.pseudo}</h3>
+                  <h3 className="pacte-etape">3. La game de {autre.pseudo} à prendre</h3>
                   <ul className="verglas-grille pacte-grille">
                     {gamesAutre.map((g) => (
                       <TuileGame

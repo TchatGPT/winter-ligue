@@ -869,7 +869,7 @@ export const CARDS: readonly CardDefinition[] = [
     subtitle: 'Échange de games',
     rarity: 'L',
     glyph: '🤝',
-    description: 'Tu la gardes. Dès ta 30e game, choisis une de tes games et une game d’un autre joueur : elles échangent leur score.',
+    description: 'Tu la gardes. Dès ta 30e game, échange une de tes games contre une game d’un autre joueur, au choix : chacune prend la place de l’autre.',
     effect: { kind: 'echange_choisi', minGames: 30 },
     nature: 'bonus',
     power: 94,

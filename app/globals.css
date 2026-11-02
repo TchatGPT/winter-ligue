@@ -17386,6 +17386,17 @@ a.adm-tuile:hover .adm-tuile-fleche {
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gold) 45%, transparent);
   font-size: 2rem;
 }
+/* L'en-tête montre la carte elle-même, comme au classement. */
+.pacte-carte {
+  display: block;
+  width: 4.5rem;
+  flex: none;
+  filter: drop-shadow(0 6px 10px rgb(0 0 0 / 0.45));
+}
+.pacte-joueur {
+  width: 100%;
+  max-width: 28rem;
+}
 .pacte-zone {
   display: grid;
   min-height: 0;

@@ -88,7 +88,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   tout de suite, hors de toute game (décidé le 19/10/2026) — son coup (`COUP_DE_VERGLAS`, hors de `CARDS`)
   s'inscrit chez elle, déjà réglé, avec ses points (`CarteEnAttente.points`), que
   `pointsHorsGame()` ajoute au total. L'immunité le pare. Jamais sur soi ; un membre de la
-  modération ne joue pas le Verglas qu'il garde.
+  modération peut jouer le Verglas qu'il garde (décidé le 02/11/2026).
 - **Les points bonus** (`kind: 'bonus_total'`, décidé le 02/11/2026) : les cartes « +N pts
   bonus » ajoutent N points au **total**, tout de suite après leur révélation, hors de
   toute game (`CarteEnAttente.points`, comme le coup du Verglas). Le classement les écrit
@@ -177,7 +177,9 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   peut-être, et c'est vérifié route par route. Exceptions, décidées par l'organisation :
   ouvrir un booster qui lui revient, puisque le tirage est fait par le serveur ; saisir ou
   modifier ses propres games — le score se calcule sur le serveur, la capture fait foi ;
-  et régler son propre compteur de Boosters Perso. Le journal garde qui a fait quoi.
+  régler son propre compteur de Boosters Perso ; et jouer le Verglas ou le Pacte du Givre
+  qu'il garde (02/11/2026), sortis d'un tirage du serveur. Le journal garde qui a fait
+  quoi.
 - **Une session dure trente jours**, prolongée par le proxy à chaque visite
   (`lib/auth/jeton.ts`), six mois au plus. La prolongation ne touche jamais `iat` :
   c'est lui que confronte la révocation.
