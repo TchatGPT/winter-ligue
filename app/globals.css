@@ -17374,7 +17374,7 @@ a.adm-tuile:hover .adm-tuile-fleche {
   color: var(--muted);
 }
 /* Le Pacte du Givre reprend la fenêtre du Verglas : trois choix empilés,
-   chacun dans sa liste, qui défile si elle est longue. */
+   chacun dans sa liste déroulante. */
 .pacte-glyphe {
   display: grid;
   width: 4.5rem;
@@ -17393,9 +17393,9 @@ a.adm-tuile:hover .adm-tuile-fleche {
   flex: none;
   filter: drop-shadow(0 6px 10px rgb(0 0 0 / 0.45));
 }
-.pacte-joueur {
+/* Les trois choix du Pacte : des listes déroulantes, pleine largeur. */
+.pacte-select {
   width: 100%;
-  max-width: 28rem;
 }
 .pacte-zone {
   display: grid;
@@ -17414,15 +17414,6 @@ a.adm-tuile:hover .adm-tuile-fleche {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--ink-2);
-}
-.pacte-grille {
-  min-height: 0;
-  max-height: 11rem;
-}
-@media (max-width: 40rem) {
-  .pacte-grille {
-    max-height: 8.5rem;
-  }
 }
 .verglas-pied {
   display: flex;

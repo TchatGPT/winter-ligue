@@ -34,26 +34,35 @@ interface Choix {
 const resume = (g: GameChoisissable) =>
   `${shortDateTime(g.jouee)} · ${g.kills} kill${g.kills > 1 ? 's' : ''}${g.placement ? ` · Top ${g.placement}` : ''}`;
 
-function TuileGame({
-  game,
-  choisie,
+/** Une liste déroulante de games : « 31 pts — 02/11 18:45 · 11 kills · Top 1 ». */
+function ChoixGame({
+  id,
+  games,
+  valeur,
   disabled,
   onChoisir,
 }: {
-  game: GameChoisissable;
-  choisie: boolean;
+  id: string;
+  games: GameChoisissable[];
+  valeur: string | null;
   disabled: boolean;
-  onChoisir: () => void;
+  onChoisir: (id: string | null) => void;
 }) {
   return (
-    <li>
-      <button type="button" className="verglas-tuile" aria-pressed={choisie} disabled={disabled} onClick={onChoisir}>
-        <span className="min-w-0">
-          <span className="verglas-tuile-pseudo num">{game.score} pts</span>
-          <span className="verglas-tuile-infos num">{resume(game)}</span>
-        </span>
-      </button>
-    </li>
+    <select
+      id={id}
+      className="field pacte-select num"
+      value={valeur ?? ''}
+      disabled={disabled}
+      onChange={(e) => onChoisir(e.target.value || null)}
+    >
+      <option value="">Choisis une game…</option>
+      {games.map((g) => (
+        <option key={g.id} value={g.id}>
+          {g.score} pts — {resume(g)}
+        </option>
+      ))}
+    </select>
   );
 }
 
@@ -64,7 +73,7 @@ function TuileGame({
  * Le porteur échange une de ses games contre une game d'un autre joueur : les
  * deux games changent de main, chacune repart avec le score de l'autre. Trois
  * choix, dans l'ordre où le joueur les donne : une de ses games, l'autre
- * joueur — dans une liste déroulante —, une game de cet autre joueur ;
+ * joueur, une game de cet autre joueur — trois listes déroulantes ;
  * seulement des games encore sans carte. En bas, ce que l'échange va donner,
  * et un seul bouton. Le serveur revérifie tout (`/api/admin/cartes/echange`).
  */
@@ -229,21 +238,13 @@ export function LancerPacte({
           <>
             <div className="pacte-zone">
               <section>
-                <h3 className="pacte-etape">1. La game de {porteur.pseudo} à céder</h3>
+                <h3 className="pacte-etape">
+                  <label htmlFor="pacte-mienne">1. La game de {porteur.pseudo} à céder</label>
+                </h3>
                 {choix.miennes.length === 0 ? (
                   <p className="verglas-vide">Aucune game sans carte.</p>
                 ) : (
-                  <ul className="verglas-grille pacte-grille">
-                    {choix.miennes.map((g) => (
-                      <TuileGame
-                        key={g.id}
-                        game={g}
-                        choisie={g.id === maGame}
-                        disabled={busy}
-                        onChoisir={() => setMaGame(g.id === maGame ? null : g.id)}
-                      />
-                    ))}
-                  </ul>
+                  <ChoixGame id="pacte-mienne" games={choix.miennes} valeur={maGame} disabled={busy} onChoisir={setMaGame} />
                 )}
               </section>
 
@@ -256,7 +257,7 @@ export function LancerPacte({
                 ) : (
                   <select
                     id="pacte-autre"
-                    className="field pacte-joueur"
+                    className="field pacte-select"
                     value={autreId ?? ''}
                     disabled={busy}
                     onChange={(e) => {
@@ -276,18 +277,16 @@ export function LancerPacte({
 
               {autre && (
                 <section>
-                  <h3 className="pacte-etape">3. La game de {autre.pseudo} à prendre</h3>
-                  <ul className="verglas-grille pacte-grille">
-                    {gamesAutre.map((g) => (
-                      <TuileGame
-                        key={g.id}
-                        game={g}
-                        choisie={g.id === autreGame}
-                        disabled={busy}
-                        onChoisir={() => setAutreGame(g.id === autreGame ? null : g.id)}
-                      />
-                    ))}
-                  </ul>
+                  <h3 className="pacte-etape">
+                    <label htmlFor="pacte-sienne">3. La game de {autre.pseudo} à prendre</label>
+                  </h3>
+                  <ChoixGame
+                    id="pacte-sienne"
+                    games={gamesAutre}
+                    valeur={autreGame}
+                    disabled={busy}
+                    onChoisir={setAutreGame}
+                  />
                 </section>
               )}
             </div>
