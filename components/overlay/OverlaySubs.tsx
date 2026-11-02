@@ -12,11 +12,16 @@ import type { SubsOverlay } from '@/lib/services/overlay';
 /**
  * Le compteur de subs du stream, toujours affiché.
  *
- * Le nombre de la saison, la jauge jusqu'au prochain palier et ce qu'il
- * rapporte, et l'évènement qui vient — ou celui qui court, avec son temps.
- * Quand le nombre monte, il compte jusqu'à sa nouvelle valeur ; quand un palier
- * tombe, une bannière dit lequel, et ce que tout le monde y gagne.
+ * À gauche, le nombre de la saison ; quand il monte, il compte jusqu'à sa
+ * nouvelle valeur, et le « +N » s'inscrit dessous — il recouvrait le texte
+ * d'à côté. À droite, les paliers — Booster Commu, Avalanche, Booster Folie,
+ * Tempête de neige — défilent l'un après l'autre (`DEFILE_MS`), chacun avec ce
+ * qu'il reste et ce qu'il fait. Quand un palier tombe, une bannière l'annonce
+ * **sous** le compteur, sans le cacher : le nombre qui monte reste à l'écran.
  */
+
+/** Le temps qu'un palier reste affiché avant le suivant. */
+const DEFILE_MS = 6000;
 
 function minutes(fin: string, maintenant: number): string {
   const s = Math.max(0, Math.round((Date.parse(fin) - maintenant) / 1000));
@@ -42,6 +47,7 @@ export function OverlaySubs({
   const [gain, setGain] = useState<{ n: number; cle: number } | null>(null);
   const [palier, setPalier] = useState<{ label: string; description: string; cle: number } | null>(null);
   const [horloge, setHorloge] = useState(() => Date.now());
+  const [tour, setTour] = useState(0);
   const precedent = useRef(initial.total);
 
   const recoit = useCallback((suivante: SubsOverlay) => {
@@ -96,16 +102,32 @@ export function OverlaySubs({
   }, [palier]);
 
   useEffect(() => {
+    if (!gain) return;
+    const t = setTimeout(() => setGain(null), 1800);
+    return () => clearTimeout(t);
+  }, [gain]);
+
+  // Les paliers défilent, l'un après l'autre.
+  const nbPaliers = vue.paliers.length;
+  useEffect(() => {
+    if (nbPaliers < 2) return;
+    const t = setInterval(() => setTour((n) => n + 1), DEFILE_MS);
+    return () => clearInterval(t);
+  }, [nbPaliers]);
+
+  useEffect(() => {
     if (vue.enCours.length === 0) return;
     const t = setInterval(() => setHorloge(Date.now()), 1000);
     return () => clearInterval(t);
   }, [vue.enCours.length]);
 
   const enCours = vue.enCours.filter((e) => Date.parse(e.endsAt) > horloge);
+  const indice = nbPaliers > 0 ? tour % nbPaliers : 0;
+  const montre = vue.paliers[indice] ?? null;
 
   return (
-    <Scene largeur={880} hauteur={260}>
-      <div className="ov-subs glass" data-palier={palier ? '' : undefined}>
+    <Scene largeur={880} hauteur={360}>
+      <div className="ov-subs glass">
         <SnowCap radius="var(--r-lg)" seed="ov-subs" epaisseur={16} />
 
         <div className="ov-subs-compte">
@@ -113,49 +135,53 @@ export function OverlaySubs({
           <strong className="ov-subs-nombre" key={gain?.cle ?? 0} data-monte={gain ? '' : undefined}>
             {flakes(affiche)}
           </strong>
-          {gain && (
-            <span className="ov-subs-gain" key={`g-${gain.cle}`}>
-              +{gain.n}
-            </span>
-          )}
+          {/* Sa place est gardée sous le nombre : rien ne bouge quand il paraît. */}
+          <span className="ov-subs-gain-place" aria-live="polite">
+            {gain && (
+              <span className="ov-subs-gain" key={`g-${gain.cle}`}>
+                +{gain.n} sub{gain.n > 1 ? 's' : ''}
+              </span>
+            )}
+          </span>
         </div>
 
         <div className="ov-subs-suite">
-          {vue.prochain && (
-            <>
+          {montre && (
+            <div className="ov-subs-defile" key={`${indice}-${montre.label}`}>
               <p className="ov-subs-prochain">
-                <strong>{vue.prochain.label}</strong> dans <b>{vue.prochain.restant}</b> sub
-                {vue.prochain.restant > 1 ? 's' : ''}
+                <strong>{montre.label}</strong> dans <b>{montre.restant}</b> sub{montre.restant > 1 ? 's' : ''}
               </p>
               <span className="ov-subs-jauge" aria-hidden="true">
-                <b style={{ width: `${Math.round(vue.prochain.progression * 100)}%` }} />
+                <b style={{ width: `${Math.round(montre.progression * 100)}%` }} />
               </span>
-              <p className="ov-subs-effet">{vue.prochain.description}</p>
-            </>
+              <p className="ov-subs-effet">{montre.description}</p>
+            </div>
           )}
-          <p className="ov-subs-evenement">
-            {enCours.length > 0 ? (
-              <>
+          <div className="ov-subs-pied">
+            {nbPaliers > 1 && (
+              <span className="ov-subs-points" aria-hidden="true">
+                {vue.paliers.map((p, i) => (
+                  <i key={p.label} data-actif={i === indice ? '' : undefined} />
+                ))}
+              </span>
+            )}
+            {enCours.length > 0 && (
+              <p className="ov-subs-evenement">
                 <span className="ov-subs-pastille" aria-hidden="true" />
                 <strong>{enCours[0].label}</strong> en cours · {minutes(enCours[0].endsAt, horloge)}
-              </>
-            ) : vue.evenement ? (
-              <>
-                <strong>{vue.evenement.label}</strong> dans {vue.evenement.restant} sub
-                {vue.evenement.restant > 1 ? 's' : ''} · {vue.evenement.resume}
-              </>
-            ) : null}
-          </p>
-        </div>
-
-        {palier && (
-          <div className="ov-subs-palier" key={palier.cle}>
-            <span>Palier franchi</span>
-            <strong>{palier.label}</strong>
-            <em>{palier.description}</em>
+              </p>
+            )}
           </div>
-        )}
+        </div>
       </div>
+
+      {palier && (
+        <div className="ov-subs-palier glass" key={palier.cle}>
+          <span>Palier franchi</span>
+          <strong>{palier.label}</strong>
+          <em>{palier.description}</em>
+        </div>
+      )}
     </Scene>
   );
 }

@@ -398,6 +398,39 @@ export function paliersDuCompteur(totalSubs: number, commuDepuis: number | null 
   return paliers.sort((a, b) => a.every - b.every);
 }
 
+/** Un palier tel que l'overlay du compteur le montre : ce qu'il fait, et ce qu'il reste. */
+export interface PalierAffiche {
+  label: string;
+  /** Ce qu'il fait, en une phrase. */
+  description: string;
+  restant: number;
+  progression: number;
+  /** Le Booster Commu accéléré par une Tempête. */
+  accelere: boolean;
+}
+
+/**
+ * Les paliers du compteur, du plus proche au plus lointain, avec leur phrase :
+ * l'overlay des subs les fait défiler. `tempeteA` : le total qui a ouvert la
+ * Tempête en cours, s'il y en a une.
+ */
+export function paliersAffiches(total: number, tempeteA: number | null): PalierAffiche[] {
+  return paliersDuCompteur(total, tempeteA === null ? null : departAccelere(tempeteA))
+    .map((p) => ({
+      label: p.label,
+      description:
+        p.genre === 'PACK'
+          ? p.accelere
+            ? `Tempête en cours : un Booster Commu tous les ${p.every} subs.`
+            : (SUB_MILESTONES.find((m) => m.packId === p.packId)?.description ?? '')
+          : (p.explication ?? ''),
+      restant: p.remaining,
+      progression: p.progress,
+      accelere: p.accelere === true,
+    }))
+    .sort((a, b) => a.restant - b.restant);
+}
+
 /** Prochain palier atteint pour chaque type, à partir d'un total de subs. */
 export function nextMilestone(
   totalSubs: number,

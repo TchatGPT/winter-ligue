@@ -5,7 +5,7 @@ import { cleDerivee } from '@/lib/auth/session';
 import { getStore, type FluxOverlay } from '@/lib/db/store';
 import { chaineDeLaLigue } from '@/lib/auth/twitch';
 import { GEMME_DU_PACK, getCard, getPack, joueursTires, packArt } from '@/lib/domain/catalog';
-import { nextMilestone, prochainEvenement } from '@/lib/domain/rules';
+import { nextMilestone, type PalierAffiche, paliersAffiches, prochainEvenement } from '@/lib/domain/rules';
 import { estLaStreameuse } from '@/lib/domain/streameuse';
 import type { PackId, Rarity } from '@/lib/domain/types';
 
@@ -93,6 +93,8 @@ export interface DuelOverlay {
 
 export interface SubsOverlay {
   total: number;
+  /** Tous les paliers, du plus proche au plus lointain : l'overlay les fait défiler. */
+  paliers: PalierAffiche[];
   prochain: { label: string; description: string; restant: number; progression: number } | null;
   evenement: { label: string; resume: string; restant: number } | null;
   enCours: { label: string; endsAt: string }[];
@@ -166,6 +168,7 @@ export function vueSubs(flux: FluxOverlay): SubsOverlay {
   const evenement = prochainEvenement(flux.totalSubs);
   return {
     total: flux.totalSubs,
+    paliers: paliersAffiches(flux.totalSubs, flux.tempeteA),
     prochain: prochain
       ? {
           label: prochain.milestone.label,
@@ -219,4 +222,5 @@ const FLUX_VIDE: FluxOverlay = {
   joueurs: [],
   duels: [],
   evenements: [],
+  tempeteA: null,
 };

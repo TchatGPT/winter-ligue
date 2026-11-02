@@ -10006,6 +10006,7 @@
   /* La matière des plaques d'overlay : le verre du site, épaissi. */
   .ov-duel-plaque.glass,
   .ov-subs.glass,
+  .ov-subs-palier.glass,
   .ov-legende.glass,
   .ov-refus.glass {
     background: linear-gradient(160deg, rgb(24 58 96 / 0.9) 0%, rgb(7 24 48 / 0.93) 100%);
@@ -10724,9 +10725,14 @@
 
   /* --------------------------------- Subs -------------------------------- */
 
+  /* Le compteur en haut du plateau ; dessous, la place de la bannière d'un
+     palier franchi, transparente le reste du temps. */
   .ov-subs {
     position: absolute;
-    inset: 20px 16px 16px;
+    top: 20px;
+    right: 16px;
+    left: 16px;
+    height: 224px;
     display: flex;
     align-items: center;
     gap: 34px;
@@ -10772,28 +10778,44 @@
       transform: scale(1);
     }
   }
+  /* Le « +N », sous le nombre, dans une place gardée : il ne recouvre plus
+     rien, et rien ne bouge quand il paraît. */
+  .ov-subs-gain-place {
+    display: grid;
+    height: 34px;
+    place-items: center;
+  }
   .ov-subs-gain {
-    position: absolute;
-    top: 44px;
-    right: -44px;
+    padding: 2px 14px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--aurora) 18%, transparent);
+    box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--aurora) 60%, transparent);
     font-family: var(--font-display);
-    font-size: 34px;
+    font-size: 22px;
     font-weight: 900;
+    line-height: 1.2;
+    white-space: nowrap;
     color: var(--aurora);
-    animation: ov-gain 1.6s ease-out both;
+    animation: ov-gain 1.8s ease-out both;
   }
   @keyframes ov-gain {
     0% {
       opacity: 0;
-      transform: translateY(20px) scale(0.7);
+      transform: translateY(10px) scale(0.7);
     }
-    20% {
+    15% {
       opacity: 1;
-      transform: translateY(0) scale(1.1);
+      transform: translateY(0) scale(1.08);
+    }
+    25% {
+      transform: scale(1);
+    }
+    80% {
+      opacity: 1;
     }
     100% {
       opacity: 0;
-      transform: translateY(-40px) scale(1);
+      transform: translateY(-6px);
     }
   }
   .ov-subs-suite {
@@ -10801,7 +10823,53 @@
     min-width: 0;
     flex: 1;
     flex-direction: column;
+    gap: 10px;
+  }
+  /* Un palier à la fois : il entre par la droite, le suivant le remplace. */
+  .ov-subs-defile {
+    display: flex;
+    flex-direction: column;
     gap: 8px;
+    animation: ov-defile 0.55s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+  }
+  @keyframes ov-defile {
+    from {
+      opacity: 0;
+      transform: translateX(28px);
+    }
+  }
+  .ov-subs-defile .ov-subs-jauge > b {
+    transform-origin: left;
+    animation: ov-jauge 0.9s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+  }
+  @keyframes ov-jauge {
+    from {
+      transform: scaleX(0);
+    }
+  }
+  .ov-subs-pied {
+    display: flex;
+    min-height: 26px;
+    align-items: center;
+    gap: 18px;
+  }
+  .ov-subs-points {
+    display: flex;
+    gap: 8px;
+  }
+  .ov-subs-points > i {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--ink) 22%, transparent);
+    transition:
+      background-color 0.3s ease,
+      width 0.3s ease;
+  }
+  .ov-subs-points > i[data-actif] {
+    width: 26px;
+    border-radius: 999px;
+    background: var(--aurora);
   }
   .ov-subs-prochain {
     font-family: var(--font-display);
@@ -10856,58 +10924,71 @@
     background: var(--aurora);
     animation: ov-appel 1.4s ease-in-out infinite;
   }
+  /* La bannière d'un palier franchi, sous le compteur : elle glisse de
+     dessous la plaque, et la laisse entière à l'écran. */
   .ov-subs-palier {
     position: absolute;
-    inset: 0;
-    z-index: 2;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-    border-radius: inherit;
-    text-align: center;
-    background: linear-gradient(160deg, rgb(20 88 96) 0%, rgb(7 30 52) 100%);
+    top: 254px;
+    right: 40px;
+    left: 40px;
+    height: 92px;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    align-content: center;
+    column-gap: 20px;
+    padding: 0 28px;
+    border-radius: var(--r-md);
     animation: ov-palier 6s ease both;
   }
-  .ov-subs-palier span {
+  .ov-subs-palier.glass {
+    background: linear-gradient(160deg, rgb(20 88 96 / 0.95) 0%, rgb(7 30 52 / 0.95) 100%);
+  }
+  .ov-subs-palier > span {
+    grid-column: 1 / -1;
     font-family: var(--font-display);
-    font-size: 18px;
+    font-size: 15px;
     font-weight: 800;
     letter-spacing: 0.3em;
     text-transform: uppercase;
     color: var(--aurora);
   }
-  .ov-subs-palier strong {
+  .ov-subs-palier > strong {
     font-family: var(--font-display);
-    font-size: 64px;
+    font-size: 38px;
+    white-space: nowrap;
     font-weight: 900;
     line-height: 1;
     text-transform: uppercase;
     color: var(--frost);
   }
-  .ov-subs-palier em {
-    font-size: 21px;
+  .ov-subs-palier > em {
+    align-self: center;
+    overflow: hidden;
+    font-size: 17px;
+    line-height: 1.25;
     font-style: normal;
     color: var(--ink-2);
   }
   @keyframes ov-palier {
     0% {
       opacity: 0;
-      transform: scale(0.9);
+      transform: translateY(-40px);
     }
-    8% {
+    9% {
       opacity: 1;
-      transform: scale(1.03);
+      transform: translateY(4px);
     }
     14% {
-      transform: scale(1);
+      transform: translateY(0);
     }
     88% {
       opacity: 1;
+      transform: translateY(0);
     }
     100% {
       opacity: 0;
+      transform: translateY(-20px);
     }
   }
 

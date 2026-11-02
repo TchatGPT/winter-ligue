@@ -106,6 +106,11 @@ export interface FluxOverlay {
   joueurs: { pseudo: string; slug: string; twitchLogin: string | null }[];
   duels: { id: string; hote: string; mise: number; creeA: string }[];
   evenements: { label: string; endsAt: string }[];
+  /**
+   * Le total qui a ouvert la Tempête de neige en cours, s'il y en a une : le
+   * Booster Commu compte alors son palier accéléré depuis lui.
+   */
+  tempeteA: number | null;
 }
 
 /** Ce qu'un overlay remonte au plus par lecture : il les joue l'un après l'autre. */
@@ -303,6 +308,10 @@ class JsonFileStore implements Store {
         .filter((e) => e.endsAt > maintenant)
         .slice(0, 2)
         .map((e) => ({ label: e.label, endsAt: e.endsAt })),
+      tempeteA:
+        db.evenements
+          .filter((e) => e.kind === 'COMMU_ACCELERE' && e.startsAt <= maintenant && e.endsAt > maintenant)
+          .sort((a, b) => b.startsAt.localeCompare(a.startsAt))[0]?.declencheA ?? null,
     };
   }
 
@@ -372,6 +381,7 @@ interface DocOverlay {
   joueurs: { pseudo: string; slug: string; twitch_login: string | null }[];
   duels: { id: string; mise: number; le: string; hote: string }[];
   evenements: { label: string; fin: string }[];
+  tempete: number | null;
 }
 
 /** La base est-elle sur cette machine ? Seule une base locale se passe de TLS. */
@@ -693,7 +703,11 @@ class PostgresStore implements Store {
                limit ${OVERLAY_LOT}) x), '[]'::json),
           'evenements', coalesce((
             select json_agg(x) from (
-              select nom as label, fin from evenements where fin > now() order by fin desc limit 2) x), '[]'::json)
+              select nom as label, fin from evenements where fin > now() order by fin desc limit 2) x), '[]'::json),
+          'tempete', (
+            select declenche_a from evenements
+             where type = 'COMMU_ACCELERE' and debut <= now() and fin > now()
+             order by debut desc limit 1)
         ) as doc`;
       const doc = ligne.doc;
       const iso = (v: string) => new Date(v).toISOString();
@@ -713,6 +727,7 @@ class PostgresStore implements Store {
         joueurs: (doc.joueurs ?? []).map((j) => ({ pseudo: j.pseudo, slug: j.slug, twitchLogin: j.twitch_login })),
         duels: doc.duels.map((d) => ({ id: d.id, hote: d.hote, mise: d.mise, creeA: iso(d.le) })),
         evenements: doc.evenements.map((e) => ({ label: e.label, endsAt: iso(e.fin) })),
+        tempeteA: doc.tempete ?? null,
       };
     });
   }

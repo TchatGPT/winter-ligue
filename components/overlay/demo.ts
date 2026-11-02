@@ -1,5 +1,5 @@
 import { CARDS, GEMME_DU_PACK, getPack, joueursTires, packArt } from '@/lib/domain/catalog';
-import { nextMilestone, prochainEvenement } from '@/lib/domain/rules';
+import { nextMilestone, paliersAffiches, prochainEvenement } from '@/lib/domain/rules';
 import type { PackId } from '@/lib/domain/types';
 import type { BoosterOverlay, DuelOverlay, SubsOverlay } from '@/lib/services/overlay';
 
@@ -68,6 +68,7 @@ export function vueSubsDemo(total: number, enCours: SubsOverlay['enCours'] = [])
   const evenement = prochainEvenement(total);
   return {
     total,
+    paliers: paliersAffiches(total, null),
     prochain: prochain
       ? {
           label: prochain.milestone.label,

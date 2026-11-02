@@ -142,6 +142,7 @@ describe('le tirage que voit l’overlay', () => {
     ],
     duels: [],
     evenements: [],
+    tempeteA: null,
   });
 
   it('déroule le joueur tiré parmi les joueurs en lice, sans la streameuse', () => {

@@ -28,9 +28,9 @@ const OVERLAYS: { id: IdOverlay; titre: string; aide: string; largeur: number; h
   {
     id: 'subs',
     titre: 'Compteur de subs',
-    aide: 'Toujours affiché : les subs de la saison, le prochain palier et ce qu’il rapporte, l’évènement qui vient.',
+    aide: 'Toujours affiché : les subs de la saison, et les paliers qui défilent avec ce qu’il reste. Un palier franchi s’annonce en dessous.',
     largeur: 880,
-    hauteur: 260,
+    hauteur: 360,
   },
 ];
 
