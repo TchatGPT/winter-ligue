@@ -31,6 +31,7 @@ import { newId } from '@/lib/db/store';
 import { getCard, getPack, joueursTires, momentDe, PACKS } from '@/lib/domain/catalog';
 import { pick, tirePack } from '@/lib/domain/rng';
 import {
+  ACHAT_PERSO,
   chanceDe,
   packsPersoAcquis,
   poidsAvecChance,
@@ -48,7 +49,7 @@ import {
   type Rarity,
 } from '@/lib/domain/types';
 import { carteQuiAttend, gamesSansCarte, regleCartesSansAttendre } from './effects';
-import { audit } from './ledger';
+import { audit, debit } from './ledger';
 import { aJoueToutesSesGames, gamesOf, pointsHorsGame } from './league';
 
 export class PackError extends Error {
@@ -64,7 +65,8 @@ export class PackError extends Error {
       | 'STREAMEUSE'
       | 'AUCUN_DU'
       | 'AUCUN_BENEFICIAIRE'
-      | 'CARTE_EN_ATTENTE',
+      | 'CARTE_EN_ATTENTE'
+      | 'FLOCONS_INSUFFISANTS',
   ) {
     super(message);
     this.name = 'PackError';
@@ -162,6 +164,40 @@ export function ajoutePackDu(
   };
   db.packsDus.push(du);
   return du;
+}
+
+/**
+ * Un Booster Perso acheté avec des flocons (`ACHAT_PERSO`) : le prix est
+ * débité au grand livre, et le booster mis en file, à ouvrir comme les
+ * autres — avec la chance du solde qui reste. À appeler dans une transaction.
+ *
+ * Le navigateur n'envoie qu'une clé d'achat, tirée à l'ouverture de la
+ * fenêtre : une requête rejouée avec la même clé n'achète pas deux fois. Le
+ * prix, le solde et le droit d'acheter se décident ici.
+ */
+export function acheteBoosterPerso(
+  db: Database,
+  joueurId: string,
+  cle: string,
+): { solde: number; dejaAchete: boolean } {
+  const joueur = db.players.find((p) => p.id === joueurId && p.active);
+  if (!joueur) throw new PackError('Joueur introuvable.', 'JOUEUR_INTROUVABLE');
+  if (estLaStreameuse(joueur, chaineDeLaLigue())) {
+    throw new PackError('La streameuse ne tire pas de cartes.', 'STREAMEUSE');
+  }
+  if (db.ledger.some((l) => l.playerId === joueurId && l.reason === 'ACHAT_BOOSTER' && l.refId === cle)) {
+    return { solde: joueur.snowflakes, dejaAchete: true };
+  }
+  const { prix } = ACHAT_PERSO;
+  if (joueur.snowflakes < prix) {
+    throw new PackError(
+      `Il te manque ${(prix - joueur.snowflakes).toLocaleString('fr-FR')} ❄ pour un Booster Perso.`,
+      'FLOCONS_INSUFFISANTS',
+    );
+  }
+  debit(db, joueurId, prix, 'ACHAT_BOOSTER', cle);
+  ajoutePackDu(db, 'perso', joueurId, `acheté ${prix.toLocaleString('fr-FR')} flocons`);
+  return { solde: joueur.snowflakes, dejaAchete: false };
 }
 
 /**

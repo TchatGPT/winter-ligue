@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
+import { AchatBooster } from '@/components/AchatBooster';
 import { CadeauDuJour } from '@/components/CadeauDuJour';
 import { CodeCadeau } from '@/components/CodeCadeau';
 import { IconQuitter } from '@/components/icons';
@@ -67,11 +68,13 @@ export function SessionBadge({
   if (stacked) {
     return (
       <div className="space-y-3">
-        {/* La capsule du solde, la même que les pastilles de stats du hero. */}
+        {/* La capsule du solde, la même que les pastilles de stats du hero.
+            Touchée, elle propose un Booster Perso contre des flocons. */}
         {balance !== null && (
-          <div
-            className="glass glass-soft flex flex-col items-center px-2 py-3 text-center"
-            title="Tes flocons — la monnaie de la saison"
+          <AchatBooster
+            solde={balance}
+            className="solde-capsule glass glass-soft flex w-full flex-col items-center px-2 py-3 text-center"
+            title="Tes flocons — échange-les contre un Booster Perso"
           >
             <span className="num block font-display text-[20px] leading-none font-black text-ink">
               <span className="mr-1 text-[15px] text-ice" aria-hidden="true">
@@ -82,7 +85,7 @@ export function SessionBadge({
             <span className="mt-1.5 block text-[13px] tracking-[0.12em] text-faint uppercase">
               Flocons
             </span>
-          </div>
+          </AchatBooster>
         )}
         {cadeau && <CadeauDuJour etat={cadeau} variante="tuile" />}
         {balance !== null && <CodeCadeau variante="tuile" />}
@@ -115,8 +118,14 @@ export function SessionBadge({
           className="flex items-center gap-1.5 rounded-full border border-white/15 bg-white/8 py-1 pr-1 pl-3 font-display text-sm font-bold text-ice max-sm:gap-2"
           title="Tes flocons — la monnaie de la saison"
         >
-          <span aria-hidden="true">❄</span>
-          <span className="num">{num(balance)}</span>
+          <AchatBooster
+            solde={balance}
+            className="solde-pastille flex items-center gap-1.5"
+            title="Tes flocons — échange-les contre un Booster Perso"
+          >
+            <span aria-hidden="true">❄</span>
+            <span className="num">{num(balance)}</span>
+          </AchatBooster>
           {cadeau && <CadeauDuJour etat={cadeau} variante="pastille" />}
           <CodeCadeau variante="pastille" />
         </span>

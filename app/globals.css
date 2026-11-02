@@ -5555,6 +5555,80 @@
     color: var(--danger);
   }
 
+  /* ---- Le solde du menu, qu'on touche pour un Booster Perso (components/AchatBooster.tsx) ---- */
+  .solde-capsule {
+    cursor: pointer;
+    transition:
+      transform 0.18s ease,
+      border-color 0.18s ease;
+  }
+  .solde-capsule:hover,
+  .solde-capsule:focus-visible {
+    border-color: var(--glass-edge-lit);
+    transform: translateY(-1px);
+  }
+  .solde-pastille {
+    cursor: pointer;
+  }
+  .achat-carte {
+    max-width: 28rem;
+  }
+  .achat-tete {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding-right: 2.5rem;
+  }
+  .achat-visuel {
+    width: 4.5rem;
+    height: auto;
+    flex-shrink: 0;
+    border-radius: 0.6rem;
+    box-shadow: var(--lift-1);
+  }
+  .achat-compte {
+    display: grid;
+    gap: 0.5rem;
+    margin-top: 1.1rem;
+    padding: 0.85rem 1rem;
+    border: 1px solid var(--glass-edge);
+    border-radius: var(--r-sm);
+    background: var(--glass-1);
+  }
+  .achat-compte > div {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+  .achat-compte dt {
+    font-size: 0.875rem;
+    color: var(--muted);
+  }
+  .achat-compte dd {
+    font-family: var(--font-display);
+    font-size: 1.125rem;
+    font-weight: 800;
+    color: var(--ink);
+    white-space: nowrap;
+  }
+  .achat-fleche {
+    margin-inline: 0.4rem;
+    color: var(--faint);
+  }
+  .achat-avertissement {
+    margin-top: 0.85rem;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    color: var(--ink-2);
+  }
+  .achat-avertissement strong {
+    color: var(--ink);
+  }
+  .achat-avertissement[data-kind='manque'] strong {
+    color: var(--danger);
+  }
+
   /* ---- L'arène : la course des boules de neige ---- */
   .arene {
     container-type: inline-size;

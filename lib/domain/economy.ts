@@ -56,7 +56,9 @@ export type LedgerReason =
   /** Le cadeau du jour ; la référence est le jour, à Paris. */
   | 'CADEAU_DU_JOUR'
   /** Les flocons d'une Avalanche, versés à tous ; la référence est l'évènement. */
-  | 'AVALANCHE';
+  | 'AVALANCHE'
+  /** Un Booster Perso acheté ; la référence est la clé d'achat, tirée par l'écran. */
+  | 'ACHAT_BOOSTER';
 
 /**
  * Vérifie qu'un débit est possible. On refuse tout solde négatif : c'est la

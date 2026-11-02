@@ -139,6 +139,11 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - **Le cadeau du jour** verse 40 ❄ par jour et, le septième jour d'affilée, met un
   Booster Perso en file au lieu de flocons (`boosterDuJour`, décidé le 02/11/2026) ;
   ce jour-là reste ouvert à solde plein. Il s'ouvre dès l'inscription, sans game.
+- **Un Booster Perso s'achète 5 000 ❄** (`ACHAT_PERSO`, décidé le 02/11/2026), depuis le
+  solde du menu (`AchatBooster`, `/api/achat-booster`, `acheteBoosterPerso`) : le prix
+  passe au grand livre (`debit`, `ACHAT_BOOSTER`, la clé d'achat en référence — une même
+  clé n'achète qu'une fois) et le booster est mis en file. Les flocons dépensés font
+  baisser la chance : la fenêtre montre la chance avant et après, avant l'achat.
 - **Une carte n'a aucune valeur en flocons** : elle ne s'achète, ne s'échange ni ne se
   revend — ni cote, ni marché, ni collection, ni exemplaires en réserve. Elle se joue sur
   une game, puis disparaît.

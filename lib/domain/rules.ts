@@ -83,9 +83,9 @@ export const DEFAULT_MAX_GAMES_PER_PLAYER = 60;
  * versent plus : ils font tomber des boosters de la ligue et des évènements
  * (voir SUBS plus bas), pour tout le monde à la fois.
  *
- * Ils servent à deux choses : se miser dans les affrontements, et améliorer
- * les taux de rareté quand un pack s'ouvre pour soi — voir `CHANCE`. Ils ne
- * s'échangent contre rien d'autre.
+ * Ils servent à trois choses : se miser dans les affrontements, améliorer
+ * les taux de rareté quand un pack s'ouvre pour soi — voir `CHANCE` —, et
+ * s'échanger contre un Booster Perso (`ACHAT_PERSO`). Rien d'autre.
  */
 export const ECONOMY = {
   /** Flocons gagnés par kill. */
@@ -526,9 +526,10 @@ export const WEIGHT_TOTAL = 100_000;
  * et l'ultra rare de 8 % à 32 %. Un joueur riche tire mieux, il ne tire pas à
  * coup sûr, et les flocons ne s'achètent pas : ils se gagnent en jouant.
  *
- * Les flocons ne sont **pas dépensés** : les mêmes servent à miser dans les
- * affrontements. Tenir son solde pour tirer mieux, ou le risquer pour le
- * doubler, c'est le seul arbitrage que la monnaie propose.
+ * Ouvrir un booster ne dépense pas de flocons : les mêmes servent à miser
+ * dans les affrontements. Tenir son solde pour tirer mieux, le risquer pour
+ * le doubler, ou le dépenser pour un Booster Perso de plus (`ACHAT_PERSO`),
+ * au prix de sa chance : c'est tout l'arbitrage que la monnaie propose.
  *
  * Les Boosters Commu et Folie ne s'ouvrent pour personne : aucune chance ne
  * s'y applique.
@@ -740,4 +741,14 @@ export const CADEAU_DU_JOUR = {
 export const JOKERS = {
   depart: 3,
   max: 5,
+} as const;
+
+/**
+ * Un Booster Perso contre des flocons, depuis le solde du menu (décidé le
+ * 02/11/2026). Le prix est dépensé : le solde baisse, et la chance aux
+ * boosters avec lui (`PALIERS_CHANCE`) — l'écran le dit avant l'achat. Ce
+ * qu'on gagne en cartes, on le perd en taux.
+ */
+export const ACHAT_PERSO = {
+  prix: 5_000,
 } as const;
