@@ -447,14 +447,14 @@ export const CARDS: readonly CardDefinition[] = [
     cible: 'HASARD',
   },
   {
-    // Booster Perso, ajoutée le 02/11/2026.
+    // Booster Perso, ajoutée le 02/11/2026 (×1,4 et non ×1,5).
     id: 'souffle-polaire',
     name: 'Souffle Polaire',
-    subtitle: 'Game ×1,5',
+    subtitle: 'Game ×1,4',
     rarity: 'R',
     glyph: '💨',
-    description: 'Ta prochaine game compte ×1,5 : kills et top.',
-    effect: { kind: 'multiplicateur_game', value: 1.5 },
+    description: 'Ta prochaine game compte ×1,4 : kills et top.',
+    effect: { kind: 'multiplicateur_game', value: 1.4 },
     nature: 'bonus',
     power: 46,
     packs: ['perso'],
