@@ -118,27 +118,6 @@ export function SpinReel({
     ),
   );
 
-  /**
-   * La meilleure carte du lot, et la bande qui la porte.
-   *
-   * Une seule fête par ouverture, à l'arrêt de cette bande-là. Cinq fanfares de
-   * plusieurs secondes à cent millisecondes d'intervalle s'empileraient en
-   * bouillie, et la meilleure carte se noierait au milieu des autres au lieu
-   * d'être ce qu'on retient.
-   */
-  const meilleure = useMemo(() => {
-    let index = 0;
-    let rang = -1;
-    gagnantes.forEach((carte, i) => {
-      const r = RARITY_ORDER[carte.rarity as Rarity] ?? 0;
-      if (r > rang) {
-        rang = r;
-        index = i;
-      }
-    });
-    return { index, rang: Math.max(0, rang) };
-  }, [gagnantes]);
-
   const cadre = useRef<HTMLDivElement>(null);
 
   /*
@@ -168,8 +147,6 @@ export function SpinReel({
     relances,
     duree,
     courbe,
-    rang: meilleure.rang,
-    bandeMeilleure: meilleure.index,
     sourdine,
     onFini,
   });

@@ -117,8 +117,6 @@ export function RailPack({
     duree,
     courbe: COURBE_MESUREE,
     axe: 'x',
-    rang,
-    bandeMeilleure: 0,
     sourdine,
     onFini,
   });

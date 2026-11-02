@@ -89,9 +89,9 @@ Six échantillons dans `public/sons/`. Durées décodées :
 | `box-opening-spin-tick` | 0,132 s | une dent du cliquet      |
 | `common`                | 0,784 s | le claquement d'un arrêt |
 | `spin-bait`             | 5,747 s | plus joué (trahissait la rareté) |
-| `rare`                  | 5,642 s | la fête, rare et +       |
-| `ultra_rare`            | 3,762 s | la fête, ultra rare      |
-| `legendary`             | 3,762 s | la fête, légendaire      |
+| `rare`                  | 5,642 s | plus joué (idem)         |
+| `ultra_rare`            | 3,762 s | plus joué (idem)         |
+| `legendary`             | 3,762 s | plus joué (idem)         |
 
 Le cliquet ne porte que **40 ms de son utile**, suivies de 92 ms de silence
 numérique : c'est ce qui détermine à partir de quelle cadence les dents se

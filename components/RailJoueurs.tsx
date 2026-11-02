@@ -54,8 +54,6 @@ export function RailJoueurs({
     duree: DUREE_TIRAGE_JOUEUR,
     courbe: COURBE_MESUREE,
     axe: 'x',
-    rang: 0,
-    bandeMeilleure: 0,
     sourdine,
     onFini,
   });

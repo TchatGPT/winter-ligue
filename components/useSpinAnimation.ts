@@ -7,7 +7,6 @@ import {
   programme,
   programmeCrans,
   reveilleSon,
-  sonDeFete,
 } from '@/components/bruitage';
 import {
   type Axe,
@@ -229,10 +228,6 @@ export interface ReglagesRail {
   courbe?: Courbe;
   /** L'axe du défilement. Vertical par défaut, horizontal pour un pack. */
   axe?: Axe;
-  /** Le rang de rareté le plus haut du lot : c'est lui qui décide de la fanfare. */
-  rang: number;
-  /** Quelle bande porte cette meilleure carte : la fanfare tombe à son arrêt. */
-  bandeMeilleure: number;
   /**
    * Ce rail tourne sans un bruit, et ne touche pas au contexte audio.
    *
@@ -256,8 +251,6 @@ export function useSpinAnimation({
   duree,
   courbe = COURBE_MESUREE,
   axe = 'y',
-  rang,
-  bandeMeilleure,
   sourdine = false,
   onFini,
 }: ReglagesRail): void {
@@ -563,7 +556,6 @@ export function useSpinAnimation({
       if (t0Audio === null) return;
 
       const arretDe = (i: number) => t0Audio + dureesVues[i] / 1000;
-      const fete = sonDeFete(rang);
 
       if (!direct) {
         // Le claquement du jeton : la colonne s'arrête une première fois, et il
@@ -595,12 +587,10 @@ export function useSpinAnimation({
         // Chaque rouleau garde en revanche son claquement : c'est l'évènement
         // qu'on voit, et c'est lui qui fait des cinq arrêts cinq moments.
         for (let i = 0; i < courses.length; i += 1) programme('commun', arretDe(i));
-        // Plus de montée avant l'arrêt : elle ne partait que pour une rare ou
-        // mieux, et trahissait la carte avant qu'elle ne se pose. Pendant la
-        // course, toutes les ouvertures sonnent pareil.
+        // Rien d'autre : ni montée avant l'arrêt, ni fanfare à l'arrêt. Elles
+        // dépendaient de la rareté, et la trahissaient avant que la carte ne
+        // se lise. Toutes les ouvertures sonnent pareil.
       }
-
-      if (fete) programme(fete, arretDe(bandeMeilleure));
     });
 
     /*
@@ -652,12 +642,12 @@ export function useSpinAnimation({
       minuteries.forEach(clearTimeout);
       for (const course of courses) course.cancel();
       // Le contexte audio survit au démontage : sans ce ménage, une trentaine de
-      // dents et une fanfare tomberaient dans le vide après le départ du joueur.
+      // dents tomberaient dans le vide après le départ du joueur.
       // Un rail en sourdine n'y touche pas : il n'a rien programmé, et couperait
       // le son de celui qui tourne à côté de lui.
       if (!sourdine) arreteTout();
     };
-  }, [cadre, bandes, tuiles, relances, duree, courbe, axe, rang, bandeMeilleure, sourdine]);
+  }, [cadre, bandes, tuiles, relances, duree, courbe, axe, sourdine]);
 
   // Le contexte audio se réveille au clic, et l'ouverture en est un. Les
   // écouteurs globaux couvrent le reste, mais un appel explicite ici garantit

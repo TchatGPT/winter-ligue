@@ -66,8 +66,8 @@ export function RailBanc() {
   const lance = useCallback(
     (combien: number, palier: Rarity) => {
       reveilleSon();
-      // La meilleure carte au milieu, pour vérifier que la fanfare tombe bien à
-      // l'arrêt de sa colonne et non à celui de la dernière.
+      // La meilleure carte au milieu, pour vérifier que son halo s'allume bien
+      // sur sa colonne.
       const milieu = Math.floor(combien / 2);
       setGagnantes(
         Array.from({ length: combien }, (_, i) => carteDe(i === milieu ? palier : 'C')),

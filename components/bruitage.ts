@@ -21,15 +21,17 @@
  *
  * ## Les échantillons
  *
- * Cinq fichiers dans `public/sons/`, durées décodées :
+ * Deux fichiers dans `public/sons/`, durées décodées :
  *
  * | fichier                     | durée   | son utile | rôle                     |
  * | --------------------------- | ------- | --------- | ------------------------ |
  * | `box-opening-spin-tick`     | 0,132 s | **40 ms** | une dent du cliquet      |
  * | `common`                    | 0,784 s |           | le claquement d'un arrêt |
- * | `rare`                      | 5,642 s |           | la fête, rare            |
- * | `ultra_rare`                | 3,762 s |           | la fête, ultra rare      |
- * | `legendary`                 | 3,762 s |           | la fête, légendaire      |
+ *
+ * Plus aucun son ne dépend de la rareté (02/11/2026) : la montée partait pour
+ * une rare ou mieux pendant la course, et chaque rareté avait sa fanfare à
+ * l'arrêt. On entendait la carte avant de la lire. Toutes les ouvertures
+ * sonnent désormais pareil, et c'est l'écran qui annonce la rareté.
  *
  * Le cliquet ne porte que quarante millisecondes de son utile, suivies de
  * quatre-vingt-douze de silence numérique : c'est ce qui détermine à partir de
@@ -37,14 +39,9 @@
  * se recouvrent — d'où le grondement du départ.
  */
 
-import { RARITY_ORDER } from '@/lib/domain/rules';
-
 const SONS = {
   cran: '/sons/box-opening-spin-tick.mp3',
   commun: '/sons/common.mp3',
-  rare: '/sons/rare.mp3',
-  ultra: '/sons/ultra_rare.mp3',
-  legendaire: '/sons/legendary.mp3',
 } as const;
 
 export type NomSon = keyof typeof SONS;
@@ -70,21 +67,15 @@ export type NomSon = keyof typeof SONS;
  * allait donc dans le mauvais sens : il baissait encore le fichier déjà le plus
  * faible, et le cliquet sortait dix-huit décibels sous la fanfare.
  *
- * Chaque gain est le produit d'une **normalisation** vers `ultra_rare` et d'un
- * **écart de rôle** en décibels, seule partie discutable : le cliquet à −8 dB
- * parce qu'il revient trente-sept fois et doit être la texture, pas le sujet ;
- * le claquement à −4 ; les fanfares à 0.
- *
- * La montée (`spin-bait`) n'est plus jouée depuis le 02/11/2026 : elle ne
- * partait que pour une rare ou mieux, pendant que le rail tournait encore, et
- * annonçait donc la rareté avant la carte.
+ * Chaque gain est le produit d'une **normalisation** vers `ultra_rare` (une
+ * fanfare retirée depuis, gardée comme référence pour ne pas changer le
+ * niveau d'ensemble) et d'un **écart de rôle** en décibels, seule partie
+ * discutable : le cliquet à −8 dB parce qu'il revient trente-sept fois et doit
+ * être la texture, pas le sujet ; le claquement à −4.
  */
 const NIVEAUX: Record<NomSon, number> = {
   cran: 0.44, // normalisé ×3,94, puis −8 dB de rôle
   commun: 0.48, // ×2,72, −4 dB
-  rare: 0.34, // ×1,20
-  ultra: 0.28, // référence
-  legendaire: 0.29, // ×1,04
 };
 
 /**
@@ -306,7 +297,7 @@ export function programmeCrans(instants: readonly number[], t0: number): void {
 /**
  * Coupe tout ce qui est programmé et pas encore joué.
  *
- * Sans ça, quitter la page en plein spin laisserait trente dents et une fanfare
+ * Sans ça, quitter la page en plein spin laisserait trente dents
  * tomber dans le vide — le contexte, lui, survit au démontage du composant.
  */
 export function arreteTout(): void {
@@ -318,23 +309,4 @@ export function arreteTout(): void {
     }
   }
   vivantes.clear();
-}
-
-/**
- * Le son de fête qui convient à une rareté, ou rien.
- *
- * Une fanfare par rareté au-dessus de la commune, et la coupure suit leurs
- * noms : `rare`, `ultra_rare`, `legendary`. Pour la commune, `null` — le
- * claquement d'arrêt suffit.
- *
- * Les seuils se lisent dans `RARITY_ORDER`, jamais en chiffres : ils étaient
- * écrits pour six raretés (rare à 2, ultra rare à 4, légendaire à 5), et depuis
- * qu'il n'en reste que quatre, une rare se posait sans un bruit tandis que
- * l'ultra rare et la légendaire jouaient toutes deux la fanfare de la rare.
- */
-export function sonDeFete(rang: number): NomSon | null {
-  if (rang >= RARITY_ORDER.L) return 'legendaire';
-  if (rang >= RARITY_ORDER.UR) return 'ultra';
-  if (rang >= RARITY_ORDER.R) return 'rare';
-  return null;
 }
