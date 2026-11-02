@@ -483,7 +483,7 @@ describe('quand toutes les games sont jouées', () => {
 
   it('s’arrête quand il n’y a plus de game sans carte', () => {
     const { db } = finisseur();
-    for (const id of ['baton-de-marche', 'poudreuse', 'percee']) pose(db, 'a', id);
+    for (const id of ['second-souffle', 'poudreuse', 'percee']) pose(db, 'a', id);
     const faites = regleCartesSansAttendre(db, 'a', MAINTENANT);
     expect(faites).toHaveLength(2);
     expect(enAttente(db, 'a')).toHaveLength(1);
@@ -603,7 +603,7 @@ describe('sur qui une carte tombe', () => {
     // Les autres ont encore des games à jouer : un créneau de plus chacun.
     for (const p of db.players) if (p.id !== 'alpha') p.creneauxBonus = 2;
     const alpha = db.players.find((p) => p.id === 'alpha')!;
-    pose(db, 'alpha', 'baton-de-marche');
+    pose(db, 'alpha', 'poudreuse');
     regleCartesSansAttendre(db, 'alpha', MAINTENANT);
     expect(peutRecevoir(db, alpha)).toBe(false);
     expect(peutRecevoir(db, db.players.find((p) => p.id === 'bravo')!)).toBe(true);
