@@ -4,6 +4,8 @@ import { getStore } from '@/lib/db/store';
 import { BottomNav, SidebarNav } from './NavTabs';
 import { SessionBadge } from './SessionBadge';
 import { etatCadeau } from '@/lib/services/cadeauDuJour';
+import { evenementsActifs } from '@/lib/services/evenements';
+import { EvenementsFlottants } from './EvenementsFlottants';
 import { LogoCristal, Marque } from './Logo';
 import { SEASON } from '@/lib/domain/rules';
 
@@ -16,7 +18,8 @@ export const SIDEBAR_WIDTH = 270;
  *
  * Elle flotte à seize pixels des bords, avec sa crête de neige en haut, et
  * le fond du site se voit au travers. Dedans, de haut en bas : l'entête, la
- * navigation, puis le compte, calé en bas. Rien d'illustré : la matière, la
+ * navigation, puis, calés en bas, les évènements en cours — une Tempête de
+ * neige — et le compte. Rien d'illustré : la matière, la
  * crête et le titre givré sont ceux du reste du site, par les mêmes classes
  * et le même composant `SnowCap`.
  *
@@ -28,11 +31,12 @@ export async function Sidebar() {
   const isAdmin = session?.role === 'admin';
   const isPlayer = playerIdOf(session) !== null;
 
-  const { player, cadeau } = await getStore().read((db) => {
+  const { player, cadeau, evenements } = await getStore().read((db) => {
     const found = isPlayer ? db.players.find((p) => p.id === session!.sub) : undefined;
     return {
       player: found ? { pseudo: found.pseudo, snowflakes: found.snowflakes } : null,
       cadeau: found ? etatCadeau(db, found.id) : null,
+      evenements: evenementsActifs(db),
     };
   });
 
@@ -54,8 +58,11 @@ export async function Sidebar() {
           {/* ---- La navigation ---- */}
           <SidebarNav isAdmin={isAdmin} isPlayer={isPlayer} />
 
-          {/* ---- Le compte, calé en bas ---- */}
-          <div className="menu-compte mt-auto">
+          {/* ---- Les évènements en cours, puis le compte, calés en bas ---- */}
+          <div className="mt-auto">
+            <EvenementsFlottants evenements={evenements} variante="menu" />
+          </div>
+          <div className="menu-compte">
             <SessionBadge
               role={session?.role ?? null}
               pseudo={player?.pseudo ?? null}

@@ -12,7 +12,7 @@ import { chaineDeLaLigue } from '@/lib/auth/twitch';
 import { estLaStreameuse } from '@/lib/domain/streameuse';
 import './globals.css';
 import { PiedDePage } from '@/components/PiedDePage';
-import { EvenementsFlottants, HAUTEUR_BANDEAU_EVENEMENTS } from '@/components/EvenementsFlottants';
+import { EvenementsFlottants } from '@/components/EvenementsFlottants';
 import { getStore } from '@/lib/db/store';
 import { evenementsActifs } from '@/lib/services/evenements';
 
@@ -84,7 +84,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   const session = await getSession();
   const connecte = session !== null;
-  // Les évènements de subs en cours, pour la mini-bannière du haut, et
+  // Les évènements de subs en cours, pour le bandeau du haut sur téléphone
+  // (sur ordinateur, ils sont dans la colonne de gauche), et
   // l'inscription : un joueur sans pseudo Warzone le donne avant tout le
   // reste — sauf la streameuse, qui ne joue pas. La base est déjà chargée pour
   // la page : la lecture est gardée le temps du rendu.
@@ -122,11 +123,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 pas des marges vides. La réserve du bas, qui dégage la barre de
                 navigation flottante des téléphones, est au pied de page : il
                 n'y a de barre que pour un visiteur connecté. */}
-            <main
-              className="relative z-10 w-full flex-1 px-4 pt-6 pb-8 sm:px-6 sm:pt-8 lg:px-8 lg:pt-6 lg:pb-10 2xl:px-10"
-              style={enCours.length ? { ['--bandeau-evts' as string]: HAUTEUR_BANDEAU_EVENEMENTS } : undefined}
-            >
-              <EvenementsFlottants evenements={enCours} />
+            <main className="relative z-10 w-full flex-1 px-4 pt-6 pb-8 sm:px-6 sm:pt-8 lg:px-8 lg:pt-6 lg:pb-10 2xl:px-10">
+              <EvenementsFlottants evenements={enCours} variante="bandeau" />
               {children}
             </main>
             <PiedDePage barreMobile={connecte} />

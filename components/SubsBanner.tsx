@@ -9,8 +9,9 @@ import { departAccelere, paliersDuCompteur, type PalierAVenir } from '@/lib/doma
  * Le compteur de subs de la saison, et ce que les subs font tomber.
  *
  *  1. le nombre, en très grand — c'est lui qu'on vient voir ;
- *  2. (ce qui tourne maintenant n'est plus ici : c'est la mini-bannière du
- *     haut du site, `EvenementsFlottants`) ;
+ *  2. (ce qui tourne maintenant n'est plus ici : c'est `EvenementsFlottants`,
+ *     dans la colonne de gauche sur ordinateur, en tête de page sur
+ *     téléphone) ;
  *  3. les paliers, à la manière des taux de rareté : les boosters de la ligue
  *     et les évènements, chacun sa médaille, sa teinte, sa jauge creusée et ce
  *     qu'il reste à faire. Le plus proche est marqué. Pendant une Tempête, le

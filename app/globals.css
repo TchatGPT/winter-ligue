@@ -6466,21 +6466,16 @@
   animation: evenement-pulse 1.8s ease-in-out infinite;
 }
 /*
- * Les évènements en cours, en tête des pages — voir `EvenementsFlottants`. Un
- * bandeau dans le cours de la page : un segment par évènement, teinté de sa
+ * Les évènements en cours, en tête des pages sur téléphone et tablette — voir
+ * `EvenementsFlottants` ; sur ordinateur, ils sont dans la colonne de gauche.
+ * Un bandeau dans le cours de la page : un segment par évènement, teinté de sa
  * couleur, la médaille du bloc des subs, le nom, la phrase, et le temps qui
- * reste en grand. Côte à côte dès qu'il y a la place.
+ * reste en grand.
  */
 .bandeau-evts {
   display: grid;
   gap: 10px;
   margin-bottom: 16px;
-}
-@media (min-width: 64rem) {
-  .bandeau-evts {
-    grid-auto-columns: minmax(0, 1fr);
-    grid-auto-flow: column;
-  }
 }
 .bandeau-evt {
   --teinte: var(--aurora);
@@ -6566,6 +6561,136 @@
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--muted);
+}
+/*
+ * Sur ordinateur, les évènements en cours sont dans la colonne de gauche,
+ * au-dessus du compte — voir `EvenementsFlottants` : une tuile par évènement,
+ * dans sa teinte, la médaille et le nom, la phrase, puis le temps qui reste.
+ */
+.menu-evts {
+  display: grid;
+  gap: 10px;
+  padding-top: 18px;
+}
+.menu-evt {
+  --teinte: var(--aurora);
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--teinte) 45%, transparent);
+  border-radius: var(--r-md);
+  background:
+    linear-gradient(160deg, color-mix(in srgb, var(--teinte) 22%, transparent) 0%, color-mix(in srgb, var(--teinte) 4%, transparent) 75%),
+    color-mix(in srgb, var(--fond) 60%, transparent);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--ink) 14%, transparent);
+}
+.menu-evt-tete {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.menu-evt-embleme {
+  width: 38px;
+  height: 38px;
+  flex: none;
+  filter: drop-shadow(0 3px 3px color-mix(in srgb, var(--fond) 80%, transparent));
+}
+.menu-evt .evenement-pastille {
+  margin-right: 6px;
+  background: var(--teinte);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--teinte) 22%, transparent);
+}
+.menu-evt-statut {
+  display: flex;
+  align-items: center;
+  font-family: var(--font-display);
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--teinte);
+}
+.menu-evt-nom {
+  display: block;
+  margin-top: 2px;
+  font-family: var(--font-display);
+  font-size: 1.0625rem;
+  font-weight: 900;
+  line-height: 1.05;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.menu-evt-description {
+  font-size: 0.8125rem;
+  line-height: 1.35;
+  color: var(--ink-2);
+}
+.menu-evt-temps {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid color-mix(in srgb, var(--teinte) 20%, transparent);
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 900;
+  line-height: 1;
+  color: var(--ink);
+}
+.menu-evt-reste {
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+/*
+ * Sur un écran peu haut — un portable, un écran zoomé à 125 % —, la tuile
+ * tient sur une ligne : la médaille et le nom, le temps qui reste à droite,
+ * sans la phrase. Entière, elle poussait le solde, le cadeau du jour et la
+ * déconnexion sous le bas de l'écran pendant les quatre jours d'une Tempête,
+ * dans une colonne qui défile sans barre visible.
+ */
+@media (max-height: 900px) {
+  .menu-evts {
+    gap: 8px;
+    padding-top: 12px;
+  }
+  .menu-evt {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px 8px 9px;
+  }
+  .menu-evt-tete {
+    min-width: 0;
+    flex: 1;
+    gap: 8px;
+  }
+  .menu-evt-embleme {
+    width: 30px;
+    height: 30px;
+  }
+  .menu-evt-nom {
+    font-size: 0.875rem;
+  }
+  .menu-evt-description {
+    display: none;
+  }
+  .menu-evt-temps {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+    padding-top: 0;
+    border-top: 0;
+    font-size: 1rem;
+    white-space: nowrap;
+  }
+  .menu-evt-reste {
+    font-size: 0.5625rem;
+  }
 }
 /* Sur téléphone, la phrase passe à la ligne au lieu d'être coupée. */
 @media (max-width: 40rem) {
@@ -7640,9 +7765,8 @@
  * ses explications au lieu de faire défiler la page. Sous 46 rem de haut, la
  * page défile, comme ailleurs.
  *
- * Le bandeau des évènements ne se retire plus de cette hauteur : une Tempête
- * dure quatre jours, et les paliers, écrasés d'autant, se chevauchaient
- * (02/11/2026). Tant qu'un évènement tourne, la page défile de sa hauteur.
+ * Les évènements en cours n'y prennent aucune place : sur ordinateur, ils sont
+ * dans la colonne de gauche (02/11/2026). Rien ne se retire de cette hauteur.
  */
 @media (min-width: 150rem) {
   .grille-classement {
@@ -9720,11 +9844,10 @@
      les étapes sur une ligne, la scène dessous, sans défiler jusqu'aux taux.
      Sur un écran moins haut (2560 × 1305, celui d'un 1440p), les sachets se
      règlent aussi sur la hauteur : 913 px, c'est tout ce qui n'est pas eux, du
-     haut de la page au bas de la scène, mesuré sur la maquette. Le bandeau des
-     évènements n'y entre plus : une Tempête dure quatre jours, et les sachets
-     rapetissaient d'autant (02/11/2026) — la page défile de sa hauteur. Jamais
-     sous 180 px de large : plus bas, la page défile plutôt que de rendre les
-     sachets illisibles. */
+     haut de la page au bas de la scène, mesuré sur la maquette. Les évènements
+     en cours n'y entrent pas : sur ordinateur, ils sont dans la colonne de
+     gauche (02/11/2026). Jamais sous 180 px de large : plus bas, la page défile
+     plutôt que de rendre les sachets illisibles. */
   /* Quand la rangée défile (un téléphone), le premier et le dernier sachet
      doivent pouvoir venir au centre : c'est le sachet du centre qui est
      retenu. Sans ce rembourrage, le dernier n'y arrivait jamais, et son
@@ -13353,7 +13476,7 @@
 @media (min-width: 1024px) and (min-height: 760px) {
   .adm,
 .rgs {
-    height: calc(100dvh - var(--adm-hors) - var(--bandeau-evts, 0px));
+    height: calc(100dvh - var(--adm-hors));
     min-height: 30rem;
     grid-template-rows: auto minmax(0, 1fr);
   }
