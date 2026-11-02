@@ -34,9 +34,14 @@ export function serieDuJour(dernier: string | null, serie: number, aujourdhui: s
   return dernier !== null && dernier === veille(aujourdhui) ? Math.max(0, serie) + 1 : 1;
 }
 
-/** Ce que vaut le cadeau au jour `serie` de la série : le septième vaut plus. */
+/** Le jour `serie` de la série est-il celui du booster — le septième d'une semaine ? */
+export function boosterDuJour(serie: number): boolean {
+  return serie > 0 && serie % CADEAU_DU_JOUR.cycle === 0;
+}
+
+/** Les flocons du cadeau au jour `serie` de la série : aucun le jour du booster. */
 export function montantDuJour(serie: number): number {
-  return serie > 0 && serie % CADEAU_DU_JOUR.cycle === 0 ? CADEAU_DU_JOUR.septiemeJour : CADEAU_DU_JOUR.parJour;
+  return boosterDuJour(serie) ? 0 : CADEAU_DU_JOUR.parJour;
 }
 
 /** Le rang dans la semaine en cours, de 1 à 7. */

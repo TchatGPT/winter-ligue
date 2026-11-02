@@ -21,7 +21,7 @@ import { crossedMilestones, nextMilestone, SUBS } from '@/lib/domain/rules';
 import type { PackId } from '@/lib/domain/types';
 import { audit } from './ledger';
 import { ajoutePackDu, crediteBoostersPerso } from './packs';
-import { commuAccelereDepuis, declencheEvenements } from '@/lib/services/evenements';
+import { commuAccelereDepuis, declencheEvenements, verseFloconsATous } from '@/lib/services/evenements';
 import { dejaVu, gesteDuMessage, ligneDuGeste, recitDuGeste, retiens } from '@/lib/domain/twitchSubs';
 
 export class SubError extends Error {
@@ -64,9 +64,10 @@ export function addSubs(db: Database, delta: number, actor: string, precision?: 
 
   // Les évènements d'abord : une Tempête ouverte par cette saisie accélère
   // déjà le Booster Commu pour les subs qui la suivent. Ils se déclenchent sur
-  // les mêmes franchissements, dans la même transaction : un palier ne peut pas
-  // verser ses flocons sans ouvrir sa fenêtre, ni l'inverse.
+  // les mêmes franchissements, dans la même transaction : une Avalanche ne
+  // peut pas s'inscrire sans verser ses flocons, ni l'inverse.
   const evenements = declencheEvenements(db, from, to);
+  verseFloconsATous(db, evenements);
   const crossed = crossedMilestones(from, to, commuAccelereDepuis(db));
   const recipients = db.players.filter((p) => p.active);
 

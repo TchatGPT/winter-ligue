@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import { IconSnowflake } from '@/components/icons';
-import { montantDuJour } from '@/lib/domain/cadeauDuJour';
+import { boosterDuJour, montantDuJour } from '@/lib/domain/cadeauDuJour';
 import { CADEAU_DU_JOUR } from '@/lib/domain/rules';
 import { num } from '@/lib/format';
 import type { EtatCadeau } from '@/lib/services/cadeauDuJour';
@@ -19,7 +19,7 @@ const rienAEcouter = () => () => {};
  * attend encore.
  *
  * La tuile montre la semaine en cours — sept crans, le septième doré, celui
- * qui vaut plus. Le navigateur ne fait que demander : le jour, la série et le
+ * du Booster Perso. Le navigateur ne fait que demander : le jour, la série et le
  * montant se décident sur le serveur (`lib/services/cadeauDuJour.ts`). Le
  * compte à rebours jusqu'à minuit n'est qu'un affichage.
  *
@@ -75,13 +75,18 @@ export function CadeauDuJour({ etat, variante }: { etat: EtatCadeau; variante: '
         });
         return;
       }
-      const { recu, montant } = charge.data as {
+      const { recu, montant, booster } = charge.data as {
         recu: number;
         montant: number;
+        booster: boolean;
       };
       setMessage({
         kind: 'ok',
-        text: recu < montant ? `+${num(recu)} ❄ : ton solde touche le plafond.` : `+${num(recu)} ❄ sur ton solde !`,
+        text: booster
+          ? 'Un Booster Perso t’attend dans tes boosters !'
+          : recu < montant
+            ? `+${num(recu)} ❄ : ton solde touche le plafond.`
+            : `+${num(recu)} ❄ sur ton solde !`,
       });
       router.refresh();
     } catch {
@@ -97,7 +102,7 @@ export function CadeauDuJour({ etat, variante }: { etat: EtatCadeau; variante: '
       ? 'Solde plein : ta chance est au maximum'
       : etat.dejaPris
       ? `Pris · série de ${etat.serie} jour${etat.serie > 1 ? 's' : ''} — reviens demain`
-      : `+${num(etat.montant)} ❄ · jour ${etat.jour} sur ${CADEAU_DU_JOUR.cycle}`;
+      : `${cadeauCourt(etat.serie)} · jour ${etat.jour} sur ${CADEAU_DU_JOUR.cycle}`;
 
   return (
     <>
@@ -107,8 +112,12 @@ export function CadeauDuJour({ etat, variante }: { etat: EtatCadeau; variante: '
           className="cadeau-jour-pastille"
           data-dispo={dispo ? '' : undefined}
           onClick={ouvre}
-          aria-label={dispo ? `Cadeau du jour : ${etat.montant} flocons à prendre` : 'Cadeau du jour'}
-          title={dispo ? `Cadeau du jour : +${etat.montant} ❄` : 'Cadeau du jour'}
+          aria-label={
+            dispo
+              ? `Cadeau du jour : ${etat.booster ? 'un Booster Perso' : `${etat.montant} flocons`} à prendre`
+              : 'Cadeau du jour'
+          }
+          title={dispo ? `Cadeau du jour : ${cadeauCourt(etat.serie)}` : 'Cadeau du jour'}
         >
           <IconSnowflake className="h-[19px] w-[19px]" />
         </button>
@@ -188,9 +197,9 @@ export function FenetreCadeauDuJour({
           Cadeau du jour
         </h2>
         <p className="mt-2 text-[14px] leading-relaxed text-muted lg:mt-3 lg:text-[16px]">
-          Chaque jour, {num(CADEAU_DU_JOUR.parJour)} flocons ; le {CADEAU_DU_JOUR.cycle}ᵉ jour d’affilée,{' '}
-          {num(CADEAU_DU_JOUR.septiemeJour)} flocons, puis la semaine recommence. Un jour manqué, et la série repart du
-          premier jour. Le jour change à minuit, heure de Paris.
+          Chaque jour, {num(CADEAU_DU_JOUR.parJour)} flocons ; le {CADEAU_DU_JOUR.cycle}ᵉ jour d’affilée, un{' '}
+          <strong className="text-gold">Booster Perso</strong>, puis la semaine recommence. Un jour manqué, et la série
+          repart du premier jour. Le jour change à minuit, heure de Paris.
         </p>
 
         <ol className="cadeau-jour-calendrier" aria-label="La semaine en cours">
@@ -207,7 +216,12 @@ export function FenetreCadeauDuJour({
                 data-septieme={jour === CADEAU_DU_JOUR.cycle ? '' : undefined}
               >
                 <span className="cadeau-jour-case-jour">J{jour}</span>
-                <span className="cadeau-jour-case-montant num">{fait ? '✓' : `+${num(montantDuJour(jour))}`}</span>
+                <span
+                  className="cadeau-jour-case-montant num"
+                  aria-label={!fait && boosterDuJour(jour) ? 'Booster Perso' : undefined}
+                >
+                  {fait ? '✓' : boosterDuJour(jour) ? '🎁' : `+${num(montantDuJour(jour))}`}
+                </span>
               </li>
             );
           })}
@@ -223,7 +237,10 @@ export function FenetreCadeauDuJour({
                 {etat.serie > 1 ? 's' : ''}.
               </p>
               <p className="mt-1 text-[14px] text-muted lg:text-[16px]">
-                Demain : <strong className="text-ice">+{num(montantDuJour(etat.serie + 1))} ❄</strong>
+                Demain :{' '}
+                <strong className={boosterDuJour(etat.serie + 1) ? 'text-gold' : 'text-ice'}>
+                  {cadeauCourt(etat.serie + 1)}
+                </strong>
                 <AvantMinuit />
               </p>
             </>
@@ -234,7 +251,7 @@ export function FenetreCadeauDuJour({
                 {etat.serie > 1 ? ` · série de ${etat.serie} jours` : ''}.
               </p>
               <button type="button" className="btn btn-ice mt-3 w-full lg:mt-4" onClick={onPrendre} disabled={busy}>
-                Prendre +{num(etat.montant)} ❄
+                {etat.booster ? 'Prendre le Booster Perso' : `Prendre +${num(etat.montant)} ❄`}
               </button>
             </>
           )}
@@ -248,6 +265,11 @@ export function FenetreCadeauDuJour({
       </div>
     </div>
   );
+}
+
+/** Le cadeau du jour `serie` en court : « +40 ❄ », ou « un Booster Perso ». */
+function cadeauCourt(serie: number): string {
+  return boosterDuJour(serie) ? 'un Booster Perso' : `+${num(montantDuJour(serie))} ❄`;
 }
 
 /** Le jour `jour` de la semaine (1 à 7) est-il déjà pris ? */

@@ -3,18 +3,16 @@ import 'server-only';
 /**
  * Les évènements déclenchés par les subs.
  *
- * À certains paliers de subs, quelque chose se met à tourner pour **tout le
- * monde**, pendant une heure ou deux : les flocons doublés, les cartes plus
- * fortes. Puis ça s'arrête.
+ * À certains paliers de subs, quelque chose arrive à **tout le monde** : des
+ * flocons versés d'un coup (l'Avalanche), ou des règles changées le temps d'une
+ * fenêtre (la Tempête de neige). Puis ça s'arrête.
  *
  * ## Pourquoi c'est compatible avec l'invariant anti-pay-to-win
  *
- * Un évènement est collectif et borné dans le temps. Il ne verse rien à
- * personne en particulier : il change les *règles* pour tous les joueurs actifs
- * pendant sa fenêtre, exactement comme les boosters de la ligue tombent pour tous.
- * Celui qui a déclenché le palier n'en tire pas plus que les autres — et
- * pendant une fenêtre « flocons doublés », le meilleur joueur gagne toujours
- * deux fois plus que le moins bon, ni plus ni moins qu'en temps normal.
+ * Un évènement est collectif. Il ne verse rien à personne en particulier :
+ * l'Avalanche donne la même somme à chaque joueur qui a joué, exactement comme
+ * les boosters de la ligue tombent pour tous. Celui qui a payé les subs n'en
+ * tire pas un flocon de plus que les autres.
  *
  * ## Où les effets s'appliquent
  *
@@ -31,6 +29,9 @@ import 'server-only';
 
 import type { Database, EvenementActif } from '@/lib/db/entities';
 import { newId } from '@/lib/db/store';
+import { gamesOf } from './league';
+import { credit } from './ledger';
+import { joueursEnLice } from './packs';
 import {
   departAccelere,
   type EvenementKind,
@@ -91,6 +92,27 @@ export function declencheEvenements(
   return crees;
 }
 
+/**
+ * Verse les flocons des évènements qui en donnent — l'Avalanche — à chaque
+ * joueur de la ligue qui a au moins une game : la même somme pour tous, par
+ * `credit()`, l'évènement en référence. Rien sans game, comme pour le cadeau du
+ * jour : des comptes ouverts pour l'occasion ne doivent pas s'en servir pour
+ * nourrir un compte principal en duel. Renvoie le nombre de versements.
+ */
+export function verseFloconsATous(db: Database, evenements: readonly EvenementActif[]): number {
+  let versements = 0;
+  for (const e of evenements) {
+    const montant = EVENEMENTS_SUBS.find((r) => r.kind === e.kind && r.label === e.label)?.flocons ?? 0;
+    if (montant <= 0) continue;
+    for (const joueur of joueursEnLice(db)) {
+      if (!gamesOf(db, joueur.id).some((g) => !g.skipped)) continue;
+      credit(db, joueur.id, montant, 'AVALANCHE', e.id);
+      versements += 1;
+    }
+  }
+  return versements;
+}
+
 /** Le facteur en vigueur pour un genre d'effet : 1 s'il n'y a rien. */
 function facteur(db: Database, kind: EvenementKind, now: Date): number {
   return facteurEvenement(
@@ -99,7 +121,7 @@ function facteur(db: Database, kind: EvenementKind, now: Date): number {
   );
 }
 
-/** Flocons d'une game : 2 pendant une avalanche, 1 sinon. */
+/** Flocons d'une game : 2 pendant une ancienne Avalanche (flocons doublés), 1 sinon. */
 export const facteurGain = (db: Database, now = new Date()) => facteur(db, 'FLOCONS_DOUBLES', now);
 
 /** Points d'une carte : 1,5 pendant un blizzard, 1 sinon. */

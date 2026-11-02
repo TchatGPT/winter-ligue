@@ -113,8 +113,13 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   dans la même transaction ; l'écran et l'overlay ne font que les dérouler (`tirageDe`,
   `RailJoueurs`). Jamais de joueur choisi côté client.
 - Les paliers de subs profitent à **tous les joueurs actifs** (boosters de la ligue,
-  évènements) ; ils ne versent plus de flocons. Ne jamais ajouter de
+  évènements). Seule l'**Avalanche** verse des flocons : la même somme
+  (`AVALANCHE_FLOCONS`) à chaque joueur qui a au moins une game, tout de suite
+  (`verseFloconsATous`, décidé le 02/11/2026). Ne jamais ajouter de
   récompense individuelle : c'est l'invariant anti-pay-to-win, et il est testé.
+- **Le cadeau du jour** verse 40 ❄ par jour et, le septième jour d'affilée, met un
+  Booster Perso en file au lieu de flocons (`boosterDuJour`, décidé le 02/11/2026) ;
+  ce jour-là reste ouvert à solde plein.
 - **Une carte n'a aucune valeur en flocons** : elle ne s'achète, ne s'échange ni ne se
   revend — ni cote, ni marché, ni collection, ni exemplaires en réserve. Elle se joue sur
   une game, puis disparaît.

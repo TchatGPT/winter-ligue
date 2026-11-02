@@ -145,7 +145,7 @@ function Taux({ weights }: { weights: Record<Rarity, number> }) {
 export function Regles({ maxGames, packs }: { maxGames: number; packs: PackDefinition[] }) {
   const pack = (id: string) => packs.find((p) => p.id === id);
   const palier = (id: 'commu' | 'folie') => SUB_MILESTONES.find((m) => m.packId === id)?.every;
-  const avalanche = EVENEMENTS_SUBS.find((e) => e.kind === 'FLOCONS_DOUBLES');
+  const avalanche = EVENEMENTS_SUBS.find((e) => e.kind === 'FLOCONS_A_TOUS');
   const tempete = EVENEMENTS_SUBS.find((e) => e.kind === 'COMMU_ACCELERE');
   const chanceMax = PALIERS_CHANCE.at(-1)!.multiplicateur;
 
@@ -418,7 +418,7 @@ export function Regles({ maxGames, packs }: { maxGames: number; packs: PackDefin
           <Tuile
             valeur={`${CADEAU_DU_JOUR.parJour} ❄`}
             nom="Cadeau du jour"
-            detail={`${CADEAU_DU_JOUR.septiemeJour} ❄ le ${CADEAU_DU_JOUR.cycle}e jour`}
+            detail={`un Booster Perso le ${CADEAU_DU_JOUR.cycle}e jour`}
             ton="aurore"
           />
           <Tuile valeur="Codes" nom="Pendant le live" detail="à taper sur le site" ton="aurore" />
@@ -449,8 +449,8 @@ export function Regles({ maxGames, packs }: { maxGames: number; packs: PackDefin
                 </li>
                 {avalanche && (
                   <li>
-                    Tous les {avalanche.every} subs, l’<b>{avalanche.label}</b> double les flocons des games pendant 1
-                    h.
+                    Tous les {avalanche.every} subs, l’<b>{avalanche.label}</b> verse {avalanche.flocons} ❄ à chaque
+                    joueur qui a joué au moins une game.
                   </li>
                 )}
               </Puces>

@@ -3,6 +3,7 @@ import { type Database, type Game, type Player } from '@/lib/db/entities';
 import { emptyDatabase } from '@/lib/db/store';
 import { getCard } from '@/lib/domain/catalog';
 import {
+  AVALANCHE_FLOCONS,
   EVENEMENTS_SUBS,
   FACTEURS_EVENEMENTS,
   GAME_LIMITS,
@@ -62,11 +63,30 @@ function joueur(id: string): Player {
   };
 }
 
+/** Une game saisie pour ce joueur : sans game, l'Avalanche ne lui verse rien. */
+function joue(db: Database, playerId: string): void {
+  db.games.push({
+    id: `g-${playerId}-${db.games.length}`,
+    playerId,
+    kills: 3,
+    placement: null,
+    bonusPoints: 0,
+    skipped: false,
+    score: 3,
+    note: null,
+    playedAt: T0.toISOString(),
+    createdAt: T0.toISOString(),
+    applied: [],
+  });
+}
+
 describe('la table des évènements', () => {
   it('a des paliers positifs, des durées courtes et un libellé', () => {
     for (const e of EVENEMENTS_SUBS) {
       expect(e.every).toBeGreaterThan(0);
-      expect(e.dureeMinutes).toBeGreaterThan(0);
+      // Sans fenêtre, seulement pour un versement : il se règle d'un coup.
+      if (e.kind === 'FLOCONS_A_TOUS') expect(e.dureeMinutes).toBe(0);
+      else expect(e.dureeMinutes).toBeGreaterThan(0);
       // Une semaine au plus : au-delà, ce serait un réglage, pas un évènement.
       expect(e.dureeMinutes).toBeLessThanOrEqual(7 * 24 * 60);
       expect(e.label.length).toBeGreaterThan(0);
@@ -80,7 +100,7 @@ describe('la table des évènements', () => {
     for (const e of EVENEMENTS_SUBS) expect(FACTEURS_EVENEMENTS[e.kind]).toBeGreaterThanOrEqual(1);
   });
 
-  it('ne change que les règles : aucun évènement ne verse ni ne désigne', () => {
+  it('ne désigne personne : aucun évènement ne vise un joueur', () => {
     for (const e of EVENEMENTS_SUBS) {
       expect(e).not.toHaveProperty('amount');
       expect(e).not.toHaveProperty('playerId');
@@ -140,14 +160,23 @@ describe('facteurEvenement', () => {
 describe('declencheEvenements', () => {
   it('ouvre une fenêtre maintenant, de la durée annoncée', () => {
     const db = emptyDatabase();
+    const crees = declencheEvenements(db, tempete.every - 1, tempete.every, T0).filter(
+      (e) => e.kind === 'COMMU_ACCELERE',
+    );
+    expect(crees).toHaveLength(1);
+    expect(crees[0].label).toBe(tempete.label);
+    expect(crees[0].startsAt).toBe(T0.toISOString());
+    expect(crees[0].endsAt).toBe(minutes(tempete.dureeMinutes).toISOString());
+    expect(crees[0].declencheA).toBe(tempete.every);
+  });
+
+  it('inscrit l’Avalanche sans fenêtre : elle ne reste pas en cours', () => {
+    const db = emptyDatabase();
     const crees = declencheEvenements(db, avalanche.every - 1, avalanche.every, T0);
     expect(crees).toHaveLength(1);
-    expect(crees[0].kind).toBe('FLOCONS_DOUBLES');
-    expect(crees[0].label).toBe(avalanche.label);
-    expect(crees[0].startsAt).toBe(T0.toISOString());
-    expect(crees[0].endsAt).toBe(minutes(avalanche.dureeMinutes).toISOString());
-    expect(crees[0].declencheA).toBe(avalanche.every);
-    expect(db.evenements).toHaveLength(1);
+    expect(crees[0].kind).toBe('FLOCONS_A_TOUS');
+    expect(crees[0].startsAt).toBe(crees[0].endsAt);
+    expect(evenementsActifs(db, T0)).toHaveLength(0);
   });
 
   it('enchaîne deux fenêtres du même genre au lieu de les superposer', () => {
@@ -156,20 +185,19 @@ describe('declencheEvenements', () => {
      * et le chat aurait payé le second pour rien.
      */
     const db = emptyDatabase();
-    const crees = declencheEvenements(db, avalanche.every - 1, avalanche.every * 2, T0);
-    const flocons = crees.filter((e) => e.kind === 'FLOCONS_DOUBLES');
-    expect(flocons).toHaveLength(2);
-    expect(flocons[0].startsAt).toBe(T0.toISOString());
-    expect(flocons[1].startsAt).toBe(flocons[0].endsAt);
-    expect(flocons[1].endsAt).toBe(minutes(avalanche.dureeMinutes * 2).toISOString());
+    const crees = declencheEvenements(db, tempete.every - 1, tempete.every * 2, T0);
+    const tempetes = crees.filter((e) => e.kind === 'COMMU_ACCELERE');
+    expect(tempetes).toHaveLength(2);
+    expect(tempetes[0].startsAt).toBe(T0.toISOString());
+    expect(tempetes[1].startsAt).toBe(tempetes[0].endsAt);
+    expect(tempetes[1].endsAt).toBe(minutes(tempete.dureeMinutes * 2).toISOString());
 
-    // À l'instant du déclenchement, une seule est active ; le facteur est
-    // celui du genre, pas son carré.
-    expect(evenementsActifs(db, T0).filter((e) => e.kind === 'FLOCONS_DOUBLES')).toHaveLength(1);
-    expect(facteurGain(db, T0)).toBe(2);
-    // Et la seconde prend le relais quand la première finit.
-    expect(facteurGain(db, minutes(avalanche.dureeMinutes + 1))).toBe(2);
-    expect(facteurGain(db, minutes(avalanche.dureeMinutes * 2 + 1))).toBe(1);
+    // À l'instant du déclenchement, une seule est active ; la seconde prend le
+    // relais quand la première finit.
+    const actives = (t: Date) => evenementsActifs(db, t).filter((e) => e.kind === 'COMMU_ACCELERE');
+    expect(actives(T0)).toHaveLength(1);
+    expect(actives(minutes(tempete.dureeMinutes + 1))).toHaveLength(1);
+    expect(actives(minutes(tempete.dureeMinutes * 2 + 1))).toHaveLength(0);
   });
 
   it('ne fait rien entre deux paliers', () => {
@@ -288,30 +316,43 @@ describe('les cartes pendant un blizzard', () => {
 });
 
 describe('addSubs déclenche les évènements', () => {
-  it('ouvre les fenêtres dans la même saisie que les flocons de palier', () => {
+  it('verse l’Avalanche dans la même saisie, à chaque joueur qui a joué', () => {
     const db = emptyDatabase();
-    db.players.push(joueur('a'), joueur('b'));
+    db.players.push(joueur('a'), joueur('b'), joueur('sans-game'));
+    joue(db, 'a');
+    joue(db, 'b');
     const r = addSubs(db, avalanche.every, 'test');
     expect(r.totalSubs).toBe(avalanche.every);
     expect(r.evenements.map((e) => e.label)).toContain(avalanche.label);
-    expect(db.evenements.some((e) => e.kind === 'FLOCONS_DOUBLES')).toBe(true);
-    expect(facteurGain(db)).toBe(2);
-    // Un sub de plus n'ouvre rien : le palier suivant n'est pas atteint.
+    const evt = db.evenements.find((e) => e.kind === 'FLOCONS_A_TOUS')!;
+    for (const id of ['a', 'b']) {
+      expect(db.players.find((p) => p.id === id)!.snowflakes).toBe(AVALANCHE_FLOCONS);
+    }
+    // Chaque versement passe au grand livre, l'Avalanche en référence.
+    expect(db.ledger.filter((l) => l.reason === 'AVALANCHE' && l.refId === evt.id)).toHaveLength(2);
+    // Sans game, rien : un compte ouvert pour l'occasion ne la touche pas.
+    expect(db.players.find((p) => p.id === 'sans-game')!.snowflakes).toBe(0);
+    // Ni les gains de game doublés : c'était l'ancienne Avalanche.
+    expect(facteurGain(db)).toBe(1);
+    // Un sub de plus ne verse rien : le palier suivant n'est pas atteint.
     const r2 = addSubs(db, 1, 'test');
     expect(r2.evenements).toEqual([]);
+    expect(db.players.find((p) => p.id === 'a')!.snowflakes).toBe(AVALANCHE_FLOCONS);
   });
 
-  it('ne verse rien de plus à personne — les évènements ne sont pas des crédits', () => {
+  it('verse la même somme à chacun, quel que soit qui a payé les subs', () => {
     const db = emptyDatabase();
     db.players.push(joueur('a'), joueur('b'));
+    joue(db, 'a');
+    joue(db, 'b');
     const r = addSubs(db, tempete.every, 'test');
     const a = db.players.find((p) => p.id === 'a')!.snowflakes;
     const b = db.players.find((p) => p.id === 'b')!.snowflakes;
     expect(a).toBe(b);
-    // Ni les paliers ni les évènements ne versent de flocons.
-    expect(a).toBe(0);
+    // Cinq Avalanches franchies, rien d'autre ne verse de flocons.
+    expect(a).toBe((tempete.every / avalanche.every) * AVALANCHE_FLOCONS);
     expect(r.packs.length).toBeGreaterThan(0);
-    expect(db.ledger).toHaveLength(0);
+    expect(db.ledger.every((l) => l.reason === 'AVALANCHE')).toBe(true);
   });
 
   it('laisse de côté les joueurs inactifs', () => {

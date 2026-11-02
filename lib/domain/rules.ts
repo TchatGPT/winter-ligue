@@ -179,22 +179,32 @@ export function packsPersoAcquis(offerts: number, niveau3 = 0): number {
 /**
  * Ce qu'un évènement change, le temps qu'il dure.
  *
- *  - `FLOCONS_DOUBLES`   — les gains de game doublés ;
+ *  - `FLOCONS_A_TOUS`    — des flocons versés tout de suite, la même somme à
+ *    chaque joueur qui a joué : l'Avalanche, depuis le 02/11/2026 ;
+ *  - `FLOCONS_DOUBLES`   — les gains de game doublés (l'ancienne Avalanche) ;
  *  - `CARTES_RENFORCEES` — les points des cartes majorés de moitié (plus aucun
- *    palier ne le déclenche, mais d'anciens évènements le portent) ;
+ *    palier ne déclenche ces deux-là, mais d'anciens évènements les portent) ;
  *  - `COMMU_ACCELERE`    — le Booster Commu tombe tous les
  *    `COMMU_ACCELERE_TOUS_LES` subs au lieu de son palier habituel.
  */
-export type EvenementKind = 'FLOCONS_DOUBLES' | 'CARTES_RENFORCEES' | 'COMMU_ACCELERE';
+export type EvenementKind = 'FLOCONS_A_TOUS' | 'FLOCONS_DOUBLES' | 'CARTES_RENFORCEES' | 'COMMU_ACCELERE';
 
 /** Les genres d'évènement que le site sait lire, pour écarter le reste au chargement. */
-export const EVENEMENT_KINDS: readonly EvenementKind[] = ['FLOCONS_DOUBLES', 'CARTES_RENFORCEES', 'COMMU_ACCELERE'];
+export const EVENEMENT_KINDS: readonly EvenementKind[] = [
+  'FLOCONS_A_TOUS',
+  'FLOCONS_DOUBLES',
+  'CARTES_RENFORCEES',
+  'COMMU_ACCELERE',
+];
 
 export interface EvenementSubs {
   /** Tous les N subs cumulés. */
   every: number;
   kind: EvenementKind;
+  /** Zéro pour un évènement qui se règle d'un coup, sans fenêtre. */
   dureeMinutes: number;
+  /** Les flocons versés à chaque joueur au déclenchement, pour `FLOCONS_A_TOUS`. */
+  flocons?: number;
   label: string;
   /** La phrase entière, pour le bandeau et les règles. */
   description: string;
@@ -206,25 +216,31 @@ export interface EvenementSubs {
 export const COMMU_ACCELERE_TOUS_LES = 20;
 
 /**
+ * Ce que l'Avalanche verse à chaque joueur (décidé le 02/11/2026). Sur une
+ * saison de 2 000 subs, vingt Avalanches font 2 000 flocons : une dizaine de
+ * games moyennes, assez pour se sentir, pas pour remplacer les games.
+ */
+export const AVALANCHE_FLOCONS = 100;
+
+/**
  * Les paliers qui déclenchent un évènement, et ce qu'ils déclenchent.
  *
- * Ils s'ajoutent aux paliers de flocons et de packs, ils ne les remplacent
- * pas : un palier de flocons donne quelque chose à garder, un évènement change
- * les règles le temps de sa fenêtre — une heure pour l'Avalanche, quatre jours
- * pour la Tempête de neige, qui fait tomber le Booster Commu bien plus souvent.
+ * Ils s'ajoutent aux paliers des boosters de la ligue. L'Avalanche verse ses
+ * flocons tout de suite ; la Tempête de neige change les règles quatre jours
+ * durant, et fait tomber le Booster Commu bien plus souvent.
  *
- * Tous s'appliquent à tout le monde. Ils ne versent rien à personne, ils
- * changent les règles pendant leur fenêtre.
+ * Tous profitent à tout le monde, et pareil : l'Avalanche verse la même somme
+ * à chaque joueur qui a joué, quel que soit celui qui a payé les subs.
  */
 export const EVENEMENTS_SUBS: readonly EvenementSubs[] = [
   {
     every: 100,
-    kind: 'FLOCONS_DOUBLES',
-    dureeMinutes: 60,
+    kind: 'FLOCONS_A_TOUS',
+    dureeMinutes: 0,
     label: 'Avalanche',
-    description:
-      'Pendant 1 heure, chaque game rapporte deux fois plus de flocons, à tous les joueurs.',
-    resume: 'Flocons ×2',
+    description: `${AVALANCHE_FLOCONS} flocons pour chaque joueur de la ligue, versés tout de suite.`,
+    resume: `+${AVALANCHE_FLOCONS} ❄ à tous`,
+    flocons: AVALANCHE_FLOCONS,
   },
   {
     every: 500,
@@ -238,6 +254,8 @@ export const EVENEMENTS_SUBS: readonly EvenementSubs[] = [
 
 /** Les facteurs qu'un évènement applique. Un seul par genre, jamais cumulés. */
 export const FACTEURS_EVENEMENTS: Record<EvenementKind, number> = {
+  // Il ne multiplie rien : il verse, une fois.
+  FLOCONS_A_TOUS: 1,
   FLOCONS_DOUBLES: 2,
   CARTES_RENFORCEES: 1.5,
   // Il ne multiplie rien : il change le palier du Booster Commu.
@@ -648,11 +666,13 @@ export const DUEL = {
 /**
  * Le cadeau du jour : quelques flocons pour qui passe sur le site, chaque jour.
  *
- * Quarante par jour, et deux cents le septième jour d'affilée — puis la
- * semaine recommence, tant que la série tient. Un jour manqué la fait
- * repartir du premier. Sur une saison de trois mois, un joueur présent tous les
- * jours en tire environ cinq mille cinq cents : de quoi revenir, pas de quoi
- * remplacer une bonne game ni approcher le plafond sans duel.
+ * Quarante par jour, et le septième jour d'affilée un Booster Perso au lieu de
+ * flocons (décidé le 02/11/2026 : des boosters aussi pour qui n'a pas les
+ * moyens de sub) — puis la semaine recommence, tant que la série tient. Un
+ * jour manqué la fait repartir du premier. Sur une saison de trois mois, un
+ * joueur présent tous les jours en tire environ trois mille flocons et douze
+ * Boosters Perso : de quoi revenir, pas de quoi remplacer une bonne game ni
+ * approcher le plafond sans duel.
  *
  * Réservé à qui a au moins une game : un compte qui ne joue jamais n'en
  * touche pas, et des comptes secondaires ne peuvent pas s'en servir pour
@@ -660,6 +680,7 @@ export const DUEL = {
  */
 export const CADEAU_DU_JOUR = {
   parJour: 40,
-  septiemeJour: 200,
+  /** Le dernier jour de la semaine ne verse pas de flocons : il met ce booster en file. */
+  septiemeJour: 'perso',
   cycle: 7,
 } as const;

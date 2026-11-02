@@ -54,7 +54,9 @@ export type LedgerReason =
   /** Des flocons récupérés avec un code cadeau ; la référence est le code. */
   | 'CODE_CADEAU'
   /** Le cadeau du jour ; la référence est le jour, à Paris. */
-  | 'CADEAU_DU_JOUR';
+  | 'CADEAU_DU_JOUR'
+  /** Les flocons d'une Avalanche, versés à tous ; la référence est l'évènement. */
+  | 'AVALANCHE';
 
 /**
  * Vérifie qu'un débit est possible. On refuse tout solde négatif : c'est la
