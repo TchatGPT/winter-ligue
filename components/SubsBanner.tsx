@@ -23,7 +23,10 @@ import { departAccelere, paliersDuCompteur, type PalierAVenir } from '@/lib/doma
 
 /** La médaille et la teinte d'un palier : celles du booster, ou de l'évènement. */
 export function blason(p: PalierAVenir): { glyphe: GlyphePalier; teinte: string } {
-  if (p.genre === 'PACK' && p.packId) return { glyphe: 'booster', teinte: RARITY_META[GEMME_DU_PACK[p.packId]].color };
+  if (p.genre === 'PACK' && p.packId) {
+    const glyphe = p.packId === 'commu' ? 'commu' : p.packId === 'folie' ? 'folie' : 'booster';
+    return { glyphe, teinte: RARITY_META[GEMME_DU_PACK[p.packId]].color };
+  }
   if (p.kind === 'COMMU_ACCELERE') return { glyphe: 'tempete', teinte: 'var(--ice)' };
   return { glyphe: 'flocons', teinte: 'var(--aurora)' };
 }
@@ -75,8 +78,11 @@ export function paliersEnCours(totalSubs: number, evenements: EvenementActif[] =
 
 /**
  * Les paliers, un par ligne : la médaille, le nom dans sa teinte, « tous les
- * N », le décompte et la jauge creusée. Le plus proche est marqué. Sur
- * l'accueil, et dans le tableau de bord de la modération.
+ * N » et la jauge creusée ; à droite, dans sa colonne, ce qu'il reste — le
+ * nombre en grand, « subs restants » dessous. Il était coupé en deux (« dans
+ * 18 » en haut, « subs » au bout de la jauge), et se lisait mal. Le plus
+ * proche est marqué. Sur l'accueil, et dans le tableau de bord de la
+ * modération.
  */
 export function PaliersSubs({ totalSubs, evenements = [] }: { totalSubs: number; evenements?: EvenementActif[] }) {
   const paliers = paliersEnCours(totalSubs, evenements);
@@ -99,18 +105,19 @@ export function PaliersSubs({ totalSubs, evenements = [] }: { totalSubs: number;
                 <span className="palier-nom">{p.label}</span>
                 <span className="palier-tous">tous les {p.every}</span>
                 {p.accelere && <span className="palier-badge">Tempête de neige</span>}
-                <span className="palier-dans num">
-                  dans <strong>{p.remaining}</strong>
-                </span>
               </div>
               {p.explication && <p className="palier-explication">{p.explication}</p>}
-              <div className="palier-pied">
-                <span className="palier-jauge" aria-hidden="true">
-                  <span style={{ width: `${Math.round(p.progress * 100)}%` }} />
-                </span>
-                <span className="palier-resume">subs</span>
-              </div>
+              <span className="palier-jauge" aria-hidden="true">
+                <span style={{ width: `${Math.round(p.progress * 100)}%` }} />
+              </span>
             </div>
+            <p className="palier-compte">
+              <strong className="num">{p.remaining}</strong>
+              <span>
+                {p.remaining > 1 ? 'subs' : 'sub'}
+                <span className="palier-compte-reste">{p.remaining > 1 ? ' restants' : ' restant'}</span>
+              </span>
+            </p>
           </li>
         );
       })}

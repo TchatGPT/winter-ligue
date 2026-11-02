@@ -7426,6 +7426,9 @@
 .palier {
   --teinte: var(--aurora);
   display: flex;
+  /* Dans la grille de la liste : sans cela, le nom, qui ne se coupe pas,
+     élargissait la ligne et poussait le compteur hors du bloc. */
+  min-width: 0;
   align-items: center;
   gap: 12px;
   padding: 8px 14px 8px 9px;
@@ -7453,12 +7456,16 @@
   display: grid;
   min-width: 0;
   flex: 1;
+  /* Une colonne bornée à la largeur du corps : un nom qui ne se coupe pas
+     n'élargit plus la grille sous le compteur. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 6px;
 }
 .palier-tete {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
-  gap: 10px;
+  gap: 4px 10px;
 }
 .palier-nom {
   font-family: var(--font-display);
@@ -7467,7 +7474,8 @@
   letter-spacing: 0.05em;
   line-height: 1;
   text-transform: uppercase;
-  white-space: nowrap;
+  /* Sur deux lignes s'il le faut, sur un téléphone étroit, plutôt que coupé. */
+  overflow-wrap: anywhere;
   color: color-mix(in srgb, var(--teinte) 55%, var(--ink));
 }
 .palier-tous {
@@ -7479,23 +7487,34 @@
   white-space: nowrap;
   color: var(--faint);
 }
-.palier-dans {
-  margin-left: auto;
-  font-size: 0.8125rem;
-  white-space: nowrap;
-  color: var(--muted);
+/* Ce qu'il reste, dans sa colonne, séparé du corps par un filet : le
+   nombre en grand, « subs restants » dessous, alignés à droite. */
+.palier-compte {
+  display: flex;
+  min-width: 4.75rem;
+  flex: none;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+  padding-left: 14px;
+  border-left: 1px solid color-mix(in srgb, var(--teinte) 22%, transparent);
 }
-.palier-dans strong {
+.palier-compte strong {
   font-family: var(--font-display);
-  font-size: 1.6rem;
+  font-size: 1.75rem;
   font-weight: 900;
-  line-height: 1;
+  line-height: 0.9;
   color: var(--ink);
 }
-.palier-pied {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+.palier-compte span {
+  font-family: var(--font-display);
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--muted);
 }
 .palier-jauge {
   position: relative;
@@ -7595,19 +7614,11 @@
 }
 
 /* L'unité du décompte, sous lui : « dans 50 » / « SUBS ». */
-.palier-resume {
-  flex: none;
-  font-family: var(--font-display);
-  font-size: 0.75rem;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  line-height: 1;
-  text-transform: uppercase;
-  white-space: nowrap;
-  color: var(--muted);
-}
 /* Le Booster Commu accéléré : une étiquette, pas une ligne de plus. */
 .palier-badge {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
   padding: 2px 8px;
   border-radius: 999px;
   background: color-mix(in srgb, var(--ice) 18%, transparent);
@@ -7683,6 +7694,17 @@
 }
 @container (max-width: 26rem) {
   .palier-tous {
+    display: none;
+  }
+  /* Le compteur resserré : « subs » seul, sous un nombre un peu moins grand. */
+  .palier-compte {
+    min-width: 0;
+    padding-left: 10px;
+  }
+  .palier-compte strong {
+    font-size: 1.45rem;
+  }
+  .palier-compte-reste {
     display: none;
   }
 }
