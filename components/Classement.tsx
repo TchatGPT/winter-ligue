@@ -11,8 +11,8 @@ import { FicheCarte } from '@/components/FicheCarte';
 import { LancerPacte } from '@/components/LancerPacte';
 import { LancerVerglas } from '@/components/LancerVerglas';
 import { IconActivision } from '@/components/icons';
-import { flakesShort } from '@/components/ui';
-import { RARITY_ORDER } from '@/lib/domain/rules';
+import { flakes } from '@/components/ui';
+import { multiplicateurChance, RARITY_ORDER } from '@/lib/domain/rules';
 import { memeTexte, pourChercher } from '@/lib/domain/texte';
 import type { CarteDuClassement, CarteGardee, RankingRow } from '@/lib/services/league';
 
@@ -151,7 +151,11 @@ export function Classement({
     setTri((t) => (t.cle === cle ? { cle, desc: !t.desc } : { cle, desc: cle !== 'rang' && cle !== 'pseudo' }));
 
   return (
-    <section className="glass tableau-verre @container relative" aria-label="Classement général">
+    <section
+      className="glass tableau-verre @container relative"
+      aria-label="Classement général"
+      data-moderation={boostersPerso ? '' : undefined}
+    >
       <SnowCap radius="var(--r-lg)" seed="classement" />
 
       {fiche && (
@@ -329,7 +333,9 @@ export function Classement({
                   <Podiums totals={row.totals} />
                 </td>
                 <td className="tableau-verre-secondaire num text-right text-ink-2">{row.totals.bestScore}</td>
-                <td className="num text-right text-ink-2">{flakesShort(row.snowflakes)}</td>
+                <td className="num text-right text-ink-2">
+                  <Flocons solde={row.snowflakes} />
+                </td>
               </tr>
             ))}
             {visibles.length === 0 && (
@@ -381,7 +387,7 @@ export function Classement({
                 <Detail label="Moyenne" valeur={row.totals.averageScore} />
                 <Detail label="Top 1/2/3" valeur={<Podiums totals={row.totals} />} />
                 <Detail label="Meilleure" valeur={row.totals.bestScore} />
-                <Detail label="Flocons" valeur={flakesShort(row.snowflakes)} />
+                <Detail label="Flocons" valeur={<Flocons solde={row.snowflakes} />} />
               </dl>
             </details>
           </li>
@@ -664,6 +670,27 @@ function PileDeCartes({
         ))}
       </span>
     </span>
+  );
+}
+
+/**
+ * Le solde de flocons, en entier — « 7 680 », pas « 7,68k » —, et dessous la
+ * chance qu'il donne aux boosters : son multiplicateur (`PALIERS_CHANCE`).
+ * Dans la même colonne : la chance suit le solde, une colonne de plus élargissait
+ * le tableau sans rien dire de neuf au tri.
+ */
+function Flocons({ solde }: { solde: number }) {
+  const chance = multiplicateurChance(solde);
+  return (
+    <>
+      <span className="block">{flakes(solde)}</span>
+      <span
+        className={`block text-[12px] whitespace-nowrap ${chance > 1 ? 'text-aurora' : 'text-muted'}`}
+        title="La chance aux boosters, d'après le solde de flocons"
+      >
+        chance ×{chance.toLocaleString('fr-FR', { maximumFractionDigits: 2 })}
+      </span>
+    </>
   );
 }
 

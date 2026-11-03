@@ -7343,7 +7343,9 @@
  * La zone qui défile : haute, même vide, et en retrait des bords arrondis de
  * la carte — les arêtes des lignes et de l'en-tête s'arrêtent avant la
  * courbe au lieu de la traverser. Ses propres coins sont arrondis et
- * découpent ce qui dépasse.
+ * découpent ce qui dépasse. Sans fond à elle (retiré le 03/11/2026) : plus
+ * sombre que la plaque, elle laissait autour d'elle une bande d'une autre
+ * teinte, à gauche, à droite et en bas.
  */
 .tableau-verre-defile {
   min-height: 60vh;
@@ -7351,7 +7353,6 @@
   margin: 0 0.9rem 0.9rem;
   overflow-y: auto;
   border-radius: calc(var(--r-lg) - 0.9rem);
-  background: rgb(0 10 30 / 0.12);
 }
 
 .tableau-verre-table {
@@ -7391,11 +7392,18 @@
 /*
  * Le tableau se règle sur sa propre largeur (le classement est un conteneur).
  * Étroit, il efface ses colonnes secondaires et resserre ses cellules : sans
- * cela, il exigeait 1 170 px et poussait la page hors de l'écran d'un
- * portable. Très large, ses lignes s'agrandissent : corps de 18 px, cellules
- * plus hautes.
+ * cela, il exigeait 1 250 px — la chance s'écrit sous les flocons — et
+ * poussait la page hors de l'écran d'un portable. La modération, qui règle
+ * les Boosters Perso sous chaque pseudo, en exige 1 360 : son seuil est plus
+ * haut. Très large, ses lignes s'agrandissent : corps de 18 px, cellules plus
+ * hautes.
  */
-@container (max-width: 74.99rem) {
+@container (max-width: 86.49rem) {
+  .tableau-verre[data-moderation] .tableau-verre-secondaire {
+    display: none;
+  }
+}
+@container (max-width: 79.99rem) {
   .tableau-verre-secondaire {
     display: none;
   }
