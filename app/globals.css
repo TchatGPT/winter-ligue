@@ -14028,9 +14028,6 @@
 .adm-panneau[data-ton='glace'] {
   --ton: var(--ice);
 }
-.adm-panneau[data-ton='violet'] {
-  --ton: var(--violet);
-}
 .adm-panneau[data-ton='danger'] {
   --ton: var(--danger);
   box-shadow:
@@ -14373,9 +14370,6 @@
 .adm-tuile[data-ton='aurore'] {
   --teinte: var(--aurora);
 }
-.adm-tuile[data-ton='violet'] {
-  --teinte: var(--violet);
-}
 a.adm-tuile:hover {
   transform: translateY(-2px);
 }
@@ -14472,9 +14466,9 @@ a.adm-tuile:hover .adm-tuile-fleche {
   }
 }
 
-/* La réserve des boosters cadeau, à droite du titre : le nombre en violet,
-   la teinte des boosters cadeau (l'or, retiré le 03/11/2026, était seul de
-   son espèce sur le site). */
+/* La réserve des boosters cadeau, à droite du titre : le nombre en vert
+   aurore, celui du tirage équitable (l'or, retiré le 03/11/2026, était seul
+   de son espèce sur le site). */
 .adm-reserve {
   display: flex;
   flex-direction: column;
@@ -14486,7 +14480,7 @@ a.adm-tuile:hover .adm-tuile-fleche {
   font-size: 2.6rem;
   font-weight: 900;
   line-height: 0.9;
-  color: var(--violet);
+  color: var(--aurora);
 }
 .adm-reserve span {
   margin-top: 0.25rem;
@@ -14507,8 +14501,8 @@ a.adm-tuile:hover .adm-tuile-fleche {
   margin-top: 0.55rem;
   padding: 0.55rem;
   border-radius: var(--r-md);
-  background: color-mix(in srgb, var(--violet) 8%, rgb(0 10 30 / 0.24));
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--violet) 24%, transparent);
+  background: color-mix(in srgb, var(--aurora) 8%, rgb(0 10 30 / 0.24));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--aurora) 24%, transparent);
 }
 /* Combien : moins, le nombre, plus. */
 .adm-nombre {
@@ -14604,9 +14598,9 @@ a.adm-tuile:hover .adm-tuile-fleche {
   font-size: 1rem;
   font-weight: 900;
   text-align: center;
-  color: var(--violet);
-  background: color-mix(in srgb, var(--violet) 14%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--violet) 40%, transparent);
+  color: var(--aurora);
+  background: color-mix(in srgb, var(--aurora) 14%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--aurora) 40%, transparent);
 }
 .adm-dons li {
   justify-content: space-between;
@@ -14620,39 +14614,6 @@ a.adm-tuile:hover .adm-tuile-fleche {
   flex: none;
   font-size: 0.8125rem;
   color: var(--faint);
-}
-
-/* L'initiale d'un pseudo : de la neige pour un joueur de la ligue, du verre
-   pour un viewer ; un sub offert se cerne d'or. */
-.adm-avatar {
-  display: grid;
-  width: 2.25rem;
-  height: 2.25rem;
-  flex: none;
-  place-items: center;
-  border-radius: var(--r-pilule);
-  font-family: var(--font-display);
-  font-size: 1rem;
-  font-weight: 900;
-  text-transform: uppercase;
-  color: var(--ink);
-  background: rgb(255 255 255 / 0.08);
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.35),
-    inset 0 0 0 1px rgb(255 255 255 / 0.12);
-}
-.adm-avatar[data-statut='joueur'] {
-  background: linear-gradient(178deg, var(--neige-1) 0%, var(--neige-2) 55%, var(--neige-3) 100%);
-  color: var(--nuit);
-  text-shadow: none;
-}
-.adm-avatar[data-statut='anonyme'] {
-  color: var(--faint);
-}
-.adm-sub[data-genre='cadeau'] .adm-avatar {
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.35),
-    0 0 0 2px color-mix(in srgb, var(--violet) 75%, transparent);
 }
 
 /* Le fil des subs : jour par jour, une ligne par sub. */

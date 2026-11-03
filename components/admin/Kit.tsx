@@ -150,7 +150,7 @@ export function Panneau({
   surtitre?: ReactNode;
   sousTitre?: ReactNode;
   /** La teinte du surtitre et de l'arête : or pour ce qui attend un geste. */
-  ton?: 'or' | 'glace' | 'aurore' | 'violet' | 'danger';
+  ton?: 'or' | 'glace' | 'aurore' | 'danger';
   actions?: ReactNode;
   defile?: boolean;
   /** Le nom de sa zone dans la grille de l'écran ; il tire aussi sa neige. */

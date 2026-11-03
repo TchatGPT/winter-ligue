@@ -107,16 +107,6 @@ type Statut = 'joueur' | 'viewer' | 'anonyme';
 
 const statutDe = (inscrit: boolean | null): Statut => (inscrit === null ? 'anonyme' : inscrit ? 'joueur' : 'viewer');
 
-/** L'initiale d'un pseudo, dans une pastille : neige pour un joueur, verre pour un viewer. */
-function Avatar({ pseudo, statut }: { pseudo: string; statut: Statut }) {
-  const initiale = statut === 'anonyme' ? '?' : (pseudo.match(/[\p{L}\p{N}]/u)?.[0] ?? '?');
-  return (
-    <span className="adm-avatar" data-statut={statut} aria-hidden="true">
-      {initiale}
-    </span>
-  );
-}
-
 /** Une tuile de chiffre : sa médaille, le nombre en grand, ce qu'il compte, et où aller. */
 function Tuile({
   medaille,
@@ -133,7 +123,7 @@ function Tuile({
   nom: string;
   detail: ReactNode;
   href?: string;
-  ton?: 'or' | 'glace' | 'aurore' | 'violet';
+  ton?: 'or' | 'glace' | 'aurore';
   /** Une teinte à soi, celle du prochain palier. */
   teinte?: string;
   children?: ReactNode;
@@ -192,7 +182,6 @@ function LigneSub({ s }: { s: SubVue }) {
   const statut = statutDe(s.inscrit);
   return (
     <li className="adm-sub" data-statut={statut} data-genre={s.genre}>
-      <Avatar pseudo={s.pseudo} statut={statut} />
       <div className="adm-sub-corps">
         <p className="adm-sub-phrase">
           <b>{s.pseudo}</b> {action(s)}
@@ -200,7 +189,7 @@ function LigneSub({ s }: { s: SubVue }) {
         <p className="adm-sub-etiquettes">
           <Pastille ton={statut === 'joueur' ? 'glace' : 'gris'}>{statut}</Pastille>
           {s.boosters > 0 && (
-            <Pastille ton={s.inscrit ? 'aurore' : 'violet'}>
+            <Pastille ton="aurore">
               {s.inscrit
                 ? `+${s.boosters} Booster${s.boosters > 1 ? 's' : ''} Perso`
                 : `+${s.boosters} booster${s.boosters > 1 ? 's' : ''} cadeau`}
@@ -512,11 +501,11 @@ export function TableauDeBord({
 
         <Tuile
           medaille={
-            <Medaille teinte="var(--violet)" id="tdb-cadeau" className="adm-tuile-medaille">
+            <Medaille teinte="var(--aurora)" id="tdb-cadeau" className="adm-tuile-medaille">
               <Cadeau className="medaille-icone" />
             </Medaille>
           }
-          ton="violet"
+          ton="aurore"
           nombre={flakes(reserve)}
           nom={reserve > 1 ? 'Boosters cadeau' : 'Booster cadeau'}
           detail={reserve === 0 ? 'Rien à donner pour l’instant' : 'À donner à des joueurs'}
@@ -548,7 +537,7 @@ export function TableauDeBord({
       {/* ---------------------------- Les boosters cadeau ---------------------------- */}
       <Panneau
         zone="cadeau"
-        ton="violet"
+        ton="aurore"
         surtitre="Payés par des viewers"
         titre="Boosters cadeau"
         sousTitre={
@@ -577,7 +566,6 @@ export function TableauDeBord({
               {aRedonner.map((d) => (
                 <li key={d.twitchId} data-ouvert={ouvert === d.twitchId ? '' : undefined}>
                   <div className="adm-personne-ligne">
-                    <Avatar pseudo={d.pseudo} statut="viewer" />
                     <div className="min-w-0 flex-1">
                       <p className="adm-personne-nom">{d.pseudo}</p>
                       <p className="adm-personne-detail">
