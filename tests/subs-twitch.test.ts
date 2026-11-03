@@ -259,4 +259,51 @@ describe('les boosters cadeau', () => {
     expect(donneBoosterCadeau(db, genereux.id, db.subsTwitch, 'modo').reserve).toBe(0);
     expect(() => donneBoosterCadeau(db, genereux.id, db.subsTwitch, 'modo')).toThrow('Plus aucun booster cadeau');
   });
+
+  it('se répartissent : on choisit le viewer qui les a payés, et combien à chaque joueur', () => {
+    const db = base();
+    // Trente subs offerts : six boosters cadeau payés par le même viewer, puis un T3 d'un autre.
+    ajouteSubsTwitch(db, annonce('community_sub_gift', { id: 'cg', total: 30, sub_tier: '1000' }, 'tw-queen'));
+    ajouteSubsTwitch(db, annonce('sub', sub('3000'), 'tw-absinthe'));
+    const un = joueur(db);
+    const autre = rattacheCompteTwitch(db, {
+      id: 'tw-autre',
+      login: 'autre',
+      displayName: 'Autre',
+      avatarUrl: null,
+      roleChaine: 'joueur',
+    });
+    const parQueen = () => db.packsDus.filter((p) => p.donDe === 'tw-queen').length;
+
+    // Le T3 d'absinthe est plus récent : choisi à la main, c'est bien lui qui part.
+    const r1 = donneBoosterCadeau(db, un.id, db.subsTwitch, 'modo', { donateur: 'tw-absinthe', nombre: 1 });
+    expect(r1).toMatchObject({ nombre: 1, reserve: 6 });
+    expect(parQueen()).toBe(0);
+
+    // Les six de Queen : deux à l'un, quatre à l'autre.
+    expect(donneBoosterCadeau(db, un.id, db.subsTwitch, 'modo', { donateur: 'tw-queen', nombre: 2 })).toMatchObject({
+      nombre: 2,
+      reserve: 4,
+      boostersPerso: 3,
+    });
+    expect(donneBoosterCadeau(db, autre.id, db.subsTwitch, 'modo', { donateur: 'tw-queen', nombre: 4 })).toMatchObject({
+      nombre: 4,
+      reserve: 0,
+    });
+    expect(parQueen()).toBe(6);
+    expect(boostersPerso(db).filter((b) => b.joueurId === autre.id)).toHaveLength(4);
+  });
+
+  it('refuse d’en donner plus qu’un viewer n’en a payé, sans rien donner', () => {
+    const db = base();
+    ajouteSubsTwitch(db, annonce('community_sub_gift', { id: 'cg', total: 10, sub_tier: '1000' }, 'tw-queen'));
+    const un = joueur(db);
+    expect(() => donneBoosterCadeau(db, un.id, db.subsTwitch, 'modo', { donateur: 'tw-queen', nombre: 3 })).toThrow(
+      'Il ne reste que 2 boosters cadeau',
+    );
+    expect(() => donneBoosterCadeau(db, un.id, db.subsTwitch, 'modo', { donateur: 'tw-inconnu' })).toThrow(
+      'n’a plus de booster cadeau',
+    );
+    expect(db.packsDus.filter((p) => p.donDe)).toHaveLength(0);
+  });
 });

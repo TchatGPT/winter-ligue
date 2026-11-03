@@ -14026,6 +14026,9 @@
 .adm-panneau[data-ton='glace'] {
   --ton: var(--ice);
 }
+.adm-panneau[data-ton='violet'] {
+  --ton: var(--violet);
+}
 .adm-panneau[data-ton='danger'] {
   --ton: var(--danger);
   box-shadow:
@@ -14368,6 +14371,9 @@
 .adm-tuile[data-ton='aurore'] {
   --teinte: var(--aurora);
 }
+.adm-tuile[data-ton='violet'] {
+  --teinte: var(--violet);
+}
 a.adm-tuile:hover {
   transform: translateY(-2px);
 }
@@ -14464,7 +14470,9 @@ a.adm-tuile:hover .adm-tuile-fleche {
   }
 }
 
-/* La réserve des boosters cadeau, à droite du titre : le nombre en or. */
+/* La réserve des boosters cadeau, à droite du titre : le nombre en violet,
+   la teinte des boosters cadeau (l'or, retiré le 03/11/2026, était seul de
+   son espèce sur le site). */
 .adm-reserve {
   display: flex;
   flex-direction: column;
@@ -14476,7 +14484,7 @@ a.adm-tuile:hover .adm-tuile-fleche {
   font-size: 2.6rem;
   font-weight: 900;
   line-height: 0.9;
-  color: var(--gold);
+  color: var(--violet);
 }
 .adm-reserve span {
   margin-top: 0.25rem;
@@ -14489,15 +14497,47 @@ a.adm-tuile:hover .adm-tuile-fleche {
   color: var(--faint);
 }
 
-/* Donner : le choix du joueur et le bouton d'or. */
+/* Répartir les boosters d'un viewer : le joueur, combien, et le bouton. */
 .adm-don {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
+  margin-top: 0.55rem;
   padding: 0.55rem;
   border-radius: var(--r-md);
-  background: color-mix(in srgb, var(--gold) 8%, rgb(0 10 30 / 0.24));
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gold) 24%, transparent);
+  background: color-mix(in srgb, var(--violet) 8%, rgb(0 10 30 / 0.24));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--violet) 24%, transparent);
+}
+/* Combien : moins, le nombre, plus. */
+.adm-nombre {
+  display: inline-flex;
+  min-height: 44px;
+  flex: none;
+  align-items: center;
+  border-radius: var(--r-pilule);
+  background: rgb(0 10 30 / 0.35);
+  box-shadow: inset 0 0 0 1px var(--glass-edge);
+}
+.adm-nombre button {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+.adm-nombre button:disabled {
+  color: var(--faint);
+  opacity: 0.5;
+}
+.adm-nombre output {
+  min-width: 2rem;
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 900;
+  text-align: center;
+  color: var(--ink);
 }
 .adm-don .field {
   min-width: 0;
@@ -14507,12 +14547,6 @@ a.adm-tuile:hover .adm-tuile-fleche {
 .adm-don .btn {
   min-height: 44px;
   flex: none;
-}
-.adm-don .btn-gold:disabled {
-  border-color: rgb(255 255 255 / 0.16);
-  background: rgb(255 255 255 / 0.06);
-  color: var(--muted);
-  opacity: 0.75;
 }
 @media (max-width: 479px) {
   .adm-don .btn {
@@ -14537,11 +14571,14 @@ a.adm-tuile:hover .adm-tuile-fleche {
 }
 .adm-personnes li,
 .adm-dons li {
+  padding: 0.55rem 0.15rem;
+  border-bottom: 1px solid rgb(255 255 255 / 0.07);
+}
+.adm-dons li,
+.adm-personne-ligne {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.55rem 0.15rem;
-  border-bottom: 1px solid rgb(255 255 255 / 0.07);
 }
 .adm-personnes li:last-child,
 .adm-dons li:last-child {
@@ -14565,9 +14602,9 @@ a.adm-tuile:hover .adm-tuile-fleche {
   font-size: 1rem;
   font-weight: 900;
   text-align: center;
-  color: var(--gold);
-  background: color-mix(in srgb, var(--gold) 14%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gold) 40%, transparent);
+  color: var(--violet);
+  background: color-mix(in srgb, var(--violet) 14%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--violet) 40%, transparent);
 }
 .adm-dons li {
   justify-content: space-between;
@@ -14613,7 +14650,7 @@ a.adm-tuile:hover .adm-tuile-fleche {
 .adm-sub[data-genre='cadeau'] .adm-avatar {
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 0.35),
-    0 0 0 2px color-mix(in srgb, var(--gold) 75%, transparent);
+    0 0 0 2px color-mix(in srgb, var(--violet) 75%, transparent);
 }
 
 /* Le fil des subs : jour par jour, une ligne par sub. */

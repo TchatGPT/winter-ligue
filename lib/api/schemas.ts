@@ -240,6 +240,12 @@ export const adminSubsSchema = z.union([
 export const boostersPersoSchema = z.object({ playerId: uuid, sens: z.enum(['plus', 'moins']) });
 
 /** Redonner un booster cadeau à un joueur : le serveur choisit de quelle réserve. */
-export const boosterCadeauSchema = z.object({ playerId: uuid });
+export const boosterCadeauSchema = z.object({
+  playerId: uuid,
+  /** Le compte Twitch du viewer qui les a payés ; sans lui, les plus anciens d'abord. */
+  donateur: z.string().trim().min(1).max(64).optional(),
+  /** Combien en donner : le serveur vérifie qu'il en reste assez. */
+  nombre: z.number().int().min(1).max(100).optional(),
+});
 
 export type GameInput = z.infer<typeof gameSchema>;

@@ -250,12 +250,16 @@ export function boostersCadeauDonnes(db: Database): Map<string, number> {
 }
 
 /**
- * Redonne un booster cadeau à un joueur de la ligue.
+ * Redonne des boosters cadeau à un joueur de la ligue.
  *
  * Un booster cadeau, c'est un Booster Perso payé par quelqu'un qui n'est pas
- * inscrit (`persoEnAttente`). Il se prend sur le plus ancien donateur qui en a
- * encore, et retient son compte Twitch (`donDe`) : il sort de la réserve, et ne
- * lui sera pas versé s'il s'inscrit plus tard. La streameuse n'en reçoit pas.
+ * inscrit (`persoEnAttente`). La modération choisit de qui il vient — le viewer
+ * qui l'a payé, et qui a dit à qui le donner (décidé le 03/11/2026) — et
+ * combien : six boosters d'un viewer se répartissent, deux à l'un, quatre à
+ * l'autre. Sans viewer choisi, ils se prennent sur les plus anciens. Chacun
+ * retient le compte Twitch de qui l'a payé (`donDe`) : il sort de la réserve,
+ * et ne lui sera pas versé s'il s'inscrit plus tard. La streameuse n'en reçoit
+ * pas.
  *
  * Le registre se lit hors de la base (`Store.subsTwitch`) : on le passe.
  * À appeler dans une transaction.
@@ -265,33 +269,59 @@ export function donneBoosterCadeau(
   joueurId: string,
   registre: readonly SubTwitch[],
   auteur: string,
-): { boostersPerso: number; reserve: number; donateur: string } {
+  choix: { donateur?: string; nombre?: number } = {},
+): { boostersPerso: number; reserve: number; donateur: string; nombre: number } {
   const joueur = db.players.find((p) => p.id === joueurId && p.active);
   if (!joueur) throw new PackError('Joueur introuvable.', 'JOUEUR_INTROUVABLE');
   if (estLaStreameuse(joueur, chaineDeLaLigue())) {
     throw new PackError('La streameuse ne joue pas : pas de Booster Perso pour elle.', 'STREAMEUSE');
   }
+  const nombre = choix.nombre ?? 1;
+  if (!Number.isInteger(nombre) || nombre < 1) throw new PackError('Nombre de boosters invalide.', 'AUCUN_DU');
+
   const inscrits = new Set(db.players.map((p) => p.twitchId).filter((id): id is string => Boolean(id)));
-  const sources = persoEnAttente(registre, inscrits, boostersCadeauDonnes(db))
+  const toutes = persoEnAttente(registre, inscrits, boostersCadeauDonnes(db))
     .filter((s) => s.restants > 0)
     .sort((a, b) => a.premier.localeCompare(b.premier));
-  const source = sources[0];
-  if (!source) throw new PackError('Plus aucun booster cadeau à redonner.', 'AUCUN_DU');
+  const totalReserve = toutes.reduce((n, s) => n + s.restants, 0);
+  if (totalReserve === 0) throw new PackError('Plus aucun booster cadeau à redonner.', 'AUCUN_DU');
+  const sources = choix.donateur ? toutes.filter((s) => s.twitchId === choix.donateur) : toutes;
+  if (sources.length === 0) throw new PackError('Ce viewer n’a plus de booster cadeau à donner.', 'AUCUN_DU');
+  const disponibles = sources.reduce((n, s) => n + s.restants, 0);
+  if (disponibles < nombre) {
+    throw new PackError(
+      `Il ne reste que ${disponibles} booster${disponibles > 1 ? 's' : ''} cadeau${choix.donateur ? ` payé${disponibles > 1 ? 's' : ''} par ${sources[0].pseudo}` : ''}.`,
+      'AUCUN_DU',
+    );
+  }
 
-  const du = ajoutePackDu(db, 'perso', joueur.id, `booster cadeau, payé par ${source.pseudo}`);
-  du.donDe = source.twitchId;
-  const reserve = sources.reduce((n, s) => n + s.restants, 0) - 1;
+  // Un par un, du plus ancien viewer au plus récent : chacun retient le sien.
+  let reste = nombre;
+  const payeurs: string[] = [];
+  for (const source of sources) {
+    const pris = Math.min(reste, source.restants);
+    for (let i = 0; i < pris; i++) {
+      const du = ajoutePackDu(db, 'perso', joueur.id, `booster cadeau, payé par ${source.pseudo}`);
+      du.donDe = source.twitchId;
+    }
+    if (pris > 0) payeurs.push(source.pseudo);
+    reste -= pris;
+    if (reste === 0) break;
+  }
+
+  const reserve = totalReserve - nombre;
   const boostersPerso = db.packsDus.filter(
     (p) => p.packId === 'perso' && p.joueurId === joueur.id && p.ouvertureId === null,
   ).length;
+  const donateur = payeurs.join(', ');
   audit(
     db,
     auteur,
     'BOOSTER_CADEAU_DONNE',
     joueur.id,
-    `${joueur.pseudo} reçoit un booster cadeau payé par ${source.pseudo} (réserve : ${reserve})`,
+    `${joueur.pseudo} reçoit ${nombre} booster${nombre > 1 ? 's' : ''} cadeau payé${nombre > 1 ? 's' : ''} par ${donateur} (réserve : ${reserve})`,
   );
-  return { boostersPerso, reserve, donateur: source.pseudo };
+  return { boostersPerso, reserve, donateur, nombre };
 }
 
 /**

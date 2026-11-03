@@ -13,9 +13,10 @@ export const dynamic = 'force-dynamic';
 const REGISTRE_SUBS = 5000;
 
 /**
- * Redonne un booster cadeau — un Booster Perso payé par quelqu'un qui n'est
- * pas inscrit — à un joueur de la ligue (Modération → Vue d'ensemble). Le
- * serveur choisit la réserve : le plus ancien donateur qui en a encore.
+ * Redonne des boosters cadeau — des Boosters Perso payés par quelqu'un qui
+ * n'est pas inscrit — à un joueur de la ligue (Modération → Tableau de bord).
+ * La modération choisit le viewer qui les a payés et combien ; le serveur
+ * vérifie qu'il en reste assez. Sans viewer choisi, les plus anciens d'abord.
  */
 export async function POST(request: Request): Promise<NextResponse> {
   const g = await guard(request, {
@@ -31,7 +32,10 @@ export async function POST(request: Request): Promise<NextResponse> {
     const registre = await getStore().subsTwitch(REGISTRE_SUBS);
     return ok(
       await getStore().transaction((db) =>
-        donneBoosterCadeau(db, g.body.playerId, registre, g.session?.sub ?? 'admin'),
+        donneBoosterCadeau(db, g.body.playerId, registre, g.session?.sub ?? 'admin', {
+          donateur: g.body.donateur,
+          nombre: g.body.nombre,
+        }),
       ),
     );
   } catch (error) {

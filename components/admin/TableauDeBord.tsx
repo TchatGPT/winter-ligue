@@ -133,7 +133,7 @@ function Tuile({
   nom: string;
   detail: ReactNode;
   href?: string;
-  ton?: 'or' | 'glace' | 'aurore';
+  ton?: 'or' | 'glace' | 'aurore' | 'violet';
   /** Une teinte à soi, celle du prochain palier. */
   teinte?: string;
   children?: ReactNode;
@@ -184,7 +184,10 @@ function action(s: SubVue): ReactNode {
   return `${s.genre === 'resub' ? 's’est réabonné' : 's’est abonné'}${niveau}`;
 }
 
-/** Une ligne du fil : qui, quoi, joueur ou viewer, ce que ça a rapporté, et l'heure. */
+/**
+ * Une ligne du fil : qui, quoi, son étiquette — « joueur » s'il est inscrit à
+ * la ligue, « viewer » sinon —, ce que ça a rapporté, et l'heure.
+ */
 function LigneSub({ s }: { s: SubVue }) {
   const statut = statutDe(s.inscrit);
   return (
@@ -195,11 +198,9 @@ function LigneSub({ s }: { s: SubVue }) {
           <b>{s.pseudo}</b> {action(s)}
         </p>
         <p className="adm-sub-etiquettes">
-          <Pastille ton={statut === 'joueur' ? 'glace' : 'gris'}>
-            {statut === 'joueur' ? 'joueur de la ligue' : statut}
-          </Pastille>
+          <Pastille ton={statut === 'joueur' ? 'glace' : 'gris'}>{statut}</Pastille>
           {s.boosters > 0 && (
-            <Pastille ton={s.inscrit ? 'aurore' : 'or'}>
+            <Pastille ton={s.inscrit ? 'aurore' : 'violet'}>
               {s.inscrit
                 ? `+${s.boosters} Booster${s.boosters > 1 ? 's' : ''} Perso`
                 : `+${s.boosters} booster${s.boosters > 1 ? 's' : ''} cadeau`}
@@ -212,6 +213,98 @@ function LigneSub({ s }: { s: SubVue }) {
       </time>
     </li>
   );
+}
+
+/**
+ * Répartir les boosters cadeau d'un viewer : à quel joueur, et combien — pas
+ * forcément tous. Six boosters se donnent deux à l'un, quatre à l'autre, en
+ * deux fois. Le serveur revérifie qu'il en reste assez.
+ */
+function Repartition({
+  donateur,
+  receveurs,
+  occupe,
+  onDonner,
+}: {
+  donateur: DonateurVue;
+  receveurs: ReceveurVue[];
+  occupe: boolean;
+  onDonner: (joueurId: string, nombre: number) => Promise<boolean>;
+}) {
+  const [joueur, setJoueur] = useState('');
+  const [voulu, setVoulu] = useState(1);
+  // Après un don, il en reste moins : le nombre ne dépasse jamais ce qui reste.
+  const nombre = Math.min(voulu, donateur.restants);
+
+  return (
+    <form
+      className="adm-don"
+      onSubmit={async (e) => {
+        e.preventDefault();
+        if (!joueur || occupe) return;
+        if (await onDonner(joueur, nombre)) {
+          setJoueur('');
+          setVoulu(1);
+        }
+      }}
+    >
+      <select
+        className="field"
+        value={joueur}
+        onChange={(e) => setJoueur(e.target.value)}
+        aria-label={`Le joueur qui reçoit des boosters de ${donateur.pseudo}`}
+      >
+        <option value="">À quel joueur ?</option>
+        {receveurs.map((j) => (
+          <option key={j.id} value={j.id}>
+            {j.pseudo}
+            {j.boostersPerso > 0 ? ` (a déjà ${j.boostersPerso} Booster${j.boostersPerso > 1 ? 's' : ''} Perso)` : ''}
+          </option>
+        ))}
+      </select>
+      <div className="adm-nombre" role="group" aria-label="Combien de boosters">
+        <button type="button" onClick={() => setVoulu(Math.max(1, nombre - 1))} disabled={nombre <= 1} aria-label="Un de moins">
+          −
+        </button>
+        <output className="num" aria-live="polite">
+          {nombre}
+        </output>
+        <button
+          type="button"
+          onClick={() => setVoulu(Math.min(donateur.restants, nombre + 1))}
+          disabled={nombre >= donateur.restants}
+          aria-label="Un de plus"
+        >
+          +
+        </button>
+      </div>
+      <button type="submit" className="btn btn-ice" disabled={!joueur || occupe}>
+        Donner {nombre}
+      </button>
+    </form>
+  );
+}
+
+/**
+ * Les dons, regroupés : quatre boosters donnés d'un coup au même joueur, payés
+ * par le même viewer, font une ligne — « a reçu 4 boosters ».
+ */
+function regroupeDons(dons: DonVue[]): (DonVue & { nombre: number })[] {
+  const groupes: (DonVue & { nombre: number })[] = [];
+  for (const d of dons) {
+    const dernier = groupes.at(-1);
+    if (
+      dernier &&
+      dernier.joueur === d.joueur &&
+      dernier.donateur === d.donateur &&
+      Math.abs(Date.parse(dernier.le) - Date.parse(d.le)) < 60_000
+    ) {
+      dernier.nombre += 1;
+    } else {
+      groupes.push({ ...d, nombre: 1 });
+    }
+  }
+  return groupes;
 }
 
 /** Twitch n'est pas branché : un bandeau, comme ceux des évènements. */
@@ -248,8 +341,9 @@ type FiltreFil = 'tout' | 'joueurs' | 'viewers' | 'offerts';
  *  2. quatre tuiles : les subs de la saison et le prochain palier, les
  *     boosters à ouvrir en live, les boosters cadeau à donner, les joueurs
  *     (et ceux à qui il manque un pseudo Activision) ;
- *  3. les boosters cadeau : payés par des viewers qui ne jouent pas, que la
- *     modération donne à des joueurs — à qui, et d'où ils viennent ;
+ *  3. les boosters cadeau : payés par des viewers qui ne jouent pas. Le
+ *     viewer dit à qui les donner : la modération répartit les siens, à quel
+ *     joueur et combien ;
  *  4. le fil des subs, jour par jour : qui, quoi, joueur de la ligue ou
  *     viewer, et le booster que ça a rapporté ;
  *  5. sur un très grand écran, les paliers du compteur.
@@ -286,7 +380,8 @@ export function TableauDeBord({
   maintenant: string;
 }) {
   const { busy, message, envoie, setMessage } = useAction();
-  const [receveur, setReceveur] = useState('');
+  /** Le viewer dont on répartit les boosters, s'il y en a un d'ouvert. */
+  const [ouvert, setOuvert] = useState<string | null>(null);
   const [filtre, setFiltre] = useState<FiltreFil>('tout');
   const [recherche, setRecherche] = useState('');
   const [ordre, setOrdre] = useState<'recent' | 'ancien'>('recent');
@@ -329,15 +424,20 @@ export function TableauDeBord({
     return { groupes, reste: Math.max(0, gardes.length - montres) };
   }, [subs, filtre, recherche, ordre, montres, maintenant]);
 
-  async function donne() {
-    const j = receveurs.find((x) => x.id === receveur);
-    if (!j) return;
+  async function donne(d: DonateurVue, joueurId: string, nombre: number): Promise<boolean> {
+    const j = receveurs.find((x) => x.id === joueurId);
+    if (!j) return false;
     const fait = await envoie(
       '/api/admin/boosters-cadeau',
-      { playerId: j.id },
-      { cle: 'cadeau', succes: `Booster cadeau donné à ${j.pseudo} : il l’attend dans ses Boosters Perso.` },
+      { playerId: j.id, donateur: d.twitchId, nombre },
+      {
+        cle: `cadeau-${d.twitchId}`,
+        succes: `${nombre} booster${nombre > 1 ? 's' : ''} de ${d.pseudo} donné${nombre > 1 ? 's' : ''} à ${j.pseudo} : ${nombre > 1 ? 'ils l’attendent' : 'il l’attend'} dans ses Boosters Perso.`,
+      },
     );
-    if (fait) setReceveur('');
+    // Tout est donné : la répartition se referme.
+    if (fait && nombre >= d.restants) setOuvert(null);
+    return fait !== null;
   }
 
   const Pack = NAV_ICONS.pack;
@@ -412,11 +512,11 @@ export function TableauDeBord({
 
         <Tuile
           medaille={
-            <Medaille teinte="var(--gold)" id="tdb-cadeau" className="adm-tuile-medaille">
+            <Medaille teinte="var(--violet)" id="tdb-cadeau" className="adm-tuile-medaille">
               <Cadeau className="medaille-icone" />
             </Medaille>
           }
-          ton="or"
+          ton="violet"
           nombre={flakes(reserve)}
           nom={reserve > 1 ? 'Boosters cadeau' : 'Booster cadeau'}
           detail={reserve === 0 ? 'Rien à donner pour l’instant' : 'À donner à des joueurs'}
@@ -448,13 +548,13 @@ export function TableauDeBord({
       {/* ---------------------------- Les boosters cadeau ---------------------------- */}
       <Panneau
         zone="cadeau"
-        ton="or"
+        ton="violet"
         surtitre="Payés par des viewers"
         titre="Boosters cadeau"
         sousTitre={
           <>
             Un viewer qui ne joue pas dans la ligue a pris un <b>sub de niveau 3</b> ou offert <b>5 subs</b> : son
-            booster revient à la ligue. Donne-le à un joueur.
+            booster revient à la ligue. Il dit à qui le donner : choisis ses boosters, le joueur, et combien.
           </>
         }
         actions={
@@ -465,35 +565,6 @@ export function TableauDeBord({
         }
         defile
       >
-        <form
-          className="adm-don"
-          onSubmit={(e) => {
-            e.preventDefault();
-            void donne();
-          }}
-        >
-          <select
-            className="field"
-            value={receveur}
-            onChange={(e) => setReceveur(e.target.value)}
-            disabled={reserve === 0}
-            aria-label="Le joueur qui reçoit un booster cadeau"
-          >
-            <option value="">{reserve === 0 ? 'Rien à donner' : 'À quel joueur ?'}</option>
-            {receveurs.map((j) => (
-              <option key={j.id} value={j.id}>
-                {j.pseudo}
-                {j.boostersPerso > 0
-                  ? ` (a déjà ${j.boostersPerso} Booster${j.boostersPerso > 1 ? 's' : ''} Perso)`
-                  : ''}
-              </option>
-            ))}
-          </select>
-          <button type="submit" className="btn btn-gold" disabled={reserve === 0 || !receveur || busy !== null}>
-            Donner 1 booster
-          </button>
-        </form>
-
         {aRedonner.length === 0 ? (
           <Vide>
             Aucun booster à donner. Dès qu’un viewer qui ne joue pas prend un sub de niveau 3 ou offre 5 subs, son
@@ -504,26 +575,44 @@ export function TableauDeBord({
             <h3 className="adm-intertitre">Qui les a payés</h3>
             <ul className="adm-personnes">
               {aRedonner.map((d) => (
-                <li key={d.twitchId}>
-                  <Avatar pseudo={d.pseudo} statut="viewer" />
-                  <div className="min-w-0 flex-1">
-                    <p className="adm-personne-nom">{d.pseudo}</p>
-                    <p className="adm-personne-detail">
-                      {[
-                        d.offerts > 0 ? `${pluriel(d.offerts, 'sub')} offert${d.offerts > 1 ? 's' : ''}` : null,
-                        d.niveau3 > 0 ? `${pluriel(d.niveau3, 'sub')} de niveau 3` : null,
-                        d.donnes > 0 ? `${flakes(d.donnes)} déjà donné${d.donnes > 1 ? 's' : ''}` : null,
-                      ]
-                        .filter(Boolean)
-                        .join(' · ')}
-                    </p>
+                <li key={d.twitchId} data-ouvert={ouvert === d.twitchId ? '' : undefined}>
+                  <div className="adm-personne-ligne">
+                    <Avatar pseudo={d.pseudo} statut="viewer" />
+                    <div className="min-w-0 flex-1">
+                      <p className="adm-personne-nom">{d.pseudo}</p>
+                      <p className="adm-personne-detail">
+                        {[
+                          d.offerts > 0 ? `${pluriel(d.offerts, 'sub')} offert${d.offerts > 1 ? 's' : ''}` : null,
+                          d.niveau3 > 0 ? `${pluriel(d.niveau3, 'sub')} de niveau 3` : null,
+                          d.donnes > 0 ? `${flakes(d.donnes)} déjà donné${d.donnes > 1 ? 's' : ''}` : null,
+                        ]
+                          .filter(Boolean)
+                          .join(' · ')}
+                      </p>
+                    </div>
+                    <span
+                      className="adm-compte"
+                      title={`${d.restants} booster${d.restants > 1 ? 's' : ''} cadeau à donner`}
+                    >
+                      {flakes(d.restants)}
+                    </span>
+                    <button
+                      type="button"
+                      className="btn btn-sm"
+                      aria-expanded={ouvert === d.twitchId}
+                      onClick={() => setOuvert(ouvert === d.twitchId ? null : d.twitchId)}
+                    >
+                      {ouvert === d.twitchId ? 'Fermer' : 'Donner'}
+                    </button>
                   </div>
-                  <span
-                    className="adm-compte"
-                    title={`${d.restants} booster${d.restants > 1 ? 's' : ''} cadeau à donner`}
-                  >
-                    {flakes(d.restants)}
-                  </span>
+                  {ouvert === d.twitchId && (
+                    <Repartition
+                      donateur={d}
+                      receveurs={receveurs}
+                      occupe={busy !== null}
+                      onDonner={(joueurId, nombre) => donne(d, joueurId, nombre)}
+                    />
+                  )}
                 </li>
               ))}
             </ul>
@@ -534,14 +623,17 @@ export function TableauDeBord({
           <section className="adm-bloc">
             <h3 className="adm-intertitre">Déjà donnés</h3>
             <ul className="adm-dons">
-              {dons.slice(0, 8).map((d) => (
-                <li key={d.id}>
-                  <p>
-                    <b>{d.joueur}</b> a reçu un booster payé par {d.donateur}
-                  </p>
-                  <time dateTime={d.le}>{quand(d.le, maintenant)}</time>
-                </li>
-              ))}
+              {regroupeDons(dons)
+                .slice(0, 8)
+                .map((d) => (
+                  <li key={d.id}>
+                    <p>
+                      <b>{d.joueur}</b> a reçu {d.nombre > 1 ? `${d.nombre} boosters payés` : 'un booster payé'} par{' '}
+                      {d.donateur}
+                    </p>
+                    <time dateTime={d.le}>{quand(d.le, maintenant)}</time>
+                  </li>
+                ))}
             </ul>
           </section>
         )}
