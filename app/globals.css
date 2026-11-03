@@ -6745,78 +6745,75 @@
 }
 
 /*
- * Les trois étapes des boosters, en une bande compacte (03/11/2026) : trois
- * cartes de même hauteur — le dessin en glace, le numéro et le titre, une
- * phrase, centrés —, sur une ligne dès 48 rem, reliées par deux chevrons de
- * glace ; empilées en dessous. Puis, sur sa ligne, ce qui compte pour un sub.
- * Ce qui comptait était dans la première carte : elle grandissait, et les deux
- * autres, étirées à sa hauteur, restaient à moitié vides.
+ * Comment ça marche : une frise de trois étapes (03/11/2026). Chaque étape a
+ * son rail — le dessin en glace dans un rond, le numéro en pastille sur son
+ * bord, un trait jusqu'à l'étape suivante — puis le titre et une phrase. Tout
+ * s'aligne en haut : les titres sont sur la même ligne, quelle que soit la
+ * longueur des phrases, et il n'y a pas de boîte à remplir.
+ *
+ * Étroite, la frise descend : le rail à gauche, le trait vers le bas.
  */
-.etapes-cartes {
+.frise {
+  --rond: 52px;
   display: grid;
-  gap: 8px;
+  gap: 0;
 }
-@container (min-width: 48rem) {
-  .etapes-cartes {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 24px;
-  }
-  .etape-case:not(:last-child)::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    right: -12px;
-    width: 10px;
-    height: 10px;
-    border-top: 3px solid color-mix(in srgb, var(--ice) 75%, transparent);
-    border-right: 3px solid color-mix(in srgb, var(--ice) 75%, transparent);
-    border-radius: 2px;
-    transform: translate(calc(50% - 3px), -50%) rotate(45deg);
-  }
-}
-.etape-case {
+.frise-etape {
   position: relative;
-  display: flex;
+  display: grid;
+  grid-template-columns: var(--rond) minmax(0, 1fr);
+  column-gap: 14px;
 }
-.etape-carte {
+.frise-rail {
   display: flex;
-  flex: 1;
-  gap: 12px;
+  flex-direction: column;
   align-items: center;
-  padding: 12px 16px;
 }
-.etape-icone {
-  /* Le dessin en glace, posé tel quel : pas de pastille derrière. */
+.frise-rond {
   position: relative;
   display: grid;
-  width: 40px;
-  height: 40px;
+  width: var(--rond);
+  height: var(--rond);
   flex: none;
   place-items: center;
+  padding: 9px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--fond) 55%, transparent);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--ice) 35%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--ink) 18%, transparent);
 }
-/* Sur une ligne mais à l'étroit (un portable) : le texte d'abord, sans le
-   dessin. */
-@container (min-width: 48rem) and (max-width: 64rem) {
-  .etape-icone {
-    display: none;
-  }
-}
-/* Le numéro, en pastille d'aurore devant le titre. */
-.etape-numero {
-  display: inline-grid;
-  width: 1.4rem;
-  height: 1.4rem;
-  margin-right: 0.45rem;
+.frise-numero {
+  position: absolute;
+  top: -3px;
+  right: -5px;
+  display: grid;
+  width: 1.3rem;
+  height: 1.3rem;
   place-items: center;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--aurora) 22%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--aurora) 55%, transparent);
-  font-size: 0.8125rem;
-  color: var(--aurora);
-  vertical-align: 0.1em;
+  background: var(--aurora);
+  box-shadow: 0 0 0 2px var(--fond);
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 900;
+  color: var(--nuit);
 }
-.etape-titre {
-  display: block;
+.frise-trait {
+  width: 2px;
+  min-height: 14px;
+  flex: 1;
+  margin-block: 6px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--ice) 55%, transparent), color-mix(in srgb, var(--ice) 12%, transparent));
+}
+.frise-etape:last-child .frise-trait {
+  visibility: hidden;
+}
+.frise-corps {
+  padding: 4px 0 16px;
+}
+.frise-titre {
   font-family: var(--font-display);
   font-size: 1.0625rem;
   font-weight: 900;
@@ -6825,47 +6822,62 @@
   text-transform: uppercase;
   color: var(--ink);
 }
-.etape-texte {
-  display: block;
-  margin-top: 3px;
+.frise-texte {
+  margin-top: 4px;
   font-size: 0.9375rem;
-  line-height: 1.45;
+  line-height: 1.5;
   color: var(--ink-2);
 }
+/* Large : les trois étapes côte à côte, le trait à l'horizontale, à hauteur
+   du centre des ronds. */
+@container (min-width: 46rem) {
+  .frise {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    column-gap: 18px;
+  }
+  .frise-etape {
+    display: flex;
+    flex-direction: column;
+  }
+  .frise-rail {
+    flex-direction: row;
+  }
+  .frise-trait {
+    width: auto;
+    height: 2px;
+    min-height: 0;
+    margin: 0 0 0 14px;
+    background: linear-gradient(90deg, color-mix(in srgb, var(--ice) 55%, transparent), color-mix(in srgb, var(--ice) 12%, transparent));
+  }
+  .frise-corps {
+    padding: 12px 8px 0 0;
+  }
+}
+
 /*
- * Ce qui compte pour un sub, et ce qui ne compte pas : une plaque basse sous
- * les étapes, deux groupes — le titre puis ses pastilles —, côte à côte quand
- * la place le permet. Les pastilles sont gravées dans la plaque : plus sombres
- * que le verre, une ombre intérieure, un rebord bas qui accroche la lumière.
- * Le premier groupe est teinté d'aurore, le second éteint : la couleur dit oui
- * ou non avant qu'on lise.
+ * Ce qui compte pour un sub : sous la frise, après un filet, deux colonnes
+ * symétriques — le titre, puis ses pastilles. Les pastilles sont gravées : plus
+ * sombres que le verre, une ombre intérieure, un rebord bas qui accroche la
+ * lumière. Le vert dit oui, le rouge éteint dit non, avant qu'on lise.
  */
 .etape-subs {
   --grave: 0 -1px 0 color-mix(in srgb, var(--fond) 85%, transparent),
     0 1px 0 color-mix(in srgb, var(--ink) 10%, transparent);
   display: grid;
-  gap: 10px;
-  margin-top: 10px;
-  padding: 12px 16px;
+  gap: 14px;
+  margin-top: 6px;
+  padding-top: 16px;
+  border-top: 1px solid color-mix(in srgb, var(--ice) 18%, transparent);
 }
-/* Côte à côte seulement quand chacun tient sur sa ligne ; sinon l'un sous
-   l'autre, chacun sur une ligne. */
-@container (min-width: 76rem) {
+@container (min-width: 46rem) {
   .etape-subs {
-    grid-template-columns: auto minmax(0, 1fr);
-    align-items: center;
-    column-gap: 28px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+    margin-top: 18px;
   }
-}
-.etape-subs-ligne {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px 10px;
 }
 .etape-subs-titre {
   display: flex;
-  flex: none;
   align-items: center;
   gap: 6px;
   font-family: var(--font-display);
@@ -6876,13 +6888,14 @@
   color: color-mix(in srgb, var(--danger) 70%, var(--ink));
   text-shadow: var(--grave);
 }
-.etape-subs-ligne[data-compte] .etape-subs-titre {
+.etape-subs-colonne[data-compte] .etape-subs-titre {
   color: color-mix(in srgb, var(--aurora) 80%, var(--ink));
 }
 .etape-subs-puces {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+  margin-top: 8px;
 }
 .etape-subs-puces li {
   padding: 4px 12px 3px;
@@ -6898,28 +6911,25 @@
   color: var(--muted);
   text-shadow: var(--grave);
 }
-.etape-subs-ligne[data-compte] .etape-subs-puces li {
+.etape-subs-colonne[data-compte] .etape-subs-puces li {
   border-bottom-color: color-mix(in srgb, var(--aurora) 34%, transparent);
   background: color-mix(in srgb, var(--aurora) 10%, color-mix(in srgb, var(--fond) 55%, transparent));
   color: color-mix(in srgb, var(--aurora) 35%, var(--ink));
 }
-/* Sur un très grand écran, la bande se lit de plus loin. */
+/* Sur un très grand écran, la frise se lit de plus loin. */
 @media (min-width: 120rem) {
-  .etape-icone {
-    width: 48px;
-    height: 48px;
+  .frise {
+    --rond: 60px;
   }
-  .etape-titre {
+  .frise-titre {
     font-size: 1.1875rem;
   }
-  .etape-texte {
+  .frise-texte,
+  .etape-subs-puces li {
     font-size: 1rem;
   }
   .etape-subs-titre {
     font-size: 1rem;
-  }
-  .etape-subs-puces li {
-    font-size: 0.9375rem;
   }
 }
 /*
@@ -9803,7 +9813,7 @@
   /* À partir de 2 400 px de large, la page des boosters tient dans la fenêtre :
      les étapes sur une ligne, la scène dessous, sans défiler jusqu'aux taux.
      Sur un écran moins haut (2560 × 1305, celui d'un 1440p), les sachets se
-     règlent aussi sur la hauteur : 780 px, c'est tout ce qui n'est pas eux, du
+     règlent aussi sur la hauteur : 870 px, c'est tout ce qui n'est pas eux, du
      haut de la page au bas de la scène, mesuré sur la maquette (913 avant que
      la bande des étapes ne se resserre, le 03/11/2026). Les évènements
      en cours n'y entrent pas : sur ordinateur, ils sont dans la colonne de
@@ -9823,7 +9833,7 @@
         180px,
         min(
           calc((100cqw - 3 * var(--ecart) - 2 * var(--marge) - 10px) / 4),
-          calc((100svh - 780px) / 1.865)
+          calc((100svh - 870px) / 1.865)
         ),
         285px
       );

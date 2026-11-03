@@ -68,29 +68,29 @@ function palierDe(pack: PackId): number | undefined {
 }
 
 /**
- * Sous les trois étapes, sur sa ligne : ce qui compte pour un sub, et ce qui
- * ne compte pas, en pastilles qu'on lit d'un coup d'œil. Les listes viennent
- * de `lib/domain/twitchSubs.ts`, comme la règle qu'elles disent.
+ * Sous la frise : ce qui compte pour un sub, et ce qui ne compte pas, en deux
+ * colonnes symétriques — le titre, puis ses pastilles. Les listes viennent de
+ * `lib/domain/twitchSubs.ts`, comme la règle qu'elles disent.
  */
 function CeQuiCompte() {
   return (
-    <div className="etape-subs glass glass-soft">
-      <div className="etape-subs-ligne" data-compte="">
-        <span className="etape-subs-titre">
+    <div className="etape-subs">
+      <div className="etape-subs-colonne" data-compte="">
+        <p className="etape-subs-titre">
           <IconCoche className="h-4 w-4" />
-          Compte
-        </span>
+          Compte pour un sub
+        </p>
         <ul className="etape-subs-puces">
           {CE_QUI_COMPTE.map((t) => (
             <li key={t}>{t}</li>
           ))}
         </ul>
       </div>
-      <div className="etape-subs-ligne">
-        <span className="etape-subs-titre">
+      <div className="etape-subs-colonne">
+        <p className="etape-subs-titre">
           <IconCroix className="h-4 w-4" />
           Ne compte pas
-        </span>
+        </p>
         <ul className="etape-subs-puces">
           {CE_QUI_NE_COMPTE_PAS.map((t) => (
             <li key={t}>{t}</li>
@@ -362,16 +362,18 @@ export function PackOpening({
         </div>
       )}
 
-      {/* Comment ça marche, en une bande : trois étapes d'une phrase, de même
-          hauteur, sur une ligne dès qu'elles tiennent ; dessous, sur sa ligne, ce
-          qui compte pour un sub. Les boosters, plus bas, prennent la place
-          (resserrée le 03/11/2026 : la bande faisait 560 px de haut). */}
-      <section className="glass @container relative overflow-hidden px-4 pt-5 pb-4 sm:px-5 xl:col-span-2">
+      {/* Comment ça marche : une frise de trois étapes — le dessin dans un rond
+          numéroté, relié au suivant par un trait, puis le titre et une phrase,
+          tous alignés en haut —, et dessous ce qui compte pour un sub. Sur un
+          écran étroit, la frise descend à la verticale. Refaite le 03/11/2026 :
+          des cartes de hauteurs inégales laissaient des titres décalés et des
+          blancs. */}
+      <section className="glass @container relative overflow-hidden px-5 pt-5 pb-5 sm:px-6 xl:col-span-2">
         <SnowCap radius="var(--r-lg)" seed="boosters-etapes" epaisseur={14} />
-        <TitreGlace taille="bloc" className="relative mb-3">
+        <TitreGlace taille="bloc" className="relative mb-4">
           Comment ça marche
         </TitreGlace>
-        <ol className="etapes-cartes">
+        <ol className="frise">
           {[
             {
               titre: 'Un booster t’est dû',
@@ -379,7 +381,7 @@ export function PackOpening({
               icone: <GlaceSachet className="h-full w-full" />,
             },
             {
-              titre: 'La streameuse l’ouvre',
+              titre: 'Lriaa ou la modération l’ouvre',
               texte: 'En live. Le serveur tire la carte ; tes flocons montent ta chance, jusqu’à ×4.',
               icone: <GlaceCartes className="h-full w-full" />,
             },
@@ -388,19 +390,21 @@ export function PackOpening({
               texte: 'Sur ta prochaine game, ou tout de suite : c’est écrit sur la carte.',
               icone: <GlaceEpees className="h-full w-full" />,
             },
-          ].map((etape: { titre: string; texte: string; icone: React.ReactNode }, i) => (
-            <li key={etape.titre} className="etape-case">
-              <div className="etape-carte glass glass-soft">
-                <span className="etape-icone" aria-hidden="true">
+          ].map((etape, i) => (
+            <li key={etape.titre} className="frise-etape">
+              <div className="frise-rail" aria-hidden="true">
+                <span className="frise-rond">
                   {etape.icone}
+                  <span className="frise-numero">{i + 1}</span>
                 </span>
-                <div className="min-w-0">
-                  <span className="etape-titre">
-                    <span className="etape-numero">{i + 1}</span>
-                    {etape.titre}
-                  </span>
-                  <span className="etape-texte">{etape.texte}</span>
-                </div>
+                <span className="frise-trait" />
+              </div>
+              <div className="frise-corps">
+                <p className="frise-titre">
+                  <span className="sr-only">Étape {i + 1} : </span>
+                  {etape.titre}
+                </p>
+                <p className="frise-texte">{etape.texte}</p>
               </div>
             </li>
           ))}
