@@ -315,8 +315,10 @@ export function Regles({ maxGames, packs }: { maxGames: number; packs: PackDefin
               </Encart>
               <Encart titre="Pour toi, ou au sort">
                 <p>
-                  <b>Perso</b> et <b>Finisseur</b> s’ouvrent pour toi, et ne contiennent que des bonus. <b>Commu</b> et{' '}
-                  <b>Folie</b> sont ceux de la ligue : leur carte tombe sur des joueurs tirés au sort.
+                  <b>Perso</b> et <b>Finisseur</b> s’ouvrent pour toi : rien ne s’y retourne contre toi, et un malus
+                  qu’on en tire, tu l’envoies à qui tu veux. <b>Commu</b> et <b>Folie</b> sont ceux de la ligue,
+                  avec les actions de la Summer Ligue : leur carte tombe sur des joueurs tirés au sort, ou sur
+                  toute la ligue.
                 </p>
               </Encart>
               <Encart titre="Bon à savoir">

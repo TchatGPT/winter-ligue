@@ -29,13 +29,15 @@ import 'server-only';
 
 import type { CarteEnAttente, Database, Game, Player } from '@/lib/db/entities';
 import { newId } from '@/lib/db/store';
-import { COUP_DE_VERGLAS, getCard, momentDe, PACTE_SUBI } from '@/lib/domain/catalog';
+import { COUP_DE_VERGLAS, getCard, momentDe, PACTE_SUBI, TROC_SUBI } from '@/lib/domain/catalog';
 import { rewardForGame } from '@/lib/domain/economy';
 import { CRENEAUX_BONUS, GAME_LIMITS, JOKERS, placementPoints } from '@/lib/domain/rules';
-import type { CardDefinition, CardEffect } from '@/lib/domain/types';
+import { pick } from '@/lib/domain/rng';
+import { rank, totalsFor } from '@/lib/domain/scoring';
+import type { ActionRoue, CardDefinition, CardEffect } from '@/lib/domain/types';
 import { shortDateTime } from '@/lib/format';
-import { facteurCartes } from '@/lib/services/evenements';
-import { aJoueToutesSesGames, estImmunise, gamesOf, limiteDe, recomputeGame } from './league';
+import { declencheTempete, facteurCartes } from '@/lib/services/evenements';
+import { aJoueToutesSesGames, estImmunise, gamesOf, limiteDe, pointsHorsGame, recomputeGame } from './league';
 import { credit } from './ledger';
 
 /** Ce que la saisie sait de la partie, au-delà de la game elle-même. */
@@ -510,16 +512,10 @@ function regleInstant(
       pendante.points = effect.value;
       return sansEffet(`${pts(effect.value)} bonus sur le total`);
     }
-    case 'game_supplementaire': {
-      if (joueur.creneauxBonus >= CRENEAUX_BONUS.max) {
-        credit(db, joueur.id, CRENEAUX_BONUS.floconsDeRepli, 'CARTE', pendante.ouvertureId);
-        return sansEffet(
-          `déjà ${CRENEAUX_BONUS.max} games supplémentaires : +${fr(CRENEAUX_BONUS.floconsDeRepli)} flocons à la place`,
-        );
-      }
-      joueur.creneauxBonus += 1;
-      return sansEffet(`+1 game : ${limiteDe(db, joueur)} games à jouer cette saison`);
-    }
+    case 'game_supplementaire':
+      return ajouteCreneau(db, joueur, pendante.ouvertureId);
+    case 'roue':
+      return regleRoue(db, pendante, card, effect.action, now);
     case 'immunite': {
       // Une immunité qui court encore est prolongée, pas remplacée.
       const depart = estImmunise(joueur, now) ? new Date(joueur.immuniseJusqua!) : now;
@@ -530,6 +526,602 @@ function regleInstant(
     default:
       return { points: 0, resultat: '', facteurFlocons: 1, regle: false, gameId: null };
   }
+}
+
+/* --------------------------- Les roues de la Summer ----------------------- */
+
+/**
+ * Une game figée : elle porte une carte qui la fige — « Fige ta meilleure
+ * game » du Perso ou une action « fige » des roues. Seule une game figée
+ * échappe à la « Pire game à 0 ».
+ */
+function estFigee(game: Game): boolean {
+  return game.applied.some((a) => {
+    const c = getCard(a.cardId);
+    if (!c) return false;
+    if (c.effect.kind === 'fige_meilleure') return true;
+    return c.effect.kind === 'roue' && (c.effect.action.quoi === 'fige_meilleure' || c.effect.action.quoi === 'fige_hasard');
+  });
+}
+
+/** Les games comptées d'un joueur. */
+const comptees = (db: Database, joueurId: string) => db.games.filter((g) => g.playerId === joueurId && !g.skipped);
+
+/** Une liste dans un ordre tiré au sort par le serveur. */
+function melange<T>(liste: readonly T[]): T[] {
+  const reste = [...liste];
+  const sortie: T[] = [];
+  while (reste.length > 0) {
+    const x = pick(reste);
+    reste.splice(reste.indexOf(x), 1);
+    sortie.push(x);
+  }
+  return sortie;
+}
+
+/** La meilleure game de toute la ligue, parmi les joueurs en lice, et à qui elle est. */
+function meilleureDeLaLigue(db: Database): { game: Game; pseudo: string } | null {
+  let meilleure: Game | null = null;
+  for (const g of db.games) {
+    if (g.skipped) continue;
+    if (!meilleure || g.score > meilleure.score) meilleure = g;
+  }
+  if (!meilleure) return null;
+  const pseudo = db.players.find((p) => p.id === meilleure!.playerId)?.pseudo ?? 'un joueur';
+  return { game: meilleure, pseudo };
+}
+
+/**
+ * Fait prendre à une game un score donné, au grand livre des points de la
+ * game (`applyPoints`) : la carte s'y inscrit, même à zéro point.
+ */
+function donneLeScore(db: Database, game: Game, card: CardDefinition, ouvertureId: string, score: number): number {
+  return applyPoints(db, game, card, ouvertureId, score - game.score);
+}
+
+/** Un membre du groupe d'une action : sa carte, et le joueur. */
+interface Membre {
+  pendante: CarteEnAttente;
+  joueur: Player;
+}
+
+const regleSur = (resultat: string, points: number, gameId: string | null): Reglement => ({
+  points,
+  resultat,
+  facteurFlocons: 1,
+  regle: true,
+  gameId,
+});
+
+/** Le créneau d'une game supplémentaire, ou des flocons à la place s'il en a déjà trois. */
+function ajouteCreneau(db: Database, joueur: Player, ouvertureId: string): Reglement {
+  if (joueur.creneauxBonus >= CRENEAUX_BONUS.max) {
+    credit(db, joueur.id, CRENEAUX_BONUS.floconsDeRepli, 'CARTE', ouvertureId);
+    return sansEffet(
+      `déjà ${CRENEAUX_BONUS.max} games supplémentaires : +${fr(CRENEAUX_BONUS.floconsDeRepli)} flocons à la place`,
+    );
+  }
+  joueur.creneauxBonus += 1;
+  return sansEffet(`+1 game : ${limiteDe(db, joueur)} games à jouer cette saison`);
+}
+
+/**
+ * Échange le score de deux games — celle de `a` et celle de `b` —, au grand
+ * livre de chacune. Celui qui y perdrait est-il immunisé ? L'échange tombe.
+ */
+function echangeDeuxGames(
+  db: Database,
+  card: CardDefinition,
+  a: Membre,
+  ga: Game,
+  b: Membre,
+  gb: Game,
+  now: Date,
+): [Reglement, Reglement] {
+  const sa = ga.score;
+  const sb = gb.score;
+  const perdant = sb > sa ? b : sa > sb ? a : null;
+  if (perdant && estImmunise(perdant.joueur, now)) {
+    const texte = `échange annulé : ${perdant.joueur.pseudo} est immunisé`;
+    return [sansEffet(texte), sansEffet(texte)];
+  }
+  if (sa === sb) {
+    const texte = `égalité à ${sa} pts, sans effet`;
+    return [sansEffet(texte, ga.id), sansEffet(texte, gb.id)];
+  }
+  const pa = donneLeScore(db, ga, card, a.pendante.ouvertureId, sb);
+  const pb = donneLeScore(db, gb, card, b.pendante.ouvertureId, sa);
+  return [
+    regleSur(`sa game de ${sa} pts prend les ${sb} pts de celle de ${b.joueur.pseudo} → ${pts(pa)}`, pa, ga.id),
+    regleSur(`sa game de ${sb} pts prend les ${sa} pts de celle de ${a.joueur.pseudo} → ${pts(pb)}`, pb, gb.id),
+  ];
+}
+
+/**
+ * Une chaîne d'échanges : chaque participant donne sa game au suivant et
+ * reçoit celle du précédent — leurs scores tournent. Aucun point n'est créé
+ * ni perdu (aux bornes d'une game près).
+ */
+function chaine(
+  db: Database,
+  card: CardDefinition,
+  maillons: { membre: Membre; game: Game }[],
+  resultats: Map<string, Reglement>,
+): void {
+  const scores = maillons.map((m) => m.game.score);
+  maillons.forEach((m, i) => {
+    const precedent = maillons[(i - 1 + maillons.length) % maillons.length];
+    const suivant = maillons[(i + 1) % maillons.length];
+    const recu = scores[(i - 1 + maillons.length) % maillons.length];
+    const points = donneLeScore(db, m.game, card, m.membre.pendante.ouvertureId, recu);
+    resultats.set(
+      m.membre.pendante.id,
+      regleSur(
+        `donne sa game de ${scores[i]} pts à ${suivant.membre.joueur.pseudo}, reçoit celle de ${precedent.membre.joueur.pseudo} (${recu} pts) → ${pts(points)}`,
+        points,
+        m.game.id,
+      ),
+    );
+  });
+}
+
+/**
+ * Règle une action des roues de la Summer, une seule fois pour tous les
+ * joueurs tirés : toutes les cartes de la même ouverture sont réglées
+ * ensemble, et celle de ce joueur rend son règlement. Les actions sont celles
+ * de la Summer, telles quelles (décidé par l'organisation le 03/11/2026) —
+ * voir `ActionRoue`. Ce qui ne peut pas s'appliquer est sans effet : rien
+ * n'attend.
+ */
+function regleRoue(
+  db: Database,
+  pendante: CarteEnAttente,
+  card: CardDefinition,
+  action: ActionRoue,
+  now: Date,
+): Reglement {
+  const groupe: Membre[] = db.cartesEnAttente
+    .filter((c) => c.ouvertureId === pendante.ouvertureId && c.cardId === card.id && c.consommeeA === null)
+    .sort((a, b) => a.creeA.localeCompare(b.creeA) || a.id.localeCompare(b.id))
+    .flatMap((c) => {
+      const joueur = db.players.find((p) => p.id === c.joueurId);
+      return joueur ? [{ pendante: c, joueur }] : [];
+    });
+  const resultats = new Map<string, Reglement>();
+  const pour = (m: Membre, r: Reglement) => resultats.set(m.pendante.id, r);
+  const o = pendante.ouvertureId;
+
+  switch (action.quoi) {
+    case 'rien':
+      for (const m of groupe) pour(m, sansEffet('pas de chance : rien ne change'));
+      break;
+
+    case 'game_sup':
+      for (const m of groupe) pour(m, ajouteCreneau(db, m.joueur, o));
+      break;
+
+    case 'meilleure_fois':
+    case 'pire_fois':
+    case 'hasard_fois':
+      for (const m of groupe) {
+        const libres = gamesSansCarte(db, m.joueur.id).filter((g) => g.score > 0);
+        if (libres.length === 0) {
+          pour(m, sansEffet('aucune game libre, sans effet'));
+          continue;
+        }
+        const game =
+          action.quoi === 'meilleure_fois'
+            ? [...libres].sort((a, b) => b.score - a.score)[0]
+            : action.quoi === 'pire_fois'
+              ? [...libres].sort((a, b) => a.score - b.score)[0]
+              : pick(libres);
+        const avant = game.score;
+        const points = applyPoints(db, game, card, o, Math.round(avant * (action.facteur - 1)));
+        const quelle = action.quoi === 'meilleure_fois' ? 'meilleure game' : action.quoi === 'pire_fois' ? 'pire game' : 'une game';
+        pour(m, regleSur(`${quelle} de ${avant} pts ×${fr(action.facteur)} → ${pts(points)}`, points, game.id));
+      }
+      break;
+
+    case 'hasard_divise':
+      for (const m of groupe) {
+        if (estImmunise(m.joueur, now)) {
+          pour(m, sansEffet('paré par l’immunité'));
+          continue;
+        }
+        const libres = gamesSansCarte(db, m.joueur.id).filter((g) => g.score > 0);
+        if (libres.length === 0) {
+          pour(m, sansEffet('aucune game libre, sans effet'));
+          continue;
+        }
+        const game = pick(libres);
+        const avant = game.score;
+        const apres = Math.ceil(avant / action.diviseur);
+        const points = donneLeScore(db, game, card, o, apres);
+        pour(m, regleSur(`une game de ${avant} pts ÷${fr(action.diviseur)} → ${pts(points)}`, points, game.id));
+      }
+      break;
+
+    case 'supprime_pire':
+      for (const m of groupe) {
+        const libres = gamesSansCarte(db, m.joueur.id);
+        if (libres.length === 0) {
+          pour(m, sansEffet('aucune game libre, sans effet'));
+          continue;
+        }
+        const pire = [...libres].sort((a, b) => a.score - b.score || a.playedAt.localeCompare(b.playedAt))[0];
+        applyPoints(db, pire, card, o, 0);
+        pire.skipped = true;
+        pour(m, regleSur(`pire game (${pire.score} pts) supprimée : son créneau est rendu`, 0, pire.id));
+      }
+      break;
+
+    case 'echange_meilleure_pire':
+    case 'echange_hasard':
+    case 'clone_sur_pire': {
+      const [a, b] = groupe;
+      if (!a || !b) {
+        for (const m of groupe) pour(m, sansEffet('il faut deux joueurs, sans effet'));
+        break;
+      }
+      const libresA = gamesSansCarte(db, a.joueur.id);
+      const libresB = gamesSansCarte(db, b.joueur.id);
+      if (action.quoi === 'clone_sur_pire') {
+        // La pire game libre du premier prend le score de la meilleure du
+        // second, qui la garde : elle est copiée, pas déplacée.
+        const sources = comptees(db, b.joueur.id);
+        if (libresA.length === 0 || sources.length === 0) {
+          for (const m of groupe) pour(m, sansEffet('pas de game à cloner, sans effet'));
+          break;
+        }
+        const pire = [...libresA].sort((x, y) => x.score - y.score)[0];
+        const source = [...sources].sort((x, y) => y.score - x.score)[0];
+        if (source.score < pire.score && estImmunise(a.joueur, now)) {
+          for (const m of groupe) pour(m, sansEffet(`clone annulé : ${a.joueur.pseudo} est immunisé`));
+          break;
+        }
+        const avant = pire.score;
+        const points = donneLeScore(db, pire, card, o, source.score);
+        pour(a, regleSur(`sa pire game de ${avant} pts prend les ${source.score} pts de la meilleure de ${b.joueur.pseudo} → ${pts(points)}`, points, pire.id));
+        pour(b, sansEffet(`sa meilleure game (${source.score} pts) a été clonée chez ${a.joueur.pseudo} ; il la garde`));
+        break;
+      }
+      if (libresA.length === 0 || libresB.length === 0) {
+        for (const m of groupe) pour(m, sansEffet('il faut une game libre de chaque côté, sans effet'));
+        break;
+      }
+      const ga =
+        action.quoi === 'echange_meilleure_pire' ? [...libresA].sort((x, y) => y.score - x.score)[0] : pick(libresA);
+      const gb =
+        action.quoi === 'echange_meilleure_pire' ? [...libresB].sort((x, y) => x.score - y.score)[0] : pick(libresB);
+      const [ra, rb] = echangeDeuxGames(db, card, a, ga, b, gb, now);
+      pour(a, ra);
+      pour(b, rb);
+      break;
+    }
+
+    case 'tempete': {
+      const tempete = declencheTempete(db, now);
+      const texte = tempete
+        ? `Tempête de neige déclenchée, jusqu’au ${shortDateTime(tempete.endsAt)}`
+        : 'pas de Tempête de neige à déclencher, sans effet';
+      for (const m of groupe) pour(m, sansEffet(texte));
+      break;
+    }
+
+    case 'clone_ligue': {
+      const meilleure = meilleureDeLaLigue(db);
+      for (const m of groupe) {
+        if (!meilleure) {
+          pour(m, sansEffet('aucune game dans la ligue, sans effet'));
+          continue;
+        }
+        // Hors de toute game : `pointsHorsGame()` les ajoute au total.
+        m.pendante.points = meilleure.game.score;
+        pour(m, sansEffet(`${pts(meilleure.game.score)} : la meilleure game de la ligue, celle de ${meilleure.pseudo}`));
+      }
+      break;
+    }
+
+    case 'meilleure_aux_derniers': {
+      const meilleure = meilleureDeLaLigue(db);
+      for (const m of groupe) {
+        const libres = gamesSansCarte(db, m.joueur.id);
+        if (!meilleure || libres.length === 0) {
+          pour(m, sansEffet('aucune game libre, sans effet'));
+          continue;
+        }
+        const pire = [...libres].sort((x, y) => x.score - y.score)[0];
+        const avant = pire.score;
+        const points = donneLeScore(db, pire, card, o, meilleure.game.score);
+        pour(m, regleSur(`sa pire game de ${avant} pts prend les ${meilleure.game.score} pts de la meilleure de la ligue → ${pts(points)}`, points, pire.id));
+      }
+      break;
+    }
+
+    case 'par_top1': {
+      // Depuis la dernière fois que cette carte est tombée ; la première fois,
+      // depuis le début de la saison.
+      const precedente = db.ouvertures
+        .filter((x) => x.cardId === card.id && x.id !== o)
+        .sort((x, y) => y.openedAt.localeCompare(x.openedAt))[0];
+      const depuis = precedente?.openedAt ?? '';
+      for (const m of groupe) {
+        const tops = comptees(db, m.joueur.id).filter((g) => g.placement === 1 && g.createdAt > depuis).length;
+        if (tops === 0) {
+          pour(m, sansEffet(depuis ? 'aucun Top 1 depuis la dernière fois, sans effet' : 'aucun Top 1, sans effet'));
+          continue;
+        }
+        m.pendante.points = tops * action.points;
+        pour(m, sansEffet(`${tops} Top 1 → ${pts(tops * action.points)} sur le total`));
+      }
+      break;
+    }
+
+    case 'petites_games':
+      for (const m of groupe) {
+        const petites = comptees(db, m.joueur.id).filter((g) => g.kills < action.moinsDe).length;
+        if (petites === 0) {
+          pour(m, sansEffet(`aucune game de moins de ${action.moinsDe} kills, sans effet`));
+          continue;
+        }
+        m.pendante.points = petites * action.points;
+        pour(m, sansEffet(`${petites} game${petites > 1 ? 's' : ''} de moins de ${action.moinsDe} kills → ${pts(petites * action.points)} sur le total`));
+      }
+      break;
+
+    case 'vol_score': {
+      const ordre = rank(
+        db.players
+          .filter((p) => p.active)
+          .map((player) => ({ player, totals: totalsFor(comptees(db, player.id), pointsHorsGame(db, player.id)) })),
+      );
+      for (const m of groupe) {
+        const i = ordre.findIndex((r) => r.player.id === m.joueur.id);
+        const dessus = i > 0 ? ordre[i - 1] : null;
+        const sien = ordre[i]?.totals.totalScore ?? 0;
+        if (!dessus || dessus.totals.totalScore <= sien) {
+          pour(m, sansEffet('personne au-dessus de lui, sans effet'));
+          continue;
+        }
+        const gain = dessus.totals.totalScore - sien;
+        m.pendante.points = gain;
+        pour(m, sansEffet(`prend le score de ${dessus.player.pseudo} (${dessus.totals.totalScore} pts) → ${pts(gain)} sur le total`));
+      }
+      break;
+    }
+
+    case 'fige_meilleure':
+    case 'fige_hasard':
+      for (const m of groupe) {
+        const toutes = comptees(db, m.joueur.id);
+        // Jamais la pire game : il doit pouvoir s'en débarrasser.
+        const pire = [...toutes].sort((x, y) => x.score - y.score)[0];
+        const meilleure = [...toutes].sort((x, y) => y.score - x.score)[0];
+        let libres = gamesSansCarte(db, m.joueur.id).filter((g) => g.id !== pire?.id);
+        if (action.quoi === 'fige_meilleure' && toutes.length < action.minGames) libres = [];
+        if (action.quoi === 'fige_hasard' && action.meilleureExclue) libres = libres.filter((g) => g.id !== meilleure?.id);
+        if (libres.length === 0) {
+          pour(m, sansEffet('aucune game à figer, sans effet'));
+          continue;
+        }
+        const game = action.quoi === 'fige_meilleure' ? [...libres].sort((x, y) => y.score - x.score)[0] : pick(libres);
+        applyPoints(db, game, card, o, 0);
+        pour(m, regleSur(`game de ${game.score} pts figée : plus aucune carte ne peut la toucher`, 0, game.id));
+      }
+      break;
+
+    case 'chaine_tete':
+    case 'echange_general': {
+      const maillons: { membre: Membre; game: Game }[] = [];
+      for (const m of melange(groupe)) {
+        if (estImmunise(m.joueur, now)) {
+          pour(m, sansEffet('paré par l’immunité : hors de la chaîne'));
+          continue;
+        }
+        let libres = gamesSansCarte(db, m.joueur.id);
+        if (action.quoi === 'chaine_tete') {
+          // Ni sa meilleure ni sa pire.
+          const toutes = comptees(db, m.joueur.id);
+          const pire = [...toutes].sort((x, y) => x.score - y.score)[0];
+          const meilleure = [...toutes].sort((x, y) => y.score - x.score)[0];
+          libres = libres.filter((g) => g.id !== pire?.id && g.id !== meilleure?.id);
+        }
+        if (libres.length === 0) {
+          pour(m, sansEffet('aucune game à échanger : hors de la chaîne'));
+          continue;
+        }
+        maillons.push({ membre: m, game: pick(libres) });
+      }
+      if (maillons.length < 2) {
+        for (const x of maillons) pour(x.membre, sansEffet('pas assez de joueurs dans la chaîne, sans effet'));
+        break;
+      }
+      chaine(db, card, maillons, resultats);
+      break;
+    }
+
+    case 'roulette': {
+      const barillet = groupe.filter((m) => !estImmunise(m.joueur, now) && comptees(db, m.joueur.id).length > 0);
+      const touche = barillet.length > 0 ? pick(barillet) : null;
+      for (const m of groupe) {
+        if (m !== touche) {
+          pour(m, sansEffet(estImmunise(m.joueur, now) ? 'paré par l’immunité' : 'épargné par le barillet'));
+          continue;
+        }
+        const candidates = comptees(db, m.joueur.id).filter((g) => !estFigee(g));
+        if (candidates.length === 0) {
+          pour(m, sansEffet('touché, mais toutes ses games sont figées : sans effet'));
+          continue;
+        }
+        const meilleure = [...candidates].sort((x, y) => y.score - x.score)[0];
+        applyPoints(db, meilleure, card, o, 0);
+        meilleure.skipped = true;
+        pour(m, regleSur(`touché : il perd sa meilleure game (${meilleure.score} pts)`, -meilleure.score, meilleure.id));
+      }
+      break;
+    }
+
+    case 'pire_a_zero':
+      for (const m of groupe) {
+        if (estImmunise(m.joueur, now)) {
+          pour(m, sansEffet('paré par l’immunité'));
+          continue;
+        }
+        // Même une game déjà touchée par une carte ; jamais une game figée.
+        const candidates = comptees(db, m.joueur.id).filter((g) => !estFigee(g));
+        if (candidates.length === 0) {
+          pour(m, sansEffet('aucune game, sans effet'));
+          continue;
+        }
+        const pire = [...candidates].sort((x, y) => x.score - y.score)[0];
+        if (pire.score === 0) {
+          pour(m, sansEffet('sa pire game vaut déjà 0, sans effet'));
+          continue;
+        }
+        const avant = pire.score;
+        const points = donneLeScore(db, pire, card, o, 0);
+        pour(m, regleSur(`pire game de ${avant} pts ramenée à ${pire.score} → ${pts(points)}`, points, pire.id));
+      }
+      break;
+
+    case 'jokers':
+      for (const m of groupe) {
+        const enMain = jokersDe(db, m.joueur.id).length;
+        const donnes = Math.max(0, Math.min(action.nombre, JOKERS.max - enMain));
+        for (let i = 0; i < donnes; i++) {
+          db.cartesEnAttente.push({
+            id: newId(),
+            joueurId: m.joueur.id,
+            cardId: 'joker-givre',
+            ouvertureId: o,
+            creeA: new Date(now.getTime() + i).toISOString(),
+            consommeeA: null,
+            gameId: null,
+            resultat: null,
+            paireId: null,
+          });
+        }
+        pour(
+          m,
+          sansEffet(
+            donnes === 0
+              ? `déjà ${JOKERS.max} Jokers en main, sans effet`
+              : `+${donnes} Joker${donnes > 1 ? 's' : ''} (${enMain + donnes} en main)`,
+          ),
+        );
+      }
+      break;
+
+    case 'fusion_pires':
+      for (const m of groupe) {
+        const libres = [...gamesSansCarte(db, m.joueur.id)].sort((x, y) => x.score - y.score);
+        if (libres.length < 2) {
+          pour(m, sansEffet('il faut deux games libres, sans effet'));
+          continue;
+        }
+        const [pire, seconde] = libres;
+        const somme = pire.score + seconde.score;
+        const points = donneLeScore(db, seconde, card, o, somme);
+        applyPoints(db, pire, card, o, 0);
+        pire.skipped = true;
+        pour(m, regleSur(`ses 2 pires games (${pire.score} et ${somme - pire.score} pts) n’en font plus qu’une de ${seconde.score} pts : un créneau est rendu`, points, seconde.id));
+      }
+      break;
+
+    case 'pire_moyenne':
+      for (const m of groupe) {
+        const toutes = comptees(db, m.joueur.id);
+        const libres = gamesSansCarte(db, m.joueur.id);
+        if (toutes.length < 2 || libres.length === 0) {
+          pour(m, sansEffet('il faut deux games, dont une libre : sans effet'));
+          continue;
+        }
+        const moyenne = Math.round(toutes.reduce((s, g) => s + g.score, 0) / toutes.length);
+        const pire = [...libres].sort((x, y) => x.score - y.score)[0];
+        if (pire.score >= moyenne) {
+          pour(m, sansEffet(`pire game déjà à la moyenne (${moyenne} pts), sans effet`));
+          continue;
+        }
+        const avant = pire.score;
+        const points = donneLeScore(db, pire, card, o, moyenne);
+        pour(m, regleSur(`pire game de ${avant} pts ramenée à la moyenne de ${moyenne} → ${pts(points)}`, points, pire.id));
+      }
+      break;
+  }
+
+  // Les autres cartes du groupe sont réglées ici ; celle-ci, par l'appelant.
+  for (const m of groupe) {
+    if (m.pendante === pendante) continue;
+    consomme(m.pendante, card, resultats.get(m.pendante.id) ?? sansEffet('sans effet'), now);
+  }
+  return resultats.get(pendante.id) ?? sansEffet('sans effet');
+}
+
+export type RefusEchangeCible = 'CARTE' | 'CIBLE' | 'IMMUNISE' | 'DEJA' | 'GAMES';
+
+/**
+ * Joue un Troc des Neiges gardé par un finisseur, sur le joueur qu'il
+ * désigne : sa pire game libre et la meilleure game libre de l'autre
+ * échangent leur score. Une fois par joueur — sauf la revanche : visé par
+ * quelqu'un, on peut le viser à son tour même si on a déjà joué le sien. Un
+ * immunisé ne peut pas être visé. Sur la game de l'autre, une trace
+ * (`TROC_SUBI`) retient qui l'a visé.
+ */
+export function joueEchangeCible(
+  db: Database,
+  carteId: string,
+  cible: Player,
+  now = new Date(),
+): CarteAppliquee | RefusEchangeCible {
+  const pendante = db.cartesEnAttente.find((c) => c.id === carteId && c.consommeeA === null);
+  const card = pendante ? getCard(pendante.cardId) : null;
+  if (!pendante || !card || card.effect.kind !== 'echange_cible') return 'CARTE';
+  if (cible.id === pendante.joueurId) return 'CIBLE';
+  if (estImmunise(cible, now)) return 'IMMUNISE';
+  const dejaJoue = db.cartesEnAttente.some(
+    (c) =>
+      c.joueurId === pendante.joueurId &&
+      c.consommeeA !== null &&
+      c.gameId !== null &&
+      getCard(c.cardId)?.effect.kind === 'echange_cible' &&
+      c.cardId !== TROC_SUBI.id,
+  );
+  const revanche = db.cartesEnAttente.some(
+    (c) => c.joueurId === pendante.joueurId && c.cardId === TROC_SUBI.id && c.paireId === cible.id,
+  );
+  if (dejaJoue && !revanche) return 'DEJA';
+  const miennes = gamesSansCarte(db, pendante.joueurId);
+  const siennes = gamesSansCarte(db, cible.id);
+  if (miennes.length === 0 || siennes.length === 0) return 'GAMES';
+  const pire = [...miennes].sort((a, b) => a.score - b.score)[0];
+  const meilleure = [...siennes].sort((a, b) => b.score - a.score)[0];
+  const porteur = db.players.find((p) => p.id === pendante.joueurId)?.pseudo ?? 'un finisseur';
+  const sa = pire.score;
+  const sb = meilleure.score;
+  const points = donneLeScore(db, pire, card, pendante.ouvertureId, sb);
+  const rendu = donneLeScore(db, meilleure, TROC_SUBI, pendante.ouvertureId, sa);
+  db.cartesEnAttente.push({
+    id: newId(),
+    joueurId: cible.id,
+    cardId: TROC_SUBI.id,
+    ouvertureId: pendante.ouvertureId,
+    creeA: now.toISOString(),
+    consommeeA: now.toISOString(),
+    gameId: meilleure.id,
+    resultat: `Troc des Neiges de ${porteur} : sa meilleure game de ${sb} pts prend les ${sa} pts de la pire de ${porteur} → ${pts(rendu)}`,
+    // Qui l'a visé : pour la revanche.
+    paireId: pendante.joueurId,
+  });
+  return consomme(
+    pendante,
+    card,
+    regleSur(
+      `${revanche && dejaJoue ? 'revanche sur' : 'joué sur'} ${cible.pseudo} : sa pire game de ${sa} pts prend les ${sb} pts de la meilleure de ${cible.pseudo} → ${pts(points)}`,
+      points,
+      pire.id,
+    ),
+    now,
+  );
 }
 
 /** Écrit le règlement sur la carte, et en rend la trace. */
@@ -784,8 +1376,8 @@ export function joueVerglas(
     consommeeA: now.toISOString(),
     gameId: null,
     resultat: pare
-      ? `Verglas de ${porteur}, paré par l’immunité`
-      : `Verglas de ${porteur} : −${valeur} pts sur le total`,
+      ? `${card.name} de ${porteur}, paré par l’immunité`
+      : `${card.name} de ${porteur} : −${valeur} pts sur le total`,
     paireId: null,
     points: pare ? 0 : -valeur,
   });
@@ -945,7 +1537,13 @@ function cartesSurLaGame(db: Database, game: Game): CarteEnAttente[] {
 export function sortALaCorrection(cardId: string): 'relue' | 'gardee' | 'bloque' {
   const card = getCard(cardId);
   if (!card) return 'gardee';
-  if (card.effect.kind === 'clone_kills' || card.effect.kind === 'echange' || card.effect.kind === 'echange_choisi') {
+  if (
+    card.effect.kind === 'clone_kills' ||
+    card.effect.kind === 'echange' ||
+    card.effect.kind === 'echange_choisi' ||
+    card.effect.kind === 'echange_cible' ||
+    card.effect.kind === 'roue'
+  ) {
     return 'bloque';
   }
   return RECALCULABLES.has(card.effect.kind) && momentDe(card.effect) === 'PROCHAINE' ? 'relue' : 'gardee';
@@ -1054,7 +1652,7 @@ export function rendCartesDeLaGame(db: Database, game: Game): { rendues: string[
     const card = getCard(pendante.cardId);
     if (!card) continue;
     const libre =
-      card.effect.kind === 'echange_choisi'
+      card.effect.kind === 'echange_choisi' || card.effect.kind === 'echange_cible' || card.effect.kind === 'roue'
         ? false
         : momentDe(card.effect) === 'GARDEE'
           ? card.effect.kind !== 'joker' || jokersDe(db, pendante.joueurId).length < JOKERS.max

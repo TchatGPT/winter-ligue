@@ -93,6 +93,32 @@ export function declencheEvenements(
 }
 
 /**
+ * Déclenche une Tempête de neige tout de suite, hors des paliers : la carte
+ * « Booster Commu tous les 20 subs » des roues de la Summer (03/11/2026). Comme
+ * un palier franchi, elle suit celle qui court encore au lieu de s'y
+ * superposer. Rend la Tempête créée, ou null s'il n'y en a pas de règle.
+ */
+export function declencheTempete(db: Database, now = new Date()): EvenementActif | null {
+  const regle = EVENEMENTS_SUBS.find((r) => r.kind === 'COMMU_ACCELERE');
+  if (!regle) return null;
+  const enCours = db.evenements
+    .filter((e) => e.kind === regle.kind && new Date(e.endsAt).getTime() > now.getTime())
+    .sort((a, b) => b.endsAt.localeCompare(a.endsAt))[0];
+  const debut = enCours ? new Date(enCours.endsAt) : now;
+  const evenement: EvenementActif = {
+    id: newId(),
+    kind: regle.kind,
+    label: regle.label,
+    description: regle.description,
+    startsAt: debut.toISOString(),
+    endsAt: new Date(debut.getTime() + regle.dureeMinutes * 60_000).toISOString(),
+    declencheA: db.config.totalSubs,
+  };
+  db.evenements.push(evenement);
+  return evenement;
+}
+
+/**
  * Verse les flocons des évènements qui en donnent — l'Avalanche — à chaque
  * joueur de la ligue qui a au moins une game : la même somme pour tous, par
  * `credit()`, l'évènement en référence. Rien sans game, comme pour le cadeau du

@@ -4,17 +4,11 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import { SnowCap } from '@/components/SnowCap';
-import { cardArt, cardVignettes, getCard } from '@/lib/domain/catalog';
-import type { RankingRow } from '@/lib/services/league';
+import { cardArt, cardVignettes, getCard, RARITY_META } from '@/lib/domain/catalog';
+import type { CarteGardee, RankingRow } from '@/lib/services/league';
 import { pourChercher } from '@/lib/domain/texte';
 
 const rienAEcouter = () => () => {};
-
-/** Ce que le Verglas retire, lu sur la carte. */
-const PERTE = (() => {
-  const effet = getCard('plaque-verglas')?.effect;
-  return effet?.kind === 'malus_choisi' ? effet.value : 0;
-})();
 
 /** Sans accent, casse ni lettres qui se confondent : « Boreal » trouve « Boréal » (`pourChercher`). */
 const plat = pourChercher;
@@ -32,8 +26,11 @@ function Avatar({ joueur, grand }: { joueur: Pick<RankingRow, 'pseudo' | 'avatar
 }
 
 /**
- * Lancer un Verglas, pour la modération : une fenêtre à part, ouverte depuis
- * la fiche de la carte.
+ * Jouer une carte gardée qui vise un joueur, pour la modération : une fenêtre
+ * à part, ouverte depuis la fiche de la carte. Le Verglas du Perso et
+ * l'Éboulement du Finisseur retirent des points à la victime ; le Troc des
+ * Neiges du Finisseur échange la pire game libre du porteur contre la
+ * meilleure de la cible — un immunisé ne peut pas être visé.
  *
  * En haut, le coup qui se prépare — le porteur, la glace, la victime choisie.
  * Dessous, tous les joueurs en tuiles, qu'on choisit d'un clic (une recherche
@@ -44,16 +41,21 @@ function Avatar({ joueur, grand }: { joueur: Pick<RankingRow, 'pseudo' | 'avatar
  * et qu'aucun membre de la modération ne joue le Verglas qu'il garde.
  */
 export function LancerVerglas({
-  carteId,
+  carte,
   porteur,
   joueurs,
   onClose,
 }: {
-  carteId: string;
+  carte: CarteGardee;
   porteur: RankingRow;
   joueurs: RankingRow[];
   onClose: () => void;
 }) {
+  const carteId = carte.id;
+  const effet = getCard(carte.cardId)?.effect;
+  const troc = effet?.kind === 'echange_cible';
+  /** Ce que la carte retire, lu sur la carte. */
+  const perte = effet?.kind === 'malus_choisi' ? effet.value : 0;
   const router = useRouter();
   const navigateur = useSyncExternalStore(
     rienAEcouter,
@@ -65,6 +67,7 @@ export function LancerVerglas({
   const [busy, setBusy] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
   const [envoye, setEnvoye] = useState<RankingRow | null>(null);
+  const [resultat, setResultat] = useState<string | null>(null);
 
   const victimes = useMemo(
     () => joueurs.filter((j) => j.id !== porteur.id).sort((a, b) => a.rank - b.rank),
@@ -108,6 +111,7 @@ export function LancerVerglas({
         return;
       }
       setEnvoye(choisi);
+      setResultat(typeof charge.data?.resultat === 'string' ? charge.data.resultat : null);
       router.refresh();
     } catch {
       setErreur('Le serveur n’a pas répondu.');
@@ -118,15 +122,15 @@ export function LancerVerglas({
 
   if (!navigateur) return null;
   // L'illustration en vignette : elle s'affiche en 4,5 et 7 rem.
-  const art = cardArt('plaque-verglas');
-  const vignettes = cardVignettes('plaque-verglas');
+  const art = cardArt(carte.cardId);
+  const vignettes = cardVignettes(carte.cardId);
 
   return createPortal(
     <div
       className="fenetre-voile"
       role="dialog"
       aria-modal="true"
-      aria-label="Lancer le Verglas"
+      aria-label={`Jouer ${carte.nom}`}
       onClick={() => !busy && onClose()}
     >
       <div className="fenetre-carte verglas-fenetre glass glass-reflet relative" onClick={(e) => e.stopPropagation()}>
@@ -147,17 +151,19 @@ export function LancerVerglas({
               // eslint-disable-next-line @next/next/no-img-element
               <img className="verglas-fait-art" src={art} srcSet={vignettes?.srcset} sizes="112px" alt="" />
             )}
-            <p className="verglas-surtitre">Verglas envoyé</p>
+            <p className="verglas-surtitre">{carte.nom} joué</p>
             <div className="verglas-fait-cible">
               <Avatar joueur={envoye} grand />
               <span className="verglas-fait-pseudo">{envoye.pseudo}</span>
             </div>
             <p className="verglas-fait-texte">
-              {envoye.immunise ? (
+              {troc ? (
+                <>{resultat ?? 'Échange fait.'}</>
+              ) : envoye.immunise ? (
                 <>Son immunité l’a paré : son total ne bouge pas.</>
               ) : (
                 <>
-                  <strong>−{PERTE} points</strong> sur son total.
+                  <strong>−{perte} points</strong> sur son total.
                 </>
               )}
             </p>
@@ -173,11 +179,22 @@ export function LancerVerglas({
                 <img className="verglas-vignette" src={art} srcSet={vignettes?.srcset} sizes="72px" alt="" />
               )}
               <div className="min-w-0">
-                <p className="verglas-surtitre">Ultra rare · Verglas</p>
-                <h2 className="verglas-titre">Lancer le Verglas</h2>
+                <p className="verglas-surtitre">
+                  {RARITY_META[carte.rarity].label} · {carte.nom}
+                </p>
+                <h2 className="verglas-titre">Jouer {carte.nom}</h2>
                 <p className="verglas-sous-titre">
-                  Choisis la victime de <strong>{porteur.pseudo}</strong> : elle perd {PERTE} points sur son total,
-                  tout de suite.
+                  {troc ? (
+                    <>
+                      Choisis la cible de <strong>{porteur.pseudo}</strong> : sa pire game libre et la meilleure de la
+                      cible échangent leur score.
+                    </>
+                  ) : (
+                    <>
+                      Choisis la victime de <strong>{porteur.pseudo}</strong> : elle perd {perte} points sur son
+                      total, tout de suite.
+                    </>
+                  )}
                 </p>
               </div>
             </header>
@@ -190,7 +207,7 @@ export function LancerVerglas({
                 <span className="verglas-camp-role">lance</span>
               </div>
               <div className="verglas-fleche" aria-hidden="true">
-                <span className="verglas-fleche-valeur">−{PERTE} pts</span>
+                <span className="verglas-fleche-valeur">{troc ? 'pire ⇄ meilleure' : `−${perte} pts`}</span>
                 <span className="verglas-fleche-trait" />
               </div>
               <div className="verglas-camp">
@@ -235,7 +252,7 @@ export function LancerVerglas({
                         type="button"
                         className="verglas-tuile"
                         aria-pressed={j.id === cible}
-                        disabled={busy}
+                        disabled={busy || (troc && j.immunise)}
                         onClick={() => setCible(j.id === cible ? null : j.id)}
                       >
                         <Avatar joueur={j} />
@@ -259,7 +276,7 @@ export function LancerVerglas({
                   <span className="text-danger">{erreur}</span>
                 ) : choisi?.immunise ? (
                   <span className="text-gold">
-                    {choisi.pseudo} est immunisé : le Verglas sera paré, et la carte perdue.
+                    {choisi.pseudo} est immunisé : {carte.nom} sera paré, et la carte perdue.
                   </span>
                 ) : choisi ? (
                   <>La carte de {porteur.pseudo} sera consommée.</>
@@ -272,7 +289,7 @@ export function LancerVerglas({
                   Annuler
                 </button>
                 <button type="button" className="btn btn-ice" disabled={!choisi || busy} onClick={envoie}>
-                  {busy ? 'Envoi…' : choisi ? `Envoyer sur ${choisi.pseudo}` : 'Envoyer le Verglas'}
+                  {busy ? 'Envoi…' : choisi ? `Jouer sur ${choisi.pseudo}` : `Jouer ${carte.nom}`}
                 </button>
               </div>
             </footer>

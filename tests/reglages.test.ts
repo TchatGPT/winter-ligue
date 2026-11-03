@@ -25,7 +25,7 @@ import { regleApresRevelation } from '@/lib/services/effects';
 // boosters tels qu'ils étaient, pour tirer une carte de flocons, une carte à
 // deux ou un malus de tête, et vérifier ce que l'ouverture en fait.
 vi.mock('@/lib/domain/catalog', async (vrai) =>
-  (await import('./stubs/cartes-retirees')).avecAnciensBoosters(await vrai()),
+  (await import('./stubs/cartes-retirees')).avecBoostersDAvant(await vrai()),
 );
 
 const base = () => emptyDatabase();

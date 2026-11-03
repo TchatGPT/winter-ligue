@@ -36,7 +36,81 @@ export const PACK_IDS: readonly PackId[] = ['perso', 'commu', 'folie', 'finisseu
  * Un pack Perso ou Finisseur n'a pas de cible : sa carte va au joueur désigné.
  * La streameuse n'est jamais tirée : elle ne joue pas.
  */
-export type CibleCarte = 'TOUS' | 'HASARD' | 'DEUX' | 'TETE' | 'QUEUE';
+export type CibleCarte =
+  | 'TOUS'
+  | 'HASARD'
+  | 'DEUX'
+  | 'TETE'
+  | 'QUEUE'
+  /* Les roues de la Summer (03/11/2026) : trois joueurs tirés, six dans le
+     barillet de la roulette, les dix premiers, les cinq derniers. */
+  | 'TROIS'
+  | 'SIX'
+  | 'DIX_PREMIERS'
+  | 'CINQ_DERNIERS';
+
+/**
+ * Une action des roues de la Summer Ligue, reprise telle quelle dans le
+ * Commu, le Folie et le Finisseur (décidé par l'organisation le 03/11/2026,
+ * en levant pour elles les règles des malus). Elle se règle tout de suite,
+ * une fois la carte révélée, et une seule fois pour tous les joueurs tirés.
+ *
+ * « Figée », comme à la Summer, veut dire : qui porte déjà une carte. Les
+ * actions qui changent un score ne touchent qu'une game encore libre. Les
+ * games ne changent pas de main : ce sont leurs scores qui s'échangent, et un
+ * clone arrive en points hors game — le total est celui de la Summer.
+ */
+export type ActionRoue =
+  /** « Meilleure game ×1,5 » : la meilleure game libre de chacun. */
+  | { quoi: 'meilleure_fois'; facteur: number }
+  /** « Pire game ×2 » : la pire game libre de chacun. */
+  | { quoi: 'pire_fois'; facteur: number }
+  /** « Game aléatoire ×2 » : une game libre au hasard. */
+  | { quoi: 'hasard_fois'; facteur: number }
+  /** « Une game au hasard ÷ 2 » : arrondi au supérieur ; les immunisés y échappent. */
+  | { quoi: 'hasard_divise'; diviseur: number }
+  /** « Ajout d'une game sup » : un créneau de plus, comme la carte du Perso. */
+  | { quoi: 'game_sup' }
+  /** « Suppression de la pire game » : elle ne compte plus, son créneau est rendu. */
+  | { quoi: 'supprime_pire' }
+  /** « Échange meilleure ↔ pire » : la meilleure du premier tiré, la pire du second. */
+  | { quoi: 'echange_meilleure_pire' }
+  /** « Échange 2 games aléatoires » : une game au hasard de chacun. */
+  | { quoi: 'echange_hasard' }
+  /** « Roue commu × 20 subs » : une Tempête de neige. */
+  | { quoi: 'tempete' }
+  /** « Clone meilleure → joueur aléatoire » : la meilleure game de la ligue, en points. */
+  | { quoi: 'clone_ligue' }
+  /** « Clone meilleure → pire aléatoire » : la pire du premier prend le score de la meilleure du second. */
+  | { quoi: 'clone_sur_pire' }
+  /** « Meilleure game aux 5 derniers » : leur pire game prend le score de la meilleure de la ligue. */
+  | { quoi: 'meilleure_aux_derniers' }
+  /** « +5 pts par Top 1 » : par Top 1 fait depuis la dernière fois que la carte est tombée. */
+  | { quoi: 'par_top1'; points: number }
+  /** « Vol de score » : le total du joueur juste au-dessus, en points hors game. */
+  | { quoi: 'vol_score' }
+  /** « Fige la meilleure game » : jamais la pire ; `minGames` games jouées au moins. */
+  | { quoi: 'fige_meilleure'; minGames: number }
+  /** « Fige une game au hasard » : jamais la pire, ni la meilleure si `meilleureExclue`. */
+  | { quoi: 'fige_hasard'; meilleureExclue: boolean }
+  /** « Échange entre les 10 premiers » : en chaîne, ni leur meilleure ni leur pire. */
+  | { quoi: 'chaine_tete' }
+  /** « Échange général » : chacun donne une game au hasard au suivant. */
+  | { quoi: 'echange_general' }
+  /** « +5 pts petites games » : par game de moins de N kills. */
+  | { quoi: 'petites_games'; moinsDe: number; points: number }
+  /** « Roulette russe » : un des six perd sa meilleure game. */
+  | { quoi: 'roulette' }
+  /** « Pire game à 0 » : même déjà touchée, sauf figée ; les immunisés y échappent. */
+  | { quoi: 'pire_a_zero' }
+  /** « 3 Jokers pour tout le monde » : dans la limite de la main. */
+  | { quoi: 'jokers'; nombre: number }
+  /** « Fusion des 2 pires games » : une seule, qui vaut leur somme ; un créneau rendu. */
+  | { quoi: 'fusion_pires' }
+  /** « Pire game ramenée à la moyenne ». */
+  | { quoi: 'pire_moyenne' }
+  /** « Pas de chance » : rien ne change. */
+  | { quoi: 'rien' };
 
 /**
  * Ce qu'une carte fait.
@@ -160,7 +234,17 @@ export type CardEffect =
    * autre joueur, toutes deux encore sans carte : elles échangent leur score.
    * La modération la joue pour lui (décidé par l'organisation le 02/11/2026).
    */
-  | { kind: 'echange_choisi'; minGames: number };
+  | { kind: 'echange_choisi'; minGames: number }
+  /**
+   * « Échange pire contre meilleure » (Finisseur, roues de la Summer) : le
+   * joueur la garde et désigne un joueur ; sa pire game libre et la meilleure
+   * de l'autre échangent leur score. Une fois par joueur, sauf la revanche
+   * contre qui l'a visé ; un immunisé ne peut pas être visé.
+   */
+  | { kind: 'echange_cible' }
+  /* -------------------------- Les roues de la Summer ---------------------- */
+  /** Une action des roues, telle quelle : voir {@link ActionRoue}. */
+  | { kind: 'roue'; action: ActionRoue };
 
 /**
  * Quand une carte se joue. Voir {@link CardEffect}. `GARDEE` : elle ne se joue

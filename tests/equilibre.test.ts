@@ -181,8 +181,17 @@ describe('le Joker', () => {
   });
 });
 
+/**
+ * Les cartes de la Summer — les actions de ses roues, reprises telles quelles
+ * dans le Commu, le Folie et le Finisseur (décidé par l'organisation le
+ * 03/11/2026) — lèvent pour elles les règles des malus : la roulette prend une
+ * game, l'échange général fait tourner les games de tous. Ces règles-ci
+ * gardent les cartes Winter.
+ */
+const winter = (c: (typeof CARDS)[number]) => c.effect.kind !== 'roue';
+
 describe('les malus ne transfèrent jamais', () => {
-  const malus = CARDS.filter((c) => c.nature === 'malus');
+  const malus = CARDS.filter((c) => c.nature === 'malus' && winter(c));
 
   it('un malus ordinaire ne fait que retirer des points à sa cible', () => {
     // C'est la règle la plus importante du jeu : le vol crée un double
@@ -196,7 +205,7 @@ describe('les malus ne transfèrent jamais', () => {
   it('aucun malus ne touche une game déjà jouée par sa cible', () => {
     // Un malus tombe sur la prochaine game : personne ne perd une game
     // qu'il a déjà marquée. Seuls des bonus relèvent une game jouée.
-    for (const card of CARDS.filter((c) => momentDe(c.effect) === 'JOUEE')) {
+    for (const card of CARDS.filter((c) => momentDe(c.effect) === 'JOUEE' && winter(c))) {
       expect(card.nature).toBe('bonus');
     }
     // Le Verglas se garde ; son coup, lui, tombe sur le total, sans game.
@@ -245,7 +254,7 @@ describe('les malus ne transfèrent jamais', () => {
     const paires = CARDS.filter((c) => aDeux(c.effect));
     for (const card of paires) expect(card.cible).toBe('DEUX');
     // Et une carte à deux ne vise que deux joueurs.
-    for (const card of CARDS.filter((c) => c.cible === 'DEUX')) {
+    for (const card of CARDS.filter((c) => c.cible === 'DEUX' && winter(c))) {
       expect(aDeux(card.effect)).toBe(true);
     }
   });
@@ -531,7 +540,7 @@ describe('cohérence du jeu de cartes', () => {
   it('dit en clair ce que retire chaque malus', () => {
     // Plus de badge « MALUS » (abandonné le 13/10/2026) : la description dit
     // les points qu'elle retire.
-    for (const card of CARDS.filter((c) => c.nature === 'malus' && !aDeux(c.effect))) {
+    for (const card of CARDS.filter((c) => c.nature === 'malus' && !aDeux(c.effect) && winter(c))) {
       expect(card.description).toMatch(/−\d+ points|÷/);
     }
   });

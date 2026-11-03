@@ -44,12 +44,24 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   l'**intitulé de son action** (`subtitle`). Ajouter une carte, c'est ajouter une entrée
   là ; ajouter un genre d'effet, c'est aussi une branche dans `lib/services/effects.ts`,
   dans `impactMax()`, dans `momentDe()` et dans `resumeEffet()`.
-- Le Booster Perso a ses propres cartes ; le Commu, le Folie et le Finisseur ont
-  retrouvé celles de la Summer (02/11/2026, sans le Perso). Les cartes retirées
-  restent dans `tests/stubs/cartes-retirees.ts` : les tests y trouvent chaque genre
-  d'effet (`avecCartesRetirees`, ou `avecAnciensBoosters` pour les tirer d'un
-  booster). Une carte doit pouvoir sortir de chaque booster qui tire sa rareté — un
-  test le vérifie.
+- Le Booster Perso a ses propres cartes. Le Commu (16), le Folie (7) et le
+  Finisseur (9) tirent **les actions des roues de la Summer Ligue, telles quelles**
+  (décidé le 03/11/2026, sans les deux actions FloooZii), en cartes classées par
+  rareté selon leur force : genre `roue` (`ActionRoue`), réglé dans `regleRoue`.
+  Elles se règlent tout de suite, une fois la carte révélée, **une seule fois pour
+  tous les joueurs tirés** (les cartes d'une même ouverture). « Figée » veut dire :
+  qui porte déjà une carte ; une action qui change un score ne prend qu'une game
+  libre. Les games ne changent pas de main : leurs scores s'échangent
+  (`applyPoints`), et un clone ou un vol de score arrive en points hors game. Leur
+  tirage a ses cibles (`TROIS`, `SIX`, `DIX_PREMIERS`, `CINQ_DERNIERS`,
+  `beneficiairesRoue`) et ignore la règle « pas de stock » : rien n'en reste en
+  attente. Une game qu'elles ont touchée ne se corrige pas : elle se supprime. Les
+  cartes retirées restent dans `tests/stubs/cartes-retirees.ts` : les tests y
+  trouvent chaque genre d'effet (`avecCartesRetirees` ; `avecAnciensBoosters` pour
+  les tirer d'un booster ; `avecBoostersDAvant` pour les règles qui ne visent que
+  les cartes Winter). Une carte doit pouvoir sortir de chaque booster qui tire sa
+  rareté — un test le vérifie. Un identifiant de carte retirée ne se réutilise
+  jamais : la base y renvoie encore.
 - Les taux de rareté sont dans `RARITY_WEIGHTS_BASE` et dans `PACKS[].weights`.
   Toute table doit sommer **exactement** à 100 000 — un test le vérifie.
 - **Pas de plafond de points par rareté** (retiré le 12/10/2026, à la demande de
@@ -60,7 +72,9 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   malus parmi les communes. Un
   malus retire des points, il n'en donne jamais à l'attaquant, ne tombe que sur la
   prochaine game de sa cible, et ne supprime, ne vole ni ne copie jamais la game
-  d'autrui. `tests/equilibre.test.ts` verrouille ces règles.
+  d'autrui. `tests/equilibre.test.ts` verrouille ces règles — pour les cartes Winter :
+  celles de la Summer les lèvent (roulette, échange général, pire game à 0 qui frappe
+  même une game déjà touchée), à la demande de l'organisation.
 - La résolution des effets vit dans `lib/services/effects.ts`, et nulle part ailleurs.
   Chaque delta de points passe par `applyPoints`, qui le journalise dans `game.applied`.
   **Une game ne porte jamais deux cartes** : une carte ne tombe que sur une game encore
@@ -80,6 +94,12 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   (`annonceeA`). Rouvrir pour le même joueur la règle d'abord ; passé deux minutes, la
   page des boosters de la modération rattrape ce qui traîne. Une carte de flocons ne
   compte jamais comme carte en attente.
+- **Les cartes gardées qui visent un joueur** se jouent toutes par la même fenêtre
+  (`LancerVerglas`, `/api/admin/cartes/verglas`) : le Verglas du Perso et l'Éboulement
+  du Finisseur (`malus_choisi`, −10 et −20), et le Troc des Neiges du Finisseur
+  (`echange_cible`, `joueEchangeCible`) — la pire game libre du porteur et la meilleure
+  de la cible échangent leur score ; une fois par joueur, sauf la revanche contre qui
+  l'a visé (la trace `TROC_SUBI` retient qui, dans `paireId`) ; jamais sur un immunisé.
 - **Le Verglas** (`kind: 'malus_choisi'`, ultra rare du Booster Perso, décidé par
   l'organisation le 13/10/2026) est la seule exception aux règles des malus : il sort d'un
   booster ouvert pour un joueur, qui le garde et **choisit sa victime**. La modération le

@@ -50,7 +50,7 @@ import {
 } from '@/lib/domain/types';
 import { carteQuiAttend, gamesSansCarte, regleCartesSansAttendre } from './effects';
 import { audit, debit } from './ledger';
-import { aJoueToutesSesGames, gamesOf, pointsHorsGame } from './league';
+import { aJoueToutesSesGames, estImmunise, gamesOf, pointsHorsGame } from './league';
 
 export class PackError extends Error {
   constructor(
@@ -515,6 +515,8 @@ export function queueDuClassement(db: Database): Player[] {
 function beneficiairesDe(db: Database, card: CardDefinition): Player[] {
   const enLice = joueursEnLice(db);
   if (enLice.length === 0) return [];
+  // Les roues de la Summer ont leur propre tirage : voir `beneficiairesRoue`.
+  if (card.effect.kind === 'roue') return beneficiairesRoue(db, card);
   const prets = bassin(db);
   if (prets.length === 0) return [];
   switch (card.cible) {
@@ -538,6 +540,69 @@ function beneficiairesDe(db: Database, card: CardDefinition): Player[] {
     }
     case 'QUEUE': {
       const ordre = classes(db, prets);
+      return ordre.slice(ordre.length - tailleDeLaQueue(ordre.length));
+    }
+    // Les cibles des roues de la Summer ne servent qu'à elles.
+    case 'TROIS':
+    case 'SIX':
+    case 'DIX_PREMIERS':
+    case 'CINQ_DERNIERS':
+      return [];
+  }
+}
+
+/** Jusqu'à `n` joueurs distincts, tirés au sort. */
+function tireDistincts(joueurs: Player[], n: number): Player[] {
+  const reste = [...joueurs];
+  const tires: Player[] = [];
+  while (tires.length < n && reste.length > 0) {
+    const p = pick(reste);
+    reste.splice(reste.indexOf(p), 1);
+    tires.push(p);
+  }
+  return tires;
+}
+
+/**
+ * Sur qui tombe une action des roues de la Summer (03/11/2026). Comme à la
+ * Summer, une carte en attente n'en protège pas : l'action se règle tout de
+ * suite, sur l'état de la ligue. Les tirés au sort ont au moins une game ;
+ * le barillet laisse dehors les immunisés ; « 3 joueurs figent leur meilleure
+ * game » ne tire que parmi ceux qui ont joué assez de games.
+ */
+function beneficiairesRoue(db: Database, card: CardDefinition): Player[] {
+  if (card.effect.kind !== 'roue') return [];
+  const action = card.effect.action;
+  const enLice = joueursEnLice(db);
+  const comptees = (p: Player) => db.games.filter((g) => g.playerId === p.id && !g.skipped).length;
+  // De préférence ceux qui ont joué ; s'ils ne sont pas assez, tous — l'action
+  // est alors sans effet pour qui n'a pas de game, mais l'ouverture se fait.
+  const avecGames = enLice.filter((p) => comptees(p) > 0);
+  const besoin = card.cible === 'DEUX' || card.cible === 'SIX' ? 2 : 1;
+  let pool = avecGames.length >= besoin ? avecGames : enLice;
+  if (action.quoi === 'fige_meilleure') pool = pool.filter((p) => comptees(p) >= action.minGames);
+  if (action.quoi === 'roulette') pool = pool.filter((p) => !estImmunise(p));
+  switch (card.cible) {
+    case 'TOUS':
+      return enLice;
+    case 'HASARD':
+      return tireDistincts(pool, 1);
+    case 'DEUX':
+      return pool.length < 2 ? [] : tireDistincts(pool, 2);
+    case 'TROIS':
+      return tireDistincts(pool, 3);
+    case 'SIX':
+      return pool.length < 2 ? [] : tireDistincts(pool, 6);
+    case 'DIX_PREMIERS':
+      return classes(db, pool).slice(0, 10);
+    case 'CINQ_DERNIERS': {
+      const ordre = classes(db, pool);
+      return ordre.slice(Math.max(0, ordre.length - 5));
+    }
+    case 'TETE':
+      return classes(db, pool).slice(0, 1);
+    case 'QUEUE': {
+      const ordre = classes(db, pool);
       return ordre.slice(ordre.length - tailleDeLaQueue(ordre.length));
     }
   }
@@ -613,7 +678,9 @@ export function ouvrePack(db: Database, demande: DemandeOuverture, ouvertPar: st
   const beneficiaires = joueur ? [joueur] : beneficiairesDe(db, card);
   if (beneficiaires.length === 0) {
     throw new PackError(
-      card.cible === 'DEUX'
+      card.effect.kind === 'roue'
+        ? 'Pas assez de joueurs avec une game pour cette carte : le booster reste dans la file.'
+        : card.cible === 'DEUX'
         ? 'Il faut deux joueurs actifs pour cette carte.'
         : 'Aucun joueur libre pour recevoir la carte : chacun a déjà une carte qui attend sa prochaine game. Le booster reste dans la file.',
       'AUCUN_BENEFICIAIRE',
@@ -621,7 +688,7 @@ export function ouvrePack(db: Database, demande: DemandeOuverture, ouvertPar: st
   }
   // Les deux cartes d'une paire partagent un identifiant : c'est lui qui
   // permet à la seconde game saisie de retrouver la première.
-  const paireId = card.cible === 'DEUX' && !joueur ? newId() : null;
+  const paireId = card.cible === 'DEUX' && card.effect.kind === 'echange' && !joueur ? newId() : null;
 
   const now = new Date().toISOString();
   const ouverture: OuverturePack = {
@@ -663,7 +730,7 @@ export function ouvrePack(db: Database, demande: DemandeOuverture, ouvertPar: st
     `${pack.name} → ${card.name} (${card.rarity}) pour ${
       joueur
         ? joueur.pseudo
-        : card.cible === 'TOUS'
+        : card.cible === 'TOUS' || card.cible === 'DIX_PREMIERS' || card.cible === 'CINQ_DERNIERS'
           ? `${beneficiaires.length} joueur(s)`
           : beneficiaires.map((b) => b.pseudo).join(', ')
     }${chance > 0 ? ` — chance ${Math.round(chance * 100)} %` : ''}`,

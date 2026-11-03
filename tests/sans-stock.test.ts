@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { Database, Player } from '@/lib/db/entities';
 import { emptyDatabase } from '@/lib/db/store';
 import { getCard, momentDe } from '@/lib/domain/catalog';
@@ -6,6 +6,12 @@ import { WEIGHT_TOTAL } from '@/lib/domain/rules';
 import type { Rarity } from '@/lib/domain/types';
 import { carteQuiAttend, regleApresRevelation } from '@/lib/services/effects';
 import { ouvrePack, PackError, reglagePack } from '@/lib/services/packs';
+
+// La règle « pas de stock » vise les cartes Winter : les cartes de la Summer se
+// règlent tout de suite. On tire donc dans les boosters d'avant.
+vi.mock('@/lib/domain/catalog', async (vrai) =>
+  (await import('./stubs/cartes-retirees')).avecBoostersDAvant(await vrai()),
+);
 
 /**
  * Pas de stock de cartes (décidé le 13/10/2026) : un joueur n'a jamais plus

@@ -8,15 +8,7 @@
 
 import { BOOSTER_ART, CARD_ART, CARD_VIGNETTES } from './card-art.generated';
 import { GAME_LIMITS, PLACEMENT_POINTS, RARITY_ORDER, RARITY_WEIGHTS_BASE } from './rules';
-import type {
-  CardDefinition,
-  CardEffect,
-  CibleCarte,
-  MomentCarte,
-  PackDefinition,
-  PackId,
-  Rarity,
-} from './types';
+import type { CardDefinition, CardEffect, CibleCarte, MomentCarte, PackDefinition, PackId, Rarity, ActionRoue } from './types';
 
 /**
  * Palette de raretés : froide pour le banal, chaude pour le convoité. Sur un
@@ -135,7 +127,7 @@ export const CARDS: readonly CardDefinition[] = [
     nature: 'bonus',
     power: 9,
     // Dans le Perso aussi depuis le 20/10/2026, avec les autres communes.
-    packs: ['perso', 'commu', 'finisseur'],
+    packs: ['perso'],
     cible: 'HASARD',
   },
   {
@@ -208,119 +200,7 @@ export const CARDS: readonly CardDefinition[] = [
     packs: ['perso'],
     cible: 'HASARD',
   },
-  {
-    // Carte de la Summer, revenue le 02/11/2026.
-    id: 'boule-de-neige',
-    name: 'Boule de Neige',
-    subtitle: '+4 pts petites games',
-    rarity: 'C',
-    glyph: '⚪',
-    description: 'Si ta prochaine game fait moins de 5 kills, elle gagne 4 points.',
-    effect: { kind: 'petite_game', moinsDe: 5, value: 4 },
-    nature: 'bonus',
-    power: 6,
-    packs: ['commu', 'finisseur'],
-    cible: 'HASARD',
-  },
-  {
-    // Carte de la Summer, revenue le 02/11/2026.
-    id: 'rafale',
-    name: 'Rafale',
-    subtitle: '+4 pts à partir du Top 3',
-    rarity: 'C',
-    glyph: '🍃',
-    description: 'Si ta prochaine game finit dans le Top 3, elle gagne 4 points.',
-    effect: { kind: 'bonus_top', top: 3, value: 4 },
-    nature: 'bonus',
-    power: 7,
-    packs: ['commu', 'finisseur'],
-    cible: 'HASARD',
-  },
-  {
-    // Carte de la Summer, revenue le 02/11/2026.
-    id: 'etincelle',
-    name: 'Étincelle',
-    subtitle: 'Pas de chance',
-    rarity: 'C',
-    glyph: '✦',
-    description: 'La carte est passée à côté du classement : 60 flocons de consolation, tout de suite.',
-    effect: { kind: 'snowflakes', value: 60 },
-    nature: 'bonus',
-    power: 4,
-    packs: ['commu', 'finisseur'],
-    cible: 'HASARD',
-  },
-  {
-    // Carte de la Summer, revenue le 02/11/2026.
-    id: 'poudreuse',
-    name: 'Poudreuse',
-    subtitle: '+5 pts bonus',
-    rarity: 'C',
-    glyph: '❄',
-    description: '+5 points sur ta prochaine game.',
-    effect: { kind: 'bonus_points', value: 5 },
-    nature: 'bonus',
-    power: 11,
-    packs: ['commu', 'finisseur'],
-    cible: 'HASARD',
-  },
-  {
-    // Carte de la Summer, revenue le 02/11/2026.
-    id: 'filet',
-    name: 'Filet de Neige',
-    subtitle: 'Joker',
-    rarity: 'C',
-    glyph: '🕸',
-    description: 'Joker : ta prochaine game vaut au moins 6 points, même ratée.',
-    effect: { kind: 'plancher', value: 6 },
-    nature: 'bonus',
-    power: 12,
-    packs: ['commu', 'finisseur'],
-    cible: 'HASARD',
-  },
-  {
-    // Carte de la Summer, revenue le 02/11/2026.
-    id: 'etoile-polaire',
-    name: 'Étoile Polaire',
-    subtitle: '+200 flocons',
-    rarity: 'C',
-    glyph: '⭐',
-    description: '200 flocons, tout de suite.',
-    effect: { kind: 'snowflakes', value: 200 },
-    nature: 'bonus',
-    power: 9,
-    packs: ['commu'],
-    cible: 'HASARD',
-  },
-  {
-    // Carte de la Summer, revenue le 02/11/2026.
-    id: 'manne',
-    name: 'Manne',
-    subtitle: 'Flocons doublés',
-    rarity: 'C',
-    glyph: '💠',
-    description: 'Les flocons de ta prochaine game sont doublés.',
-    effect: { kind: 'flocons_doubles' },
-    nature: 'bonus',
-    power: 10,
-    packs: ['commu', 'finisseur'],
-    cible: 'HASARD',
-  },
   /* ============================== Rare ================================== */
-  {
-    id: 'percee',
-    name: 'Percée',
-    subtitle: '+8 pts bonus',
-    rarity: 'R',
-    glyph: '⚔',
-    description: '+8 points sur ta prochaine game.',
-    effect: { kind: 'bonus_points', value: 8 },
-    nature: 'bonus',
-    power: 36,
-    // Pas dans le Perso : sa rare y est le Joker.
-    packs: ['commu', 'finisseur', 'folie'],
-    cible: 'HASARD',
-  },
   {
     id: 'lanterne-givree',
     name: 'Lanterne Givrée',
@@ -394,224 +274,6 @@ export const CARDS: readonly CardDefinition[] = [
     cible: 'HASARD',
   },
   {
-    // Carte de la Summer, revenue le 02/11/2026.
-    id: 'givre-mordant',
-    name: 'Givre Mordant',
-    subtitle: '−4 pts à un joueur',
-    rarity: 'R'  /* un malus : jamais parmi les communes */,
-    glyph: '🥶',
-    description: '−4 points sur la prochaine game d’un joueur tiré au sort.',
-    effect: { kind: 'malus_points', value: 4 },
-    nature: 'malus',
-    power: 14,
-    packs: ['commu'],
-    cible: 'HASARD',
-  },
-  {
-    // Carte de la Summer, revenue le 02/11/2026.
-    id: 'vent-du-nord',
-    name: 'Vent du Nord',
-    subtitle: 'Multiplicateur game',
-    rarity: 'R',
-    glyph: '💨',
-    description:
-      'Le score entier de ta prochaine game, kills et top, est multiplié par 1,2, jusqu’à +10 points.',
-    effect: { kind: 'multiplicateur_game', value: 1.2, cap: 10 },
-    nature: 'bonus',
-    power: 27,
-    packs: ['finisseur', 'folie'],
-    cible: 'TOUS',
-  },
-  {
-    // Carte de la Summer, revenue le 02/11/2026.
-    id: 'echo',
-    name: 'Écho des Cimes',
-    subtitle: 'Clone kill du meilleur',
-    rarity: 'R',
-    glyph: '🗻',
-    description:
-      'Ta prochaine game prend les kills du meilleur tueur de ta partie, jusqu’à +10 points.',
-    effect: { kind: 'clone_kills', cap: 10 },
-    nature: 'bonus',
-    power: 29,
-    packs: ['commu'],
-    cible: 'HASARD',
-  },
-  {
-    // Carte de la Summer, revenue le 02/11/2026.
-    id: 'pluie-de-flocons',
-    name: 'Pluie de Flocons',
-    subtitle: '+500 flocons',
-    rarity: 'R',
-    glyph: '🌧',
-    description: '500 flocons, tout de suite.',
-    effect: { kind: 'snowflakes', value: 500 },
-    nature: 'bonus',
-    power: 21,
-    packs: ['commu', 'folie'],
-    cible: 'HASARD',
-  },
-  {
-    // Carte de la Summer, revenue le 02/11/2026.
-    id: 'redoux',
-    name: 'Redoux',
-    subtitle: 'Pire game ×2',
-    rarity: 'R',
-    glyph: '🌤',
-    description: 'Ta pire game encore sans carte voit son score multiplié par 2, jusqu’à +10 points.',
-    effect: { kind: 'multiplie_jouee', cible: 'pire', value: 2, cap: 10 },
-    nature: 'bonus',
-    power: 32,
-    packs: ['commu', 'finisseur'],
-    cible: 'HASARD',
-  },
-  {
-    // Carte de la Summer, revenue le 02/11/2026.
-    id: 'chasse-croise',
-    name: 'Chassé-Croisé',
-    subtitle: 'Échange de kills',
-    rarity: 'R',
-    glyph: '🔁',
-    description:
-      'Deux joueurs tirés au sort échangent les kills de leur prochaine game, jusqu’à 10 points de part et d’autre.',
-    effect: { kind: 'echange', sur: 'kills', cap: 10 },
-    nature: 'malus',
-    power: 34,
-    packs: ['commu', 'folie'],
-    cible: 'DEUX',
-  },
-  {
-    // Carte de la Summer, revenue le 02/11/2026.
-    id: 'contre-courant',
-    name: 'Contre-Courant',
-    subtitle: 'Roulette russe',
-    rarity: 'R',
-    glyph: '🌀',
-    description:
-      'Une seule balle dans le barillet : −8 points sur la prochaine game d’un joueur tiré au sort.',
-    effect: { kind: 'malus_points', value: 8 },
-    nature: 'malus',
-    power: 36,
-    packs: ['commu', 'folie'],
-    cible: 'HASARD',
-  },
-  {
-    // Carte de la Summer, revenue le 02/11/2026.
-    id: 'second-souffle',
-    name: 'Second Souffle',
-    subtitle: '+12 pts bonus',
-    rarity: 'R',
-    glyph: '🌬',
-    description: '+12 points sur ta prochaine game.',
-    effect: { kind: 'bonus_points', value: 12 },
-    nature: 'bonus',
-    power: 45,
-    packs: ['commu', 'finisseur'],
-    cible: 'HASARD',
-  },
-  {
-    // Carte de la Summer, revenue le 02/11/2026.
-    id: 'blizzard',
-    name: 'Blizzard',
-    subtitle: 'Multiplicateur game',
-    rarity: 'R',
-    glyph: '🌪',
-    description:
-      'Le score entier de ta prochaine game, kills et top, est multiplié par 1,3, jusqu’à +15 points.',
-    effect: { kind: 'multiplicateur_game', value: 1.3, cap: 15 },
-    nature: 'bonus',
-    power: 51,
-    packs: ['finisseur', 'folie'],
-    cible: 'TOUS',
-  },
-  {
-    // Carte de la Summer, revenue le 02/11/2026.
-    id: 'socle',
-    name: 'Socle de Glace',
-    subtitle: 'Joker',
-    rarity: 'R',
-    glyph: '🧱',
-    description: 'Joker : ta prochaine game vaut au moins 15 points, même ratée.',
-    effect: { kind: 'plancher', value: 15 },
-    nature: 'bonus',
-    power: 47,
-    packs: ['commu', 'finisseur'],
-    cible: 'HASARD',
-  },
-  {
-    // Carte de la Summer, revenue le 02/11/2026.
-    id: 'sang-froid',
-    name: 'Sang-Froid',
-    subtitle: '+12 pts à partir du Top 3',
-    rarity: 'R',
-    glyph: '🧊',
-    description: 'Si ta prochaine game finit dans le Top 3, elle gagne 12 points.',
-    effect: { kind: 'bonus_top', top: 3, value: 12 },
-    nature: 'bonus',
-    power: 49,
-    packs: ['finisseur', 'folie'],
-    cible: 'TOUS',
-  },
-  {
-    // Carte de la Summer, revenue le 02/11/2026.
-    id: 'bouclier-givre',
-    name: 'Bouclier de Givre',
-    subtitle: 'Immunité 2 jours',
-    rarity: 'R',
-    glyph: '🛡',
-    description:
-      'Pendant 48 heures, aucun malus ne peut toucher tes games. Les bonus t’atteignent toujours.',
-    effect: { kind: 'immunite', heures: 48 },
-    nature: 'bonus',
-    power: 43,
-    packs: ['commu'],
-    cible: 'HASARD',
-  },
-  {
-    // Carte de la Summer, revenue le 02/11/2026.
-    id: 'degel',
-    name: 'Dégel',
-    subtitle: 'Pire game ramenée à la moyenne',
-    rarity: 'R',
-    glyph: '💧',
-    description:
-      'Ta pire game encore sans carte remonte au niveau de ta moyenne, jusqu’à +15 points.',
-    effect: { kind: 'releve_pire', cap: 15 },
-    nature: 'bonus',
-    power: 54,
-    packs: ['finisseur', 'folie'],
-    cible: 'TOUS',
-  },
-  {
-    // Carte de la Summer, revenue le 02/11/2026.
-    id: 'traineau-perce',
-    name: 'Traîneau Percé',
-    subtitle: '−12 pts au premier',
-    rarity: 'R',
-    glyph: '🛷',
-    description: '−12 points sur la prochaine game du premier du classement.',
-    effect: { kind: 'malus_points', value: 12 },
-    nature: 'malus',
-    power: 56,
-    packs: ['commu', 'folie'],
-    cible: 'TETE',
-  },
-  {
-    // Carte de la Summer, revenue le 02/11/2026.
-    id: 'verglas',
-    name: 'Glissade',
-    subtitle: 'Une game ÷ 2',
-    rarity: 'R',
-    glyph: '⛸',
-    description:
-      'La prochaine game d’un joueur tiré au sort est divisée par 2 (÷2), jusqu’à −15 points.',
-    effect: { kind: 'diviseur_game', value: 2, cap: 15 },
-    nature: 'malus',
-    power: 58,
-    packs: ['commu', 'folie'],
-    cible: 'HASARD',
-  },
-  {
     // Les kills du meilleur tueur de la partie — celui de la capture,
     // coéquipiers et streameuse compris —, lus à la saisie. S'il l'est
     // lui-même, une consolation fixe : être le meilleur ne coûte pas la carte.
@@ -630,20 +292,6 @@ export const CARDS: readonly CardDefinition[] = [
     cible: 'HASARD',
   },
   /* ============================== Ultra rare ============================ */
-  {
-    id: 'rempart-polaire',
-    name: 'Rempart Polaire',
-    subtitle: '+18 pts bonus',
-    rarity: 'UR',
-    glyph: '🏰',
-    description: '+18 points sur ta prochaine game.',
-    effect: { kind: 'bonus_points', value: 18 },
-    nature: 'bonus',
-    power: 76,
-    // Pas dans le Perso : son ultra rare y est la Coulée de Neige.
-    packs: ['commu', 'finisseur', 'folie'],
-    cible: 'HASARD',
-  },
   {
     // Un malus que le joueur garde, et dont il choisit la victime : la
     // modération le joue pour lui. Décidé par l'organisation le 13/10/2026 ;
@@ -719,108 +367,7 @@ export const CARDS: readonly CardDefinition[] = [
     packs: ['perso'],
     cible: 'HASARD',
   },
-  {
-    // Carte de la Summer, revenue le 02/11/2026.
-    id: 'nuit-polaire',
-    name: 'Nuit Polaire',
-    subtitle: 'Multiplicateur game',
-    rarity: 'UR',
-    glyph: '🌑',
-    description:
-      'Le score entier de ta prochaine game, kills et top, est multiplié par 1,5, jusqu’à +20 points.',
-    effect: { kind: 'multiplicateur_game', value: 1.5, cap: 20 },
-    nature: 'bonus',
-    power: 74,
-    packs: ['finisseur', 'folie'],
-    cible: 'TOUS',
-  },
-  {
-    // Carte de la Summer, revenue le 02/11/2026.
-    id: 'reflet',
-    name: 'Reflet de Glace',
-    subtitle: 'Clone kill du meilleur',
-    rarity: 'UR',
-    glyph: '🪞',
-    description:
-      'Ta prochaine game prend les kills du meilleur tueur de ta partie, jusqu’à +20 points.',
-    effect: { kind: 'clone_kills', cap: 20 },
-    nature: 'bonus',
-    power: 72,
-    packs: ['commu'],
-    cible: 'HASARD',
-  },
-  {
-    // Carte de la Summer, revenue le 02/11/2026.
-    id: 'aurore-boreale',
-    name: 'Aurore Boréale',
-    subtitle: '+2 000 flocons',
-    rarity: 'UR',
-    glyph: '🌌',
-    description: '2 000 flocons, tout de suite.',
-    effect: { kind: 'snowflakes', value: 2000 },
-    nature: 'bonus',
-    power: 64,
-    packs: ['commu', 'folie'],
-    cible: 'HASARD',
-  },
-  {
-    // Carte de la Summer, revenue le 02/11/2026.
-    id: 'refuge',
-    name: 'Refuge',
-    subtitle: 'Game supplémentaire',
-    rarity: 'UR',
-    glyph: '🛖',
-    description:
-      'Un créneau de game en plus, hors limite : une game de plus à jouer cette saison.',
-    effect: { kind: 'game_supplementaire' },
-    nature: 'bonus',
-    power: 77,
-    packs: ['commu', 'finisseur'],
-    cible: 'HASARD',
-  },
-  {
-    // Carte de la Summer, revenue le 02/11/2026.
-    id: 'cordee',
-    name: 'Cordée',
-    subtitle: 'Coup de pouce aux derniers',
-    rarity: 'UR',
-    glyph: '🧗',
-    description: 'Les derniers du classement gagnent 15 points sur leur prochaine game.',
-    effect: { kind: 'bonus_points', value: 15 },
-    nature: 'bonus',
-    power: 69,
-    packs: ['commu', 'folie'],
-    cible: 'QUEUE',
-  },
-  {
-    // Carte de la Summer, revenue le 02/11/2026.
-    id: 'tempete-de-verglas',
-    name: 'Tempête de Verglas',
-    subtitle: '−16 pts au premier',
-    rarity: 'UR',
-    glyph: '🌩',
-    description: '−16 points sur la prochaine game du premier du classement.',
-    effect: { kind: 'malus_points', value: 16 },
-    nature: 'malus',
-    power: 82,
-    packs: ['commu', 'folie'],
-    cible: 'TETE',
-  },
   /* ============================== Légendaire ============================ */
-  {
-    id: 'etoile-du-nord',
-    name: 'Étoile du Nord',
-    subtitle: '+25 pts bonus',
-    rarity: 'L',
-    glyph: '🌟',
-    description: '+25 points sur ta prochaine game.',
-    effect: { kind: 'bonus_points', value: 25 },
-    nature: 'bonus',
-    power: 94,
-    // Pas dans le Perso : ses légendaires y sont Ouragan Blanc et Permafrost.
-    packs: ['commu', 'finisseur', 'folie'],
-    cible: 'HASARD',
-  },
   {
     id: 'ouragan-blanc',
     name: 'Ouragan Blanc',
@@ -891,63 +438,459 @@ export const CARDS: readonly CardDefinition[] = [
     packs: ['perso'],
     cible: 'HASARD',
   },
+  /* ===================== Booster Commu — la Roue Communautaire ===================== */
+  // Les roues de la Summer Ligue, reprises telles quelles le 03/11/2026.
   {
-    // Carte de la Summer, revenue le 02/11/2026.
-    id: 'grand-nord',
-    name: 'Grand Nord',
-    subtitle: 'Multiplicateur game',
-    rarity: 'L',
-    glyph: '🧭',
+    id: 'flocon-de-plus',
+    name: 'Flocon de Plus',
+    subtitle: 'Ajout d’une game sup',
+    rarity: 'C',
+    glyph: '➕',
     description:
-      'Le score entier de ta prochaine game, kills et top, est multiplié par 2, jusqu’à +25 points.',
-    effect: { kind: 'multiplicateur_game', value: 2, cap: 25 },
+      'Une game bonus pour tous les joueurs, hors limite — trois au plus dans la saison.',
+    effect: { kind: 'roue', action: { quoi: 'game_sup' } },
     nature: 'bonus',
-    power: 100,
-    packs: ['finisseur', 'folie'],
+    power: 6,
+    packs: ['commu'],
     cible: 'TOUS',
   },
   {
-    // Carte de la Summer, revenue le 02/11/2026.
-    id: 'sanctuaire',
-    name: 'Sanctuaire',
-    subtitle: 'Joker',
-    rarity: 'L',
-    glyph: '🏔',
-    description: 'Joker : ta prochaine game vaut au moins 25 points, même ratée.',
-    effect: { kind: 'plancher', value: 25 },
+    id: 'petits-pas',
+    name: 'Petits Pas',
+    subtitle: '+5 pts petites games',
+    rarity: 'C',
+    glyph: '👣',
+    description:
+      '+5 points pour chaque game de moins de 5 kills, à chaque joueur.',
+    effect: { kind: 'roue', action: { quoi: 'petites_games', moinsDe: 5, points: 5 } },
     nature: 'bonus',
-    power: 91,
-    packs: ['finisseur', 'folie'],
+    power: 7,
+    packs: ['commu'],
     cible: 'TOUS',
   },
   {
-    // Carte de la Summer, revenue le 02/11/2026.
-    id: 'gel-eternel',
-    name: 'Gel Éternel',
+    id: 'couronnes-de-givre',
+    name: 'Couronnes de Givre',
+    subtitle: '+5 pts par Top 1',
+    rarity: 'C',
+    glyph: '👑',
+    description:
+      '+5 points par Top 1 fait depuis la dernière fois que cette carte est tombée, à chaque joueur.',
+    effect: { kind: 'roue', action: { quoi: 'par_top1', points: 5 } },
+    nature: 'bonus',
+    power: 8,
+    packs: ['commu'],
+    cible: 'TOUS',
+  },
+  {
+    id: 'givre-errant',
+    name: 'Givre Errant',
+    subtitle: '3 joueurs figent une game au hasard',
+    rarity: 'C',
+    glyph: '🧊',
+    description:
+      'Trois joueurs tirés au sort figent une de leurs games au hasard, ni la meilleure ni la pire : plus aucune carte ne peut la toucher.',
+    effect: { kind: 'roue', action: { quoi: 'fige_hasard', meilleureExclue: true } },
+    nature: 'bonus',
+    power: 9,
+    packs: ['commu'],
+    cible: 'TROIS',
+  },
+  {
+    id: 'neige-melee',
+    name: 'Neige Mêlée',
+    subtitle: 'Échange 2 games aléatoires',
+    rarity: 'C',
+    glyph: '🔀',
+    description:
+      'Deux joueurs tirés au sort échangent une game au hasard : chacune prend le score de l’autre.',
+    effect: { kind: 'roue', action: { quoi: 'echange_hasard' } },
+    nature: 'bonus',
+    power: 10,
+    packs: ['commu'],
+    cible: 'DEUX',
+  },
+  {
+    id: 'deneigement',
+    name: 'Déneigement',
+    subtitle: 'Suppression de la pire game',
+    rarity: 'R',
+    glyph: '🧹',
+    description:
+      'La pire game libre de chaque joueur est supprimée : elle ne compte plus, son créneau est rendu.',
+    effect: { kind: 'roue', action: { quoi: 'supprime_pire' } },
+    nature: 'bonus',
+    power: 30,
+    packs: ['commu'],
+    cible: 'TOUS',
+  },
+  {
+    id: 'trois-glacons',
+    name: 'Trois Glaçons',
+    subtitle: '3 joueurs figent leur meilleure game',
+    rarity: 'R',
+    glyph: '🧊',
+    description:
+      'Trois joueurs tirés au sort parmi ceux qui ont joué au moins 30 games figent leur meilleure game libre.',
+    effect: { kind: 'roue', action: { quoi: 'fige_meilleure', minGames: 30 } },
+    nature: 'bonus',
+    power: 32,
+    packs: ['commu'],
+    cible: 'TROIS',
+  },
+  {
+    id: 'degel-double',
+    name: 'Dégel Double',
+    subtitle: 'Pire game ×2',
+    rarity: 'R',
+    glyph: '✖️',
+    description:
+      'La pire game libre de chaque joueur compte double.',
+    effect: { kind: 'roue', action: { quoi: 'pire_fois', facteur: 2 } },
+    nature: 'bonus',
+    power: 34,
+    packs: ['commu'],
+    cible: 'TOUS',
+  },
+  {
+    id: 'cime-eclatante',
+    name: 'Cime Éclatante',
     subtitle: 'Meilleure game ×1,5',
-    rarity: 'L',
-    glyph: '💎',
+    rarity: 'R',
+    glyph: '⛰',
     description:
-      'Ta meilleure game encore sans carte est multipliée par 1,5, jusqu’à +25 points.',
-    effect: { kind: 'multiplie_jouee', cible: 'meilleure', value: 1.5, cap: 25 },
+      'La meilleure game libre de chaque joueur compte ×1,5. Si elle porte déjà une carte, c’est la suivante.',
+    effect: { kind: 'roue', action: { quoi: 'meilleure_fois', facteur: 1.5 } },
     nature: 'bonus',
-    power: 96,
-    packs: ['finisseur', 'folie'],
+    power: 38,
+    packs: ['commu'],
     cible: 'TOUS',
   },
   {
-    // Carte de la Summer, revenue le 02/11/2026.
-    id: 'grand-froid',
-    name: 'Grand Froid',
-    subtitle: '−20 pts au premier',
+    id: 'triple-echo',
+    name: 'Triple Écho',
+    subtitle: 'Game aléatoire ×2 — 3 joueurs',
+    rarity: 'R',
+    glyph: '🎲',
+    description:
+      'Trois joueurs tirés au sort voient une game libre au hasard compter double.',
+    effect: { kind: 'roue', action: { quoi: 'hasard_fois', facteur: 2 } },
+    nature: 'bonus',
+    power: 42,
+    packs: ['commu'],
+    cible: 'TROIS',
+  },
+  {
+    id: 'contre-vent',
+    name: 'Contre-Vent',
+    subtitle: 'Échange meilleure ↔ pire',
+    rarity: 'R',
+    glyph: '↔️',
+    description:
+      'Deux joueurs tirés au sort : la meilleure game libre du premier et la pire du second échangent leur score.',
+    effect: { kind: 'roue', action: { quoi: 'echange_meilleure_pire' } },
+    nature: 'bonus',
+    power: 46,
+    packs: ['commu'],
+    cible: 'DEUX',
+  },
+  {
+    id: 'ronde-des-cimes',
+    name: 'Ronde des Cimes',
+    subtitle: 'Échange entre les 10 premiers',
+    rarity: 'R',
+    glyph: '🔄',
+    description:
+      'Les dix premiers du classement échangent une game en chaîne, dans un ordre tiré au sort — ni leur meilleure ni leur pire. Aucun point n’est créé ni perdu.',
+    effect: { kind: 'roue', action: { quoi: 'chaine_tete' } },
+    nature: 'bonus',
+    power: 50,
+    packs: ['commu'],
+    cible: 'DIX_PREMIERS',
+  },
+  {
+    id: 'miroir-des-cimes',
+    name: 'Miroir des Cimes',
+    subtitle: 'Clone meilleure → joueur aléatoire',
+    rarity: 'UR',
+    glyph: '🪞',
+    description:
+      'Un joueur tiré au sort reçoit, en points bonus, la meilleure game de toute la ligue. Son propriétaire la garde.',
+    effect: { kind: 'roue', action: { quoi: 'clone_ligue' } },
+    nature: 'bonus',
+    power: 66,
+    packs: ['commu'],
+    cible: 'HASARD',
+  },
+  {
+    id: 'calque-de-givre',
+    name: 'Calque de Givre',
+    subtitle: 'Clone meilleure → pire aléatoire',
+    rarity: 'UR',
+    glyph: '📋',
+    description:
+      'Deux joueurs tirés au sort : la pire game libre du premier prend le score de la meilleure game du second, qui garde la sienne.',
+    effect: { kind: 'roue', action: { quoi: 'clone_sur_pire' } },
+    nature: 'bonus',
+    power: 70,
+    packs: ['commu'],
+    cible: 'DEUX',
+  },
+  {
+    id: 'appel-de-la-tempete',
+    name: 'Appel de la Tempête',
+    subtitle: 'Booster Commu tous les 20 subs',
+    rarity: 'UR',
+    glyph: '🌨',
+    description:
+      'Déclenche une Tempête de neige : pendant 4 jours, le Booster Commu tombe tous les 20 subs au lieu de 35.',
+    effect: { kind: 'roue', action: { quoi: 'tempete' } },
+    nature: 'bonus',
+    power: 74,
+    packs: ['commu'],
+    cible: 'TOUS',
+  },
+  {
+    id: 'voleur-d-hiver',
+    name: 'Voleur d’Hiver',
+    subtitle: 'Vol de score',
     rarity: 'L',
-    glyph: '☠',
-    description: '−20 points sur la prochaine game du premier du classement.',
-    effect: { kind: 'malus_points', value: 20 },
+    glyph: '🦹',
+    description:
+      'Un joueur tiré au sort prend le score total du joueur juste au-dessus de lui au classement. Celui du dessus garde le sien.',
+    effect: { kind: 'roue', action: { quoi: 'vol_score' } },
+    nature: 'bonus',
+    power: 92,
+    packs: ['commu'],
+    cible: 'HASARD',
+  },
+  /* ===================== Booster Folie — la Roue de Folie ===================== */
+  // Les roues de la Summer Ligue, reprises telles quelles le 03/11/2026.
+  {
+    id: 'morsure-du-froid',
+    name: 'Morsure du Froid',
+    subtitle: 'Une game au hasard ÷ 2',
+    rarity: 'R',
+    glyph: '🥶',
+    description:
+      'Pour chaque joueur, une game libre tirée au hasard est divisée par 2 (÷2, arrondi au supérieur). Les joueurs immunisés y échappent.',
+    effect: { kind: 'roue', action: { quoi: 'hasard_divise', diviseur: 2 } },
     nature: 'malus',
-    power: 98,
+    power: 36,
     packs: ['folie'],
-    cible: 'TETE',
+    cible: 'TOUS',
+  },
+  {
+    id: 'grand-gel',
+    name: 'Grand Gel',
+    subtitle: 'Chacun fige une game au hasard',
+    rarity: 'R',
+    glyph: '❄️',
+    description:
+      'Chaque joueur fige une de ses games au hasard, jamais la pire : plus aucune carte ne peut la toucher.',
+    effect: { kind: 'roue', action: { quoi: 'fige_hasard', meilleureExclue: false } },
+    nature: 'bonus',
+    power: 40,
+    packs: ['folie'],
+    cible: 'TOUS',
+  },
+  {
+    id: 'pluie-de-jokers',
+    name: 'Pluie de Jokers',
+    subtitle: '3 Jokers pour tout le monde',
+    rarity: 'R',
+    glyph: '🃏',
+    description:
+      'Chaque joueur reçoit 3 Jokers, dans la limite de 5 en main.',
+    effect: { kind: 'roue', action: { quoi: 'jokers', nombre: 3 } },
+    nature: 'bonus',
+    power: 52,
+    packs: ['folie'],
+    cible: 'TOUS',
+  },
+  {
+    id: 'nuit-blanche',
+    name: 'Nuit Blanche',
+    subtitle: 'Pire game à 0',
+    rarity: 'UR',
+    glyph: '🌑',
+    description:
+      'La pire game de chaque joueur tombe à 0 point, même si une carte l’a déjà touchée — sauf une game figée, et les joueurs immunisés.',
+    effect: { kind: 'roue', action: { quoi: 'pire_a_zero' } },
+    nature: 'malus',
+    power: 72,
+    packs: ['folie'],
+    cible: 'TOUS',
+  },
+  {
+    id: 'blizzard-general',
+    name: 'Blizzard Général',
+    subtitle: 'Échange général',
+    rarity: 'UR',
+    glyph: '🌪',
+    description:
+      'Tous les joueurs qui ont une game libre entrent dans une chaîne tirée au sort : chacun donne une game au hasard au suivant. Les immunisés n’y entrent pas.',
+    effect: { kind: 'roue', action: { quoi: 'echange_general' } },
+    nature: 'bonus',
+    power: 76,
+    packs: ['folie'],
+    cible: 'TOUS',
+  },
+  {
+    id: 'aube-des-derniers',
+    name: 'Aube des Derniers',
+    subtitle: 'Meilleure game aux 5 derniers',
+    rarity: 'UR',
+    glyph: '🌅',
+    description:
+      'Les cinq derniers du classement voient leur pire game libre prendre le score de la meilleure game de toute la ligue.',
+    effect: { kind: 'roue', action: { quoi: 'meilleure_aux_derniers' } },
+    nature: 'bonus',
+    power: 78,
+    packs: ['folie'],
+    cible: 'CINQ_DERNIERS',
+  },
+  {
+    id: 'barillet-de-glace',
+    name: 'Barillet de Glace',
+    subtitle: 'Roulette russe',
+    rarity: 'L',
+    glyph: '🔫',
+    description:
+      'Six joueurs tirés au sort entrent dans le barillet, une seule balle : le joueur touché perd définitivement sa meilleure game. Les immunisés n’y entrent pas.',
+    effect: { kind: 'roue', action: { quoi: 'roulette' } },
+    nature: 'malus',
+    power: 96,
+    packs: ['folie'],
+    cible: 'SIX',
+  },
+  /* ===================== Booster Finisseur — la Roue des Finisseurs ===================== */
+  // Les roues de la Summer Ligue, reprises telles quelles le 03/11/2026.
+  {
+    id: 'neige-fondue',
+    name: 'Neige Fondue',
+    subtitle: 'Pas de chance',
+    rarity: 'C',
+    glyph: '💧',
+    description:
+      'Pas de chance : rien ne change, ni points, ni games, ni protection.',
+    effect: { kind: 'roue', action: { quoi: 'rien' } },
+    nature: 'bonus',
+    power: 4,
+    packs: ['finisseur'],
+    cible: 'HASARD',
+  },
+  {
+    id: 'sommet-atteint',
+    name: 'Sommet Atteint',
+    subtitle: '+10 pts bonus',
+    rarity: 'C',
+    glyph: '🚩',
+    description:
+      '+10 points bonus sur ton total, tout de suite.',
+    effect: { kind: 'bonus_total', value: 10 },
+    nature: 'bonus',
+    power: 11,
+    packs: ['finisseur'],
+    cible: 'HASARD',
+  },
+  {
+    id: 'drapeau-plante',
+    name: 'Drapeau Planté',
+    subtitle: '+15 pts bonus',
+    rarity: 'R',
+    glyph: '🏳',
+    description:
+      '+15 points bonus sur ton total, tout de suite.',
+    effect: { kind: 'bonus_total', value: 15 },
+    nature: 'bonus',
+    power: 31,
+    packs: ['finisseur'],
+    cible: 'HASARD',
+  },
+  {
+    id: 'remontee',
+    name: 'Remontée',
+    subtitle: 'Pire game ramenée à la moyenne',
+    rarity: 'R',
+    glyph: '📈',
+    description:
+      'Ta pire game libre remonte au niveau de la moyenne de toutes tes games.',
+    effect: { kind: 'roue', action: { quoi: 'pire_moyenne' } },
+    nature: 'bonus',
+    power: 44,
+    packs: ['finisseur'],
+    cible: 'HASARD',
+  },
+  {
+    id: 'abri-de-glace',
+    name: 'Abri de Glace',
+    subtitle: 'Immunité 2 jours',
+    rarity: 'R',
+    glyph: '🛡',
+    description:
+      'Pendant 2 jours (48 h), aucune action négative ne peut te viser. Une immunité en cours est prolongée.',
+    effect: { kind: 'immunite', heures: 48 },
+    nature: 'bonus',
+    power: 48,
+    packs: ['finisseur'],
+    cible: 'HASARD',
+  },
+  {
+    id: 'soudure-de-glace',
+    name: 'Soudure de Glace',
+    subtitle: 'Fusion des 2 pires games',
+    rarity: 'UR',
+    glyph: '🔗',
+    description:
+      'Tes 2 pires games libres n’en font plus qu’une, qui vaut leur somme : tu ne perds aucun point, et un créneau de game se libère.',
+    effect: { kind: 'roue', action: { quoi: 'fusion_pires' } },
+    nature: 'bonus',
+    power: 64,
+    packs: ['finisseur'],
+    cible: 'HASARD',
+  },
+  {
+    id: 'eboulement',
+    name: 'Éboulement',
+    subtitle: '−20 pts à un joueur',
+    rarity: 'UR',
+    glyph: '🪨',
+    description:
+      'Tu la gardes et désignes un joueur : il perd −20 points sur son total. Tu n’y gagnes rien. Un joueur immunisé ne peut pas être visé.',
+    effect: { kind: 'malus_choisi', value: 20 },
+    nature: 'malus',
+    power: 68,
+    packs: ['finisseur'],
+    cible: 'HASARD',
+  },
+  {
+    id: 'statue-de-givre',
+    name: 'Statue de Givre',
+    subtitle: 'Fige ta meilleure game',
+    rarity: 'UR',
+    glyph: '🗿',
+    description:
+      'Ta meilleure game libre est figée — jamais ta pire : plus aucune carte ne peut la toucher. Si elle l’est déjà, c’est la suivante.',
+    effect: { kind: 'roue', action: { quoi: 'fige_meilleure', minGames: 0 } },
+    nature: 'bonus',
+    power: 80,
+    packs: ['finisseur'],
+    cible: 'HASARD',
+  },
+  {
+    id: 'troc-des-neiges',
+    name: 'Troc des Neiges',
+    subtitle: 'Échange pire contre meilleure',
+    rarity: 'L',
+    glyph: '🔁',
+    description:
+      'Tu la gardes et désignes un joueur : ta pire game libre et sa meilleure échangent leur score. Une seule fois par joueur, sauf la revanche contre qui t’a visé. Un joueur immunisé ne peut pas être visé.',
+    effect: { kind: 'echange_cible' },
+    nature: 'bonus',
+    power: 94,
+    packs: ['finisseur'],
+    cible: 'HASARD',
   },
 ];
 
@@ -990,7 +933,26 @@ export const PACTE_SUBI: CardDefinition = {
   cible: 'HASARD',
 };
 
-const CARD_INDEX = new Map([...CARDS, COUP_DE_VERGLAS, PACTE_SUBI].map((c) => [c.id, c]));
+/**
+ * La trace d'un Troc des Neiges sur la game du joueur visé : elle dit d'où
+ * vient l'échange, en fait une game qui porte une carte, et retient qui l'a
+ * visé (`paireId`) — pour la revanche. Elle ne sort d'aucun booster.
+ */
+export const TROC_SUBI: CardDefinition = {
+  id: 'troc-des-neiges-subi',
+  name: 'Troc des Neiges',
+  subtitle: 'Game échangée',
+  rarity: 'L',
+  glyph: '🔁',
+  description: 'Ta meilleure game a échangé son score avec la pire game d’un finisseur, qui a joué un Troc des Neiges.',
+  effect: { kind: 'echange_cible' },
+  nature: 'malus',
+  power: 94,
+  packs: ['finisseur'],
+  cible: 'HASARD',
+};
+
+const CARD_INDEX = new Map([...CARDS, COUP_DE_VERGLAS, PACTE_SUBI, TROC_SUBI].map((c) => [c.id, c]));
 
 /**
  * Combien de joueurs une carte d'un booster de la ligue fait tirer au sort :
@@ -1002,6 +964,8 @@ const CARD_INDEX = new Map([...CARDS, COUP_DE_VERGLAS, PACTE_SUBI].map((c) => [c
 export function joueursTires(cible: CibleCarte): number {
   if (cible === 'HASARD') return 1;
   if (cible === 'DEUX') return 2;
+  if (cible === 'TROIS') return 3;
+  if (cible === 'SIX') return 6;
   return 0;
 }
 
@@ -1017,10 +981,12 @@ export function momentDe(effect: CardEffect): MomentCarte {
     case 'bonus_total':
     case 'game_supplementaire':
     case 'immunite':
+    case 'roue':
       return 'INSTANT';
     case 'joker':
     case 'malus_choisi':
     case 'echange_choisi':
+    case 'echange_cible':
       return 'GARDEE';
     default:
       return 'PROCHAINE';
@@ -1073,6 +1039,9 @@ export function impactMax(effect: CardEffect): number | null {
     case 'supprime_pire':
     case 'joker':
     case 'echange_choisi':
+    case 'echange_cible':
+    case 'roue':
+      // Les roues de la Summer suivent les games : pas de « au plus ».
       return null;
   }
 }
@@ -1135,6 +1104,67 @@ export function resumeEffet(effect: CardEffect): string {
       return 'une game annulable';
     case 'echange_choisi':
       return 'échange de games choisi';
+    case 'echange_cible':
+      return 'pire contre meilleure';
+    case 'roue':
+      return resumeRoue(effect.action);
+  }
+}
+
+/** Une action des roues de la Summer, en quelques mots. */
+function resumeRoue(action: ActionRoue): string {
+  const fr = (n: number) => n.toLocaleString('fr-FR');
+  switch (action.quoi) {
+    case 'meilleure_fois':
+      return `meilleure game ×${fr(action.facteur)}`;
+    case 'pire_fois':
+      return `pire game ×${fr(action.facteur)}`;
+    case 'hasard_fois':
+      return `une game ×${fr(action.facteur)}`;
+    case 'hasard_divise':
+      return `une game ÷${fr(action.diviseur)}`;
+    case 'game_sup':
+      return '+1 game pour tous';
+    case 'supprime_pire':
+      return 'pire game supprimée';
+    case 'echange_meilleure_pire':
+      return 'meilleure ↔ pire';
+    case 'echange_hasard':
+      return 'échange de games';
+    case 'tempete':
+      return 'Tempête de neige';
+    case 'clone_ligue':
+      return 'meilleure game de la ligue';
+    case 'clone_sur_pire':
+      return 'pire game clonée';
+    case 'meilleure_aux_derniers':
+      return 'aux cinq derniers';
+    case 'par_top1':
+      return `+${action.points} pts par Top 1`;
+    case 'vol_score':
+      return 'vol de score';
+    case 'fige_meilleure':
+      return 'meilleure game figée';
+    case 'fige_hasard':
+      return 'une game figée';
+    case 'chaine_tete':
+      return 'échange des 10 premiers';
+    case 'echange_general':
+      return 'échange général';
+    case 'petites_games':
+      return `+${action.points} pts par petite game`;
+    case 'roulette':
+      return 'roulette russe';
+    case 'pire_a_zero':
+      return 'pire game à 0';
+    case 'jokers':
+      return `+${action.nombre} Jokers`;
+    case 'fusion_pires':
+      return 'deux pires fusionnées';
+    case 'pire_moyenne':
+      return 'pire game à la moyenne';
+    case 'rien':
+      return 'rien ne change';
   }
 }
 

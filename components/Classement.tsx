@@ -127,7 +127,7 @@ export function Classement({
   const [fiche, setFiche] = useState<{ row: RankingRow; carte: CarteDuClassement | CarteGardee } | null>(null);
   const ouvre = (row: RankingRow, carte: CarteDuClassement | CarteGardee) => setFiche({ row, carte });
   /** Le Verglas que la modération lance, s'il y en a un : sa fenêtre remplace la fiche. */
-  const [verglas, setVerglas] = useState<{ carteId: string; porteur: RankingRow } | null>(null);
+  const [verglas, setVerglas] = useState<{ carte: CarteGardee; porteur: RankingRow } | null>(null);
   const [pacte, setPacte] = useState<{ carteId: string; porteur: RankingRow } | null>(null);
 
   const visibles = useMemo(() => {
@@ -170,8 +170,13 @@ export function Classement({
               </>
             ) : fiche.carte.genre === 'malus_choisi' ? (
               <>
-                Verglas de <strong className="text-ink">{fiche.row.pseudo}</strong> : il choisit sa victime, la
-                modération le joue pour lui.
+                {fiche.carte.nom} de <strong className="text-ink">{fiche.row.pseudo}</strong> : il choisit sa victime,
+                la modération le joue pour lui.
+              </>
+            ) : fiche.carte.genre === 'echange_cible' ? (
+              <>
+                {fiche.carte.nom} de <strong className="text-ink">{fiche.row.pseudo}</strong> : il choisit sa cible, la
+                modération fait l’échange pour lui.
               </>
             ) : fiche.carte.genre === 'echange_choisi' ? (
               <>
@@ -186,17 +191,19 @@ export function Classement({
             )
           }
           action={
-            boostersPerso && fiche.carte.genre === 'malus_choisi' && 'id' in fiche.carte ? (
+            boostersPerso &&
+            (fiche.carte.genre === 'malus_choisi' || fiche.carte.genre === 'echange_cible') &&
+            'id' in fiche.carte ? (
               <button
                 type="button"
                 className="btn btn-ice w-full"
                 onClick={() => {
                   if (!('id' in fiche.carte)) return;
-                  setVerglas({ carteId: fiche.carte.id, porteur: fiche.row });
+                  setVerglas({ carte: fiche.carte, porteur: fiche.row });
                   setFiche(null);
                 }}
               >
-                Lancer le Verglas…
+                Jouer {fiche.carte.nom}…
               </button>
             ) : boostersPerso && fiche.carte.genre === 'echange_choisi' && 'id' in fiche.carte ? (
               <button
@@ -218,7 +225,7 @@ export function Classement({
 
       {verglas && (
         <LancerVerglas
-          carteId={verglas.carteId}
+          carte={verglas.carte}
           porteur={verglas.porteur}
           joueurs={rows}
           onClose={() => setVerglas(null)}

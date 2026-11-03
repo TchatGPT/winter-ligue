@@ -101,9 +101,9 @@ describe('la page de test des cartes', () => {
     const maintenant = new Date().toISOString();
     db.ouvertures.push({
       id: 'o-vraie',
-      packId: 'commu',
-      cardId: 'traineau-perce',
-      rarity: 'R',
+      packId: 'perso',
+      cardId: 'vent-porteur',
+      rarity: 'C',
       joueurId: null,
       beneficiaires: [testeur],
       chance: 0,
@@ -115,7 +115,7 @@ describe('la page de test des cartes', () => {
     db.cartesEnAttente.push({
       id: 'c-vraie',
       joueurId: testeur,
-      cardId: 'traineau-perce',
+      cardId: 'vent-porteur',
       ouvertureId: 'o-vraie',
       creeA: maintenant,
       consommeeA: null,
@@ -148,8 +148,10 @@ describe('la page de test des cartes', () => {
       for (const carte of cartesDuPack(pack.id)) {
         const { db, testeur } = base();
         expect(() => donneCarteDeTest(db, testeur, { packId: pack.id, cardId: carte.id, cle: cle() }, 'x')).not.toThrow();
-        const posee = db.cartesEnAttente.at(-1)!;
-        expect(posee.cardId).toBe(carte.id);
+        // La carte posée est celle de l'ouverture ; une Pluie de Jokers pose ses Jokers après elle.
+        const o = db.ouvertures.at(-1)!;
+        expect(o.cardId).toBe(carte.id);
+        const posee = db.cartesEnAttente.find((c) => c.ouvertureId === o.id && c.cardId === carte.id)!;
         if (momentDe(getCard(carte.id)!.effect) === 'PROCHAINE') expect(posee.consommeeA).toBeNull();
       }
     }

@@ -25,7 +25,7 @@ import {
 // Le catalogue n'a plus qu'une carte par rareté : les cartes retirées restent
 // trouvables par `getCard`, pour exercer chaque genre d'effet.
 vi.mock('@/lib/domain/catalog', async (vrai) =>
-  (await import('./stubs/cartes-retirees')).avecCartesRetirees(await vrai()),
+  (await import('./stubs/cartes-retirees')).avecBoostersDAvant(await vrai()),
 );
 
 /**
