@@ -9825,18 +9825,20 @@
      Elle se calcule à partir de la largeur du cadre : les quatre sachets, leurs
      trois écarts et les deux marges occupent exactement la place disponible,
      moins dix pixels de jeu. Ils grandissent donc avec le panneau au lieu de
-     sauter d'un palier à l'autre, et le plancher de 104 px les fait passer au
-     défilement sur un téléphone plutôt que de les y rendre illisibles. Les
-     bornes se lisent en hauteur : de 194 à 494 px, celle des sachets depuis
-     qu'ils existent (planches au rapport 1:1,865).
+     sauter d'un palier à l'autre. Sur un téléphone, les quatre tiennent côte
+     à côte (décidé le 03/11/2026) : le plancher était de 104 px, deux sachets
+     seulement se voyaient, et passer de l'un à l'autre faisait défiler la
+     rangée par à-coups. Le booster choisi se voit en grand juste en dessous,
+     dans « Booster choisi ». Sous 48 px, sur un écran très étroit, la rangée
+     défile encore plutôt que de rendre les sachets illisibles.
 
-     L'écart grandit avec le cadre, lui aussi : 14 px sur un téléphone, jusqu'à
+     L'écart grandit avec le cadre, lui aussi : 8 px sur un téléphone, jusqu'à
      56 sur un grand écran. Fixé à 12 px, il collait les sachets les uns aux
      autres dès que la place ne manquait plus. */
   .rangee-piste {
-    --ecart: clamp(14px, 3.2cqw, 56px);
+    --ecart: clamp(8px, 3.2cqw, 56px);
     --marge: 16px;
-    --l-sachet: clamp(104px, calc((100cqw - 3 * var(--ecart) - 2 * var(--marge) - 10px) / 4), 265px);
+    --l-sachet: clamp(48px, calc((100cqw - 3 * var(--ecart) - 2 * var(--marge) - 10px) / 4), 265px);
     gap: var(--ecart);
     padding: 44px var(--marge) 48px;
   }

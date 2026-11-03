@@ -206,8 +206,9 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   en file d'office s'il a un compte (`crediteBoostersPerso`), sinon à sa première
   connexion, d'après le registre (`rattacheCompteTwitch`). Payés par un non-inscrit, ils
   forment la réserve des **boosters cadeau** (`persoEnAttente`) que la modération redonne
-  à des joueurs (`donneBoosterCadeau`, qui retient `donDe`) ; s'il s'inscrit, il ne
-  reçoit que ce qui n'a pas été redonné. Pour l'offrir à un autre,
+  à des joueurs (`donneBoosterCadeau`, qui retient `donDe`) : le viewer dit à qui les
+  donner, et la modération répartit les siens — de quel viewer, à quel joueur, combien
+  (03/11/2026) ; s'il s'inscrit, il ne reçoit que ce qui n'a pas été redonné. Pour l'offrir à un autre,
   la modération fait − chez l'un et + chez l'autre, sous le pseudo dans le classement
   (`ajusteBoostersPerso`) ; plus de − / + dans Modération → Joueurs.
 - Les duels se jouent entre joueurs : il n'y a plus de bot. `CAMP_BOT` ne sert plus
