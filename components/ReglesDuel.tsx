@@ -4,7 +4,8 @@ import { DUEL } from '@/lib/domain/rules';
 
 /**
  * Comment se joue un duel, en quatre étapes, dans l'ordre où elles arrivent :
- * on mise, on court, l'un tombe, l'autre rafle. La même frise que « Comment ça
+ * on mise, on court, le hasard tranche, l'autre rafle. Sans rien dire de la
+ * course elle-même (03/11/2026) : la découvrir fait partie du duel. La même frise que « Comment ça
  * marche » des boosters (refaite le 03/11/2026) : l'icône dans un rond
  * numéroté, un trait jusqu'à l'étape suivante — détaché des ronds —, puis le
  * titre et une précision, alignés en haut.
@@ -15,8 +16,8 @@ const ETAPES = [
     titre: 'Même mise',
     detail: `${DUEL.mises.slice(0, -1).map(flakes).join(', ')} ou ${flakes(DUEL.miseMax)} ❄ chacun`,
   },
-  { Icone: IconSwords, titre: 'La course', detail: 'chacun pousse sa boule de neige' },
-  { Icone: IconImpact, titre: 'Une chance sur deux', detail: 'le premier qui tombe a perdu' },
+  { Icone: IconSwords, titre: 'La course', detail: 'en direct, sous tes yeux' },
+  { Icone: IconImpact, titre: 'Une chance sur deux', detail: 'aucun avantage, le hasard tranche' },
   { Icone: IconTrophy, titre: 'Tout ou rien', detail: 'le gagnant rafle les deux mises' },
 ];
 
