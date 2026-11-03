@@ -68,13 +68,13 @@ function palierDe(pack: PackId): number | undefined {
 }
 
 /**
- * Sous l'étape 1 : ce qui compte pour un sub, et ce qui ne compte pas, en
- * pastilles qu'on lit d'un coup d'œil. Les listes viennent de
- * `lib/domain/twitchSubs.ts`, comme la règle qu'elles disent.
+ * Sous les trois étapes, sur sa ligne : ce qui compte pour un sub, et ce qui
+ * ne compte pas, en pastilles qu'on lit d'un coup d'œil. Les listes viennent
+ * de `lib/domain/twitchSubs.ts`, comme la règle qu'elles disent.
  */
 function CeQuiCompte() {
   return (
-    <div className="etape-subs">
+    <div className="etape-subs glass glass-soft">
       <div className="etape-subs-ligne" data-compte="">
         <span className="etape-subs-titre">
           <IconCoche className="h-4 w-4" />
@@ -362,10 +362,10 @@ export function PackOpening({
         </div>
       )}
 
-      {/* Comment ça marche, en une bande : trois étapes d'une phrase, sur une
-          ligne dès qu'elles tiennent. Les boosters, dessous, prennent la place
-          (resserrée le 03/11/2026 : la bande faisait 560 px de haut, et la scène
-          commençait au bas de l'écran). */}
+      {/* Comment ça marche, en une bande : trois étapes d'une phrase, de même
+          hauteur, sur une ligne dès qu'elles tiennent ; dessous, sur sa ligne, ce
+          qui compte pour un sub. Les boosters, plus bas, prennent la place
+          (resserrée le 03/11/2026 : la bande faisait 560 px de haut). */}
       <section className="glass @container relative overflow-hidden px-4 pt-5 pb-4 sm:px-5 xl:col-span-2">
         <SnowCap radius="var(--r-lg)" seed="boosters-etapes" epaisseur={14} />
         <TitreGlace taille="bloc" className="relative mb-3">
@@ -376,7 +376,6 @@ export function PackOpening({
             {
               titre: 'Un booster t’est dû',
               texte: `Un sub T3 ou ${PACKS_REGLES.persoTousLes} subs offerts : un Booster Perso. Commu tous les ${palierDe('commu')} subs, Folie tous les ${palierDe('folie')}, Finisseur à ta dernière game.`,
-              detail: <CeQuiCompte />,
               icone: <GlaceSachet className="h-full w-full" />,
             },
             {
@@ -389,7 +388,7 @@ export function PackOpening({
               texte: 'Sur ta prochaine game, ou tout de suite : c’est écrit sur la carte.',
               icone: <GlaceEpees className="h-full w-full" />,
             },
-          ].map((etape: { titre: string; texte: string; detail?: React.ReactNode; icone: React.ReactNode }, i) => (
+          ].map((etape: { titre: string; texte: string; icone: React.ReactNode }, i) => (
             <li key={etape.titre} className="etape-case">
               <div className="etape-carte glass glass-soft">
                 <span className="etape-icone" aria-hidden="true">
@@ -401,12 +400,12 @@ export function PackOpening({
                     {etape.titre}
                   </span>
                   <span className="etape-texte">{etape.texte}</span>
-                  {etape.detail}
                 </div>
               </div>
             </li>
           ))}
         </ol>
+        <CeQuiCompte />
       </section>
 
       {/* ------------------------------ La scène ---------------------------- */}

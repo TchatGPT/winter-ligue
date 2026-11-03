@@ -6745,30 +6745,29 @@
 }
 
 /*
- * Les trois étapes des boosters, en une bande compacte (03/11/2026) : le
- * dessin en glace, le numéro et le titre, une phrase — et sous la première,
- * ce qui compte pour un sub, en pastilles sur une ligne. Empilées quand leur
- * bloc est étroit ; dès 52 rem, sur une ligne, la première plus large, deux
- * chevrons de glace pour l'ordre. C'est la scène des boosters, dessous, qui
- * doit prendre la place.
+ * Les trois étapes des boosters, en une bande compacte (03/11/2026) : trois
+ * cartes de même hauteur — le dessin en glace, le numéro et le titre, une
+ * phrase, centrés —, sur une ligne dès 48 rem, reliées par deux chevrons de
+ * glace ; empilées en dessous. Puis, sur sa ligne, ce qui compte pour un sub.
+ * Ce qui comptait était dans la première carte : elle grandissait, et les deux
+ * autres, étirées à sa hauteur, restaient à moitié vides.
  */
 .etapes-cartes {
   display: grid;
-  gap: 10px;
+  gap: 8px;
 }
-@container (min-width: 52rem) {
+@container (min-width: 48rem) {
   .etapes-cartes {
-    grid-template-columns: minmax(0, 1.8fr) repeat(2, minmax(0, 1fr));
-    gap: 26px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 24px;
   }
-  .etape-case:first-child::after,
-  .etape-case:nth-child(2)::after {
+  .etape-case:not(:last-child)::after {
     content: '';
     position: absolute;
     top: 50%;
-    right: -13px;
-    width: 11px;
-    height: 11px;
+    right: -12px;
+    width: 10px;
+    height: 10px;
     border-top: 3px solid color-mix(in srgb, var(--ice) 75%, transparent);
     border-right: 3px solid color-mix(in srgb, var(--ice) 75%, transparent);
     border-radius: 2px;
@@ -6783,23 +6782,30 @@
   display: flex;
   flex: 1;
   gap: 12px;
-  align-items: flex-start;
-  padding: 12px 14px;
+  align-items: center;
+  padding: 12px 16px;
 }
 .etape-icone {
   /* Le dessin en glace, posé tel quel : pas de pastille derrière. */
   position: relative;
   display: grid;
-  width: 42px;
-  height: 42px;
+  width: 40px;
+  height: 40px;
   flex: none;
   place-items: center;
+}
+/* Sur une ligne mais à l'étroit (un portable) : le texte d'abord, sans le
+   dessin. */
+@container (min-width: 48rem) and (max-width: 64rem) {
+  .etape-icone {
+    display: none;
+  }
 }
 /* Le numéro, en pastille d'aurore devant le titre. */
 .etape-numero {
   display: inline-grid;
-  width: 1.35rem;
-  height: 1.35rem;
+  width: 1.4rem;
+  height: 1.4rem;
   margin-right: 0.45rem;
   place-items: center;
   border-radius: 999px;
@@ -6814,47 +6820,56 @@
   font-family: var(--font-display);
   font-size: 1.0625rem;
   font-weight: 900;
-  line-height: 1.2;
+  line-height: 1.25;
   letter-spacing: 0.03em;
   text-transform: uppercase;
   color: var(--ink);
 }
 .etape-texte {
   display: block;
-  margin-top: 4px;
-  font-size: 0.875rem;
+  margin-top: 3px;
+  font-size: 0.9375rem;
   line-height: 1.45;
   color: var(--ink-2);
 }
 /*
- * Sous l'étape 1 : ce qui compte pour un sub, et ce qui ne compte pas — le
- * titre et ses pastilles sur une ligne. Les pastilles sont gravées dans la
- * carte : plus sombres que le verre, une ombre intérieure, un rebord bas qui
- * accroche la lumière. La première rangée est teintée d'aurore, la seconde
- * éteinte : la couleur dit oui ou non avant qu'on lise.
+ * Ce qui compte pour un sub, et ce qui ne compte pas : une plaque basse sous
+ * les étapes, deux groupes — le titre puis ses pastilles —, côte à côte quand
+ * la place le permet. Les pastilles sont gravées dans la plaque : plus sombres
+ * que le verre, une ombre intérieure, un rebord bas qui accroche la lumière.
+ * Le premier groupe est teinté d'aurore, le second éteint : la couleur dit oui
+ * ou non avant qu'on lise.
  */
 .etape-subs {
   --grave: 0 -1px 0 color-mix(in srgb, var(--fond) 85%, transparent),
     0 1px 0 color-mix(in srgb, var(--ink) 10%, transparent);
   display: grid;
-  gap: 6px;
-  margin-top: 8px;
-  padding-top: 8px;
-  border-top: 1px solid color-mix(in srgb, var(--ice) 20%, transparent);
+  gap: 10px;
+  margin-top: 10px;
+  padding: 12px 16px;
+}
+/* Côte à côte seulement quand chacun tient sur sa ligne ; sinon l'un sous
+   l'autre, chacun sur une ligne. */
+@container (min-width: 76rem) {
+  .etape-subs {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    column-gap: 28px;
+  }
 }
 .etape-subs-ligne {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 5px 8px;
+  gap: 6px 10px;
 }
 .etape-subs-titre {
   display: flex;
   flex: none;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   font-family: var(--font-display);
-  font-size: 0.8125rem;
+  font-size: 0.9375rem;
   font-weight: 800;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -6867,10 +6882,10 @@
 .etape-subs-puces {
   display: flex;
   flex-wrap: wrap;
-  gap: 5px;
+  gap: 6px;
 }
 .etape-subs-puces li {
-  padding: 2px 9px 1px;
+  padding: 4px 12px 3px;
   border: 1px solid color-mix(in srgb, var(--fond) 70%, transparent);
   border-bottom-color: color-mix(in srgb, var(--ink) 16%, transparent);
   border-radius: 999px;
@@ -6878,7 +6893,7 @@
   box-shadow:
     inset 0 2px 5px color-mix(in srgb, var(--fond) 90%, transparent),
     inset 0 -1px 0 color-mix(in srgb, var(--ink) 6%, transparent);
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   line-height: 1.4;
   color: var(--muted);
   text-shadow: var(--grave);
@@ -6887,6 +6902,25 @@
   border-bottom-color: color-mix(in srgb, var(--aurora) 34%, transparent);
   background: color-mix(in srgb, var(--aurora) 10%, color-mix(in srgb, var(--fond) 55%, transparent));
   color: color-mix(in srgb, var(--aurora) 35%, var(--ink));
+}
+/* Sur un très grand écran, la bande se lit de plus loin. */
+@media (min-width: 120rem) {
+  .etape-icone {
+    width: 48px;
+    height: 48px;
+  }
+  .etape-titre {
+    font-size: 1.1875rem;
+  }
+  .etape-texte {
+    font-size: 1rem;
+  }
+  .etape-subs-titre {
+    font-size: 1rem;
+  }
+  .etape-subs-puces li {
+    font-size: 0.9375rem;
+  }
 }
 /*
  * Les taux de rareté : une tuile par rareté, de la commune à la légendaire,
@@ -9769,7 +9803,7 @@
   /* À partir de 2 400 px de large, la page des boosters tient dans la fenêtre :
      les étapes sur une ligne, la scène dessous, sans défiler jusqu'aux taux.
      Sur un écran moins haut (2560 × 1305, celui d'un 1440p), les sachets se
-     règlent aussi sur la hauteur : 736 px, c'est tout ce qui n'est pas eux, du
+     règlent aussi sur la hauteur : 780 px, c'est tout ce qui n'est pas eux, du
      haut de la page au bas de la scène, mesuré sur la maquette (913 avant que
      la bande des étapes ne se resserre, le 03/11/2026). Les évènements
      en cours n'y entrent pas : sur ordinateur, ils sont dans la colonne de
@@ -9789,7 +9823,7 @@
         180px,
         min(
           calc((100cqw - 3 * var(--ecart) - 2 * var(--marge) - 10px) / 4),
-          calc((100svh - 736px) / 1.865)
+          calc((100svh - 780px) / 1.865)
         ),
         285px
       );
