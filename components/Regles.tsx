@@ -482,7 +482,13 @@ export function Regles({ maxGames, packs }: { maxGames: number; packs: PackDefin
           <h3 id="chance-paliers" className="rgs-encart-titre">
             Ton multiplicateur, selon ton solde
           </h3>
-          <ol className="rgs-chance-paliers">
+          <ol
+            className="rgs-chance-paliers"
+            style={{
+              ['--n' as string]: PALIERS_CHANCE.length,
+              ['--demi' as string]: Math.ceil(PALIERS_CHANCE.length / 2),
+            }}
+          >
             {PALIERS_CHANCE.map((p) => (
               <li
                 key={p.des}

@@ -15088,16 +15088,8 @@ a.adm-tuile:hover .adm-tuile-fleche {
   }
 }
 @media (min-width: 1024px) and (min-height: 760px) {
-  /* La hauteur du contenu, jusqu'à celle de la fenêtre : un sujet court ne
-     laisse plus un grand vide sous lui (03/11/2026) ; un long défile en
-     lui-même. */
   .rgs {
-    height: auto;
-    grid-template-rows: auto;
-  }
-  .rgs-nav,
-  .rgs-page {
-    max-height: calc(100dvh - var(--adm-hors));
+    grid-template-rows: minmax(0, 1fr);
   }
 }
 
@@ -15268,7 +15260,9 @@ a.adm-tuile:hover .adm-tuile-fleche {
   min-height: 0;
   flex: 1;
   flex-direction: column;
-  gap: 1rem;
+  /* L'écart suit la hauteur de l'écran : aéré sur un grand, serré sur un
+     petit. */
+  gap: clamp(1rem, 2.6vh, 2.2rem);
   overflow-y: auto;
   font-size: 0.9375rem;
   line-height: 1.5;
@@ -15278,6 +15272,17 @@ a.adm-tuile:hover .adm-tuile-fleche {
 }
 .rgs-page-corps > * {
   flex: none;
+}
+/* Le sujet se pose au milieu de la hauteur qui lui reste, au lieu de laisser
+   tout le vide en bas (03/11/2026). Des marges automatiques plutôt qu'un
+   centrage : un sujet trop long défile depuis son début, sans être rogné. */
+@media (min-width: 1024px) {
+  .rgs-page-corps > :first-child {
+    margin-top: auto;
+  }
+  .rgs-page-corps > :last-child {
+    margin-bottom: auto;
+  }
 }
 .rgs-page-corps b {
   color: var(--ink);
@@ -15459,6 +15464,18 @@ a.adm-tuile:hover .adm-tuile-fleche {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(5.6rem, 1fr));
   gap: 0.45rem;
+}
+/* Des lignes égales : tous sur une ligne si elle les tient, sinon deux lignes
+   de même longueur — jamais un palier seul en bas. */
+@container (min-width: 50rem) {
+  .rgs-chance-paliers {
+    grid-template-columns: repeat(var(--demi, 8), minmax(0, 1fr));
+  }
+}
+@container (min-width: 96rem) {
+  .rgs-chance-paliers {
+    grid-template-columns: repeat(var(--n, 15), minmax(0, 1fr));
+  }
 }
 .rgs-chance-paliers li {
   --teinte: color-mix(in srgb, var(--gold) calc(var(--t) * 100%), var(--ice));
@@ -15709,9 +15726,29 @@ a.adm-tuile:hover .adm-tuile-fleche {
 .rgs-frise .rgs-frise-rond {
   color: var(--ice);
 }
-@container (min-width: 46rem) {
+/* À l'horizontale dès 36 rem : la page des règles est plus étroite que la
+   bande des boosters. */
+@container (min-width: 36rem) {
   .rgs-frise {
     grid-template-columns: repeat(var(--colonnes, 3), minmax(0, 1fr));
+    column-gap: 14px;
+  }
+  .rgs-frise .frise-etape {
+    display: flex;
+    flex-direction: column;
+  }
+  .rgs-frise .frise-rail {
+    flex-direction: row;
+  }
+  .rgs-frise .frise-trait {
+    width: auto;
+    height: 2px;
+    min-height: 0;
+    margin: 0 0 0 12px;
+    background: linear-gradient(90deg, color-mix(in srgb, var(--ice) 55%, transparent), color-mix(in srgb, var(--ice) 12%, transparent));
+  }
+  .rgs-frise .frise-corps {
+    padding: 10px 6px 0 0;
   }
 }
 /* À quoi servent les flocons : trois tuiles, dont deux qui mènent quelque part. */
@@ -15968,7 +16005,51 @@ a.rgs-usage b::after {
 @media (min-width: 1800px) and (min-height: 1000px) {
   .rgs-page {
     gap: 1.5rem;
-    padding: 2.4rem 2.4rem 1.8rem;
+    padding: 2.4rem 2.6rem 1.8rem;
+  }
+  .rgs-puces {
+    gap: 0.7rem;
+  }
+  .rgs-ticket li,
+  .rgs-ticket-total {
+    padding-block: 0.6rem;
+  }
+  .rgs-ticket-total b {
+    font-size: 1.6rem;
+  }
+  .rgs-faits li {
+    padding: 0.6rem 1.1rem;
+    font-size: 1rem;
+  }
+  .rgs-usage {
+    padding: 1.2rem 1.3rem;
+  }
+  .rgs-usage b {
+    font-size: 1.15rem;
+  }
+  .rgs-tuile-nom {
+    font-size: 0.875rem;
+  }
+  .rgs-tuile-detail {
+    font-size: 0.9375rem;
+  }
+  .rgs-frise {
+    --rond: 60px;
+  }
+  .rgs-frise .frise-titre {
+    font-size: 1.25rem;
+  }
+  .rgs-frise .frise-texte {
+    font-size: 1.0625rem;
+  }
+  .rgs-booster-art {
+    width: 5.5rem;
+  }
+  .rgs-booster-corps > p {
+    font-size: 0.95rem;
+  }
+  .rgs-taux-legende {
+    font-size: 0.85rem;
   }
   .rgs-medaille-grande {
     width: 4.2rem;
@@ -15989,8 +16070,8 @@ a.rgs-usage b::after {
   }
   .rgs-encart,
   .rgs-ticket {
-    gap: 0.65rem;
-    padding: 1.3rem 1.4rem;
+    gap: 0.9rem;
+    padding: 1.6rem 1.7rem;
   }
   .rgs-encart-titre {
     font-size: 0.9rem;
@@ -16021,6 +16102,101 @@ a.rgs-usage b::after {
   }
   .rgs-entree {
     grid-template-columns: 1.1rem 2.8rem minmax(0, 1fr);
+  }
+}
+
+/* -- Sur un écran haut (1 150 px et plus, un 1440p) : le sujet prend de la
+   taille pour occuper la page, au lieu de flotter petit au milieu
+   (03/11/2026). -- */
+@media (min-width: 1500px) and (min-height: 1150px) {
+  .rgs-page-corps {
+    gap: 2.4rem;
+    font-size: 1.125rem;
+  }
+  .rgs-tuile {
+    gap: 0.35rem;
+    padding: 1.9rem 1.8rem;
+  }
+  .rgs-tuile-valeur,
+  .rgs-raretes b,
+  .rgs-paliers-nombre b {
+    font-size: 3.2rem;
+  }
+  .rgs-tuile-nom {
+    font-size: 0.95rem;
+  }
+  .rgs-tuile-detail {
+    font-size: 1rem;
+  }
+  .rgs-formule i {
+    font-size: 2.2rem;
+  }
+  .rgs-grille {
+    gap: 1.4rem;
+  }
+  .rgs-encart,
+  .rgs-ticket {
+    gap: 1rem;
+    padding: 2rem 2.1rem;
+  }
+  .rgs-encart-titre {
+    font-size: 1rem;
+  }
+  .rgs-puces {
+    gap: 0.9rem;
+  }
+  .rgs-ticket li,
+  .rgs-ticket-total {
+    padding-block: 0.75rem;
+  }
+  .rgs-ticket-total b {
+    font-size: 1.9rem;
+  }
+  .rgs-frise {
+    --rond: 72px;
+  }
+  .rgs-frise .frise-titre {
+    font-size: 1.45rem;
+  }
+  .rgs-frise .frise-texte {
+    font-size: 1.125rem;
+  }
+  .rgs-booster {
+    gap: 1rem;
+    padding: 1.4rem 1.2rem;
+  }
+  .rgs-booster-art {
+    width: 7rem;
+  }
+  .rgs-booster h3 {
+    font-size: 1.45rem;
+  }
+  .rgs-booster-corps > p {
+    font-size: 1.05rem;
+  }
+  .rgs-taux-barre {
+    height: 11px;
+  }
+  .rgs-taux-legende {
+    font-size: 0.95rem;
+  }
+  .rgs-faits li {
+    padding: 0.75rem 1.3rem;
+    font-size: 1.0625rem;
+  }
+  .rgs-usage {
+    gap: 0.4rem;
+    padding: 1.6rem 1.7rem;
+  }
+  .rgs-usage b {
+    font-size: 1.3rem;
+  }
+  .rgs-raretes li,
+  .rgs-paliers li {
+    padding: 1.8rem 1.6rem;
+  }
+  .rgs-chance-paliers b {
+    font-size: 1.6rem;
   }
 }
 
