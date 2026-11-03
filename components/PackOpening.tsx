@@ -35,6 +35,13 @@ const RARITY_LADDER: Rarity[] = ['C', 'R', 'UR', 'L'];
  */
 const SECOURS_ANNONCE_MS = 9000;
 
+/**
+ * Tant que la carte du joueur choisi attend sa game, l'écran se relit à ce
+ * rythme : dès qu'elle a joué — une game saisie, une carte retirée —, le
+ * bouton se rouvre, sans F5.
+ */
+const RELECTURE_MS = 4000;
+
 function pourcent(v: number): string {
   const decimales = v === 0 ? 0 : v < 0.1 ? 3 : v < 1 ? 2 : 1;
   return `${v.toLocaleString('fr-FR', { minimumFractionDigits: decimales, maximumFractionDigits: decimales })} %`;
@@ -302,6 +309,19 @@ export function PackOpening({
       body: '{}',
     }).catch(() => undefined);
   }, [aLaMain]);
+
+  // Sa carte attend encore : la page se relit toute seule, tant que l'écran est
+  // au repos — aucun rail ne tourne, rien ne se relance — et que l'onglet est
+  // visible. Ce n'est qu'une relecture : le serveur revérifie tout à
+  // l'ouverture.
+  const bloque = aLaMain && phase === 'repos' && pourUnJoueur && Boolean(joueur?.attend);
+  useEffect(() => {
+    if (!bloque) return;
+    const minuteur = setInterval(() => {
+      if (!document.hidden) router.refresh();
+    }, RELECTURE_MS);
+    return () => clearInterval(minuteur);
+  }, [bloque, router]);
 
   function reset() {
     setPhase('repos');
