@@ -4,10 +4,10 @@ import { DUEL } from '@/lib/domain/rules';
 
 /**
  * Comment se joue un duel, en quatre étapes, dans l'ordre où elles arrivent :
- * on mise, on court, l'un tombe, l'autre rafle. Une icône, un mot en
- * capitales, une précision dessous ; une flèche entre deux étapes dit
- * l'ordre. Elles remplacent quatre colonnes de petit texte, coupées où elles
- * pouvaient.
+ * on mise, on court, l'un tombe, l'autre rafle. La même frise que « Comment ça
+ * marche » des boosters (refaite le 03/11/2026) : l'icône dans un rond
+ * numéroté, un trait jusqu'à l'étape suivante — détaché des ronds —, puis le
+ * titre et une précision, alignés en haut.
  */
 const ETAPES = [
   {
@@ -22,16 +22,23 @@ const ETAPES = [
 
 export function ReglesDuel() {
   return (
-    <ol className="duels-etapes" aria-label="Comment se joue un duel">
-      {ETAPES.map(({ Icone, titre, detail }) => (
-        <li key={titre}>
-          <span className="duels-etape-icone" aria-hidden="true">
-            <Icone className="h-[1.15rem] w-[1.15rem]" />
-          </span>
-          <span className="duels-etape-texte">
-            <b>{titre}</b>
-            <span>{detail}</span>
-          </span>
+    <ol className="duels-frise" aria-label="Comment se joue un duel">
+      {ETAPES.map(({ Icone, titre, detail }, i) => (
+        <li key={titre} className="duels-frise-etape">
+          <div className="duels-frise-rail" aria-hidden="true">
+            <span className="frise-rond duels-frise-rond">
+              <Icone className="h-[1.2rem] w-[1.2rem]" />
+              <span className="frise-numero">{i + 1}</span>
+            </span>
+            <span className="frise-trait duels-frise-trait" />
+          </div>
+          <div className="duels-frise-corps">
+            <p className="duels-frise-titre">
+              <span className="sr-only">Étape {i + 1} : </span>
+              {titre}
+            </p>
+            <p className="duels-frise-texte">{detail}</p>
+          </div>
         </li>
       ))}
     </ol>

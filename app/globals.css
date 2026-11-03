@@ -3632,94 +3632,118 @@
     gap: 1rem;
   }
 
-  /* Le déroulé d'un duel, dans l'en-tête (`ReglesDuel`) : une icône dans sa
-     bille, un mot en capitales, une précision ; un chevron entre deux étapes
-     dit l'ordre. Le filet du chapeau de l'en-tête ferait doublon. */
-  .entete-page-lead:has(> .duels-etapes) {
+  /* Le déroulé d'un duel, dans l'en-tête (`ReglesDuel`), dans la manière de
+     la frise des boosters (03/11/2026) : l'icône dans un rond numéroté, un
+     trait jusqu'à l'étape suivante, puis le titre et une précision, alignés
+     en haut. Le filet du chapeau de l'en-tête ferait doublon.
+
+     - téléphone : la frise descend, le rail à gauche, le trait vers le bas ;
+     - tablette : deux par deux, sans trait ;
+     - ordinateur : les quatre en ligne, le trait détaché des ronds. */
+  .entete-page-lead:has(> .duels-frise) {
+    flex: 1 1 36rem;
     max-width: none;
     padding-left: 0;
     border-left: 0;
   }
-  .duels-etapes {
+  .duels-frise {
+    --rond: 44px;
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.75rem 1rem;
   }
-  @media (min-width: 1024px) {
-    .duels-etapes {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 1.6rem;
-    }
-  }
-  .duels-etapes li {
-    position: relative;
-    display: flex;
-    min-width: 0;
-    align-items: center;
-    gap: 0.7rem;
-  }
-  @media (min-width: 1024px) {
-    .duels-etapes li + li::before {
-      content: '';
-      position: absolute;
-      top: 50%;
-      left: -1.05rem;
-      width: 0.45rem;
-      height: 0.45rem;
-      border-top: 2px solid color-mix(in srgb, var(--ice) 55%, transparent);
-      border-right: 2px solid color-mix(in srgb, var(--ice) 55%, transparent);
-      transform: translateY(-50%) rotate(45deg);
-    }
-  }
-  .duels-etape-icone {
+  .duels-frise-etape {
     display: grid;
-    width: 2.5rem;
-    height: 2.5rem;
-    flex: none;
-    place-items: center;
-    border-radius: var(--r-pilule);
-    color: var(--ice);
-    background: radial-gradient(
-      circle at 34% 28%,
-      rgb(255 255 255 / 0.24) 0%,
-      rgb(143 220 255 / 0.12) 50%,
-      rgb(8 30 60 / 0.3) 100%
-    );
-    box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / 0.45),
-      inset 0 0 0 1px color-mix(in srgb, var(--ice) 26%, transparent),
-      0 4px 8px -5px rgb(0 8 24 / 0.7);
+    grid-template-columns: var(--rond) minmax(0, 1fr);
+    column-gap: 12px;
   }
-  .duels-etape-texte {
+  .duels-frise-rail {
     display: flex;
-    min-width: 0;
     flex-direction: column;
-    gap: 0.2rem;
+    align-items: center;
   }
-  .duels-etape-texte b {
+  .duels-frise-rond {
+    width: var(--rond);
+    height: var(--rond);
+    padding: 0;
+    color: var(--ice);
+  }
+  .duels-frise .duels-frise-trait {
+    min-height: 10px;
+    margin-block: 5px;
+  }
+  .duels-frise-etape:last-child .duels-frise-trait {
+    visibility: hidden;
+  }
+  .duels-frise-corps {
+    padding: 3px 0 12px;
+  }
+  .duels-frise-titre {
     font-family: var(--font-display);
     font-size: 0.9375rem;
     font-weight: 900;
     letter-spacing: 0.05em;
-    line-height: 1.1;
+    line-height: 1.2;
     text-transform: uppercase;
     color: var(--ink);
   }
-  .duels-etape-texte > span {
-    font-size: 0.8125rem;
-    line-height: 1.3;
+  .duels-frise-texte {
+    margin-top: 2px;
+    font-size: 0.875rem;
+    line-height: 1.4;
     color: var(--ink-2);
   }
+  @media (min-width: 640px) {
+    .duels-frise {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px 24px;
+    }
+    .duels-frise-etape {
+      align-items: center;
+    }
+    .duels-frise .duels-frise-trait {
+      display: none;
+    }
+    .duels-frise-corps {
+      padding: 0;
+    }
+  }
+  @media (min-width: 1024px) {
+    .duels-frise {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      column-gap: 14px;
+    }
+    .duels-frise-etape {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .duels-frise-rail {
+      flex-direction: row;
+    }
+    .duels-frise .duels-frise-trait {
+      display: block;
+      width: auto;
+      height: 2px;
+      min-height: 0;
+      margin: 0 0 0 14px;
+      background: linear-gradient(
+        90deg,
+        color-mix(in srgb, var(--ice) 55%, transparent),
+        color-mix(in srgb, var(--ice) 10%, transparent)
+      );
+    }
+    .duels-frise-corps {
+      padding: 10px 6px 0 0;
+    }
+  }
   @media (min-width: 150rem) {
-    .duels-etape-texte b {
+    .duels-frise {
+      --rond: 52px;
+    }
+    .duels-frise-titre {
       font-size: 1.0625rem;
     }
-    .duels-etape-texte > span {
+    .duels-frise-texte {
       font-size: 0.9375rem;
-    }
-    .duels-etape-icone {
-      width: 2.9rem;
-      height: 2.9rem;
     }
   }
 
@@ -4815,7 +4839,7 @@
     .duels-lancer-bouton {
       margin-top: 0.65rem;
     }
-    .duels-etape-texte > span {
+    .duels-frise-texte {
       display: none;
     }
     .duels-solde {
