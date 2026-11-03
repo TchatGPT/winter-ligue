@@ -3,6 +3,7 @@
 import { useEffect, useId, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import { libelleMultiplicateur } from '@/lib/domain/rules';
+import { pourChercher } from '@/lib/domain/texte';
 
 export interface CandidatBooster {
   id: string;
@@ -24,12 +25,8 @@ const MARGE = 12;
 
 const rienAEcouter = () => () => {};
 
-/** Sans accent ni casse, pour que « Boreal » trouve « Boréal ». */
-const plat = (s: string) =>
-  s
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .toLowerCase();
+/** Sans accent, casse ni lettres qui se confondent : « Boreal » trouve « Boréal » (`pourChercher`). */
+const plat = pourChercher;
 
 interface Place {
   left: number;

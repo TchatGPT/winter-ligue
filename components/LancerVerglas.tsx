@@ -6,6 +6,7 @@ import { createPortal } from 'react-dom';
 import { SnowCap } from '@/components/SnowCap';
 import { cardArt, cardVignettes, getCard } from '@/lib/domain/catalog';
 import type { RankingRow } from '@/lib/services/league';
+import { pourChercher } from '@/lib/domain/texte';
 
 const rienAEcouter = () => () => {};
 
@@ -15,12 +16,8 @@ const PERTE = (() => {
   return effet?.kind === 'malus_choisi' ? effet.value : 0;
 })();
 
-/** Sans accent ni casse, pour que « Boreal » trouve « Boréal ». */
-const plat = (s: string) =>
-  s
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .toLowerCase();
+/** Sans accent, casse ni lettres qui se confondent : « Boreal » trouve « Boréal » (`pourChercher`). */
+const plat = pourChercher;
 
 function Avatar({ joueur, grand }: { joueur: Pick<RankingRow, 'pseudo' | 'avatarUrl'>; grand?: boolean }) {
   const classe = grand ? 'verglas-avatar verglas-avatar-grand' : 'verglas-avatar';

@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { type ReactNode, useEffect, useMemo, useState } from 'react';
 import { NAV_ICONS, type NavIconName } from '@/components/icons';
 import { SnowCap } from '@/components/SnowCap';
+import { pourChercher } from '@/lib/domain/texte';
 
 /**
  * Le kit de la modération : la barre de navigation, l'écran, le panneau, la
@@ -203,8 +204,8 @@ export function Vide({ children }: { children: ReactNode }) {
 
 /* ------------------------------- Le tableau ------------------------------- */
 
-/** Sans accents ni majuscules, pour chercher un pseudo. */
-export const plat = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+/** Sans accents, majuscules ni lettres qui se confondent, pour chercher un pseudo (`pourChercher`). */
+export const plat = pourChercher;
 
 export interface Colonne<T> {
   cle: string;

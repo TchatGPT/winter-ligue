@@ -22,3 +22,19 @@ const ramene = (texte: string) => texte.toLowerCase().replace(/\s/g, '').replace
 export function memeTexte(a: string | null | undefined, b: string | null | undefined): boolean {
   return ramene(a ?? '') === ramene(b ?? '');
 }
+
+/**
+ * Un texte tel qu'on le cherche : sans accents ni casse, et sans les lettres
+ * qu'une police confond — un I majuscule et un l minuscule, un 1, un O et un
+ * zéro. « Boreal » trouve « Boréal », et « Ales » trouve « AIessandroPeps »,
+ * écrit avec un I majuscule (vu dans le registre des subs le 03/11/2026) :
+ * dans la police du site, on ne voit pas la différence.
+ */
+export function pourChercher(texte: string): string {
+  return texte
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[il1|]/g, 'l')
+    .replace(/0/g, 'o');
+}

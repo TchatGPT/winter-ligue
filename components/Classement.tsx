@@ -13,7 +13,7 @@ import { LancerVerglas } from '@/components/LancerVerglas';
 import { IconActivision } from '@/components/icons';
 import { flakesShort } from '@/components/ui';
 import { RARITY_ORDER } from '@/lib/domain/rules';
-import { memeTexte } from '@/lib/domain/texte';
+import { memeTexte, pourChercher } from '@/lib/domain/texte';
 import type { CarteDuClassement, CarteGardee, RankingRow } from '@/lib/services/league';
 
 /**
@@ -101,7 +101,7 @@ function valeur(row: RankingRow, cle: Cle): number | string {
 }
 
 /** Sans accent ni casse, pour que « Boreal » trouve « Boréal ». */
-const plat = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+const plat = pourChercher;
 
 /**
  * `outils` : ce que la modération pose dans l'entête, à côté de la recherche
