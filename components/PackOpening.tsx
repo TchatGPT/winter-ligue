@@ -78,7 +78,7 @@ function CeQuiCompte() {
       <div className="etape-subs-colonne" data-compte="">
         <p className="etape-subs-titre">
           <IconCoche className="h-4 w-4" />
-          Compte pour un sub
+          Compte pour le Booster Perso
         </p>
         <ul className="etape-subs-puces">
           {CE_QUI_COMPTE.map((t) => (

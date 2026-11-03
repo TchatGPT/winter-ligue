@@ -6856,9 +6856,9 @@
 
 /*
  * Ce qui compte pour un sub : sous la frise, après un filet, deux colonnes
- * symétriques — le titre, puis ses pastilles. Les pastilles sont gravées : plus
- * sombres que le verre, une ombre intérieure, un rebord bas qui accroche la
- * lumière. Le vert dit oui, le rouge éteint dit non, avant qu'on lise.
+ * symétriques — le titre, puis ses pastilles. Les pastilles sont creusées :
+ * plus sombres que le verre, une ombre intérieure, sans rebord clair en bas
+ * (retiré le 03/11/2026). Le vert dit oui, le rouge éteint dit non.
  */
 .etape-subs {
   --grave: 0 -1px 0 color-mix(in srgb, var(--fond) 85%, transparent),
@@ -6898,21 +6898,17 @@
   margin-top: 8px;
 }
 .etape-subs-puces li {
-  padding: 4px 12px 3px;
+  padding: 4px 12px;
   border: 1px solid color-mix(in srgb, var(--fond) 70%, transparent);
-  border-bottom-color: color-mix(in srgb, var(--ink) 16%, transparent);
   border-radius: 999px;
   background: color-mix(in srgb, var(--fond) 55%, transparent);
-  box-shadow:
-    inset 0 2px 5px color-mix(in srgb, var(--fond) 90%, transparent),
-    inset 0 -1px 0 color-mix(in srgb, var(--ink) 6%, transparent);
+  box-shadow: inset 0 2px 5px color-mix(in srgb, var(--fond) 90%, transparent);
   font-size: 0.875rem;
   line-height: 1.4;
   color: var(--muted);
   text-shadow: var(--grave);
 }
 .etape-subs-colonne[data-compte] .etape-subs-puces li {
-  border-bottom-color: color-mix(in srgb, var(--aurora) 34%, transparent);
   background: color-mix(in srgb, var(--aurora) 10%, color-mix(in srgb, var(--fond) 55%, transparent));
   color: color-mix(in srgb, var(--aurora) 35%, var(--ink));
 }
