@@ -6745,47 +6745,34 @@
 }
 
 /*
- * Les trois étapes des boosters, en cartes : le dessin en glace, « Étape 1 »,
- * un titre, deux phrases — et sous la première, ce qui compte pour un sub.
- * Empilées quand leur bloc est étroit. Dès qu'il s'élargit, la première, qui
- * pèse deux fois les autres, prend la gauche sur toute la hauteur, et les deux
- * suivantes s'empilent à droite : trois cartes en ligne laissaient les deux
- * dernières à moitié vides, ou trop étroites pour leur texte. Deux chevrons de
- * glace disent dans quel ordre les lire.
+ * Les trois étapes des boosters, en une bande compacte (03/11/2026) : le
+ * dessin en glace, le numéro et le titre, une phrase — et sous la première,
+ * ce qui compte pour un sub, en pastilles sur une ligne. Empilées quand leur
+ * bloc est étroit ; dès 52 rem, sur une ligne, la première plus large, deux
+ * chevrons de glace pour l'ordre. C'est la scène des boosters, dessous, qui
+ * doit prendre la place.
  */
 .etapes-cartes {
   display: grid;
-  gap: 12px;
+  gap: 10px;
 }
 @container (min-width: 52rem) {
   .etapes-cartes {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 28px 40px;
-  }
-  .etape-case:first-child {
-    grid-row: span 2;
+    grid-template-columns: minmax(0, 1.8fr) repeat(2, minmax(0, 1fr));
+    gap: 26px;
   }
   .etape-case:first-child::after,
   .etape-case:nth-child(2)::after {
     content: '';
     position: absolute;
-    width: 13px;
-    height: 13px;
+    top: 50%;
+    right: -13px;
+    width: 11px;
+    height: 11px;
     border-top: 3px solid color-mix(in srgb, var(--ice) 75%, transparent);
     border-right: 3px solid color-mix(in srgb, var(--ice) 75%, transparent);
     border-radius: 2px;
-  }
-  /* De la première à la deuxième : vers la droite, à hauteur de la deuxième. */
-  .etape-case:first-child::after {
-    top: 25%;
-    right: -20px;
     transform: translate(calc(50% - 3px), -50%) rotate(45deg);
-  }
-  /* De la deuxième à la troisième : vers le bas, entre les deux. */
-  .etape-case:nth-child(2)::after {
-    top: calc(100% + 14px);
-    left: 50%;
-    transform: translate(-50%, calc(-50% - 3px)) rotate(135deg);
   }
 }
 .etape-case {
@@ -6795,89 +6782,81 @@
 .etape-carte {
   display: flex;
   flex: 1;
-  gap: 14px;
+  gap: 12px;
   align-items: flex-start;
-  padding: 16px;
+  padding: 12px 14px;
 }
 .etape-icone {
-  /* Le dessin en glace, posé tel quel : pas de pastille derrière, la glace se
-     suffit sur le verre. Petit sur un téléphone, pour laisser la place au
-     texte. */
+  /* Le dessin en glace, posé tel quel : pas de pastille derrière. */
   position: relative;
   display: grid;
-  width: 52px;
-  height: 52px;
+  width: 42px;
+  height: 42px;
   flex: none;
   place-items: center;
 }
-@container (min-width: 30rem) {
-  .etape-carte {
-    gap: 18px;
-    padding: 20px 22px;
-  }
-  .etape-icone {
-    width: 72px;
-    height: 72px;
-  }
-}
+/* Le numéro, en pastille d'aurore devant le titre. */
 .etape-numero {
-  display: block;
-  font-family: var(--font-display);
-  font-size: 0.875rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  display: inline-grid;
+  width: 1.35rem;
+  height: 1.35rem;
+  margin-right: 0.45rem;
+  place-items: center;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--aurora) 22%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--aurora) 55%, transparent);
+  font-size: 0.8125rem;
   color: var(--aurora);
+  vertical-align: 0.1em;
 }
 .etape-titre {
   display: block;
-  margin-top: 2px;
   font-family: var(--font-display);
-  font-size: 1.25rem;
+  font-size: 1.0625rem;
   font-weight: 900;
-  line-height: 1.1;
+  line-height: 1.2;
   letter-spacing: 0.03em;
   text-transform: uppercase;
   color: var(--ink);
 }
 .etape-texte {
   display: block;
-  margin-top: 8px;
-  font-size: 0.9375rem;
-  line-height: 1.6;
+  margin-top: 4px;
+  font-size: 0.875rem;
+  line-height: 1.45;
   color: var(--ink-2);
 }
 /*
- * Sous l'étape 1 : ce qui compte pour un sub, et ce qui ne compte pas. Deux
- * rangées de pastilles, la première teintée d'aurore, la seconde éteinte : la
- * couleur dit oui ou non avant qu'on lise.
- *
- * Tout y est gravé dans la carte, pas posé dessus. Les pastilles sont des
- * creux : plus sombres que le verre, une ombre intérieure qui tombe du haut, et
- * un rebord bas qui accroche la lumière — c'est lui qui dit « enfoncé ». Le
- * texte suit la même lumière : une ombre d'un pixel au-dessus de la lettre, là
- * où la paroi du creux lui fait de l'ombre.
+ * Sous l'étape 1 : ce qui compte pour un sub, et ce qui ne compte pas — le
+ * titre et ses pastilles sur une ligne. Les pastilles sont gravées dans la
+ * carte : plus sombres que le verre, une ombre intérieure, un rebord bas qui
+ * accroche la lumière. La première rangée est teintée d'aurore, la seconde
+ * éteinte : la couleur dit oui ou non avant qu'on lise.
  */
 .etape-subs {
   --grave: 0 -1px 0 color-mix(in srgb, var(--fond) 85%, transparent),
     0 1px 0 color-mix(in srgb, var(--ink) 10%, transparent);
   display: grid;
-  gap: 14px;
-  margin-top: 14px;
-  padding-top: 14px;
+  gap: 6px;
+  margin-top: 8px;
+  padding-top: 8px;
   border-top: 1px solid color-mix(in srgb, var(--ice) 20%, transparent);
 }
-/* Les titres, plus lisibles : un corps plus grand, moins d'interlettrage —
-   le condensé espacé se lisait mal en petit —, et le rouge comme le vert
-   éclaircis vers l'encre, sans perdre leur couleur. */
+.etape-subs-ligne {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px 8px;
+}
 .etape-subs-titre {
   display: flex;
+  flex: none;
   align-items: center;
-  gap: 7px;
+  gap: 5px;
   font-family: var(--font-display);
-  font-size: 1rem;
+  font-size: 0.8125rem;
   font-weight: 800;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
   color: color-mix(in srgb, var(--danger) 70%, var(--ink));
   text-shadow: var(--grave);
@@ -6888,11 +6867,10 @@
 .etape-subs-puces {
   display: flex;
   flex-wrap: wrap;
-  gap: 7px;
-  margin-top: 9px;
+  gap: 5px;
 }
 .etape-subs-puces li {
-  padding: 5px 13px 4px;
+  padding: 2px 9px 1px;
   border: 1px solid color-mix(in srgb, var(--fond) 70%, transparent);
   border-bottom-color: color-mix(in srgb, var(--ink) 16%, transparent);
   border-radius: 999px;
@@ -6900,7 +6878,7 @@
   box-shadow:
     inset 0 2px 5px color-mix(in srgb, var(--fond) 90%, transparent),
     inset 0 -1px 0 color-mix(in srgb, var(--ink) 6%, transparent);
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   line-height: 1.4;
   color: var(--muted);
   text-shadow: var(--grave);
@@ -6909,69 +6887,6 @@
   border-bottom-color: color-mix(in srgb, var(--aurora) 34%, transparent);
   background: color-mix(in srgb, var(--aurora) 10%, color-mix(in srgb, var(--fond) 55%, transparent));
   color: color-mix(in srgb, var(--aurora) 35%, var(--ink));
-}
-/* Sur un très grand écran, la bande a la place d'être lue de loin. */
-@media (min-width: 120rem) {
-  .etape-carte {
-    gap: 22px;
-    padding: 24px 28px;
-  }
-  .etape-icone {
-    width: 88px;
-    height: 88px;
-  }
-  .etape-titre {
-    font-size: 1.4rem;
-  }
-  .etape-texte {
-    font-size: 1.0625rem;
-  }
-  .etape-subs-titre {
-    font-size: 1.0625rem;
-  }
-  .etape-subs-puces li {
-    font-size: 0.9375rem;
-  }
-}
-/*
- * Très large (la bande dépasse 125 rem, un écran de 2 400 px et plus) : les
- * trois étapes sur une ligne, la première deux fois plus large, et chaque
- * titre de « ce qui compte » sur la même ligne que ses pastilles. Empilées,
- * les étapes 2 et 3 donnaient à la bande la hauteur de l'étape 1 tout entière,
- * et la scène des boosters passait sous le bas de l'écran. Les chevrons
- * pointent tous deux à droite, à mi-hauteur.
- */
-@container (min-width: 125rem) {
-  .etapes-cartes {
-    grid-template-columns: minmax(0, 2fr) repeat(2, minmax(0, 1fr));
-    gap: 40px;
-  }
-  .etape-case:first-child {
-    grid-row: auto;
-  }
-  .etape-case:first-child::after,
-  .etape-case:nth-child(2)::after {
-    top: 50%;
-    right: -20px;
-    left: auto;
-    transform: translate(calc(50% - 3px), -50%) rotate(45deg);
-  }
-  .etape-subs {
-    gap: 10px;
-    margin-top: 12px;
-    padding-top: 12px;
-  }
-  .etape-subs-ligne {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-  }
-  .etape-subs-titre {
-    flex: none;
-  }
-  .etape-subs-puces {
-    margin-top: 0;
-  }
 }
 /*
  * Les taux de rareté : une tuile par rareté, de la commune à la légendaire,
@@ -9841,20 +9756,22 @@
      défile encore plutôt que de rendre les sachets illisibles.
 
      L'écart grandit avec le cadre, lui aussi : 8 px sur un téléphone, jusqu'à
-     56 sur un grand écran. Fixé à 12 px, il collait les sachets les uns aux
+     40 sur un grand écran (resserré le 03/11/2026, pour des sachets un peu plus
+     grands sur ordinateur). Fixé à 12 px, il collait les sachets les uns aux
      autres dès que la place ne manquait plus. */
   .rangee-piste {
-    --ecart: clamp(8px, 3.2cqw, 56px);
+    --ecart: clamp(8px, 2.2cqw, 40px);
     --marge: 16px;
-    --l-sachet: clamp(48px, calc((100cqw - 3 * var(--ecart) - 2 * var(--marge) - 10px) / 4), 265px);
+    --l-sachet: clamp(48px, calc((100cqw - 3 * var(--ecart) - 2 * var(--marge) - 10px) / 4), 285px);
     gap: var(--ecart);
     padding: 44px var(--marge) 48px;
   }
   /* À partir de 2 400 px de large, la page des boosters tient dans la fenêtre :
      les étapes sur une ligne, la scène dessous, sans défiler jusqu'aux taux.
      Sur un écran moins haut (2560 × 1305, celui d'un 1440p), les sachets se
-     règlent aussi sur la hauteur : 913 px, c'est tout ce qui n'est pas eux, du
-     haut de la page au bas de la scène, mesuré sur la maquette. Les évènements
+     règlent aussi sur la hauteur : 736 px, c'est tout ce qui n'est pas eux, du
+     haut de la page au bas de la scène, mesuré sur la maquette (913 avant que
+     la bande des étapes ne se resserre, le 03/11/2026). Les évènements
      en cours n'y entrent pas : sur ordinateur, ils sont dans la colonne de
      gauche (02/11/2026). Jamais sous 180 px de large : plus bas, la page défile
      plutôt que de rendre les sachets illisibles. */
@@ -9872,9 +9789,9 @@
         180px,
         min(
           calc((100cqw - 3 * var(--ecart) - 2 * var(--marge) - 10px) / 4),
-          calc((100svh - 913px) / 1.865)
+          calc((100svh - 736px) / 1.865)
         ),
-        265px
+        285px
       );
     }
   }

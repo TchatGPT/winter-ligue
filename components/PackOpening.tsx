@@ -77,8 +77,8 @@ function CeQuiCompte() {
     <div className="etape-subs">
       <div className="etape-subs-ligne" data-compte="">
         <span className="etape-subs-titre">
-          <IconCoche className="h-5 w-5" />
-          Compte, un sub chacun
+          <IconCoche className="h-4 w-4" />
+          Compte
         </span>
         <ul className="etape-subs-puces">
           {CE_QUI_COMPTE.map((t) => (
@@ -88,7 +88,7 @@ function CeQuiCompte() {
       </div>
       <div className="etape-subs-ligne">
         <span className="etape-subs-titre">
-          <IconCroix className="h-5 w-5" />
+          <IconCroix className="h-4 w-4" />
           Ne compte pas
         </span>
         <ul className="etape-subs-puces">
@@ -355,38 +355,38 @@ export function PackOpening({
           : null;
 
   return (
-    <div className="space-y-6 xl:grid xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] xl:items-start xl:gap-6 xl:space-y-0">
+    <div className="space-y-6 xl:grid xl:grid-cols-[minmax(0,5fr)_minmax(0,2fr)] xl:items-start xl:gap-6 xl:space-y-0">
       {error && (
         <div className="xl:col-span-2">
           <Notice kind="error">{error}</Notice>
         </div>
       )}
 
-      {/* Comment ça marche, en tête et en travers : trois étapes numérotées,
-          reliées par une flèche quand elles tiennent sur une ligne. */}
-      <section className="glass @container relative overflow-hidden px-4 py-5 sm:px-6 sm:py-6 xl:col-span-2 3xl:px-8 3xl:py-7">
-        <SnowCap radius="var(--r-lg)" seed="boosters-etapes" epaisseur={16} />
-        <TitreGlace taille="bloc" eyebrow="En trois étapes" className="relative mb-5">
+      {/* Comment ça marche, en une bande : trois étapes d'une phrase, sur une
+          ligne dès qu'elles tiennent. Les boosters, dessous, prennent la place
+          (resserrée le 03/11/2026 : la bande faisait 560 px de haut, et la scène
+          commençait au bas de l'écran). */}
+      <section className="glass @container relative overflow-hidden px-4 pt-5 pb-4 sm:px-5 xl:col-span-2">
+        <SnowCap radius="var(--r-lg)" seed="boosters-etapes" epaisseur={14} />
+        <TitreGlace taille="bloc" className="relative mb-3">
           Comment ça marche
         </TitreGlace>
         <ol className="etapes-cartes">
           {[
             {
               titre: 'Un booster t’est dû',
-              texte: `Un sub T3, ou ${PACKS_REGLES.persoTousLes} subs offerts : un Booster Perso pour toi. Tous les ${palierDe('commu')} subs comptés de la saison, un Booster Commu pour ceux que le sort désigne ; tous les ${palierDe('folie')}, un Booster Folie. Ta dernière game de la saison : le Booster Finisseur.`,
+              texte: `Un sub T3 ou ${PACKS_REGLES.persoTousLes} subs offerts : un Booster Perso. Commu tous les ${palierDe('commu')} subs, Folie tous les ${palierDe('folie')}, Finisseur à ta dernière game.`,
               detail: <CeQuiCompte />,
               icone: <GlaceSachet className="h-full w-full" />,
             },
             {
               titre: 'La streameuse l’ouvre',
-              texte:
-                'À l’antenne, devant tout le monde. Le serveur tire une carte, une seule, avant que le rail ne tourne. Tes flocons poussent les raretés vers le haut quand le booster est pour toi, jusqu’à ×4.',
+              texte: 'En live. Le serveur tire la carte ; tes flocons montent ta chance, jusqu’à ×4.',
               icone: <GlaceCartes className="h-full w-full" />,
             },
             {
               titre: 'La carte se joue',
-              texte:
-                'Le plus souvent sur ta prochaine game : elle s’y applique, puis disparaît. Certaines relèvent une game déjà jouée, ou donnent tout de suite des flocons, une game de plus, une immunité.',
+              texte: 'Sur ta prochaine game, ou tout de suite : c’est écrit sur la carte.',
               icone: <GlaceEpees className="h-full w-full" />,
             },
           ].map((etape: { titre: string; texte: string; detail?: React.ReactNode; icone: React.ReactNode }, i) => (
@@ -396,8 +396,10 @@ export function PackOpening({
                   {etape.icone}
                 </span>
                 <div className="min-w-0">
-                  <span className="etape-numero">Étape {i + 1}</span>
-                  <span className="etape-titre">{etape.titre}</span>
+                  <span className="etape-titre">
+                    <span className="etape-numero">{i + 1}</span>
+                    {etape.titre}
+                  </span>
                   <span className="etape-texte">{etape.texte}</span>
                   {etape.detail}
                 </div>
