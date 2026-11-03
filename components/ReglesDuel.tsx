@@ -5,8 +5,9 @@ import { DUEL } from '@/lib/domain/rules';
 /**
  * Comment se joue un duel, en quatre étapes, dans l'ordre où elles arrivent :
  * on mise, on court, le hasard tranche, l'autre rafle. Sans rien dire de la
- * course elle-même (03/11/2026) : la découvrir fait partie du duel. La même frise que « Comment ça
- * marche » des boosters (refaite le 03/11/2026) : l'icône dans un rond
+ * course elle-même (03/11/2026) : la découvrir fait partie du duel.
+ *
+ * La même frise que « Comment ça marche » des boosters : l'icône dans un rond
  * numéroté, un trait jusqu'à l'étape suivante — détaché des ronds —, puis le
  * titre et une précision, alignés en haut.
  */
