@@ -1,11 +1,25 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { Medaille } from '@/components/EmblemePalier';
-import { NAV_ICONS, type NavIconName } from '@/components/icons';
+import {
+  IconAntenne,
+  IconCadeau,
+  IconImpact,
+  IconLayers,
+  IconPack,
+  IconShield,
+  IconSnowflake,
+  IconSwords,
+  IconTrophy,
+  IconUser,
+  NAV_ICONS,
+  type NavIconName,
+} from '@/components/icons';
 import { ReglesSommaire, type SujetRegles } from '@/components/ReglesSommaire';
 import { RarityChip } from '@/components/ui';
-import { CARDS, RARITY_META } from '@/lib/domain/catalog';
+import { CARDS, packArt, RARITY_META } from '@/lib/domain/catalog';
 import {
+  ACHAT_PERSO,
   CADEAU_DU_JOUR,
   CHANCE,
   COMMU_ACCELERE_TOUS_LES,
@@ -13,6 +27,7 @@ import {
   DUEL,
   ECONOMY,
   EVENEMENTS_SUBS,
+  JOKERS,
   PACKS_REGLES,
   PALIERS_CHANCE,
   PLACEMENT_POINTS,
@@ -41,14 +56,18 @@ function Encart({ titre, children }: { titre: string; children: ReactNode }) {
   );
 }
 
-/** Deux colonnes sur un grand écran : à gauche le concret, à droite les encarts. */
-function Duo({ gauche, droite }: { gauche: ReactNode; droite: ReactNode }) {
-  return (
-    <div className="rgs-duo">
-      <div className="rgs-pile">{gauche}</div>
-      <div className="rgs-pile">{droite}</div>
-    </div>
-  );
+/**
+ * Des encarts côte à côte, de même hauteur : autant de colonnes qu'il y en a,
+ * dès que la page a la place ; empilés sinon. Il n'y a plus de colonne courte
+ * qui laisse un trou sous elle.
+ */
+function Grille({ children }: { children: ReactNode }) {
+  return <div className="rgs-grille">{children}</div>;
+}
+
+/** Quelques faits courts, en pastilles sur une ligne. */
+function Faits({ children }: { children: ReactNode }) {
+  return <ul className="rgs-faits">{children}</ul>;
 }
 
 /** Une liste à puces, sobre. */
@@ -96,14 +115,30 @@ function Ticket({
   );
 }
 
-/** Des étapes numérotées, côte à côte ou les unes sous les autres. */
-function Etapes({ etapes, vertical = false }: { etapes: { titre: string; texte: ReactNode }[]; vertical?: boolean }) {
+/**
+ * Des étapes en frise, comme « Comment ça marche » des boosters : l'icône dans
+ * un rond numéroté, un trait jusqu'à la suivante, le titre et une phrase. À la
+ * verticale quand la page est étroite.
+ */
+function Frise({ etapes }: { etapes: { icone: ReactNode; titre: string; texte: ReactNode }[] }) {
   return (
-    <ol className="rgs-etapes" data-vertical={vertical ? '' : undefined}>
-      {etapes.map((e) => (
-        <li key={e.titre}>
-          <b>{e.titre}</b>
-          <span>{e.texte}</span>
+    <ol className="frise rgs-frise" style={{ ['--colonnes' as string]: etapes.length }}>
+      {etapes.map((e, i) => (
+        <li key={e.titre} className="frise-etape">
+          <div className="frise-rail" aria-hidden="true">
+            <span className="frise-rond rgs-frise-rond">
+              {e.icone}
+              <span className="frise-numero">{i + 1}</span>
+            </span>
+            <span className="frise-trait" />
+          </div>
+          <div className="frise-corps">
+            <p className="frise-titre">
+              <span className="sr-only">Étape {i + 1} : </span>
+              {e.titre}
+            </p>
+            <p className="frise-texte">{e.texte}</p>
+          </div>
         </li>
       ))}
     </ol>
@@ -135,8 +170,9 @@ function Taux({ weights }: { weights: Record<Rarity, number> }) {
 /**
  * Les règles de la saison, en sept sujets : les points, les boosters, les
  * cartes, les flocons, la chance, les duels et les subs. Chacun se résume en
- * une ligne dans le sommaire ; sa page montre d'abord le concret (une
- * addition, des tuiles, des étapes), puis l'explique en quelques encarts.
+ * une ligne dans le sommaire ; sa page va droit au but (refaite le 03/11/2026) :
+ * le concret d'abord — une addition, les boosters, des tuiles, une frise —,
+ * puis deux ou trois encarts de même hauteur, ou quelques faits en pastilles.
  *
  * Tous les nombres sont lus dans `lib/domain/rules`, `catalog` et les boosters
  * tels que la ligue les règle (`resolvedPacks`) : la page dit exactement ce
@@ -221,42 +257,35 @@ export function Regles({ maxGames, packs }: { maxGames: number; packs: PackDefin
           <i aria-hidden="true">=</i>
           <Tuile valeur="Score" nom="de la game" ton="or" />
         </div>
-        <Duo
-          gauche={
-            <Ticket
-              titre="Un exemple"
-              lignes={[
-                { quoi: '7 kills', vaut: '7 pts' },
-                { quoi: 'Top 2', vaut: `+${PLACEMENT_POINTS['2']} pts` },
-                { quoi: 'Une carte bonus', vaut: '+10 pts' },
-              ]}
-              total={{ quoi: 'Ta game', vaut: `${7 + PLACEMENT_POINTS['2'] + 10} pts` }}
-            />
-          }
-          droite={
-            <>
-              <Encart titre="La saison">
-                <Puces>
-                  <li>
-                    <b>{maxGames} games</b> comptent par joueur ; la dernière t’ouvre le Booster Finisseur.
-                  </li>
-                  <li>La carte « Game supplémentaire » en ajoute une, {CRENEAUX_BONUS.max} au plus.</li>
-                </Puces>
-              </Encart>
-              <Encart titre="Le classement">
-                <Puces>
-                  <li>
-                    Il additionne toutes tes games. Les <b>{SEASON.finalistCount} premiers</b> vont en finale.
-                  </li>
-                  <li>À égalité : le plus de Top 1, puis de kills, puis la meilleure game.</li>
-                </Puces>
-              </Encart>
-              <Encart titre="Qui saisit les games">
-                <p>La modération, d’après le stream. Le score est calculé par le serveur : personne ne l’impose.</p>
-              </Encart>
-            </>
-          }
-        />
+        <Grille>
+          <Ticket
+            titre="Un exemple"
+            lignes={[
+              { quoi: '7 kills', vaut: '7 pts' },
+              { quoi: 'Top 2', vaut: `+${PLACEMENT_POINTS['2']} pts` },
+              { quoi: 'Une carte bonus', vaut: '+10 pts' },
+            ]}
+            total={{ quoi: 'Ta game', vaut: `${7 + PLACEMENT_POINTS['2'] + 10} pts` }}
+          />
+          <Encart titre="La saison">
+            <Puces>
+              <li>
+                <b>{maxGames} games</b> par joueur.
+              </li>
+              <li>« Game supplémentaire » en ajoute une, {CRENEAUX_BONUS.max} au plus.</li>
+              <li>Top 6, 8 et 10 ne rapportent rien seuls : ils servent aux cartes.</li>
+            </Puces>
+          </Encart>
+          <Encart titre="Le classement">
+            <Puces>
+              <li>
+                Toutes tes games additionnées. Les <b>{SEASON.finalistCount} premiers</b> vont en finale.
+              </li>
+              <li>À égalité : le plus de Top 1, puis de kills, puis la meilleure game.</li>
+              <li>Saisi par la modération, calculé par le serveur.</li>
+            </Puces>
+          </Encart>
+        </Grille>
       </>,
     ),
 
@@ -272,69 +301,58 @@ export function Regles({ maxGames, packs }: { maxGames: number; packs: PackDefin
           {boosters.map((b) => {
             const p = pack(b.id);
             if (!p) return null;
+            const art = packArt(p.id);
             return (
               <article key={b.id} className="rgs-booster" data-pour={b.pourToi ? 'toi' : 'sort'}>
-                <header>
+                {art ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- une planche déjà dimensionnée
+                  <img className="rgs-booster-art" src={art} alt="" width={120} height={224} />
+                ) : (
                   <span className="rgs-booster-glyphe" aria-hidden="true">
                     {p.glyph}
                   </span>
-                  <h3>{p.name}</h3>
-                  <em>{b.pourToi ? 'pour toi' : 'au sort'}</em>
-                </header>
-                <p>{b.quand}</p>
-                <Taux weights={p.weights} />
+                )}
+                <div className="rgs-booster-corps">
+                  <header>
+                    <h3>{p.name}</h3>
+                    <em>{b.pourToi ? 'pour toi' : 'pour la ligue'}</em>
+                  </header>
+                  <p>{b.quand}</p>
+                  <Taux weights={p.weights} />
+                </div>
               </article>
             );
           })}
         </div>
-        <Duo
-          gauche={
-            <Encart titre="Comment ça se passe">
-              <Etapes
-                vertical
-                etapes={[
-                  { titre: 'Il arrive dans la file', texte: 'Dès que tu le gagnes, ou qu’un palier de subs tombe.' },
-                  { titre: 'Il s’ouvre en live', texte: 'Lriaa ou la modération l’ouvre, un par un, à l’écran.' },
-                  {
-                    titre: 'Le serveur tire la carte',
-                    texte: 'Et, pour un booster de la ligue, le joueur qui la reçoit. Personne ne choisit.',
-                  },
-                  { titre: 'La carte joue', texte: 'Le plus souvent sur ta prochaine game.' },
-                ]}
-              />
-            </Encart>
-          }
-          droite={
-            <>
-              <Encart titre="Rien n’est truqué">
-                <p>
-                  La carte est tirée <b>par le serveur</b>, au hasard, aux taux affichés sur la page Boosters, avant
-                  même l’animation. <b>Ni Lriaa ni la modération ne choisissent</b> la carte, ni le joueur sur qui elle
-                  tombe. Chaque ouverture est inscrite au journal.
-                </p>
-              </Encart>
-              <Encart titre="Pour toi, ou au sort">
-                <p>
-                  <b>Perso</b> et <b>Finisseur</b> s’ouvrent pour toi : rien ne s’y retourne contre toi, et un malus
-                  qu’on en tire, tu l’envoies à qui tu veux. <b>Commu</b> et <b>Folie</b> sont ceux de la ligue,
-                  avec les actions de la Summer Ligue : leur carte tombe sur des joueurs tirés au sort, ou sur
-                  toute la ligue.
-                </p>
-              </Encart>
-              <Encart titre="Bon à savoir">
-                <Puces>
-                  <li>Plus tu as de flocons, plus ton Perso et ton Finisseur ont de chances de sortir rare : voir « La chance ».</li>
-                  <li>La modération peut offrir un Booster Perso à un autre joueur.</li>
-                  {tempete && (
-                    <li>
-                      Pendant la {tempete.label}, le Booster Commu tombe tous les {COMMU_ACCELERE_TOUS_LES} subs.
-                    </li>
-                  )}
-                </Puces>
-              </Encart>
-            </>
-          }
+        <Frise
+          etapes={[
+            { icone: <IconPack className="h-5 w-5" />, titre: 'Il arrive', texte: 'Dans la file, dès qu’il t’est dû.' },
+            {
+              icone: <IconAntenne className="h-5 w-5" />,
+              titre: 'Il s’ouvre en live',
+              texte: 'Par Lriaa ou la modération.',
+            },
+            {
+              icone: <IconShield className="h-5 w-5" />,
+              titre: 'Le serveur tire',
+              texte: 'La carte, et le joueur pour Commu et Folie. Personne ne choisit.',
+            },
+            { icone: <IconLayers className="h-5 w-5" />, titre: 'La carte joue', texte: 'Son effet est écrit dessus.' },
+          ]}
         />
+        <Faits>
+          <li>
+            <b>Pour toi</b> : Perso et Finisseur — tes flocons y montent ta chance.
+          </li>
+          <li>
+            <b>Pour la ligue</b> : Commu et Folie — le sort désigne qui.
+          </li>
+          {tempete && (
+            <li>
+              <b>{tempete.label}</b> : un Commu tous les {COMMU_ACCELERE_TOUS_LES} subs.
+            </li>
+          )}
+        </Faits>
       </>,
     ),
 
@@ -361,46 +379,39 @@ export function Regles({ maxGames, packs }: { maxGames: number; packs: PackDefin
           })}
         </ul>
         <p className="rgs-sous-note">Plus une carte est rare, plus elle est forte.</p>
-        <Duo
-          gauche={
-            <Encart titre="Quand elle se joue">
-              <Etapes
-                vertical
-                etapes={[
-                  {
-                    titre: 'Sur ta prochaine game',
-                    texte: 'Le plus souvent. Une seule carte par game, et une seule en attente : ton booster suivant s’ouvre quand elle a joué.',
-                  },
-                  {
-                    titre: 'Sur une game déjà jouée',
-                    texte: '« Fige ta meilleure game » : plus aucune carte ne la touche.',
-                  },
-                  {
-                    titre: 'Quand tu veux',
-                    texte: 'Le Joker : tu le gardes, et une de tes games ne compte pas. Trois pour commencer, cinq au plus.',
-                  },
-                ]}
-              />
-            </Encart>
-          }
-          droite={
-            <>
-              <Encart titre="Les malus">
-                <Puces>
-                  <li>Jamais dans un booster ouvert pour toi.</li>
-                  <li>Ils tombent sur un joueur tiré au sort, ou sur la tête du classement.</li>
-                  <li>Ils retirent des points, et n’en donnent à personne.</li>
-                </Puces>
-              </Encart>
-              <Encart titre="L’immunité">
-                <p>Tant qu’elle court, elle pare tout malus qui tombe sur une de tes games. Les bonus passent.</p>
-              </Encart>
-              <Link href="/boosters" className="rgs-lien">
-                Voir toutes les cartes →
-              </Link>
-            </>
-          }
+        <Frise
+          etapes={[
+            {
+              icone: <IconSwords className="h-5 w-5" />,
+              titre: 'Sur ta prochaine game',
+              texte: 'Le plus souvent : elle s’y applique, puis disparaît.',
+            },
+            {
+              icone: <IconImpact className="h-5 w-5" />,
+              titre: 'Tout de suite',
+              texte: 'Des flocons, des points bonus, une action sur la ligue.',
+            },
+            {
+              icone: <IconCadeau className="h-5 w-5" />,
+              titre: 'Gardée',
+              texte: `Le Joker, le Verglas : tu choisis quand. ${JOKERS.depart} Jokers pour commencer.`,
+            },
+          ]}
         />
+        <Grille>
+          <Encart titre="Une à la fois">
+            <p>Une seule carte en attente : ton booster suivant s’ouvre quand elle a joué.</p>
+          </Encart>
+          <Encart titre="Les malus">
+            <p>Jamais contre toi dans ton Perso ou ton Finisseur. Ceux de la ligue tombent au sort.</p>
+          </Encart>
+          <Encart titre="L’immunité">
+            <p>Tant qu’elle court, les malus te passent à côté. Les bonus, eux, passent.</p>
+          </Encart>
+        </Grille>
+        <Link href="/boosters" className="rgs-lien">
+          Voir toutes les cartes →
+        </Link>
       </>,
     ),
 
@@ -425,40 +436,35 @@ export function Regles({ maxGames, packs }: { maxGames: number; packs: PackDefin
           />
           <Tuile valeur="Codes" nom="Pendant le live" detail="à taper sur le site" ton="aurore" />
         </div>
-        <Duo
-          gauche={
-            <Encart titre="À quoi ils servent">
-              <div className="rgs-choix">
-                <Link href="/duels" className="no-underline">
-                  <b>Miser en duel</b>
-                  <span>Le gagnant prend les deux mises.</span>
-                </Link>
-                <a href="#regle-chance" className="no-underline">
-                  <b>Augmenter ta chance</b>
-                  <span>Plus de chances de tirer rare. Rien n’est dépensé.</span>
-                </a>
-              </div>
-              <p className="rgs-sous-note">Rien d’autre ne s’achète : ni carte, ni booster.</p>
-            </Encart>
-          }
-          droite={
-            <Encart titre="Bon à savoir">
-              <Puces>
-                <li>Tout le monde commence la saison à 0 ❄.</li>
-                <li>
-                  Le solde plafonne à <b>{nombre(ECONOMY.soldeMax)} ❄</b> : au-delà, c’est perdu. Solde plein, ta
-                  chance est au maximum : le cadeau du jour et les duels te sont fermés.
-                </li>
-                {avalanche && (
-                  <li>
-                    Tous les {avalanche.every} subs, l’<b>{avalanche.label}</b> verse {avalanche.flocons} ❄ à chaque
-                    joueur qui a joué au moins une game.
-                  </li>
-                )}
-              </Puces>
-            </Encart>
-          }
-        />
+        <section className="rgs-usages" aria-label="À quoi ils servent">
+          <Link href="/duels" className="rgs-usage no-underline">
+            <b>Miser en duel</b>
+            <span>Le gagnant rafle les deux mises.</span>
+          </Link>
+          <a href="#regle-chance" className="rgs-usage no-underline">
+            <b>Monter ta chance</b>
+            <span>Plus tu en as, plus tu tires rare. Rien n’est dépensé.</span>
+          </a>
+          <div className="rgs-usage">
+            <b>Un Booster Perso</b>
+            <span>
+              {nombre(ACHAT_PERSO.prix)} ❄, en touchant ton solde. Ta chance baisse avec.
+            </span>
+          </div>
+        </section>
+        <Faits>
+          <li>
+            Départ à <b>0 ❄</b>
+          </li>
+          <li>
+            Plafond <b>{nombre(ECONOMY.soldeMax)} ❄</b> : au-delà, perdu
+          </li>
+          {avalanche && (
+            <li>
+              <b>{avalanche.label}</b> : +{avalanche.flocons} ❄ à tous, tous les {avalanche.every} subs
+            </li>
+          )}
+        </Faits>
       </>,
     ),
 
@@ -490,9 +496,7 @@ export function Regles({ maxGames, packs }: { maxGames: number; packs: PackDefin
           </ol>
         </section>
 
-        {/* Ce que ça change, pour de vrai : les taux du Booster Perso à trois
-            soldes ; à côté, sur un grand écran, quand la chance compte. */}
-        <div className="rgs-chance-bas">
+        {/* Ce que ça change, pour de vrai : les taux du Booster Perso à trois soldes. */}
         {exemplesChance.length > 0 && (
           <section className="rgs-encart" aria-labelledby="chance-exemple">
             <h3 id="chance-exemple" className="rgs-encart-titre">
@@ -525,19 +529,17 @@ export function Regles({ maxGames, packs }: { maxGames: number; packs: PackDefin
           </section>
         )}
 
-        <Encart titre="Quand elle compte">
-          <div className="rgs-chance-regles">
-            <p>
-              Pour les boosters ouverts <b>pour toi</b> : Perso et Finisseur.
-            </p>
-            <p>Jamais pour Commu et Folie : là, tout le monde est à égalité.</p>
-            <p>
-              Tes flocons ne sont <b>pas dépensés</b> : il suffit de les avoir.
-            </p>
-            <p>Les rares deviennent plus probables, jamais certaines : c’est le serveur qui tire.</p>
-          </div>
-        </Encart>
-        </div>
+        <Faits>
+          <li>
+            Pour <b>Perso et Finisseur</b> seulement
+          </li>
+          <li>
+            Il suffit de <b>les avoir</b> : rien n’est dépensé
+          </li>
+          <li>
+            Plus probable, <b>jamais certain</b>
+          </li>
+        </Faits>
       </>,
     ),
 
@@ -549,41 +551,46 @@ export function Regles({ maxGames, packs }: { maxGames: number; packs: PackDefin
       'swords',
       'var(--danger)',
       <>
-        <Etapes
+        <Frise
           etapes={[
             {
+              icone: <IconSnowflake className="h-5 w-5" />,
               titre: 'Tu lances un défi',
-              texte: `Avec ta mise : ${DUEL.mises.slice(0, -1).map(nombre).join(', ')} ou ${nombre(DUEL.miseMax)} ❄.`,
+              texte: `${DUEL.mises.slice(0, -1).map(nombre).join(', ')} ou ${nombre(DUEL.miseMax)} ❄.`,
             },
-            { titre: 'Un joueur le relève', texte: 'Avec la même mise que toi.' },
-            { titre: 'La course', texte: 'Le serveur tire le vainqueur : une chance sur deux chacun.' },
-            { titre: 'Le gagnant rafle tout', texte: 'Les deux mises. Le perdant perd la sienne.' },
+            { icone: <IconUser className="h-5 w-5" />, titre: 'Un joueur le relève', texte: 'Avec la même mise.' },
+            {
+              icone: <IconSwords className="h-5 w-5" />,
+              titre: 'La course',
+              texte: 'En direct, une chance sur deux.',
+            },
+            {
+              icone: <IconTrophy className="h-5 w-5" />,
+              titre: 'Le gagnant rafle tout',
+              texte: 'Les deux mises.',
+            },
           ]}
         />
-        <Duo
-          gauche={
-            <Ticket
-              titre="Un exemple"
-              lignes={[
-                { quoi: 'Ta mise', vaut: '1 000 ❄' },
-                { quoi: 'La mise de ton adversaire', vaut: '1 000 ❄' },
-              ]}
-              total={{ quoi: 'Le gagnant repart avec', vaut: '2 000 ❄' }}
-            />
-          }
-          droite={
-            <Encart titre="Bon à savoir">
-              <Puces>
-                <li>Tant que personne n’a relevé ton défi, tu peux l’annuler : ta mise t’est rendue.</li>
-                <li>Aucune carte n’entre en jeu dans un duel.</li>
-                <li>Un duel joué pendant ton absence t’est annoncé à ton retour.</li>
-              </Puces>
-              <Link href="/duels" className="rgs-lien">
-                Lancer un duel →
-              </Link>
-            </Encart>
-          }
-        />
+        <Grille>
+          <Ticket
+            titre="Un exemple"
+            lignes={[
+              { quoi: 'Ta mise', vaut: '1 000 ❄' },
+              { quoi: 'Sa mise', vaut: '1 000 ❄' },
+            ]}
+            total={{ quoi: 'Le gagnant repart avec', vaut: '2 000 ❄' }}
+          />
+          <Encart titre="Bon à savoir">
+            <Puces>
+              <li>Pas encore relevé ? Tu l’annules, ta mise revient.</li>
+              <li>Aucune carte n’entre en jeu.</li>
+              <li>Joué en ton absence : annoncé à ton retour.</li>
+            </Puces>
+            <Link href="/duels" className="rgs-lien">
+              Lancer un duel →
+            </Link>
+          </Encart>
+        </Grille>
       </>,
     ),
 
@@ -610,35 +617,29 @@ export function Regles({ maxGames, packs }: { maxGames: number; packs: PackDefin
             </li>
           ))}
         </ul>
-        <p className="rgs-sous-note">
-          Ces paliers comptent les subs de toute la saison, et profitent à tous les joueurs.
-        </p>
-        <Duo
-          gauche={
-            <Encart titre="Ce qui compte">
-              <div className="rgs-compte">
-                <ul data-oui="">
-                  {CE_QUI_COMPTE.map((c) => (
-                    <li key={c}>{c}</li>
-                  ))}
-                </ul>
-                <ul>
-                  {CE_QUI_NE_COMPTE_PAS.map((c) => (
-                    <li key={c}>{c}</li>
-                  ))}
-                </ul>
-              </div>
-            </Encart>
-          }
-          droite={
-            <Encart titre="Le Booster Perso">
-              <p>
-                <b>1 sub T3</b>, ou <b>{PACKS_REGLES.persoTousLes} subs offerts</b> (par paquets de 5 ou plus, cumulés sur la saison) : un Booster
-                Perso pour qui paie. S’il ne joue pas dans la ligue, la modération le donne à un joueur.
-              </p>
-            </Encart>
-          }
-        />
+        <p className="rgs-sous-note">Comptés sur toute la saison, pour tous les joueurs.</p>
+        <Grille>
+          <Encart titre="Ce qui compte">
+            <div className="rgs-compte">
+              <ul data-oui="">
+                {CE_QUI_COMPTE.map((c) => (
+                  <li key={c}>{c}</li>
+                ))}
+              </ul>
+              <ul>
+                {CE_QUI_NE_COMPTE_PAS.map((c) => (
+                  <li key={c}>{c}</li>
+                ))}
+              </ul>
+            </div>
+          </Encart>
+          <Encart titre="Le Booster Perso">
+            <p>
+              <b>1 sub T3</b> ou <b>{PACKS_REGLES.persoTousLes} subs offerts</b> : un Booster Perso pour qui paie. S’il ne
+              joue pas, la modération le donne à un joueur.
+            </p>
+          </Encart>
+        </Grille>
       </>,
     ),
   ];
