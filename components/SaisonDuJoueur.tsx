@@ -1,6 +1,6 @@
 'use client';
 
-import { type CSSProperties, useEffect, useMemo, useState } from 'react';
+import { type CSSProperties, useEffect, useMemo, useRef, useState } from 'react';
 import { CardFrame } from '@/components/CardFrame';
 import { CouronneGlace } from '@/components/CouronneGlace';
 import { IconCarte, IconChute, IconCrayon, IconEtoile, IconJoker } from '@/components/icons';
@@ -154,7 +154,17 @@ export function ColonnesSaison({
   const [survolee, setSurvolee] = useState<number | null>(null);
   const total = Math.max(creneaux, chronologie.length);
   const comptees = chronologie.filter((g) => !g.skipped);
-  const echelle = graduations(Math.max(1, moyenneLigue ?? 0, ...chronologie.map((g) => g.score)));
+  // De la marge au-dessus de la meilleure game : sa couronne tient dans le graphique.
+  const echelle = graduations(Math.max(1, moyenneLigue ?? 0, ...chronologie.map((g) => g.score)) * 1.18);
+  /**
+   * Chaque game garde une largeur lisible : sur un écran trop étroit pour toute
+   * la saison, les colonnes défilent, ouvertes sur les dernières games.
+   */
+  const defile = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const d = defile.current;
+    if (d) d.scrollLeft = d.scrollWidth;
+  }, [chronologie.length]);
   const haut = echelle[echelle.length - 1];
   const part = (score: number) => Math.max(0, Math.min(1, score / haut));
 
@@ -201,8 +211,10 @@ export function ColonnesSaison({
               </span>
             ))}
           </div>
+          <div className="saison-defile" ref={defile}>
           <div
             className="saison-colonnes"
+            style={{ ['--total' as string]: total } as CSSProperties}
             role="img"
             aria-label={`Ses ${chronologie.length} games sur ${total}, de la première à la dernière : ${chronologie
               .map((c) => (c.skipped ? 'Joker' : c.score))
@@ -309,6 +321,7 @@ export function ColonnesSaison({
               </div>
             )}
           </div>
+          </div>
           {/* Les deux moyennes, en blocs-témoins sur la même échelle que les games. */}
           <div className="saison-marge" aria-hidden="true">
             <Temoin
@@ -329,11 +342,12 @@ export function ColonnesSaison({
           </div>
         </div>
         <div className="saison-abscisse" aria-hidden="true">
-          <span>Game 1</span>
+          <span className="saison-abscisse-bord">Game 1</span>
           <span>
             {chronologie.length} jouée{chronologie.length > 1 ? 's' : ''} sur {total}
           </span>
-          <span>Game {total}</span>
+          <span className="saison-abscisse-glisse">← glisse pour remonter</span>
+          <span className="saison-abscisse-bord">Game {total}</span>
         </div>
       </figure>
 

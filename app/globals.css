@@ -2644,6 +2644,7 @@
      -------------------------------------------------------------------------- */
   .profil {
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     gap: 1rem;
   }
 
@@ -2654,7 +2655,7 @@
     padding: 1.4rem 1.2rem 1.3rem;
     overflow: hidden;
   }
-  @media (min-width: 1100px) {
+  @media (min-width: 1500px) {
     .profil-tete {
       grid-template-columns: minmax(0, 1fr) auto;
       align-items: center;
@@ -2883,10 +2884,14 @@
       grid-template-columns: repeat(2, minmax(0, 1fr));
       border-radius: var(--r-md);
     }
-    .profil-onglets > button {
-      padding: 0 0.6rem;
+    .profil .profil-onglets > button {
+      min-width: 0;
+      padding: 0.35rem 0.6rem;
       font-size: 0.8125rem;
-      letter-spacing: 0.05em;
+      letter-spacing: 0.04em;
+      line-height: 1.15;
+      text-align: center;
+      white-space: normal;
     }
   }
   .profil-onglets > button {
@@ -2936,6 +2941,7 @@
   /* -- Un panneau -- */
   .profil-panneau {
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     gap: 1.1rem;
     padding: 1.2rem 1rem 1.3rem;
   }
@@ -2998,6 +3004,19 @@
     flex-wrap: wrap;
     justify-content: space-between;
     gap: 0.6rem;
+  }
+  /* Sur un téléphone, les filtres défilent plutôt que d'être coupés. */
+  .profil-reglages > .segment {
+    max-width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .profil-reglages > .segment::-webkit-scrollbar {
+    display: none;
+  }
+  .profil-reglages > .segment > button {
+    flex-shrink: 0;
+    white-space: nowrap;
   }
 
   /* -- Games : le tableau. Des lignes fines, une jauge de score à droite ;
@@ -17608,9 +17627,10 @@ a.rgs-usage b::after {
  */
 .saison {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.75rem;
 }
-@media (min-width: 1100px) {
+@media (min-width: 1440px) {
   .saison {
     grid-template-columns: minmax(0, 1fr) 20rem;
   }
@@ -17700,10 +17720,32 @@ a.rgs-usage b::after {
   color: var(--faint);
   transform: translateY(50%);
 }
+.saison-defile {
+  position: relative;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--frost) 30%, transparent) transparent;
+}
 .saison-colonnes {
+  --col-min: 15px;
   position: relative;
   display: flex;
+  height: 100%;
+  min-width: calc(var(--total) * var(--col-min));
   gap: var(--ecart);
+}
+@media (min-width: 640px) {
+  .saison-colonnes {
+    --col-min: 19px;
+  }
+}
+@media (min-width: 1400px) {
+  .saison-colonnes {
+    --col-min: 22px;
+  }
 }
 /* Le sol : une arête de givre sous les blocs. */
 .saison-colonnes::after {
@@ -17873,7 +17915,7 @@ a.rgs-usage b::after {
 /* Le palier du Booster Finisseur, et la fin de saison au-delà. */
 .saison-palier {
   position: absolute;
-  top: -1.1rem;
+  top: 0;
   right: 0;
   bottom: var(--bas);
   left: calc(var(--x) * 100%);
@@ -18075,7 +18117,7 @@ a.rgs-usage b::after {
   white-space: nowrap;
   color: var(--muted);
   pointer-events: none;
-  transform: translate(var(--decale, -50%), -55%);
+  transform: translate(var(--decale, -50%), 0.25rem);
 }
 .saison-bulle b {
   font-family: var(--font-display);
@@ -18100,9 +18142,22 @@ a.rgs-usage b::after {
   display: flex;
   justify-content: space-between;
   gap: 0.5rem;
+  white-space: nowrap;
   margin: 0.2rem 5rem 0 1.75rem;
   font-size: 0.6875rem;
   color: var(--faint);
+}
+/* Sur un téléphone, les colonnes défilent : les bornes ne disent plus ce qu'on voit. */
+.saison-abscisse-bord {
+  display: none;
+}
+@media (min-width: 640px) {
+  .saison-abscisse-bord {
+    display: inline;
+  }
+  .saison-abscisse-glisse {
+    display: none;
+  }
 }
 @media (min-width: 640px) {
   .saison-abscisse {
@@ -18116,6 +18171,11 @@ a.rgs-usage b::after {
   margin: 0;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.6rem;
+}
+@media (min-width: 760px) and (max-width: 1439px) {
+  .saison-forme {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
 }
 .saison-forme > div {
   display: flex;
@@ -18156,9 +18216,10 @@ a.rgs-usage b::after {
 /* -- La grille des créneaux, et la game choisie -- */
 .saison-bas {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.9rem;
 }
-@media (min-width: 1100px) {
+@media (min-width: 1500px) {
   .saison-bas {
     grid-template-columns: minmax(0, 1fr) 21rem;
     align-items: start;
@@ -18179,6 +18240,12 @@ a.rgs-usage b::after {
     gap: 0.55rem;
   }
 }
+@media (min-width: 1000px) {
+  .grille-games {
+    --cols: 8;
+  }
+}
+/* À partir de 1 500 px, le détail de la game passe à côté de la grille. */
 @media (min-width: 1500px) {
   .grille-games {
     --cols: 7;
@@ -18556,7 +18623,7 @@ button.case:focus-visible {
 .detail-voile {
   display: none;
 }
-@media (min-width: 1100px) {
+@media (min-width: 1500px) {
   .detail-game {
     position: sticky;
     top: 1rem;
@@ -18565,7 +18632,7 @@ button.case:focus-visible {
     display: none;
   }
 }
-@media (max-width: 1099px) {
+@media (max-width: 1499px) {
   .detail-game {
     display: none;
   }
