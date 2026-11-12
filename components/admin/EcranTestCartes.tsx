@@ -72,9 +72,29 @@ export function EcranTestCartes({ vue }: { vue: VueTestCartes }) {
     await envoie('/api/admin/test/cartes', {}, { methode: 'DELETE', cle: 'retire', succes: 'Carte retirée.' });
   }
 
+  /** Retirer les données fictives se confirme : un premier clic le propose, le second le fait. */
+  const [confirmeRetrait, setConfirmeRetrait] = useState(false);
+  async function fictives(action: 'ajoute' | 'retire') {
+    setConfirmeRetrait(false);
+    const data = await envoie(
+      '/api/admin/test/fictives',
+      { action },
+      { cle: `fictives-${action}`, succes: action === 'ajoute' ? 'Données fictives ajoutées.' : 'Données fictives retirées.' },
+    );
+    if (!data) return;
+    const n = (k: string) => Number(data[k] ?? 0);
+    setMessage({
+      kind: 'success',
+      text:
+        action === 'ajoute'
+          ? `${n('joueurs')} joueurs fictifs, ${n('games')} games, ${n('cartes')} cartes et ${n('boosters')} boosters à ouvrir ajoutés.`
+          : `${n('joueurs')} joueurs fictifs retirés, avec leurs ${n('games')} games et ${n('cartes')} cartes.`,
+    });
+  }
+
   return (
     <EcranAdmin
-      grille="seul"
+      grille="test"
       intro={
         <>
           Donne-toi n’importe quelle carte pour voir ce qu’elle fait. Elle tombe sur{' '}
@@ -86,6 +106,46 @@ export function EcranTestCartes({ vue }: { vue: VueTestCartes }) {
       onFermeMessage={() => setMessage(null)}
     >
       <Panneau
+        zone="fictives"
+        titre="Données fictives"
+        surtitre={vue.fictifs > 0 ? `${vue.fictifs} joueurs fictifs dans la ligue` : 'Aucune donnée fictive'}
+        ton={vue.fictifs > 0 ? 'or' : 'glace'}
+        sousTitre="24 joueurs inventés, avec leurs games, leurs points, leurs flocons et leurs cartes actives, et 7 boosters de la ligue à ouvrir (4 Commu, 3 Folie) : de quoi essayer les ouvertures et les cartes. À retirer avant le lancement de la saison."
+        actions={
+          vue.fictifs === 0 ? (
+            <button
+              type="button"
+              className="btn btn-sm btn-ice"
+              disabled={busy !== null}
+              onClick={() => fictives('ajoute')}
+            >
+              {busy === 'fictives-ajoute' ? 'Ajout…' : 'Ajouter les données fictives'}
+            </button>
+          ) : confirmeRetrait ? (
+            <div className="flex flex-wrap gap-2">
+              <button type="button" className="btn btn-sm btn-danger" disabled={busy !== null} onClick={() => fictives('retire')}>
+                {busy === 'fictives-retire' ? 'Retrait…' : `Retirer les ${vue.fictifs} joueurs fictifs`}
+              </button>
+              <button type="button" className="btn btn-sm btn-ghost" disabled={busy !== null} onClick={() => setConfirmeRetrait(false)}>
+                Annuler
+              </button>
+            </div>
+          ) : (
+            <button type="button" className="btn btn-sm" disabled={busy !== null} onClick={() => setConfirmeRetrait(true)}>
+              Retirer les données fictives
+            </button>
+          )
+        }
+      >
+        <p className="adm-note">
+          Ils sont dans le classement comme de vrais joueurs ; leurs cartes ne passent ni dans le tchat ni sur
+          l’overlay du live. Les retirer efface aussi leurs games, leurs flocons, leurs cartes et les boosters
+          fictifs pas encore ouverts.
+        </p>
+      </Panneau>
+
+      <Panneau
+        zone="cartes"
         titre="Test des cartes"
         surtitre="Réservé aux testeurs"
         ton="or"

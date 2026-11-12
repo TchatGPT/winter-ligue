@@ -220,7 +220,10 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   son propre compte. La carte est posée comme à une ouverture, déjà révélée (rien dans
   le tchat), marquée (`PREFIXE_OUVERTURE_TEST`) pour que l'overlay du live
   (`fluxOverlay`) ne la joue pas, et compte pour de vrai ; pas de stock, même là. Le
-  journal garde chaque carte (`CARTE_TEST`).
+  journal garde chaque carte (`CARTE_TEST`). La même page ajoute ou retire les
+  **données fictives** (12/11/2026, `lib/services/donneesFictives.ts`,
+  `/api/admin/test/fictives`, ou `scripts/fictifs.ts`) : 24 joueurs `fictif-…` avec games,
+  flocons et cartes, et 7 boosters de la ligue à ouvrir ; les retirer avant le lancement.
 - **Une carte n'a aucune valeur en flocons** : elle ne s'achète, ne s'échange ni ne se
   revend — ni cote, ni marché, ni collection, ni exemplaires en réserve. Elle se joue sur
   une game, puis disparaît.

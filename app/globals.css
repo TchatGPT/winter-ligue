@@ -14249,6 +14249,11 @@
 .adm-grille[data-grille='overlays'] {
   grid-template-areas: 'obs' 'booster' 'duel' 'subs';
 }
+/* La page de test : les données fictives, puis les cartes, qui prennent le reste. */
+.adm-grille[data-grille='test'] {
+  grid-template-areas: 'fictives' 'cartes';
+  grid-template-rows: auto minmax(0, 1fr);
+}
 @media (min-width: 1024px) {
   .adm-grille[data-grille='tableau'] {
     grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);

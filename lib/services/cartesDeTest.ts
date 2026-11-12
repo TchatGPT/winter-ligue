@@ -6,6 +6,7 @@ import { cartesDuPack, getCard, getPack, momentDe, PACKS, resumeEffet } from '@/
 import { PREFIXE_OUVERTURE_TEST, TESTEURS_CARTES } from '@/lib/domain/rules';
 import { estLaStreameuse } from '@/lib/domain/streameuse';
 import { RARITIES, type MomentCarte, type PackId, type Rarity } from '@/lib/domain/types';
+import { nombreDeFictifs } from './donneesFictives';
 import { carteQuiAttend, regleCartesSansAttendre } from './effects';
 import { audit } from './ledger';
 import { PackError } from './packs';
@@ -179,6 +180,8 @@ export interface VueTestCartes {
   enAttenteRetirable: boolean;
   /** Les cartes qu'il garde, comptées par nom : « Joker Givré » × 3. */
   gardees: { nom: string; nombre: number }[];
+  /** Les joueurs fictifs dans la ligue (`donneesFictives`) : zéro, ou les 24. */
+  fictifs: number;
 }
 
 /** Ce que la page de test montre au testeur, ou null s'il n'en est pas un. */
@@ -218,5 +221,6 @@ export function vueTestCartes(db: Readonly<Database>, joueurId: string | null): 
     enAttente: attend ? (getCard(attend.cardId)?.name ?? attend.cardId) : null,
     enAttenteRetirable: carteDeTestQuiAttend(db as Database, joueurId) !== null,
     gardees: [...gardees].map(([nom, nombre]) => ({ nom, nombre })),
+    fictifs: nombreDeFictifs(db),
   };
 }
