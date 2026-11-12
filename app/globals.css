@@ -18150,8 +18150,8 @@ a.rgs-usage b::after {
 }
 /* Posé sur son bloc, devant les traits des moyennes. */
 /*
- * La neige d'un bloc survolé ou choisi, sur ordinateur : un coussin posé sur
- * le dessus, qui tombe en s'écrasant un peu, avec son ombre de contact.
+ * La neige d'un bloc survolé ou choisi, sur ordinateur : une couche posée
+ * sur le bloc en relief, qui épouse son dessus, son avant et son côté.
  */
 .saison-neige {
   display: none;
@@ -18160,36 +18160,72 @@ a.rgs-usage b::after {
   .saison-neige {
     position: absolute;
     z-index: 3;
-    bottom: calc(var(--bas) + var(--part) * (100% - var(--bas)) - 3px);
-    left: -3px;
+    bottom: calc(var(--bas) + var(--part) * (100% - var(--bas)));
+    left: 0;
     display: block;
-    width: calc(100% + 5px);
-    height: calc(var(--prof) + 14px);
-    overflow: visible;
-    filter: drop-shadow(0 2px 1px color-mix(in srgb, var(--nuit) 55%, transparent));
+    width: calc(100% - var(--prof));
+    height: 0;
     transform-origin: 50% 100%;
-    animation: saison-neige-tombe 0.5s cubic-bezier(0.3, 1.4, 0.5, 1) both;
+    animation: saison-neige-tombe 0.4s cubic-bezier(0.25, 1.2, 0.5, 1) both;
     pointer-events: none;
   }
-  /* La couronne ou la médaille monte d'autant : elle se pose sur la neige. */
+  /* Le dessus : le même losange que le dessus du bloc, un peu bombé. */
+  .neige-dessus {
+    position: absolute;
+    bottom: -1px;
+    left: -1px;
+    width: calc(100% + 2px);
+    height: calc(var(--prof) + 3px);
+    border-radius: 45% 45% 0 0 / 100% 100% 0 0;
+    background: linear-gradient(180deg, var(--neige-1), var(--neige-2) 70%, var(--neige-3));
+    transform: skewX(-45deg);
+    transform-origin: bottom left;
+  }
+  /* Le côté : un voile de neige, plus à l'ombre. */
+  .neige-cote {
+    position: absolute;
+    bottom: -4px;
+    left: 100%;
+    width: var(--prof);
+    height: 5px;
+    background: linear-gradient(180deg, var(--neige-3), var(--neige-ombre));
+    transform: skewY(-45deg);
+    transform-origin: bottom left;
+  }
+  /* L'avant : la lèvre qui déborde, sa coulée, et l'ombre de contact sur la glace. */
+  .neige-levre {
+    position: absolute;
+    top: -1px;
+    left: -1px;
+    width: calc(100% + 2px);
+    height: 4px;
+    border-radius: 1px 1px 3px 3px;
+    background: linear-gradient(180deg, var(--neige-2), var(--neige-3) 70%, var(--neige-ombre));
+    box-shadow: 0 1.5px 1px color-mix(in srgb, var(--nuit) 55%, transparent);
+  }
+  .neige-levre::after {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: var(--coulee);
+    width: 3px;
+    height: 4px;
+    border-radius: 0 0 2px 2px;
+    background: linear-gradient(180deg, var(--neige-3), var(--neige-ombre));
+    box-shadow: 0 1px 1px color-mix(in srgb, var(--nuit) 45%, transparent);
+  }
+  /* La couronne ou la médaille monte un peu : elle se pose sur la neige. */
   .saison-colonne:is([data-survolee], [data-choisie]):not([data-joker]) .saison-podium {
-    transform: translate(-50%, -12px);
+    transform: translate(-50%, -4px);
   }
   .saison-podium {
-    transition: transform 0.35s cubic-bezier(0.3, 1.4, 0.5, 1);
+    transition: transform 0.3s ease;
   }
 }
 @keyframes saison-neige-tombe {
-  0% {
+  from {
     opacity: 0;
-    transform: translateY(-14px) scale(0.85, 0.4);
-  }
-  60% {
-    opacity: 1;
-    transform: translateY(0) scale(1.06, 0.88);
-  }
-  100% {
-    transform: none;
+    transform: translateY(-6px) scaleY(0.2);
   }
 }
 @media (prefers-reduced-motion: reduce) {
