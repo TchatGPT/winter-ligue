@@ -1,10 +1,10 @@
 'use client';
 
-import { type CSSProperties, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
+import { type CSSProperties, type ReactNode, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { CardFrame } from '@/components/CardFrame';
 import { CouronneGlace } from '@/components/CouronneGlace';
-import { IconCarte, IconChute, IconCrayon, IconEtoile, IconJoker } from '@/components/icons';
+import { IconCarte, IconChute, IconCrane, IconCrayon, IconEtoile, IconJoker } from '@/components/icons';
 import { MedailleGlace } from '@/components/MedailleGlace';
 import { cardArt, cardVignettes, getCard } from '@/lib/domain/catalog';
 import { decimal, shortDateTime } from '@/lib/format';
@@ -164,8 +164,11 @@ export function ColonnesSaison({
   const defile = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const d = defile.current;
-    if (d) d.scrollLeft = d.scrollWidth;
-  }, [chronologie.length]);
+    if (!d) return;
+    // Ouvert sur la dernière game jouée — pas sur les créneaux vides de la fin.
+    const colonne = d.scrollWidth / Math.max(1, total);
+    d.scrollLeft = Math.max(0, (chronologie.length + 2) * colonne - d.clientWidth);
+  }, [chronologie.length, total]);
   const haut = echelle[echelle.length - 1];
   const part = (score: number) => Math.max(0, Math.min(1, score / haut));
 
@@ -180,7 +183,29 @@ export function ColonnesSaison({
   }, [comptees]);
 
   const g = survolee !== null ? (chronologie[survolee] ?? null) : null;
-  const x = survolee !== null ? (survolee + 0.5) / total : 0;
+  /**
+   * La bulle vit hors du défilement des colonnes — qui la couperait sur la
+   * première et la dernière game —, posée sur la zone du graphique au-dessus
+   * de la colonne survolée, et rabattue à l'intérieur près d'un bord.
+   */
+  const zone = useRef<HTMLDivElement>(null);
+  const bulle = useRef<HTMLDivElement>(null);
+  const [ancre, setAncre] = useState(0);
+  const survole = (i: number, el: HTMLElement) => {
+    const z = zone.current?.getBoundingClientRect();
+    const c = el.getBoundingClientRect();
+    if (z) setAncre(c.left + c.width / 2 - z.left);
+    setSurvolee(i);
+  };
+  useLayoutEffect(() => {
+    const b = bulle.current;
+    const z = zone.current;
+    if (!b || !z) return;
+    const marge = 4;
+    const gauche = Math.min(Math.max(ancre - b.offsetWidth / 2, marge), z.clientWidth - b.offsetWidth - marge);
+    b.style.left = `${Math.max(marge, gauche)}px`;
+    b.style.visibility = 'visible';
+  }, [ancre, survolee]);
 
   return (
     <div className="saison">
@@ -204,7 +229,7 @@ export function ColonnesSaison({
           </span>
         </figcaption>
 
-        <div className="saison-zone">
+        <div className="saison-zone" ref={zone}>
           <div className="saison-axe" aria-hidden="true">
             {echelle.map((v) => (
               <span key={v} style={{ ['--y' as string]: v / haut } as CSSProperties}>
@@ -255,8 +280,8 @@ export function ColonnesSaison({
                   data-podium={place ?? undefined}
                   // La bulle : au survol d'une souris, ou au clavier — jamais au
                   // toucher, où le détail s'ouvre en bas de l'écran.
-                  onPointerEnter={(e) => e.pointerType === 'mouse' && setSurvolee(i)}
-                  onFocus={(e) => e.currentTarget.matches(':focus-visible') && setSurvolee(i)}
+                  onPointerEnter={(e) => e.pointerType === 'mouse' && survole(i, e.currentTarget)}
+                  onFocus={(e) => e.currentTarget.matches(':focus-visible') && survole(i, e.currentTarget)}
                   onBlur={() => setSurvolee(null)}
                   onClick={() => onChoisit(c.id)}
                   aria-label={`Game ${i + 1} : ${c.skipped ? 'Joker' : pts(c.score)}`}
@@ -284,47 +309,42 @@ export function ColonnesSaison({
                 </button>
               );
             })}
-            {g && survolee !== null && (
-              <div
-                className="saison-bulle"
-                style={
-                  {
-                    ['--x' as string]: x,
-                    // Près d'un bord, la bulle se décale vers l'intérieur.
-                    ['--decale' as string]: x < 0.2 ? '-12%' : x > 0.8 ? '-88%' : '-50%',
-                  } as CSSProperties
-                }
-                role="status"
-              >
-                <b>
-                  Game {survolee + 1} · {g.skipped ? 'Joker' : pts(g.score)}
-                </b>
-                <span>
-                  {g.placement !== null ? `Top ${g.placement}` : 'Pas top'} · {g.kills} kill{g.kills > 1 ? 's' : ''} ·{' '}
-                  {shortDateTime(g.playedAt)}
+          </div>
+          </div>
+          {g && survolee !== null && (
+            <div
+              ref={bulle}
+              className="saison-bulle"
+              style={{ visibility: 'hidden' }}
+              role="status"
+            >
+              <b>
+                Game {survolee + 1} · {g.skipped ? 'Joker' : pts(g.score)}
+              </b>
+              <span>
+                {g.placement !== null ? `Top ${g.placement}` : 'Pas top'} · {g.kills} kill{g.kills > 1 ? 's' : ''} ·{' '}
+                {shortDateTime(g.playedAt)}
+              </span>
+              {g.applied.map((a, k) => (
+                <span key={k} className="saison-bulle-carte" data-malus={a.points < 0 ? '' : undefined}>
+                  {getCard(a.cardId)?.name ?? a.cardId} <b>{effetCourt(a.cardId, a.points)}</b>
                 </span>
-                {g.applied.map((a, k) => (
-                  <span key={k} className="saison-bulle-carte" data-malus={a.points < 0 ? '' : undefined}>
-                    {getCard(a.cardId)?.name ?? a.cardId} <b>{effetCourt(a.cardId, a.points)}</b>
-                  </span>
-                ))}
-                {!g.skipped && (
-                  <span className="saison-bulle-ecarts">
-                    <span data-sens={g.score >= moyenne ? 'haut' : 'bas'}>{signe(g.score - moyenne)}</span> vs sa
-                    moyenne
-                    {moyenneLigue !== null && (
-                      <>
-                        {' · '}
-                        <span data-sens={g.score >= moyenneLigue ? 'haut' : 'bas'}>{signe(g.score - moyenneLigue)}</span>{' '}
-                        vs la ligue
-                      </>
-                    )}
-                  </span>
-                )}
-              </div>
-            )}
-          </div>
-          </div>
+              ))}
+              {!g.skipped && (
+                <span className="saison-bulle-ecarts">
+                  <span data-sens={g.score >= moyenne ? 'haut' : 'bas'}>{signe(g.score - moyenne)}</span> vs sa
+                  moyenne
+                  {moyenneLigue !== null && (
+                    <>
+                      {' · '}
+                      <span data-sens={g.score >= moyenneLigue ? 'haut' : 'bas'}>{signe(g.score - moyenneLigue)}</span>{' '}
+                      vs la ligue
+                    </>
+                  )}
+                </span>
+              )}
+            </div>
+          )}
           {/* Les deux moyennes, en blocs-témoins sur la même échelle que les games. */}
           <div className="saison-marge" aria-hidden="true">
             <Temoin
@@ -509,7 +529,11 @@ export function GrilleGames({
                 ) : (
                   <span className="case-place">
                     {g.placement !== null ? `Top ${g.placement}` : 'Pas top'}
-                    <span className="case-kills"> · {g.kills} k</span>
+                    <span className="case-kills">
+                      {' · '}
+                      {g.kills}
+                      <IconCrane className="case-crane" />
+                    </span>
                   </span>
                 )}
               </span>

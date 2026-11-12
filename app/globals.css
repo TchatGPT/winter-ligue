@@ -17778,6 +17778,7 @@ a.rgs-usage b::after {
 
 /* La zone : l'échelle, les colonnes, et la marge des moyennes. */
 .saison-zone {
+  position: relative;
   --bas: 15px;
   --prof: 2px;
   --ecart: 2px;
@@ -18198,7 +18199,7 @@ a.rgs-usage b::after {
   position: absolute;
   z-index: 6;
   top: 0;
-  left: calc(var(--x) * 100%);
+  left: 0;
   display: grid;
   gap: 0.15rem;
   padding: 0.5rem 0.75rem;
@@ -18211,7 +18212,7 @@ a.rgs-usage b::after {
   white-space: nowrap;
   color: var(--muted);
   pointer-events: none;
-  transform: translate(var(--decale, -50%), 0.25rem);
+  transform: translateY(0.25rem);
 }
 /* Sur un écran tactile, pas de bulle : le détail s'ouvre en bas de l'écran. */
 @media (hover: none), (max-width: 639px) {
@@ -18675,6 +18676,15 @@ button.case:focus-visible {
 }
 .case-kills {
   display: inline;
+  white-space: nowrap;
+}
+/* Les kills : une tête de mort, plutôt qu'un « k » qu'on ne comprenait pas. */
+.case-crane {
+  display: inline-block;
+  width: 1.2em;
+  height: 1.2em;
+  margin-left: 0.15em;
+  vertical-align: -0.25em;
 }
 /* Sur un écran plus large : le nom de la carte, puis ses points en dessous. */
 .case-gain-unite {
