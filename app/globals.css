@@ -2992,98 +2992,6 @@
     padding-left: 0.4rem !important;
   }
 
-  /* -- Games : la saison en barres, un créneau par barre -- */
-  .profil-courbe {
-    padding: 0.9rem 0.9rem 0.7rem;
-    border-radius: var(--r-md);
-    background:
-      radial-gradient(90% 70% at 50% 0%, color-mix(in srgb, var(--ice) 7%, transparent), transparent),
-      rgb(0 10 30 / 0.26);
-    box-shadow:
-      inset 0 1px 3px rgb(0 8 24 / 0.5),
-      inset 0 -1px 0 rgb(255 255 255 / 0.12);
-  }
-  .profil-courbe-barres {
-    position: relative;
-    display: flex;
-    height: 7.5rem;
-    align-items: flex-end;
-    gap: 2px;
-  }
-  @media (min-width: 1024px) {
-    .profil-courbe-barres {
-      height: 9rem;
-      gap: 3px;
-    }
-  }
-  .profil-courbe-barres > span {
-    min-width: 2px;
-    height: calc(var(--part) * 100%);
-    flex: 1 1 0;
-    border-radius: 4px 4px 1px 1px;
-    background: linear-gradient(180deg, var(--ice), color-mix(in srgb, var(--ice-3) 70%, transparent));
-  }
-  .profil-courbe-barres > span[data-top='1'] {
-    background: linear-gradient(180deg, var(--gold), color-mix(in srgb, var(--gold) 45%, transparent));
-  }
-  .profil-courbe-barres > span[data-top='2'] {
-    background: linear-gradient(180deg, var(--noel-acier-clair), color-mix(in srgb, var(--noel-acier) 55%, transparent));
-  }
-  .profil-courbe-barres > span[data-top='3'] {
-    background: linear-gradient(180deg, var(--r-ur), color-mix(in srgb, var(--r-ur) 40%, transparent));
-  }
-  .profil-courbe-barres > span[data-passee] {
-    opacity: 0.35;
-  }
-  /* Un créneau à venir : un creux, au ras du sol. */
-  .profil-courbe-barres > span[data-a-venir] {
-    height: 6px;
-    background: rgb(255 255 255 / 0.1);
-  }
-  .profil-courbe-moyenne {
-    position: absolute;
-    right: 0;
-    bottom: calc(var(--moyenne) * 100%);
-    left: 0;
-    border-top: 1.5px dashed rgb(255 255 255 / 0.45);
-    pointer-events: none;
-  }
-  .profil-courbe figcaption {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.35rem 1rem;
-    margin-top: 0.7rem;
-    font-size: 0.75rem;
-    color: var(--muted);
-  }
-  .profil-courbe figcaption span {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-  }
-  .profil-courbe figcaption i {
-    width: 0.7rem;
-    height: 0.7rem;
-    border-radius: 3px;
-  }
-  .profil-courbe figcaption i[data-legende='1'] {
-    background: var(--gold);
-  }
-  .profil-courbe figcaption i[data-legende='2'] {
-    background: var(--noel-acier-clair);
-  }
-  .profil-courbe figcaption i[data-legende='3'] {
-    background: var(--r-ur);
-  }
-  .profil-courbe figcaption i[data-legende='autre'] {
-    background: var(--ice);
-  }
-  .profil-courbe figcaption i[data-legende='moyenne'] {
-    height: 0;
-    border-top: 1.5px dashed rgb(255 255 255 / 0.6);
-    border-radius: 0;
-  }
-
   /* -- Games : les réglages du tableau -- */
   .profil-reglages {
     display: flex;
@@ -17696,47 +17604,476 @@ a.rgs-usage b::after {
 .profil-podiums b {
   color: var(--ink);
 }
-/* Peu de games : des barres de largeur raisonnable, alignées à gauche. */
-.profil-courbe-barres > span {
-  max-width: 2.6rem;
-}
-
-.profil-games {
+/*
+ * La saison d'un joueur (SaisonDuJoueur, 12/11/2026) : des colonnes de glace,
+ * une seule teinte — le podium se lit à sa couronne et à ses médailles, pas à
+ * des couleurs —, sa forme à côté, puis un tableau d'une ligne par game.
+ */
+.saison {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 21rem), 1fr));
-  gap: 0.6rem;
+  gap: 0.75rem;
 }
-.profil-game {
-  --accent: var(--ice);
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-  gap: 0.4rem 0.9rem;
-  padding: 0.7rem 0.95rem 0.7rem 0.85rem;
+@media (min-width: 1100px) {
+  .saison {
+    grid-template-columns: minmax(0, 1fr) 20rem;
+  }
+}
+.saison-graphe,
+.saison-forme > div,
+.tab-games {
   border-radius: var(--r-md);
-  background: rgb(0 10 30 / 0.26);
+  background: color-mix(in srgb, var(--bg-deep) 38%, transparent);
   box-shadow:
-    inset 3px 0 0 var(--accent),
-    inset 0 1px 2px rgb(0 8 24 / 0.45),
-    inset 0 -1px 0 rgb(255 255 255 / 0.12);
+    inset 0 1px 3px color-mix(in srgb, var(--bg-deep) 70%, transparent),
+    inset 0 -1px 0 color-mix(in srgb, var(--frost) 12%, transparent);
 }
-.profil-game[data-top='1'] {
-  --accent: var(--gold);
-  background: color-mix(in srgb, var(--gold) 8%, rgb(0 10 30 / 0.26));
+.saison-graphe {
+  margin: 0;
+  padding: 0.9rem 1rem 0.7rem 0.6rem;
+  background:
+    radial-gradient(90% 80% at 50% 0%, color-mix(in srgb, var(--ice) 8%, transparent), transparent),
+    color-mix(in srgb, var(--bg-deep) 38%, transparent);
 }
-.profil-game[data-top='2'] {
-  --accent: var(--noel-acier-clair);
+.saison-titre {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem 1rem;
+  margin: 0 0 1.4rem 0.4rem;
+  font-family: var(--font-display);
+  font-size: 0.875rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-2);
 }
-.profil-game[data-top='3'] {
-  --accent: var(--r-ur);
+.saison-legende {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 0.9rem;
+  font-family: var(--font-sans, inherit);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--muted);
 }
-.profil-game[data-passee] {
+.saison-legende > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+.saison-zone {
+  --bas: 12px;
+  display: grid;
+  height: 11rem;
+  grid-template-columns: 2rem minmax(0, 1fr);
+}
+@media (min-width: 1024px) {
+  .saison-zone {
+    height: 13rem;
+  }
+}
+.saison-axe {
+  position: relative;
+}
+.saison-axe span {
+  position: absolute;
+  right: 0.5rem;
+  bottom: calc(var(--bas) + var(--y) * (100% - var(--bas)));
+  font-size: 0.6875rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  color: var(--faint);
+  transform: translateY(50%);
+}
+.saison-colonnes {
+  position: relative;
+  display: flex;
+  gap: 2px;
+}
+.saison-ligne,
+.saison-moyenne {
+  position: absolute;
+  right: 0;
+  bottom: calc(var(--bas) + var(--y) * (100% - var(--bas)));
+  left: 0;
+  pointer-events: none;
+}
+.saison-ligne {
+  border-top: 1px solid color-mix(in srgb, var(--ink) 8%, transparent);
+}
+.saison-moyenne {
+  z-index: 2;
+  border-top: 1px solid color-mix(in srgb, var(--frost) 60%, transparent);
+}
+.saison-moyenne span {
+  position: absolute;
+  right: 0;
+  bottom: 3px;
+  padding: 0 0.35rem;
+  border-radius: var(--r-pilule);
+  background: color-mix(in srgb, var(--fond) 85%, transparent);
+  font-size: 0.6875rem;
+  font-style: normal;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-2);
+}
+.saison-colonne {
+  position: relative;
+  display: flex;
+  max-width: 24px;
+  flex: 1 1 0;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding-bottom: var(--bas);
+}
+.saison-barre {
+  position: relative;
+  height: calc(var(--part) * 100%);
+  min-height: 2px;
+  border-radius: 4px 4px 0 0;
+  background: linear-gradient(
+    180deg,
+    var(--frost),
+    color-mix(in srgb, var(--ice) 80%, transparent) 22%,
+    color-mix(in srgb, var(--ice-3) 55%, transparent)
+  );
+  transition:
+    opacity 0.15s ease,
+    filter 0.15s ease;
+}
+.saison-colonnes:hover .saison-colonne:not([data-survolee]) .saison-barre {
   opacity: 0.5;
 }
-/* Pour la modération, une colonne de plus : le bouton « Corriger ». */
-.profil-game[data-moderation] {
-  grid-template-columns: auto minmax(0, 1fr) auto;
+.saison-colonne[data-survolee] .saison-barre {
+  filter: brightness(1.2);
 }
+/* Un Joker : la game ne compte pas, sa colonne reste en creux. */
+.saison-colonne[data-joker] .saison-barre {
+  height: 1.1rem;
+  background: none;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ice) 45%, transparent);
+}
+.saison-podium {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  width: 18px;
+  height: 18px;
+  transform: translate(-50%, -3px);
+}
+.saison-cristal {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  background: var(--frost);
+  transform: rotate(45deg);
+}
+.saison-colonne > .saison-cristal {
+  position: absolute;
+  bottom: 1px;
+  left: 50%;
+  margin-left: -3px;
+}
+.saison-creux {
+  display: inline-block;
+  width: 7px;
+  height: 10px;
+  border-radius: 2px 2px 0 0;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ice) 60%, transparent);
+}
+.saison-bulle {
+  position: absolute;
+  z-index: 5;
+  top: 0;
+  left: calc(var(--x) * 100%);
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--r-sm);
+  background: color-mix(in srgb, var(--fond) 96%, transparent);
+  box-shadow:
+    inset 0 0 0 1px var(--glass-edge),
+    0 12px 30px -10px var(--bg-deep);
+  font-size: 0.8125rem;
+  white-space: nowrap;
+  color: var(--muted);
+  pointer-events: none;
+  transform: translate(var(--decale, -50%), -55%);
+}
+.saison-bulle b {
+  font-family: var(--font-display);
+  font-size: 0.9375rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.saison-bulle-carte {
+  color: var(--ink-2);
+}
+.saison-bulle-carte b {
+  font-family: inherit;
+  font-size: inherit;
+  letter-spacing: 0;
+  color: var(--aurora);
+}
+.saison-bulle-carte[data-malus] b {
+  color: var(--danger);
+}
+.saison-abscisse {
+  display: flex;
+  justify-content: space-between;
+  margin: 0.15rem 0 0 2rem;
+  font-size: 0.6875rem;
+  color: var(--faint);
+}
+
+/* La forme : quatre chiffres, à côté des colonnes. */
+.saison-forme {
+  display: grid;
+  margin: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+.saison-forme > div {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0.7rem 0.9rem;
+}
+.saison-forme dt {
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+.saison-forme dd {
+  margin: 0.1rem 0 0;
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  font-weight: 900;
+  line-height: 1.05;
+  color: var(--ink);
+}
+.saison-forme p {
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: var(--muted);
+}
+.saison-forme b[data-sens='haut'] {
+  color: var(--aurora);
+}
+.saison-forme b[data-sens='bas'] {
+  color: var(--danger);
+}
+
+/* -- Le tableau des games : une ligne par game, toutes de la même hauteur. -- */
+.tab-games {
+  display: grid;
+  overflow: hidden;
+}
+.tab-games-tete {
+  display: none;
+}
+.tab-game {
+  display: grid;
+  min-height: 3.6rem;
+  grid-template-columns: 1.6rem 3.4rem minmax(0, 1fr) auto;
+  grid-template-areas:
+    'num score place kills'
+    'num score carte date';
+  align-items: center;
+  gap: 0.15rem 0.6rem;
+  padding: 0.5rem 0.75rem;
+  border-top: 1px solid color-mix(in srgb, var(--ink) 7%, transparent);
+  transition: background-color 0.15s ease;
+}
+.tab-games[data-moderation] .tab-game {
+  grid-template-columns: 1.6rem 3.4rem minmax(0, 1fr) auto auto;
+  grid-template-areas:
+    'num score place kills action'
+    'num score carte date action';
+}
+.tab-games-tete + .tab-game {
+  border-top: 0;
+}
+.tab-game:hover {
+  background: color-mix(in srgb, var(--ice) 6%, transparent);
+}
+.tab-game[data-podium='1'] {
+  background: color-mix(in srgb, var(--frost) 4%, transparent);
+}
+.tab-game[data-joker] {
+  opacity: 0.6;
+}
+.tab-game-numero {
+  grid-area: num;
+  font-size: 0.8125rem;
+  color: var(--faint);
+}
+.tab-game-score {
+  display: flex;
+  grid-area: score;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.tab-game-score b {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 900;
+  line-height: 1;
+  color: var(--ink);
+}
+.tab-game-score i {
+  display: block;
+  width: calc(var(--part) * 100%);
+  max-width: 100%;
+  height: 3px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--ice-3), var(--frost));
+}
+.tab-game-place {
+  display: flex;
+  min-width: 0;
+  grid-area: place;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--font-display);
+  font-size: 0.9375rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--ink);
+}
+.tab-game-place > i {
+  display: none;
+}
+.tab-game-kills {
+  grid-area: kills;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-align: right;
+  white-space: nowrap;
+  color: var(--ink-2);
+}
+.tab-game-kills small {
+  font-size: inherit;
+  font-weight: 400;
+  color: var(--muted);
+}
+.tab-game-carte {
+  display: flex;
+  min-width: 0;
+  grid-area: carte;
+  gap: 0.3rem;
+  overflow: hidden;
+  font-size: 0.8125rem;
+}
+.tab-game-date {
+  grid-area: date;
+  font-size: 0.75rem;
+  text-align: right;
+  white-space: nowrap;
+  color: var(--muted);
+}
+.tab-game-action {
+  grid-area: action;
+}
+.tab-vide {
+  font-family: var(--font-sans, inherit);
+  font-weight: 400;
+  color: var(--muted);
+}
+.tab-carte {
+  display: inline-flex;
+  min-width: 0;
+  max-width: 100%;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.1rem 0.6rem;
+  border-radius: var(--r-pilule);
+  background: color-mix(in srgb, var(--aurora) 12%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--aurora) 35%, transparent);
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--ink);
+}
+.tab-carte b {
+  flex-shrink: 0;
+  color: var(--aurora);
+}
+.tab-carte[data-malus] {
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--danger) 35%, transparent);
+}
+.tab-carte[data-malus] b {
+  color: var(--danger);
+}
+.tab-carte[data-joker] {
+  background: color-mix(in srgb, var(--ice) 10%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ice) 35%, transparent);
+}
+.tab-carte[data-joker] b {
+  font-weight: 500;
+  color: var(--muted);
+}
+/* Sur un écran large : de vraies colonnes, alignées d'une ligne à l'autre. */
+@media (min-width: 720px) {
+  .tab-games {
+    grid-template-columns: 2.5rem 5.5rem 7.5rem 5.5rem minmax(0, 1fr) 8rem;
+  }
+  .tab-games[data-moderation] {
+    grid-template-columns: 2.5rem 5.5rem 7.5rem 5.5rem minmax(0, 1fr) 8rem 2.75rem;
+  }
+  .tab-games-tete,
+  .tab-game,
+  .tab-games[data-moderation] .tab-game {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: subgrid;
+    grid-template-areas: none;
+    gap: 0 0.75rem;
+    padding: 0 1rem;
+  }
+  .tab-games-tete {
+    padding-top: 0.6rem;
+    padding-bottom: 0.45rem;
+    font-family: var(--font-display);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--faint);
+  }
+  .tab-game {
+    min-height: 3.4rem;
+    border-top: 1px solid color-mix(in srgb, var(--ink) 7%, transparent);
+  }
+  .tab-games-tete + .tab-game {
+    border-top: 1px solid color-mix(in srgb, var(--ink) 7%, transparent);
+  }
+  .tab-game > * {
+    grid-area: auto;
+  }
+  .tab-game-place > i {
+    display: inline-block;
+    width: 1.25rem;
+  }
+  .tab-game-kills,
+  .tab-game-date {
+    text-align: left;
+  }
+  .tab-game-score {
+    padding-right: 1rem;
+  }
+}
+
+/* Le bouton « Corriger » d'une game, pour la modération. */
 .profil-game-corriger {
   display: grid;
   width: 2.25rem;
@@ -17762,88 +18099,6 @@ a.rgs-usage b::after {
   outline: 2px solid var(--frost);
   outline-offset: 2px;
 }
-.profil-game-score {
-  display: flex;
-  min-width: 3.4rem;
-  flex-direction: column;
-  align-items: center;
-  line-height: 1;
-}
-.profil-game-score b {
-  font-family: var(--font-display);
-  font-size: 1.9rem;
-  font-weight: 900;
-  color: var(--ink);
-}
-.profil-game[data-top='1'] .profil-game-score b {
-  color: var(--gold);
-}
-.profil-game-score small {
-  margin-top: 0.15rem;
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--faint);
-}
-.profil-game-milieu {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  gap: 0.2rem;
-}
-.profil-game-titre {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.35rem;
-  font-family: var(--font-display);
-  font-size: 1rem;
-  font-weight: 900;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--ink);
-}
-.profil-game-kills {
-  font-family: var(--font-sans, inherit);
-  font-weight: 600;
-  letter-spacing: 0;
-  text-transform: none;
-  color: var(--ink-2);
-}
-.profil-game-date {
-  font-size: 0.8125rem;
-  color: var(--muted);
-}
-.profil-game-cartes {
-  display: flex;
-  grid-column: 1 / -1;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-}
-.profil-game-cartes > span {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.2rem 0.65rem;
-  border-radius: var(--r-pilule);
-  background: color-mix(in srgb, var(--aurora) 12%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--aurora) 35%, transparent);
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: var(--ink);
-}
-.profil-game-cartes > span b {
-  color: var(--aurora);
-}
-.profil-game-cartes > span[data-malus] {
-  background: color-mix(in srgb, var(--danger) 12%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--danger) 35%, transparent);
-}
-.profil-game-cartes > span[data-malus] b {
-  color: var(--danger);
-}
-
 /* La carte jouée sur une game, dans la saisie : un encadré à la couleur de sa
    rareté, la vignette, ce qu'elle fait, et en grand ce qu'elle donne. */
 .saisie-carte {

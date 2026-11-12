@@ -1,15 +1,15 @@
 'use client';
 
 import Link from 'next/link';
-import { type CSSProperties, type ReactNode, useMemo, useState } from 'react';
+import { type ReactNode, useMemo, useState } from 'react';
 import { CardFrame } from '@/components/CardFrame';
 import { CorrectionGame, type GameACorriger } from '@/components/CorrectionGame';
 import { CouronneGlace } from '@/components/CouronneGlace';
-import { IconCrayon } from '@/components/icons';
 import { MedailleGlace } from '@/components/MedailleGlace';
+import { ColonnesSaison, TableauGames } from '@/components/SaisonDuJoueur';
 import { SnowCap } from '@/components/SnowCap';
 import { flakes } from '@/components/ui';
-import { getCard, getPack } from '@/lib/domain/catalog';
+import { getPack } from '@/lib/domain/catalog';
 import { CHANCE, ECONOMY, libelleMultiplicateur, PACKS_REGLES } from '@/lib/domain/rules';
 import type { BilanSubs } from '@/lib/domain/twitchSubs';
 import { decimal, shortDateTime } from '@/lib/format';
@@ -52,9 +52,8 @@ function Chiffre({ nom, children, precision }: { nom: string; children: ReactNod
  * Un en-tête compact — qui il est, où il en est, ses cinq chiffres —, puis
  * des onglets, un sujet à la fois, sur toute la largeur :
  *
- *  - **Games** : la saison en barres, une par créneau — les games jouées à la
- *    couleur de leur classement, les créneaux à venir en creux —, puis un
- *    tableau fin, filtrable et triable, fait pour soixante games et plus ;
+ *  - **Games** : la saison en colonnes de glace et sa forme, puis un tableau
+ *    d'une ligne par game, filtrable et triable (`SaisonDuJoueur`) ;
  *  - **Duels** : le bilan, et chaque duel ;
  *  - **Flocons et cartes** : le solde, la chance aux boosters, les boosters à
  *    ouvrir et les cartes reçues ;
@@ -260,47 +259,8 @@ export function FicheJoueur({
                 </Chiffre>
               </dl>
 
-              {/* La saison en barres, une par game jouée : à partir de trois, elle
-                  dit quelque chose. Plus de rangée de créneaux vides. */}
-              {chronologie.length >= 3 && (
-                <figure className="profil-courbe">
-                  <div
-                    className="profil-courbe-barres"
-                    style={{ ['--moyenne' as string]: t.averageScore / meilleure } as CSSProperties}
-                    role="img"
-                    aria-label={`Ses ${chronologie.length} games, de la première à la dernière : ${chronologie.map((g) => g.score).join(', ')} points.`}
-                  >
-                    {chronologie.map((g) => (
-                      <span
-                        key={g.id}
-                        title={`Game ${numeroDe.get(g.id)} · ${g.score} pts · ${g.kills} kills${g.placement ? ` · Top ${g.placement}` : ''}`}
-                        data-top={g.placement !== null && g.placement <= 3 ? g.placement : undefined}
-                        data-passee={g.skipped ? '' : undefined}
-                        style={{ ['--part' as string]: Math.max(0.03, g.score / meilleure) } as CSSProperties}
-                      />
-                    ))}
-                    <i className="profil-courbe-moyenne" aria-hidden="true" />
-                  </div>
-                  <figcaption>
-                    <span>
-                      <i data-legende="1" /> Top 1
-                    </span>
-                    <span>
-                      <i data-legende="2" /> Top 2
-                    </span>
-                    <span>
-                      <i data-legende="3" /> Top 3
-                    </span>
-                    <span>
-                      <i data-legende="autre" /> Hors top 3
-                    </span>
-                    <span>
-                      <i data-legende="moyenne" /> Moyenne
-                    </span>
-                    <span className="ml-auto">Game 1 → {chronologie.length}</span>
-                  </figcaption>
-                </figure>
-              )}
+              {/* La saison en colonnes de glace, et sa forme. */}
+              {chronologie.length >= 3 && <ColonnesSaison chronologie={chronologie} moyenne={t.averageScore} />}
 
               {/* Les réglages de la liste : quoi montrer, dans quel ordre. */}
               <div className="profil-reglages">
@@ -331,84 +291,17 @@ export function FicheJoueur({
                 </div>
               </div>
 
-              {/* Une tuile par game : le score en grand, le classement, les kills,
-                  la carte jouée dessus. */}
+              {/* Le tableau : une ligne par game, toutes de la même hauteur. */}
               {lignes.length === 0 ? (
                 <p className="profil-vide">Aucune game ne correspond.</p>
               ) : (
-                <ul className="profil-games">
-                  {visibles.map((g) => {
-                    const top = g.placement !== null && g.placement <= 3 ? g.placement : null;
-                    return (
-                      <li
-                        key={g.id}
-                        className="profil-game"
-                        data-top={top ?? undefined}
-                        data-passee={g.skipped ? '' : undefined}
-                        data-moderation={moderation ? '' : undefined}
-                      >
-                        <span className="profil-game-score num">
-                          <b>{g.score}</b>
-                          <small>pts</small>
-                        </span>
-                        <span className="profil-game-milieu">
-                          <span className="profil-game-titre">
-                            {top ? (
-                              <>
-                                <Rang position={top} id={`game-${g.id}`} className="h-5 w-5" />
-                                Top {top}
-                              </>
-                            ) : g.placement !== null ? (
-                              `Top ${g.placement}`
-                            ) : (
-                              'Pas top'
-                            )}
-                            <span className="profil-game-kills">
-                              · {g.kills} kill{g.kills > 1 ? 's' : ''}
-                            </span>
-                          </span>
-                          <span className="profil-game-date">
-                            Game {numeroDe.get(g.id)} · {shortDateTime(g.playedAt)}
-                            {g.skipped && ' · ne compte pas'}
-                          </span>
-                        </span>
-                        {moderation && (
-                          <button
-                            type="button"
-                            className="profil-game-corriger"
-                            onClick={() => setACorriger(g)}
-                            aria-label={`Corriger la game ${numeroDe.get(g.id)}`}
-                            title="Corriger ou supprimer cette game"
-                          >
-                            <IconCrayon className="h-[18px] w-[18px]" />
-                          </button>
-                        )}
-                        {g.applied.length > 0 && (
-                          <span className="profil-game-cartes">
-                            {g.applied.map((effet, i) => {
-                              const carte = getCard(effet.cardId);
-                              if (!carte) return null;
-                              return (
-                                <span key={`${effet.cardId}-${i}`} data-malus={effet.points < 0 ? '' : undefined}>
-                                  {carte.name}
-                                  <b>
-                                    {carte.effect.kind === 'fige_meilleure'
-                                      ? 'figée'
-                                      : carte.effect.kind === 'supprime_pire'
-                                        ? 'supprimée'
-                                      : carte.effect.kind === 'clone_kills' && effet.points === 0
-                                        ? 'kills clonés'
-                                        : `${effet.points > 0 ? '+' : ''}${effet.points}`}
-                                  </b>
-                                </span>
-                              );
-                            })}
-                          </span>
-                        )}
-                      </li>
-                    );
-                  })}
-                </ul>
+                <TableauGames
+                  games={visibles}
+                  numeroDe={numeroDe}
+                  meilleure={meilleure}
+                  moderation={moderation}
+                  onCorrige={setACorriger}
+                />
               )}
               {lignes.length > GAMES_VISIBLES && (
                 <button type="button" className="btn profil-tout" onClick={() => setTout((v) => !v)}>
