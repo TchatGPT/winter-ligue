@@ -213,3 +213,47 @@ export function sonDefaite(): void {
   note(392, t, 0.35, 0.22, 'triangle');
   note(293.7, t + 0.22, 0.6, 0.22, 'triangle');
 }
+
+/* ------------------------- La nouvelle saison ------------------------- */
+
+/**
+ * La ligue qui gèle (Modération → Subs & saison, 12/11/2026) : la glace qui
+ * prend, en petits craquements aigus de plus en plus serrés.
+ */
+export function sonGivre(duree: number): void {
+  const audio = contexte();
+  if (!audio) return;
+  const t = audio.currentTime;
+  let instant = 0;
+  let pas = 0.32;
+  while (instant < duree) {
+    bouffee(t + instant, 0.03, 0.05 + 0.12 * (instant / duree), 'highpass', 5200 + Math.random() * 2400);
+    instant += pas * (0.6 + Math.random() * 0.8);
+    pas = Math.max(0.05, pas * 0.9);
+  }
+}
+
+/** Une fissure qui court dans le bloc : un claquement sec. */
+export function sonCraque(force = 1): void {
+  const audio = contexte();
+  if (!audio) return;
+  const t = audio.currentTime;
+  bouffee(t, 0.05, 0.5 * force, 'bandpass', 2400 + Math.random() * 1600);
+  bouffee(t, 0.14, 0.18 * force, 'highpass', 6000);
+  note(90 + Math.random() * 40, t, 0.12, 0.25 * force, 'sine');
+}
+
+/** Le bloc qui vole en éclats : le choc, puis la glace qui retombe en pluie. */
+export function sonExplosion(): void {
+  const audio = contexte();
+  if (!audio) return;
+  const t = audio.currentTime;
+  note(55, t, 0.9, 0.9, 'sine');
+  bouffee(t, 0.5, 0.9, 'lowpass', 1100);
+  bouffee(t, 0.9, 0.45, 'highpass', 3000);
+  for (let i = 0; i < 14; i += 1) {
+    const quand = t + 0.25 + Math.random() * 1.1;
+    note(2200 + Math.random() * 2600, quand, 0.18, 0.05, 'sine');
+    bouffee(quand, 0.04, 0.12, 'highpass', 6500);
+  }
+}

@@ -2,9 +2,18 @@
 
 import { useState } from 'react';
 import { useAction } from '@/components/admin/action';
+import { GelDeSaison, nomCourt, resumeSaison, type BilanVu } from '@/components/admin/GelDeSaison';
 import { EcranAdmin, Panneau, Pastille } from '@/components/admin/Kit';
+import { reveilleSonsDuel } from '@/components/sonsDuel';
 import { flakes } from '@/components/ui';
-import { PHRASE_NOUVELLE_SAISON, SAISONS, SUBS, nextMilestone } from '@/lib/domain/rules';
+import {
+  PHRASE_NOUVELLE_SAISON,
+  SAISONS,
+  SUBS,
+  nextMilestone,
+  parametresSaison,
+  type ParametresSaison,
+} from '@/lib/domain/rules';
 
 export interface ConfigSaison {
   maxGamesPerPlayer: number;
@@ -235,7 +244,7 @@ export function EcranSaison({
         <Panneau
           zone="regles"
           titre="Games par joueur"
-          sousTitre="Le nombre de games qui comptent pour chaque joueur. La dernière ouvre son Booster Finisseur."
+          sousTitre={`Le nombre de games qui comptent pour chaque joueur. ${resumeSaison(parametresSaison(config.numero))}.`}
         >
           <form
             className="adm-ligne-form"
@@ -277,7 +286,18 @@ export function EcranSaison({
           >
             Exporter la base (JSON)
           </a>
-          {responsable && (
+        </Panneau>
+      )}
+
+      {estAdmin && (
+        <Panneau
+          zone="changement"
+          ton="glace"
+          surtitre="Saison en cours"
+          titre={parametresSaison(config.numero).nom}
+          sousTitre={resumeSaison(parametresSaison(config.numero))}
+        >
+          {responsable ? (
             <NouvelleSaison
               numero={config.numero}
               occupe={busy !== null}
@@ -285,10 +305,12 @@ export function EcranSaison({
                 envoie(
                   '/api/admin/saison',
                   { numero, confirmation },
-                  { cle: 'nouvelle-saison', succes: `${SAISONS.find((s) => s.numero === numero)?.nom} lancée : la ligue repart de zéro.` },
+                  { cle: 'nouvelle-saison', succes: `${parametresSaison(numero).nom} lancée : la ligue repart de zéro.` },
                 )
               }
             />
+          ) : (
+            <p className="adm-note">Changer de saison remet toute la ligue à zéro : seul Jeex3 peut le faire.</p>
           )}
         </Panneau>
       )}
@@ -297,9 +319,11 @@ export function EcranSaison({
 }
 
 /**
- * Lancer une saison : la ligue repart de zéro. Réservé au responsable de la
- * saison. On choisit la saison, on exporte la base d'abord, et on tape la
- * phrase de confirmation : un clic de travers ne vide pas la ligue.
+ * Changer de saison : la ligue repart de zéro (12/11/2026). Réservé au
+ * responsable de la saison. On choisit la saison — la suivante, ou revenir à
+ * une d'avant pour la montrer —, on tape la phrase de confirmation, et la
+ * ligue gèle puis vole en éclats (`GelDeSaison`) pendant que le serveur la
+ * remet à zéro.
  */
 function NouvelleSaison({
   numero,
@@ -308,57 +332,86 @@ function NouvelleSaison({
 }: {
   numero: number;
   occupe: boolean;
-  onLancer: (numero: number, confirmation: string) => Promise<unknown>;
+  onLancer: (numero: number, confirmation: string) => Promise<Record<string, unknown> | null>;
 }) {
   const suivante = SAISONS.find((s) => s.numero > numero)?.numero ?? numero;
   const [choix, setChoix] = useState(suivante);
   const [phrase, setPhrase] = useState('');
-  const saison = SAISONS.find((s) => s.numero === choix) ?? SAISONS[0];
+  const [lancee, setLancee] = useState<{ saison: ParametresSaison; retour: boolean; requete: Promise<BilanVu | null> } | null>(
+    null,
+  );
+  const saison = parametresSaison(choix);
   const pret = phrase.trim() === PHRASE_NOUVELLE_SAISON;
+  const [court] = nomCourt(saison);
+  const verbe = choix > numero ? `Passer en ${court}` : choix < numero ? `Revenir en ${court}` : `Recommencer la ${court}`;
+
+  function lance() {
+    reveilleSonsDuel();
+    const requete = onLancer(choix, phrase.trim()).then((d) => (d ? (d as unknown as BilanVu) : null));
+    setLancee({ saison, retour: choix < numero, requete });
+  }
 
   return (
     <section className="adm-nouvelle-saison">
-      <h3 className="adm-intertitre">Nouvelle saison</h3>
-      <p className="text-[14px] leading-relaxed text-muted">
-        Saison en cours : <b className="text-ink">{SAISONS.find((s) => s.numero === numero)?.nom ?? `Saison ${numero}`}</b>.
-        Lancer une saison efface les games, les boosters, les cartes, les duels, les codes et le compteur de subs ;
-        chaque joueur repart à 0 ❄ avec ses 3 Jokers. Les comptes restent. <b className="text-ink">Exporte la base
-        d’abord.</b>
-      </p>
-      <div className="adm-nouvelle-saison-choix" role="group" aria-label="La saison à lancer">
+      <div className="adm-saisons" role="radiogroup" aria-label="La saison à lancer">
         {SAISONS.map((s) => (
           <button
             key={s.numero}
             type="button"
-            className="btn btn-sm"
-            aria-pressed={choix === s.numero}
+            role="radio"
+            aria-checked={choix === s.numero}
+            className="adm-saison-choix"
             onClick={() => setChoix(s.numero)}
           >
-            {s.nom} · {s.games} games
+            <span className="adm-saison-nom">
+              {s.nom}
+              {s.numero === numero && <Pastille ton="glace">en cours</Pastille>}
+            </span>
+            <span className="adm-saison-regle">{resumeSaison(s)}</span>
           </button>
         ))}
       </div>
-      <label className="grid gap-1.5 text-[13px] text-muted">
-        Tape « {PHRASE_NOUVELLE_SAISON} » pour confirmer
-        <input
-          className="field"
-          value={phrase}
-          onChange={(e) => setPhrase(e.target.value)}
-          autoComplete="off"
-          spellCheck={false}
+      <div className="adm-saison-bilan">
+        <p data-sens="efface">
+          <b>Repart de zéro</b>
+          Les games et les points, les flocons, les boosters à ouvrir, les cartes, les duels, les évènements, les codes
+          cadeaux, le compteur de subs et les subs offerts.
+        </p>
+        <p data-sens="reste">
+          <b>Reste</b>
+          Les joueurs inscrits et leurs comptes, les cartes et les boosters du catalogue, le journal. Chaque joueur
+          repart avec ses 3 Jokers.
+        </p>
+      </div>
+      <p className="adm-note">
+        Exporte la base d’abord (panneau Sauvegarde) : une saison remise à zéro ne se récupère pas.
+      </p>
+      <div className="adm-saison-lancer">
+        <label className="grid gap-1.5 text-[13px] text-muted">
+          Tape « {PHRASE_NOUVELLE_SAISON} » pour confirmer
+          <input
+            className="field"
+            value={phrase}
+            onChange={(e) => setPhrase(e.target.value)}
+            autoComplete="off"
+            spellCheck={false}
+          />
+        </label>
+        <button type="button" className="btn btn-danger" disabled={!pret || occupe || lancee !== null} onClick={lance}>
+          {verbe} et tout remettre à zéro
+        </button>
+      </div>
+      {lancee && (
+        <GelDeSaison
+          saison={lancee.saison}
+          retour={lancee.retour}
+          requete={lancee.requete}
+          onFin={() => {
+            setLancee(null);
+            setPhrase('');
+          }}
         />
-      </label>
-      <button
-        type="button"
-        className="btn btn-danger"
-        disabled={!pret || occupe}
-        onClick={async () => {
-          await onLancer(choix, phrase.trim());
-          setPhrase('');
-        }}
-      >
-        Lancer la {saison.nom} et tout remettre à zéro
-      </button>
+      )}
     </section>
   );
 }

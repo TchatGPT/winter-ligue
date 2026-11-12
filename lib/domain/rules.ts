@@ -80,7 +80,9 @@ export const DEFAULT_MAX_GAMES_PER_PLAYER = 60;
  *  - **Saison 1, la Mini Ligue** (du 1er décembre au 4 janvier) : 38 games, le
  *    Booster Finisseur s'ouvre à la 35ᵉ ; passé la 35ᵉ, une seule game compte
  *    par session de jeu avec Lriaa (une heure et demie) ; pas de finale.
- *  - **Saison 2** (du 4 janvier à la mi-mars) : 60 games, tout remis à zéro.
+ *  - **Saison 2** (du 4 janvier à la mi-mars) : tout remis à zéro ; le Booster
+ *    Finisseur à la 60ᵉ game, puis cinq games de plus, une par session — 65 en
+ *    tout (décidé le 12/11/2026).
  *
  * La saison en cours est celle de la base (`config.numero`). On en change par
  * le bouton « Nouvelle saison » de la modération, réservé à qui la lance
@@ -118,9 +120,9 @@ export const SAISONS: readonly ParametresSaison[] = [
   {
     numero: 2,
     nom: 'Saison 2',
-    games: 60,
+    games: 65,
     finisseurA: 60,
-    uneParSessionApres: null,
+    uneParSessionApres: 60,
     finalistes: 6,
     debut: '2027-01-04T00:00:00.000+01:00',
     fin: '2027-03-15T00:00:00.000+01:00',

@@ -82,10 +82,18 @@ describe('la Mini Ligue', () => {
     expect(prochaineGamePossible(db, id, new Date(Date.parse(jouees.at(-1)!.createdAt) + 60_000))).toBeNull();
   });
 
-  it('en saison 2, pas de règle de session', () => {
+  it('en saison 2 : le Finisseur à la 60ᵉ, puis cinq games, une par session', () => {
+    const s = parametresSaison(2);
+    expect(s).toMatchObject({ games: 65, finisseurA: 60, uneParSessionApres: 60 });
     const { db, id } = base(2);
-    const jouees = joue(db, id, 50);
+    const jouees = joue(db, id, 59);
+    expect(verifieFinisseur(db, id)).toBeNull();
     expect(prochaineGamePossible(db, id, new Date(Date.parse(jouees.at(-1)!.createdAt) + 60_000))).toBeNull();
+    const soixantieme = joue(db, id, 1, T0 + 200 * 3_600_000);
+    expect(verifieFinisseur(db, id)?.packId).toBe('finisseur');
+    const apres = Date.parse(soixantieme[0].createdAt);
+    expect(prochaineGamePossible(db, id, new Date(apres + 10 * 60_000))).not.toBeNull();
+    expect(prochaineGamePossible(db, id, new Date(apres + SESSION_MINUTES * 60_000 + 1))).toBeNull();
   });
 });
 
@@ -108,10 +116,10 @@ describe('lancer une saison', () => {
     joueur.cadeauSerie = 5;
 
     const bilan = nouvelleSaison(db, 2, 'jeex', new Date('2027-01-04T10:00:00.000Z'));
-    expect(bilan).toMatchObject({ numero: 2, games: 60, supprimees: { games: 12, boosters: 1 } });
+    expect(bilan).toMatchObject({ numero: 2, games: 65, supprimees: { games: 12, boosters: 1 } });
     expect(db.games).toHaveLength(0);
     expect(db.packsDus).toHaveLength(0);
-    expect(db.config).toMatchObject({ numero: 2, maxGamesPerPlayer: 60, totalSubs: 0, remiseA: '2027-01-04T10:00:00.000Z' });
+    expect(db.config).toMatchObject({ numero: 2, maxGamesPerPlayer: 65, totalSubs: 0, remiseA: '2027-01-04T10:00:00.000Z' });
     expect(db.players).toHaveLength(1);
     expect(joueur.snowflakes).toBe(0);
     expect(joueur.creneauxBonus).toBe(0);

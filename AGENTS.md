@@ -43,9 +43,14 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   janvier) : 38 games, le Booster Finisseur à la 35ᵉ (`finisseurA`, `verifieFinisseur`),
   passé la 35ᵉ **une game par session** de 1 h 30 avec Lriaa (`prochaineGamePossible`,
   vérifié à la saisie), **pas de finale** (`finalistes: 0`). **Saison 2** (4 janvier →
-  mi-mars) : 60 games. On change de saison par le bouton « Nouvelle saison » de
-  Modération → Subs & saison, réservé à `RESPONSABLES_SAISON` (Jeex3, identifiant Twitch
-  lu en base), avec la phrase de confirmation : `nouvelleSaison` efface games, boosters,
+  mi-mars) : 65 games — le Booster Finisseur à la 60ᵉ, puis cinq games, une par session
+  (12/11/2026). On change de saison par le panneau « Saison en cours » de
+  Modération → Subs & saison — vers la suivante, ou en revenant à une d'avant pour la
+  montrer, c'est la même remise à zéro —, réservé à `RESPONSABLES_SAISON` (Jeex3,
+  identifiant Twitch lu en base), avec la phrase de confirmation. À l'écran, la ligue gèle
+  puis vole en éclats (`GelDeSaison`) : c'est une photographie inerte de la page qui
+  s'anime, la vraie page se recharge dessous, et l'explosion attend la réponse du serveur
+  (un refus fait fondre la glace). `nouvelleSaison` efface games, boosters,
   ouvertures, cartes, duels, évènements et codes, remet le compteur de subs et les
   flocons à zéro (par `adjust`, au grand livre), redonne trois Jokers, et règle la
   limite. Comptes, grand livre et journal restent ; le registre des subs ne compte que
