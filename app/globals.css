@@ -3419,6 +3419,87 @@
       0 3px 8px -3px rgb(0 8 24 / 0.9);
     font-size: 1rem;
   }
+  /* Une carte reçue plusieurs fois : elle se clique, et montre chaque déblocage. */
+  .profil-carte-bouton {
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: pointer;
+    transition: transform 0.15s ease;
+  }
+  .profil-carte-bouton:hover {
+    transform: translateY(-3px);
+  }
+  .profil-carte-bouton:focus-visible {
+    outline: 2px solid var(--frost);
+    outline-offset: 4px;
+    border-radius: var(--r-sm);
+  }
+  .fenetre-carte.historique-carte {
+    max-width: 30rem;
+    padding: 1.1rem 1.1rem 1.2rem;
+    gap: 0.9rem;
+  }
+  .historique-tete {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+  }
+  .historique-visuel {
+    width: 4.5rem;
+    flex-shrink: 0;
+  }
+  .historique-tete h2 {
+    font-family: var(--font-display);
+    font-size: 1.4rem;
+    font-weight: 900;
+    letter-spacing: 0.03em;
+    line-height: 1.05;
+    text-transform: uppercase;
+    color: var(--ink);
+  }
+  .historique-tete p {
+    margin-top: 0.25rem;
+    font-size: 0.875rem;
+    color: var(--muted);
+  }
+  .historique-tete p b {
+    color: var(--frost);
+  }
+  .historique-liste {
+    display: grid;
+    gap: 0.35rem;
+    overflow-y: auto;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .historique-liste li {
+    display: grid;
+    grid-template-columns: 2rem minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.55rem 0.75rem;
+    border-radius: var(--r-sm);
+    background: color-mix(in srgb, var(--bg-deep) 35%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--frost) 10%, transparent);
+  }
+  .historique-rang {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-weight: 900;
+    color: var(--frost);
+  }
+  .historique-quand {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .historique-pack {
+    font-size: 0.8125rem;
+    white-space: nowrap;
+    color: var(--muted);
+  }
   .profil-cartes b {
     max-width: 100%;
     overflow: hidden;

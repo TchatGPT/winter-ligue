@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { type ReactNode, useCallback, useMemo, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { CardFrame } from '@/components/CardFrame';
 import { CorrectionGame, type GameACorriger } from '@/components/CorrectionGame';
 import { CouronneGlace } from '@/components/CouronneGlace';
@@ -12,7 +13,7 @@ import { flakes } from '@/components/ui';
 import { getPack } from '@/lib/domain/catalog';
 import { CHANCE, ECONOMY, libelleMultiplicateur, PACKS_REGLES } from '@/lib/domain/rules';
 import type { BilanSubs } from '@/lib/domain/twitchSubs';
-import { decimal, shortDateTime } from '@/lib/format';
+import { decimal, longDateTime, shortDateTime } from '@/lib/format';
 import type { FicheJoueur as DonneesFiche } from '@/lib/services/profile';
 
 /** « 1er », « 2e », « 3e »… */
@@ -82,6 +83,8 @@ export function FicheJoueur({
   const [choisieId, setChoisieId] = useState<string | null>(null);
   /** Sur téléphone, le détail de la game s'ouvre en feuille. */
   const [feuille, setFeuille] = useState(false);
+  /** La carte reçue plusieurs fois dont on regarde chaque déblocage. */
+  const [historique, setHistorique] = useState<string | null>(null);
   /** La game qu'un membre de la modération corrige, s'il y en a une. */
   const [aCorriger, setACorriger] = useState<GameACorriger | null>(null);
 
@@ -427,9 +430,9 @@ export function FicheJoueur({
             // Une carte par sorte, la dernière reçue en tête : la pastille dit
             // combien de fois elle est tombée, la date dit quand pour la dernière.
             <ul className="profil-cartes">
-              {parCarte(p.ouvertures).map(({ derniere: o, fois }) => (
-                <li key={o.cardId}>
-                  <span className="profil-carte">
+              {parCarte(p.ouvertures).map(({ derniere: o, fois }) => {
+                const visuel = (
+                  <>
                     <CardFrame
                       cardId={o.cardId}
                       name={o.nom}
@@ -439,19 +442,44 @@ export function FicheJoueur({
                       largeur="120px"
                     />
                     {fois > 1 && (
-                      <span className="pastille-nombre num" aria-label={`reçue ${fois} fois`}>
+                      <span className="pastille-nombre num" aria-hidden="true">
                         <span className="pastille-x">×</span>
                         {fois}
                       </span>
                     )}
-                  </span>
-                  <b>{o.nom}</b>
-                  <small>
-                    {o.pack} · {shortDateTime(o.openedAt)}
-                  </small>
-                </li>
-              ))}
+                  </>
+                );
+                return (
+                  <li key={o.cardId}>
+                    {/* Reçue plusieurs fois : un clic montre chaque déblocage. */}
+                    {fois > 1 ? (
+                      <button
+                        type="button"
+                        className="profil-carte profil-carte-bouton"
+                        onClick={() => setHistorique(o.cardId)}
+                        aria-label={`${o.nom}, reçue ${fois} fois : voir chaque déblocage`}
+                      >
+                        {visuel}
+                      </button>
+                    ) : (
+                      <span className="profil-carte">{visuel}</span>
+                    )}
+                    <b>{o.nom}</b>
+                    <small>
+                      {o.pack}
+                      <br />
+                      {fois > 1 ? 'Dernier déblocage' : 'Débloquée'} {leA(o.openedAt)}
+                    </small>
+                  </li>
+                );
+              })}
             </ul>
+          )}
+          {historique && (
+            <HistoriqueCarte
+              ouvertures={p.ouvertures.filter((o) => o.cardId === historique)}
+              onClose={() => setHistorique(null)}
+            />
           )}
         </section>
       )}
@@ -492,6 +520,70 @@ function parCarte<T extends { cardId: string }>(ouvertures: T[]): { derniere: T;
     else sortes.set(o.cardId, { derniere: o, fois: 1 });
   }
   return [...sortes.values()];
+}
+
+/** « le 12/11 à 15:11 ». */
+function leA(iso: string): string {
+  const [jour, heure] = shortDateTime(iso).split(' ');
+  return `le ${jour} à ${heure}`;
+}
+
+/**
+ * Chaque déblocage d'une carte reçue plusieurs fois (12/11/2026) : quand, et
+ * de quel booster, du plus récent au plus ancien.
+ */
+function HistoriqueCarte({
+  ouvertures,
+  onClose,
+}: {
+  ouvertures: DonneesFiche['profil']['ouvertures'];
+  onClose: () => void;
+}) {
+  useEffect(() => {
+    const echap = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    window.addEventListener('keydown', echap);
+    return () => window.removeEventListener('keydown', echap);
+  }, [onClose]);
+  const carte = ouvertures[0];
+  if (!carte) return null;
+  const liste = [...ouvertures].sort((a, b) => b.openedAt.localeCompare(a.openedAt));
+  return createPortal(
+    <div className="fenetre-voile" role="dialog" aria-modal="true" aria-labelledby="historique-titre" onClick={onClose}>
+      <div className="fenetre-carte historique-carte glass" onClick={(e) => e.stopPropagation()}>
+        <header className="historique-tete">
+          <span className="historique-visuel">
+            <CardFrame
+              cardId={carte.cardId}
+              name={carte.nom}
+              rarity={carte.rarity}
+              glyph={carte.glyph}
+              nature={carte.nature}
+              largeur="88px"
+            />
+          </span>
+          <span className="min-w-0 flex-1">
+            <h2 id="historique-titre">{carte.nom}</h2>
+            <p>
+              Débloquée <b className="num">{liste.length} fois</b>
+            </p>
+          </span>
+          <button type="button" className="btn btn-sm" onClick={onClose} aria-label="Fermer" autoFocus>
+            ✕
+          </button>
+        </header>
+        <ol className="historique-liste">
+          {liste.map((o, i) => (
+            <li key={`${o.openedAt}-${i}`}>
+              <span className="historique-rang num">{liste.length - i}</span>
+              <span className="historique-quand">{longDateTime(o.openedAt)}</span>
+              <span className="historique-pack">{o.pack}</span>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </div>,
+    document.body,
+  );
 }
 
 /** Les boosters à ouvrir, comptés par type, dans l'ordre où ils sont arrivés. */
