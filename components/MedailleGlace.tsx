@@ -14,21 +14,28 @@ export function MedailleGlace({
   rang,
   className = 'h-8 w-8',
   id,
+  pleine = false,
 }: {
   rang: 2 | 3;
   className?: string;
   id?: string;
+  /**
+   * Une glace pleine, sans ombre : posée sur un fond sombre — une case de la
+   * fiche, une colonne —, le disque translucide y paraîtrait noir.
+   */
+  pleine?: boolean;
 }) {
   const cle = id ?? `medaille-${rang}`;
+  const dense = pleine ? 1.6 : 1;
   const teinte = rang === 2 ? { haut: '#eef6ff', bas: '#8fb6dc', arete: '#d9e9f7' } : { haut: '#f4ecdf', bas: '#b58a63', arete: '#e8cfb3' };
 
   return (
     <svg viewBox="0 0 40 44" className={className} aria-hidden="true">
       <defs>
         <linearGradient id={`${cle}-masse`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor={teinte.haut} stopOpacity="0.55" />
-          <stop offset="0.55" stopColor="#bfe0fa" stopOpacity="0.32" />
-          <stop offset="1" stopColor={teinte.bas} stopOpacity="0.6" />
+          <stop offset="0" stopColor={teinte.haut} stopOpacity={Math.min(1, 0.55 * dense)} />
+          <stop offset="0.55" stopColor="#bfe0fa" stopOpacity={Math.min(1, 0.32 * dense * 1.5)} />
+          <stop offset="1" stopColor={teinte.bas} stopOpacity={Math.min(1, 0.6 * dense)} />
         </linearGradient>
         <linearGradient id={`${cle}-arete`} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stopColor="#ffffff" stopOpacity="0.95" />
@@ -49,7 +56,7 @@ export function MedailleGlace({
         </filter>
       </defs>
 
-      <g filter={`url(#${cle}-ombre)`}>
+      <g filter={pleine ? undefined : `url(#${cle}-ombre)`}>
         {/* Le ruban : deux pans courts, en glace. */}
         <path d="M14 2 L20 11 L26 2 L22.5 2 L20 6 L17.5 2 Z" fill={`url(#${cle}-masse)`} stroke="#eaf7ff" strokeOpacity="0.7" strokeWidth="0.8" strokeLinejoin="round" />
         {/* Le disque. */}

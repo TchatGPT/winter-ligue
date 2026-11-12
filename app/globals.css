@@ -17743,15 +17743,15 @@ a.rgs-usage b::after {
   pointer-events: none;
 }
 .saison-vague {
-  fill: color-mix(in srgb, var(--frost) 8%, transparent);
-  stroke: color-mix(in srgb, var(--frost) 45%, transparent);
-  stroke-width: 1.5;
+  fill: color-mix(in srgb, var(--frost) 13%, transparent);
+  stroke: color-mix(in srgb, var(--frost) 70%, transparent);
+  stroke-width: 2;
   vector-effect: non-scaling-stroke;
   animation: saison-houle 9s linear infinite;
 }
 .saison-vague[data-ligue] {
-  fill: color-mix(in srgb, var(--aurora) 10%, transparent);
-  stroke: color-mix(in srgb, var(--aurora) 55%, transparent);
+  fill: color-mix(in srgb, var(--aurora) 15%, transparent);
+  stroke: color-mix(in srgb, var(--aurora) 80%, transparent);
   animation-duration: 13s;
   animation-direction: reverse;
 }
@@ -17764,20 +17764,6 @@ a.rgs-usage b::after {
   .saison-vague {
     animation: none;
   }
-}
-/* Les crans des moyennes, sur l'échelle de gauche. */
-.saison-cran {
-  position: absolute;
-  right: 0;
-  bottom: calc(var(--bas) + var(--y) * (100% - var(--bas)));
-  width: 0.5rem;
-  height: 3px;
-  border-radius: 2px;
-  background: var(--frost);
-  transform: translateY(50%);
-}
-.saison-cran[data-ligue] {
-  background: var(--aurora);
 }
 .saison-moyennes {
   display: flex;
@@ -17998,10 +17984,7 @@ a.rgs-usage b::after {
   filter: brightness(1.3) saturate(1.2);
 }
 .saison-colonne[data-choisie] .saison-bloc {
-  box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--frost) 40%, transparent),
-    inset 0 1px 0 var(--frost),
-    0 0 0 2px var(--frost);
+  filter: brightness(1.45) saturate(1.25);
 }
 .saison-colonne[data-eteinte] .saison-bloc {
   opacity: 0.18;
@@ -18020,11 +18003,10 @@ a.rgs-usage b::after {
 .saison-podium {
   position: absolute;
   z-index: 4;
-  filter: drop-shadow(0 1px 2px var(--bg-deep));
   bottom: calc(var(--bas) + var(--part) * (100% - var(--bas)) + var(--prof) + 3px);
   left: calc(50% - var(--prof) / 2);
-  width: 12px;
-  height: 12px;
+  width: 14px;
+  height: 14px;
   transform: translateX(-50%);
   pointer-events: none;
 }
@@ -18033,8 +18015,14 @@ a.rgs-usage b::after {
 }
 @media (min-width: 640px) {
   .saison-podium {
-    width: 18px;
-    height: 18px;
+    width: 22px;
+    height: 22px;
+  }
+}
+@media (min-width: 1400px) {
+  .saison-podium {
+    width: 28px;
+    height: 28px;
   }
 }
 .saison-carte {
@@ -18301,7 +18289,7 @@ button.case:focus-visible {
 .case-tete {
   display: flex;
   min-width: 0;
-  height: 24px;
+  height: 26px;
   align-items: center;
   gap: 0.3rem;
 }
@@ -18328,16 +18316,15 @@ button.case:focus-visible {
   padding-right: 0.45rem;
 }
 .case-podium {
-  width: 17px;
-  height: 17px;
+  width: 18px;
+  height: 18px;
   margin-left: auto;
   flex-shrink: 0;
-  filter: drop-shadow(0 0 2px var(--bg-deep)) drop-shadow(0 1px 3px var(--bg-deep));
 }
 @media (min-width: 560px) {
   .case-podium {
-    width: 24px;
-    height: 24px;
+    width: 26px;
+    height: 26px;
   }
 }
 .case-extreme {

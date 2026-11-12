@@ -32,7 +32,8 @@ export type GameDuJoueur = FicheJoueur['profil']['games'][number];
 /** Le podium d'une game : la couronne, une médaille, ou rien. */
 function Podium({ place, id, className = 'h-4 w-4' }: { place: number | null; id: string; className?: string }) {
   if (place === 1) return <CouronneGlace className={className} id={`couronne-${id}`} />;
-  if (place === 2 || place === 3) return <MedailleGlace rang={place} className={className} id={`medaille-${id}`} />;
+  if (place === 2 || place === 3)
+    return <MedailleGlace rang={place} className={className} id={`medaille-${id}`} pleine />;
   return null;
 }
 
@@ -197,11 +198,6 @@ export function ColonnesSaison({
                 {v}
               </span>
             ))}
-            {/* Les deux moyennes, en crans sur l'échelle. */}
-            <i className="saison-cran" style={{ ['--y' as string]: part(moyenne) } as CSSProperties} />
-            {moyenneLigue !== null && (
-              <i className="saison-cran" data-ligue="" style={{ ['--y' as string]: part(moyenneLigue) } as CSSProperties} />
-            )}
           </div>
           <div
             className="saison-colonnes"
