@@ -3511,7 +3511,20 @@
   .profil-cartes small {
     font-size: 0.75rem;
     line-height: 1.3;
-    color: var(--faint);
+    color: var(--muted);
+  }
+  .profil-carte-booster {
+    padding: 0.1rem 0.5rem;
+    border-radius: var(--r-pilule);
+    background: color-mix(in srgb, var(--ice) 14%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ice) 30%, transparent);
+    font-family: var(--font-display);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    color: var(--ink-2);
   }
 
   /* --------------------------------------------------------------------------

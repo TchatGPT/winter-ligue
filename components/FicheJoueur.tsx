@@ -465,10 +465,13 @@ export function FicheJoueur({
                       <span className="profil-carte">{visuel}</span>
                     )}
                     <b>{o.nom}</b>
-                    <small>
-                      {o.pack}
-                      <br />
-                      {fois > 1 ? 'Dernier déblocage' : 'Débloquée'} {leA(o.openedAt)}
+                    {/* Son booster, et quand elle est tombée — la dernière fois, si plusieurs. */}
+                    <span className="profil-carte-booster">{o.pack.replace(/^Booster\s+/, '')}</span>
+                    <small
+                      className="num"
+                      title={`${fois > 1 ? 'Dernier déblocage' : 'Débloquée'} ${leA(o.openedAt)}`}
+                    >
+                      {shortDateTime(o.openedAt).replace(' ', ' · ')}
                     </small>
                   </li>
                 );
