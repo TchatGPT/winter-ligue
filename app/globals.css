@@ -18100,6 +18100,11 @@ a.rgs-usage b::after {
 .saison-joker {
   color: var(--ice);
 }
+@media (hover: none), (max-width: 639px) {
+  .saison-bulle {
+    display: none;
+  }
+}
 .saison-bulle {
   position: absolute;
   z-index: 6;
@@ -18226,7 +18231,7 @@ a.rgs-usage b::after {
   }
 }
 .grille-games {
-  --cols: 4;
+  --cols: 3;
   display: grid;
   margin: 0;
   padding: 0;
@@ -18236,8 +18241,13 @@ a.rgs-usage b::after {
 }
 @media (min-width: 560px) {
   .grille-games {
-    --cols: 6;
+    --cols: 5;
     gap: 0.55rem;
+  }
+}
+@media (min-width: 760px) {
+  .grille-games {
+    --cols: 6;
   }
 }
 @media (min-width: 1000px) {
@@ -18269,11 +18279,11 @@ a.rgs-usage b::after {
   position: relative;
   display: flex;
   width: 100%;
-  height: 5.6rem;
+  height: 6.75rem;
   flex-direction: column;
   justify-content: space-between;
   overflow: hidden;
-  padding: 0.4rem 0.5rem 0.45rem;
+  padding: 0.5rem 0.55rem 0.55rem;
   border: 0;
   border-radius: 14px;
   background: linear-gradient(
@@ -18386,8 +18396,8 @@ button.case:focus-visible {
     0 0 6px var(--bg-deep);
 }
 .case-podium {
-  width: 18px;
-  height: 18px;
+  width: 22px;
+  height: 22px;
   margin-left: auto;
   flex-shrink: 0;
 }
@@ -18403,8 +18413,8 @@ button.case:focus-visible {
  * repère d'un coup d'œil dans la grille.
  */
 .case[data-extreme] .case-tete {
-  margin: -0.3rem -0.4rem 0;
-  padding: 0 0.4rem;
+  margin: -0.5rem -0.55rem 0;
+  padding: 0 0.55rem;
   background: linear-gradient(
     100deg,
     color-mix(in srgb, var(--r-ur) 55%, var(--bg-deep)) 0%,
@@ -18442,7 +18452,7 @@ button.case:focus-visible {
   gap: 0.25rem;
   overflow: hidden;
   font-family: var(--font-display);
-  font-size: 0.625rem;
+  font-size: 0.75rem;
   font-weight: 900;
   letter-spacing: 0.04em;
   line-height: 1;
@@ -18452,15 +18462,9 @@ button.case:focus-visible {
   text-shadow: 0 1px 2px color-mix(in srgb, var(--bg-deep) 70%, transparent);
 }
 .case-extreme-icone {
-  display: none;
-  width: 15px;
-  height: 15px;
+  width: 14px;
+  height: 14px;
   flex-shrink: 0;
-}
-@media (min-width: 560px) {
-  .case-extreme-icone {
-    display: block;
-  }
 }
 @media (min-width: 560px) {
   .case-extreme {
@@ -18476,7 +18480,7 @@ button.case:focus-visible {
 
 .case-score {
   font-family: var(--font-display);
-  font-size: 1.45rem;
+  font-size: 1.75rem;
   font-weight: 900;
   line-height: 1;
   color: var(--ink);
@@ -18552,7 +18556,9 @@ button.case:focus-visible {
   }
 }
 .case-carte {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.15rem 0.3rem;
   width: 100%;
   min-width: 0;
   align-items: center;
@@ -18566,19 +18572,23 @@ button.case:focus-visible {
   color: var(--frost);
 }
 .case-carte-nom {
-  display: none;
+  display: block;
   min-width: 0;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
 .case-kills {
-  display: none;
+  display: inline;
 }
 /* Sur un écran plus large : le nom de la carte, puis ses points en dessous. */
 .case-gain-unite {
-  display: none;
   font-size: 0.75em;
+}
+.case-carte .case-gain {
+  grid-column: 1 / -1;
+  margin-left: 0;
+  padding-left: 0;
 }
 @media (min-width: 560px) {
   .case-carte {

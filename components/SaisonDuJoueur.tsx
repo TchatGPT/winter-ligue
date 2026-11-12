@@ -1,6 +1,7 @@
 'use client';
 
-import { type CSSProperties, useEffect, useMemo, useRef, useState } from 'react';
+import { type CSSProperties, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { CardFrame } from '@/components/CardFrame';
 import { CouronneGlace } from '@/components/CouronneGlace';
 import { IconCarte, IconChute, IconCrayon, IconEtoile, IconJoker } from '@/components/icons';
@@ -520,6 +521,23 @@ export function GrilleGames({
 
 /* ================================== Le détail ================================== */
 
+/**
+ * Sous 1 500 px, le détail s'ouvre en feuille, posée sur l'écran. Elle passe
+ * par un portail : le verre du panneau (son flou) la retiendrait sinon au bas
+ * du panneau, hors de vue.
+ */
+function useEcranEtroit(): boolean {
+  const [etroit, setEtroit] = useState(false);
+  useEffect(() => {
+    const m = window.matchMedia('(max-width: 1499px)');
+    const suit = () => setEtroit(m.matches);
+    suit();
+    m.addEventListener('change', suit);
+    return () => m.removeEventListener('change', suit);
+  }, []);
+  return etroit;
+}
+
 export function DetailGame({
   game,
   numero,
@@ -542,6 +560,7 @@ export function DetailGame({
   ouvert: boolean;
   onFerme: () => void;
 }) {
+  const etroit = useEcranEtroit();
   useEffect(() => {
     if (!ouvert) return;
     const echap = (e: KeyboardEvent) => e.key === 'Escape' && onFerme();
@@ -549,16 +568,19 @@ export function DetailGame({
     return () => window.removeEventListener('keydown', echap);
   }, [ouvert, onFerme]);
 
+  // En feuille : seulement ouverte, et posée sur l'écran.
+  const pose = (contenu: ReactNode) => (etroit ? (ouvert ? createPortal(contenu, document.body) : null) : contenu);
+
   if (!game) {
-    return (
+    return pose(
       <aside className="detail-game" data-vide="">
         <p className="detail-vide">Choisis une game dans les colonnes ou dans la grille.</p>
-      </aside>
+      </aside>,
     );
   }
   const place = podiumDe(game);
   const cartes = cartesDe(game);
-  return (
+  return pose(
     <>
       {ouvert && <div className="detail-voile" onClick={onFerme} aria-hidden="true" />}
       <aside className="detail-game" data-ouvert={ouvert ? '' : undefined} aria-label={`La game ${numero}`}>
@@ -663,6 +685,6 @@ export function DetailGame({
           </button>
         )}
       </aside>
-    </>
+    </>,
   );
 }
