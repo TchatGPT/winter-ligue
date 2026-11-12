@@ -3,7 +3,7 @@
 import { type CSSProperties, useEffect, useMemo, useState } from 'react';
 import { CardFrame } from '@/components/CardFrame';
 import { CouronneGlace } from '@/components/CouronneGlace';
-import { IconCrayon } from '@/components/icons';
+import { IconCarte, IconCrayon, IconJoker } from '@/components/icons';
 import { MedailleGlace } from '@/components/MedailleGlace';
 import { cardArt, cardVignettes, getCard } from '@/lib/domain/catalog';
 import { decimal, shortDateTime } from '@/lib/format';
@@ -73,13 +73,11 @@ function cartesDe(g: GameDuJoueur): { cardId: string; points: number; resultat: 
   return liste;
 }
 
-/** La petite illustration d'une carte, pour une case. */
-function Vignette({ cardId }: { cardId: string }) {
-  const src = cardVignettes(cardId)?.petite ?? cardArt(cardId);
-  if (!src) return <span className="case-vignette" data-vide="" aria-hidden="true" />;
-  // eslint-disable-next-line @next/next/no-img-element -- une vignette de 200 px, déjà dimensionnée
-  return <img className="case-vignette" src={src} alt="" aria-hidden="true" loading="lazy" decoding="async" />;
-}
+/** L'illustration d'une carte, en fond de sa case : la vignette de 200 px suffit. */
+const illustration = (cardId: string) => cardVignettes(cardId)?.petite ?? cardArt(cardId);
+
+/** Le Joker du catalogue : son illustration habille une game passée au Joker. */
+const JOKER = 'joker-givre';
 
 /* ================================ Les colonnes ================================ */
 
@@ -157,11 +155,19 @@ export function ColonnesSaison({
               <MedailleGlace rang={3} className="h-3.5 w-3.5" id="medaille-legende-3" /> Top 2 · 3
             </span>
             <span>
-              <i className="saison-cristal" /> carte jouée
+              <IconCarte className="h-4 w-4 text-aurora" /> carte jouée
             </span>
             <span>
-              <i className="saison-creux" /> Joker
+              <IconJoker className="h-4 w-4 text-ice" /> Joker
             </span>
+            <span className="saison-legende-moyenne">
+              <i className="saison-trait" /> Sa moyenne <b className="num">{decimal(moyenne)}</b>
+            </span>
+            {moyenneLigue !== null && (
+              <span className="saison-legende-moyenne" data-ligue="">
+                <i className="saison-trait" data-ligue="" /> Moyenne de la ligue <b className="num">{decimal(moyenneLigue)}</b>
+              </span>
+            )}
           </span>
         </figcaption>
 
@@ -225,8 +231,20 @@ export function ColonnesSaison({
                         <Podium place={place} id={`saison-${c.id}`} className="h-full w-full" />
                       </span>
                     )}
+                    {c.skipped && (
+                      <span className="saison-podium saison-joker">
+                        <IconJoker className="h-full w-full" />
+                      </span>
+                    )}
                   </span>
-                  {c.applied.length > 0 && <i className="saison-cristal" />}
+                  {c.applied.length > 0 && (
+                    <span
+                      className="saison-carte"
+                      data-malus={c.applied.reduce((s, a) => s + a.points, 0) < 0 ? '' : undefined}
+                    >
+                      <IconCarte className="h-full w-full" />
+                    </span>
+                  )}
                 </button>
               );
             })}
@@ -372,11 +390,13 @@ export function GrilleGames({
         const cartes = g.skipped ? [] : cartesDe(g);
         const carte = cartes[0];
         const extreme = g.id === meilleureId ? 'meilleure' : g.id === pireId ? 'pire' : undefined;
+        const fond = g.skipped ? illustration(JOKER) : carte ? illustration(carte.cardId) : null;
         return (
           <li key={g.id}>
             <button
               type="button"
               className="case"
+              data-carte={fond ? '' : undefined}
               data-joker={g.skipped ? '' : undefined}
               data-podium={place ?? undefined}
               data-extreme={extreme}
@@ -388,26 +408,42 @@ export function GrilleGames({
                 g.placement !== null ? `, Top ${g.placement}` : ''
               }${carte ? `, ${getCard(carte.cardId)?.name ?? ''} ${effetCourt(carte.cardId, carte.points)}` : ''}`}
             >
-              <span className="case-num">{numero}</span>
-              {place && (
-                <span className="case-podium">
-                  <Podium place={place} id={`case-${g.id}`} className="h-full w-full" />
-                </span>
-              )}
-              <b className="case-score num">{g.skipped ? '—' : g.score}</b>
-              <span className="case-pied">
-                {g.skipped ? (
-                  <span className="case-joker">Joker</span>
-                ) : carte ? (
-                  <span className="case-carte" data-malus={carte.points < 0 ? '' : undefined}>
-                    <Vignette cardId={carte.cardId} />
-                    <b>{effetCourt(carte.cardId, carte.points)}</b>
+              {fond && <span className="case-fond" style={{ backgroundImage: `url("${fond}")` }} aria-hidden="true" />}
+              <span className="case-tete">
+                <span className="case-num">{numero}</span>
+                {extreme && <span className="case-extreme">{extreme === 'meilleure' ? 'Meilleure' : 'Pire'}</span>}
+                {place && (
+                  <span className="case-podium">
+                    <Podium place={place} id={`case-${g.id}`} className="h-full w-full" />
                   </span>
-                ) : (
-                  <span className="case-place">{g.placement !== null ? `Top ${g.placement}` : `${g.kills} k`}</span>
                 )}
               </span>
-              {extreme && <span className="case-extreme">{extreme === 'meilleure' ? 'Meilleure' : 'Pire'}</span>}
+              <span className="case-milieu">
+                <b className="case-score num">{g.skipped ? '—' : g.score}</b>
+                {carte && (
+                  <span className="case-gain" data-malus={carte.points < 0 ? '' : undefined}>
+                    {effetCourt(carte.cardId, carte.points)}
+                  </span>
+                )}
+              </span>
+              <span className="case-pied">
+                {g.skipped ? (
+                  <span className="case-joker">
+                    <IconJoker className="h-3.5 w-3.5" />
+                    Joker
+                  </span>
+                ) : carte ? (
+                  <span className="case-carte">
+                    <IconCarte className="h-3.5 w-3.5" />
+                    <span className="case-carte-nom">{getCard(carte.cardId)?.name}</span>
+                  </span>
+                ) : (
+                  <span className="case-place">
+                    {g.placement !== null ? `Top ${g.placement}` : 'Pas top'}
+                    <span className="case-kills"> · {g.kills} k</span>
+                  </span>
+                )}
+              </span>
             </button>
           </li>
         );
@@ -487,7 +523,24 @@ export function DetailGame({
         </div>
 
         {game.skipped ? (
-          <p className="detail-note">Le Joker a été servi : cette game ne compte pas.</p>
+          <div className="detail-carte">
+            <span className="detail-carte-visuel">
+              {getCard(JOKER) && (
+                <CardFrame
+                  cardId={JOKER}
+                  name={getCard(JOKER)!.name}
+                  rarity={getCard(JOKER)!.rarity}
+                  glyph={getCard(JOKER)!.glyph}
+                  largeur="110px"
+                />
+              )}
+            </span>
+            <span className="detail-carte-texte">
+              <small>Joker</small>
+              <b>{getCard(JOKER)?.name ?? 'Joker'}</b>
+              <span className="detail-carte-resultat">Servi à la saisie : cette game ne compte pas.</span>
+            </span>
+          </div>
         ) : (
           <dl className="detail-ecarts">
             <div>

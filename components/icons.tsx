@@ -314,6 +314,34 @@ export function IconTwitch(props: IconProps) {
   );
 }
 
+/** Une carte jouée — la carte, son emblème et son cartouche. */
+export function IconCarte(props: IconProps) {
+  const corps = 'M7 2.8h10a2 2 0 0 1 2 2v14.4a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4.8a2 2 0 0 1 2-2Z';
+  return (
+    <Svg {...props}>
+      <Fond d={corps} />
+      <path d={corps} />
+      <path d="m12 7 2 3.3-2 3.3-2-3.3L12 7Z" />
+      <path d="M8.6 17.2h6.8" />
+    </Svg>
+  );
+}
+
+/** Le Joker — le bonnet du bouffon, ses trois pointes et leurs grelots. */
+export function IconJoker(props: IconProps) {
+  const bonnet = 'M4 17.5 5.6 8.4l4 4.4L12 5.4l2.4 7.4 4-4.4 1.6 9.1H4Z';
+  return (
+    <Svg {...props}>
+      <Fond d={bonnet} />
+      <path d={bonnet} />
+      <path d="M4 17.5h16v2.6H4z" />
+      <circle cx="5.6" cy="6.4" r="1.3" />
+      <circle cx="12" cy="3.3" r="1.3" />
+      <circle cx="18.4" cy="6.4" r="1.3" />
+    </Svg>
+  );
+}
+
 /**
  * Le symbole de Claude, en aplat : c'est un logo. Le tracé est celui de Simple
  * Icons (simple-icons 16.33), tel quel. Il signe le pied de page, rien d'autre.
