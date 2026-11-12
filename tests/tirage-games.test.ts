@@ -211,7 +211,7 @@ describe('le compte rendu d’une ouverture', () => {
     const de = (pseudo: string) => vue.effets.find((e) => e.pseudo === pseudo)!;
     expect(de('A').bilan).toBe(sb - sa);
     expect(de('B').bilan).toBe(sa - sb);
-    expect(de('A').resultat).toContain(`la game ${ea!.visees[0].numero}`);
+    expect(de('A').resultat).toContain(`échange sa game ${ea!.visees[0].numero} (`);
     expect(de('A').resultat).toContain(`la game ${eb!.visees[0].numero} de B`);
     const gagnant = sb > sa ? 'A' : 'B';
     expect(de(gagnant).sens).toBe('gain');

@@ -639,12 +639,12 @@ function echangeDeuxGames(
   const pb = donneLeScore(db, gb, card, b.pendante.ouvertureId, sa);
   return [
     regleSur(
-      `échange ${laGame(db, ga)} (${sa} pts) contre ${laGame(db, gb)} de ${b.joueur.pseudo} (${sb} pts) → ${pts(pa)}`,
+      `échange sa ${laGame(db, ga).slice(3)} (${sa} pts) contre ${laGame(db, gb)} de ${b.joueur.pseudo} (${sb} pts) → ${pts(pa)}`,
       pa,
       ga.id,
     ),
     regleSur(
-      `échange ${laGame(db, gb)} (${sb} pts) contre ${laGame(db, ga)} de ${a.joueur.pseudo} (${sa} pts) → ${pts(pb)}`,
+      `échange sa ${laGame(db, gb).slice(3)} (${sb} pts) contre ${laGame(db, ga)} de ${a.joueur.pseudo} (${sa} pts) → ${pts(pb)}`,
       pb,
       gb.id,
     ),
