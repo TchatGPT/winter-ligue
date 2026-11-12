@@ -17729,20 +17729,41 @@ a.rgs-usage b::after {
 }
 /* Les deux moyennes : franches, et nommées dans la marge à leur hauteur. */
 /*
- * Le trait d'une moyenne : caché, il ne s'affiche qu'à la demande — au survol
- * de son étiquette —, derrière les blocs, lisible à travers la glace.
+ * Les moyennes en vagues de fond : chacune remplit le graphique jusqu'à son
+ * niveau, sa crête ondule, et les blocs se dressent devant — rien ne les barre.
  */
-.saison-moyenne {
-  z-index: 1;
-  height: 3px;
-  border-radius: 2px;
-  background: var(--frost);
-  opacity: 0;
-  transform: translateY(50%);
-  transition: opacity 0.2s ease;
+.saison-vagues {
+  position: absolute;
+  z-index: 0;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: calc(100% - var(--bas));
+  overflow: hidden;
+  pointer-events: none;
 }
-.saison-moyenne[data-visible] {
-  opacity: 1;
+.saison-vague {
+  fill: color-mix(in srgb, var(--frost) 8%, transparent);
+  stroke: color-mix(in srgb, var(--frost) 45%, transparent);
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+  animation: saison-houle 9s linear infinite;
+}
+.saison-vague[data-ligue] {
+  fill: color-mix(in srgb, var(--aurora) 10%, transparent);
+  stroke: color-mix(in srgb, var(--aurora) 55%, transparent);
+  animation-duration: 13s;
+  animation-direction: reverse;
+}
+@keyframes saison-houle {
+  to {
+    transform: translateX(-125px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .saison-vague {
+    animation: none;
+  }
 }
 /* Les crans des moyennes, sur l'échelle de gauche. */
 .saison-cran {
@@ -17767,9 +17788,7 @@ a.rgs-usage b::after {
   text-transform: none;
 }
 /* La moyenne de la ligue : en tirets, verte — elle ne se confond pas avec la sienne. */
-.saison-moyenne[data-ligue] {
-  background: repeating-linear-gradient(90deg, var(--aurora) 0 12px, transparent 12px 18px);
-}
+
 .saison-trait {
   display: inline-block;
   width: 22px;
@@ -17778,7 +17797,7 @@ a.rgs-usage b::after {
   background: var(--frost);
 }
 .saison-trait[data-ligue] {
-  background: repeating-linear-gradient(90deg, var(--aurora) 0 7px, transparent 7px 10px);
+  background: var(--aurora);
 }
 .saison-legende-moyenne {
   display: inline-flex;
@@ -17791,17 +17810,6 @@ a.rgs-usage b::after {
   font: inherit;
   font-size: 0.75rem;
   color: var(--ink-2);
-  cursor: pointer;
-  transition: background-color 0.15s ease;
-}
-.saison-legende-moyenne:hover,
-.saison-legende-moyenne[aria-pressed='true'] {
-  background: color-mix(in srgb, var(--frost) 22%, transparent);
-}
-.saison-legende-moyenne:focus-visible,
-.saison-etiquette:focus-visible {
-  outline: 2px solid var(--frost);
-  outline-offset: 2px;
 }
 .saison-legende-moyenne b {
   font-weight: 800;
@@ -17810,10 +17818,7 @@ a.rgs-usage b::after {
 .saison-legende-moyenne[data-ligue] {
   background: color-mix(in srgb, var(--aurora) 12%, transparent);
 }
-.saison-legende-moyenne[data-ligue]:hover,
-.saison-legende-moyenne[data-ligue][aria-pressed='true'] {
-  background: color-mix(in srgb, var(--aurora) 24%, transparent);
-}
+
 .saison-legende-moyenne[data-ligue] b {
   color: var(--aurora);
 }
@@ -17823,9 +17828,7 @@ a.rgs-usage b::after {
 .saison-etiquette {
   position: absolute;
   left: 0.35rem;
-  border: 0;
-  cursor: pointer;
-  transition: box-shadow 0.15s ease;
+
   bottom: calc(var(--bas) + var(--y) * (100% - var(--bas)));
   display: inline-flex;
   align-items: baseline;
@@ -17863,12 +17866,7 @@ a.rgs-usage b::after {
 .saison-etiquette[data-ligue] small {
   color: color-mix(in srgb, var(--aurora) 75%, var(--ink));
 }
-.saison-etiquette[data-actif] {
-  box-shadow: inset 0 0 0 2px var(--frost);
-}
-.saison-etiquette[data-ligue][data-actif] {
-  box-shadow: inset 0 0 0 2px var(--aurora);
-}
+
 
 /* Le palier du Booster Finisseur, et la fin de saison au-delà. */
 .saison-palier {
@@ -17945,10 +17943,10 @@ a.rgs-usage b::after {
     radial-gradient(120% 40% at 50% 0%, color-mix(in srgb, var(--frost) 55%, transparent), transparent 70%),
     linear-gradient(
       180deg,
-      color-mix(in srgb, var(--frost) 70%, transparent) 0,
-      color-mix(in srgb, var(--ice) 55%, transparent) 16%,
-      color-mix(in srgb, var(--ice-2) 38%, transparent) 60%,
-      color-mix(in srgb, var(--ice-3) 60%, transparent) 100%
+      color-mix(in srgb, var(--frost) 85%, var(--fond)) 0,
+      color-mix(in srgb, var(--ice) 60%, var(--fond)) 16%,
+      color-mix(in srgb, var(--ice-2) 40%, var(--fond)) 60%,
+      color-mix(in srgb, var(--ice-3) 65%, var(--fond)) 100%
     );
   box-shadow:
     inset 0 0 0 1px color-mix(in srgb, var(--frost) 40%, transparent),
@@ -17999,15 +17997,11 @@ a.rgs-usage b::after {
   opacity: 1;
   filter: brightness(1.3) saturate(1.2);
 }
-.saison-colonne[data-choisie]::after {
-  content: '';
-  position: absolute;
-  right: var(--prof);
-  bottom: 0;
-  left: 0;
-  height: 3px;
-  border-radius: 2px;
-  background: var(--frost);
+.saison-colonne[data-choisie] .saison-bloc {
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--frost) 40%, transparent),
+    inset 0 1px 0 var(--frost),
+    0 0 0 2px var(--frost);
 }
 .saison-colonne[data-eteinte] .saison-bloc {
   opacity: 0.18;
@@ -18185,17 +18179,17 @@ a.rgs-usage b::after {
     gap: 0.55rem;
   }
 }
-@media (min-width: 1100px) {
+@media (min-width: 1500px) {
   .grille-games {
     --cols: 7;
   }
 }
-@media (min-width: 1500px) {
+@media (min-width: 1800px) {
   .grille-games {
     --cols: 8;
   }
 }
-@media (min-width: 1900px) {
+@media (min-width: 2200px) {
   .grille-games {
     --cols: 10;
   }
@@ -18321,8 +18315,7 @@ button.case:focus-visible {
   color: var(--muted);
 }
 /* Sur une illustration : le numéro et l'étiquette sur un verre givré. */
-.case[data-carte] .case-num,
-.case[data-extreme] .case-num {
+.case[data-carte] .case-num {
   padding: 0.18rem 0.2rem 0.18rem 0.45rem;
   margin-left: -0.2rem;
   border-radius: var(--r-pilule);
@@ -18331,7 +18324,7 @@ button.case:focus-visible {
   backdrop-filter: blur(6px);
   color: var(--ink);
 }
-.case[data-carte]:not([data-extreme]) .case-num {
+.case[data-carte] .case-num {
   padding-right: 0.45rem;
 }
 .case-podium {
@@ -18339,7 +18332,7 @@ button.case:focus-visible {
   height: 17px;
   margin-left: auto;
   flex-shrink: 0;
-  filter: drop-shadow(0 1px 2px var(--bg-deep));
+  filter: drop-shadow(0 0 2px var(--bg-deep)) drop-shadow(0 1px 3px var(--bg-deep));
 }
 @media (min-width: 560px) {
   .case-podium {
@@ -18349,24 +18342,30 @@ button.case:focus-visible {
 }
 .case-extreme {
   display: none;
-  overflow: hidden;
+  flex-shrink: 0;
+  margin-left: auto;
+  padding: 0.18rem 0.38rem;
+  border-radius: var(--r-pilule);
+  background: var(--fond);
   font-family: var(--font-display);
-  font-size: 0.6875rem;
+  font-size: 0.625rem;
   font-weight: 800;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.02em;
   line-height: 1;
   text-transform: uppercase;
   white-space: nowrap;
 }
-@media (min-width: 560px) {
+@media (min-width: 900px) {
   .case-extreme {
     display: block;
   }
 }
 .case[data-extreme='meilleure'] .case-extreme {
+  box-shadow: inset 0 0 0 1.5px var(--aurora);
   color: var(--aurora);
 }
 .case[data-extreme='pire'] .case-extreme {
+  box-shadow: inset 0 0 0 1.5px var(--danger);
   color: var(--danger);
 }
 .case-score {

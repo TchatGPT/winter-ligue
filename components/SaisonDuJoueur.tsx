@@ -81,6 +81,23 @@ const JOKER = 'joker-givre';
 
 /* ================================ Les colonnes ================================ */
 
+/**
+ * Une vague de fond, à la hauteur d'une moyenne (de 0 à 1) : sa crête ondule
+ * doucement, et elle remplit tout le dessous. Dessinée sur une largeur et
+ * demie, elle glisse d'une longueur d'onde en boucle — sans à-coup.
+ */
+function vague(niveau: number): string {
+  const onde = 125;
+  const ampleur = 1.6;
+  const y = 100 - niveau * 100;
+  let d = `M0 ${y.toFixed(2)}`;
+  for (let x = 0, k = 0; x < 1000 + onde; x += onde / 2, k += 1) {
+    const creux = y + (k % 2 ? ampleur : -ampleur);
+    d += ` Q${(x + onde / 4).toFixed(1)} ${creux.toFixed(2)} ${(x + onde / 2).toFixed(1)} ${y.toFixed(2)}`;
+  }
+  return `${d} L${1000 + onde} 100 L0 100 Z`;
+}
+
 export function ColonnesSaison({
   chronologie,
   creneaux,
@@ -106,22 +123,6 @@ export function ColonnesSaison({
   garde: (g: GameDuJoueur) => boolean;
 }) {
   const [survolee, setSurvolee] = useState<number | null>(null);
-  /**
-   * Le trait d'une moyenne ne traverse les colonnes qu'à la demande — au
-   * survol de son étiquette, ou d'un toucher qui le garde affiché. Le reste du
-   * temps, deux crans sur l'échelle et deux étiquettes suffisent.
-   */
-  const [ligneSurvol, setLigneSurvol] = useState<'perso' | 'ligue' | null>(null);
-  const [ligneFixe, setLigneFixe] = useState<'perso' | 'ligue' | null>(null);
-  const ligne = ligneSurvol ?? ligneFixe;
-  const montre = (quelle: 'perso' | 'ligue') => ({
-    onMouseEnter: () => setLigneSurvol(quelle),
-    onMouseLeave: () => setLigneSurvol(null),
-    onFocus: () => setLigneSurvol(quelle),
-    onBlur: () => setLigneSurvol(null),
-    onClick: () => setLigneFixe((f) => (f === quelle ? null : quelle)),
-    'aria-pressed': ligneFixe === quelle,
-  });
   const total = Math.max(creneaux, chronologie.length);
   const comptees = chronologie.filter((g) => !g.skipped);
   const echelle = graduations(Math.max(1, moyenneLigue ?? 0, ...chronologie.map((g) => g.score)));
@@ -178,13 +179,13 @@ export function ColonnesSaison({
             </span>
           </span>
           <span className="saison-moyennes">
-            <button type="button" className="saison-legende-moyenne" {...montre('perso')}>
+            <span className="saison-legende-moyenne">
               <i className="saison-trait" /> Sa moyenne <b className="num">{decimal(moyenne)}</b>
-            </button>
+            </span>
             {moyenneLigue !== null && (
-              <button type="button" className="saison-legende-moyenne" data-ligue="" {...montre('ligue')}>
+              <span className="saison-legende-moyenne" data-ligue="">
                 <i className="saison-trait" data-ligue="" /> La ligue <b className="num">{decimal(moyenneLigue)}</b>
-              </button>
+              </span>
             )}
           </span>
         </figcaption>
@@ -215,6 +216,17 @@ export function ColonnesSaison({
             {echelle.map((v) => (
               <i key={v} className="saison-ligne" style={{ ['--y' as string]: v / haut } as CSSProperties} aria-hidden="true" />
             ))}
+            {/* Les deux moyennes, en vagues de fond : les blocs se dressent dedans, rien ne les barre. */}
+            <svg className="saison-vagues" viewBox="0 0 1000 100" preserveAspectRatio="none" aria-hidden="true">
+              {[
+                { cle: 'perso', niveau: part(moyenne) },
+                ...(moyenneLigue !== null ? [{ cle: 'ligue', niveau: part(moyenneLigue) }] : []),
+              ]
+                .sort((a, b) => b.niveau - a.niveau)
+                .map((v) => (
+                  <path key={v.cle} className="saison-vague" data-ligue={v.cle === 'ligue' ? '' : undefined} d={vague(v.niveau)} />
+                ))}
+            </svg>
             {/* Le palier du Booster Finisseur : la suite se joue une game par session. */}
             {palier < total && (
               <i
@@ -270,21 +282,6 @@ export function ColonnesSaison({
                 </button>
               );
             })}
-            <i
-              className="saison-moyenne"
-              data-visible={ligne === 'perso' ? '' : undefined}
-              style={{ ['--y' as string]: part(moyenne) } as CSSProperties}
-              aria-hidden="true"
-            />
-            {moyenneLigue !== null && (
-              <i
-                className="saison-moyenne"
-                data-ligue=""
-                data-visible={ligne === 'ligue' ? '' : undefined}
-                style={{ ['--y' as string]: part(moyenneLigue) } as CSSProperties}
-                aria-hidden="true"
-              />
-            )}
             {g && survolee !== null && (
               <div
                 className="saison-bulle"
@@ -312,32 +309,21 @@ export function ColonnesSaison({
               </div>
             )}
           </div>
-          {/* Les moyennes, nommées dans la marge, à leur hauteur : survolées, leur trait s'affiche. */}
-          <div className="saison-marge">
-            <button
-              type="button"
-              className="saison-etiquette"
-              data-actif={ligne === 'perso' ? '' : undefined}
-              style={{ ['--y' as string]: etiquettes.perso } as CSSProperties}
-              aria-label={`Sa moyenne : ${decimal(moyenne)} points`}
-              {...montre('perso')}
-            >
+          {/* Les moyennes, nommées dans la marge, à la hauteur de leur vague. */}
+          <div className="saison-marge" aria-hidden="true">
+            <span className="saison-etiquette" style={{ ['--y' as string]: etiquettes.perso } as CSSProperties}>
               <small>Sa moyenne</small>
               {decimal(moyenne)}
-            </button>
+            </span>
             {moyenneLigue !== null && etiquettes.ligue !== null && (
-              <button
-                type="button"
+              <span
                 className="saison-etiquette"
                 data-ligue=""
-                data-actif={ligne === 'ligue' ? '' : undefined}
                 style={{ ['--y' as string]: etiquettes.ligue } as CSSProperties}
-                aria-label={`Moyenne de la ligue : ${decimal(moyenneLigue)} points`}
-                {...montre('ligue')}
               >
                 <small>La ligue</small>
                 {decimal(moyenneLigue)}
-              </button>
+              </span>
             )}
           </div>
         </div>
@@ -449,10 +435,7 @@ export function GrilleGames({
             >
               {fond && <span className="case-fond" style={{ backgroundImage: `url("${fond}")` }} aria-hidden="true" />}
               <span className="case-tete">
-                <span className="case-num">
-                  {numero}
-                  {extreme && <span className="case-extreme">{extreme === 'meilleure' ? 'Meilleure' : 'Pire'}</span>}
-                </span>
+                <span className="case-num">{numero}</span>
                 {place && (
                   <span className="case-podium">
                     <Podium place={place} id={`case-${g.id}`} className="h-full w-full" />
@@ -461,6 +444,7 @@ export function GrilleGames({
               </span>
               <span className="case-milieu">
                 <b className="case-score num">{g.skipped ? '—' : g.score}</b>
+                {extreme && <span className="case-extreme">{extreme === 'meilleure' ? 'Meilleure' : 'Pire'}</span>}
               </span>
               <span className="case-pied">
                 {g.skipped ? (
