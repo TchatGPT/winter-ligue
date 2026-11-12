@@ -6,7 +6,7 @@ import { CardFrame } from '@/components/CardFrame';
 import { CorrectionGame, type GameACorriger } from '@/components/CorrectionGame';
 import { CouronneGlace } from '@/components/CouronneGlace';
 import { MedailleGlace } from '@/components/MedailleGlace';
-import { ColonnesSaison, TableauGames } from '@/components/SaisonDuJoueur';
+import { ColonnesSaison, Pagination, TableauGames } from '@/components/SaisonDuJoueur';
 import { SnowCap } from '@/components/SnowCap';
 import { flakes } from '@/components/ui';
 import { getPack } from '@/lib/domain/catalog';
@@ -20,8 +20,8 @@ const ordinal = (n: number) => (n === 1 ? '1er' : `${n}e`);
 
 const signe = (n: number) => (n > 0 ? `+${flakes(n)}` : n < 0 ? `−${flakes(-n)}` : '0');
 
-/** Les games montrées d'emblée dans le tableau ; la suite se déplie. */
-const GAMES_VISIBLES = 20;
+/** Les games d'une page du tableau : pas de longue liste à faire défiler. */
+const GAMES_PAR_PAGE = 10;
 
 type Onglet = 'games' | 'duels' | 'flocons' | 'subs';
 type Filtre = 'toutes' | 'top3' | 'carte';
@@ -82,7 +82,7 @@ export function FicheJoueur({
   const [onglet, setOnglet] = useState<Onglet>('games');
   const [filtre, setFiltre] = useState<Filtre>('toutes');
   const [tri, setTri] = useState<Tri>('recentes');
-  const [tout, setTout] = useState(false);
+  const [page, setPage] = useState(0);
   /** La game qu'un membre de la modération corrige, s'il y en a une. */
   const [aCorriger, setACorriger] = useState<GameACorriger | null>(null);
 
@@ -113,7 +113,13 @@ export function FicheJoueur({
       ? [...filtrees].reverse()
       : [...filtrees].sort((a, b) => b.score - a.score || b.playedAt.localeCompare(a.playedAt));
   }, [chronologie, filtre, tri]);
-  const visibles = tout ? lignes : lignes.slice(0, GAMES_VISIBLES);
+  const pages = Math.max(1, Math.ceil(lignes.length / GAMES_PAR_PAGE));
+  const pageVue = Math.min(page, pages - 1);
+  const visibles = lignes.slice(pageVue * GAMES_PAR_PAGE, (pageVue + 1) * GAMES_PAR_PAGE);
+  // La meilleure et la pire game de la saison, marquées dans le tableau.
+  const comptees = chronologie.filter((g) => !g.skipped);
+  const meilleureId = comptees.length > 1 ? comptees.reduce((m, g) => (g.score > m.score ? g : m)).id : null;
+  const pireId = comptees.length > 1 ? comptees.reduce((m, g) => (g.score < m.score ? g : m)).id : null;
 
 
   const ONGLETS: { cle: Onglet; nom: string; compte?: number }[] = [
@@ -260,7 +266,7 @@ export function FicheJoueur({
               </dl>
 
               {/* La saison en colonnes de glace, et sa forme. */}
-              {chronologie.length >= 3 && <ColonnesSaison chronologie={chronologie} moyenne={t.averageScore} />}
+              {chronologie.length >= 3 && <ColonnesSaison chronologie={chronologie} moyenne={t.averageScore} moyenneLigue={fiche.moyenneLigue} />}
 
               {/* Les réglages de la liste : quoi montrer, dans quel ordre. */}
               <div className="profil-reglages">
@@ -272,7 +278,15 @@ export function FicheJoueur({
                       ['carte', `Avec carte · ${avecCarte}`],
                     ] as const
                   ).map(([cle, nom]) => (
-                    <button key={cle} type="button" aria-pressed={filtre === cle} onClick={() => setFiltre(cle)}>
+                    <button
+                      key={cle}
+                      type="button"
+                      aria-pressed={filtre === cle}
+                      onClick={() => {
+                        setFiltre(cle);
+                        setPage(0);
+                      }}
+                    >
                       {nom}
                     </button>
                   ))}
@@ -284,7 +298,15 @@ export function FicheJoueur({
                       ['meilleures', 'Meilleures'],
                     ] as const
                   ).map(([cle, nom]) => (
-                    <button key={cle} type="button" aria-pressed={tri === cle} onClick={() => setTri(cle)}>
+                    <button
+                      key={cle}
+                      type="button"
+                      aria-pressed={tri === cle}
+                      onClick={() => {
+                        setTri(cle);
+                        setPage(0);
+                      }}
+                    >
                       {nom}
                     </button>
                   ))}
@@ -299,14 +321,21 @@ export function FicheJoueur({
                   games={visibles}
                   numeroDe={numeroDe}
                   meilleure={meilleure}
+                  meilleureId={meilleureId}
+                  pireId={pireId}
                   moderation={moderation}
                   onCorrige={setACorriger}
                 />
               )}
-              {lignes.length > GAMES_VISIBLES && (
-                <button type="button" className="btn profil-tout" onClick={() => setTout((v) => !v)}>
-                  {tout ? 'Montrer moins' : `Voir les ${lignes.length} games`}
-                </button>
+              {pages > 1 && (
+                <Pagination
+                  page={pageVue}
+                  pages={pages}
+                  premiere={pageVue * GAMES_PAR_PAGE + 1}
+                  derniere={Math.min(lignes.length, (pageVue + 1) * GAMES_PAR_PAGE)}
+                  total={lignes.length}
+                  onPage={setPage}
+                />
               )}
               {aCorriger && (
                 <CorrectionGame

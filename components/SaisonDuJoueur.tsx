@@ -54,14 +54,17 @@ function effetCourt(effet: { cardId: string; points: number }): string {
 export function ColonnesSaison({
   chronologie,
   moyenne,
+  moyenneLigue,
 }: {
   /** Les games, de la première à la dernière. */
   chronologie: GameDuJoueur[];
   moyenne: number;
+  /** La moyenne d'une game dans toute la ligue, à comparer. */
+  moyenneLigue: number | null;
 }) {
   const [survolee, setSurvolee] = useState<number | null>(null);
   const comptees = chronologie.filter((g) => !g.skipped);
-  const echelle = graduations(Math.max(1, ...chronologie.map((g) => g.score)));
+  const echelle = graduations(Math.max(1, moyenneLigue ?? 0, ...chronologie.map((g) => g.score)));
   const haut = echelle[echelle.length - 1];
   const part = (score: number) => Math.max(0, Math.min(1, score / haut));
 
@@ -91,6 +94,14 @@ export function ColonnesSaison({
               <MedailleGlace rang={3} className="h-3.5 w-3.5" id="medaille-legende-3" /> Top 2 · 3
             </span>
             <span>
+              <i className="saison-trait" /> sa moyenne
+            </span>
+            {moyenneLigue !== null && (
+              <span>
+                <i className="saison-trait" data-ligue="" /> moyenne de la ligue
+              </span>
+            )}
+            <span>
               <i className="saison-cristal" /> carte jouée
             </span>
             <span>
@@ -115,15 +126,27 @@ export function ColonnesSaison({
             role="img"
             aria-label={`Ses ${chronologie.length} games, de la première à la dernière : ${chronologie
               .map((x) => (x.skipped ? 'Joker' : x.score))
-              .join(', ')} points. Moyenne ${decimal(moyenne)}.`}
+              .join(', ')} points. Sa moyenne ${decimal(moyenne)}${
+              moyenneLigue !== null ? `, celle de la ligue ${decimal(moyenneLigue)}` : ''
+            }.`}
             onMouseLeave={() => setSurvolee(null)}
           >
             {echelle.map((v) => (
               <i key={v} className="saison-ligne" style={{ ['--y' as string]: v / haut } as CSSProperties} aria-hidden="true" />
             ))}
             <i className="saison-moyenne" style={{ ['--y' as string]: part(moyenne) } as CSSProperties} aria-hidden="true">
-              <span>moy. {decimal(moyenne)}</span>
+              <span>sa moy. {decimal(moyenne)}</span>
             </i>
+            {moyenneLigue !== null && (
+              <i
+                className="saison-moyenne"
+                data-ligue=""
+                style={{ ['--y' as string]: part(moyenneLigue) } as CSSProperties}
+                aria-hidden="true"
+              >
+                <span>ligue {decimal(moyenneLigue)}</span>
+              </i>
+            )}
             {chronologie.map((x, i) => {
               const place = x.placement !== null && x.placement <= 3 ? x.placement : null;
               return (
@@ -224,12 +247,17 @@ export function TableauGames({
   games,
   numeroDe,
   meilleure,
+  meilleureId,
+  pireId,
   moderation,
   onCorrige,
 }: {
   games: GameDuJoueur[];
   numeroDe: Map<string, number>;
   meilleure: number;
+  /** Sa meilleure et sa pire game de la saison : marquées, pour qu'on les voie d'un coup d'œil. */
+  meilleureId: string | null;
+  pireId: string | null;
   moderation: boolean;
   onCorrige: (g: GameDuJoueur) => void;
 }) {
@@ -247,6 +275,7 @@ export function TableauGames({
       {games.map((g) => {
         const numero = numeroDe.get(g.id) ?? 0;
         const place = g.placement !== null && g.placement <= 3 ? g.placement : null;
+        const extreme = g.id === meilleureId ? 'meilleure' : g.id === pireId ? 'pire' : undefined;
         return (
           <div
             key={g.id}
@@ -254,12 +283,16 @@ export function TableauGames({
             role="row"
             data-joker={g.skipped ? '' : undefined}
             data-podium={place ?? undefined}
+            data-extreme={extreme}
           >
             <span className="tab-game-numero num" role="cell">
               {numero}
             </span>
             <span className="tab-game-score" role="cell">
-              <b className="num">{g.skipped ? '—' : g.score}</b>
+              <span className="tab-game-score-haut">
+                <b className="num">{g.skipped ? '—' : g.score}</b>
+                {extreme && <em className="tab-extreme">{extreme === 'meilleure' ? 'Meilleure' : 'Pire'}</em>}
+              </span>
               <i style={{ ['--part' as string]: g.skipped ? 0 : Math.max(0, g.score) / Math.max(1, meilleure) } as CSSProperties} />
             </span>
             <span className="tab-game-place" role="cell">
@@ -312,5 +345,51 @@ export function TableauGames({
         );
       })}
     </div>
+  );
+}
+
+/* ================================ La pagination ================================ */
+
+/** Les pages du tableau : dix games à la fois, sans longue liste à faire défiler. */
+export function Pagination({
+  page,
+  pages,
+  premiere,
+  derniere,
+  total,
+  onPage,
+}: {
+  page: number;
+  pages: number;
+  premiere: number;
+  derniere: number;
+  total: number;
+  onPage: (page: number) => void;
+}) {
+  return (
+    <nav className="tab-pages" aria-label="Pages des games">
+      <span className="tab-pages-compte">
+        Games <b className="num">{premiere}</b>–<b className="num">{derniere}</b> sur <b className="num">{total}</b>
+      </span>
+      <span className="tab-pages-boutons">
+        <button type="button" disabled={page === 0} onClick={() => onPage(page - 1)} aria-label="Page précédente">
+          ‹
+        </button>
+        {Array.from({ length: pages }, (_, i) => (
+          <button
+            key={i}
+            type="button"
+            aria-current={i === page ? 'page' : undefined}
+            onClick={() => onPage(i)}
+            aria-label={`Page ${i + 1}`}
+          >
+            {i + 1}
+          </button>
+        ))}
+        <button type="button" disabled={page === pages - 1} onClick={() => onPage(page + 1)} aria-label="Page suivante">
+          ›
+        </button>
+      </span>
+    </nav>
   );
 }

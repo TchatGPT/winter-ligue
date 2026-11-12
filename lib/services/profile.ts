@@ -147,6 +147,11 @@ export interface FicheJoueur {
   rang: { position: number; sur: number; finaliste: boolean; ecart: number | null } | null;
   /** Les games qui comptent pour lui : le plafond de la saison, plus ses créneaux gagnés. */
   creneaux: number;
+  /**
+   * Les points moyens d'une game dans toute la ligue — les games qui comptent
+   * des joueurs classés —, à comparer à la sienne (12/11/2026). Nul sans game.
+   */
+  moyenneLigue: number | null;
   duels: { joues: number; gagnes: number; perdus: number; net: number; derniers: DuelFiche[] };
 }
 
@@ -197,6 +202,12 @@ export async function getFicheJoueur(slug: string): Promise<FicheJoueur | null> 
       streameuse: estLaStreameuse(player, chaineDeLaLigue()),
       rang,
       creneaux: db.config.maxGamesPerPlayer + (player.creneauxBonus ?? 0),
+      moyenneLigue: (() => {
+        const classes = new Set(classement.map((r) => r.id));
+        const comptees = db.games.filter((g) => !g.skipped && classes.has(g.playerId));
+        if (comptees.length === 0) return null;
+        return Math.round((comptees.reduce((s, g) => s + g.score, 0) / comptees.length) * 100) / 100;
+      })(),
       duels: {
         joues: joues.length,
         gagnes,

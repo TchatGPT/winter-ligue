@@ -3192,10 +3192,6 @@
       font-size: 1.6rem;
     }
   }
-  .profil-tout {
-    justify-self: center;
-  }
-
   /* -- Trois chiffres d'un panneau : duels, subs -- */
   .profil-trio {
     display: grid;
@@ -17708,6 +17704,23 @@ a.rgs-usage b::after {
   z-index: 2;
   border-top: 1px solid color-mix(in srgb, var(--frost) 60%, transparent);
 }
+/* La moyenne de toute la ligue : un trait vert clair, nommé à gauche. */
+.saison-moyenne[data-ligue] {
+  border-top: 2px solid color-mix(in srgb, var(--aurora) 85%, transparent);
+}
+.saison-moyenne[data-ligue] span {
+  right: auto;
+  left: 0;
+  color: var(--aurora);
+}
+.saison-trait {
+  display: inline-block;
+  width: 14px;
+  border-top: 2px solid color-mix(in srgb, var(--frost) 70%, transparent);
+}
+.saison-trait[data-ligue] {
+  border-top-color: var(--aurora);
+}
 .saison-moyenne span {
   position: absolute;
   right: 0;
@@ -17729,17 +17742,37 @@ a.rgs-usage b::after {
   justify-content: flex-end;
   padding-bottom: var(--bas);
 }
+/* Un bloc de glace : translucide, l'arête gauche qui prend la lumière, la
+   droite dans l'ombre, un biseau en haut, et des veines de givre. */
 .saison-barre {
   position: relative;
   height: calc(var(--part) * 100%);
   min-height: 2px;
-  border-radius: 4px 4px 0 0;
-  background: linear-gradient(
-    180deg,
-    var(--frost),
-    color-mix(in srgb, var(--ice) 80%, transparent) 22%,
-    color-mix(in srgb, var(--ice-3) 55%, transparent)
-  );
+  border-radius: 3px 3px 1px 1px;
+  background:
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--frost) 55%, transparent) 0,
+      color-mix(in srgb, var(--frost) 10%, transparent) 22%,
+      transparent 55%,
+      color-mix(in srgb, var(--nuit) 35%, transparent) 100%
+    ),
+    repeating-linear-gradient(
+      172deg,
+      transparent 0 9px,
+      color-mix(in srgb, var(--frost) 14%, transparent) 9px 10px
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--frost) 85%, transparent),
+      color-mix(in srgb, var(--ice) 60%, transparent) 18%,
+      color-mix(in srgb, var(--ice-3) 45%, transparent)
+    );
+  box-shadow:
+    inset 0 2px 0 color-mix(in srgb, var(--frost) 90%, transparent),
+    inset 1px 0 0 color-mix(in srgb, var(--frost) 55%, transparent),
+    inset -1px 0 0 color-mix(in srgb, var(--ice) 35%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--ice) 18%, transparent);
   transition:
     opacity 0.15s ease,
     filter 0.15s ease;
@@ -17763,6 +17796,16 @@ a.rgs-usage b::after {
   width: 18px;
   height: 18px;
   transform: translate(-50%, -3px);
+}
+/* Sur un téléphone, les colonnes sont fines : la couronne et les médailles aussi. */
+@media (max-width: 639px) {
+  .saison-podium {
+    width: 12px;
+    height: 12px;
+  }
+  .saison-zone {
+    height: 10rem;
+  }
 }
 .saison-cristal {
   display: inline-block;
@@ -17882,10 +17925,10 @@ a.rgs-usage b::after {
 .tab-game {
   display: grid;
   min-height: 3.6rem;
-  grid-template-columns: 1.6rem 3.4rem minmax(0, 1fr) auto;
+  grid-template-columns: 1.6rem 4.6rem minmax(0, 1fr) auto;
   grid-template-areas:
     'num score place kills'
-    'num score carte date';
+    'num score carte carte';
   align-items: center;
   gap: 0.15rem 0.6rem;
   padding: 0.5rem 0.75rem;
@@ -17893,10 +17936,30 @@ a.rgs-usage b::after {
   transition: background-color 0.15s ease;
 }
 .tab-games[data-moderation] .tab-game {
-  grid-template-columns: 1.6rem 3.4rem minmax(0, 1fr) auto auto;
+  grid-template-columns: 1.6rem 4.6rem minmax(0, 1fr) auto auto;
   grid-template-areas:
     'num score place kills action'
-    'num score carte date action';
+    'num score carte carte action';
+}
+/* Sur un téléphone, la carte prend toute la seconde ligne ; la date attend
+   un écran plus large (le numéro de la game suffit à la retrouver). */
+.tab-game-date {
+  display: none;
+}
+@media (min-width: 560px) {
+  .tab-game {
+    grid-template-areas:
+      'num score place kills'
+      'num score carte date';
+  }
+  .tab-games[data-moderation] .tab-game {
+    grid-template-areas:
+      'num score place kills action'
+      'num score carte date action';
+  }
+  .tab-game-date {
+    display: block;
+  }
 }
 .tab-games-tete + .tab-game {
   border-top: 0;
@@ -17927,6 +17990,39 @@ a.rgs-usage b::after {
   font-weight: 900;
   line-height: 1;
   color: var(--ink);
+}
+.tab-game-score-haut {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.2rem 0.4rem;
+}
+.tab-extreme {
+  padding: 0.1rem 0.45rem;
+  border-radius: var(--r-pilule);
+  font-family: var(--font-display);
+  font-size: 0.6875rem;
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.tab-game[data-extreme='meilleure'] .tab-extreme {
+  background: color-mix(in srgb, var(--aurora) 18%, transparent);
+  color: var(--aurora);
+}
+.tab-game[data-extreme='pire'] .tab-extreme {
+  background: color-mix(in srgb, var(--danger) 16%, transparent);
+  color: var(--danger);
+}
+.tab-game[data-extreme='meilleure'] {
+  box-shadow: inset 3px 0 0 var(--aurora);
+  background: color-mix(in srgb, var(--aurora) 6%, transparent);
+}
+.tab-game[data-extreme='pire'] {
+  box-shadow: inset 3px 0 0 var(--danger);
+  background: color-mix(in srgb, var(--danger) 5%, transparent);
 }
 .tab-game-score i {
   display: block;
@@ -17984,6 +18080,55 @@ a.rgs-usage b::after {
 .tab-game-action {
   grid-area: action;
 }
+/* Les pages du tableau. */
+.tab-pages {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem 1rem;
+}
+.tab-pages-compte {
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+.tab-pages-compte b {
+  color: var(--ink);
+}
+.tab-pages-boutons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+.tab-pages-boutons button {
+  min-width: 2.5rem;
+  height: 2.5rem;
+  padding: 0 0.5rem;
+  border-radius: var(--r-pilule);
+  background: color-mix(in srgb, var(--ink) 6%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 14%, transparent);
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+.tab-pages-boutons button:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--ice) 16%, transparent);
+  color: var(--ink);
+}
+.tab-pages-boutons button[aria-current='page'] {
+  background: var(--frost);
+  color: var(--bg);
+  box-shadow: none;
+}
+.tab-pages-boutons button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.tab-pages-boutons button:focus-visible {
+  outline: 2px solid var(--frost);
+  outline-offset: 2px;
+}
 .tab-vide {
   font-family: var(--font-sans, inherit);
   font-weight: 400;
@@ -18022,13 +18167,14 @@ a.rgs-usage b::after {
   font-weight: 500;
   color: var(--muted);
 }
-/* Sur un écran large : de vraies colonnes, alignées d'une ligne à l'autre. */
-@media (min-width: 720px) {
+/* Sur un écran large : de vraies colonnes, alignées d'une ligne à l'autre. En
+   dessous — téléphone, tablette en hauteur —, chaque game tient sur deux lignes. */
+@media (min-width: 900px) {
   .tab-games {
-    grid-template-columns: 2.5rem 5.5rem 7.5rem 5.5rem minmax(0, 1fr) 8rem;
+    grid-template-columns: 2.5rem 8.5rem 7rem 5.5rem minmax(0, 1fr) 7.5rem;
   }
   .tab-games[data-moderation] {
-    grid-template-columns: 2.5rem 5.5rem 7.5rem 5.5rem minmax(0, 1fr) 8rem 2.75rem;
+    grid-template-columns: 2.5rem 8.5rem 7rem 5.5rem minmax(0, 1fr) 7.5rem 2.75rem;
   }
   .tab-games-tete,
   .tab-game,
@@ -18070,6 +18216,9 @@ a.rgs-usage b::after {
   }
   .tab-game-score {
     padding-right: 1rem;
+  }
+  .tab-game-score-haut {
+    flex-wrap: nowrap;
   }
 }
 
