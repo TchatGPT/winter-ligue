@@ -18150,149 +18150,82 @@ a.rgs-usage b::after {
 }
 /* Posé sur son bloc, devant les traits des moyennes. */
 /*
- * Le glaçon qui fond, sur le bloc survolé ou choisi, sur ordinateur : le haut
- * s'arrondit, un reflet mouillé descend, des gouttes coulent sur la face
- * avant, et une flaque s'étale au pied.
+ * Le haut du glaçon qui fond, sur le bloc survolé ou choisi, sur ordinateur :
+ * l'arête nette du dessus laisse place à un sommet ramolli, dans la même
+ * glace, d'où pendent des coulées. Le reste de la barre ne change pas.
  */
-.saison-fonte,
-.saison-flaque {
+.saison-fonte {
   display: none;
 }
 @media (hover: hover) and (min-width: 640px) {
-  .saison-colonne:is([data-survolee], [data-choisie]) .saison-bloc {
-    filter: brightness(1.08) saturate(1.15);
-    border-radius: 7px 7px 0 0 / 5px 5px 0 0;
-    transition:
-      border-radius 0.5s ease,
-      opacity 0.2s ease,
-      filter 0.15s ease;
+  .saison-colonne:is([data-survolee], [data-choisie]):not([data-joker]) .saison-bloc {
+    filter: none;
   }
-  /* Le dessus fond : son losange s'amenuise. */
-  .saison-colonne:is([data-survolee], [data-choisie]) .saison-bloc::before {
-    opacity: 0.45;
-    transition: opacity 0.5s ease;
+  .saison-colonne:is([data-survolee], [data-choisie]):not([data-joker]) .saison-bloc::before {
+    opacity: 0;
   }
   .saison-fonte {
     position: absolute;
     z-index: 3;
-    bottom: var(--bas);
+    bottom: calc(var(--bas) + var(--part) * (100% - var(--bas)) - 20px);
     left: 0;
     display: block;
-    width: calc(100% - var(--prof));
-    height: calc(var(--part) * (100% - var(--bas)));
-    overflow: hidden;
-    border-radius: 7px 7px 0 0 / 5px 5px 0 0;
-    /* La glace mouillée : un voile d'eau, plus dense vers le pied. */
-    background: linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--frost) 30%, transparent) 0,
-      transparent 25%,
-      transparent 55%,
-      color-mix(in srgb, var(--ice-3) 45%, transparent) 100%
-    );
+    width: 100%;
+    height: calc(var(--prof) + 23px);
+    overflow: visible;
+    transform-origin: 50% 0;
+    animation: fonte-ramollit 0.7s ease-out both;
     pointer-events: none;
   }
-  .fonte-reflet {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(
-      180deg,
-      transparent 0%,
-      color-mix(in srgb, var(--frost) 70%, transparent) 8%,
-      transparent 18%
-    );
-    background-size: 100% 300%;
-    animation: fonte-reflet 2.4s ease-in-out infinite;
+  .fonte-cote {
+    fill: color-mix(in srgb, var(--ice-3) 55%, var(--nuit));
+    opacity: 0.45;
   }
-  .fonte-goutte {
-    position: absolute;
-    top: 0;
-    left: var(--x);
-    width: 2.5px;
-    height: calc(var(--l) * 24%);
-    min-height: 10px;
-    border-radius: 0 0 2px 2px;
-    background: linear-gradient(
-      180deg,
-      transparent,
-      color-mix(in srgb, var(--nuit) 45%, var(--ice-3)) 60%,
-      color-mix(in srgb, var(--nuit) 30%, var(--ice-2))
-    );
-    box-shadow: 1px 0 0 color-mix(in srgb, var(--frost) 60%, transparent);
+  .fonte-arete {
+    fill: none;
+    stroke: var(--neige-1);
+    stroke-width: 1;
+    stroke-linecap: round;
+    vector-effect: non-scaling-stroke;
+    opacity: 0.9;
+  }
+  /* La perle d'eau : elle se forme au bout de la coulée, glisse un peu, et retombe. */
+  .fonte-perle {
+    fill: var(--frost);
     opacity: 0;
-    animation: fonte-coule 2.2s cubic-bezier(0.55, 0, 0.8, 0.5) var(--d) infinite;
-  }
-  /* La tête de la goutte : une perle d'eau, éclairée en haut. */
-  .fonte-goutte::after {
-    content: '';
-    position: absolute;
-    bottom: -3px;
-    left: -1.75px;
-    width: 6px;
-    height: 7px;
-    border-radius: 50% 50% 50% 50% / 40% 40% 60% 60%;
-    background: radial-gradient(circle at 35% 30%, var(--neige-1) 0 18%, var(--ice-2) 45%, color-mix(in srgb, var(--nuit) 40%, var(--ice-3)) 100%);
-  }
-  /* La flaque, au pied du glaçon. */
-  .saison-flaque {
-    position: absolute;
-    z-index: 1;
-    bottom: calc(var(--bas) - 4px);
-    left: -7px;
-    display: block;
-    width: calc(100% - var(--prof) + 16px);
-    height: 7px;
-    border-radius: 50%;
-    background: radial-gradient(
-      ellipse at 50% 35%,
-      color-mix(in srgb, var(--frost) 85%, transparent) 0 20%,
-      color-mix(in srgb, var(--ice) 60%, transparent) 50%,
-      transparent 72%
-    );
-    transform-origin: 50% 50%;
-    animation: fonte-flaque 0.9s ease-out both;
-    pointer-events: none;
+    transform-box: fill-box;
+    transform-origin: 50% 0;
+    animation: fonte-perle 2.6s ease-in 0.6s infinite;
   }
 }
-@keyframes fonte-coule {
+@keyframes fonte-ramollit {
+  from {
+    opacity: 0;
+    transform: scaleY(0.45);
+  }
+}
+@keyframes fonte-perle {
   0% {
     opacity: 0;
-    transform: translateY(-30%);
+    transform: translateY(-2px) scale(0.3);
   }
-  12% {
-    opacity: 1;
+  35% {
+    opacity: 0.95;
+    transform: translateY(0) scale(1);
   }
-  85% {
-    opacity: 1;
+  70% {
+    opacity: 0.95;
+    transform: translateY(4px) scale(1, 1.15);
   }
   100% {
     opacity: 0;
-    transform: translateY(var(--chute, 420%));
-  }
-}
-@keyframes fonte-reflet {
-  from {
-    background-position: 0 100%;
-  }
-  to {
-    background-position: 0 0%;
-  }
-}
-@keyframes fonte-flaque {
-  from {
-    opacity: 0;
-    transform: scaleX(0.3);
+    transform: translateY(14px) scale(0.8, 1.3);
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .fonte-goutte,
-  .fonte-reflet,
-  .saison-flaque {
+  .saison-fonte,
+  .fonte-perle {
     animation: none;
-  }
-  .fonte-goutte {
-    opacity: 1;
-    top: 20%;
   }
 }
 .saison-creux {

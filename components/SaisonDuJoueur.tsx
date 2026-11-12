@@ -32,37 +32,54 @@ import type { FicheJoueur } from '@/lib/services/profile';
 export type GameDuJoueur = FicheJoueur['profil']['games'][number];
 
 /**
- * Le glaçon qui fond, sur le bloc survolé ou choisi (sur ordinateur,
- * 12/11/2026) : son haut s'arrondit, un reflet mouillé descend sur la glace,
- * des gouttes coulent le long de la face avant, et une flaque s'étale au
- * pied. Les gouttes changent de place d'une game à l'autre.
+ * Le haut du glaçon qui fond, sur le bloc survolé ou choisi (sur ordinateur,
+ * 12/11/2026). La barre garde son aspect : seule son arête du dessus se
+ * ramollit — un sommet arrondi, dans la même glace — et deux ou trois coulées
+ * de longueurs inégales pendent sur la face avant ; une perle d'eau se forme
+ * au bout de la plus longue. Tiré de la game : chaque bloc fond à sa façon.
  */
 function Fonte({ graine }: { graine: number }) {
-  const gouttes = [0, 1, 2].map((k) => ({
-    x: 18 + (((graine * 53 + k * 29) % 64) | 0),
-    d: k * 0.55 + ((graine * 7 + k * 3) % 5) * 0.12,
-    l: 0.7 + (((graine + k * 11) % 5) / 10),
-  }));
+  const { d, perle } = useMemo(() => {
+    let a = (graine * 2654435761) >>> 0;
+    const rnd = () => {
+      a = (a + 0x6d2b79f5) >>> 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+    // Le sommet : arrondi à gauche, le dessus qui monte vers l'arrière, arrondi à droite.
+    let chemin = 'M0 30 C0 17 4 13 14 12 C38 10 58 8 74 5 C88 2 97 3 100 9 L100 30';
+    // Le bas, de droite à gauche : une ligne d'eau, et les coulées.
+    const coulees = [0, 1, 2]
+      .map((k) => ({ x: 12 + k * 22 + rnd() * 12, l: 6 + rnd() * (k === 1 ? 22 : 14), w: 4 + rnd() * 3 }))
+      .sort((p, q) => q.x - p.x);
+    let x0 = 100;
+    for (const c of coulees) {
+      const milieu = (x0 + c.x + c.w) / 2;
+      chemin += ` Q${milieu.toFixed(1)} ${(27 + rnd() * 3).toFixed(1)} ${(c.x + c.w).toFixed(1)} 30 C${(c.x + c.w).toFixed(1)} ${(30 + c.l).toFixed(1)} ${(c.x - c.w).toFixed(1)} ${(30 + c.l).toFixed(1)} ${(c.x - c.w).toFixed(1)} 30`;
+      x0 = c.x - c.w;
+    }
+    chemin += ` L${Math.min(x0, 6).toFixed(1)} 30 L0 30 Z`;
+    const longue = coulees.reduce((m, c) => (c.l > m.l ? c : m));
+    return { d: chemin, perle: { x: longue.x, y: 30 + longue.l } };
+  }, [graine]);
+  const id = `fonte-${graine}`;
   return (
-    <>
-      <span className="saison-fonte" aria-hidden="true">
-        <i className="fonte-reflet" />
-        {gouttes.map((g, k) => (
-          <i
-            key={k}
-            className="fonte-goutte"
-            style={
-              {
-                ['--x' as string]: `${g.x}%`,
-                ['--d' as string]: `${g.d}s`,
-                ['--l' as string]: g.l,
-              } as CSSProperties
-            }
-          />
-        ))}
-      </span>
-      <span className="saison-flaque" aria-hidden="true" />
-    </>
+    <svg className="saison-fonte" viewBox="0 0 100 60" preserveAspectRatio="none" aria-hidden="true">
+      <defs>
+        <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" style={{ stopColor: 'var(--neige-1)' }} />
+          <stop offset="0.3" style={{ stopColor: 'var(--frost)' }} />
+          <stop offset="1" style={{ stopColor: 'var(--ice)' }} stopOpacity="0.85" />
+        </linearGradient>
+      </defs>
+      <path d={d} fill={`url(#${id})`} />
+      {/* Le côté du sommet, à l'ombre, comme le côté du bloc. */}
+      <path d="M80 4 C90 2 97 3 100 9 L100 30 L80 30 Z" className="fonte-cote" />
+      {/* L'arête mouillée, qui prend la lumière. */}
+      <path d="M2 18 C4 13 8 12 14 12 C38 10 58 8 74 5" className="fonte-arete" />
+      <ellipse className="fonte-perle" cx={perle.x} cy={perle.y + 3} rx="3.2" ry="3" />
+    </svg>
   );
 }
 
