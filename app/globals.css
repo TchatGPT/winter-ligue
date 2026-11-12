@@ -17728,13 +17728,43 @@ a.rgs-usage b::after {
   border-top: 1px solid color-mix(in srgb, var(--ink) 7%, transparent);
 }
 /* Les deux moyennes : franches, et nommées dans la marge à leur hauteur. */
-/* Derrière les blocs : elle se lit à travers la glace, et ne barre aucune icône. */
+/*
+ * Le trait d'une moyenne : caché, il ne s'affiche qu'à la demande — au survol
+ * de son étiquette —, derrière les blocs, lisible à travers la glace.
+ */
 .saison-moyenne {
   z-index: 1;
   height: 3px;
   border-radius: 2px;
   background: var(--frost);
+  opacity: 0;
   transform: translateY(50%);
+  transition: opacity 0.2s ease;
+}
+.saison-moyenne[data-visible] {
+  opacity: 1;
+}
+/* Les crans des moyennes, sur l'échelle de gauche. */
+.saison-cran {
+  position: absolute;
+  right: 0;
+  bottom: calc(var(--bas) + var(--y) * (100% - var(--bas)));
+  width: 0.5rem;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--frost);
+  transform: translateY(50%);
+}
+.saison-cran[data-ligue] {
+  background: var(--aurora);
+}
+.saison-moyennes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  font-family: var(--font-sans, inherit);
+  letter-spacing: 0;
+  text-transform: none;
 }
 /* La moyenne de la ligue : en tirets, verte — elle ne se confond pas avec la sienne. */
 .saison-moyenne[data-ligue] {
@@ -17751,10 +17781,27 @@ a.rgs-usage b::after {
   background: repeating-linear-gradient(90deg, var(--aurora) 0 7px, transparent 7px 10px);
 }
 .saison-legende-moyenne {
-  padding: 0.1rem 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.6rem;
+  border: 0;
   border-radius: var(--r-pilule);
   background: color-mix(in srgb, var(--frost) 10%, transparent);
+  font: inherit;
+  font-size: 0.75rem;
   color: var(--ink-2);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+.saison-legende-moyenne:hover,
+.saison-legende-moyenne[aria-pressed='true'] {
+  background: color-mix(in srgb, var(--frost) 22%, transparent);
+}
+.saison-legende-moyenne:focus-visible,
+.saison-etiquette:focus-visible {
+  outline: 2px solid var(--frost);
+  outline-offset: 2px;
 }
 .saison-legende-moyenne b {
   font-weight: 800;
@@ -17762,6 +17809,10 @@ a.rgs-usage b::after {
 }
 .saison-legende-moyenne[data-ligue] {
   background: color-mix(in srgb, var(--aurora) 12%, transparent);
+}
+.saison-legende-moyenne[data-ligue]:hover,
+.saison-legende-moyenne[data-ligue][aria-pressed='true'] {
+  background: color-mix(in srgb, var(--aurora) 24%, transparent);
 }
 .saison-legende-moyenne[data-ligue] b {
   color: var(--aurora);
@@ -17772,6 +17823,9 @@ a.rgs-usage b::after {
 .saison-etiquette {
   position: absolute;
   left: 0.35rem;
+  border: 0;
+  cursor: pointer;
+  transition: box-shadow 0.15s ease;
   bottom: calc(var(--bas) + var(--y) * (100% - var(--bas)));
   display: inline-flex;
   align-items: baseline;
@@ -17808,6 +17862,12 @@ a.rgs-usage b::after {
 }
 .saison-etiquette[data-ligue] small {
   color: color-mix(in srgb, var(--aurora) 75%, var(--ink));
+}
+.saison-etiquette[data-actif] {
+  box-shadow: inset 0 0 0 2px var(--frost);
+}
+.saison-etiquette[data-ligue][data-actif] {
+  box-shadow: inset 0 0 0 2px var(--aurora);
 }
 
 /* Le palier du Booster Finisseur, et la fin de saison au-delà. */
@@ -18174,7 +18234,7 @@ a.rgs-usage b::after {
 }
 @media (min-width: 560px) {
   .case {
-    height: 7rem;
+    height: 7.25rem;
     padding: 0.55rem 0.65rem 0.6rem;
     border-radius: var(--r-sm);
   }
@@ -18355,8 +18415,11 @@ button.case:focus-visible {
   }
 }
 .case-gain {
+  flex-shrink: 0;
+  margin-left: auto;
+  padding-left: 0.3rem;
   font-family: var(--font-display);
-  font-size: 1rem;
+  font-size: 0.9375rem;
   font-weight: 900;
   line-height: 1;
   white-space: nowrap;
@@ -18377,14 +18440,15 @@ button.case:focus-visible {
 }
 @media (min-width: 560px) {
   .case-gain {
-    font-size: 1.35rem;
+    font-size: 1.05rem;
   }
   .case-gain[data-mot] {
-    font-size: 0.75rem;
+    font-size: 0.6875rem;
   }
 }
 .case-carte {
-  display: none;
+  display: flex;
+  width: 100%;
   min-width: 0;
   align-items: center;
   gap: 0.3rem;
@@ -18397,6 +18461,7 @@ button.case:focus-visible {
   color: var(--frost);
 }
 .case-carte-nom {
+  display: none;
   min-width: 0;
   overflow: hidden;
   white-space: nowrap;
@@ -18405,9 +18470,27 @@ button.case:focus-visible {
 .case-kills {
   display: none;
 }
+/* Sur un écran plus large : le nom de la carte, puis ses points en dessous. */
+.case-gain-unite {
+  display: none;
+  font-size: 0.75em;
+}
 @media (min-width: 560px) {
   .case-carte {
-    display: flex;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 0.15rem 0.3rem;
+  }
+  .case-carte-nom {
+    display: block;
+  }
+  .case-carte .case-gain {
+    grid-column: 1 / -1;
+    margin-left: 0;
+    padding-left: 0;
+  }
+  .case-gain-unite {
+    display: inline;
   }
   .case-kills {
     display: inline;

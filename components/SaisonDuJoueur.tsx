@@ -106,6 +106,22 @@ export function ColonnesSaison({
   garde: (g: GameDuJoueur) => boolean;
 }) {
   const [survolee, setSurvolee] = useState<number | null>(null);
+  /**
+   * Le trait d'une moyenne ne traverse les colonnes qu'à la demande — au
+   * survol de son étiquette, ou d'un toucher qui le garde affiché. Le reste du
+   * temps, deux crans sur l'échelle et deux étiquettes suffisent.
+   */
+  const [ligneSurvol, setLigneSurvol] = useState<'perso' | 'ligue' | null>(null);
+  const [ligneFixe, setLigneFixe] = useState<'perso' | 'ligue' | null>(null);
+  const ligne = ligneSurvol ?? ligneFixe;
+  const montre = (quelle: 'perso' | 'ligue') => ({
+    onMouseEnter: () => setLigneSurvol(quelle),
+    onMouseLeave: () => setLigneSurvol(null),
+    onFocus: () => setLigneSurvol(quelle),
+    onBlur: () => setLigneSurvol(null),
+    onClick: () => setLigneFixe((f) => (f === quelle ? null : quelle)),
+    'aria-pressed': ligneFixe === quelle,
+  });
   const total = Math.max(creneaux, chronologie.length);
   const comptees = chronologie.filter((g) => !g.skipped);
   const echelle = graduations(Math.max(1, moyenneLigue ?? 0, ...chronologie.map((g) => g.score)));
@@ -160,13 +176,15 @@ export function ColonnesSaison({
             <span>
               <IconJoker className="h-4 w-4 text-ice" /> Joker
             </span>
-            <span className="saison-legende-moyenne">
+          </span>
+          <span className="saison-moyennes">
+            <button type="button" className="saison-legende-moyenne" {...montre('perso')}>
               <i className="saison-trait" /> Sa moyenne <b className="num">{decimal(moyenne)}</b>
-            </span>
+            </button>
             {moyenneLigue !== null && (
-              <span className="saison-legende-moyenne" data-ligue="">
-                <i className="saison-trait" data-ligue="" /> Moyenne de la ligue <b className="num">{decimal(moyenneLigue)}</b>
-              </span>
+              <button type="button" className="saison-legende-moyenne" data-ligue="" {...montre('ligue')}>
+                <i className="saison-trait" data-ligue="" /> La ligue <b className="num">{decimal(moyenneLigue)}</b>
+              </button>
             )}
           </span>
         </figcaption>
@@ -178,6 +196,11 @@ export function ColonnesSaison({
                 {v}
               </span>
             ))}
+            {/* Les deux moyennes, en crans sur l'échelle. */}
+            <i className="saison-cran" style={{ ['--y' as string]: part(moyenne) } as CSSProperties} />
+            {moyenneLigue !== null && (
+              <i className="saison-cran" data-ligue="" style={{ ['--y' as string]: part(moyenneLigue) } as CSSProperties} />
+            )}
           </div>
           <div
             className="saison-colonnes"
@@ -247,11 +270,17 @@ export function ColonnesSaison({
                 </button>
               );
             })}
-            <i className="saison-moyenne" style={{ ['--y' as string]: part(moyenne) } as CSSProperties} aria-hidden="true" />
+            <i
+              className="saison-moyenne"
+              data-visible={ligne === 'perso' ? '' : undefined}
+              style={{ ['--y' as string]: part(moyenne) } as CSSProperties}
+              aria-hidden="true"
+            />
             {moyenneLigue !== null && (
               <i
                 className="saison-moyenne"
                 data-ligue=""
+                data-visible={ligne === 'ligue' ? '' : undefined}
                 style={{ ['--y' as string]: part(moyenneLigue) } as CSSProperties}
                 aria-hidden="true"
               />
@@ -283,21 +312,32 @@ export function ColonnesSaison({
               </div>
             )}
           </div>
-          {/* Les moyennes, nommées dans la marge, à la hauteur de leur trait. */}
-          <div className="saison-marge" aria-hidden="true">
-            <span className="saison-etiquette" style={{ ['--y' as string]: etiquettes.perso } as CSSProperties}>
+          {/* Les moyennes, nommées dans la marge, à leur hauteur : survolées, leur trait s'affiche. */}
+          <div className="saison-marge">
+            <button
+              type="button"
+              className="saison-etiquette"
+              data-actif={ligne === 'perso' ? '' : undefined}
+              style={{ ['--y' as string]: etiquettes.perso } as CSSProperties}
+              aria-label={`Sa moyenne : ${decimal(moyenne)} points`}
+              {...montre('perso')}
+            >
               <small>Sa moyenne</small>
               {decimal(moyenne)}
-            </span>
+            </button>
             {moyenneLigue !== null && etiquettes.ligue !== null && (
-              <span
+              <button
+                type="button"
                 className="saison-etiquette"
                 data-ligue=""
+                data-actif={ligne === 'ligue' ? '' : undefined}
                 style={{ ['--y' as string]: etiquettes.ligue } as CSSProperties}
+                aria-label={`Moyenne de la ligue : ${decimal(moyenneLigue)} points`}
+                {...montre('ligue')}
               >
                 <small>La ligue</small>
                 {decimal(moyenneLigue)}
-              </span>
+              </button>
             )}
           </div>
         </div>
@@ -421,16 +461,6 @@ export function GrilleGames({
               </span>
               <span className="case-milieu">
                 <b className="case-score num">{g.skipped ? '—' : g.score}</b>
-                {/* Ce que la carte a fait : rien, si elle n'a rien fait. */}
-                {carte && effetCourt(carte.cardId, carte.points) !== '±0' && (
-                  <span
-                    className="case-gain"
-                    data-malus={carte.points < 0 ? '' : undefined}
-                    data-mot={/^[+−]/.test(effetCourt(carte.cardId, carte.points)) ? undefined : ''}
-                  >
-                    {effetCourt(carte.cardId, carte.points)}
-                  </span>
-                )}
               </span>
               <span className="case-pied">
                 {g.skipped ? (
@@ -442,6 +472,19 @@ export function GrilleGames({
                   <span className="case-carte">
                     <IconCarte className="h-3.5 w-3.5" />
                     <span className="case-carte-nom">{getCard(carte.cardId)?.name}</span>
+                    {/* Ce que la carte a fait : rien, si elle n'a rien fait. */}
+                    {effetCourt(carte.cardId, carte.points) !== '±0' && (
+                      <b
+                        className="case-gain"
+                        data-malus={carte.points < 0 ? '' : undefined}
+                        data-mot={/^[+−]/.test(effetCourt(carte.cardId, carte.points)) ? undefined : ''}
+                      >
+                        {effetCourt(carte.cardId, carte.points)}
+                        {/^[+−]/.test(effetCourt(carte.cardId, carte.points)) && (
+                          <span className="case-gain-unite"> pts</span>
+                        )}
+                      </b>
+                    )}
                   </span>
                 ) : (
                   <span className="case-place">
