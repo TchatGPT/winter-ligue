@@ -3,7 +3,7 @@
 import { type CSSProperties, useEffect, useMemo, useState } from 'react';
 import { CardFrame } from '@/components/CardFrame';
 import { CouronneGlace } from '@/components/CouronneGlace';
-import { IconCarte, IconCrayon, IconJoker } from '@/components/icons';
+import { IconCarte, IconChute, IconCrayon, IconEtoile, IconJoker } from '@/components/icons';
 import { MedailleGlace } from '@/components/MedailleGlace';
 import { cardArt, cardVignettes, getCard } from '@/lib/domain/catalog';
 import { decimal, shortDateTime } from '@/lib/format';
@@ -432,11 +432,18 @@ export function GrilleGames({
               {fond && <span className="case-fond" style={{ backgroundImage: `url("${fond}")` }} aria-hidden="true" />}
               <span className="case-tete">
                 {extreme ? (
-                  <span className="case-extreme">{extreme === 'meilleure' ? 'Meilleure' : 'Pire'}</span>
+                  <span className="case-extreme">
+                    {extreme === 'meilleure' ? (
+                      <IconEtoile className="case-extreme-icone" />
+                    ) : (
+                      <IconChute className="case-extreme-icone" />
+                    )}
+                    {extreme === 'meilleure' ? 'Meilleure' : 'Pire'}
+                  </span>
                 ) : (
                   <span className="case-num">{numero}</span>
                 )}
-                {place && (
+                {place && !extreme && (
                   <span className="case-podium">
                     <Podium place={place} id={`case-${g.id}`} className="h-full w-full" />
                   </span>
@@ -444,6 +451,12 @@ export function GrilleGames({
               </span>
               <span className="case-milieu">
                 <b className="case-score num">{g.skipped ? '—' : g.score}</b>
+                {/* Sous un bandeau, le podium descend à côté du score, sur le fond sombre. */}
+                {place && extreme && (
+                  <span className="case-podium">
+                    <Podium place={place} id={`case-${g.id}`} className="h-full w-full" />
+                  </span>
+                )}
               </span>
               <span className="case-pied">
                 {g.skipped ? (

@@ -18331,8 +18331,13 @@ button.case:focus-visible {
 .case[data-extreme] .case-tete {
   margin: -0.3rem -0.4rem 0;
   padding: 0 0.4rem;
-  background: var(--gold);
-  color: var(--bg);
+  background: linear-gradient(
+    100deg,
+    color-mix(in srgb, var(--r-ur) 55%, var(--bg-deep)) 0%,
+    color-mix(in srgb, var(--gold) 70%, var(--r-ur)) 70%,
+    var(--gold) 100%
+  );
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--frost) 45%, transparent);
 }
 @media (min-width: 560px) {
   .case[data-extreme] .case-tete {
@@ -18341,7 +18346,11 @@ button.case:focus-visible {
   }
 }
 .case[data-extreme='pire'] .case-tete {
-  background: var(--danger);
+  background: linear-gradient(
+    100deg,
+    color-mix(in srgb, var(--danger) 55%, var(--bg-deep)) 0%,
+    var(--danger) 100%
+  );
 }
 .case[data-extreme] .case-num {
   padding: 0;
@@ -18353,17 +18362,31 @@ button.case:focus-visible {
   color: var(--bg);
 }
 .case-extreme {
+  display: inline-flex;
   min-width: 0;
+  align-items: center;
+  gap: 0.25rem;
   overflow: hidden;
   font-family: var(--font-display);
-  font-size: 0.5625rem;
+  font-size: 0.625rem;
   font-weight: 900;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.04em;
   line-height: 1;
   text-transform: uppercase;
   white-space: nowrap;
-  text-overflow: ellipsis;
-  color: var(--bg);
+  color: var(--ink);
+  text-shadow: 0 1px 2px color-mix(in srgb, var(--bg-deep) 70%, transparent);
+}
+.case-extreme-icone {
+  display: none;
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+}
+@media (min-width: 560px) {
+  .case-extreme-icone {
+    display: block;
+  }
 }
 @media (min-width: 560px) {
   .case-extreme {
@@ -18373,16 +18396,10 @@ button.case:focus-visible {
 }
 /* Dans le bandeau, le mot passe d'abord : la couronne ou la médaille se fait
    plus petite, et s'efface sur téléphone. */
-.case[data-extreme] .case-podium {
-  display: none;
-  width: 18px;
-  height: 18px;
+.case-milieu .case-podium {
+  margin-left: auto;
 }
-@media (min-width: 560px) {
-  .case[data-extreme] .case-podium {
-    display: block;
-  }
-}
+
 .case-score {
   font-family: var(--font-display);
   font-size: 1.45rem;
@@ -18617,12 +18634,12 @@ button.case:focus-visible {
   text-transform: uppercase;
 }
 .detail-extreme[data-extreme='meilleure'] {
-  background: var(--gold);
-  color: var(--bg);
+  background: linear-gradient(100deg, color-mix(in srgb, var(--r-ur) 55%, var(--bg-deep)), var(--gold));
+  color: var(--ink);
 }
 .detail-extreme[data-extreme='pire'] {
-  background: var(--danger);
-  color: var(--bg);
+  background: linear-gradient(100deg, color-mix(in srgb, var(--danger) 55%, var(--bg-deep)), var(--danger));
+  color: var(--ink);
 }
 .detail-fermer {
   display: grid;
