@@ -421,8 +421,13 @@ export function GrilleGames({
               </span>
               <span className="case-milieu">
                 <b className="case-score num">{g.skipped ? '—' : g.score}</b>
-                {carte && (
-                  <span className="case-gain" data-malus={carte.points < 0 ? '' : undefined}>
+                {/* Ce que la carte a fait : rien, si elle n'a rien fait. */}
+                {carte && effetCourt(carte.cardId, carte.points) !== '±0' && (
+                  <span
+                    className="case-gain"
+                    data-malus={carte.points < 0 ? '' : undefined}
+                    data-mot={/^[+−]/.test(effetCourt(carte.cardId, carte.points)) ? undefined : ''}
+                  >
                     {effetCourt(carte.cardId, carte.points)}
                   </span>
                 )}

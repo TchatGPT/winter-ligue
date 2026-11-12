@@ -17728,12 +17728,12 @@ a.rgs-usage b::after {
   border-top: 1px solid color-mix(in srgb, var(--ink) 7%, transparent);
 }
 /* Les deux moyennes : franches, et nommées dans la marge à leur hauteur. */
+/* Derrière les blocs : elle se lit à travers la glace, et ne barre aucune icône. */
 .saison-moyenne {
-  z-index: 3;
+  z-index: 1;
   height: 3px;
+  border-radius: 2px;
   background: var(--frost);
-  opacity: 0.85;
-  filter: drop-shadow(0 1px 0 var(--bg-deep)) drop-shadow(0 -1px 0 var(--bg-deep));
   transform: translateY(50%);
 }
 /* La moyenne de la ligue : en tirets, verte — elle ne se confond pas avec la sienne. */
@@ -17836,6 +17836,7 @@ a.rgs-usage b::after {
 /* Une colonne : tout son créneau sert à la survoler, à la choisir. */
 .saison-colonne {
   position: relative;
+  z-index: 2;
   display: flex;
   min-width: 0;
   flex: 1 1 0;
@@ -17965,6 +17966,7 @@ a.rgs-usage b::after {
 .saison-podium {
   position: absolute;
   z-index: 4;
+  filter: drop-shadow(0 1px 2px var(--bg-deep));
   bottom: calc(var(--bas) + var(--part) * (100% - var(--bas)) + var(--prof) + 3px);
   left: calc(50% - var(--prof) / 2);
   width: 12px;
@@ -18004,7 +18006,7 @@ a.rgs-usage b::after {
 }
 .saison-bulle {
   position: absolute;
-  z-index: 5;
+  z-index: 6;
   top: 0;
   left: calc(var(--x) * 100%);
   display: grid;
@@ -18258,31 +18260,31 @@ button.case:focus-visible {
   line-height: 1;
   color: var(--muted);
 }
+/* Sur une illustration : le numéro et l'étiquette sur un verre givré. */
 .case[data-carte] .case-num,
 .case[data-extreme] .case-num {
-  padding: 0.15rem 0.2rem 0.15rem 0.45rem;
+  padding: 0.18rem 0.2rem 0.18rem 0.45rem;
   margin-left: -0.2rem;
   border-radius: var(--r-pilule);
-  background: color-mix(in srgb, var(--bg-deep) 80%, transparent);
-  color: var(--ink-2);
+  background: color-mix(in srgb, var(--fond) 55%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--frost) 25%, transparent);
+  backdrop-filter: blur(6px);
+  color: var(--ink);
 }
 .case[data-carte]:not([data-extreme]) .case-num {
   padding-right: 0.45rem;
 }
 .case-podium {
-  width: 19px;
-  height: 19px;
+  width: 17px;
+  height: 17px;
   margin-left: auto;
   flex-shrink: 0;
-  padding: 2px;
-  border-radius: 50%;
-  background: color-mix(in srgb, var(--bg-deep) 75%, transparent);
+  filter: drop-shadow(0 1px 2px var(--bg-deep));
 }
 @media (min-width: 560px) {
   .case-podium {
     width: 24px;
     height: 24px;
-    padding: 3px;
   }
 }
 .case-extreme {
@@ -18351,29 +18353,34 @@ button.case:focus-visible {
   .case-milieu {
     gap: 0.4rem;
   }
-  .case-gain {
-    padding: 0.12rem 0.45rem;
-  }
 }
 .case-gain {
-  padding: 0.08rem 0.3rem;
-  border-radius: var(--r-pilule);
-  background: color-mix(in srgb, var(--bg-deep) 82%, transparent);
-  box-shadow: inset 0 0 0 1.5px var(--aurora);
   font-family: var(--font-display);
-  font-size: 0.6875rem;
+  font-size: 1rem;
   font-weight: 900;
-  line-height: 1.1;
+  line-height: 1;
   white-space: nowrap;
   color: var(--aurora);
+  text-shadow:
+    0 1px 2px var(--bg-deep),
+    0 0 6px var(--bg-deep);
 }
 .case-gain[data-malus] {
-  box-shadow: inset 0 0 0 1.5px var(--danger);
   color: var(--danger);
+}
+/* Un effet sans points — « figée », « supprimée » : en petites capitales. */
+.case-gain[data-mot] {
+  font-size: 0.6875rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--frost);
 }
 @media (min-width: 560px) {
   .case-gain {
-    font-size: 0.9375rem;
+    font-size: 1.35rem;
+  }
+  .case-gain[data-mot] {
+    font-size: 0.75rem;
   }
 }
 .case-carte {
