@@ -31,6 +31,54 @@ import type { FicheJoueur } from '@/lib/services/profile';
 
 export type GameDuJoueur = FicheJoueur['profil']['games'][number];
 
+/**
+ * Un coussin de neige pour le haut d'un bloc (12/11/2026), posé quand on le
+ * survole ou qu'on le choisit, sur ordinateur. Comme la neige des panneaux
+ * (`SnowCap`) : une seule courbe irrégulière, plus épaisse au milieu, un lèvre
+ * qui déborde un peu sur l'avant et une coulée, une sous-face bleutée et une
+ * ombre de contact. Tirée de la game : chaque bloc a la sienne.
+ */
+function Neige({ graine }: { graine: number }) {
+  const d = useMemo(() => {
+    let a = (graine * 2654435761) >>> 0;
+    const rnd = () => {
+      a = (a + 0x6d2b79f5) >>> 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+    const xs = [0, 10, 24, 38, 52, 66, 80, 92, 100];
+    const ys = xs.map((x, i) =>
+      i === 0 || i === xs.length - 1 ? 14 + rnd() * 2 : 1 + rnd() * 5 + Math.pow(Math.abs(x - 50) / 50, 2) * 8,
+    );
+    let chemin = `M0 20 L0 ${ys[0].toFixed(1)}`;
+    for (let i = 1; i < xs.length; i += 1) {
+      const mx = (xs[i - 1] + xs[i]) / 2;
+      chemin += ` Q${xs[i - 1].toFixed(1)} ${ys[i - 1].toFixed(1)} ${mx.toFixed(1)} ${((ys[i - 1] + ys[i]) / 2).toFixed(1)}`;
+    }
+    chemin += ` T100 ${ys[ys.length - 1].toFixed(1)} L100 20`;
+    // Une coulée sur la lèvre avant, à une place tirée.
+    const c = 20 + rnd() * 50;
+    const long = 4 + rnd() * 4;
+    chemin += ` L${(c + 9).toFixed(1)} 20 Q${(c + 5).toFixed(1)} ${(20 + long).toFixed(1)} ${c.toFixed(1)} 20 Z`;
+    return chemin;
+  }, [graine]);
+  return (
+    <svg className="saison-neige" viewBox="0 0 100 20" preserveAspectRatio="none" aria-hidden="true">
+      <defs>
+        <linearGradient id={`neige-${graine}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" style={{ stopColor: 'var(--neige-1)' }} />
+          <stop offset="0.55" style={{ stopColor: 'var(--neige-2)' }} />
+          <stop offset="1" style={{ stopColor: 'var(--neige-3)' }} />
+        </linearGradient>
+      </defs>
+      <path d={d} fill={`url(#neige-${graine})`} />
+      {/* La sous-face, à l'ombre, là où la neige touche la glace. */}
+      <path d="M2 17 Q50 21 98 17 L98 20 L2 20 Z" style={{ fill: 'var(--neige-ombre)' }} opacity="0.55" />
+    </svg>
+  );
+}
+
 /** Le podium d'une game : la couronne, une médaille, ou rien. */
 function Podium({ place, id, className = 'h-4 w-4' }: { place: number | null; id: string; className?: string }) {
   if (place === 1) return <CouronneGlace className={className} id={`couronne-${id}`} />;
@@ -289,6 +337,7 @@ export function ColonnesSaison({
                   style={{ ['--part' as string]: c.skipped ? 0 : part(c.score) } as CSSProperties}
                 >
                   <span className="saison-bloc" />
+                  {(survolee === i || choisie === c.id) && !c.skipped && <Neige graine={i + 1} />}
                   {place && (
                     <span className="saison-podium">
                       <Podium place={place} id={`saison-${c.id}`} className="h-full w-full" />
