@@ -319,10 +319,10 @@ export function IconCrane(props: IconProps) {
   const crane = 'M12 3a7.5 7.5 0 0 0-7.5 7.5c0 2.6 1.3 4.5 3 5.6V19a1.5 1.5 0 0 0 1.5 1.5h6a1.5 1.5 0 0 0 1.5-1.5v-2.9c1.7-1.1 3-3 3-5.6A7.5 7.5 0 0 0 12 3Z';
   return (
     <Svg {...props}>
-      <Fond d={crane} />
+      <path d={crane} fill="currentColor" fillOpacity={0.35} stroke="none" />
       <path d={crane} />
-      <circle cx="9" cy="11" r="1.6" fill="currentColor" />
-      <circle cx="15" cy="11" r="1.6" fill="currentColor" />
+      <circle cx="9" cy="11" r="2.1" fill="currentColor" />
+      <circle cx="15" cy="11" r="2.1" fill="currentColor" />
       <path d="M12 13.6 11 15.6h2L12 13.6Z" fill="currentColor" />
       <path d="M10 20.5v-2.2M14 20.5v-2.2" />
     </Svg>

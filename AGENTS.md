@@ -226,7 +226,9 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   Jokers servis, des subs et leurs paliers, des boosters ouverts et à ouvrir, des duels,
   des cartes actives et gardées. Les vrais joueurs sont mis de côté pendant la création
   (rien ne tombe sur eux) ; tout ce qui est fictif est marqué, et le retrait l'efface,
-  subs du compteur compris. « Refaire à neuf » retire puis recrée. À retirer avant le
+  subs du compteur compris. Le bouton remplit aussi la fiche du testeur qui l'appuie :
+  des games marquées (`NOTE_FICTIVE`), dont le retrait reprend les flocons et rend les
+  cartes. « Refaire à neuf » retire puis recrée. À retirer avant le
   lancement.
 - **Une carte n'a aucune valeur en flocons** : elle ne s'achète, ne s'échange ni ne se
   revend — ni cote, ni marché, ni collection, ni exemplaires en réserve. Elle se joue sur

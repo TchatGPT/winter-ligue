@@ -4,7 +4,8 @@ import { type CSSProperties, type ReactNode, useEffect, useLayoutEffect, useMemo
 import { createPortal } from 'react-dom';
 import { CardFrame } from '@/components/CardFrame';
 import { CouronneGlace } from '@/components/CouronneGlace';
-import { IconCarte, IconChute, IconCrane, IconCrayon, IconEtoile, IconJoker } from '@/components/icons';
+import { CraneGlace } from '@/components/CraneGlace';
+import { IconCarte, IconChute, IconCrayon, IconEtoile, IconJoker } from '@/components/icons';
 import { MedailleGlace } from '@/components/MedailleGlace';
 import { cardArt, cardVignettes, getCard } from '@/lib/domain/catalog';
 import { decimal, shortDateTime } from '@/lib/format';
@@ -532,7 +533,7 @@ export function GrilleGames({
                     <span className="case-kills">
                       {' · '}
                       {g.kills}
-                      <IconCrane className="case-crane" />
+                      <CraneGlace className="case-crane" />
                     </span>
                   </span>
                 )}

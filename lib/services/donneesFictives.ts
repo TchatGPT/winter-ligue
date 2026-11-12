@@ -10,7 +10,7 @@ import { creeBataille, rejointBataille } from './batailles';
 import { rattacheCompteTwitch } from './comptes';
 import { appliqueCartesEnAttente, carteQuiAttend, jokerDe, regleCartesSansAttendre, utiliseJoker } from './effects';
 import { recomputeGame } from './league';
-import { audit, credit } from './ledger';
+import { adjust, audit, credit } from './ledger';
 import { ajoutePackDu, ouvrePack } from './packs';
 import { addSubs } from './subs';
 
@@ -36,6 +36,12 @@ import { addSubs } from './subs';
 
 export const PREFIXE_FICTIF = 'fictif-';
 const RAISON = 'données fictives';
+/**
+ * Les games fictives posées sur un vrai compte — celui du testeur, pour voir
+ * sa propre fiche remplie — se reconnaissent à leur note : le retrait les
+ * efface, reprend leurs flocons et rend les cartes qu'elles avaient prises.
+ */
+const NOTE_FICTIVE = 'données fictives';
 
 const PSEUDOS = [
   'GlaçonFou', 'Nordik_77', 'SnowSniper', 'xBlizzardx', 'Frimas', 'IcyKaze',
@@ -102,7 +108,15 @@ function poseCarte(db: Database, joueur: Player, packId: PackId, cardId: string,
 }
 
 /** Une game saisie comme par la modération, à une date passée ; avec un Joker, elle ne compte pas. */
-function saisit(db: Database, joueur: Player, kills: number, placement: Placement, le: Date, joker = false): Game {
+function saisit(
+  db: Database,
+  joueur: Player,
+  kills: number,
+  placement: Placement,
+  le: Date,
+  joker = false,
+  note: string | null = null,
+): Game {
   const game: Game = {
     id: newId(),
     playerId: joueur.id,
@@ -111,7 +125,7 @@ function saisit(db: Database, joueur: Player, kills: number, placement: Placemen
     bonusPoints: 0,
     skipped: false,
     score: 0,
-    note: null,
+    note,
     playedAt: le.toISOString(),
     createdAt: le.toISOString(),
     applied: [],
@@ -142,24 +156,61 @@ export interface BilanFictif {
   duels: number;
   subs: number;
   evenements: number;
+  /** Les games fictives posées sur le compte du testeur. */
+  tesGames: number;
 }
 
 /**
  * Remplit la ligue de données fictives. À appeler dans une transaction. S'il
  * y en a déjà, elles sont d'abord retirées : la ligue fictive repart à neuf.
  */
-export function ajouteDonneesFictives(db: Database, acteur: string, now = new Date()): BilanFictif {
-  if (db.players.some(estFictif)) retireDonneesFictives(db, acteur);
+export function ajouteDonneesFictives(
+  db: Database,
+  acteur: string,
+  now = new Date(),
+  /** Le compte du testeur, qui reçoit aussi des games fictives (12/11/2026). */
+  testeurId: string | null = null,
+): BilanFictif {
+  retireDonneesFictives(db, acteur);
 
   // Les vrais joueurs de côté, le temps de tout faire : les cartes de la
   // ligue, les tirages et l'Avalanche ne tombent que sur les fictifs.
   const misDeCote = db.players.filter((p) => p.active);
   for (const p of misDeCote) p.active = false;
+  let bilan: BilanFictif;
   try {
-    return remplit(db, acteur, now);
+    bilan = remplit(db, acteur, now);
   } finally {
     for (const p of misDeCote) p.active = true;
   }
+  const testeur = testeurId ? db.players.find((p) => p.id === testeurId && p.active) : undefined;
+  if (testeur) bilan.tesGames = remplitLeTesteur(db, testeur, acteur, now);
+  return bilan;
+}
+
+/**
+ * Des games fictives sur le compte du testeur, pour voir sa propre fiche
+ * remplie : jusqu'à la veille du Booster Finisseur, avec des cartes du Perso
+ * jouées dessus. Marquées (`NOTE_FICTIVE`), elles partent au retrait.
+ */
+function remplitLeTesteur(db: Database, joueur: Player, acteur: string, now: Date): number {
+  const r = hasard(20261113);
+  const un = <T,>(l: readonly T[]) => l[Math.floor(r() * l.length)];
+  const aJouer = cartesDuPack('perso').filter((c) => momentDe(c.effect) === 'PROCHAINE');
+  const palier = Math.min(parametresSaison(db.config.numero).finisseurA, db.config.maxGamesPerPlayer);
+  const deja = db.games.filter((g) => g.playerId === joueur.id && !g.skipped).length;
+  const nb = Math.max(0, palier - 1 - deja);
+  const debut = now.getTime() - (nb + 2) * 13 * 3_600_000;
+  for (let k = 0; k < nb; k += 1) {
+    const le = new Date(debut + k * 13 * 3_600_000);
+    if (r() < 0.2) poseCarte(db, joueur, 'perso', un(aJouer).id, le, acteur);
+    const kills = Math.round(3 + r() * 14);
+    const tirage = r();
+    const placement: Placement =
+      tirage < 0.12 ? 1 : tirage < 0.2 ? 2 : tirage < 0.3 ? 3 : tirage < 0.6 ? un(TOPS.filter((t) => t > 3)) : null;
+    saisit(db, joueur, kills, placement, new Date(le.getTime() + 60_000), false, NOTE_FICTIVE);
+  }
+  return nb;
 }
 
 function remplit(db: Database, acteur: string, now: Date): BilanFictif {
@@ -173,7 +224,17 @@ function remplit(db: Database, acteur: string, now: Date): BilanFictif {
   const max = Math.max(1, palier - 1);
   // Une game toutes les treize heures, les plus avancés commençant il y a un mois.
   const debut = now.getTime() - (max + 2) * 13 * 3_600_000;
-  const bilan: BilanFictif = { joueurs: 0, games: 0, cartes: 0, ouverts: 0, boosters: 0, duels: 0, subs: 0, evenements: 0 };
+  const bilan: BilanFictif = {
+    joueurs: 0,
+    games: 0,
+    cartes: 0,
+    ouverts: 0,
+    boosters: 0,
+    duels: 0,
+    subs: 0,
+    evenements: 0,
+    tesGames: 0,
+  };
 
   const joueurs = PSEUDOS.map((pseudo, i) =>
     rattacheCompteTwitch(db, {
@@ -313,7 +374,23 @@ function remplit(db: Database, acteur: string, now: Date): BilanFictif {
 export function retireDonneesFictives(db: Database, acteur: string): { joueurs: number; games: number; cartes: number } {
   const ids = new Set(db.players.filter(estFictif).map((p) => p.id));
   const subs = db.subEvents.filter((e) => e.id.startsWith(PREFIXE_FICTIF));
-  if (ids.size === 0 && subs.length === 0) return { joueurs: 0, games: 0, cartes: 0 };
+  // Les games fictives d'un vrai compte : leurs flocons repris, leurs cartes rendues.
+  const surVrais = db.games.filter((g) => g.note === NOTE_FICTIVE && !ids.has(g.playerId));
+  if (ids.size === 0 && subs.length === 0 && surVrais.length === 0) return { joueurs: 0, games: 0, cartes: 0 };
+  const gamesVraies = new Set(surVrais.map((g) => g.id));
+  const repris = new Map<string, number>();
+  for (const l of db.ledger) {
+    if (l.refId && gamesVraies.has(l.refId)) repris.set(l.playerId, (repris.get(l.playerId) ?? 0) + l.delta);
+  }
+  for (const [joueurId, gagne] of repris) if (gagne > 0) adjust(db, joueurId, -gagne, 'données fictives retirées');
+  for (const c of db.cartesEnAttente) {
+    if (c.gameId && gamesVraies.has(c.gameId)) {
+      c.gameId = null;
+      c.consommeeA = null;
+      c.resultat = null;
+    }
+  }
+  db.games = db.games.filter((g) => !gamesVraies.has(g.id));
   const avant = { games: db.games.length, cartes: db.cartesEnAttente.length };
   const ouvertures = new Set(
     db.ouvertures

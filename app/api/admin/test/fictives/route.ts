@@ -37,7 +37,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   try {
     const resultat = await getStore().transaction((db) => {
       if (!estTesteur(db, moi)) return null;
-      return g.body.action === 'ajoute' ? ajouteDonneesFictives(db, acteur) : retireDonneesFictives(db, acteur);
+      return g.body.action === 'ajoute' ? ajouteDonneesFictives(db, acteur, new Date(), moi) : retireDonneesFictives(db, acteur);
     });
     if (!resultat) return fail('NON_AUTORISE', 'Cette page est réservée aux testeurs de la ligue.');
     return ok(resultat);

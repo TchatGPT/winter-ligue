@@ -18681,10 +18681,10 @@ button.case:focus-visible {
 /* Les kills : une tête de mort, plutôt qu'un « k » qu'on ne comprenait pas. */
 .case-crane {
   display: inline-block;
-  width: 1.2em;
-  height: 1.2em;
-  margin-left: 0.15em;
-  vertical-align: -0.25em;
+  width: 1.35em;
+  height: 1.35em;
+  margin-left: 0.2em;
+  vertical-align: -0.3em;
 }
 /* Sur un écran plus large : le nom de la carte, puis ses points en dessous. */
 .case-gain-unite {

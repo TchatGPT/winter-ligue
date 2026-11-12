@@ -50,6 +50,21 @@ describe('les données fictives', () => {
     expect(db.ouvertures.every((o) => !o.beneficiaires.includes(vrai.id))).toBe(true);
   });
 
+  it('remplissent aussi la fiche du testeur, et la lui rendent telle quelle au retrait', () => {
+    const { db, vrai } = ligue();
+    const bilan = ajouteDonneesFictives(db, 'testeur', MAINTENANT, vrai.id);
+    expect(bilan.tesGames).toBe(parametresSaison(1).finisseurA - 1);
+    expect(db.games.filter((g) => g.playerId === vrai.id)).toHaveLength(bilan.tesGames);
+    expect(vrai.snowflakes).toBeGreaterThan(1_234);
+    // Refaire à neuf ne les double pas.
+    ajouteDonneesFictives(db, 'testeur', MAINTENANT, vrai.id);
+    expect(db.games.filter((g) => g.playerId === vrai.id)).toHaveLength(bilan.tesGames);
+    retireDonneesFictives(db, 'testeur');
+    expect(db.games.filter((g) => g.playerId === vrai.id)).toHaveLength(0);
+    expect(vrai.snowflakes).toBe(1_234);
+    expect(db.cartesEnAttente.filter((c) => c.joueurId === vrai.id).every((c) => c.gameId === null)).toBe(true);
+  });
+
   it('se refont à neuf, et se retirent entièrement', () => {
     const { db, vrai } = ligue();
     ajouteDonneesFictives(db, 'testeur', MAINTENANT);

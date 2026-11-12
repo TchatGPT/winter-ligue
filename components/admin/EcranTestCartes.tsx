@@ -87,7 +87,7 @@ export function EcranTestCartes({ vue }: { vue: VueTestCartes }) {
       kind: 'success',
       text:
         action === 'ajoute'
-          ? `${n('joueurs')} joueurs fictifs, ${n('games')} games, ${n('ouverts')} boosters déjà ouverts, ${n('boosters')} à ouvrir, ${n('duels')} duels, ${n('subs')} subs.`
+          ? `${n('joueurs')} joueurs fictifs, ${n('games')} games, ${n('ouverts')} boosters déjà ouverts, ${n('boosters')} à ouvrir, ${n('duels')} duels, ${n('subs')} subs — et ${n('tesGames')} games sur ton compte.`
           : `${n('joueurs')} joueurs fictifs retirés, avec leurs ${n('games')} games et ${n('cartes')} cartes.`,
     });
   }
@@ -110,7 +110,7 @@ export function EcranTestCartes({ vue }: { vue: VueTestCartes }) {
         titre="Données fictives"
         surtitre={vue.fictifs > 0 ? `${vue.fictifs} joueurs fictifs dans la ligue` : 'Aucune donnée fictive'}
         ton={vue.fictifs > 0 ? 'or' : 'glace'}
-        sousTitre="Une ligue qui a déjà vécu : 24 joueurs inventés, leurs games, leurs points et leurs flocons, des cartes déjà jouées et des Jokers déjà servis, des subs et leurs paliers, des boosters déjà ouverts et d’autres à ouvrir, des duels joués, des cartes actives et gardées. À retirer avant le lancement de la saison."
+        sousTitre="Une ligue qui a déjà vécu, et ta propre fiche remplie de games : 24 joueurs inventés, leurs games, leurs points et leurs flocons, des cartes déjà jouées et des Jokers déjà servis, des subs et leurs paliers, des boosters déjà ouverts et d’autres à ouvrir, des duels joués, des cartes actives et gardées. À retirer avant le lancement de la saison."
         actions={
           confirme ? (
             <div className="flex flex-wrap gap-2">
