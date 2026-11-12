@@ -10,7 +10,7 @@ import { z } from 'zod';
 import { MANCHES_POSSIBLES } from '@/lib/domain/bataille';
 import { LONGUEUR_ACTIVISION } from '@/lib/domain/activision';
 import { UTILISATIONS_MAX } from '@/lib/domain/codes';
-import { DUEL, ECONOMY, GAME_LIMITS, PHRASE_NOUVELLE_SAISON } from '@/lib/domain/rules';
+import { DUEL, ECONOMY, GAME_LIMITS } from '@/lib/domain/rules';
 import { sansInvisibles } from '@/lib/domain/texte';
 import { PACK_IDS } from '@/lib/domain/types';
 
@@ -79,13 +79,8 @@ export const donneesFictivesSchema = z.object({ action: z.enum(['ajoute', 'retir
 /** Jouer une Cryogénisation gardée : la carte seule, le serveur choisit la game. */
 export const figerSchema = z.object({ carteId: uuid }).strict();
 
-/** Lancer une saison : son numéro, et la phrase de confirmation tapée à la main. */
-export const nouvelleSaisonSchema = z
-  .object({
-    numero: z.number().int().min(1).max(9),
-    confirmation: z.literal(PHRASE_NOUVELLE_SAISON),
-  })
-  .strict();
+/** Lancer une saison : son numéro. La fenêtre de confirmation est à l'écran, le rôle au serveur. */
+export const nouvelleSaisonSchema = z.object({ numero: z.number().int().min(1).max(9) }).strict();
 
 /** Jouer un Pacte du Givre : la carte, une game de son porteur, une game d'un autre. */
 export const echangeChoisiSchema = z.object({ carteId: uuid, maGameId: uuid, autreGameId: uuid }).strict();

@@ -2,7 +2,7 @@
  * Le message du tchat qui annonce une ouverture de booster, une fois la carte
  * révélée à l'écran du stream.
  *
- *  - « 🎁 Booster Perso ouvert ! @jeex3 a obtenu la carte Congère (Commune),
+ *  - « 🎁 Booster Perso ouvert ! @jex3_ a obtenu la carte Congère (Commune),
  *    qui fait : +3 points sur ta prochaine game. »
  *  - « 📣 Booster Commu ouvert ! @a, @b et @c ont obtenu la carte Percée
  *    (Rare), qui fait : +8 pts bonus. »

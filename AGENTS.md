@@ -47,11 +47,10 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   (12/11/2026). L'accueil écrit la saison en cours et ses dates indicatives (`periode`).
   On change de saison par le panneau « Saison en cours » de Modération → Subs & saison
   — vers la suivante, ou en revenant à une d'avant pour la montrer, c'est la même remise
-  à zéro —, réservé à `RESPONSABLES_SAISON` (Jeex3,
-  identifiant Twitch lu en base), avec la phrase de confirmation. À l'écran, la ligue gèle
-  puis vole en éclats (`GelDeSaison`) : c'est une photographie inerte de la page qui
-  s'anime, la vraie page se recharge dessous, et l'explosion attend la réponse du serveur
-  (un refus fait fondre la glace). `nouvelleSaison` efface games, boosters,
+  à zéro —, réservé à `RESPONSABLES_SAISON` (Jex3_, son
+  identifiant Twitch lu en base — le panneau n'existe que pour lui), après une fenêtre de
+  confirmation, sans phrase à taper ni animation (12/11/2026). `nouvelleSaison` efface
+  games, boosters,
   ouvertures, cartes, duels, évènements et codes, remet le compteur de subs et les
   flocons à zéro (par `adjust`, au grand livre), redonne trois Jokers, et règle la
   limite. Comptes, grand livre et journal restent ; le registre des subs ne compte que

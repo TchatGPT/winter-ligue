@@ -15,8 +15,8 @@ export const dynamic = 'force-dynamic';
  *
  * Le garde demande la modération ; la transaction demande en plus que le
  * compte soit celui d'un responsable de la saison (`RESPONSABLES_SAISON`, lu
- * en base). Le navigateur envoie le numéro de la saison et la phrase de
- * confirmation, tapée à la main : un clic de travers ne vide pas la ligue.
+ * en base). Le navigateur n'envoie que le numéro de la saison, une fois la
+ * fenêtre de confirmation acceptée.
  */
 export async function POST(request: Request): Promise<NextResponse> {
   const g = await guard(request, {

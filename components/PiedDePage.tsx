@@ -108,7 +108,7 @@ export function PiedDePage({ barreMobile = false }: { barreMobile?: boolean }) {
         </div>
         <p className="pied-de-page-credit">
           <span>
-            Développé par <strong>Jeex3</strong> &amp; <strong>Claude</strong>
+            Développé par <strong>Jex3_</strong> &amp; <strong>Claude</strong>
           </span>
           <span className="pied-de-page-claude" aria-hidden="true">
             <IconClaude />

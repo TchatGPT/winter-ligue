@@ -6,9 +6,9 @@ import { adjust, audit } from './ledger';
 import { joueursEnLice } from './packs';
 
 /**
- * Lancer une saison (décidé le 12/11/2026) : la Mini Ligue le 1er décembre,
+ * Lancer une saison (décidé le 12/11/2026) : la Mini Ligue le 22 novembre,
  * la saison 2 le 4 janvier. Réservé aux responsables de la saison
- * (`RESPONSABLES_SAISON`, Jeex3), lus en base par leur identifiant Twitch.
+ * (`RESPONSABLES_SAISON`, Jex3_), lus en base par leur identifiant Twitch.
  */
 export function estResponsableSaison(db: Readonly<Database>, joueurId: string | null): boolean {
   if (!joueurId) return false;

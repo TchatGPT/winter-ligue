@@ -1,13 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useAction } from '@/components/admin/action';
-import { GelDeSaison, nomCourt, resumeSaison, type BilanVu } from '@/components/admin/GelDeSaison';
 import { EcranAdmin, Panneau, Pastille } from '@/components/admin/Kit';
-import { reveilleSonsDuel } from '@/components/sonsDuel';
 import { flakes } from '@/components/ui';
 import {
-  PHRASE_NOUVELLE_SAISON,
   SAISONS,
   SUBS,
   nextMilestone,
@@ -289,7 +287,7 @@ export function EcranSaison({
         </Panneau>
       )}
 
-      {estAdmin && (
+      {responsable && (
         <Panneau
           zone="changement"
           ton="glace"
@@ -297,33 +295,40 @@ export function EcranSaison({
           titre={parametresSaison(config.numero).nom}
           sousTitre={resumeSaison(parametresSaison(config.numero))}
         >
-          {responsable ? (
-            <NouvelleSaison
-              numero={config.numero}
-              occupe={busy !== null}
-              onLancer={(numero, confirmation) =>
-                envoie(
-                  '/api/admin/saison',
-                  { numero, confirmation },
-                  { cle: 'nouvelle-saison', succes: `${parametresSaison(numero).nom} lancée : la ligue repart de zéro.` },
-                )
-              }
-            />
-          ) : (
-            <p className="adm-note">Changer de saison remet toute la ligue à zéro : seul Jeex3 peut le faire.</p>
-          )}
+          <NouvelleSaison
+            numero={config.numero}
+            occupe={busy !== null}
+            onLancer={(numero) =>
+              envoie(
+                '/api/admin/saison',
+                { numero },
+                { cle: 'nouvelle-saison', succes: `${parametresSaison(numero).nom} lancée : la ligue repart de zéro.` },
+              )
+            }
+          />
         </Panneau>
       )}
     </EcranAdmin>
   );
 }
 
+/** Les réglages d'une saison, en une ligne. */
+function resumeSaison(s: ParametresSaison): string {
+  return [
+    `${s.games} games`,
+    `Booster Finisseur à la ${s.finisseurA}ᵉ`,
+    s.uneParSessionApres !== null ? 'puis une game par session' : null,
+    s.finalistes > 0 ? `finale à ${s.finalistes}` : 'pas de finale',
+  ]
+    .filter(Boolean)
+    .join(' · ');
+}
+
 /**
  * Changer de saison : la ligue repart de zéro (12/11/2026). Réservé au
- * responsable de la saison. On choisit la saison — la suivante, ou revenir à
- * une d'avant pour la montrer —, on tape la phrase de confirmation, et la
- * ligue gèle puis vole en éclats (`GelDeSaison`) pendant que le serveur la
- * remet à zéro.
+ * responsable de la saison (Jex3_) : le panneau n'existe que pour lui. On
+ * choisit la saison — la suivante, ou revenir à une d'avant pour la montrer —,
+ * puis une fenêtre demande de confirmer.
  */
 function NouvelleSaison({
   numero,
@@ -332,23 +337,27 @@ function NouvelleSaison({
 }: {
   numero: number;
   occupe: boolean;
-  onLancer: (numero: number, confirmation: string) => Promise<Record<string, unknown> | null>;
+  onLancer: (numero: number) => Promise<Record<string, unknown> | null>;
 }) {
   const suivante = SAISONS.find((s) => s.numero > numero)?.numero ?? numero;
   const [choix, setChoix] = useState(suivante);
-  const [phrase, setPhrase] = useState('');
-  const [lancee, setLancee] = useState<{ saison: ParametresSaison; retour: boolean; requete: Promise<BilanVu | null> } | null>(
-    null,
-  );
+  const [confirme, setConfirme] = useState(false);
   const saison = parametresSaison(choix);
-  const pret = phrase.trim() === PHRASE_NOUVELLE_SAISON;
-  const [court] = nomCourt(saison);
+  const court = saison.nom.split(' · ')[0];
   const verbe = choix > numero ? `Passer en ${court}` : choix < numero ? `Revenir en ${court}` : `Recommencer la ${court}`;
 
-  function lance() {
-    reveilleSonsDuel();
-    const requete = onLancer(choix, phrase.trim()).then((d) => (d ? (d as unknown as BilanVu) : null));
-    setLancee({ saison, retour: choix < numero, requete });
+  useEffect(() => {
+    if (!confirme) return;
+    const echap = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !occupe) setConfirme(false);
+    };
+    window.addEventListener('keydown', echap);
+    return () => window.removeEventListener('keydown', echap);
+  }, [confirme, occupe]);
+
+  async function lance() {
+    await onLancer(choix);
+    setConfirme(false);
   }
 
   return (
@@ -383,35 +392,47 @@ function NouvelleSaison({
           repart avec ses 3 Jokers.
         </p>
       </div>
-      <p className="adm-note">
-        Exporte la base d’abord (panneau Sauvegarde) : une saison remise à zéro ne se récupère pas.
-      </p>
       <div className="adm-saison-lancer">
-        <label className="grid gap-1.5 text-[13px] text-muted">
-          Tape « {PHRASE_NOUVELLE_SAISON} » pour confirmer
-          <input
-            className="field"
-            value={phrase}
-            onChange={(e) => setPhrase(e.target.value)}
-            autoComplete="off"
-            spellCheck={false}
-          />
-        </label>
-        <button type="button" className="btn btn-danger" disabled={!pret || occupe || lancee !== null} onClick={lance}>
-          {verbe} et tout remettre à zéro
+        <button type="button" className="btn btn-danger" disabled={occupe} onClick={() => setConfirme(true)}>
+          {verbe}
         </button>
       </div>
-      {lancee && (
-        <GelDeSaison
-          saison={lancee.saison}
-          retour={lancee.retour}
-          requete={lancee.requete}
-          onFin={() => {
-            setLancee(null);
-            setPhrase('');
-          }}
-        />
-      )}
+      {confirme &&
+        createPortal(
+          <div
+            className="fenetre-voile"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="confirme-saison"
+            onClick={() => !occupe && setConfirme(false)}
+          >
+            <div
+              className="fenetre-carte glass glass-reflet relative grid gap-4 px-6 pt-7 pb-6"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h2
+                id="confirme-saison"
+                className="font-display text-2xl leading-none font-black tracking-wide text-ink uppercase"
+              >
+                {verbe} ?
+              </h2>
+              <p className="text-[14px] leading-relaxed text-muted">
+                Toute la ligue repart de zéro : games, points, flocons, boosters, cartes, duels, évènements, codes et
+                subs. Les joueurs restent inscrits. Ça ne se récupère pas.
+              </p>
+              <p className="text-[14px] text-ink">{resumeSaison(saison)}</p>
+              <div className="flex flex-wrap justify-end gap-2">
+                <button type="button" className="btn btn-ghost" disabled={occupe} onClick={() => setConfirme(false)}>
+                  Annuler
+                </button>
+                <button type="button" className="btn btn-danger" disabled={occupe} onClick={lance} autoFocus>
+                  {occupe ? 'Remise à zéro…' : 'Confirmer'}
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body,
+        )}
     </section>
   );
 }

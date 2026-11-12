@@ -148,13 +148,10 @@ export function parametresSaison(numero: number | undefined): ParametresSaison {
 
 /**
  * Qui peut lancer une nouvelle saison et remettre la ligue à zéro : son
- * identifiant Twitch, lu en base (Jeex3).
+ * identifiant Twitch, lu en base (Jex3_).
  */
-/** La phrase à taper pour lancer une saison : la ligue repart de zéro. */
-export const PHRASE_NOUVELLE_SAISON = 'REMETTRE À ZÉRO';
-
 export const RESPONSABLES_SAISON: readonly string[] = [
-  '207954362', // Jeex3
+  '207954362', // Jex3_
 ];
 
 /* ------------------------------- Économie ------------------------------- */
@@ -845,7 +842,7 @@ export const ACHAT_PERSO = {
  * base, et un autre modérateur n'y a pas accès.
  */
 export const TESTEURS_CARTES: readonly string[] = [
-  '207954362', // Jeex3
+  '207954362', // Jex3_
 ];
 
 /**
