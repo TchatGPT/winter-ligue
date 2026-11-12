@@ -72,10 +72,10 @@ export function EcranTestCartes({ vue }: { vue: VueTestCartes }) {
     await envoie('/api/admin/test/cartes', {}, { methode: 'DELETE', cle: 'retire', succes: 'Carte retirée.' });
   }
 
-  /** Retirer les données fictives se confirme : un premier clic le propose, le second le fait. */
-  const [confirmeRetrait, setConfirmeRetrait] = useState(false);
+  /** Ce que les données fictives feront, à confirmer dans le panneau : les refaire à neuf, ou les retirer. */
+  const [confirme, setConfirme] = useState<'ajoute' | 'retire' | null>(null);
   async function fictives(action: 'ajoute' | 'retire') {
-    setConfirmeRetrait(false);
+    setConfirme(null);
     const data = await envoie(
       '/api/admin/test/fictives',
       { action },
@@ -87,7 +87,7 @@ export function EcranTestCartes({ vue }: { vue: VueTestCartes }) {
       kind: 'success',
       text:
         action === 'ajoute'
-          ? `${n('joueurs')} joueurs fictifs, ${n('games')} games, ${n('cartes')} cartes et ${n('boosters')} boosters à ouvrir ajoutés.`
+          ? `${n('joueurs')} joueurs fictifs, ${n('games')} games, ${n('ouverts')} boosters déjà ouverts, ${n('boosters')} à ouvrir, ${n('duels')} duels, ${n('subs')} subs.`
           : `${n('joueurs')} joueurs fictifs retirés, avec leurs ${n('games')} games et ${n('cartes')} cartes.`,
     });
   }
@@ -110,37 +110,49 @@ export function EcranTestCartes({ vue }: { vue: VueTestCartes }) {
         titre="Données fictives"
         surtitre={vue.fictifs > 0 ? `${vue.fictifs} joueurs fictifs dans la ligue` : 'Aucune donnée fictive'}
         ton={vue.fictifs > 0 ? 'or' : 'glace'}
-        sousTitre="24 joueurs inventés, avec leurs games, leurs points, leurs flocons et leurs cartes actives, et 7 boosters de la ligue à ouvrir (4 Commu, 3 Folie) : de quoi essayer les ouvertures et les cartes. À retirer avant le lancement de la saison."
+        sousTitre="Une ligue qui a déjà vécu : 24 joueurs inventés, leurs games, leurs points et leurs flocons, des cartes déjà jouées et des Jokers déjà servis, des subs et leurs paliers, des boosters déjà ouverts et d’autres à ouvrir, des duels joués, des cartes actives et gardées. À retirer avant le lancement de la saison."
         actions={
-          vue.fictifs === 0 ? (
-            <button
-              type="button"
-              className="btn btn-sm btn-ice"
-              disabled={busy !== null}
-              onClick={() => fictives('ajoute')}
-            >
-              {busy === 'fictives-ajoute' ? 'Ajout…' : 'Ajouter les données fictives'}
-            </button>
-          ) : confirmeRetrait ? (
+          confirme ? (
             <div className="flex flex-wrap gap-2">
-              <button type="button" className="btn btn-sm btn-danger" disabled={busy !== null} onClick={() => fictives('retire')}>
-                {busy === 'fictives-retire' ? 'Retrait…' : `Retirer les ${vue.fictifs} joueurs fictifs`}
+              <button
+                type="button"
+                className={`btn btn-sm ${confirme === 'retire' ? 'btn-danger' : 'btn-ice'}`}
+                disabled={busy !== null}
+                onClick={() => fictives(confirme)}
+              >
+                {busy === `fictives-${confirme}`
+                  ? confirme === 'retire'
+                    ? 'Retrait…'
+                    : 'Création…'
+                  : confirme === 'retire'
+                    ? `Confirmer : retirer les ${vue.fictifs} joueurs fictifs`
+                    : 'Confirmer : tout refaire à neuf'}
               </button>
-              <button type="button" className="btn btn-sm btn-ghost" disabled={busy !== null} onClick={() => setConfirmeRetrait(false)}>
+              <button type="button" className="btn btn-sm btn-ghost" disabled={busy !== null} onClick={() => setConfirme(null)}>
                 Annuler
               </button>
             </div>
-          ) : (
-            <button type="button" className="btn btn-sm" disabled={busy !== null} onClick={() => setConfirmeRetrait(true)}>
-              Retirer les données fictives
+          ) : vue.fictifs === 0 ? (
+            <button type="button" className="btn btn-sm btn-ice" disabled={busy !== null} onClick={() => fictives('ajoute')}>
+              {busy === 'fictives-ajoute' ? 'Création…' : 'Ajouter des données fictives'}
             </button>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              <button type="button" className="btn btn-sm btn-ice" disabled={busy !== null} onClick={() => setConfirme('ajoute')}>
+                Refaire à neuf
+              </button>
+              <button type="button" className="btn btn-sm" disabled={busy !== null} onClick={() => setConfirme('retire')}>
+                Retirer
+              </button>
+            </div>
           )
         }
       >
         <p className="adm-note">
-          Ils sont dans le classement comme de vrais joueurs ; leurs cartes ne passent ni dans le tchat ni sur
-          l’overlay du live. Les retirer efface aussi leurs games, leurs flocons, leurs cartes et les boosters
-          fictifs pas encore ouverts.
+          Ils sont dans le classement comme de vrais joueurs ; rien ne passe dans le tchat ni sur l’overlay du live.
+          Pendant la création, les vrais joueurs sont mis de côté : aucune carte ni aucun versement ne tombe sur eux.
+          « Refaire à neuf » retire tout puis recrée ; « Retirer » efface les joueurs fictifs, leurs games, flocons,
+          cartes, duels et boosters, et reprend les subs fictifs au compteur.
         </p>
       </Panneau>
 

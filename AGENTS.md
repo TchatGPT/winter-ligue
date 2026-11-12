@@ -221,8 +221,13 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   (`fluxOverlay`) ne la joue pas, et compte pour de vrai ; pas de stock, même là. Le
   journal garde chaque carte (`CARTE_TEST`). La même page ajoute ou retire les
   **données fictives** (12/11/2026, `lib/services/donneesFictives.ts`,
-  `/api/admin/test/fictives`, ou `scripts/fictifs.ts`) : 24 joueurs `fictif-…` avec games,
-  flocons et cartes, et 7 boosters de la ligue à ouvrir ; les retirer avant le lancement.
+  `/api/admin/test/fictives`, ou `scripts/fictifs.ts`) : une ligue qui a déjà vécu, faite
+  par les services du site — 24 joueurs `fictif-…`, leurs games, cartes consommées et
+  Jokers servis, des subs et leurs paliers, des boosters ouverts et à ouvrir, des duels,
+  des cartes actives et gardées. Les vrais joueurs sont mis de côté pendant la création
+  (rien ne tombe sur eux) ; tout ce qui est fictif est marqué, et le retrait l'efface,
+  subs du compteur compris. « Refaire à neuf » retire puis recrée. À retirer avant le
+  lancement.
 - **Une carte n'a aucune valeur en flocons** : elle ne s'achète, ne s'échange ni ne se
   revend — ni cote, ni marché, ni collection, ni exemplaires en réserve. Elle se joue sur
   une game, puis disparaît.
