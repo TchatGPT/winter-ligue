@@ -152,6 +152,26 @@ export interface RankingRow {
   carte: CarteDuClassement | null;
   /** Vrai pour les places qualificatives pour la finale. */
   finalist: boolean;
+  /**
+   * Le nombre de games que la colonne « Games » montre après la barre
+   * (12/11/2026) : le palier du Booster Finisseur (35, ou 60 en saison 2) tant
+   * qu'il n'est pas atteint, puis la limite de la saison (38, ou 65), créneaux
+   * bonus compris.
+   */
+  objectifGames: number;
+}
+
+/**
+ * Le palier du Booster Finisseur, ou la fin de la saison une fois le palier
+ * passé — comme `verifieFinisseur` le compte : les games jouées, Jokers
+ * exclus, ou le Finisseur déjà tombé.
+ */
+export function objectifGamesDe(db: Database, player: Player): number {
+  const limite = limiteDe(db, player);
+  const seuil = Math.min(parametresSaison(db.config.numero).finisseurA, db.config.maxGamesPerPlayer);
+  const jouees = db.games.filter((g) => g.playerId === player.id && !g.skipped).length;
+  const finisseur = db.packsDus.some((p) => p.packId === 'finisseur' && p.joueurId === player.id);
+  return jouees >= seuil || finisseur ? limite : seuil;
 }
 
 /** Classement complet, calculé sur une base déjà lue. */
@@ -178,6 +198,7 @@ export function classementDe(db: Database): RankingRow[] {
     gardees: gardeesDuJoueur(db, player.id),
     ...carteActive(db, player.id),
     finalist: position <= parametresSaison(db.config.numero).finalistes,
+    objectifGames: objectifGamesDe(db, player),
   }));
 }
 

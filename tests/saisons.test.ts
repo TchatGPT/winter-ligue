@@ -4,7 +4,7 @@ import { emptyDatabase } from '@/lib/db/store';
 import { parametresSaison, SESSION_MINUTES } from '@/lib/domain/rules';
 import { rattacheCompteTwitch } from '@/lib/services/comptes';
 import { jokersDe } from '@/lib/services/effects';
-import { prochaineGamePossible } from '@/lib/services/league';
+import { objectifGamesDe, prochaineGamePossible } from '@/lib/services/league';
 import { credit } from '@/lib/services/ledger';
 import { ajoutePackDu, verifieFinisseur } from '@/lib/services/packs';
 import { estResponsableSaison, nouvelleSaison } from '@/lib/services/saisons';
@@ -94,6 +94,25 @@ describe('la Mini Ligue', () => {
     const apres = Date.parse(soixantieme[0].createdAt);
     expect(prochaineGamePossible(db, id, new Date(apres + 10 * 60_000))).not.toBeNull();
     expect(prochaineGamePossible(db, id, new Date(apres + SESSION_MINUTES * 60_000 + 1))).toBeNull();
+  });
+});
+
+describe('la colonne « Games » du classement', () => {
+  it('compte sur le palier du Finisseur, puis sur la fin de la saison', () => {
+    for (const [numero, palier, fin] of [
+      [1, 35, 38],
+      [2, 60, 65],
+    ] as const) {
+      const { db, id } = base(numero);
+      const joueur = db.players.find((p) => p.id === id)!;
+      joue(db, id, palier - 1);
+      expect(objectifGamesDe(db, joueur)).toBe(palier);
+      joue(db, id, 1, T0 + 500 * 3_600_000);
+      expect(objectifGamesDe(db, joueur)).toBe(fin);
+      // Un créneau bonus allonge la fin.
+      joueur.creneauxBonus = 1;
+      expect(objectifGamesDe(db, joueur)).toBe(fin + 1);
+    }
   });
 });
 

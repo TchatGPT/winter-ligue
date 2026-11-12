@@ -386,7 +386,9 @@ export function Classement({
                     </span>
                   )}
                 </td>
-                <td className="num text-right text-ink-2">{row.totals.countedGames}</td>
+                <td className="num text-right text-ink-2">
+                  <SurObjectif row={row} />
+                </td>
                 <td className="tableau-verre-secondaire num text-right text-ink-2">{row.totals.averageScore}</td>
                 <td className="num text-right text-ink-2">{row.totals.totalKills}</td>
                 <td className="num text-center text-ink-2">
@@ -442,7 +444,7 @@ export function Classement({
                 </span>
               </summary>
               <dl className="tableau-verre-detail grid grid-cols-3 gap-x-3 gap-y-2 px-4 pt-2.5 pb-3.5 text-[13px]">
-                <Detail label="Games" valeur={row.totals.countedGames} />
+                <Detail label="Games" valeur={<SurObjectif row={row} />} />
                 <Detail label="Kills" valeur={row.totals.totalKills} />
                 <Detail label="Moyenne" valeur={row.totals.averageScore} />
                 <Detail label="Top 1/2/3" valeur={<Podiums totals={row.totals} />} />
@@ -799,6 +801,16 @@ function Podiums({ totals }: { totals: RankingRow['totals'] }) {
       <span className="text-faint"> / </span>
       <span className={totals.top3 > 0 ? 'text-ink-2' : 'text-faint'}>{totals.top3}</span>
     </>
+  );
+}
+
+/** « 12/35 » : les games jouées, sur le palier du Finisseur, puis sur la fin de la saison. */
+function SurObjectif({ row }: { row: RankingRow }) {
+  return (
+    <span className="whitespace-nowrap" aria-label={`${row.totals.countedGames} games sur ${row.objectifGames}`}>
+      {row.totals.countedGames}
+      <span className="text-faint">/{row.objectifGames}</span>
+    </span>
   );
 }
 
