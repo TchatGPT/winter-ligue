@@ -125,10 +125,40 @@ export function Classement({
   const [recherche, setRecherche] = useState('');
   /** La carte qu'on regarde en grand, s'il y en a une : la carte active, ou une carte gardée. */
   const [fiche, setFiche] = useState<{ row: RankingRow; carte: CarteDuClassement | CarteGardee } | null>(null);
-  const ouvre = (row: RankingRow, carte: CarteDuClassement | CarteGardee) => setFiche({ row, carte });
+  const ouvre = (row: RankingRow, carte: CarteDuClassement | CarteGardee) => {
+    setFige({ busy: false, texte: null, erreur: false });
+    setFiche({ row, carte });
+  };
   /** Le Verglas que la modération lance, s'il y en a un : sa fenêtre remplace la fiche. */
   const [verglas, setVerglas] = useState<{ carte: CarteGardee; porteur: RankingRow } | null>(null);
   const [pacte, setPacte] = useState<{ carteId: string; porteur: RankingRow } | null>(null);
+  const router = useRouter();
+  /** La Cryogénisation en cours d'envoi, et ce que le serveur en a dit. */
+  const [fige, setFige] = useState<{ busy: boolean; texte: string | null; erreur: boolean }>({
+    busy: false,
+    texte: null,
+    erreur: false,
+  });
+
+  async function joueCryogenisation(carteId: string) {
+    setFige({ busy: true, texte: null, erreur: false });
+    try {
+      const reponse = await fetch('/api/admin/cartes/figer', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ carteId }),
+      });
+      const charge = await reponse.json();
+      if (!charge.ok) {
+        setFige({ busy: false, texte: charge.error?.message ?? 'Refusé.', erreur: true });
+        return;
+      }
+      setFige({ busy: false, texte: charge.data?.resultat ?? 'Game figée.', erreur: false });
+      router.refresh();
+    } catch {
+      setFige({ busy: false, texte: 'Le serveur n’a pas répondu.', erreur: true });
+    }
+  }
 
   const visibles = useMemo(() => {
     const q = plat(recherche.trim());
@@ -173,6 +203,11 @@ export function Classement({
                 {fiche.carte.nom} de <strong className="text-ink">{fiche.row.pseudo}</strong> : il choisit sa victime,
                 la modération le joue pour lui.
               </>
+            ) : fiche.carte.genre === 'fige_garde' ? (
+              <>
+                {fiche.carte.nom} de <strong className="text-ink">{fiche.row.pseudo}</strong> : il dit quand, la
+                modération fige sa meilleure game pour lui.
+              </>
             ) : fiche.carte.genre === 'echange_cible' ? (
               <>
                 {fiche.carte.nom} de <strong className="text-ink">{fiche.row.pseudo}</strong> : il choisit sa cible, la
@@ -205,6 +240,24 @@ export function Classement({
               >
                 Jouer {fiche.carte.nom}…
               </button>
+            ) : boostersPerso && fiche.carte.genre === 'fige_garde' && 'id' in fiche.carte ? (
+              <div className="grid w-full gap-2">
+                {fige.texte && (
+                  <p className={`text-[14px] ${fige.erreur ? 'text-danger' : 'text-aurora'}`} role="status">
+                    {fige.texte}
+                  </p>
+                )}
+                {!fige.texte || fige.erreur ? (
+                  <button
+                    type="button"
+                    className="btn btn-ice w-full"
+                    disabled={fige.busy}
+                    onClick={() => 'id' in fiche.carte && joueCryogenisation(fiche.carte.id)}
+                  >
+                    {fige.busy ? 'Envoi…' : `Jouer ${fiche.carte.nom}`}
+                  </button>
+                ) : null}
+              </div>
             ) : boostersPerso && fiche.carte.genre === 'echange_choisi' && 'id' in fiche.carte ? (
               <button
                 type="button"
@@ -571,16 +624,17 @@ function CarteActive({
   onOuvrir: (carte: CarteDuClassement | CarteGardee) => void;
 }) {
   // La carte active, puis les cartes gardées : plusieurs, l'une sur l'autre.
-  // Les Jokers n'en font qu'une, posée en dernier : rien ne couvre la
-  // pastille de leur nombre.
-  const joker = row.gardees.find((c) => c.genre === 'joker');
+  // Deux cartes identiques n'en font qu'une, leur nombre en pastille (le
+  // 12/11/2026 ; les Jokers, déjà le 02/11). Le Joker est posé en dernier :
+  // rien ne couvre sa pastille.
+  const uniques = row.gardees.filter((c, i) => row.gardees.findIndex((d) => d.cardId === c.cardId) === i);
   const cartes: (CarteDuClassement | CarteGardee)[] = [
     ...(row.carte ? [row.carte] : []),
-    ...row.gardees.filter((c) => c.genre !== 'joker'),
-    ...(joker ? [joker] : []),
+    ...uniques.filter((c) => c.genre !== 'joker'),
+    ...uniques.filter((c) => c.genre === 'joker'),
   ];
-  const jokers = nombreDeJokers(row);
-  if (cartes.length >= 2) return <PileDeCartes cartes={cartes} jokers={jokers} onOuvrir={onOuvrir} />;
+  const nombres = combienDeChaque(row);
+  if (cartes.length >= 2) return <PileDeCartes cartes={cartes} nombres={nombres} onOuvrir={onOuvrir} />;
   const c = cartes[0];
   if (!c) return <span className="text-[13px] text-faint">—</span>;
   return (
@@ -601,7 +655,7 @@ function CarteActive({
           nature={c.nature}
           largeur="56px"
         />
-        {c.genre === 'joker' && <PastilleJokers nombre={jokers} />}
+        <PastilleCarte carte={c} nombres={nombres} />
       </span>
       <span className="min-w-0 leading-tight">
         <span className="block truncate text-[14px] font-bold text-ink @min-[100rem]:text-[16px]">{c.nom}</span>
@@ -629,12 +683,12 @@ const TEINTE: Record<CarteDuClassement['rarity'], string> = {
  */
 function PileDeCartes({
   cartes,
-  jokers,
+  nombres,
   onOuvrir,
 }: {
   cartes: (CarteDuClassement | CarteGardee)[];
-  /** Combien de Jokers il garde : la carte du Joker les porte en pastille. */
-  jokers: number;
+  /** Combien il en garde de chaque : une carte en double porte son nombre en pastille. */
+  nombres: Map<string, number>;
   onOuvrir: (carte: CarteDuClassement | CarteGardee) => void;
 }) {
   const [premiere, ...autres] = cartes;
@@ -660,7 +714,7 @@ function PileDeCartes({
               nature={c.nature}
               largeur="56px"
             />
-            {c.genre === 'joker' && <PastilleJokers nombre={jokers} />}
+            <PastilleCarte carte={c} nombres={nombres} />
           </button>
         ))}
       </span>
@@ -672,7 +726,7 @@ function PileDeCartes({
             key={'id' in c ? c.id : c.cardId}
             className={`block truncate text-[13px] font-semibold @min-[100rem]:text-[14px] ${TEINTE[c.rarity]}`}
           >
-            + {c.genre === 'joker' && jokers > 1 ? `${jokers} Jokers` : c.nom}
+            + {(nombres.get(c.cardId) ?? 1) > 1 && 'id' in c ? `${nombres.get(c.cardId)} × ${c.nom}` : c.nom}
           </span>
         ))}
       </span>
@@ -706,10 +760,30 @@ function nombreDeJokers(row: RankingRow): number {
   return row.gardees.filter((c) => c.genre === 'joker').length;
 }
 
-/** Le nombre de Jokers, sur le coin de la carte : la seule carte du classement qui en porte un. */
-function PastilleJokers({ nombre }: { nombre: number }) {
+/** Combien il garde de chaque carte. */
+function combienDeChaque(row: RankingRow): Map<string, number> {
+  const n = new Map<string, number>();
+  for (const c of row.gardees) n.set(c.cardId, (n.get(c.cardId) ?? 0) + 1);
+  return n;
+}
+
+/**
+ * Le nombre, sur le coin d'une carte gardée : toujours sur le Joker, et sur
+ * toute carte qu'il garde en plusieurs exemplaires (deux Verglas). La carte
+ * active, elle, est seule.
+ */
+function PastilleCarte({
+  carte,
+  nombres,
+}: {
+  carte: CarteDuClassement | CarteGardee;
+  nombres: Map<string, number>;
+}) {
+  if (!('id' in carte)) return null;
+  const nombre = nombres.get(carte.cardId) ?? 1;
+  if (carte.genre !== 'joker' && nombre < 2) return null;
   return (
-    <span className="pastille-nombre num" data-taille="petite" aria-label={`${nombre} Joker${nombre > 1 ? 's' : ''}`}>
+    <span className="pastille-nombre num" data-taille="petite" aria-label={`${nombre} ${carte.nom}`}>
       <span className="pastille-x">×</span>
       {nombre}
     </span>

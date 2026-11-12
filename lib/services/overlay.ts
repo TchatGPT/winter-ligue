@@ -4,7 +4,7 @@ import { createHmac, timingSafeEqual } from 'node:crypto';
 import { cleDerivee } from '@/lib/auth/session';
 import { getStore, type FluxOverlay } from '@/lib/db/store';
 import { chaineDeLaLigue } from '@/lib/auth/twitch';
-import { GEMME_DU_PACK, getCard, getPack, joueursTires, packArt } from '@/lib/domain/catalog';
+import { estUneCourse, GEMME_DU_PACK, getCard, getPack, joueursTires, packArt } from '@/lib/domain/catalog';
 import { nextMilestone, type PalierAffiche, paliersAffiches, prochainEvenement } from '@/lib/domain/rules';
 import { estLaStreameuse } from '@/lib/domain/streameuse';
 import type { PackId, Rarity } from '@/lib/domain/types';
@@ -81,7 +81,7 @@ export interface BoosterOverlay {
    * Null sinon — tout le monde, la tête ou la queue du classement ne se
    * tirent pas, et un booster ouvert pour un joueur va à ce joueur.
    */
-  tirage: { gagnants: string[]; joueurs: string[] } | null;
+  tirage: { gagnants: string[]; joueurs: string[]; course?: boolean } | null;
 }
 
 export interface DuelOverlay {
@@ -153,7 +153,9 @@ export function vueBoosters(flux: FluxOverlay): BoosterOverlay[] {
           ? `${o.beneficiaires.join(', ')} et ${autres} autre${autres > 1 ? 's' : ''}`
           : liste(o.beneficiaires),
       carte,
-      tirage: tire ? { gagnants: o.beneficiaires, joueurs: enLice.length ? enLice : o.beneficiaires } : null,
+      tirage: tire
+        ? { gagnants: o.beneficiaires, joueurs: enLice.length ? enLice : o.beneficiaires, course: estUneCourse(card) }
+        : null,
     });
   }
   return vues;

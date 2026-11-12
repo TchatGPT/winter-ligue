@@ -5,7 +5,7 @@ import { EventailBoosters } from '@/components/EventailBoosters';
 import { SnowCap } from '@/components/SnowCap';
 import { IconJauge, IconPack, IconSnowflake, IconSwords, IconTrophy, IconTwitch } from '@/components/icons';
 import { GEMME_DU_PACK, PACKS, packArt } from '@/lib/domain/catalog';
-import { CADEAU_DU_JOUR, CHANCE, ECONOMY, PLACEMENT_POINTS, SEASON } from '@/lib/domain/rules';
+import { CADEAU_DU_JOUR, CHANCE, ECONOMY, PLACEMENT_POINTS, saisonDuMoment } from '@/lib/domain/rules';
 
 /**
  * L'accueil, quand on n'est pas connecté.
@@ -119,9 +119,11 @@ function Dalle({
 }
 
 export function Accueil({ twitchEnabled, devLogin }: { twitchEnabled: boolean; devLogin: boolean }) {
-  const debut = jourDe(SEASON.startsAt);
-  const fin = jourDe(SEASON.endsAt);
-  const avantLaSaison = avantLe(SEASON.startsAt);
+  // La saison du calendrier : la Mini Ligue jusqu'au 4 janvier, puis la saison 2.
+  const saison = saisonDuMoment();
+  const debut = jourDe(saison.debut);
+  const fin = jourDe(saison.fin);
+  const avantLaSaison = avantLe(saison.debut);
 
   // Twitch branché, on part chez lui ; sinon la page de connexion dit que la
   // connexion ouvre bientôt, et garde l'entrée de l'administration.
@@ -144,7 +146,7 @@ export function Accueil({ twitchEnabled, devLogin }: { twitchEnabled: boolean; d
         chiffre: `+${PLACEMENT_POINTS['1']}`,
         legende: 'le Top 1 · +1 par kill',
         titre: 'Chaque kill compte',
-        children: `Tes kills et tes Top 3 font ton score. Les ${SEASON.finalistCount} premiers jouent la finale.`,
+        children: 'Tes kills et tes Top 3 font ton score, game après game.',
       },
     },
     {
@@ -215,7 +217,7 @@ export function Accueil({ twitchEnabled, devLogin }: { twitchEnabled: boolean; d
       <section className="acc-hero" aria-labelledby="accueil-titre">
         <div className="acc-hero-texte">
           <p className="eyebrow">
-            {SEASON.edition} · du {debut} au {fin}
+            {saison.nom} · du {debut} au {fin}
           </p>
           <h1 id="accueil-titre" className="hero-titre acc-titre">
             <span className="glace" data-text="Winter">

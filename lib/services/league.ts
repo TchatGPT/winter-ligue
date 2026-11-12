@@ -15,7 +15,7 @@ import type { Database, Game, Player } from '@/lib/db/entities';
 import { getStore } from '@/lib/db/store';
 import { rank, scoreGame, totalsFor, type PlayerTotals, type ScoredGame } from '@/lib/domain/scoring';
 import { getCard, momentDe, resumeEffet } from '@/lib/domain/catalog';
-import { SEASON } from '@/lib/domain/rules';
+import { parametresSaison, SESSION_MINUTES } from '@/lib/domain/rules';
 import type { CardDefinition, Rarity } from '@/lib/domain/types';
 
 /** Réécrit le score d'une game à partir de ses composantes. À appeler après toute modification. */
@@ -38,6 +38,26 @@ export function recomputePlayerGames(db: Database, playerId: string): void {
 /** Le nombre de games qui comptent pour ce joueur : les games passées n'en sont pas. */
 export function gamesComptees(db: Database, playerId: string): number {
   return db.games.filter((g) => g.playerId === playerId && !g.skipped).length;
+}
+
+/**
+ * Passé le seuil de la saison (`uneParSessionApres` : la 35ᵉ game de la Mini
+ * Ligue), une seule game compte par session de jeu avec Lriaa. Rend l'heure à
+ * partir de laquelle ce joueur peut de nouveau en jouer une, ou null s'il le
+ * peut maintenant : sa dernière game comptée, au-delà du seuil, a moins d'une
+ * session (`SESSION_MINUTES`).
+ */
+export function prochaineGamePossible(db: Database, playerId: string, now = new Date()): Date | null {
+  const seuil = parametresSaison(db.config.numero).uneParSessionApres;
+  if (seuil === null) return null;
+  const comptees = db.games
+    .filter((g) => g.playerId === playerId && !g.skipped)
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  // La game qu'on saisit serait la (n + 1)ᵉ : la règle vaut dès la 36ᵉ.
+  if (comptees.length < seuil) return null;
+  const derniere = comptees.at(-1)!;
+  const libre = new Date(Date.parse(derniere.createdAt) + SESSION_MINUTES * 60_000);
+  return libre.getTime() > now.getTime() ? libre : null;
 }
 
 /**
@@ -157,7 +177,7 @@ export function classementDe(db: Database): RankingRow[] {
     immunise: estImmunise(player),
     gardees: gardeesDuJoueur(db, player.id),
     ...carteActive(db, player.id),
-    finalist: position <= SEASON.finalistCount,
+    finalist: position <= parametresSaison(db.config.numero).finalistes,
   }));
 }
 

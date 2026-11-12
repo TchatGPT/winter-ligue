@@ -2,6 +2,8 @@ import { EcranSaison, type RetourSubs } from '@/components/admin/EcranSaison';
 import { exigeRole } from '@/lib/auth/acces';
 import { isTwitchEnabled } from '@/lib/auth/twitch';
 import { getStore } from '@/lib/db/store';
+import { playerIdOf } from '@/lib/auth/session';
+import { estResponsableSaison } from '@/lib/services/saisons';
 import { etatSubsTwitch } from '@/lib/services/twitchSubs';
 
 export const dynamic = 'force-dynamic';
@@ -35,7 +37,9 @@ export default async function AdminSaisonPage({
       config: {
         maxGamesPerPlayer: db.config.maxGamesPerPlayer,
         totalSubs: db.config.totalSubs,
+        numero: db.config.numero ?? 1,
       },
+      responsable: estResponsableSaison(db, playerIdOf(session)),
       packsEnFile: db.packsDus.filter((p) => p.ouvertureId === null).length,
     })),
     // L'état se lit chez Twitch : c'est lui qui garde les abonnements.
@@ -49,6 +53,7 @@ export default async function AdminSaisonPage({
       config={data.config}
       packsEnFile={data.packsEnFile}
       estAdmin={session.role === 'admin'}
+      responsable={data.responsable}
       twitch={{ configure: twitchConfigure, etat: etatTwitch, retour }}
     />
   );

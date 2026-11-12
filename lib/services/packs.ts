@@ -28,11 +28,12 @@ import { chaineDeLaLigue } from '@/lib/auth/twitch';
 import type { Database, OuverturePack, PackDu, Player, SubTwitch } from '@/lib/db/entities';
 import { persoEnAttente } from '@/lib/domain/twitchSubs';
 import { newId } from '@/lib/db/store';
-import { getCard, getPack, joueursTires, momentDe, PACKS } from '@/lib/domain/catalog';
+import { estUneCourse, getCard, getPack, joueursTires, momentDe, PACKS } from '@/lib/domain/catalog';
 import { pick, tirePack } from '@/lib/domain/rng';
 import {
   ACHAT_PERSO,
   chanceDe,
+  parametresSaison,
   packsPersoAcquis,
   poidsAvecChance,
   tailleDeLaQueue,
@@ -48,7 +49,7 @@ import {
   RARITIES,
   type Rarity,
 } from '@/lib/domain/types';
-import { carteQuiAttend, gamesSansCarte, regleCartesSansAttendre } from './effects';
+import { carteQuiAttend, estFigee, gamesSansCarte, regleCartesSansAttendre } from './effects';
 import { audit, debit } from './ledger';
 import { aJoueToutesSesGames, estImmunise, gamesOf, pointsHorsGame } from './league';
 
@@ -369,13 +370,15 @@ export function ajusteBoostersPerso(
 }
 
 /**
- * Met en file le pack Finisseur d'un joueur qui vient d'atteindre son quota de
- * games. Une fois par joueur et par saison : la limite peut être relevée par
- * la modération, le pack n'en tombe pas une seconde fois.
+ * Met en file le pack Finisseur d'un joueur qui vient d'atteindre le seuil de
+ * la saison (`finisseurA` : la 35ᵉ game de la Mini Ligue, la dernière sinon).
+ * Une fois par joueur et par saison : la limite peut être relevée par la
+ * modération, le pack n'en tombe pas une seconde fois.
  */
 export function verifieFinisseur(db: Database, joueurId: string): PackDu | null {
   const jouees = gamesOf(db, joueurId).filter((g) => !g.skipped).length;
-  if (jouees < db.config.maxGamesPerPlayer) return null;
+  const seuil = Math.min(parametresSaison(db.config.numero).finisseurA, db.config.maxGamesPerPlayer);
+  if (jouees < seuil) return null;
   const deja = db.packsDus.some((p) => p.packId === 'finisseur' && p.joueurId === joueurId);
   if (deja) return null;
   return ajoutePackDu(db, 'finisseur', joueurId, `${jouees} games jouées`);
@@ -591,8 +594,17 @@ function beneficiairesRoue(db: Database, card: CardDefinition): Player[] {
       return pool.length < 2 ? [] : tireDistincts(pool, 2);
     case 'TROIS':
       return tireDistincts(pool, 3);
-    case 'SIX':
-      return pool.length < 2 ? [] : tireDistincts(pool, 6);
+    case 'SIX': {
+      if (pool.length < 2) return [];
+      const tires = tireDistincts(pool, 6);
+      if (action.quoi !== 'roulette') return tires;
+      // La Roulette se court comme un duel : le perdant — le seul qui ne passe
+      // pas la ligne — est tiré ici, parmi ceux qui ont une game à perdre, et
+      // mis en tête. L'écran, l'overlay et la carte le lisent là.
+      const exposes = tires.filter((p) => db.games.some((g) => g.playerId === p.id && !g.skipped && !estFigee(g)));
+      const perdant = exposes.length > 0 ? pick(exposes) : null;
+      return perdant ? [perdant, ...tires.filter((p) => p !== perdant)] : tires;
+    }
     case 'DIX_PREMIERS':
       return classes(db, pool).slice(0, 10);
     case 'CINQ_DERNIERS': {
@@ -757,6 +769,11 @@ export interface TirageJoueurs {
   gagnants: string[];
   /** Ceux qui défilent devant le repère : les joueurs en lice. */
   joueurs: string[];
+  /**
+   * La Roulette russe : pas de rail, une course à six, où le premier des
+   * `gagnants` est celui qui ne passe pas la ligne.
+   */
+  course?: boolean;
 }
 
 export function tirageDe(db: Database, o: OuverturePack): TirageJoueurs | null {
@@ -767,6 +784,7 @@ export function tirageDe(db: Database, o: OuverturePack): TirageJoueurs | null {
   return {
     gagnants: o.beneficiaires.map(pseudoDe),
     joueurs: joueursEnLice(db).map((p) => p.pseudo),
+    course: estUneCourse(card),
   };
 }
 

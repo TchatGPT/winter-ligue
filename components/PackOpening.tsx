@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ChoixJoueurBooster, type CandidatBooster } from '@/components/ChoixJoueurBooster';
+import { CourseRoulette } from '@/components/CourseRoulette';
 import { RangeePacks } from '@/components/RangeePacks';
 import { SnowCap } from '@/components/SnowCap';
 import { prechargeSons, reveilleSon } from '@/components/bruitage';
@@ -571,21 +572,29 @@ export function PackOpening({
                   {ouverture.nom}
                 </span>
                 <span className="font-display text-[26px] leading-none font-black tracking-wide text-ink uppercase xl:text-[32px]">
-                  {tirage.gagnants.length > 1
-                    ? rangJoueur === 0
-                      ? 'Premier joueur'
-                      : 'Second joueur'
-                    : 'Sur qui tombe-t-elle ?'}
+                  {tirage.course
+                    ? 'Qui ne passera pas la ligne ?'
+                    : tirage.gagnants.length > 1
+                      ? `Joueur ${rangJoueur + 1} sur ${tirage.gagnants.length}`
+                      : 'Sur qui tombe-t-elle ?'}
                 </span>
               </div>
-              <RailJoueurs
-                key={rangJoueur}
-                joueurs={tirage.joueurs}
-                gagnant={tirage.gagnants[rangJoueur]}
-                onFini={() =>
-                  rangJoueur + 1 < tirage.gagnants.length ? setRangJoueur(rangJoueur + 1) : setPhase('reveal')
-                }
-              />
+              {/* La Roulette russe se court comme un duel, à six ; les autres
+                  cartes tirent leurs joueurs un par un, sur le rail. */}
+              {tirage.course ? (
+                <div className="px-4">
+                  <CourseRoulette pseudos={tirage.gagnants} graine={ouverture.id} onFini={() => setPhase('reveal')} />
+                </div>
+              ) : (
+                <RailJoueurs
+                  key={rangJoueur}
+                  joueurs={tirage.joueurs}
+                  gagnant={tirage.gagnants[rangJoueur]}
+                  onFini={() =>
+                    rangJoueur + 1 < tirage.gagnants.length ? setRangJoueur(rangJoueur + 1) : setPhase('reveal')
+                  }
+                />
+              )}
             </div>
           )}
 

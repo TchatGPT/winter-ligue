@@ -14,6 +14,7 @@ import { useFluxOverlay } from '@/components/overlay/useFluxOverlay';
 import { CARDS, RARITY_META } from '@/lib/domain/catalog';
 import type { BoosterOverlay } from '@/lib/services/overlay';
 import { COURBE_MESUREE } from '@/lib/spin/courbe';
+import { CourseRoulette } from '@/components/CourseRoulette';
 
 /**
  * L'overlay des boosters : ce que le stream voit quand la streameuse en ouvre
@@ -316,16 +317,26 @@ function TirageJoueurs({
           {booster.carte.name}
         </span>
         <span className="ov-tirage-question">
-          {n > 1 ? (rang === 0 ? 'Premier joueur' : 'Second joueur') : 'Sur qui tombe-t-elle ?'}
+          {tirage.course
+            ? 'Qui ne passera pas la ligne ?'
+            : n > 1
+              ? `Joueur ${rang + 1} sur ${n}`
+              : 'Sur qui tombe-t-elle ?'}
         </span>
       </div>
-      <RailJoueurs
-        key={rang}
-        joueurs={tirage.joueurs}
-        gagnant={tirage.gagnants[rang]}
-        sourdine={!son}
-        onFini={() => (rang + 1 < n ? setRang(rang + 1) : onFini())}
-      />
+      {tirage.course ? (
+        <div className="ov-course">
+          <CourseRoulette pseudos={tirage.gagnants} graine={booster.id} sourdine={!son} onFini={onFini} />
+        </div>
+      ) : (
+        <RailJoueurs
+          key={rang}
+          joueurs={tirage.joueurs}
+          gagnant={tirage.gagnants[rang]}
+          sourdine={!son}
+          onFini={() => (rang + 1 < n ? setRang(rang + 1) : onFini())}
+        />
+      )}
     </div>
   );
 }

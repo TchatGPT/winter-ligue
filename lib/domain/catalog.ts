@@ -417,8 +417,8 @@ export const CARDS: readonly CardDefinition[] = [
     subtitle: 'Échange de games',
     rarity: 'L',
     glyph: '🤝',
-    description: 'Tu la gardes. Dès ta 30e game, échange une de tes games contre une game d’un autre joueur, au choix : chacune prend la place de l’autre.',
-    effect: { kind: 'echange_choisi', minGames: 30 },
+    description: 'Tu la gardes. Dès ta 15e game, échange une de tes games contre une game d’un autre joueur, au choix : chacune prend la place de l’autre.',
+    effect: { kind: 'echange_choisi', minGames: 15 },
     nature: 'bonus',
     power: 94,
     packs: ['perso'],
@@ -455,44 +455,47 @@ export const CARDS: readonly CardDefinition[] = [
     cible: 'TOUS',
   },
   {
+    // Changée le 12/11/2026 : commune → rare, +3 au lieu de +5.
     id: 'petits-pas',
     name: 'Petits Pas',
-    subtitle: '+5 pts petites games',
-    rarity: 'C',
+    subtitle: '+3 pts petites games',
+    rarity: 'R',
     glyph: '👣',
     description:
-      '+5 points pour chaque game de moins de 5 kills, à chaque joueur.',
-    effect: { kind: 'roue', action: { quoi: 'petites_games', moinsDe: 5, points: 5 } },
+      '+3 points pour chaque game de moins de 5 kills, à chaque joueur.',
+    effect: { kind: 'roue', action: { quoi: 'petites_games', moinsDe: 5, points: 3 } },
     nature: 'bonus',
-    power: 7,
+    power: 18,
     packs: ['commu'],
     cible: 'TOUS',
   },
   {
+    // Changée le 12/11/2026 : commune → ultra rare.
     id: 'couronnes-de-givre',
     name: 'Couronnes de Givre',
     subtitle: '+5 pts par Top 1',
-    rarity: 'C',
+    rarity: 'UR',
     glyph: '👑',
     description:
       '+5 points par Top 1 fait depuis la dernière fois que cette carte est tombée, à chaque joueur.',
     effect: { kind: 'roue', action: { quoi: 'par_top1', points: 5 } },
     nature: 'bonus',
-    power: 8,
+    power: 69,
     packs: ['commu'],
     cible: 'TOUS',
   },
   {
+    // Changée le 12/11/2026 : commune → ultra rare.
     id: 'givre-errant',
     name: 'Givre Errant',
     subtitle: '3 joueurs figent une game au hasard',
-    rarity: 'C',
+    rarity: 'UR',
     glyph: '🧊',
     description:
       'Trois joueurs tirés au sort figent une de leurs games au hasard, ni la meilleure ni la pire : plus aucune carte ne peut la toucher.',
     effect: { kind: 'roue', action: { quoi: 'fige_hasard', meilleureExclue: true } },
     nature: 'bonus',
-    power: 9,
+    power: 65,
     packs: ['commu'],
     cible: 'TROIS',
   },
@@ -511,16 +514,17 @@ export const CARDS: readonly CardDefinition[] = [
     cible: 'DEUX',
   },
   {
+    // Changée le 12/11/2026 : rare → ultra rare.
     id: 'deneigement',
     name: 'Déneigement',
     subtitle: 'Suppression de la pire game',
-    rarity: 'R',
+    rarity: 'UR',
     glyph: '🧹',
     description:
       'La pire game libre de chaque joueur est supprimée : elle ne compte plus, son créneau est rendu.',
     effect: { kind: 'roue', action: { quoi: 'supprime_pire' } },
     nature: 'bonus',
-    power: 30,
+    power: 73,
     packs: ['commu'],
     cible: 'TOUS',
   },
@@ -559,7 +563,7 @@ export const CARDS: readonly CardDefinition[] = [
     rarity: 'R',
     glyph: '⛰',
     description:
-      'La meilleure game libre de chaque joueur compte ×1,5. Si elle porte déjà une carte, c’est la suivante.',
+      'La meilleure game de chaque joueur compte ×1,5, même si une carte du Booster Perso l’a déjà multipliée. Une seule fois par game : si elle l’a déjà eu, c’est la suivante. Jamais une game figée.',
     effect: { kind: 'roue', action: { quoi: 'meilleure_fois', facteur: 1.5 } },
     nature: 'bonus',
     power: 38,
@@ -637,20 +641,6 @@ export const CARDS: readonly CardDefinition[] = [
     cible: 'DEUX',
   },
   {
-    id: 'appel-de-la-tempete',
-    name: 'Appel de la Tempête',
-    subtitle: 'Booster Commu tous les 20 subs',
-    rarity: 'UR',
-    glyph: '🌨',
-    description:
-      'Déclenche une Tempête de neige : pendant 4 jours, le Booster Commu tombe tous les 20 subs au lieu de 35.',
-    effect: { kind: 'roue', action: { quoi: 'tempete' } },
-    nature: 'bonus',
-    power: 74,
-    packs: ['commu'],
-    cible: 'TOUS',
-  },
-  {
     id: 'voleur-d-hiver',
     name: 'Voleur d’Hiver',
     subtitle: 'Vol de score',
@@ -681,30 +671,32 @@ export const CARDS: readonly CardDefinition[] = [
     cible: 'TOUS',
   },
   {
+    // Changée le 12/11/2026 : rare → ultra rare.
     id: 'grand-gel',
     name: 'Grand Gel',
     subtitle: 'Chacun fige une game au hasard',
-    rarity: 'R',
+    rarity: 'UR',
     glyph: '❄️',
     description:
       'Chaque joueur fige une de ses games au hasard, jamais la pire : plus aucune carte ne peut la toucher.',
     effect: { kind: 'roue', action: { quoi: 'fige_hasard', meilleureExclue: false } },
     nature: 'bonus',
-    power: 40,
+    power: 67,
     packs: ['folie'],
     cible: 'TOUS',
   },
   {
+    // Changée le 12/11/2026 : un Joker au lieu de trois.
     id: 'pluie-de-jokers',
     name: 'Pluie de Jokers',
-    subtitle: '3 Jokers pour tout le monde',
+    subtitle: '1 Joker pour tout le monde',
     rarity: 'R',
     glyph: '🃏',
     description:
-      'Chaque joueur reçoit 3 Jokers, dans la limite de 5 en main.',
-    effect: { kind: 'roue', action: { quoi: 'jokers', nombre: 3 } },
+      'Chaque joueur reçoit un Joker, dans la limite de 5 en main.',
+    effect: { kind: 'roue', action: { quoi: 'jokers', nombre: 1 } },
     nature: 'bonus',
-    power: 52,
+    power: 30,
     packs: ['folie'],
     cible: 'TOUS',
   },
@@ -737,27 +729,13 @@ export const CARDS: readonly CardDefinition[] = [
     cible: 'TOUS',
   },
   {
-    id: 'aube-des-derniers',
-    name: 'Aube des Derniers',
-    subtitle: 'Meilleure game aux 5 derniers',
-    rarity: 'UR',
-    glyph: '🌅',
-    description:
-      'Les cinq derniers du classement voient leur pire game libre prendre le score de la meilleure game de toute la ligue.',
-    effect: { kind: 'roue', action: { quoi: 'meilleure_aux_derniers' } },
-    nature: 'bonus',
-    power: 78,
-    packs: ['folie'],
-    cible: 'CINQ_DERNIERS',
-  },
-  {
     id: 'barillet-de-glace',
     name: 'Barillet de Glace',
     subtitle: 'Roulette russe',
     rarity: 'L',
     glyph: '🔫',
     description:
-      'Six joueurs tirés au sort entrent dans le barillet, une seule balle : le joueur touché perd définitivement sa meilleure game. Les immunisés n’y entrent pas.',
+      'Six joueurs tirés au sort font la course, comme en duel : le seul qui ne passe pas la ligne perd définitivement sa meilleure game. Les immunisés n’y entrent pas.',
     effect: { kind: 'roue', action: { quoi: 'roulette' } },
     nature: 'malus',
     power: 96,
@@ -851,14 +829,15 @@ export const CARDS: readonly CardDefinition[] = [
     cible: 'HASARD',
   },
   {
+    // Changée le 12/11/2026 : −15 au lieu de −20.
     id: 'eboulement',
     name: 'Éboulement',
-    subtitle: '−20 pts à un joueur',
+    subtitle: '−15 pts à un joueur',
     rarity: 'UR',
     glyph: '🪨',
     description:
-      'Tu la gardes et désignes un joueur : il perd −20 points sur son total. Tu n’y gagnes rien. Un joueur immunisé ne peut pas être visé.',
-    effect: { kind: 'malus_choisi', value: 20 },
+      'Tu la gardes et désignes un joueur : il perd −15 points sur son total. Tu n’y gagnes rien. Un joueur immunisé ne peut pas être visé.',
+    effect: { kind: 'malus_choisi', value: 15 },
     nature: 'malus',
     power: 68,
     packs: ['finisseur'],
@@ -890,6 +869,21 @@ export const CARDS: readonly CardDefinition[] = [
     nature: 'bonus',
     power: 94,
     packs: ['finisseur'],
+    cible: 'HASARD',
+  },
+  {
+    // Folie, ajoutée le 12/11/2026 : la game figée du Perso, mais quand on veut.
+    id: 'cryogenisation',
+    name: 'Cryogénisation',
+    subtitle: 'Fige ta meilleure game, quand tu veux',
+    rarity: 'L',
+    glyph: '🧊',
+    description:
+      'Tu la gardes, et tu dis quand : ta meilleure game est figée, jamais ta pire. Plus aucune carte ne peut la toucher.',
+    effect: { kind: 'fige_garde' },
+    nature: 'bonus',
+    power: 93,
+    packs: ['folie'],
     cible: 'HASARD',
   },
 ];
@@ -969,6 +963,15 @@ export function joueursTires(cible: CibleCarte): number {
   return 0;
 }
 
+/**
+ * La carte se joue-t-elle en course, comme un duel ? La Roulette russe du
+ * Folie : pas de rail de joueurs, une course à six, où le premier tiré est
+ * celui qui ne passe pas la ligne.
+ */
+export function estUneCourse(card: Pick<CardDefinition, 'effect'>): boolean {
+  return card.effect.kind === 'roue' && card.effect.action.quoi === 'roulette';
+}
+
 /** Quand une carte se joue : à la prochaine game, sur une game jouée, ou tout de suite. */
 export function momentDe(effect: CardEffect): MomentCarte {
   switch (effect.kind) {
@@ -987,6 +990,7 @@ export function momentDe(effect: CardEffect): MomentCarte {
     case 'malus_choisi':
     case 'echange_choisi':
     case 'echange_cible':
+    case 'fige_garde':
       return 'GARDEE';
     default:
       return 'PROCHAINE';
@@ -1040,6 +1044,7 @@ export function impactMax(effect: CardEffect): number | null {
     case 'joker':
     case 'echange_choisi':
     case 'echange_cible':
+    case 'fige_garde':
     case 'roue':
       // Les roues de la Summer suivent les games : pas de « au plus ».
       return null;
@@ -1106,6 +1111,8 @@ export function resumeEffet(effect: CardEffect): string {
       return 'échange de games choisi';
     case 'echange_cible':
       return 'pire contre meilleure';
+    case 'fige_garde':
+      return 'meilleure game figée, quand tu veux';
     case 'roue':
       return resumeRoue(effect.action);
   }
@@ -1279,7 +1286,7 @@ export const PACKS: readonly PackDefinition[] = [
     id: 'finisseur',
     name: 'Booster Finisseur',
     tagline: 'Pour qui va au bout',
-    declencheur: 'Quand un joueur a joué toutes ses games de la saison.',
+    declencheur: 'À la 35ᵉ game de la Mini Ligue ; à la dernière game de la saison ensuite.',
     glyph: '🏁',
     // Le vert de l'aurore qui couronne sa planche.
     gradient: ['#2e8b7a', '#0c2a26'],

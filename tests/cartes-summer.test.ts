@@ -5,7 +5,7 @@ import { cartesDuPack, getCard, momentDe, PACKS, TROC_SUBI } from '@/lib/domain/
 import { JOKERS } from '@/lib/domain/rules';
 import { scoreGame } from '@/lib/domain/scoring';
 import type { Placement } from '@/lib/domain/types';
-import { jokersDe, joueEchangeCible, regleCartesSansAttendre } from '@/lib/services/effects';
+import { jokersDe, joueEchangeCible, joueFigeGarde, regleCartesSansAttendre } from '@/lib/services/effects';
 import { pointsHorsGame } from '@/lib/services/league';
 
 /**
@@ -106,8 +106,10 @@ const immunise = (db: Database, id: string) => {
 };
 
 describe('les boosters de la Summer', () => {
-  it('Commu, Folie et Finisseur ne tirent que des cartes de la Summer : 16, 7 et 9', () => {
-    expect(cartesDuPack('commu')).toHaveLength(16);
+  it('Commu, Folie et Finisseur tirent les cartes de la Summer : 15, 7 et 9', () => {
+    // 12/11/2026 : « Booster Commu tous les 20 subs » et « Meilleure game aux
+    // 5 derniers » retirées, la Cryogénisation ajoutée au Folie.
+    expect(cartesDuPack('commu')).toHaveLength(15);
     expect(cartesDuPack('folie')).toHaveLength(7);
     expect(cartesDuPack('finisseur')).toHaveLength(9);
     // Le Perso garde les siennes : aucune carte de la Summer n'en sort.
@@ -174,18 +176,28 @@ describe('les cartes de toute la ligue', () => {
     expect(total(db, 'd')).toBe(30);
   });
 
-  it('« 3 Jokers pour tout le monde » s’arrête à la limite de la main', () => {
+  it('« 1 Joker pour tout le monde » s’arrête à la limite de la main', () => {
     const db = base('a', 'b');
     ouvre(db, 'pluie-de-jokers', ['a', 'b']);
-    expect(jokersDe(db, 'a')).toHaveLength(3);
-    ouvre(db, 'pluie-de-jokers', ['a', 'b']);
+    expect(jokersDe(db, 'a')).toHaveLength(1);
+    for (let i = 0; i < 6; i += 1) ouvre(db, 'pluie-de-jokers', ['a', 'b']);
     expect(jokersDe(db, 'a')).toHaveLength(JOKERS.max);
   });
 
-  it('« Booster Commu tous les 20 subs » déclenche une Tempête de neige', () => {
+  it('« Meilleure game ×1,5 » se cumule avec une carte du Perso, mais une seule fois par game', () => {
     const db = base('a');
-    ouvre(db, 'appel-de-la-tempete', ['a']);
-    expect(db.evenements.filter((e) => e.kind === 'COMMU_ACCELERE')).toHaveLength(1);
+    const meilleure = game(db, 'a', 20);
+    game(db, 'a', 10);
+    // Déjà ×1,2 par une carte du Perso : le ×1,5 s'y ajoute.
+    meilleure.applied.push({ id: 'x', cardId: 'vent-porteur', ouvertureId: 'ox', points: 4, at: '2027-01-15T20:00:00.000Z' });
+    meilleure.bonusPoints = 4;
+    meilleure.score = 24;
+    ouvre(db, 'cime-eclatante', ['a']);
+    expect(meilleure.score).toBe(36);
+    // Une seconde : pas sur la même game, sur la suivante.
+    ouvre(db, 'cime-eclatante', ['a']);
+    expect(meilleure.score).toBe(36);
+    expect(total(db, 'a')).toBe(36 + 15);
   });
 
   it('« +5 pts par Top 1 » compte les Top 1 depuis la dernière fois que la carte est tombée', () => {
@@ -203,6 +215,16 @@ describe('les cartes de toute la ligue', () => {
 });
 
 describe('les cartes qui tirent des joueurs', () => {
+  it('« Roulette russe » : celui qui ne passe pas la ligne — en tête du tirage — perd sa meilleure game', () => {
+    const db = base('a', 'b', 'c');
+    for (const id of ['a', 'b', 'c']) {
+      game(db, id, 20);
+      game(db, id, 5);
+    }
+    ouvre(db, 'barillet-de-glace', ['b', 'a', 'c']);
+    expect(db.games.filter((g) => g.skipped).map((g) => g.playerId)).toEqual(['b']);
+  });
+
   it('« Roulette russe » : un seul des tirés perd sa meilleure game', () => {
     const db = base('a', 'b', 'c', 'd', 'e', 'f');
     for (const id of ['a', 'b', 'c', 'd', 'e', 'f']) {
@@ -305,5 +327,31 @@ describe('les cartes du Finisseur', () => {
     game(db, 'b', 1);
     const revanche = joueEchangeCible(db, garde('b', '2027-01-18T10:00:00.000Z'), a, MAINTENANT);
     expect(typeof revanche).not.toBe('string');
+  });
+});
+
+describe('la Cryogénisation', () => {
+  it('se garde, puis fige la meilleure game libre quand on la joue — jamais la pire', () => {
+    const db = base('a');
+    const meilleure = game(db, 'a', 25);
+    const pire = game(db, 'a', 2);
+    const o = ouvre(db, 'cryogenisation', ['a']);
+    const carte = cartesDe(db, o)[0];
+    // Gardée : rien ne s'est passé à l'ouverture.
+    expect(carte.consommeeA).toBeNull();
+    const r = joueFigeGarde(db, carte.id);
+    expect(typeof r).not.toBe('string');
+    expect(carte.gameId).toBe(meilleure.id);
+    expect(meilleure.applied.map((a) => a.cardId)).toEqual(['cryogenisation']);
+    expect(pire.applied).toHaveLength(0);
+  });
+
+  it('reste en main s’il n’y a que la pire game à figer', () => {
+    const db = base('a');
+    game(db, 'a', 3);
+    const o = ouvre(db, 'cryogenisation', ['a']);
+    const carte = cartesDe(db, o)[0];
+    expect(joueFigeGarde(db, carte.id)).toBe('GAMES');
+    expect(carte.consommeeA).toBeNull();
   });
 });

@@ -168,7 +168,7 @@ type EtatCouloir = 'depart' | 'course' | 'chute' | 'victoire';
  * change d'un camp à l'autre, la peau du bot est d'acier. D'où des dégradés
  * propres à chaque dessin — deux couloirs, deux jeux d'identifiants.
  */
-function PereNoel() {
+export function PereNoel() {
   const id = useId().replace(/[^a-zA-Z0-9]/g, '');
   const u = (nom: string) => `url(#${id}-${nom})`;
 
@@ -279,7 +279,7 @@ function PereNoel() {
 }
 
 /** Un obstacle du couloir. Celui qui fait tomber ressemble aux autres. */
-function DessinObstacle({ genre }: { genre: GenreObstacle }) {
+export function DessinObstacle({ genre }: { genre: GenreObstacle }) {
   if (genre === 'rocher') {
     return (
       <svg viewBox="0 0 40 28" aria-hidden="true">

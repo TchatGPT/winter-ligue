@@ -458,6 +458,8 @@ alter table cartes_en_attente add column if not exists points integer;
 
 -- Les messages de Twitch déjà comptés : un message renvoyé ne compte qu'une fois.
 alter table saison add column if not exists twitch_vus jsonb not null default '[]';
+alter table saison add column if not exists numero integer not null default 1;
+alter table saison add column if not exists remise_a timestamptz;
 
 -- Les Top 6, 8 et 10 : ils ne rapportent rien, ils servent aux cartes.
 alter table games drop constraint if exists games_top_check;
@@ -572,6 +574,8 @@ export async function chargeBase(sql: postgres.Sql | postgres.TransactionSql): P
       seasonEndsAt: new Date(saison.fin as string).toISOString(),
       overlayGeneration: (saison.overlay_generation as number | undefined) ?? 1,
       twitchVus: Array.isArray(saison.twitch_vus) ? (saison.twitch_vus as LeagueConfig['twitchVus']) : [],
+      numero: (saison.numero as number | undefined) ?? 1,
+      remiseA: saison.remise_a ? new Date(saison.remise_a as string).toISOString() : null,
     } satisfies LeagueConfig;
   }
   for (const col of CHARGEES) {
@@ -586,8 +590,12 @@ export async function chargeBase(sql: postgres.Sql | postgres.TransactionSql): P
 /** Les derniers subs du registre, le plus récent en tête. */
 export async function lisSubsTwitch(sql: postgres.Sql, combien: number): Promise<Database['subsTwitch']> {
   const col = COLLECTIONS.find((c) => c.cle === 'subsTwitch')!;
+  // Depuis la dernière remise à zéro de la ligue : une saison neuve ne compte
+  // pas les subs de la précédente, qui restent pour l'histoire.
   const lignes = await sql<Record<string, unknown>[]>`
-    select * from subs_twitch order by le desc limit ${Math.max(1, Math.floor(combien))}`;
+    select * from subs_twitch
+     where le >= coalesce((select remise_a from saison where id = 1), '-infinity'::timestamptz)
+     order by le desc limit ${Math.max(1, Math.floor(combien))}`;
   return lignes.map((l) => versObjet(l, col.colonnes)) as unknown as Database['subsTwitch'];
 }
 
@@ -647,15 +655,17 @@ export async function enregistreBase(tx: postgres.TransactionSql, db: Database, 
 
   if (avant.get('saison')?.get('1') !== apres.get('saison')?.get('1')) {
     await tx`
-      insert into saison (id, version, total_subs, games_max_par_joueur, debut, fin, mis_a_jour, overlay_generation, twitch_vus)
+      insert into saison (id, version, total_subs, games_max_par_joueur, debut, fin, mis_a_jour, overlay_generation, twitch_vus, numero, remise_a)
       values (1, ${db.version}, ${db.config.totalSubs}, ${db.config.maxGamesPerPlayer},
               ${db.config.seasonStartsAt}, ${db.config.seasonEndsAt}, now(), ${db.config.overlayGeneration},
-              ${tx.json(db.config.twitchVus as unknown as postgres.JSONValue)})
+              ${tx.json(db.config.twitchVus as unknown as postgres.JSONValue)},
+              ${db.config.numero ?? 1}, ${db.config.remiseA ?? null})
       on conflict (id) do update set
         version = excluded.version, total_subs = excluded.total_subs,
         games_max_par_joueur = excluded.games_max_par_joueur,
         debut = excluded.debut, fin = excluded.fin, mis_a_jour = now(),
-        overlay_generation = excluded.overlay_generation, twitch_vus = excluded.twitch_vus`;
+        overlay_generation = excluded.overlay_generation, twitch_vus = excluded.twitch_vus,
+        numero = excluded.numero, remise_a = excluded.remise_a`;
     touchees += 1;
   }
 

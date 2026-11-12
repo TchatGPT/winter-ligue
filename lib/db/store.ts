@@ -253,7 +253,11 @@ class JsonFileStore implements Store {
 
   async subsTwitch(combien: number): Promise<SubTwitch[]> {
     const db = await this.load();
-    return db.subsTwitch.slice(-Math.max(1, combien)).reverse();
+    const depuis = db.config.remiseA ?? '';
+    return db.subsTwitch
+      .filter((s) => s.le >= depuis)
+      .slice(-Math.max(1, combien))
+      .reverse();
   }
 
   async sonde(): Promise<Sonde> {

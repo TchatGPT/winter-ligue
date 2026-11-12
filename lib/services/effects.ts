@@ -435,7 +435,8 @@ function regleSurJouee(db: Database, pendante: CarteEnAttente, card: CardDefinit
     // La meilleure game encore sans carte ; à égalité, la plus récente. La
     // carte s'y pose sans en changer le score : elle prend la place, et plus
     // aucune autre ne peut la toucher.
-    const libres = gamesSansCarte(db, pendante.joueurId);
+    // Jamais sa pire game : il doit pouvoir s'en débarrasser (12/11/2026).
+    const libres = gamesSansCarte(db, pendante.joueurId).filter((g) => g.id !== pireComptee(db, pendante.joueurId)?.id);
     if (libres.length === 0) return attend;
     const meilleure = [...libres].sort((a, b) => b.score - a.score)[0];
     // Inscrite sur la game, à zéro point : elle s'y voit, et la game n'est
@@ -535,17 +536,22 @@ function regleInstant(
  * game » du Perso ou une action « fige » des roues. Seule une game figée
  * échappe à la « Pire game à 0 ».
  */
-function estFigee(game: Game): boolean {
+export function estFigee(game: Game): boolean {
   return game.applied.some((a) => {
     const c = getCard(a.cardId);
     if (!c) return false;
-    if (c.effect.kind === 'fige_meilleure') return true;
+    if (c.effect.kind === 'fige_meilleure' || c.effect.kind === 'fige_garde') return true;
     return c.effect.kind === 'roue' && (c.effect.action.quoi === 'fige_meilleure' || c.effect.action.quoi === 'fige_hasard');
   });
 }
 
 /** Les games comptées d'un joueur. */
 const comptees = (db: Database, joueurId: string) => db.games.filter((g) => g.playerId === joueurId && !g.skipped);
+
+/** La pire game comptée d'un joueur : elle ne se fige jamais. */
+function pireComptee(db: Database, joueurId: string): Game | undefined {
+  return [...comptees(db, joueurId)].sort((a, b) => a.score - b.score)[0];
+}
 
 /** Une liste dans un ordre tiré au sort par le serveur. */
 function melange<T>(liste: readonly T[]): T[] {
@@ -701,6 +707,24 @@ function regleRoue(
       break;
 
     case 'meilleure_fois':
+      // La meilleure game de chacun, même si une carte du Perso l'a déjà
+      // multipliée ; une seule fois par game, et jamais une game figée
+      // (décidé le 12/11/2026).
+      for (const m of groupe) {
+        const candidates = comptees(db, m.joueur.id).filter(
+          (g) => g.score > 0 && !estFigee(g) && !g.applied.some((a) => a.cardId === card.id),
+        );
+        if (candidates.length === 0) {
+          pour(m, sansEffet('aucune game à multiplier, sans effet'));
+          continue;
+        }
+        const game = [...candidates].sort((a, b) => b.score - a.score)[0];
+        const avant = game.score;
+        const points = applyPoints(db, game, card, o, Math.round(avant * (action.facteur - 1)));
+        pour(m, regleSur(`meilleure game de ${avant} pts ×${fr(action.facteur)} → ${pts(points)}`, points, game.id));
+      }
+      break;
+
     case 'pire_fois':
     case 'hasard_fois':
       for (const m of groupe) {
@@ -709,15 +733,10 @@ function regleRoue(
           pour(m, sansEffet('aucune game libre, sans effet'));
           continue;
         }
-        const game =
-          action.quoi === 'meilleure_fois'
-            ? [...libres].sort((a, b) => b.score - a.score)[0]
-            : action.quoi === 'pire_fois'
-              ? [...libres].sort((a, b) => a.score - b.score)[0]
-              : pick(libres);
+        const game = action.quoi === 'pire_fois' ? [...libres].sort((a, b) => a.score - b.score)[0] : pick(libres);
         const avant = game.score;
         const points = applyPoints(db, game, card, o, Math.round(avant * (action.facteur - 1)));
-        const quelle = action.quoi === 'meilleure_fois' ? 'meilleure game' : action.quoi === 'pire_fois' ? 'pire game' : 'une game';
+        const quelle = action.quoi === 'pire_fois' ? 'pire game' : 'une game';
         pour(m, regleSur(`${quelle} de ${avant} pts ×${fr(action.facteur)} → ${pts(points)}`, points, game.id));
       }
       break;
@@ -941,11 +960,15 @@ function regleRoue(
     }
 
     case 'roulette': {
+      // Le perdant de la course est tiré à l'ouverture, et mis en tête des
+      // bénéficiaires (`beneficiairesRoue`) : l'écran et l'overlay le font
+      // tomber, la carte le frappe. Sans lui, au sort.
       const barillet = groupe.filter((m) => !estImmunise(m.joueur, now) && comptees(db, m.joueur.id).length > 0);
-      const touche = barillet.length > 0 ? pick(barillet) : null;
+      const designe = db.ouvertures.find((x) => x.id === o)?.beneficiaires[0];
+      const touche = barillet.find((m) => m.joueur.id === designe) ?? (barillet.length > 0 ? pick(barillet) : null);
       for (const m of groupe) {
         if (m !== touche) {
-          pour(m, sansEffet(estImmunise(m.joueur, now) ? 'paré par l’immunité' : 'épargné par le barillet'));
+          pour(m, sansEffet(estImmunise(m.joueur, now) ? 'paré par l’immunité' : 'a passé la ligne : épargné'));
           continue;
         }
         const candidates = comptees(db, m.joueur.id).filter((g) => !estFigee(g));
@@ -956,7 +979,7 @@ function regleRoue(
         const meilleure = [...candidates].sort((x, y) => y.score - x.score)[0];
         applyPoints(db, meilleure, card, o, 0);
         meilleure.skipped = true;
-        pour(m, regleSur(`touché : il perd sa meilleure game (${meilleure.score} pts)`, -meilleure.score, meilleure.id));
+        pour(m, regleSur(`n’a pas passé la ligne : il perd sa meilleure game (${meilleure.score} pts)`, -meilleure.score, meilleure.id));
       }
       break;
     }
@@ -1055,6 +1078,30 @@ function regleRoue(
     consomme(m.pendante, card, resultats.get(m.pendante.id) ?? sansEffet('sans effet'), now);
   }
   return resultats.get(pendante.id) ?? sansEffet('sans effet');
+}
+
+/**
+ * Joue une Cryogénisation gardée (Folie, 12/11/2026) : la meilleure game
+ * encore sans carte de son porteur est figée — jamais sa pire —, et plus
+ * aucune carte ne peut la toucher. Rend 'CARTE' si la carte n'est pas une
+ * Cryogénisation en main, 'GAMES' s'il n'a pas de game à figer : la carte
+ * reste alors en main.
+ */
+export function joueFigeGarde(db: Database, carteId: string, now = new Date()): CarteAppliquee | 'CARTE' | 'GAMES' {
+  const pendante = db.cartesEnAttente.find((c) => c.id === carteId && c.consommeeA === null);
+  const card = pendante ? getCard(pendante.cardId) : null;
+  if (!pendante || !card || card.effect.kind !== 'fige_garde') return 'CARTE';
+  const pire = pireComptee(db, pendante.joueurId);
+  const libres = gamesSansCarte(db, pendante.joueurId).filter((g) => g.id !== pire?.id);
+  if (libres.length === 0) return 'GAMES';
+  const meilleure = [...libres].sort((a, b) => b.score - a.score)[0];
+  applyPoints(db, meilleure, card, pendante.ouvertureId, 0);
+  return consomme(
+    pendante,
+    card,
+    regleSur(`meilleure game figée (${meilleure.score} pts) : plus aucune carte ne peut la toucher`, 0, meilleure.id),
+    now,
+  );
 }
 
 export type RefusEchangeCible = 'CARTE' | 'CIBLE' | 'IMMUNISE' | 'DEJA' | 'GAMES';

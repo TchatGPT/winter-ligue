@@ -7,10 +7,11 @@ import { deleteGameSchema, gameSchema, updateGameSchema } from '@/lib/api/schema
 import type { Game } from '@/lib/db/entities';
 import { getStore, newId } from '@/lib/db/store';
 import { getCard } from '@/lib/domain/catalog';
+import { parametresSaison } from '@/lib/domain/rules';
 import { rewardForGame } from '@/lib/domain/economy';
 import { LIMITS } from '@/lib/security/ratelimit';
 import { appliqueCartesEnAttente, jokerDe, regleCartesSansAttendre, utiliseJoker } from '@/lib/services/effects';
-import { gamesComptees, limiteDe, recomputeGame } from '@/lib/services/league';
+import { gamesComptees, limiteDe, prochaineGamePossible, recomputeGame } from '@/lib/services/league';
 import { corrigeGame, supprimeGame, type Correction } from '@/lib/services/corrections';
 import { audit, credit } from '@/lib/services/ledger';
 import { verifieFinisseur } from '@/lib/services/packs';
@@ -55,6 +56,13 @@ export async function POST(request: Request): Promise<NextResponse> {
       if (estLaStreameuse(player, chaineDeLaLigue())) return { error: 'STREAMEUSE' as const };
 
       if (gamesComptees(db, player.id) >= limiteDe(db, player)) return { error: 'LIMITE' as const };
+      // Passé la 35ᵉ game de la Mini Ligue, une par session. Une game passée
+      // par un Joker ne compte pas : elle reste permise.
+      const libre = g.body.joker ? null : prochaineGamePossible(db, player.id);
+      if (libre) {
+        const seuil = parametresSaison(db.config.numero).uneParSessionApres;
+        return { error: 'SESSION' as const, libre: libre.toISOString(), seuil };
+      }
       if (g.body.joker && !jokerDe(db, player.id)) return { error: 'JOKER' as const };
 
       const now = new Date().toISOString();
@@ -133,6 +141,17 @@ export async function POST(request: Request): Promise<NextResponse> {
         return fail('CONFLIT', 'La streameuse ne joue pas dans la ligue : aucune game ne lui est attribuée.');
       }
       if (result.error === 'JOKER') return fail('CONFLIT', 'Ce joueur n’a pas de Joker à jouer.');
+      if (result.error === 'SESSION') {
+        const heure = new Date(result.libre).toLocaleTimeString('fr-FR', {
+          timeZone: 'Europe/Paris',
+          hour: '2-digit',
+          minute: '2-digit',
+        });
+        return fail(
+          'CONFLIT',
+          `Passé la ${result.seuil}ᵉ game, une seule compte par session : la prochaine de ce joueur à partir de ${heure}.`,
+        );
+      }
       return result.error === 'JOUEUR'
         ? fail('INTROUVABLE', 'Joueur introuvable.')
         : fail('CONFLIT', 'Ce joueur a atteint sa limite de games pour la saison.');

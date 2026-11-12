@@ -7,7 +7,7 @@ import { etatCadeau } from '@/lib/services/cadeauDuJour';
 import { evenementsActifs } from '@/lib/services/evenements';
 import { EvenementsFlottants } from './EvenementsFlottants';
 import { LogoCristal, Marque } from './Logo';
-import { SEASON } from '@/lib/domain/rules';
+import { parametresSaison } from '@/lib/domain/rules';
 
 /** Largeur de la plaque, et la marge qui la décolle des bords de l'écran. */
 export const SIDEBAR_WIDTH = 270;
@@ -31,12 +31,13 @@ export async function Sidebar() {
   const isAdmin = session?.role === 'admin';
   const isPlayer = playerIdOf(session) !== null;
 
-  const { player, cadeau, evenements } = await getStore().read((db) => {
+  const { player, cadeau, evenements, numero } = await getStore().read((db) => {
     const found = isPlayer ? db.players.find((p) => p.id === session!.sub) : undefined;
     return {
       player: found ? { pseudo: found.pseudo, snowflakes: found.snowflakes } : null,
       cadeau: found ? etatCadeau(db, found.id) : null,
       evenements: evenementsActifs(db),
+      numero: parametresSaison(db.config.numero).numero,
     };
   });
 
@@ -51,7 +52,7 @@ export async function Sidebar() {
         <div className="menu-colonne">
           {/* ---- L'entête ---- */}
           <Link href="/" className="menu-entete no-underline" aria-label="Winter Ligue — accueil">
-            <Marque saison={SEASON.edition} />
+            <Marque saison={`Saison ${numero}`} />
           </Link>
           <span className="menu-separateur" aria-hidden="true" />
 

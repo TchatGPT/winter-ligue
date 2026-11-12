@@ -10,7 +10,7 @@ import 'server-only';
 import { chaineDeLaLigue } from '@/lib/auth/twitch';
 import { CAMP_BOT, type Database } from '@/lib/db/entities';
 import { getStore } from '@/lib/db/store';
-import { chanceDe, SEASON } from '@/lib/domain/rules';
+import { chanceDe, parametresSaison } from '@/lib/domain/rules';
 import { estLaStreameuse } from '@/lib/domain/streameuse';
 import { type BilanSubs, bilanDesSubs } from '@/lib/domain/twitchSubs';
 import { cartesJoueesSur } from './effects';
@@ -165,7 +165,7 @@ export async function getFicheJoueur(slug: string): Promise<FicheJoueur | null> 
     let rang: FicheJoueur['rang'] = null;
     if (i >= 0) {
       const ligne = classement[i];
-      const qualifies = SEASON.finalistCount;
+      const qualifies = parametresSaison(db.config.numero).finalistes;
       let ecart: number | null = null;
       if (ligne.finalist) {
         const premierHors = classement[qualifies];

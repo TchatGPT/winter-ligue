@@ -276,3 +276,73 @@ export function meneur(course: Course, u: number): Camp | null {
   if (Math.abs(h - a) < 0.015) return null;
   return h > a ? 'hote' : 'adversaire';
 }
+
+/* -------------------------------------------------------------------------- */
+/* La Roulette russe : six couloirs, un seul ne passe pas la ligne            */
+/* -------------------------------------------------------------------------- */
+
+/** Comment tombe celui de la Roulette : sur un obstacle, sur la glace, ou sa boule éclate. */
+export type ChuteRoulette = 'rocher' | 'glisse' | 'eclate';
+
+export interface CourseRoulette {
+  /** Un couloir par joueur tiré, dans l'ordre du tirage : le premier est le perdant. */
+  couloirs: Couloir[];
+  chute: { type: ChuteRoulette; instant: number; position: number };
+  /** L'ordre d'affichage des couloirs, de haut en bas : le perdant n'est pas toujours en haut. */
+  ordre: number[];
+}
+
+/**
+ * Écrit la course de la Roulette russe (Folie, 12/11/2026) : `n` couloirs,
+ * dont le premier est celui du perdant — tiré par le serveur à l'ouverture.
+ * Tous passent la ligne, sauf lui, qui tombe tard, une fois qu'on y a cru.
+ * Déterministe : l'écran de la modération et l'overlay montrent la même
+ * course.
+ */
+export function ecritCourseRoulette(graine: string, n: number): CourseRoulette {
+  const rnd = tirage(`roulette:${graine}`);
+  const entre = (a: number, b: number) => a + (b - a) * rnd();
+  const allure = (): Allure => ({
+    amplitude: entre(0.28, 0.45),
+    frequence: entre(1.2, 2.2),
+    phase: entre(0, 2 * Math.PI),
+    elan: 1,
+  });
+
+  const allures = Array.from({ length: n }, allure);
+  const types: ChuteRoulette[] = ['rocher', 'glisse', 'eclate'];
+  const type = types[Math.floor(rnd() * types.length)];
+  const instant = entre(CHUTE_AU_PLUS_TOT, CHUTE_AU_PLUS_TARD);
+  // Il tombe dans le peloton : on ne le voit pas venir.
+  const vise = Math.min(0.88, Math.max(0.45, avancee(allures[1] ?? allures[0], instant) + entre(-0.06, 0.06)));
+  allures[0].elan = vise / base(allures[0], instant);
+  const position = avancee(allures[0], instant);
+
+  const genres: GenreObstacle[] = ['rocher', 'souche', 'glace'];
+  const obstacles = (fatal: Obstacle | null, libre: number | null): Obstacle[] => {
+    const occupes = libre === null ? [] : [libre];
+    const poses: Obstacle[] = fatal ? [fatal] : [];
+    for (let essai = 0; essai < 80 && poses.length < OBSTACLES_PAR_COULOIR; essai += 1) {
+      const p = entre(0.14, 0.93);
+      if (![...poses.map((o) => o.position), ...occupes].some((q) => Math.abs(q - p) < ECART_OBSTACLES)) {
+        poses.push({ position: p, genre: genres[Math.floor(rnd() * genres.length)] });
+      }
+    }
+    return poses.sort((a, b) => a.position - b.position);
+  };
+  const fatal: Obstacle | null =
+    type === 'eclate' ? null : { position, genre: type === 'glisse' ? 'glace' : rnd() < 0.5 ? 'rocher' : 'souche' };
+
+  const couloirs = allures.map((a, i) => ({
+    allure: a,
+    obstacles: i === 0 ? obstacles(fatal, fatal ? null : position) : obstacles(null, null),
+  }));
+
+  // L'ordre d'affichage, mélangé par la même graine.
+  const ordre = Array.from({ length: n }, (_, i) => i);
+  for (let i = ordre.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(rnd() * (i + 1));
+    [ordre[i], ordre[j]] = [ordre[j], ordre[i]];
+  }
+  return { couloirs, chute: { type, instant, position }, ordre };
+}

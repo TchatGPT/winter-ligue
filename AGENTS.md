@@ -38,6 +38,18 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 ## Conventions
 
 - Interface, commentaires et messages d'erreur **en français**.
+- **Les saisons** (`SAISONS`, `parametresSaison`, décidé le 12/11/2026) : la saison en
+  cours est en base (`config.numero`). **Saison 1, la Mini Ligue** (1er décembre → 4
+  janvier) : 38 games, le Booster Finisseur à la 35ᵉ (`finisseurA`, `verifieFinisseur`),
+  passé la 35ᵉ **une game par session** de 1 h 30 avec Lriaa (`prochaineGamePossible`,
+  vérifié à la saisie), **pas de finale** (`finalistes: 0`). **Saison 2** (4 janvier →
+  mi-mars) : 60 games. On change de saison par le bouton « Nouvelle saison » de
+  Modération → Subs & saison, réservé à `RESPONSABLES_SAISON` (Jeex3, identifiant Twitch
+  lu en base), avec la phrase de confirmation : `nouvelleSaison` efface games, boosters,
+  ouvertures, cartes, duels, évènements et codes, remet le compteur de subs et les
+  flocons à zéro (par `adjust`, au grand livre), redonne trois Jokers, et règle la
+  limite. Comptes, grand livre et journal restent ; le registre des subs ne compte que
+  ce qui suit la remise à zéro (`config.remiseA`).
 - Les constantes de saison vivent dans `lib/domain/rules.ts`, nulle part ailleurs.
 - Le catalogue de cartes vit dans `lib/domain/catalog.ts`. Les actions sont celles des
   roues de la Summer Ligue ; chaque carte porte un **nom d'hiver** (`name`) et
@@ -48,6 +60,15 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   Finisseur (9) tirent **les actions des roues de la Summer Ligue, telles quelles**
   (décidé le 03/11/2026, sans les deux actions FloooZii), en cartes classées par
   rareté selon leur force : genre `roue` (`ActionRoue`), réglé dans `regleRoue`.
+  Retouchées le 12/11/2026 : « Booster Commu tous les 20 subs » et « Meilleure game aux
+  5 derniers » retirées ; la **Meilleure game ×1,5** se cumule avec un multiplicateur du
+  Perso mais ne touche qu'une fois une même game, jamais une game figée ; la **Roulette
+  russe se court comme un duel à six** (`CourseRoulette`, `ecritCourseRoulette`) — le
+  perdant, seul à ne pas passer la ligne, est tiré à l'ouverture et mis **en tête des
+  bénéficiaires**, que l'écran, l'overlay et la carte lisent ; la **Cryogénisation**
+  (Folie, `fige_garde`) se garde et fige la meilleure game quand la modération la joue
+  (`/api/admin/cartes/figer`, `joueFigeGarde`). **La pire game d'un joueur ne se fige
+  jamais**, par aucune carte.
   Elles se règlent tout de suite, une fois la carte révélée, **une seule fois pour
   tous les joueurs tirés** (les cartes d'une même ouverture). « Figée » veut dire :
   qui porte déjà une carte ; une action qui change un score ne prend qu'une game
@@ -96,7 +117,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   compte jamais comme carte en attente.
 - **Les cartes gardées qui visent un joueur** se jouent toutes par la même fenêtre
   (`LancerVerglas`, `/api/admin/cartes/verglas`) : le Verglas du Perso et l'Éboulement
-  du Finisseur (`malus_choisi`, −10 et −20), et le Troc des Neiges du Finisseur
+  du Finisseur (`malus_choisi`, −10 et −15), et le Troc des Neiges du Finisseur
   (`echange_cible`, `joueEchangeCible`) — la pire game libre du porteur et la meilleure
   de la cible échangent leur score ; une fois par joueur, sauf la revanche contre qui
   l'a visé (la trace `TROC_SUBI` retient qui, dans `paireId`) ; jamais sur un immunisé.
@@ -114,7 +135,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   toute game (`CarteEnAttente.points`, comme le coup du Verglas). Le classement les écrit
   sous les points (« dont +N bonus », `totals.horsGame`), où ils sont déjà comptés.
 - **Le Pacte du Givre** (`kind: 'echange_choisi'`, légendaire du Booster Perso, décidé le
-  02/11/2026) est gardé, et ne se joue qu'à partir de la 30ᵉ game de son porteur. Il
+  02/11/2026) est gardé, et ne se joue qu'à partir de la 15ᵉ game de son porteur. Il
   choisit une de ses games et une game d'un autre joueur, toutes deux encore sans carte ;
   la modération fait l'échange depuis la fiche de la carte au classement
   (`/api/admin/cartes/echange`, `joueEchangeChoisi`) : chaque game repart avec le score de
@@ -135,7 +156,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   en reçoit trois à son inscription (`donneJokersDeDepart`, `JOKERS`, décidé le
   02/11/2026), et en garde cinq au plus : un sixième, tiré pendant qu'il en garde cinq,
   est consommé sans effet ; redescendu sous cinq, il peut remonter. Le classement les
-  montre en une carte, avec leur nombre en pastille. Une game annulée par un Joker ne
+  montre en une carte, avec leur nombre en pastille — comme toute carte gardée en
+  plusieurs exemplaires (12/11/2026). Une game annulée par un Joker ne
   se rétablit pas.
 - **Une game se corrige ou se supprime** depuis la fiche du joueur, par la modération
   (`CorrectionGame`, `PATCH` / `DELETE /api/games`, `lib/services/corrections.ts`) :

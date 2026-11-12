@@ -235,6 +235,13 @@ export interface LeagueConfig {
    * renvoie un message qu'il croit perdu, il ne doit compter qu'une fois.
    */
   twitchVus: { id: string; le: string }[];
+  /** La saison en cours : ses réglages sont dans `SAISONS`. */
+  numero?: number;
+  /**
+   * La dernière remise à zéro de la ligue : le registre des subs ne compte
+   * que ce qui l'a suivie. Nul : jamais remise à zéro.
+   */
+  remiseA?: string | null;
 }
 
 /** Un versement déclenché par les subs Twitch, conservé pour l'historique. */

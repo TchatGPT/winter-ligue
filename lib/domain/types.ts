@@ -242,6 +242,12 @@ export type CardEffect =
    * contre qui l'a visé ; un immunisé ne peut pas être visé.
    */
   | { kind: 'echange_cible' }
+  /**
+   * « Fige ta meilleure game, quand tu veux » (la Cryogénisation, Folie,
+   * 12/11/2026) : le joueur la garde ; la modération la joue quand il le dit,
+   * et sa meilleure game libre est figée — jamais sa pire.
+   */
+  | { kind: 'fige_garde' }
   /* -------------------------- Les roues de la Summer ---------------------- */
   /** Une action des roues, telle quelle : voir {@link ActionRoue}. */
   | { kind: 'roue'; action: ActionRoue };

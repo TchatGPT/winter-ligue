@@ -338,17 +338,17 @@ describe('le Pacte du Givre', () => {
     return game(db, 'a', kills);
   }
 
-  it('se garde, et ne se joue qu’à partir de la trentième game', () => {
+  it('se garde, et ne se joue qu’à partir de la quinzième game', () => {
     const db = base('a', 'b');
     pose(db, 'a', 'pacte-du-givre', 1);
     regleCartesSansAttendre(db, 'a');
     const garde = enAttente(db, 'a')[0];
     expect(garde.cardId).toBe('pacte-du-givre');
-    const mienne = porteur(db, 29);
+    const mienne = porteur(db, 14);
     const sienne = game(db, 'b', 40, 1);
     expect(joueEchangeChoisi(db, garde.id, mienne.id, sienne.id)).toBe('TROP_TOT');
-    const trentieme = game(db, 'a', 4);
-    expect(typeof joueEchangeChoisi(db, garde.id, trentieme.id, sienne.id)).not.toBe('string');
+    const quinzieme = game(db, 'a', 4);
+    expect(typeof joueEchangeChoisi(db, garde.id, quinzieme.id, sienne.id)).not.toBe('string');
   });
 
   it('échange le score des deux games choisies, et les fige', () => {
@@ -479,15 +479,17 @@ describe('la game figée', () => {
     expect(gamesSansCarte(db, 'a').map((g) => g.id)).toEqual([petite.id]);
   });
 
-  it('passe à la deuxième meilleure si la meilleure est figée, puis à la troisième', () => {
+  it('passe à la deuxième meilleure si la meilleure est figée, puis à la troisième — jamais la pire', () => {
     const db = base('a');
     const g1 = game(db, 'a', 20);
     const g2 = game(db, 'a', 12);
     const g3 = game(db, 'a', 6);
-    for (let minute = 1; minute <= 3; minute += 1) pose(db, 'a', 'permafrost', minute);
+    game(db, 'a', 2);
+    for (let minute = 1; minute <= 4; minute += 1) pose(db, 'a', 'permafrost', minute);
     regleCartesSansAttendre(db, 'a');
     const figees = db.cartesEnAttente.filter((c) => c.cardId === 'permafrost').map((c) => c.gameId);
-    expect(figees).toEqual([g1.id, g2.id, g3.id]);
+    // La quatrième attend : il ne reste que la pire, qui ne se fige jamais.
+    expect(figees).toEqual([g1.id, g2.id, g3.id, null]);
   });
 
   it('attend une game jouée avant de se poser', () => {

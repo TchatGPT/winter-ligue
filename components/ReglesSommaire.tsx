@@ -33,7 +33,7 @@ const lit = () => window.location.hash.slice(1).replace(/^regle-/, '');
  * l'ensemble tient dans la fenêtre. Sur un téléphone : le sommaire en grille,
  * qui mène à chaque sujet, et tous les sujets les uns sous les autres.
  */
-export function ReglesSommaire({ sujets }: { sujets: SujetRegles[] }) {
+export function ReglesSommaire({ sujets, saison }: { sujets: SujetRegles[]; saison: string }) {
   const hash = useSyncExternalStore(ecoute, lit, () => '');
   const actif = sujets.some((s) => s.id === hash) ? hash : sujets[0].id;
 
@@ -42,7 +42,7 @@ export function ReglesSommaire({ sujets }: { sujets: SujetRegles[] }) {
       <nav className="glass rgs-nav" aria-label="Les règles">
         <SnowCap radius="var(--r-lg)" seed="regles-sommaire" epaisseur={14} />
         <div className="rgs-nav-tete">
-          <p className="eyebrow">Saison 1</p>
+          <p className="eyebrow">{saison}</p>
           <h1 className="rgs-nav-titre">Les règles</h1>
         </div>
         <ol className="rgs-liste">

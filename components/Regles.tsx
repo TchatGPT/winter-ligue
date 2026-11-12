@@ -31,12 +31,12 @@ import {
   PACKS_REGLES,
   PALIERS_CHANCE,
   PLACEMENT_POINTS,
-  SEASON,
   SUB_MILESTONES,
   poidsAvecChance,
   rarityPercent,
 } from '@/lib/domain/rules';
 import { CE_QUI_COMPTE, CE_QUI_NE_COMPTE_PAS } from '@/lib/domain/twitchSubs';
+import type { ParametresSaison } from '@/lib/domain/rules';
 import type { PackDefinition, Rarity } from '@/lib/domain/types';
 
 const RARETES: Rarity[] = ['C', 'R', 'UR', 'L'];
@@ -178,7 +178,20 @@ function Taux({ weights }: { weights: Record<Rarity, number> }) {
  * tels que la ligue les règle (`resolvedPacks`) : la page dit exactement ce
  * que le serveur applique.
  */
-export function Regles({ maxGames, packs }: { maxGames: number; packs: PackDefinition[] }) {
+export function Regles({
+  maxGames,
+  saison,
+  packs,
+}: {
+  maxGames: number;
+  saison: ParametresSaison;
+  packs: PackDefinition[];
+}) {
+  // Le Booster Finisseur : à la dernière game, ou à un seuil plus tôt (35 games
+  // dans la Mini Ligue, pour 38).
+  const finisseurA = Math.min(saison.finisseurA, maxGames);
+  const quandFinisseur =
+    finisseurA < maxGames ? `Ta ${finisseurA}ᵉ game de la saison` : 'Ta dernière game de la saison';
   const pack = (id: string) => packs.find((p) => p.id === id);
   const palier = (id: 'commu' | 'folie') => SUB_MILESTONES.find((m) => m.packId === id)?.every;
   const avalanche = EVENEMENTS_SUBS.find((e) => e.kind === 'FLOCONS_A_TOUS');
@@ -198,7 +211,7 @@ export function Regles({ maxGames, packs }: { maxGames: number; packs: PackDefin
 
   const boosters: { id: string; quand: string; pourToi: boolean }[] = [
     { id: 'perso', quand: `1 sub T3, ou ${PACKS_REGLES.persoTousLes} subs offerts`, pourToi: true },
-    { id: 'finisseur', quand: 'Ta dernière game de la saison', pourToi: true },
+    { id: 'finisseur', quand: quandFinisseur, pourToi: true },
     { id: 'commu', quand: `Tous les ${palier('commu')} subs de la chaîne`, pourToi: false },
     { id: 'folie', quand: `Tous les ${palier('folie')} subs de la chaîne`, pourToi: false },
   ];
@@ -270,8 +283,21 @@ export function Regles({ maxGames, packs }: { maxGames: number; packs: PackDefin
           <Encart titre="La saison">
             <Puces>
               <li>
-                <b>{maxGames} games</b> par joueur.
+                <b>{maxGames} games</b> par joueur
+                {finisseurA < maxGames ? (
+                  <>
+                    {' '}
+                    ; le Booster Finisseur à la <b>{finisseurA}ᵉ</b>.
+                  </>
+                ) : (
+                  '.'
+                )}
               </li>
+              {saison.uneParSessionApres !== null && (
+                <li>
+                  Passé la {saison.uneParSessionApres}ᵉ, <b>une game par session</b>.
+                </li>
+              )}
               <li>« Game supplémentaire » en ajoute une, {CRENEAUX_BONUS.max} au plus.</li>
               <li>Top 6, 8 et 10 ne rapportent rien seuls : ils servent aux cartes.</li>
             </Puces>
@@ -279,7 +305,15 @@ export function Regles({ maxGames, packs }: { maxGames: number; packs: PackDefin
           <Encart titre="Le classement">
             <Puces>
               <li>
-                Toutes tes games additionnées. Les <b>{SEASON.finalistCount} premiers</b> vont en finale.
+                Toutes tes games additionnées.
+                {saison.finalistes > 0 ? (
+                  <>
+                    {' '}
+                    Les <b>{saison.finalistes} premiers</b> vont en finale.
+                  </>
+                ) : (
+                  <> Pas de finale cette saison : le classement final fait foi.</>
+                )}
               </li>
               <li>À égalité : le plus de Top 1, puis de kills, puis la meilleure game.</li>
               <li>Saisi par la modération, calculé par le serveur.</li>
@@ -650,5 +684,5 @@ export function Regles({ maxGames, packs }: { maxGames: number; packs: PackDefin
     ),
   ];
 
-  return <ReglesSommaire sujets={sujets} />;
+  return <ReglesSommaire sujets={sujets} saison={saison.nom} />;
 }

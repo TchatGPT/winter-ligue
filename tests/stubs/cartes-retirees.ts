@@ -900,6 +900,35 @@ export const CARTES_RETIREES: readonly CardDefinition[] = [
     packs: ['folie'],
     cible: 'TETE',
   },
+  // Retirées du Commu et du Folie le 12/11/2026.
+  {
+    id: 'appel-de-la-tempete',
+    name: 'Appel de la Tempête',
+    subtitle: 'Booster Commu tous les 20 subs',
+    rarity: 'UR',
+    glyph: '🌨',
+    description:
+      'Déclenche une Tempête de neige : pendant 4 jours, le Booster Commu tombe tous les 20 subs au lieu de 35.',
+    effect: { kind: 'roue', action: { quoi: 'tempete' } },
+    nature: 'bonus',
+    power: 74,
+    packs: ['commu'],
+    cible: 'TOUS',
+  },
+  {
+    id: 'aube-des-derniers',
+    name: 'Aube des Derniers',
+    subtitle: 'Meilleure game aux 5 derniers',
+    rarity: 'UR',
+    glyph: '🌅',
+    description:
+      'Les cinq derniers du classement voient leur pire game libre prendre le score de la meilleure game de toute la ligue.',
+    effect: { kind: 'roue', action: { quoi: 'meilleure_aux_derniers' } },
+    nature: 'bonus',
+    power: 78,
+    packs: ['folie'],
+    cible: 'CINQ_DERNIERS',
+  },
 ];
 
 /**

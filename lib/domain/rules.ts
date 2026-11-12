@@ -74,6 +74,80 @@ export const GAME_LIMITS = {
  */
 export const DEFAULT_MAX_GAMES_PER_PLAYER = 60;
 
+/**
+ * Les saisons de la Winter Ligue (décidé le 12/11/2026).
+ *
+ *  - **Saison 1, la Mini Ligue** (du 1er décembre au 4 janvier) : 38 games, le
+ *    Booster Finisseur s'ouvre à la 35ᵉ ; passé la 35ᵉ, une seule game compte
+ *    par session de jeu avec Lriaa (une heure et demie) ; pas de finale.
+ *  - **Saison 2** (du 4 janvier à la mi-mars) : 60 games, tout remis à zéro.
+ *
+ * La saison en cours est celle de la base (`config.numero`). On en change par
+ * le bouton « Nouvelle saison » de la modération, réservé à qui la lance
+ * (`RESPONSABLES_SAISON`), qui remet la ligue à zéro et règle la limite.
+ */
+export interface ParametresSaison {
+  numero: number;
+  nom: string;
+  /** La limite de games par joueur, que la remise à zéro règle. */
+  games: number;
+  /** Le Booster Finisseur tombe à cette game. */
+  finisseurA: number;
+  /** Au-delà de cette game, une seule par session ; null : pas de règle. */
+  uneParSessionApres: number | null;
+  /** Combien de joueurs vont en finale ; zéro : pas de finale. */
+  finalistes: number;
+  debut: string;
+  fin: string;
+}
+
+/** Une session de jeu avec Lriaa : deux games d'un même joueur, au-delà du seuil, sont à cet écart au moins. */
+export const SESSION_MINUTES = 90;
+
+export const SAISONS: readonly ParametresSaison[] = [
+  {
+    numero: 1,
+    nom: 'Saison 1 · Mini Ligue',
+    games: 38,
+    finisseurA: 35,
+    uneParSessionApres: 35,
+    finalistes: 0,
+    debut: '2026-12-01T00:00:00.000+01:00',
+    fin: '2027-01-04T00:00:00.000+01:00',
+  },
+  {
+    numero: 2,
+    nom: 'Saison 2',
+    games: 60,
+    finisseurA: 60,
+    uneParSessionApres: null,
+    finalistes: 6,
+    debut: '2027-01-04T00:00:00.000+01:00',
+    fin: '2027-03-15T00:00:00.000+01:00',
+  },
+];
+
+/** La saison du calendrier : la première qui n'est pas encore finie, ou la dernière. */
+export function saisonDuMoment(now = new Date()): ParametresSaison {
+  return SAISONS.find((s) => Date.parse(s.fin) > now.getTime()) ?? SAISONS[SAISONS.length - 1];
+}
+
+/** Les réglages d'une saison ; la dernière connue pour un numéro inconnu. */
+export function parametresSaison(numero: number | undefined): ParametresSaison {
+  return SAISONS.find((s) => s.numero === numero) ?? SAISONS[0];
+}
+
+/**
+ * Qui peut lancer une nouvelle saison et remettre la ligue à zéro : son
+ * identifiant Twitch, lu en base (Jeex3).
+ */
+/** La phrase à taper pour lancer une saison : la ligue repart de zéro. */
+export const PHRASE_NOUVELLE_SAISON = 'REMETTRE À ZÉRO';
+
+export const RESPONSABLES_SAISON: readonly string[] = [
+  '207954362', // Jeex3
+];
+
 /* ------------------------------- Économie ------------------------------- */
 
 /**
