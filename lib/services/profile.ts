@@ -152,6 +152,11 @@ export interface FicheJoueur {
    * des joueurs classés —, à comparer à la sienne (12/11/2026). Nul sans game.
    */
   moyenneLigue: number | null;
+  /**
+   * Les repères de la saison sur ses créneaux : la game du Booster Finisseur,
+   * et celle après laquelle une seule game compte par session (ou null).
+   */
+  paliers: { finisseur: number; uneParSessionApres: number | null };
   duels: { joues: number; gagnes: number; perdus: number; net: number; derniers: DuelFiche[] };
 }
 
@@ -202,6 +207,10 @@ export async function getFicheJoueur(slug: string): Promise<FicheJoueur | null> 
       streameuse: estLaStreameuse(player, chaineDeLaLigue()),
       rang,
       creneaux: db.config.maxGamesPerPlayer + (player.creneauxBonus ?? 0),
+      paliers: {
+        finisseur: Math.min(parametresSaison(db.config.numero).finisseurA, db.config.maxGamesPerPlayer),
+        uneParSessionApres: parametresSaison(db.config.numero).uneParSessionApres,
+      },
       moyenneLigue: (() => {
         const classes = new Set(classement.map((r) => r.id));
         const comptees = db.games.filter((g) => !g.skipped && classes.has(g.playerId));

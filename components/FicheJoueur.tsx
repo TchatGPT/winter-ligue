@@ -1,12 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { type ReactNode, useMemo, useState } from 'react';
+import { type ReactNode, useCallback, useMemo, useState } from 'react';
 import { CardFrame } from '@/components/CardFrame';
 import { CorrectionGame, type GameACorriger } from '@/components/CorrectionGame';
 import { CouronneGlace } from '@/components/CouronneGlace';
 import { MedailleGlace } from '@/components/MedailleGlace';
-import { ColonnesSaison, Pagination, TableauGames } from '@/components/SaisonDuJoueur';
+import { ColonnesSaison, DetailGame, GrilleGames } from '@/components/SaisonDuJoueur';
 import { SnowCap } from '@/components/SnowCap';
 import { flakes } from '@/components/ui';
 import { getPack } from '@/lib/domain/catalog';
@@ -20,12 +20,9 @@ const ordinal = (n: number) => (n === 1 ? '1er' : `${n}e`);
 
 const signe = (n: number) => (n > 0 ? `+${flakes(n)}` : n < 0 ? `−${flakes(-n)}` : '0');
 
-/** Les games d'une page du tableau : pas de longue liste à faire défiler. */
-const GAMES_PAR_PAGE = 10;
 
 type Onglet = 'games' | 'duels' | 'flocons' | 'subs';
 type Filtre = 'toutes' | 'top3' | 'carte';
-type Tri = 'recentes' | 'meilleures';
 
 /** La couronne, une médaille, ou le rang dans un disque de glace. */
 function Rang({ position, id, className }: { position: number; id: string; className: string }) {
@@ -52,8 +49,8 @@ function Chiffre({ nom, children, precision }: { nom: string; children: ReactNod
  * Un en-tête compact — qui il est, où il en est, ses cinq chiffres —, puis
  * des onglets, un sujet à la fois, sur toute la largeur :
  *
- *  - **Games** : la saison en colonnes de glace et sa forme, puis un tableau
- *    d'une ligne par game, filtrable et triable (`SaisonDuJoueur`) ;
+ *  - **Games** : la saison en colonnes de glace et sa forme, puis la grille
+ *    des créneaux et le détail de la game choisie (`SaisonDuJoueur`) ;
  *  - **Duels** : le bilan, et chaque duel ;
  *  - **Flocons et cartes** : le solde, la chance aux boosters, les boosters à
  *    ouvrir et les cartes reçues ;
@@ -81,8 +78,10 @@ export function FicheJoueur({
   const classe = rang !== null && aJoue;
   const [onglet, setOnglet] = useState<Onglet>('games');
   const [filtre, setFiltre] = useState<Filtre>('toutes');
-  const [tri, setTri] = useState<Tri>('recentes');
-  const [page, setPage] = useState(0);
+  /** La game qu'on regarde de près ; la dernière jouée, d'abord. */
+  const [choisieId, setChoisieId] = useState<string | null>(null);
+  /** Sur téléphone, le détail de la game s'ouvre en feuille. */
+  const [feuille, setFeuille] = useState(false);
   /** La game qu'un membre de la modération corrige, s'il y en a une. */
   const [aCorriger, setACorriger] = useState<GameACorriger | null>(null);
 
@@ -99,27 +98,32 @@ export function FicheJoueur({
   // Les games dans l'ordre où elles ont été jouées, numérotées.
   const chronologie = useMemo(() => [...p.games].sort((a, b) => a.playedAt.localeCompare(b.playedAt)), [p.games]);
   const numeroDe = useMemo(() => new Map(chronologie.map((g, i) => [g.id, i + 1])), [chronologie]);
-  const meilleure = Math.max(1, ...chronologie.map((g) => g.score));
   const restantes = Math.max(0, fiche.creneaux - t.countedGames);
   const boostersPerso = p.packsDus.filter((b) => b.pack === 'perso').length;
   const avecCarte = chronologie.filter((g) => g.applied.length > 0).length;
   const top3 = chronologie.filter((g) => g.placement !== null && g.placement <= 3).length;
 
-  const lignes = useMemo(() => {
-    const filtrees = chronologie.filter((g) =>
-      filtre === 'top3' ? g.placement !== null && g.placement <= 3 : filtre === 'carte' ? g.applied.length > 0 : true,
-    );
-    return tri === 'recentes'
-      ? [...filtrees].reverse()
-      : [...filtrees].sort((a, b) => b.score - a.score || b.playedAt.localeCompare(a.playedAt));
-  }, [chronologie, filtre, tri]);
-  const pages = Math.max(1, Math.ceil(lignes.length / GAMES_PAR_PAGE));
-  const pageVue = Math.min(page, pages - 1);
-  const visibles = lignes.slice(pageVue * GAMES_PAR_PAGE, (pageVue + 1) * GAMES_PAR_PAGE);
-  // La meilleure et la pire game de la saison, marquées dans le tableau.
+  // Le filtre efface les games qu'il écarte, sans rien déplacer : la grille
+  // garde sa taille.
+  const garde = useCallback(
+    (g: { placement: number | null; applied: unknown[]; skipped: boolean }) =>
+      filtre === 'top3'
+        ? !g.skipped && g.placement !== null && g.placement <= 3
+        : filtre === 'carte'
+          ? g.applied.length > 0
+          : true,
+    [filtre],
+  );
+  // La meilleure et la pire game de la saison, marquées.
   const comptees = chronologie.filter((g) => !g.skipped);
   const meilleureId = comptees.length > 1 ? comptees.reduce((m, g) => (g.score > m.score ? g : m)).id : null;
   const pireId = comptees.length > 1 ? comptees.reduce((m, g) => (g.score < m.score ? g : m)).id : null;
+  const choisie = chronologie.find((g) => g.id === choisieId) ?? chronologie[chronologie.length - 1] ?? null;
+  const choisit = useCallback((id: string) => {
+    setChoisieId(id);
+    setFeuille(true);
+  }, []);
+  const fermeFeuille = useCallback(() => setFeuille(false), []);
 
 
   const ONGLETS: { cle: Onglet; nom: string; compte?: number }[] = [
@@ -266,11 +270,20 @@ export function FicheJoueur({
               </dl>
 
               {/* La saison en colonnes de glace, et sa forme. */}
-              {chronologie.length >= 3 && <ColonnesSaison chronologie={chronologie} moyenne={t.averageScore} moyenneLigue={fiche.moyenneLigue} />}
+              <ColonnesSaison
+                chronologie={chronologie}
+                creneaux={fiche.creneaux}
+                palier={fiche.paliers.finisseur}
+                moyenne={t.averageScore}
+                moyenneLigue={fiche.moyenneLigue}
+                choisie={choisie?.id ?? null}
+                onChoisit={choisit}
+                garde={garde}
+              />
 
-              {/* Les réglages de la liste : quoi montrer, dans quel ordre. */}
+              {/* Ce que le filtre met en avant : les autres games s'effacent. */}
               <div className="profil-reglages">
-                <div className="segment" role="group" aria-label="Quelles games montrer">
+                <div className="segment" role="group" aria-label="Quelles games mettre en avant">
                   {(
                     [
                       ['toutes', `Toutes · ${chronologie.length}`],
@@ -278,65 +291,41 @@ export function FicheJoueur({
                       ['carte', `Avec carte · ${avecCarte}`],
                     ] as const
                   ).map(([cle, nom]) => (
-                    <button
-                      key={cle}
-                      type="button"
-                      aria-pressed={filtre === cle}
-                      onClick={() => {
-                        setFiltre(cle);
-                        setPage(0);
-                      }}
-                    >
-                      {nom}
-                    </button>
-                  ))}
-                </div>
-                <div className="segment" role="group" aria-label="Dans quel ordre">
-                  {(
-                    [
-                      ['recentes', 'Récentes'],
-                      ['meilleures', 'Meilleures'],
-                    ] as const
-                  ).map(([cle, nom]) => (
-                    <button
-                      key={cle}
-                      type="button"
-                      aria-pressed={tri === cle}
-                      onClick={() => {
-                        setTri(cle);
-                        setPage(0);
-                      }}
-                    >
+                    <button key={cle} type="button" aria-pressed={filtre === cle} onClick={() => setFiltre(cle)}>
                       {nom}
                     </button>
                   ))}
                 </div>
               </div>
 
-              {/* Le tableau : une ligne par game, toutes de la même hauteur. */}
-              {lignes.length === 0 ? (
-                <p className="profil-vide">Aucune game ne correspond.</p>
-              ) : (
-                <TableauGames
-                  games={visibles}
-                  numeroDe={numeroDe}
-                  meilleure={meilleure}
+              {/* La grille de la saison, une case par créneau, et la game choisie. */}
+              <div className="saison-bas">
+                <GrilleGames
+                  chronologie={chronologie}
+                  creneaux={fiche.creneaux}
+                  palier={fiche.paliers.finisseur}
+                  uneParSessionApres={fiche.paliers.uneParSessionApres}
+                  choisie={choisie?.id ?? null}
+                  onChoisit={choisit}
+                  garde={garde}
                   meilleureId={meilleureId}
                   pireId={pireId}
+                />
+                <DetailGame
+                  game={choisie}
+                  numero={choisie ? (numeroDe.get(choisie.id) ?? 0) : 0}
+                  moyenne={t.averageScore}
+                  moyenneLigue={fiche.moyenneLigue}
+                  extreme={choisie?.id === meilleureId ? 'meilleure' : choisie?.id === pireId ? 'pire' : null}
                   moderation={moderation}
-                  onCorrige={setACorriger}
+                  onCorrige={(g) => {
+                    setFeuille(false);
+                    setACorriger(g);
+                  }}
+                  ouvert={feuille}
+                  onFerme={fermeFeuille}
                 />
-              )}
-              {pages > 1 && (
-                <Pagination
-                  page={pageVue}
-                  pages={pages}
-                  premiere={pageVue * GAMES_PAR_PAGE + 1}
-                  derniere={Math.min(lignes.length, (pageVue + 1) * GAMES_PAR_PAGE)}
-                  total={lignes.length}
-                  onPage={setPage}
-                />
-              )}
+              </div>
               {aCorriger && (
                 <CorrectionGame
                   key={aCorriger.id}
