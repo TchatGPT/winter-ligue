@@ -117,7 +117,7 @@ export function ColonnesSaison({
     const perso = part(moyenne);
     const ligue = moyenneLigue !== null ? part(moyenneLigue) : null;
     if (ligue === null) return { perso, ligue };
-    const ecart = 0.13;
+    const ecart = 0.2;
     if (Math.abs(perso - ligue) >= ecart) return { perso, ligue };
     const milieu = (perso + ligue) / 2;
     const persoDessus = perso >= ligue;
@@ -225,18 +225,17 @@ export function ColonnesSaison({
                   aria-label={`Game ${i + 1} : ${c.skipped ? 'Joker' : pts(c.score)}`}
                   style={{ ['--part' as string]: c.skipped ? 0 : part(c.score) } as CSSProperties}
                 >
-                  <span className="saison-bloc">
-                    {place && (
-                      <span className="saison-podium">
-                        <Podium place={place} id={`saison-${c.id}`} className="h-full w-full" />
-                      </span>
-                    )}
-                    {c.skipped && (
-                      <span className="saison-podium saison-joker">
-                        <IconJoker className="h-full w-full" />
-                      </span>
-                    )}
-                  </span>
+                  <span className="saison-bloc" />
+                  {place && (
+                    <span className="saison-podium">
+                      <Podium place={place} id={`saison-${c.id}`} className="h-full w-full" />
+                    </span>
+                  )}
+                  {c.skipped && (
+                    <span className="saison-podium saison-joker">
+                      <IconJoker className="h-full w-full" />
+                    </span>
+                  )}
                   {c.applied.length > 0 && (
                     <span
                       className="saison-carte"
@@ -410,8 +409,10 @@ export function GrilleGames({
             >
               {fond && <span className="case-fond" style={{ backgroundImage: `url("${fond}")` }} aria-hidden="true" />}
               <span className="case-tete">
-                <span className="case-num">{numero}</span>
-                {extreme && <span className="case-extreme">{extreme === 'meilleure' ? 'Meilleure' : 'Pire'}</span>}
+                <span className="case-num">
+                  {numero}
+                  {extreme && <span className="case-extreme">{extreme === 'meilleure' ? 'Meilleure' : 'Pire'}</span>}
+                </span>
                 {place && (
                   <span className="case-podium">
                     <Podium place={place} id={`case-${g.id}`} className="h-full w-full" />

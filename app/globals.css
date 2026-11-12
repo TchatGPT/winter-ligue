@@ -17732,6 +17732,7 @@ a.rgs-usage b::after {
   z-index: 3;
   height: 3px;
   background: var(--frost);
+  opacity: 0.85;
   filter: drop-shadow(0 1px 0 var(--bg-deep)) drop-shadow(0 -1px 0 var(--bg-deep));
   transform: translateY(50%);
 }
@@ -17960,13 +17961,19 @@ a.rgs-usage b::after {
 .saison-colonne[data-joker] .saison-bloc::after {
   opacity: 0.25;
 }
+/* Posé sur son bloc, devant les traits des moyennes. */
 .saison-podium {
   position: absolute;
-  bottom: calc(100% + var(--prof) + 2px);
-  left: calc(50% + var(--prof) / 2);
+  z-index: 4;
+  bottom: calc(var(--bas) + var(--part) * (100% - var(--bas)) + var(--prof) + 3px);
+  left: calc(50% - var(--prof) / 2);
   width: 12px;
   height: 12px;
   transform: translateX(-50%);
+  pointer-events: none;
+}
+.saison-colonne[data-joker] .saison-podium {
+  bottom: calc(var(--bas) + 1.1rem + var(--prof) + 3px);
 }
 @media (min-width: 640px) {
   .saison-podium {
@@ -18238,40 +18245,56 @@ button.case:focus-visible {
 .case-tete {
   display: flex;
   min-width: 0;
-  height: 20px;
+  height: 24px;
   align-items: center;
   gap: 0.3rem;
 }
 .case-num {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   font-size: 0.75rem;
   font-variant-numeric: tabular-nums;
   line-height: 1;
   color: var(--muted);
 }
+.case[data-carte] .case-num,
+.case[data-extreme] .case-num {
+  padding: 0.15rem 0.2rem 0.15rem 0.45rem;
+  margin-left: -0.2rem;
+  border-radius: var(--r-pilule);
+  background: color-mix(in srgb, var(--bg-deep) 80%, transparent);
+  color: var(--ink-2);
+}
+.case[data-carte]:not([data-extreme]) .case-num {
+  padding-right: 0.45rem;
+}
 .case-podium {
-  width: 15px;
-  height: 15px;
+  width: 19px;
+  height: 19px;
   margin-left: auto;
   flex-shrink: 0;
+  padding: 2px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--bg-deep) 75%, transparent);
 }
 @media (min-width: 560px) {
   .case-podium {
-    width: 20px;
-    height: 20px;
+    width: 24px;
+    height: 24px;
+    padding: 3px;
   }
 }
 .case-extreme {
   display: none;
   overflow: hidden;
-  padding: 0.05rem 0.35rem;
-  border-radius: var(--r-pilule);
   font-family: var(--font-display);
-  font-size: 0.5625rem;
-  font-weight: 700;
+  font-size: 0.6875rem;
+  font-weight: 800;
   letter-spacing: 0.06em;
+  line-height: 1;
   text-transform: uppercase;
   white-space: nowrap;
-  color: var(--bg);
 }
 @media (min-width: 560px) {
   .case-extreme {
@@ -18279,10 +18302,10 @@ button.case:focus-visible {
   }
 }
 .case[data-extreme='meilleure'] .case-extreme {
-  background: var(--aurora);
+  color: var(--aurora);
 }
 .case[data-extreme='pire'] .case-extreme {
-  background: var(--danger);
+  color: var(--danger);
 }
 .case-score {
   font-family: var(--font-display);
@@ -18320,22 +18343,33 @@ button.case:focus-visible {
 /* La carte : ses points à côté du score, son nom en bas, sur son illustration. */
 .case-milieu {
   display: flex;
+  min-width: 0;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.25rem;
+}
+@media (min-width: 560px) {
+  .case-milieu {
+    gap: 0.4rem;
+  }
+  .case-gain {
+    padding: 0.12rem 0.45rem;
+  }
 }
 .case-gain {
-  padding: 0.1rem 0.4rem;
+  padding: 0.08rem 0.3rem;
   border-radius: var(--r-pilule);
-  background: var(--aurora);
+  background: color-mix(in srgb, var(--bg-deep) 82%, transparent);
+  box-shadow: inset 0 0 0 1.5px var(--aurora);
   font-family: var(--font-display);
-  font-size: 0.8125rem;
+  font-size: 0.6875rem;
   font-weight: 900;
   line-height: 1.1;
   white-space: nowrap;
-  color: var(--bg);
+  color: var(--aurora);
 }
 .case-gain[data-malus] {
-  background: var(--danger);
+  box-shadow: inset 0 0 0 1.5px var(--danger);
+  color: var(--danger);
 }
 @media (min-width: 560px) {
   .case-gain {
