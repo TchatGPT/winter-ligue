@@ -18100,11 +18100,6 @@ a.rgs-usage b::after {
 .saison-joker {
   color: var(--ice);
 }
-@media (hover: none), (max-width: 639px) {
-  .saison-bulle {
-    display: none;
-  }
-}
 .saison-bulle {
   position: absolute;
   z-index: 6;
@@ -18123,6 +18118,12 @@ a.rgs-usage b::after {
   color: var(--muted);
   pointer-events: none;
   transform: translate(var(--decale, -50%), 0.25rem);
+}
+/* Sur un écran tactile, pas de bulle : le détail s'ouvre en bas de l'écran. */
+@media (hover: none), (max-width: 639px) {
+  .saison-bulle {
+    display: none;
+  }
 }
 .saison-bulle b {
   font-family: var(--font-display);

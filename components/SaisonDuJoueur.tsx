@@ -253,8 +253,10 @@ export function ColonnesSaison({
                   data-joker={c.skipped ? '' : undefined}
                   data-eteinte={garde(c) ? undefined : ''}
                   data-podium={place ?? undefined}
-                  onMouseEnter={() => setSurvolee(i)}
-                  onFocus={() => setSurvolee(i)}
+                  // La bulle : au survol d'une souris, ou au clavier — jamais au
+                  // toucher, où le détail s'ouvre en bas de l'écran.
+                  onPointerEnter={(e) => e.pointerType === 'mouse' && setSurvolee(i)}
+                  onFocus={(e) => e.currentTarget.matches(':focus-visible') && setSurvolee(i)}
                   onBlur={() => setSurvolee(null)}
                   onClick={() => onChoisit(c.id)}
                   aria-label={`Game ${i + 1} : ${c.skipped ? 'Joker' : pts(c.score)}`}
