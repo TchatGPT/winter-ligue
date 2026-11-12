@@ -112,6 +112,7 @@ export const COLLECTIONS: Collection[] = [
       c('openedAt', 'ouvert_le', 'ts'),
       c('idempotencyKey', 'cle_idempotence', 'text'),
       c('annonceeA', 'annoncee_le', 'ts'),
+      c('games', 'games', 'json'),
     ],
   },
   {
@@ -438,6 +439,8 @@ alter table boosters_a_ouvrir add column if not exists donateur_twitch_id text;
 
 -- L'annonce d'une ouverture dans le tchat : une fois et une seule.
 alter table ouvertures add column if not exists annoncee_le timestamptz;
+-- Les games qu'une carte des roues va toucher, tirées à l'ouverture (12/11/2026).
+alter table ouvertures add column if not exists games jsonb;
 
 -- Un rôle choisi à la main : la connexion Twitch n'y touche plus.
 alter table joueurs add column if not exists role_manuel boolean not null default false;

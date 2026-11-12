@@ -143,6 +143,43 @@ export interface PackDu {
   donDe?: string | null;
 }
 
+/** Une game montrée au tirage des games : de quoi la reconnaître à l'écran. */
+export interface GameMontree {
+  id: string;
+  /** Son rang parmi les games du joueur, de la première jouée à la dernière. */
+  numero: number;
+  score: number;
+  kills: number;
+  top: Placement;
+}
+
+/**
+ * Le troisième tirage d'une ouverture (12/11/2026) : la game, ou les games,
+ * qu'une carte des roues de la Summer va toucher — tirées au sort, ou
+ * désignées par la carte (sa pire, sa meilleure). Décidé par le serveur à
+ * l'ouverture, comme la carte et les joueurs ; l'écran et l'overlay le
+ * déroulent, et la carte, révélée, frappe ces games-là (`regleRoue`).
+ */
+export interface GamesTirees {
+  /** Tirées au sort : le rail tourne. Désignées par la carte : elles s'allument. */
+  hasard: boolean;
+  /** Ce qui lie les games de deux joueurs : un échange de score, une copie, une fusion. */
+  lien?: 'echange' | 'copie' | 'fusion' | null;
+  /**
+   * Par bénéficiaire, dans l'ordre de l'ouverture : ce que la carte prend
+   * chez lui — rien (nul) quand elle ne prend pas de game chez lui.
+   */
+  parJoueur: ({
+    joueurId: string;
+    pseudo: string;
+    /** « une game au hasard », « sa pire game »… */
+    libelle: string;
+    visees: GameMontree[];
+    /** Celles parmi lesquelles le sort a pris : ce qui défile sur le rail. */
+    parmi: GameMontree[];
+  } | null)[];
+}
+
 /** Une ouverture de pack : le tirage, et sur qui il est tombé. */
 export interface OuverturePack {
   id: string;
@@ -162,6 +199,8 @@ export interface OuverturePack {
   idempotencyKey: string;
   /** Quand elle a été annoncée dans le tchat — une fois et une seule (`annonceOuverture`). */
   annonceeA?: string | null;
+  /** Les games que la carte va toucher, quand elle en prend : voir `GamesTirees`. */
+  games?: GamesTirees | null;
 }
 
 /**

@@ -15,6 +15,7 @@ import { CARDS, RARITY_META } from '@/lib/domain/catalog';
 import type { BoosterOverlay } from '@/lib/services/overlay';
 import { COURBE_MESUREE } from '@/lib/spin/courbe';
 import { CourseRoulette } from '@/components/CourseRoulette';
+import { questionDesGames, TirageGames } from '@/components/TirageGames';
 
 /**
  * L'overlay des boosters : ce que le stream voit quand la streameuse en ouvre
@@ -294,7 +295,8 @@ function Ouverture({
 
 /**
  * Le second tirage : sur qui tombe la carte, quand elle tombe sur des joueurs
- * tirés au sort. Un rail par joueur tiré, l'un après l'autre.
+ * tirés au sort — une bande par joueur, toutes ensemble —, puis le troisième :
+ * les games qu'elle touche (`TirageGames`).
  */
 function TirageJoueurs({
   booster,
@@ -307,7 +309,10 @@ function TirageJoueurs({
   son: boolean;
   onFini: () => void;
 }) {
-  const [rang, setRang] = useState(0);
+  // Les joueurs d'abord, tous ensemble ; puis les games que la carte touche.
+  // Un booster ouvert pour un joueur n'a que ses games à dérouler.
+  const [etape, setEtape] = useState<'joueurs' | 'games'>(tirage.sansJoueurs ? 'games' : 'joueurs');
+  const apresJoueurs = () => (tirage.games ? setEtape('games') : onFini());
   const meta = RARITY_META[booster.carte.rarity] ?? RARITY_META.C;
   const n = tirage.gagnants.length;
   return (
@@ -317,25 +322,25 @@ function TirageJoueurs({
           {booster.carte.name}
         </span>
         <span className="ov-tirage-question">
-          {tirage.course
-            ? 'Qui ne passera pas la ligne ?'
-            : n > 1
-              ? `Joueur ${rang + 1} sur ${n}`
-              : 'Sur qui tombe-t-elle ?'}
+          {etape === 'games' && tirage.games
+            ? questionDesGames(tirage.games)
+            : tirage.course
+              ? 'Qui ne passera pas la ligne ?'
+              : n > 1
+                ? `Sur quels ${n === 2 ? 'deux' : n === 3 ? 'trois' : n} joueurs ?`
+                : 'Sur qui tombe-t-elle ?'}
         </span>
       </div>
-      {tirage.course ? (
+      {etape === 'games' && tirage.games ? (
+        <div className="ov-games">
+          <TirageGames games={tirage.games} sourdine={!son} onFini={onFini} />
+        </div>
+      ) : tirage.course ? (
         <div className="ov-course">
-          <CourseRoulette pseudos={tirage.gagnants} graine={booster.id} sourdine={!son} onFini={onFini} />
+          <CourseRoulette pseudos={tirage.gagnants} graine={booster.id} sourdine={!son} onFini={apresJoueurs} />
         </div>
       ) : (
-        <RailJoueurs
-          key={rang}
-          joueurs={tirage.joueurs}
-          gagnant={tirage.gagnants[rang]}
-          sourdine={!son}
-          onFini={() => (rang + 1 < n ? setRang(rang + 1) : onFini())}
-        />
+        <RailJoueurs joueurs={tirage.joueurs} gagnants={tirage.gagnants} sourdine={!son} onFini={apresJoueurs} />
       )}
     </div>
   );

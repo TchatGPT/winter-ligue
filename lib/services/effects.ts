@@ -27,7 +27,7 @@ import 'server-only';
  *   4. Un malus ne touche pas un joueur immunisé : il est paré, et disparaît.
  */
 
-import type { CarteEnAttente, Database, Game, Player } from '@/lib/db/entities';
+import type { CarteEnAttente, Database, Game, GameMontree, GamesTirees, Player } from '@/lib/db/entities';
 import { newId } from '@/lib/db/store';
 import { COUP_DE_VERGLAS, getCard, momentDe, PACTE_SUBI, TROC_SUBI } from '@/lib/domain/catalog';
 import { rewardForGame } from '@/lib/domain/economy';
@@ -671,6 +671,149 @@ function chaine(
   });
 }
 
+/** Une game telle que l'écran du tirage la montre. */
+function montre(db: Database, g: Game): GameMontree {
+  const siennes = db.games
+    .filter((x) => x.playerId === g.playerId)
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id));
+  return { id: g.id, numero: siennes.indexOf(g) + 1, score: g.score, kills: g.kills, top: g.placement };
+}
+
+const parScore = (l: readonly Game[]) => [...l].sort((x, y) => x.score - y.score);
+
+/** Au-delà, l'écran ne déroule plus les games : la carte tombe sur trop de monde. */
+const JOUEURS_AU_TIRAGE_DES_GAMES = 3;
+
+/**
+ * Les games que touchera une carte des roues, tirées à l'ouverture
+ * (12/11/2026) : l'écran déroule ce tirage après celui des joueurs, et la
+ * carte, révélée, frappe ces games-là (`regleRoue`, `retenue`). Les règles de
+ * choix sont celles de `regleRoue` — une game sans carte, jamais la pire à
+ * figer… — pour que l'écran montre ce que la carte fera. Nul quand la carte
+ * ne prend pas de game, ou tombe sur toute la ligue.
+ */
+export function choisitGamesRoue(db: Database, card: CardDefinition, joueurs: readonly Player[]): GamesTirees | null {
+  if (card.effect.kind !== 'roue') return null;
+  const action = card.effect.action;
+  const roulette = action.quoi === 'roulette';
+  if (!roulette && (joueurs.length === 0 || joueurs.length > JOUEURS_AU_TIRAGE_DES_GAMES)) return null;
+  const pour = (p: Player, libelle: string, visees: Game[], parmi: Game[]): GamesTirees['parJoueur'][number] =>
+    visees.length === 0
+      ? null
+      : {
+          joueurId: p.id,
+          pseudo: p.pseudo,
+          libelle,
+          visees: visees.map((g) => montre(db, g)),
+          parmi: parmi.map((g) => montre(db, g)),
+        };
+  const fait = (hasard: boolean, parJoueur: GamesTirees['parJoueur'], lien: GamesTirees['lien'] = null) =>
+    parJoueur.some(Boolean) ? { hasard, lien, parJoueur } : null;
+
+  switch (action.quoi) {
+    case 'hasard_fois':
+      return fait(
+        true,
+        joueurs.map((p) => {
+          const libres = gamesSansCarte(db, p.id).filter((g) => g.score > 0);
+          return libres.length ? pour(p, `une game au hasard, ×${fr(action.facteur)}`, [pick(libres)], libres) : null;
+        }),
+      );
+    case 'fige_hasard':
+      return fait(
+        true,
+        joueurs.map((p) => {
+          const toutes = comptees(db, p.id);
+          const pire = parScore(toutes)[0];
+          const meilleure = parScore(toutes).at(-1);
+          let libres = gamesSansCarte(db, p.id).filter((g) => g.id !== pire?.id);
+          if (action.meilleureExclue) libres = libres.filter((g) => g.id !== meilleure?.id);
+          return libres.length ? pour(p, 'une game au hasard, figée', [pick(libres)], libres) : null;
+        }),
+      );
+    case 'fige_meilleure':
+      return fait(
+        false,
+        joueurs.map((p) => {
+          const toutes = comptees(db, p.id);
+          if (toutes.length < action.minGames) return null;
+          const pire = parScore(toutes)[0];
+          const libres = gamesSansCarte(db, p.id).filter((g) => g.id !== pire?.id);
+          const meilleure = parScore(libres).at(-1);
+          return meilleure ? pour(p, 'sa meilleure game, figée', [meilleure], libres) : null;
+        }),
+      );
+    case 'echange_hasard':
+    case 'echange_meilleure_pire': {
+      const [a, b] = joueurs;
+      if (!a || !b) return null;
+      const libresA = gamesSansCarte(db, a.id);
+      const libresB = gamesSansCarte(db, b.id);
+      if (libresA.length === 0 || libresB.length === 0) return null;
+      if (action.quoi === 'echange_hasard') {
+        return fait(
+          true,
+          [pour(a, 'une game au hasard', [pick(libresA)], libresA), pour(b, 'une game au hasard', [pick(libresB)], libresB)],
+          'echange',
+        );
+      }
+      return fait(
+        false,
+        [
+          pour(a, 'sa meilleure game', [parScore(libresA).at(-1)!], libresA),
+          pour(b, 'sa pire game', [parScore(libresB)[0]], libresB),
+        ],
+        'echange',
+      );
+    }
+    case 'clone_sur_pire': {
+      const [a, b] = joueurs;
+      if (!a || !b) return null;
+      const libresA = gamesSansCarte(db, a.id);
+      const sources = comptees(db, b.id);
+      if (libresA.length === 0 || sources.length === 0) return null;
+      return fait(
+        false,
+        [
+          pour(a, 'sa pire game, qui prend le score', [parScore(libresA)[0]], libresA),
+          pour(b, 'sa meilleure game, copiée', [parScore(sources).at(-1)!], sources),
+        ],
+        'copie',
+      );
+    }
+    case 'pire_moyenne':
+      return fait(
+        false,
+        joueurs.map((p) => {
+          const libres = gamesSansCarte(db, p.id);
+          if (comptees(db, p.id).length < 2 || libres.length === 0) return null;
+          return pour(p, 'sa pire game, ramenée à la moyenne', [parScore(libres)[0]], libres);
+        }),
+      );
+    case 'fusion_pires':
+      return fait(
+        false,
+        joueurs.map((p) => {
+          const libres = parScore(gamesSansCarte(db, p.id));
+          return libres.length >= 2 ? pour(p, 'ses deux pires games, fondues en une', libres.slice(0, 2), libres) : null;
+        }),
+        'fusion',
+      );
+    case 'roulette': {
+      // Le perdant de la course est le premier tiré (`beneficiairesRoue`) :
+      // sa meilleure game encore libre de toute carte qui fige.
+      const perdant = joueurs[0];
+      if (!perdant || estImmunise(perdant)) return null;
+      const candidates = comptees(db, perdant.id).filter((g) => !estFigee(g));
+      const meilleure = parScore(candidates).at(-1);
+      if (!meilleure) return null;
+      return fait(false, [pour(perdant, 'sa meilleure game, perdue', [meilleure], candidates), ...joueurs.slice(1).map(() => null)]);
+    }
+    default:
+      return null;
+  }
+}
+
 /**
  * Règle une action des roues de la Summer, une seule fois pour tous les
  * joueurs tirés : toutes les cartes de la même ouverture sont réglées
@@ -696,6 +839,14 @@ function regleRoue(
   const resultats = new Map<string, Reglement>();
   const pour = (m: Membre, r: Reglement) => resultats.set(m.pendante.id, r);
   const o = pendante.ouvertureId;
+  // Les games tirées à l'ouverture, que l'écran a montrées (`choisitGamesRoue`) :
+  // la carte frappe celles-là, si elles peuvent encore l'être ; sinon elle
+  // choisit comme elle l'aurait fait.
+  const tirees = db.ouvertures.find((x) => x.id === o)?.games ?? null;
+  const retenue = (m: Membre, parmi: readonly Game[], rang = 0): Game | undefined => {
+    const id = tirees?.parJoueur.find((e) => e?.joueurId === m.joueur.id)?.visees[rang]?.id;
+    return id ? parmi.find((g) => g.id === id) : undefined;
+  };
 
   switch (action.quoi) {
     case 'rien':
@@ -733,7 +884,8 @@ function regleRoue(
           pour(m, sansEffet('aucune game libre, sans effet'));
           continue;
         }
-        const game = action.quoi === 'pire_fois' ? [...libres].sort((a, b) => a.score - b.score)[0] : pick(libres);
+        const game =
+          retenue(m, libres) ?? (action.quoi === 'pire_fois' ? [...libres].sort((a, b) => a.score - b.score)[0] : pick(libres));
         const avant = game.score;
         const points = applyPoints(db, game, card, o, Math.round(avant * (action.facteur - 1)));
         const quelle = action.quoi === 'pire_fois' ? 'pire game' : 'une game';
@@ -792,8 +944,8 @@ function regleRoue(
           for (const m of groupe) pour(m, sansEffet('pas de game à cloner, sans effet'));
           break;
         }
-        const pire = [...libresA].sort((x, y) => x.score - y.score)[0];
-        const source = [...sources].sort((x, y) => y.score - x.score)[0];
+        const pire = retenue(a, libresA) ?? [...libresA].sort((x, y) => x.score - y.score)[0];
+        const source = retenue(b, sources) ?? [...sources].sort((x, y) => y.score - x.score)[0];
         if (source.score < pire.score && estImmunise(a.joueur, now)) {
           for (const m of groupe) pour(m, sansEffet(`clone annulé : ${a.joueur.pseudo} est immunisé`));
           break;
@@ -809,9 +961,11 @@ function regleRoue(
         break;
       }
       const ga =
-        action.quoi === 'echange_meilleure_pire' ? [...libresA].sort((x, y) => y.score - x.score)[0] : pick(libresA);
+        retenue(a, libresA) ??
+        (action.quoi === 'echange_meilleure_pire' ? [...libresA].sort((x, y) => y.score - x.score)[0] : pick(libresA));
       const gb =
-        action.quoi === 'echange_meilleure_pire' ? [...libresB].sort((x, y) => x.score - y.score)[0] : pick(libresB);
+        retenue(b, libresB) ??
+        (action.quoi === 'echange_meilleure_pire' ? [...libresB].sort((x, y) => x.score - y.score)[0] : pick(libresB));
       const [ra, rb] = echangeDeuxGames(db, card, a, ga, b, gb, now);
       pour(a, ra);
       pour(b, rb);
@@ -923,7 +1077,9 @@ function regleRoue(
           pour(m, sansEffet('aucune game à figer, sans effet'));
           continue;
         }
-        const game = action.quoi === 'fige_meilleure' ? [...libres].sort((x, y) => y.score - x.score)[0] : pick(libres);
+        const game =
+          retenue(m, libres) ??
+          (action.quoi === 'fige_meilleure' ? [...libres].sort((x, y) => y.score - x.score)[0] : pick(libres));
         applyPoints(db, game, card, o, 0);
         pour(m, regleSur(`game de ${game.score} pts figée : plus aucune carte ne peut la toucher`, 0, game.id));
       }
@@ -976,7 +1132,7 @@ function regleRoue(
           pour(m, sansEffet('touché, mais toutes ses games sont figées : sans effet'));
           continue;
         }
-        const meilleure = [...candidates].sort((x, y) => y.score - x.score)[0];
+        const meilleure = retenue(m, candidates) ?? [...candidates].sort((x, y) => y.score - x.score)[0];
         applyPoints(db, meilleure, card, o, 0);
         meilleure.skipped = true;
         pour(m, regleSur(`n’a pas passé la ligne : il perd sa meilleure game (${meilleure.score} pts)`, -meilleure.score, meilleure.id));
@@ -1042,7 +1198,9 @@ function regleRoue(
           pour(m, sansEffet('il faut deux games libres, sans effet'));
           continue;
         }
-        const [pire, seconde] = libres;
+        const v0 = retenue(m, libres, 0);
+        const v1 = retenue(m, libres, 1);
+        const [pire, seconde] = v0 && v1 && v0 !== v1 ? [v0, v1].sort((x, y) => x.score - y.score) : libres;
         const somme = pire.score + seconde.score;
         const points = donneLeScore(db, seconde, card, o, somme);
         applyPoints(db, pire, card, o, 0);
@@ -1060,7 +1218,7 @@ function regleRoue(
           continue;
         }
         const moyenne = Math.round(toutes.reduce((s, g) => s + g.score, 0) / toutes.length);
-        const pire = [...libres].sort((x, y) => x.score - y.score)[0];
+        const pire = retenue(m, libres) ?? [...libres].sort((x, y) => x.score - y.score)[0];
         if (pire.score >= moyenne) {
           pour(m, sansEffet(`pire game déjà à la moyenne (${moyenne} pts), sans effet`));
           continue;

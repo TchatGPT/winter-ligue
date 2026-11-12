@@ -7,6 +7,7 @@ import { chaineDeLaLigue } from '@/lib/auth/twitch';
 import { estUneCourse, GEMME_DU_PACK, getCard, getPack, joueursTires, packArt } from '@/lib/domain/catalog';
 import { nextMilestone, type PalierAffiche, paliersAffiches, prochainEvenement } from '@/lib/domain/rules';
 import { estLaStreameuse } from '@/lib/domain/streameuse';
+import { gamesAuTirage, type TirageJoueurs } from '@/lib/domain/tirage';
 import type { PackId, Rarity } from '@/lib/domain/types';
 
 /**
@@ -81,7 +82,7 @@ export interface BoosterOverlay {
    * Null sinon — tout le monde, la tête ou la queue du classement ne se
    * tirent pas, et un booster ouvert pour un joueur va à ce joueur.
    */
-  tirage: { gagnants: string[]; joueurs: string[]; course?: boolean } | null;
+  tirage: TirageJoueurs | null;
 }
 
 export interface DuelOverlay {
@@ -135,6 +136,7 @@ export function vueBoosters(flux: FluxOverlay): BoosterOverlay[] {
     const touteLaLigue = !o.joueur && card.cible === 'TOUS';
     const autres = o.nbBeneficiaires - o.beneficiaires.length;
     const tire = !o.joueur && joueursTires(card.cible) > 0 && o.beneficiaires.length > 0;
+    const games = gamesAuTirage(o.games);
     vues.push({
       id: o.id,
       at: o.openedAt,
@@ -154,8 +156,15 @@ export function vueBoosters(flux: FluxOverlay): BoosterOverlay[] {
           : liste(o.beneficiaires),
       carte,
       tirage: tire
-        ? { gagnants: o.beneficiaires, joueurs: enLice.length ? enLice : o.beneficiaires, course: estUneCourse(card) }
-        : null,
+        ? {
+            gagnants: o.beneficiaires,
+            joueurs: enLice.length ? enLice : o.beneficiaires,
+            course: estUneCourse(card),
+            games,
+          }
+        : o.joueur && games
+          ? { gagnants: [o.joueur], joueurs: [o.joueur], sansJoueurs: true, games }
+          : null,
     });
   }
   return vues;

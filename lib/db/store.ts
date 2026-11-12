@@ -23,7 +23,7 @@ import { synchroniseCatalogue } from './lecture';
 import { chargeBase, empreintes, enregistreBase, lisJournal, lisSubsTwitch, SCHEMA_SQL, TABLES } from './tables';
 import { dirname, join } from 'node:path';
 import { DEFAULT_MAX_GAMES_PER_PLAYER, ECONOMY, EVENEMENT_KINDS, PREFIXE_OUVERTURE_TEST, SEASON } from '@/lib/domain/rules';
-import type { AuditEntry, Database, PlayerRole, SubTwitch } from './entities';
+import type { AuditEntry, Database, GamesTirees, PlayerRole, SubTwitch } from './entities';
 import type { Rarity } from '@/lib/domain/types';
 
 /*
@@ -97,6 +97,8 @@ export interface FluxOverlay {
     /** Sur qui la carte est tombée, dans l'ordre du tirage : six pseudos au plus. */
     beneficiaires: string[];
     nbBeneficiaires: number;
+    /** Les games que la carte touche, tirées à l'ouverture (`GamesTirees`). */
+    games?: GamesTirees | null;
   }[];
   /**
    * Les joueurs actifs, pour le second tirage d'un booster de la ligue — ceux
@@ -296,6 +298,7 @@ class JsonFileStore implements Store {
         joueur: o.joueurId ? pseudo(o.joueurId) : null,
         beneficiaires: o.beneficiaires.slice(0, 6).map(pseudo),
         nbBeneficiaires: o.beneficiaires.length,
+        games: o.games ?? null,
       })),
       joueurs: ouvertures.length
         ? db.players
@@ -382,6 +385,7 @@ interface DocOverlay {
     joueur: string | null;
     beneficiaires: string[];
     nb: number;
+    games?: GamesTirees | null;
   }[];
   joueurs: { pseudo: string; slug: string; twitch_login: string | null }[];
   duels: { id: string; mise: number; le: string; hote: string }[];
@@ -686,7 +690,8 @@ class PostgresStore implements Store {
                           join joueurs j on j.id = e.id
                          order by e.n
                          limit 6) b), '[]'::json) as beneficiaires,
-                     jsonb_array_length(o.beneficiaires) as nb
+                     jsonb_array_length(o.beneficiaires) as nb,
+                     o.games
                 from ouvertures o
                where o.ouvert_le > ${depuis}::timestamptz
                  and o.cle_idempotence not like ${PREFIXE_OUVERTURE_TEST + '%'}
@@ -732,6 +737,7 @@ class PostgresStore implements Store {
           joueur: o.joueur,
           beneficiaires: o.beneficiaires,
           nbBeneficiaires: o.nb,
+          games: o.games ?? null,
         })),
         joueurs: (doc.joueurs ?? []).map((j) => ({ pseudo: j.pseudo, slug: j.slug, twitchLogin: j.twitch_login })),
         duels: doc.duels.map((d) => ({ id: d.id, hote: d.hote, mise: d.mise, creeA: iso(d.le) })),

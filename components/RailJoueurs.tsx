@@ -8,10 +8,15 @@ import { COURBE_MESUREE, RANG_GAGNANT } from '@/lib/spin/courbe';
 /**
  * Le second tirage d'un booster de la ligue : le rail des joueurs.
  *
- * Quand la carte tombe sur un joueur tiré au sort, ou sur deux, le serveur les
- * a tirés dans la transaction de l'ouverture, comme la carte. Ce rail ne fait
- * que dérouler ce tirage : des plaques de pseudos défilent, et la course
- * s'arrête sur le joueur tiré — un rail par joueur.
+ * Quand la carte tombe sur des joueurs tirés au sort, le serveur les a tirés
+ * dans la transaction de l'ouverture, comme la carte. Ce rail ne fait que
+ * dérouler ce tirage : des plaques de pseudos défilent, et la course s'arrête
+ * sur le joueur tiré.
+ *
+ * Deux ou trois joueurs tournent **en même temps**, une bande par joueur,
+ * empilées (12/11/2026) : la même animation deux fois de suite lassait. Les
+ * bandes partent ensemble et s'arrêtent à quelques dixièmes l'une de l'autre,
+ * dans un ordre tiré au sort (`dureesEtalees`), sous le même repère.
  *
  * Le même moteur que le rail des cartes (`useSpinAnimation`), couché, avec la
  * même géométrie mesurée : seules les tuiles changent. Le son aussi est le
@@ -29,27 +34,35 @@ function initiale(pseudo: string): string {
 
 export function RailJoueurs({
   joueurs,
-  gagnant,
+  gagnants,
   sourdine = false,
   onFini,
 }: {
   /** Ceux qui défilent : les joueurs en lice. */
   joueurs: readonly string[];
-  /** Le joueur tiré par le serveur. */
-  gagnant: string;
+  /** Les joueurs tirés par le serveur : une bande chacun. */
+  gagnants: readonly string[];
   /** Sans un bruit : l'overlay du stream ne sonne que si on le lui demande. */
   sourdine?: boolean;
   onFini: () => void;
 }) {
-  // La bande est construite une fois, au montage, comme celle des cartes.
-  const [bande] = useState(() => construitBandeJoueurs(joueurs, gagnant, Math.random));
+  // Les bandes sont construites une fois, au montage, comme celles des cartes.
+  // Un joueur tiré dans une autre bande n'y sert pas de leurre — sauf si la
+  // ligue est trop petite pour s'en passer.
+  const [bandes] = useState(() => {
+    const autres = joueurs.filter((j) => !gagnants.includes(j));
+    return gagnants.map((g) => construitBandeJoueurs(autres.length >= 2 ? [g, ...autres] : joueurs, g, Math.random));
+  });
   const cadre = useRef<HTMLDivElement>(null);
 
-  const metaTuiles = useMemo(() => [bande.map(() => ({ rang: 0, couleur: 'var(--ice)' }))], [bande]);
+  const metaTuiles = useMemo(
+    () => bandes.map((bande) => bande.map(() => ({ rang: 0, couleur: 'var(--ice)' }))),
+    [bandes],
+  );
 
   useSpinAnimation({
     cadre,
-    bandes: 1,
+    bandes: bandes.length,
     tuiles: metaTuiles,
     duree: DUREE_TIRAGE_JOUEUR,
     courbe: COURBE_MESUREE,
@@ -63,32 +76,36 @@ export function RailJoueurs({
       <div
         className="rail rail-x rail-joueurs"
         ref={cadre}
-        style={{ ['--bandes' as string]: 1 }}
+        data-rangs={bandes.length}
+        style={{ ['--bandes' as string]: 1, ['--rangs' as string]: bandes.length }}
         role="img"
-        aria-label="Tirage d’un joueur en cours"
+        aria-label={bandes.length > 1 ? `Tirage de ${bandes.length} joueurs en cours` : 'Tirage d’un joueur en cours'}
       >
-        <div
-          className="rail-fenetre"
-          {...{ [ATTR_FENETRE]: '' }}
-          data-arrete="false"
-          data-rang={0}
-          style={{ ['--gagne' as string]: 'var(--ice)' }}
-        >
-          <div className="rail-ruban" {...{ [ATTR_RUBAN]: '' }}>
-            {bande.map((pseudo, k) => (
-              <div
-                key={k}
-                className={`rail-carte rail-joueur${k === RANG_GAGNANT ? ' rail-carte-gagnante' : ''}`}
-                data-rang={0}
-                style={{ ['--r' as string]: 'var(--ice)', ['--k' as string]: String(k) }}
-                aria-hidden="true"
-              >
-                <span className="rail-joueur-pastille">{initiale(pseudo)}</span>
-                <span className="rail-joueur-nom">{pseudo}</span>
-              </div>
-            ))}
+        {bandes.map((bande, b) => (
+          <div
+            key={b}
+            className="rail-fenetre"
+            {...{ [ATTR_FENETRE]: '' }}
+            data-arrete="false"
+            data-rang={0}
+            style={{ ['--gagne' as string]: 'var(--ice)' }}
+          >
+            <div className="rail-ruban" {...{ [ATTR_RUBAN]: '' }}>
+              {bande.map((pseudo, k) => (
+                <div
+                  key={k}
+                  className={`rail-carte rail-joueur${k === RANG_GAGNANT ? ' rail-carte-gagnante' : ''}`}
+                  data-rang={0}
+                  style={{ ['--r' as string]: 'var(--ice)', ['--k' as string]: String(k) }}
+                  aria-hidden="true"
+                >
+                  <span className="rail-joueur-pastille">{initiale(pseudo)}</span>
+                  <span className="rail-joueur-nom">{pseudo}</span>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+        ))}
 
         <span className="rail-repere" aria-hidden="true" />
         <span className="rail-voile rail-voile-avant" aria-hidden="true" />

@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ChoixJoueurBooster, type CandidatBooster } from '@/components/ChoixJoueurBooster';
 import { CourseRoulette } from '@/components/CourseRoulette';
+import { questionDesGames, TirageGames } from '@/components/TirageGames';
 import { RangeePacks } from '@/components/RangeePacks';
 import { SnowCap } from '@/components/SnowCap';
 import { prechargeSons, reveilleSon } from '@/components/bruitage';
@@ -123,7 +124,7 @@ export interface JoueurOuverture {
  * Reste `tirage`, où le rail met en scène un résultat **déjà acquis** : le
  * serveur a tiré avant que la première tuile n'existe.
  */
-type Phase = 'repos' | 'demande' | 'tirage' | 'joueurs' | 'reveal';
+type Phase = 'repos' | 'demande' | 'tirage' | 'joueurs' | 'games' | 'reveal';
 
 /** Une ouverture, et son second tirage quand la carte tombe sur des joueurs tirés au sort. */
 type OuvertureTiree = OuvertureVue & { tirage?: TirageJoueurs | null };
@@ -169,8 +170,6 @@ export function PackOpening({
   const [phase, setPhase] = useState<Phase>('repos');
   const [error, setError] = useState<string | null>(null);
   const [ouverture, setOuverture] = useState<OuvertureTiree | null>(null);
-  /** Quel joueur le second tirage déroule : le premier, puis le second. */
-  const [rangJoueur, setRangJoueur] = useState(0);
 
   useEffect(() => {
     if (moderateur) void prechargeSons();
@@ -188,7 +187,7 @@ export function PackOpening({
   }, [aLaMain, cartesDesRails]);
 
   const pack = useMemo(() => packs.find((p) => p.id === selected) ?? packs[0], [packs, selected]);
-  const busy = phase === 'demande' || phase === 'tirage' || phase === 'joueurs';
+  const busy = phase === 'demande' || phase === 'tirage' || phase === 'joueurs' || phase === 'games';
   const pourUnJoueur = pack?.portee === 'JOUEUR';
 
   const choisir = useCallback((id: string) => {
@@ -266,7 +265,6 @@ export function PackOpening({
       // révélation la trouve prête.
       prechargeGrande((payload.data as OuvertureTiree).cardId);
       setOuverture(payload.data as OuvertureTiree);
-      setRangJoueur(0);
       setPhase('tirage');
       // La file se recharge pendant que le rail tourne, caché sous lui : la
       // pastille d'un joueur qui n'a plus rien à ouvrir s'éteint, les compteurs
@@ -327,7 +325,6 @@ export function PackOpening({
   function reset() {
     setPhase('repos');
     setOuverture(null);
-    setRangJoueur(0);
   }
 
   if (!pack) return null;
@@ -346,14 +343,21 @@ export function PackOpening({
   const packOuvert = ouverture ? (packs.find((p) => p.id === ouverture.packId) ?? pack) : pack;
   /** Ce qui se pose par-dessus le repos : le rail qui tourne, ou la carte tirée. */
   const tirage = ouverture?.tirage?.gagnants.length ? ouverture.tirage : null;
+  /** Les games que la carte touche, à dérouler après les joueurs. */
+  const gamesTirees = tirage?.games ?? null;
+  /** Après la carte : les joueurs s'il y en a à tirer, puis les games, puis la révélation. */
+  const apresCarte = (): Phase => (tirage && !tirage.sansJoueurs ? 'joueurs' : gamesTirees ? 'games' : 'reveal');
+  const apresJoueurs = (): Phase => (gamesTirees ? 'games' : 'reveal');
   const surScene =
     phase === 'tirage' && gagnante
       ? 'tirage'
       : phase === 'joueurs' && tirage
         ? 'joueurs'
-        : phase === 'reveal' && ouverture
-          ? 'reveal'
-          : null;
+        : phase === 'games' && gamesTirees
+          ? 'games'
+          : phase === 'reveal' && ouverture
+            ? 'reveal'
+            : null;
 
   return (
     <div className="space-y-6 xl:grid xl:grid-cols-[minmax(0,5fr)_minmax(0,2fr)] xl:items-start xl:gap-6 xl:space-y-0">
@@ -555,13 +559,13 @@ export function PackOpening({
                 poids={packOuvert.weights}
                 gagnante={gagnante}
                 duree={COURBE_MESUREE.duree}
-                onFini={() => setPhase(tirage ? 'joueurs' : 'reveal')}
+                onFini={() => setPhase(apresCarte())}
               />
             </div>
           )}
 
           {/* Le second tirage : sur qui tombe la carte, quand elle tombe sur des
-              joueurs tirés au sort — un rail par joueur, l'un après l'autre. */}
+              joueurs tirés au sort — une bande par joueur, toutes ensemble. */}
           {surScene === 'joueurs' && tirage && ouverture && (
             <div className="rail-dans-scene col-start-1 row-start-1 -mx-4 self-center">
               <div className="mb-5 flex flex-col items-center gap-1.5 px-4 text-center">
@@ -575,26 +579,44 @@ export function PackOpening({
                   {tirage.course
                     ? 'Qui ne passera pas la ligne ?'
                     : tirage.gagnants.length > 1
-                      ? `Joueur ${rangJoueur + 1} sur ${tirage.gagnants.length}`
+                      ? `Sur quels ${tirage.gagnants.length === 2 ? 'deux' : tirage.gagnants.length === 3 ? 'trois' : tirage.gagnants.length} joueurs ?`
                       : 'Sur qui tombe-t-elle ?'}
                 </span>
               </div>
               {/* La Roulette russe se court comme un duel, à six ; les autres
-                  cartes tirent leurs joueurs un par un, sur le rail. */}
+                  cartes tirent leurs joueurs ensemble, une bande chacun. */}
               {tirage.course ? (
                 <div className="px-4">
-                  <CourseRoulette pseudos={tirage.gagnants} graine={ouverture.id} onFini={() => setPhase('reveal')} />
+                  <CourseRoulette pseudos={tirage.gagnants} graine={ouverture.id} onFini={() => setPhase(apresJoueurs())} />
                 </div>
               ) : (
                 <RailJoueurs
-                  key={rangJoueur}
                   joueurs={tirage.joueurs}
-                  gagnant={tirage.gagnants[rangJoueur]}
-                  onFini={() =>
-                    rangJoueur + 1 < tirage.gagnants.length ? setRangJoueur(rangJoueur + 1) : setPhase('reveal')
-                  }
+                  gagnants={tirage.gagnants}
+                  onFini={() => setPhase(apresJoueurs())}
                 />
               )}
+            </div>
+          )}
+
+          {/* Le troisième tirage : la game, ou les games, que la carte touche —
+              au sort sur un rail, ou désignées par la carte. */}
+          {surScene === 'games' && gamesTirees && ouverture && (
+            <div className="rail-dans-scene col-start-1 row-start-1 -mx-4 self-center">
+              <div className="mb-5 flex flex-col items-center gap-1.5 px-4 text-center">
+                <span
+                  className="font-display text-[17px] font-black tracking-[0.08em] uppercase xl:text-[19px]"
+                  style={{ color: rarityMeta(ouverture.rarity).color }}
+                >
+                  {ouverture.nom}
+                </span>
+                <span className="font-display text-[26px] leading-none font-black tracking-wide text-ink uppercase xl:text-[32px]">
+                  {questionDesGames(gamesTirees)}
+                </span>
+              </div>
+              <div className="px-4">
+                <TirageGames games={gamesTirees} onFini={() => setPhase('reveal')} />
+              </div>
             </div>
           )}
 

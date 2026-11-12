@@ -26,6 +26,7 @@ import 'server-only';
 
 import { chaineDeLaLigue } from '@/lib/auth/twitch';
 import type { Database, OuverturePack, PackDu, Player, SubTwitch } from '@/lib/db/entities';
+import { gamesAuTirage, type TirageJoueurs } from '@/lib/domain/tirage';
 import { persoEnAttente } from '@/lib/domain/twitchSubs';
 import { newId } from '@/lib/db/store';
 import { estUneCourse, getCard, getPack, joueursTires, momentDe, PACKS } from '@/lib/domain/catalog';
@@ -49,7 +50,7 @@ import {
   RARITIES,
   type Rarity,
 } from '@/lib/domain/types';
-import { carteQuiAttend, estFigee, gamesSansCarte, regleCartesSansAttendre } from './effects';
+import { carteQuiAttend, choisitGamesRoue, estFigee, gamesSansCarte, regleCartesSansAttendre } from './effects';
 import { audit, debit } from './ledger';
 import { aJoueToutesSesGames, estImmunise, gamesOf, pointsHorsGame } from './league';
 
@@ -583,7 +584,13 @@ function beneficiairesRoue(db: Database, card: CardDefinition): Player[] {
   const avecGames = enLice.filter((p) => comptees(p) > 0);
   const besoin = card.cible === 'DEUX' || card.cible === 'SIX' ? 2 : 1;
   let pool = avecGames.length >= besoin ? avecGames : enLice;
-  if (action.quoi === 'fige_meilleure') pool = pool.filter((p) => comptees(p) >= action.minGames);
+  if (action.quoi === 'fige_meilleure') {
+    // Personne n'a encore assez de games : la carte tombe quand même, et reste
+    // sans effet. Refuser l'ouverture laissait le booster dans la file, et le
+    // rouvrir retirait la carte — un tirage qu'on pouvait refaire.
+    const assez = pool.filter((p) => comptees(p) >= action.minGames);
+    if (assez.length > 0) pool = assez;
+  }
   if (action.quoi === 'roulette') pool = pool.filter((p) => !estImmunise(p));
   switch (card.cible) {
     case 'TOUS':
@@ -715,6 +722,10 @@ export function ouvrePack(db: Database, demande: DemandeOuverture, ouvertPar: st
     openedAt: now,
     idempotencyKey: demande.idempotencyKey,
   };
+  // Le troisième tirage : les games que la carte va toucher, quand elle en
+  // prend (cartes des roues de la Summer) — l'écran le déroulera.
+  const games = choisitGamesRoue(db, card, beneficiaires);
+  if (games) ouverture.games = games;
   db.ouvertures.push(ouverture);
   if (du) du.ouvertureId = ouverture.id;
 
@@ -753,31 +764,17 @@ export function ouvrePack(db: Database, demande: DemandeOuverture, ouvertPar: st
 
 /* --------------------------- Le tirage des joueurs ----------------------- */
 
-/**
- * Le second tirage d'une ouverture, tel que l'écran le rejoue : qui a été tiré,
- * et parmi qui.
- *
- * Il n'existe que pour un booster de la ligue dont la carte tombe sur des
- * joueurs tirés au sort (`joueursTires`) : tout le monde, la tête ou la queue
- * du classement ne se tirent pas, et un booster ouvert pour un joueur va à ce
- * joueur. Le serveur a tiré dans la transaction de l'ouverture
- * (`beneficiairesDe`) ; l'écran ne fait que dérouler ce tirage, comme le rail
- * déroule la carte.
- */
-export interface TirageJoueurs {
-  /** Les joueurs tirés, dans l'ordre du tirage. */
-  gagnants: string[];
-  /** Ceux qui défilent devant le repère : les joueurs en lice. */
-  joueurs: string[];
-  /**
-   * La Roulette russe : pas de rail, une course à six, où le premier des
-   * `gagnants` est celui qui ne passe pas la ligne.
-   */
-  course?: boolean;
-}
+export type { GameAuTirage, GamesAuTirage, TirageJoueurs } from '@/lib/domain/tirage';
 
 export function tirageDe(db: Database, o: OuverturePack): TirageJoueurs | null {
-  if (o.joueurId !== null) return null;
+  const games = gamesAuTirage(o.games);
+  if (o.joueurId !== null) {
+    // Un booster ouvert pour un joueur (le Finisseur) : rien à tirer chez les
+    // joueurs, mais ses games, s'il y en a, se déroulent.
+    if (!games) return null;
+    const pseudo = db.players.find((p) => p.id === o.joueurId)?.pseudo ?? 'Joueur inconnu';
+    return { gagnants: [pseudo], joueurs: [pseudo], sansJoueurs: true, games };
+  }
   const card = getCard(o.cardId);
   if (!card || joueursTires(card.cible) === 0 || o.beneficiaires.length === 0) return null;
   const pseudoDe = (id: string) => db.players.find((p) => p.id === id)?.pseudo ?? 'Joueur inconnu';
@@ -785,6 +782,7 @@ export function tirageDe(db: Database, o: OuverturePack): TirageJoueurs | null {
     gagnants: o.beneficiaires.map(pseudoDe),
     joueurs: joueursEnLice(db).map((p) => p.pseudo),
     course: estUneCourse(card),
+    games,
   };
 }
 

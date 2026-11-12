@@ -1453,6 +1453,162 @@
     color: var(--ink);
   }
 
+  /*
+   * Plusieurs joueurs, ou plusieurs games, tirés ensemble (12/11/2026) : une
+   * bande par rangée, sous le même repère, qui traverse toutes les rangées.
+   * Les plaques rapetissent pour que trois rangées tiennent dans la scène.
+   */
+  .rail-x.rail-joueurs[data-rangs] {
+    grid-template-rows: repeat(var(--rangs, 1), minmax(0, 1fr));
+    height: calc(var(--rail-h) * var(--rangs, 1));
+  }
+  .rail-dans-scene .rail-x.rail-joueurs[data-rangs='2'],
+  .rail-dans-scene .rail-x.rail-joueurs[data-rangs='3'] {
+    --carte-l: clamp(170px, 28cqw, 330px);
+    --carte-h: calc(var(--carte-l) * 0.38);
+    --rail-h: calc(var(--carte-h) + 26px);
+  }
+
+  /*
+   * Une game au tirage des games (`TirageGames`) : à qui, laquelle, combien.
+   * Une plaque comme celle d'un joueur, à l'aurore plutôt qu'à la glace — on
+   * ne tire plus un joueur, mais une de ses games.
+   */
+  .rail-games .rail-carte {
+    --r: var(--aurora);
+  }
+  .plaque-game {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    justify-content: center;
+    gap: calc(var(--carte-h) * 0.05);
+    padding-inline: calc(var(--carte-h) * 0.2);
+    border: 1px solid color-mix(in srgb, var(--aurora) 30%, transparent);
+    border-radius: calc(var(--carte-h) * 0.2);
+    background: linear-gradient(160deg, color-mix(in srgb, var(--aurora) 14%, var(--fond)) 0%, var(--fond) 100%);
+    box-shadow: inset 0 1px 0 color-mix(in srgb, var(--ink) 28%, transparent);
+  }
+  .rail-fenetre[data-arrete='true'] .plaque-game.rail-carte-gagnante {
+    border-color: var(--aurora);
+  }
+  .plaque-game-qui,
+  .plaque-game-detail {
+    overflow: hidden;
+    font-size: calc(var(--carte-h) * 0.135);
+    line-height: 1.1;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--faint);
+  }
+  .plaque-game-qui {
+    font-family: var(--font-display);
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .plaque-game-quoi {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5em;
+    font-family: var(--font-display);
+    font-size: calc(var(--carte-h) * 0.25);
+    font-weight: 900;
+    line-height: 1;
+    text-transform: uppercase;
+    white-space: nowrap;
+    color: var(--ink);
+  }
+  .plaque-game-quoi b {
+    color: var(--aurora);
+  }
+
+  /*
+   * Les games désignées par la carte (sa pire, sa meilleure) : pas de rail,
+   * elles se posent l'une après l'autre, chacune sous le nom de son joueur ;
+   * entre deux joueurs, le lien — ⇄ un échange, → une copie.
+   */
+  .games-posees {
+    container-type: inline-size;
+    width: 100%;
+    --carte-l: clamp(200px, 34cqw, 340px);
+    --carte-h: calc(var(--carte-l) * 0.42);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.6rem;
+  }
+  .games-posees-groupe {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.55rem;
+  }
+  .games-posees-libelle {
+    font-size: 0.9375rem;
+    text-align: center;
+    color: var(--faint);
+  }
+  .games-posees-libelle b {
+    font-family: var(--font-display);
+    font-weight: 900;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--ink);
+  }
+  /* Deux games fondues en une : côte à côte, un « + » entre elles ; l'une
+     sous l'autre quand la scène est étroite. */
+  .games-posees-plaques {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.6rem;
+  }
+  @container (min-width: 640px) {
+    .games-posees-plaques {
+      flex-direction: row;
+      gap: 0.9rem;
+    }
+  }
+  .plaque-game-posee {
+    width: var(--carte-l);
+    height: var(--carte-h);
+    border-color: var(--aurora);
+    box-shadow:
+      inset 0 1px 0 color-mix(in srgb, var(--ink) 28%, transparent),
+      0 0 26px -6px color-mix(in srgb, var(--aurora) 55%, transparent);
+    animation: game-se-pose 0.55s cubic-bezier(0.2, 1.4, 0.35, 1) both;
+    animation-delay: calc(var(--i, 0) * 260ms + 120ms);
+  }
+  /* Sous le nom de son joueur, la plaque n'a pas à le redire. */
+  .plaque-game-posee .plaque-game-qui {
+    display: none;
+  }
+  .games-posees-lien,
+  .games-posees-plus {
+    font-family: var(--font-display);
+    font-size: 1.75rem;
+    font-weight: 900;
+    line-height: 1;
+    color: var(--aurora);
+  }
+  @keyframes game-se-pose {
+    from {
+      opacity: 0;
+      transform: translateY(14px) scale(0.9);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .plaque-game-posee {
+      animation: none;
+    }
+  }
+
   /* -- L'arrêt ------------------------------------------------------------- */
 
   .rail-fenetre[data-arrete='true'] .rail-carte:not(.rail-carte-gagnante) {
@@ -10646,9 +10802,30 @@
   .ov-rail .rail-x {
     --carte-l: 420px;
   }
-  /* Le rail des joueurs, au second tirage : des plaques de 380 px. */
+  /* Le rail des joueurs, au second tirage : des plaques de 380 px ; 320 quand
+     deux ou trois rangées tournent ensemble. */
   .ov-rail .rail-x.rail-joueurs {
     --carte-l: 380px;
+  }
+  .ov-rail .rail-x.rail-joueurs[data-rangs='2'],
+  .ov-rail .rail-x.rail-joueurs[data-rangs='3'] {
+    --carte-l: 320px;
+    --rail-h: calc(var(--carte-h) + 30px);
+  }
+  /* Les games désignées, à l'échelle de la scène du live. */
+  .ov-games .games-posees {
+    --carte-l: 380px;
+  }
+  /* Sur l'image du jeu, le libellé a besoin de sa plaque. */
+  .ov-games .games-posees-libelle {
+    padding: 6px 20px;
+    border-radius: var(--r-pilule);
+    background: color-mix(in srgb, var(--fond) 84%, transparent);
+    font-size: 26px;
+  }
+  .ov-games .games-posees-lien,
+  .ov-games .games-posees-plus {
+    font-size: 44px;
   }
   /* Ce que le second tirage désigne : la carte tirée, et la question. */
   .ov-tirage-titre {

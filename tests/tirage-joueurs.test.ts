@@ -100,7 +100,7 @@ describe('le tirage que renvoie le serveur', () => {
   it('donne le joueur tiré, et fait défiler les joueurs en lice — jamais la streameuse', () => {
     const db = base();
     const tirage = tirageDe(db, ouverture(db, carteDeCible('HASARD').id, [idDe(db, 'bravo')]));
-    expect(tirage).toEqual({ gagnants: ['bravo'], joueurs: expect.arrayContaining(['alpha', 'bravo']), course: false });
+    expect(tirage).toEqual({ gagnants: ['bravo'], joueurs: expect.arrayContaining(['alpha', 'bravo']), course: false, games: null });
     expect(tirage?.joueurs).not.toContain('lriaa');
   });
 
@@ -147,7 +147,7 @@ describe('le tirage que voit l’overlay', () => {
 
   it('déroule le joueur tiré parmi les joueurs en lice, sans la streameuse', () => {
     const [vue] = vueBoosters(flux(carteDeCible('HASARD').id, ['Bravo']));
-    expect(vue.tirage).toEqual({ gagnants: ['Bravo'], joueurs: ['Alpha', 'Bravo'], course: false });
+    expect(vue.tirage).toEqual({ gagnants: ['Bravo'], joueurs: ['Alpha', 'Bravo'], course: false, games: null });
   });
 
   it('ne déroule rien quand personne n’est tiré au sort', () => {

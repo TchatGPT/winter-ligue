@@ -173,6 +173,14 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   cible (`joueursTires`) — le ou les joueurs sur qui elle tombe. Le serveur fait les deux
   dans la même transaction ; l'écran et l'overlay ne font que les dérouler (`tirageDe`,
   `RailJoueurs`). Jamais de joueur choisi côté client.
+  Deux ou trois joueurs tirés tournent **ensemble**, une bande chacun, empilées sous le
+  même repère (12/11/2026). Puis, pour une carte des roues qui prend une game, un
+  **troisième tirage** : le serveur choisit à l'ouverture la game, ou les games, que la
+  carte touchera (`choisitGamesRoue`, `ouvertures.games`) — au sort sur un rail de
+  games (`TirageGames`), ou désignées par la carte (sa pire, sa meilleure), posées sans
+  rail ; un Finisseur ouvert pour un joueur ne déroule que ses games (`sansJoueurs`).
+  `regleRoue` frappe ces games-là tant qu'elles le peuvent encore (`retenue`). Pas de
+  tirage des games pour une carte qui tombe sur toute la ligue.
 - Les paliers de subs profitent à **tous les joueurs actifs** (boosters de la ligue,
   évènements). Seule l'**Avalanche** verse des flocons : la même somme
   (`AVALANCHE_FLOCONS`) à chaque joueur qui a au moins une game, tout de suite
