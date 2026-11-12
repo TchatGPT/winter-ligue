@@ -7,6 +7,7 @@ import { SaisieGames } from '@/components/SaisieGames';
 import { exigeSession } from '@/lib/auth/acces';
 import { getSession } from '@/lib/auth/session';
 import { chaineDeLaLigue, isTwitchEnabled } from '@/lib/auth/twitch';
+import { parametresSaison } from '@/lib/domain/rules';
 import { estLaStreameuse } from '@/lib/domain/streameuse';
 import { getStore } from '@/lib/db/store';
 import { evenementsActifs } from '@/lib/services/evenements';
@@ -31,6 +32,7 @@ export default async function ClassementPage() {
     getRanking(),
     getOverview(),
     getStore().read((db) => ({
+      saison: parametresSaison(db.config.numero),
       totalSubs: db.config.totalSubs,
       evenements: evenementsActifs(db),
       joueurs: moderateur
@@ -61,6 +63,7 @@ export default async function ClassementPage() {
           une ligne. */}
       <div className="grid gap-6 xl:grid-cols-[1.15fr_1fr] xl:items-stretch 4xl:grid-cols-1">
         <Hero
+          saison={`${subs.saison.nom.split(' · ')[0]} · ${subs.saison.periode}`}
           leader={
             ranking[0]
               ? { pseudo: ranking[0].pseudo, slug: ranking[0].slug, score: ranking[0].totals.totalScore }

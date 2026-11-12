@@ -2,7 +2,6 @@ import Link from 'next/link';
 import { CouronneGlace } from '@/components/CouronneGlace';
 import { DirectTwitch } from '@/components/DirectTwitch';
 import { flakes } from '@/components/ui';
-import { SEASON } from '@/lib/domain/rules';
 import { SnowCap } from '@/components/SnowCap';
 
 /**
@@ -26,29 +25,26 @@ import { SnowCap } from '@/components/SnowCap';
  *  - le leader du moment : c'est la ligne que tout le monde regarde.
  */
 export function Hero({
+  saison,
   leader,
   joueurs,
   games,
   kills,
 }: {
+  /** « Saison 1 · du 22 novembre au 4 janvier » : celle de la base, ses dates indicatives. */
+  saison: string;
   leader: { pseudo: string; slug: string; score: number } | null;
   joueurs: number;
   games: number;
   kills: number;
 }) {
-  const debut = new Date(SEASON.startsAt);
-  const fin = new Date(SEASON.endsAt);
-  const mois = (d: Date) => d.toLocaleDateString('fr-FR', { month: 'long' });
-
   return (
     <section className="hero glass glass-reflet @container relative">
       <SnowCap radius="var(--r-xl)" seed="hero" epaisseur={26} />
 
       <div className="relative flex h-full flex-col gap-7 px-6 py-9 sm:px-10 sm:py-12 4xl:gap-5 4xl:py-6 @4xl:flex-row @4xl:items-center @4xl:justify-between @4xl:gap-10">
         <div className="min-w-0">
-          <p className="eyebrow">
-            {SEASON.edition} · du {debut.getDate()} {mois(debut)} au {fin.getDate()} {mois(fin)}
-          </p>
+          <p className="eyebrow">{saison}</p>
           {/* Chaque mot porte son texte en `data-text` : les arêtes de la glace
               sont des pseudo-éléments qui le redessinent par-dessus. */}
           <h1 className="hero-titre mt-3">

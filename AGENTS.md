@@ -39,14 +39,15 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 - Interface, commentaires et messages d'erreur **en français**.
 - **Les saisons** (`SAISONS`, `parametresSaison`, décidé le 12/11/2026) : la saison en
-  cours est en base (`config.numero`). **Saison 1, la Mini Ligue** (1er décembre → 4
+  cours est en base (`config.numero`). **Saison 1, la Mini Ligue** (22 novembre → 4
   janvier) : 38 games, le Booster Finisseur à la 35ᵉ (`finisseurA`, `verifieFinisseur`),
   passé la 35ᵉ **une game par session** de 1 h 30 avec Lriaa (`prochaineGamePossible`,
   vérifié à la saisie), **pas de finale** (`finalistes: 0`). **Saison 2** (4 janvier →
   mi-mars) : 65 games — le Booster Finisseur à la 60ᵉ, puis cinq games, une par session
-  (12/11/2026). On change de saison par le panneau « Saison en cours » de
-  Modération → Subs & saison — vers la suivante, ou en revenant à une d'avant pour la
-  montrer, c'est la même remise à zéro —, réservé à `RESPONSABLES_SAISON` (Jeex3,
+  (12/11/2026). L'accueil écrit la saison en cours et ses dates indicatives (`periode`).
+  On change de saison par le panneau « Saison en cours » de Modération → Subs & saison
+  — vers la suivante, ou en revenant à une d'avant pour la montrer, c'est la même remise
+  à zéro —, réservé à `RESPONSABLES_SAISON` (Jeex3,
   identifiant Twitch lu en base), avec la phrase de confirmation. À l'écran, la ligue gèle
   puis vole en éclats (`GelDeSaison`) : c'est une photographie inerte de la page qui
   s'anime, la vraie page se recharge dessous, et l'explosion attend la réponse du serveur
