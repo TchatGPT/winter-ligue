@@ -17751,36 +17751,53 @@ a.rgs-usage b::after {
   padding: 0 var(--prof) var(--bas) 0;
 }
 .saison-fantome {
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--frost) 32%, transparent),
-    color-mix(in srgb, var(--frost) 8%, transparent)
-  );
+  background:
+    linear-gradient(
+      100deg,
+      transparent 14%,
+      color-mix(in srgb, var(--frost) 35%, transparent) 22%,
+      transparent 40%
+    ),
+    linear-gradient(
+      180deg,
+      var(--frost) 0,
+      color-mix(in srgb, var(--frost) 70%, var(--ice)) 20%,
+      color-mix(in srgb, var(--ice) 55%, var(--fond)) 100%
+    );
   box-shadow:
-    inset 0 0 0 1.5px color-mix(in srgb, var(--frost) 80%, transparent),
-    inset 0 2px 0 var(--frost);
+    inset 0 0 0 1px color-mix(in srgb, var(--frost) 50%, transparent),
+    inset 0 1px 0 var(--frost);
 }
 .saison-fantome::before {
-  background: color-mix(in srgb, var(--frost) 60%, transparent);
+  background: var(--frost);
 }
 .saison-fantome::after {
-  background: color-mix(in srgb, var(--frost) 22%, transparent);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--frost) 60%, var(--ice)), color-mix(in srgb, var(--ice-3) 60%, var(--nuit)));
 }
+/* La ligue : la même glace, teintée d'aurore. */
 .saison-temoin[data-ligue] .saison-fantome {
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--aurora) 34%, transparent),
-    color-mix(in srgb, var(--aurora) 8%, transparent)
-  );
+  background:
+    linear-gradient(
+      100deg,
+      transparent 14%,
+      color-mix(in srgb, var(--frost) 30%, transparent) 22%,
+      transparent 40%
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--aurora) 55%, var(--frost)) 0,
+      color-mix(in srgb, var(--aurora) 70%, var(--fond)) 22%,
+      color-mix(in srgb, var(--aurora) 40%, var(--fond)) 100%
+    );
   box-shadow:
-    inset 0 0 0 1.5px color-mix(in srgb, var(--aurora) 85%, transparent),
-    inset 0 2px 0 var(--aurora);
+    inset 0 0 0 1px color-mix(in srgb, var(--aurora) 45%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--aurora) 50%, var(--frost));
 }
 .saison-temoin[data-ligue] .saison-fantome::before {
-  background: color-mix(in srgb, var(--aurora) 65%, transparent);
+  background: color-mix(in srgb, var(--aurora) 45%, var(--frost));
 }
 .saison-temoin[data-ligue] .saison-fantome::after {
-  background: color-mix(in srgb, var(--aurora) 24%, transparent);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--aurora) 55%, var(--fond)), color-mix(in srgb, var(--aurora) 25%, var(--nuit)));
 }
 .saison-temoin-valeur {
   position: absolute;
@@ -18293,19 +18310,13 @@ button.case:focus-visible {
   line-height: 1;
   color: var(--muted);
 }
-/* Sur une illustration : le numéro et l'étiquette sur un verre givré. */
+/* Sur une illustration : le numéro, avec une ombre douce pour rester lisible. */
 .case[data-carte] .case-num {
-  min-width: 1.75rem;
-  height: 1.3rem;
-  justify-content: center;
-  padding: 0 0.4rem;
-  margin-left: -0.2rem;
-  border-radius: var(--r-pilule);
-  background: color-mix(in srgb, var(--fond) 55%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--frost) 25%, transparent);
-  backdrop-filter: blur(6px);
-  text-align: center;
+  font-weight: 700;
   color: var(--ink);
+  text-shadow:
+    0 1px 2px var(--bg-deep),
+    0 0 6px var(--bg-deep);
 }
 .case-podium {
   width: 18px;
