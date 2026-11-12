@@ -431,7 +431,11 @@ export function GrilleGames({
             >
               {fond && <span className="case-fond" style={{ backgroundImage: `url("${fond}")` }} aria-hidden="true" />}
               <span className="case-tete">
-                <span className="case-num">{numero}</span>
+                {extreme ? (
+                  <span className="case-extreme">{extreme === 'meilleure' ? 'Meilleure' : 'Pire'}</span>
+                ) : (
+                  <span className="case-num">{numero}</span>
+                )}
                 {place && (
                   <span className="case-podium">
                     <Podium place={place} id={`case-${g.id}`} className="h-full w-full" />
@@ -440,7 +444,6 @@ export function GrilleGames({
               </span>
               <span className="case-milieu">
                 <b className="case-score num">{g.skipped ? '—' : g.score}</b>
-                {extreme && <span className="case-extreme">{extreme === 'meilleure' ? 'Meilleure' : 'Pire'}</span>}
               </span>
               <span className="case-pied">
                 {g.skipped ? (

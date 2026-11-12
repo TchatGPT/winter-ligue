@@ -18263,14 +18263,10 @@ button.case:focus-visible {
   );
 }
 .case[data-extreme='meilleure']:not([aria-pressed='true']) {
-  box-shadow:
-    inset 0 0 0 2px var(--aurora),
-    inset 0 1px 0 color-mix(in srgb, var(--frost) 30%, transparent);
+  box-shadow: inset 0 0 0 2px var(--gold);
 }
 .case[data-extreme='pire']:not([aria-pressed='true']) {
-  box-shadow:
-    inset 0 0 0 2px var(--danger),
-    inset 0 1px 0 color-mix(in srgb, var(--frost) 30%, transparent);
+  box-shadow: inset 0 0 0 2px var(--danger);
 }
 .case[data-joker] .case-score {
   color: var(--muted);
@@ -18327,33 +18323,65 @@ button.case:focus-visible {
     height: 26px;
   }
 }
-.case-extreme {
-  display: none;
-  flex-shrink: 0;
-  margin-left: auto;
-  padding: 0.18rem 0.38rem;
-  border-radius: var(--r-pilule);
-  background: var(--fond);
-  font-family: var(--font-display);
-  font-size: 0.625rem;
+/*
+ * La meilleure et la pire game : un bandeau franc en haut de la case, sur
+ * toute sa largeur — doré pour la meilleure, rouge pour la pire —, qu'on
+ * repère d'un coup d'œil dans la grille.
+ */
+.case[data-extreme] .case-tete {
+  margin: -0.3rem -0.4rem 0;
+  padding: 0 0.4rem;
+  background: var(--gold);
+  color: var(--bg);
+}
+@media (min-width: 560px) {
+  .case[data-extreme] .case-tete {
+    margin: -0.55rem -0.65rem 0;
+    padding: 0 0.65rem;
+  }
+}
+.case[data-extreme='pire'] .case-tete {
+  background: var(--danger);
+}
+.case[data-extreme] .case-num {
+  padding: 0;
+  margin: 0;
+  background: none;
+  box-shadow: none;
+  backdrop-filter: none;
   font-weight: 800;
+  color: var(--bg);
+}
+.case-extreme {
+  min-width: 0;
+  overflow: hidden;
+  font-family: var(--font-display);
+  font-size: 0.5625rem;
+  font-weight: 900;
   letter-spacing: 0.02em;
   line-height: 1;
   text-transform: uppercase;
   white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--bg);
 }
-@media (min-width: 900px) {
+@media (min-width: 560px) {
   .case-extreme {
-    display: block;
+    font-size: 0.8125rem;
+    letter-spacing: 0.04em;
   }
 }
-.case[data-extreme='meilleure'] .case-extreme {
-  box-shadow: inset 0 0 0 1.5px var(--aurora);
-  color: var(--aurora);
+/* Dans le bandeau, le mot passe d'abord : la couronne ou la médaille se fait
+   plus petite, et s'efface sur téléphone. */
+.case[data-extreme] .case-podium {
+  display: none;
+  width: 18px;
+  height: 18px;
 }
-.case[data-extreme='pire'] .case-extreme {
-  box-shadow: inset 0 0 0 1.5px var(--danger);
-  color: var(--danger);
+@media (min-width: 560px) {
+  .case[data-extreme] .case-podium {
+    display: block;
+  }
 }
 .case-score {
   font-family: var(--font-display);
@@ -18589,12 +18617,12 @@ button.case:focus-visible {
   text-transform: uppercase;
 }
 .detail-extreme[data-extreme='meilleure'] {
-  background: color-mix(in srgb, var(--aurora) 18%, transparent);
-  color: var(--aurora);
+  background: var(--gold);
+  color: var(--bg);
 }
 .detail-extreme[data-extreme='pire'] {
-  background: color-mix(in srgb, var(--danger) 16%, transparent);
-  color: var(--danger);
+  background: var(--danger);
+  color: var(--bg);
 }
 .detail-fermer {
   display: grid;
