@@ -18150,116 +18150,157 @@ a.rgs-usage b::after {
 }
 /* Posé sur son bloc, devant les traits des moyennes. */
 /*
- * La neige d'un bloc survolé ou choisi, sur ordinateur : une couche posée
- * sur le bloc en relief, qui épouse son dessus, son avant et son côté.
+ * Le glaçon qui fond, sur le bloc survolé ou choisi, sur ordinateur : le haut
+ * s'arrondit, un reflet mouillé descend, des gouttes coulent sur la face
+ * avant, et une flaque s'étale au pied.
  */
-.saison-neige {
+.saison-fonte,
+.saison-flaque {
   display: none;
 }
 @media (hover: hover) and (min-width: 640px) {
-  .saison-neige {
+  .saison-colonne:is([data-survolee], [data-choisie]) .saison-bloc {
+    filter: brightness(1.08) saturate(1.15);
+    border-radius: 7px 7px 0 0 / 5px 5px 0 0;
+    transition:
+      border-radius 0.5s ease,
+      opacity 0.2s ease,
+      filter 0.15s ease;
+  }
+  /* Le dessus fond : son losange s'amenuise. */
+  .saison-colonne:is([data-survolee], [data-choisie]) .saison-bloc::before {
+    opacity: 0.45;
+    transition: opacity 0.5s ease;
+  }
+  .saison-fonte {
     position: absolute;
     z-index: 3;
-    bottom: calc(var(--bas) + var(--part) * (100% - var(--bas)));
+    bottom: var(--bas);
     left: 0;
     display: block;
     width: calc(100% - var(--prof));
-    height: 0;
-    transform-origin: 50% 100%;
-    animation: saison-neige-tombe 0.4s cubic-bezier(0.25, 1.2, 0.5, 1) both;
+    height: calc(var(--part) * (100% - var(--bas)));
+    overflow: hidden;
+    border-radius: 7px 7px 0 0 / 5px 5px 0 0;
+    /* La glace mouillée : un voile d'eau, plus dense vers le pied. */
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--frost) 30%, transparent) 0,
+      transparent 25%,
+      transparent 55%,
+      color-mix(in srgb, var(--ice-3) 45%, transparent) 100%
+    );
     pointer-events: none;
   }
-  /* Le dessus : le même losange que le dessus du bloc, un peu bombé. */
-  .neige-dessus {
+  .fonte-reflet {
     position: absolute;
-    bottom: -1px;
-    left: -1px;
-    width: calc(100% + 2px);
-    height: calc(var(--prof) + 3px);
-    border-radius: 45% 45% 0 0 / 100% 100% 0 0;
-    background: linear-gradient(180deg, var(--neige-1), var(--neige-2) 70%, var(--neige-3));
-    transform: skewX(-45deg);
-    transform-origin: bottom left;
+    inset: 0;
+    background: linear-gradient(
+      180deg,
+      transparent 0%,
+      color-mix(in srgb, var(--frost) 70%, transparent) 8%,
+      transparent 18%
+    );
+    background-size: 100% 300%;
+    animation: fonte-reflet 2.4s ease-in-out infinite;
   }
-  /* Le côté : un voile de neige, plus à l'ombre. */
-  .neige-cote {
+  .fonte-goutte {
     position: absolute;
-    bottom: -4px;
-    left: 100%;
-    width: var(--prof);
-    height: 5px;
-    background: linear-gradient(180deg, var(--neige-3), var(--neige-ombre));
-    transform: skewY(-45deg);
-    transform-origin: bottom left;
+    top: 0;
+    left: var(--x);
+    width: 2.5px;
+    height: calc(var(--l) * 24%);
+    min-height: 10px;
+    border-radius: 0 0 2px 2px;
+    background: linear-gradient(
+      180deg,
+      transparent,
+      color-mix(in srgb, var(--nuit) 45%, var(--ice-3)) 60%,
+      color-mix(in srgb, var(--nuit) 30%, var(--ice-2))
+    );
+    box-shadow: 1px 0 0 color-mix(in srgb, var(--frost) 60%, transparent);
+    opacity: 0;
+    animation: fonte-coule 2.2s cubic-bezier(0.55, 0, 0.8, 0.5) var(--d) infinite;
   }
-  /* L'avant : la lèvre qui déborde, sa coulée, et l'ombre de contact sur la glace. */
-  .neige-levre {
-    position: absolute;
-    top: -1px;
-    left: -1px;
-    width: calc(100% + 2px);
-    height: 4px;
-    border-radius: 1px 1px 3px 3px;
-    background: linear-gradient(180deg, var(--neige-2), var(--neige-3) 70%, var(--neige-ombre));
-    box-shadow: 0 1.5px 1px color-mix(in srgb, var(--nuit) 55%, transparent);
-  }
-  .neige-levre::after {
+  /* La tête de la goutte : une perle d'eau, éclairée en haut. */
+  .fonte-goutte::after {
     content: '';
     position: absolute;
-    top: 3px;
-    left: var(--coulee);
-    width: 3px;
-    height: 4px;
-    border-radius: 0 0 2px 2px;
-    background: linear-gradient(180deg, var(--neige-3), var(--neige-ombre));
-    box-shadow: 0 1px 1px color-mix(in srgb, var(--nuit) 45%, transparent);
+    bottom: -3px;
+    left: -1.75px;
+    width: 6px;
+    height: 7px;
+    border-radius: 50% 50% 50% 50% / 40% 40% 60% 60%;
+    background: radial-gradient(circle at 35% 30%, var(--neige-1) 0 18%, var(--ice-2) 45%, color-mix(in srgb, var(--nuit) 40%, var(--ice-3)) 100%);
   }
-  /* La couronne ou la médaille monte un peu : elle se pose sur la neige. */
-  .saison-colonne:is([data-survolee], [data-choisie]):not([data-joker]) .saison-podium {
-    transform: translate(-50%, -4px);
-  }
-  .saison-podium {
-    transition: transform 0.3s ease;
+  /* La flaque, au pied du glaçon. */
+  .saison-flaque {
+    position: absolute;
+    z-index: 1;
+    bottom: calc(var(--bas) - 4px);
+    left: -7px;
+    display: block;
+    width: calc(100% - var(--prof) + 16px);
+    height: 7px;
+    border-radius: 50%;
+    background: radial-gradient(
+      ellipse at 50% 35%,
+      color-mix(in srgb, var(--frost) 85%, transparent) 0 20%,
+      color-mix(in srgb, var(--ice) 60%, transparent) 50%,
+      transparent 72%
+    );
+    transform-origin: 50% 50%;
+    animation: fonte-flaque 0.9s ease-out both;
+    pointer-events: none;
   }
 }
-@keyframes saison-neige-tombe {
+@keyframes fonte-coule {
+  0% {
+    opacity: 0;
+    transform: translateY(-30%);
+  }
+  12% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(var(--chute, 420%));
+  }
+}
+@keyframes fonte-reflet {
+  from {
+    background-position: 0 100%;
+  }
+  to {
+    background-position: 0 0%;
+  }
+}
+@keyframes fonte-flaque {
   from {
     opacity: 0;
-    transform: translateY(-6px) scaleY(0.2);
+    transform: scaleX(0.3);
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .saison-neige {
+  .fonte-goutte,
+  .fonte-reflet,
+  .saison-flaque {
     animation: none;
   }
-  .saison-podium {
-    transition: none;
+  .fonte-goutte {
+    opacity: 1;
+    top: 20%;
   }
 }
-.saison-podium {
-  position: absolute;
-  z-index: 4;
-  bottom: calc(var(--bas) + var(--part) * (100% - var(--bas)) + var(--prof) + 3px);
-  left: calc(50% - var(--prof) / 2);
-  width: 14px;
-  height: 14px;
-  transform: translateX(-50%);
-  pointer-events: none;
-}
-.saison-colonne[data-joker] .saison-podium {
-  bottom: calc(var(--bas) + 1.1rem + var(--prof) + 3px);
-}
-@media (min-width: 640px) {
-  .saison-podium {
-    width: 22px;
-    height: 22px;
-  }
-}
-@media (min-width: 1400px) {
-  .saison-podium {
-    width: 28px;
-    height: 28px;
-  }
+.saison-creux {
+  display: inline-block;
+  width: 8px;
+  height: 11px;
+  border-radius: 2px 2px 0 0;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ice) 60%, transparent);
 }
 .saison-carte {
   position: absolute;
@@ -18278,9 +18319,6 @@ a.rgs-usage b::after {
     width: 15px;
     height: 15px;
   }
-}
-.saison-joker {
-  color: var(--ice);
 }
 .saison-bulle {
   position: absolute;

@@ -32,20 +32,37 @@ import type { FicheJoueur } from '@/lib/services/profile';
 export type GameDuJoueur = FicheJoueur['profil']['games'][number];
 
 /**
- * La neige d'un bloc survolé ou choisi, sur ordinateur (12/11/2026) : une
- * fine couche qui épouse le bloc en relief — le dessus couvert, à peine
- * bombé, une lèvre qui déborde sur l'avant avec une petite coulée, un peu de
- * neige sur le côté —, sa sous-face bleutée et son ombre de contact. La
- * coulée change de place d'une game à l'autre.
+ * Le glaçon qui fond, sur le bloc survolé ou choisi (sur ordinateur,
+ * 12/11/2026) : son haut s'arrondit, un reflet mouillé descend sur la glace,
+ * des gouttes coulent le long de la face avant, et une flaque s'étale au
+ * pied. Les gouttes changent de place d'une game à l'autre.
  */
-function Neige({ graine }: { graine: number }) {
-  const coulee = 20 + ((graine * 37) % 55);
+function Fonte({ graine }: { graine: number }) {
+  const gouttes = [0, 1, 2].map((k) => ({
+    x: 18 + (((graine * 53 + k * 29) % 64) | 0),
+    d: k * 0.55 + ((graine * 7 + k * 3) % 5) * 0.12,
+    l: 0.7 + (((graine + k * 11) % 5) / 10),
+  }));
   return (
-    <span className="saison-neige" style={{ ['--coulee' as string]: `${coulee}%` } as CSSProperties} aria-hidden="true">
-      <i className="neige-dessus" />
-      <i className="neige-cote" />
-      <i className="neige-levre" />
-    </span>
+    <>
+      <span className="saison-fonte" aria-hidden="true">
+        <i className="fonte-reflet" />
+        {gouttes.map((g, k) => (
+          <i
+            key={k}
+            className="fonte-goutte"
+            style={
+              {
+                ['--x' as string]: `${g.x}%`,
+                ['--d' as string]: `${g.d}s`,
+                ['--l' as string]: g.l,
+              } as CSSProperties
+            }
+          />
+        ))}
+      </span>
+      <span className="saison-flaque" aria-hidden="true" />
+    </>
   );
 }
 
@@ -233,17 +250,10 @@ export function ColonnesSaison({
           <span>Points par game</span>
           <span className="saison-legende" aria-hidden="true">
             <span>
-              <CouronneGlace className="h-3.5 w-3.5" id="couronne-legende" /> Top 1
-            </span>
-            <span>
-              <MedailleGlace rang={2} className="h-3.5 w-3.5" id="medaille-legende-2" />
-              <MedailleGlace rang={3} className="h-3.5 w-3.5" id="medaille-legende-3" /> Top 2 · 3
-            </span>
-            <span>
               <IconCarte className="h-4 w-4 text-aurora" /> carte jouée
             </span>
             <span>
-              <IconJoker className="h-4 w-4 text-ice" /> Joker
+              <i className="saison-creux" /> Joker
             </span>
           </span>
         </figcaption>
@@ -307,17 +317,7 @@ export function ColonnesSaison({
                   style={{ ['--part' as string]: c.skipped ? 0 : part(c.score) } as CSSProperties}
                 >
                   <span className="saison-bloc" />
-                  {(survolee === i || choisie === c.id) && !c.skipped && <Neige graine={i + 1} />}
-                  {place && (
-                    <span className="saison-podium">
-                      <Podium place={place} id={`saison-${c.id}`} className="h-full w-full" />
-                    </span>
-                  )}
-                  {c.skipped && (
-                    <span className="saison-podium saison-joker">
-                      <IconJoker className="h-full w-full" />
-                    </span>
-                  )}
+                  {(survolee === i || choisie === c.id) && !c.skipped && <Fonte graine={i + 1} />}
                   {c.applied.length > 0 && (
                     <span
                       className="saison-carte"
