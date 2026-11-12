@@ -82,36 +82,49 @@ const JOKER = 'joker-givre';
 
 /* ================================ Les colonnes ================================ */
 
-type Niveau = 'haut' | 'milieu' | 'bas';
-
 /**
- * Les moyennes ne se tracent plus sur le graphique : ce sont les blocs qui
- * disent où tombe chaque game (12/11/2026). Au-dessus des deux moyennes — la
- * sienne, celle de la ligue —, la glace est éclatante ; entre les deux, elle
- * est franche ; sous les deux, elle s'assombrit. Sans moyenne de la ligue, il
- * n'y a que deux niveaux : au-dessus de la sienne, ou dessous.
+ * Un bloc-témoin, dans la marge du graphique : une moyenne en glace, à sa
+ * hauteur sur la même échelle que les games (12/11/2026). On compare des blocs
+ * à des blocs ; rien ne traverse les colonnes. Une game survolée y lit son
+ * écart, en direct.
  */
-function niveaux(moyenne: number, moyenneLigue: number | null) {
-  if (moyenneLigue === null) {
-    return {
-      de: (score: number): Niveau => (score >= moyenne ? 'haut' : 'bas'),
-      legende: [
-        { niveau: 'haut' as Niveau, texte: `Au-dessus de sa moyenne` },
-        { niveau: 'bas' as Niveau, texte: `Sous sa moyenne` },
-      ],
-    };
-  }
-  const persoDevant = moyenne >= moyenneLigue;
-  const haute = Math.max(moyenne, moyenneLigue);
-  const basse = Math.min(moyenne, moyenneLigue);
-  return {
-    de: (score: number): Niveau => (score >= haute ? 'haut' : score >= basse ? 'milieu' : 'bas'),
-    legende: [
-      { niveau: 'haut' as Niveau, texte: persoDevant ? 'Au-dessus de sa moyenne' : 'Au-dessus de la ligue' },
-      { niveau: 'milieu' as Niveau, texte: persoDevant ? 'Au-dessus de la ligue' : 'Au-dessus de sa moyenne' },
-      { niveau: 'bas' as Niveau, texte: persoDevant ? 'Sous la ligue' : 'Sous sa moyenne' },
-    ],
-  };
+function Temoin({
+  nom,
+  valeur,
+  part,
+  ecart,
+  ligue = false,
+}: {
+  nom: string;
+  valeur: number;
+  part: number;
+  /** L'écart de la game survolée à cette moyenne ; null sans survol. */
+  ecart: number | null;
+  ligue?: boolean;
+}) {
+  return (
+    <span
+      className="saison-temoin"
+      data-ligue={ligue ? '' : undefined}
+      style={{ ['--part' as string]: part } as CSSProperties}
+    >
+      <span className="saison-bloc saison-fantome">
+        <b className="saison-temoin-valeur num" data-sens={ecart === null ? undefined : ecart >= 0 ? 'haut' : 'bas'}>
+          {ecart === null ? decimal(valeur) : signe(ecart)}
+        </b>
+      </span>
+      <small className="saison-temoin-nom">
+        {nom === 'Sa moy.' ? (
+          <>
+            <span className="saison-temoin-long">Sa moy.</span>
+            <span className="saison-temoin-court">Moy.</span>
+          </>
+        ) : (
+          nom
+        )}
+      </small>
+    </span>
+  );
 }
 
 export function ColonnesSaison({
@@ -144,23 +157,6 @@ export function ColonnesSaison({
   const echelle = graduations(Math.max(1, moyenneLigue ?? 0, ...chronologie.map((g) => g.score)));
   const haut = echelle[echelle.length - 1];
   const part = (score: number) => Math.max(0, Math.min(1, score / haut));
-  const repere = niveaux(moyenne, moyenneLigue);
-
-  // Les deux moyennes dans la marge : trop proches, leurs étiquettes s'écartent.
-  const etiquettes = useMemo(() => {
-    const perso = part(moyenne);
-    const ligue = moyenneLigue !== null ? part(moyenneLigue) : null;
-    if (ligue === null) return { perso, ligue };
-    const ecart = 0.2;
-    if (Math.abs(perso - ligue) >= ecart) return { perso, ligue };
-    const milieu = (perso + ligue) / 2;
-    const persoDessus = perso >= ligue;
-    return {
-      perso: milieu + (persoDessus ? ecart / 2 : -ecart / 2),
-      ligue: milieu + (persoDessus ? -ecart / 2 : ecart / 2),
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- `part` ne dépend que de `haut`
-  }, [moyenne, moyenneLigue, haut]);
 
   const forme = useMemo(() => {
     const cinq = comptees.slice(-5);
@@ -194,15 +190,6 @@ export function ColonnesSaison({
             <span>
               <IconJoker className="h-4 w-4 text-ice" /> Joker
             </span>
-          </span>
-          {/* Ce que dit l'éclat d'un bloc : où tombe la game, face aux deux moyennes. */}
-          <span className="saison-niveaux">
-            {repere.legende.map((l) => (
-              <span key={l.niveau}>
-                <i className="saison-echantillon" data-niveau={l.niveau} />
-                {l.texte}
-              </span>
-            ))}
           </span>
         </figcaption>
 
@@ -253,7 +240,6 @@ export function ColonnesSaison({
                   data-joker={c.skipped ? '' : undefined}
                   data-eteinte={garde(c) ? undefined : ''}
                   data-podium={place ?? undefined}
-                  data-niveau={c.skipped ? undefined : repere.de(c.score)}
                   onMouseEnter={() => setSurvolee(i)}
                   onFocus={() => setSurvolee(i)}
                   onBlur={() => setSurvolee(null)}
@@ -307,24 +293,38 @@ export function ColonnesSaison({
                     {getCard(a.cardId)?.name ?? a.cardId} <b>{effetCourt(a.cardId, a.points)}</b>
                   </span>
                 ))}
+                {!g.skipped && (
+                  <span className="saison-bulle-ecarts">
+                    <span data-sens={g.score >= moyenne ? 'haut' : 'bas'}>{signe(g.score - moyenne)}</span> vs sa
+                    moyenne
+                    {moyenneLigue !== null && (
+                      <>
+                        {' · '}
+                        <span data-sens={g.score >= moyenneLigue ? 'haut' : 'bas'}>{signe(g.score - moyenneLigue)}</span>{' '}
+                        vs la ligue
+                      </>
+                    )}
+                  </span>
+                )}
               </div>
             )}
           </div>
-          {/* Les moyennes, nommées dans la marge, à leur hauteur sur l'échelle. */}
+          {/* Les deux moyennes, en blocs-témoins sur la même échelle que les games. */}
           <div className="saison-marge" aria-hidden="true">
-            <span className="saison-etiquette" style={{ ['--y' as string]: etiquettes.perso } as CSSProperties}>
-              <small>Sa moyenne</small>
-              {decimal(moyenne)}
-            </span>
-            {moyenneLigue !== null && etiquettes.ligue !== null && (
-              <span
-                className="saison-etiquette"
-                data-ligue=""
-                style={{ ['--y' as string]: etiquettes.ligue } as CSSProperties}
-              >
-                <small>La ligue</small>
-                {decimal(moyenneLigue)}
-              </span>
+            <Temoin
+              nom="Sa moy."
+              valeur={moyenne}
+              part={part(moyenne)}
+              ecart={g && !g.skipped ? g.score - moyenne : null}
+            />
+            {moyenneLigue !== null && (
+              <Temoin
+                nom="Ligue"
+                valeur={moyenneLigue}
+                part={part(moyenneLigue)}
+                ecart={g && !g.skipped ? g.score - moyenneLigue : null}
+                ligue
+              />
             )}
           </div>
         </div>

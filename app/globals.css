@@ -17669,7 +17669,7 @@ a.rgs-usage b::after {
   --ecart: 2px;
   display: grid;
   height: 10.5rem;
-  grid-template-columns: 1.75rem minmax(0, 1fr) 3.4rem;
+  grid-template-columns: 1.75rem minmax(0, 1fr) 5rem;
 }
 @media (min-width: 640px) {
   .saison-zone {
@@ -17731,100 +17731,125 @@ a.rgs-usage b::after {
 /* La moyenne de la ligue : en tirets, verte — elle ne se confond pas avec la sienne. */
 
 /*
- * L'éclat d'un bloc : au-dessus des deux moyennes, la glace éclatante ;
- * entre les deux, franche ; sous les deux, sombre. La légende en montre un
- * échantillon de chaque.
+ * La marge des témoins : deux blocs de glace — sa moyenne, celle de la
+ * ligue —, sur la même base et la même échelle que les games.
  */
-.saison-colonne[data-niveau='haut'] .saison-bloc {
-  filter: brightness(1.12) saturate(1.1);
-}
-.saison-colonne[data-niveau='milieu'] .saison-bloc {
-  filter: brightness(0.78);
-}
-.saison-colonne[data-niveau='bas'] .saison-bloc {
-  filter: brightness(0.5) saturate(0.55);
-}
-.saison-niveaux {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.3rem 0.9rem;
-  font-family: var(--font-sans, inherit);
-  font-size: 0.75rem;
-  font-weight: 500;
-  letter-spacing: 0;
-  text-transform: none;
-  color: var(--muted);
-}
-.saison-niveaux > span {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-}
-.saison-echantillon {
-  display: inline-block;
-  width: 9px;
-  height: 14px;
-  border-radius: 2px 2px 0 0;
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--frost) 85%, var(--fond)),
-    color-mix(in srgb, var(--ice) 60%, var(--fond)) 30%,
-    color-mix(in srgb, var(--ice-3) 65%, var(--fond))
-  );
-  box-shadow: inset 0 1px 0 var(--frost);
-}
-.saison-echantillon[data-niveau='haut'] {
-  filter: brightness(1.12) saturate(1.1);
-}
-.saison-echantillon[data-niveau='milieu'] {
-  filter: brightness(0.78);
-}
-.saison-echantillon[data-niveau='bas'] {
-  filter: brightness(0.5) saturate(0.55);
-}
 .saison-marge {
   position: relative;
+  display: flex;
+  gap: 0.45rem;
+  padding-left: 0.6rem;
+  border-left: 1px solid color-mix(in srgb, var(--frost) 12%, transparent);
 }
-.saison-etiquette {
+.saison-temoin {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  flex: 1 1 0;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 0 var(--prof) var(--bas) 0;
+}
+.saison-fantome {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--frost) 32%, transparent),
+    color-mix(in srgb, var(--frost) 8%, transparent)
+  );
+  box-shadow:
+    inset 0 0 0 1.5px color-mix(in srgb, var(--frost) 80%, transparent),
+    inset 0 2px 0 var(--frost);
+}
+.saison-fantome::before {
+  background: color-mix(in srgb, var(--frost) 60%, transparent);
+}
+.saison-fantome::after {
+  background: color-mix(in srgb, var(--frost) 22%, transparent);
+}
+.saison-temoin[data-ligue] .saison-fantome {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--aurora) 34%, transparent),
+    color-mix(in srgb, var(--aurora) 8%, transparent)
+  );
+  box-shadow:
+    inset 0 0 0 1.5px color-mix(in srgb, var(--aurora) 85%, transparent),
+    inset 0 2px 0 var(--aurora);
+}
+.saison-temoin[data-ligue] .saison-fantome::before {
+  background: color-mix(in srgb, var(--aurora) 65%, transparent);
+}
+.saison-temoin[data-ligue] .saison-fantome::after {
+  background: color-mix(in srgb, var(--aurora) 24%, transparent);
+}
+.saison-temoin-valeur {
   position: absolute;
-  left: 0.35rem;
-
-  bottom: calc(var(--bas) + var(--y) * (100% - var(--bas)));
-  display: inline-flex;
-  align-items: baseline;
-  gap: 0.3rem;
-  padding: 0.15rem 0.45rem 0.15rem 0.5rem;
-  border-radius: var(--r-pilule);
-  background: color-mix(in srgb, var(--frost) 14%, var(--fond));
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--frost) 55%, transparent);
+  bottom: calc(100% + var(--prof) + 4px);
+  left: 50%;
   font-family: var(--font-display);
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   font-weight: 900;
-  font-variant-numeric: tabular-nums;
+  line-height: 1;
   white-space: nowrap;
   color: var(--ink);
-  transform: translateY(50%);
+  transform: translateX(-50%);
 }
-.saison-etiquette small {
-  display: none;
-  font-size: 0.625rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-@media (min-width: 640px) {
-  .saison-etiquette small {
-    display: inline;
-  }
-}
-.saison-etiquette[data-ligue] {
-  background: color-mix(in srgb, var(--aurora) 14%, var(--fond));
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--aurora) 70%, transparent);
+.saison-temoin[data-ligue] .saison-temoin-valeur {
   color: var(--aurora);
 }
-.saison-etiquette[data-ligue] small {
-  color: color-mix(in srgb, var(--aurora) 75%, var(--ink));
+.saison-temoin-valeur[data-sens='haut'] {
+  color: var(--aurora);
+}
+.saison-temoin-valeur[data-sens='bas'] {
+  color: var(--danger);
+}
+.saison-temoin-nom {
+  position: absolute;
+  right: var(--prof);
+  bottom: 0;
+  left: 0;
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+  text-align: center;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--muted);
+}
+.saison-temoin[data-ligue] .saison-temoin-nom {
+  color: var(--aurora);
+}
+.saison-temoin-long {
+  display: none;
+}
+@media (min-width: 640px) {
+  .saison-temoin-long {
+    display: inline;
+  }
+  .saison-temoin-court {
+    display: none;
+  }
+}
+@media (min-width: 640px) {
+  .saison-temoin-valeur {
+    font-size: 0.9375rem;
+  }
+  .saison-temoin-nom {
+    font-size: 0.625rem;
+  }
+}
+.saison-bulle-ecarts {
+  color: var(--muted);
+}
+.saison-bulle-ecarts [data-sens] {
+  font-weight: 800;
+}
+.saison-bulle-ecarts [data-sens='haut'] {
+  color: var(--aurora);
+}
+.saison-bulle-ecarts [data-sens='bas'] {
+  color: var(--danger);
 }
 
 
@@ -18058,7 +18083,7 @@ a.rgs-usage b::after {
   display: flex;
   justify-content: space-between;
   gap: 0.5rem;
-  margin: 0.2rem 3.4rem 0 1.75rem;
+  margin: 0.2rem 5rem 0 1.75rem;
   font-size: 0.6875rem;
   color: var(--faint);
 }
