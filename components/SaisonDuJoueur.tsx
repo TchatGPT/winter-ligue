@@ -342,8 +342,10 @@ export function ColonnesSaison({
           <dt>Forme</dt>
           <dd className="num">{decimal(forme.moyenneCinq)}</dd>
           <p>
-            pts sur ses {forme.cinq} dernières ·{' '}
-            <b data-sens={forme.moyenneCinq >= moyenne ? 'haut' : 'bas'}>{signe(forme.moyenneCinq - moyenne)}</b>
+            pts sur ses {forme.cinq} dernières
+            <br />
+            <b data-sens={forme.moyenneCinq >= moyenne ? 'haut' : 'bas'}>{signe(forme.moyenneCinq - moyenne)}</b> vs sa
+            moyenne
           </p>
         </div>
         <div>
