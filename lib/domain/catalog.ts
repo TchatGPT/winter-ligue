@@ -441,14 +441,14 @@ export const CARDS: readonly CardDefinition[] = [
   /* ===================== Booster Commu — la Roue Communautaire ===================== */
   // Les roues de la Summer Ligue, reprises telles quelles le 03/11/2026.
   {
+    // Changée le 12/11/2026 : plus de game sup, 100 flocons pour chacun.
     id: 'flocon-de-plus',
     name: 'Flocon de Plus',
-    subtitle: 'Ajout d’une game sup',
+    subtitle: '+100 flocons pour tous',
     rarity: 'C',
-    glyph: '➕',
-    description:
-      'Une game bonus pour tous les joueurs, hors limite — trois au plus dans la saison.',
-    effect: { kind: 'roue', action: { quoi: 'game_sup' } },
+    glyph: '❄️',
+    description: 'Chaque joueur de la ligue reçoit 100 flocons, dès la carte révélée.',
+    effect: { kind: 'roue', action: { quoi: 'flocons', montant: 100 } },
     nature: 'bonus',
     power: 6,
     packs: ['commu'],
@@ -1130,8 +1130,8 @@ function resumeRoue(action: ActionRoue): string {
       return `une game ×${fr(action.facteur)}`;
     case 'hasard_divise':
       return `une game ÷${fr(action.diviseur)}`;
-    case 'game_sup':
-      return '+1 game pour tous';
+    case 'flocons':
+      return `+${fr(action.montant)} flocons pour tous`;
     case 'supprime_pire':
       return 'pire game supprimée';
     case 'echange_meilleure_pire':

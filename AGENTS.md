@@ -179,6 +179,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   carte touchera (`choisitGamesRoue`, `ouvertures.games`) — au sort sur un rail de
   games (`TirageGames`), ou désignées par la carte (sa pire, sa meilleure), posées sans
   rail ; un Finisseur ouvert pour un joueur ne déroule que ses games (`sansJoueurs`).
+  **Flocon de Plus** (Commu) verse 100 flocons à chaque joueur en lice (12/11/2026 : elle
+  ajoutait une game sup), par `credit`, l'ouverture en référence.
   `regleRoue` frappe ces games-là tant qu'elles le peuvent encore (`retenue`). Pas de
   tirage des games pour une carte qui tombe sur toute la ligue.
   À la révélation, **le compte rendu** (12/11/2026) : `regleRoue` écrit pour chaque

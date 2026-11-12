@@ -70,7 +70,8 @@ export type ActionRoue =
   /** « Une game au hasard ÷ 2 » : arrondi au supérieur ; les immunisés y échappent. */
   | { quoi: 'hasard_divise'; diviseur: number }
   /** « Ajout d'une game sup » : un créneau de plus, comme la carte du Perso. */
-  | { quoi: 'game_sup' }
+  /** Des flocons pour chacun (Flocon de Plus, 12/11/2026 : remplace la game sup). */
+  | { quoi: 'flocons'; montant: number }
   /** « Suppression de la pire game » : elle ne compte plus, son créneau est rendu. */
   | { quoi: 'supprime_pire' }
   /** « Échange meilleure ↔ pire » : la meilleure du premier tiré, la pire du second. */

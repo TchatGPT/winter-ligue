@@ -874,8 +874,12 @@ function regleRoue(
       for (const m of groupe) pour(m, sansEffet('pas de chance : rien ne change'));
       break;
 
-    case 'game_sup':
-      for (const m of groupe) pour(m, ajouteCreneau(db, m.joueur, o));
+    case 'flocons':
+      // Au grand livre, l'ouverture en référence ; jamais au-delà du plafond.
+      for (const m of groupe) {
+        const verses = credit(db, m.joueur.id, action.montant, 'CARTE', o);
+        pour(m, sansEffet(verses > 0 ? `+${fr(verses)} flocons` : 'solde déjà au plafond, sans effet'));
+      }
       break;
 
     case 'meilleure_fois':

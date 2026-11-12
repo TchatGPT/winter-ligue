@@ -132,6 +132,16 @@ describe('les boosters de la Summer', () => {
 });
 
 describe('les cartes de toute la ligue', () => {
+  it('« Flocon de Plus » verse 100 flocons à chacun, au grand livre', () => {
+    const db = base('a', 'b', 'c');
+    const o = ouvre(db, 'flocon-de-plus', ['a', 'b', 'c']);
+    for (const id of ['a', 'b', 'c']) {
+      expect(db.players.find((p) => p.id === id)!.snowflakes).toBe(100);
+      expect(db.ledger.filter((l) => l.playerId === id && l.refId === o)).toHaveLength(1);
+    }
+    expect(cartesDe(db, o).every((c) => c.resultat === '+100 flocons')).toBe(true);
+  });
+
   it('« Meilleure game ×1,5 » relève la meilleure game libre de chacun', () => {
     const db = base('a', 'b');
     game(db, 'a', 20);
