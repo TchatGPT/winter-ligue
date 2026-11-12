@@ -181,6 +181,11 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   rail ; un Finisseur ouvert pour un joueur ne déroule que ses games (`sansJoueurs`).
   `regleRoue` frappe ces games-là tant qu'elles le peuvent encore (`retenue`). Pas de
   tirage des games pour une carte qui tombe sur toute la ligue.
+  À la révélation, **le compte rendu** (12/11/2026) : `regleRoue` écrit pour chaque
+  joueur ce que la carte a fait à son total (`CarteEnAttente.bilan`), ses textes nomment
+  la game touchée (« la game 7 »), et `/api/admin/packs/revelee` rend la vue réglée —
+  qui gagne, qui perd, combien (`EffetVue`, `DestinCarte`). Une pire game rendue
+  (Déneigement) compte comme un gain, pas une perte.
 - Les paliers de subs profitent à **tous les joueurs actifs** (boosters de la ligue,
   évènements). Seule l'**Avalanche** verse des flocons : la même somme
   (`AVALANCHE_FLOCONS`) à chaque joueur qui a au moins une game, tout de suite

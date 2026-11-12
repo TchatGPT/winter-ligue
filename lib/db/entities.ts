@@ -235,6 +235,12 @@ export interface CarteEnAttente {
    * sont dans la game qu'elle a touchée.
    */
   points?: number | null;
+  /**
+   * Ce que la carte a fait au total du joueur, en points, une fois réglée :
+   * le compte rendu de l'ouverture (12/11/2026) dit qui gagne, qui perd.
+   * Écrit pour les cartes des roues ; nul pour les autres.
+   */
+  bilan?: number | null;
 }
 
 export interface LedgerEntry {

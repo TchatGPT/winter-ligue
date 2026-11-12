@@ -283,12 +283,19 @@ export function PackOpening({
   const ouvertureRevelee = phase === 'reveal' ? ouverture?.id : undefined;
   useEffect(() => {
     if (!ouvertureRevelee) return;
-    // La carte est à l'écran : ses flocons peuvent se voir, tout de suite.
+    // La carte est à l'écran : ses flocons peuvent se voir, tout de suite. Le
+    // serveur la règle, et rend ce qu'elle a fait : le compte rendu.
     void fetch('/api/admin/packs/revelee', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ ouvertureId: ouvertureRevelee }),
-    }).catch(() => undefined);
+    })
+      .then((r) => r.json())
+      .then((payload) => {
+        const vue = payload?.ok ? (payload.data?.vue as OuvertureVue | null) : null;
+        if (vue) setOuverture((o) => (o && o.id === vue.id ? { ...o, ...vue } : o));
+      })
+      .catch(() => undefined);
     setTimeout(() => {
       void fetch('/api/admin/packs/annonce', {
         method: 'POST',

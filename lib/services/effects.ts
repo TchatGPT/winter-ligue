@@ -638,8 +638,16 @@ function echangeDeuxGames(
   const pa = donneLeScore(db, ga, card, a.pendante.ouvertureId, sb);
   const pb = donneLeScore(db, gb, card, b.pendante.ouvertureId, sa);
   return [
-    regleSur(`sa game de ${sa} pts prend les ${sb} pts de celle de ${b.joueur.pseudo} → ${pts(pa)}`, pa, ga.id),
-    regleSur(`sa game de ${sb} pts prend les ${sa} pts de celle de ${a.joueur.pseudo} → ${pts(pb)}`, pb, gb.id),
+    regleSur(
+      `échange ${laGame(db, ga)} (${sa} pts) contre ${laGame(db, gb)} de ${b.joueur.pseudo} (${sb} pts) → ${pts(pa)}`,
+      pa,
+      ga.id,
+    ),
+    regleSur(
+      `échange ${laGame(db, gb)} (${sb} pts) contre ${laGame(db, ga)} de ${a.joueur.pseudo} (${sa} pts) → ${pts(pb)}`,
+      pb,
+      gb.id,
+    ),
   ];
 }
 
@@ -663,12 +671,17 @@ function chaine(
     resultats.set(
       m.membre.pendante.id,
       regleSur(
-        `donne sa game de ${scores[i]} pts à ${suivant.membre.joueur.pseudo}, reçoit celle de ${precedent.membre.joueur.pseudo} (${recu} pts) → ${pts(points)}`,
+        `donne ${laGame(db, m.game)} (${scores[i]} pts) à ${suivant.membre.joueur.pseudo}, reçoit celle de ${precedent.membre.joueur.pseudo} (${recu} pts) → ${pts(points)}`,
         points,
         m.game.id,
       ),
     );
   });
+}
+
+/** « la game 7 » : son rang parmi les games du joueur, comme au tirage des games. */
+function laGame(db: Database, g: Game): string {
+  return `la game ${montre(db, g).numero}`;
 }
 
 /** Une game telle que l'écran du tirage la montre. */
@@ -843,6 +856,12 @@ function regleRoue(
   // la carte frappe celles-là, si elles peuvent encore l'être ; sinon elle
   // choisit comme elle l'aurait fait.
   const tirees = db.ouvertures.find((x) => x.id === o)?.games ?? null;
+  // Le total de chacun avant la carte : le compte rendu dira ce qu'elle a fait.
+  const totalDe = (m: Membre) =>
+    comptees(db, m.joueur.id).reduce((s, g) => s + g.score, 0) +
+    pointsHorsGame(db, m.joueur.id) +
+    (m.pendante.consommeeA === null ? (m.pendante.points ?? 0) : 0);
+  const avant = new Map(groupe.map((m) => [m.pendante.id, totalDe(m)]));
   const retenue = (m: Membre, parmi: readonly Game[], rang = 0): Game | undefined => {
     const id = tirees?.parJoueur.find((e) => e?.joueurId === m.joueur.id)?.visees[rang]?.id;
     return id ? parmi.find((g) => g.id === id) : undefined;
@@ -872,7 +891,7 @@ function regleRoue(
         const game = [...candidates].sort((a, b) => b.score - a.score)[0];
         const avant = game.score;
         const points = applyPoints(db, game, card, o, Math.round(avant * (action.facteur - 1)));
-        pour(m, regleSur(`meilleure game de ${avant} pts ×${fr(action.facteur)} → ${pts(points)}`, points, game.id));
+        pour(m, regleSur(`sa meilleure game, ${laGame(db, game)} (${avant} pts), ×${fr(action.facteur)} → ${pts(points)}`, points, game.id));
       }
       break;
 
@@ -888,8 +907,8 @@ function regleRoue(
           retenue(m, libres) ?? (action.quoi === 'pire_fois' ? [...libres].sort((a, b) => a.score - b.score)[0] : pick(libres));
         const avant = game.score;
         const points = applyPoints(db, game, card, o, Math.round(avant * (action.facteur - 1)));
-        const quelle = action.quoi === 'pire_fois' ? 'pire game' : 'une game';
-        pour(m, regleSur(`${quelle} de ${avant} pts ×${fr(action.facteur)} → ${pts(points)}`, points, game.id));
+        const quelle = action.quoi === 'pire_fois' ? 'sa pire game' : 'tirée au sort';
+        pour(m, regleSur(`${quelle}, ${laGame(db, game)} (${avant} pts), ×${fr(action.facteur)} → ${pts(points)}`, points, game.id));
       }
       break;
 
@@ -908,7 +927,7 @@ function regleRoue(
         const avant = game.score;
         const apres = Math.ceil(avant / action.diviseur);
         const points = donneLeScore(db, game, card, o, apres);
-        pour(m, regleSur(`une game de ${avant} pts ÷${fr(action.diviseur)} → ${pts(points)}`, points, game.id));
+        pour(m, regleSur(`tirée au sort, ${laGame(db, game)} (${avant} pts), ÷${fr(action.diviseur)} → ${pts(points)}`, points, game.id));
       }
       break;
 
@@ -922,7 +941,7 @@ function regleRoue(
         const pire = [...libres].sort((a, b) => a.score - b.score || a.playedAt.localeCompare(b.playedAt))[0];
         applyPoints(db, pire, card, o, 0);
         pire.skipped = true;
-        pour(m, regleSur(`pire game (${pire.score} pts) supprimée : son créneau est rendu`, 0, pire.id));
+        pour(m, regleSur(`sa pire game, ${laGame(db, pire)} (${pire.score} pts), supprimée : son créneau est rendu`, 0, pire.id));
       }
       break;
 
@@ -952,8 +971,8 @@ function regleRoue(
         }
         const avant = pire.score;
         const points = donneLeScore(db, pire, card, o, source.score);
-        pour(a, regleSur(`sa pire game de ${avant} pts prend les ${source.score} pts de la meilleure de ${b.joueur.pseudo} → ${pts(points)}`, points, pire.id));
-        pour(b, sansEffet(`sa meilleure game (${source.score} pts) a été clonée chez ${a.joueur.pseudo} ; il la garde`));
+        pour(a, regleSur(`sa pire game, ${laGame(db, pire)} (${avant} pts), prend les ${source.score} pts de ${laGame(db, source)} de ${b.joueur.pseudo} → ${pts(points)}`, points, pire.id));
+        pour(b, sansEffet(`${laGame(db, source)} (${source.score} pts) est copiée chez ${a.joueur.pseudo} ; il la garde`));
         break;
       }
       if (libresA.length === 0 || libresB.length === 0) {
@@ -1081,7 +1100,7 @@ function regleRoue(
           retenue(m, libres) ??
           (action.quoi === 'fige_meilleure' ? [...libres].sort((x, y) => y.score - x.score)[0] : pick(libres));
         applyPoints(db, game, card, o, 0);
-        pour(m, regleSur(`game de ${game.score} pts figée : plus aucune carte ne peut la toucher`, 0, game.id));
+        pour(m, regleSur(`${laGame(db, game)} (${game.score} pts) figée : plus aucune carte ne peut la toucher`, 0, game.id));
       }
       break;
 
@@ -1135,7 +1154,7 @@ function regleRoue(
         const meilleure = retenue(m, candidates) ?? [...candidates].sort((x, y) => y.score - x.score)[0];
         applyPoints(db, meilleure, card, o, 0);
         meilleure.skipped = true;
-        pour(m, regleSur(`n’a pas passé la ligne : il perd sa meilleure game (${meilleure.score} pts)`, -meilleure.score, meilleure.id));
+        pour(m, regleSur(`n’a pas passé la ligne : il perd sa meilleure game, ${laGame(db, meilleure)} (${meilleure.score} pts)`, -meilleure.score, meilleure.id));
       }
       break;
     }
@@ -1159,7 +1178,7 @@ function regleRoue(
         }
         const avant = pire.score;
         const points = donneLeScore(db, pire, card, o, 0);
-        pour(m, regleSur(`pire game de ${avant} pts ramenée à ${pire.score} → ${pts(points)}`, points, pire.id));
+        pour(m, regleSur(`sa pire game, ${laGame(db, pire)} (${avant} pts), ramenée à ${pire.score} → ${pts(points)}`, points, pire.id));
       }
       break;
 
@@ -1205,7 +1224,7 @@ function regleRoue(
         const points = donneLeScore(db, seconde, card, o, somme);
         applyPoints(db, pire, card, o, 0);
         pire.skipped = true;
-        pour(m, regleSur(`ses 2 pires games (${pire.score} et ${somme - pire.score} pts) n’en font plus qu’une de ${seconde.score} pts : un créneau est rendu`, points, seconde.id));
+        pour(m, regleSur(`ses 2 pires games, ${laGame(db, pire)} (${pire.score} pts) et ${laGame(db, seconde).slice(3)} (${somme - pire.score} pts), n’en font plus qu’une de ${seconde.score} pts : un créneau est rendu`, points, seconde.id));
       }
       break;
 
@@ -1225,10 +1244,14 @@ function regleRoue(
         }
         const avant = pire.score;
         const points = donneLeScore(db, pire, card, o, moyenne);
-        pour(m, regleSur(`pire game de ${avant} pts ramenée à la moyenne de ${moyenne} → ${pts(points)}`, points, pire.id));
+        pour(m, regleSur(`sa pire game, ${laGame(db, pire)} (${avant} pts), ramenée à la moyenne de ${moyenne} → ${pts(points)}`, points, pire.id));
       }
       break;
   }
+
+  for (const m of groupe) m.pendante.bilan = totalDe(m) - (avant.get(m.pendante.id) ?? 0);
+  // Une pire game rendue n'est pas une perte : le créneau se rejoue.
+  if (action.quoi === 'supprime_pire') for (const m of groupe) m.pendante.bilan = 0;
 
   // Les autres cartes du groupe sont réglées ici ; celle-ci, par l'appelant.
   for (const m of groupe) {

@@ -5,7 +5,7 @@ import { revelationSchema } from '@/lib/api/schemas';
 import { getStore } from '@/lib/db/store';
 import { LIMITS } from '@/lib/security/ratelimit';
 import { regleCartesSansAttendre } from '@/lib/services/effects';
-import { joueursEnLice } from '@/lib/services/packs';
+import { joueursEnLice, vueOuverture } from '@/lib/services/packs';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -28,15 +28,18 @@ export async function POST(request: Request): Promise<NextResponse> {
   });
   if (!g.ok) return g.response;
   try {
-    const reglees = await getStore().transaction((db) => {
+    // Avec une ouverture, l'écran reçoit en retour ce que la carte a fait —
+    // le compte rendu, joueur par joueur.
+    const { reglees, vue } = await getStore().transaction((db) => {
       if (g.body.ouvertureId) {
         const o = db.ouvertures.find((x) => x.id === g.body.ouvertureId);
-        if (!o) return 0;
-        return o.beneficiaires.flatMap((id) => regleCartesSansAttendre(db, id, new Date(), true)).length;
+        if (!o) return { reglees: 0, vue: null };
+        const n = o.beneficiaires.flatMap((id) => regleCartesSansAttendre(db, id, new Date(), true)).length;
+        return { reglees: n, vue: vueOuverture(db, o) };
       }
-      return joueursEnLice(db).flatMap((p) => regleCartesSansAttendre(db, p.id)).length;
+      return { reglees: joueursEnLice(db).flatMap((p) => regleCartesSansAttendre(db, p.id)).length, vue: null };
     });
-    return ok({ reglees });
+    return ok({ reglees, vue });
   } catch (error) {
     return toResponse(error);
   }

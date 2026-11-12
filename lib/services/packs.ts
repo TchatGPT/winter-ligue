@@ -816,12 +816,31 @@ export interface OuvertureVue {
    * l'ouverture, ou depuis. Six au plus — une carte tombée sur toute la ligue
    * ne les liste pas tous.
    */
-  effets: { pseudo: string; resultat: string }[];
+  effets: EffetVue[];
   /** Combien de joueurs ont vu la carte se régler. */
   regles: number;
   /** Combien de joueurs attendent encore que la carte se règle. */
   enAttente: number;
 }
+
+/**
+ * Ce que la carte a fait à un joueur : le compte rendu de l'ouverture
+ * (12/11/2026). `bilan`, les points gagnés ou perdus au total ; `sens`, ce
+ * que l'écran en dit — une game figée ou un créneau rendu ne bougent pas le
+ * total, mais ne sont pas « sans effet ».
+ */
+export interface EffetVue {
+  pseudo: string;
+  resultat: string;
+  bilan: number | null;
+  sens: 'gain' | 'perte' | 'neutre';
+}
+
+/** Ce qui, dans un résultat, dit que la carte n'a rien fait à ce joueur. */
+const RIEN = /sans effet|épargné|paré par|annulé|rien ne change|hors de la chaîne/;
+
+/** Combien de lignes le compte rendu d'une ouverture garde : toute une ligue. */
+const EFFETS_MAX = 60;
 
 export function vueOuverture(db: Database, o: OuverturePack): OuvertureVue {
   const card = getCard(o.cardId);
@@ -853,12 +872,29 @@ export function vueOuverture(db: Database, o: OuverturePack): OuvertureVue {
     moment: card ? momentDe(card.effect) : 'PROCHAINE',
     effets: posees
       .filter((c) => c.consommeeA !== null && c.resultat)
-      .slice(0, 6)
-      .map((c) => ({ pseudo: pseudoDe(c.joueurId), resultat: c.resultat! })),
+      .map((c): EffetVue => {
+        const bilan = typeof c.bilan === 'number' ? c.bilan : null;
+        const sens: EffetVue['sens'] =
+          bilan !== null && bilan !== 0
+            ? bilan > 0
+              ? 'gain'
+              : 'perte'
+            : RIEN.test(c.resultat!)
+              ? 'neutre'
+              : card?.nature === 'malus'
+                ? 'perte'
+                : 'gain';
+        return { pseudo: pseudoDe(c.joueurId), resultat: c.resultat!, bilan, sens };
+      })
+      // Ceux qui gagnent d'abord, ceux qui perdent ensuite, du plus au moins.
+      .sort((a, b) => ORDRE_SENS[a.sens] - ORDRE_SENS[b.sens] || Math.abs(b.bilan ?? 0) - Math.abs(a.bilan ?? 0))
+      .slice(0, EFFETS_MAX),
     regles: posees.filter((c) => c.consommeeA !== null).length,
     enAttente: posees.filter((c) => c.consommeeA === null).length,
   };
 }
+
+const ORDRE_SENS: Record<EffetVue['sens'], number> = { gain: 0, perte: 1, neutre: 2 };
 
 /** Les dernières ouvertures, la plus récente en tête. */
 export function dernieresOuvertures(db: Database, combien = 12): OuvertureVue[] {

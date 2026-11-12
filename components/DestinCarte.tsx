@@ -20,26 +20,71 @@ function liste(noms: string[]): string {
   return `${noms.slice(0, -1).join(', ')} et ${noms[noms.length - 1]}`;
 }
 
+/** « 4 joueurs », « 1 joueur ». */
+const joueurs = (n: number) => `${n} joueur${n > 1 ? 's' : ''}`;
+
+/** « +10 pts », « −4 pts », « 1 pt ». */
+function enPoints(n: number): string {
+  const signe = n > 0 ? '+' : n < 0 ? '−' : '';
+  return `${signe}${Math.abs(n)} pt${Math.abs(n) > 1 ? 's' : ''}`;
+}
+
+/** Le résultat sans ses points de la fin (« … → +14 pts ») : la pastille les dit déjà. */
+const sansLesPoints = (resultat: string) => resultat.replace(/ → [+−-]?\d+ pts?$/, '');
+
+/**
+ * Le compte rendu d'une ouverture (12/11/2026) : qui gagne, qui perd, et
+ * quoi — joueur par joueur, la game touchée nommée, les points au total. En
+ * tête, le décompte : « 4 joueurs gagnent · 4 joueurs perdent ».
+ */
+function CompteRendu({ effets, autres }: { effets: Destin['effets']; autres: number }) {
+  const gains = effets.filter((e) => e.sens === 'gain').length;
+  const pertes = effets.filter((e) => e.sens === 'perte').length;
+  const neutres = effets.filter((e) => e.sens === 'neutre').length;
+  return (
+    <div className="compte-rendu">
+      {effets.length > 1 && (
+        <p className="compte-rendu-decompte">
+          {gains > 0 && (
+            <span data-sens="gain">
+              ▲ {gains} {gains > 1 ? 'gagnent' : 'gagne'}
+            </span>
+          )}
+          {pertes > 0 && (
+            <span data-sens="perte">
+              ▼ {pertes} {pertes > 1 ? 'perdent' : 'perd'}
+            </span>
+          )}
+          {neutres > 0 && <span data-sens="neutre">= {neutres} sans effet</span>}
+        </p>
+      )}
+      <ul className="compte-rendu-liste">
+        {effets.map((e, i) => (
+          <li key={`${e.pseudo}-${i}`} className="compte-rendu-ligne" data-sens={e.sens}>
+            <span className="compte-rendu-badge num" aria-hidden="true">
+              {e.bilan !== null && e.bilan !== 0 ? enPoints(e.bilan) : e.sens === 'neutre' ? '=' : e.sens === 'gain' ? '▲' : '▼'}
+            </span>
+            <span className="compte-rendu-texte">
+              <strong>{e.pseudo}</strong>
+              <span>{e.bilan ? sansLesPoints(e.resultat) : e.resultat}</span>
+            </span>
+          </li>
+        ))}
+      </ul>
+      {autres > 0 && <p className="compte-rendu-autres">…et {joueurs(autres)} de plus.</p>}
+    </div>
+  );
+}
+
 export function DestinCarte({ o }: { o: Destin }) {
   const qui = o.pseudo ? o.pseudo : o.tous ? 'chaque joueur en lice' : liste(o.beneficiaires);
   const autres = o.regles - o.effets.length;
 
+  if (o.effets.length > 0 && o.enAttente === 0) return <CompteRendu effets={o.effets} autres={autres} />;
+
   return (
     <Notice kind={o.nature === 'malus' ? 'error' : 'success'}>
-      {o.effets.length > 0 && (
-        <ul className="space-y-0.5">
-          {o.effets.map((e, i) => (
-            <li key={`${e.pseudo}-${i}`}>
-              <strong>{e.pseudo}</strong> : {e.resultat}
-            </li>
-          ))}
-          {autres > 0 && (
-            <li>
-              …et {autres} autre{autres > 1 ? 's' : ''} joueur{autres > 1 ? 's' : ''}.
-            </li>
-          )}
-        </ul>
-      )}
+      {o.effets.length > 0 && <CompteRendu effets={o.effets} autres={autres} />}
 
       {o.enAttente > 0 && (
         <p className={o.effets.length > 0 ? 'mt-1.5' : undefined}>

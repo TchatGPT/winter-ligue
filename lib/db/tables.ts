@@ -130,6 +130,7 @@ export const COLLECTIONS: Collection[] = [
       c('resultat', 'resultat', 'text'),
       c('paireId', 'paire_id', 'text'),
       c('points', 'points', 'int'),
+      c('bilan', 'bilan', 'int'),
     ],
   },
   {
@@ -458,6 +459,8 @@ alter table saison add column if not exists overlay_generation integer not null 
 
 -- Des points hors de toute game : le coup d'un Verglas, sur le total.
 alter table cartes_en_attente add column if not exists points integer;
+-- Ce que la carte a fait au total du joueur : le compte rendu d'une ouverture (12/11/2026).
+alter table cartes_en_attente add column if not exists bilan integer;
 
 -- Les messages de Twitch déjà comptés : un message renvoyé ne compte qu'une fois.
 alter table saison add column if not exists twitch_vus jsonb not null default '[]';

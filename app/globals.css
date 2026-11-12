@@ -12482,6 +12482,104 @@
 .revelation-destin > div {
   font-size: clamp(0.9375rem, 1.15cqw, 1.125rem);
 }
+/*
+ * Le compte rendu d'une ouverture (12/11/2026) : le décompte en tête, puis
+ * une ligne par joueur — ce qu'il gagne ou perd en pastille, à gauche, et ce
+ * que la carte a fait, la game nommée. Vert qui gagne, rouge qui perd, gris
+ * qui n'est pas touché.
+ */
+.compte-rendu {
+  --gain: var(--aurora);
+  --perte: var(--danger);
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.compte-rendu-decompte {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.compte-rendu-decompte span {
+  padding: 0.2rem 0.65rem;
+  border-radius: var(--r-pilule);
+  font-family: var(--font-display);
+  font-size: 0.875rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.compte-rendu-decompte [data-sens='gain'] {
+  background: color-mix(in srgb, var(--gain) 16%, transparent);
+  color: var(--gain);
+}
+.compte-rendu-decompte [data-sens='perte'] {
+  background: color-mix(in srgb, var(--perte) 16%, transparent);
+  color: var(--perte);
+}
+.compte-rendu-decompte [data-sens='neutre'] {
+  background: color-mix(in srgb, var(--ink) 9%, transparent);
+  color: var(--faint);
+}
+.compte-rendu-liste {
+  display: flex;
+  max-height: min(24rem, 46svh);
+  flex-direction: column;
+  gap: 0.35rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.compte-rendu-ligne {
+  --sens: var(--faint);
+  display: grid;
+  grid-template-columns: 4.6rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.5rem 0.7rem 0.5rem 0.5rem;
+  border-radius: calc(var(--r-md) / 2);
+  background: color-mix(in srgb, var(--sens) 8%, transparent);
+  box-shadow: inset 3px 0 0 color-mix(in srgb, var(--sens) 70%, transparent);
+}
+.compte-rendu-ligne[data-sens='gain'] {
+  --sens: var(--gain);
+}
+.compte-rendu-ligne[data-sens='perte'] {
+  --sens: var(--perte);
+}
+.compte-rendu-badge {
+  justify-self: stretch;
+  padding: 0.25rem 0.3rem;
+  border-radius: var(--r-pilule);
+  background: color-mix(in srgb, var(--sens) 18%, transparent);
+  font-family: var(--font-display);
+  font-size: 0.9375rem;
+  font-weight: 900;
+  text-align: center;
+  white-space: nowrap;
+  color: var(--sens);
+}
+.compte-rendu-texte {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  line-height: 1.3;
+}
+.compte-rendu-texte strong {
+  font-family: var(--font-display);
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.compte-rendu-texte span {
+  font-size: 0.9375rem;
+  color: var(--ink-2);
+}
+.compte-rendu-autres {
+  font-size: 0.875rem;
+  color: var(--faint);
+}
+
 .revelation-chance {
   margin-top: 0.6rem;
   font-size: clamp(0.875rem, 1cqw, 1rem);

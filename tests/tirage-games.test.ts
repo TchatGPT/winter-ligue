@@ -4,7 +4,7 @@ import { emptyDatabase } from '@/lib/db/store';
 import { getCard } from '@/lib/domain/catalog';
 import { scoreGame } from '@/lib/domain/scoring';
 import { choisitGamesRoue, regleCartesSansAttendre } from '@/lib/services/effects';
-import { tirageDe } from '@/lib/services/packs';
+import { tirageDe, vueOuverture } from '@/lib/services/packs';
 
 /**
  * Le troisième tirage d'une ouverture (12/11/2026) : la game, ou les games,
@@ -190,5 +190,51 @@ describe('le tirage des games', () => {
     expect(tirage).toMatchObject({ sansJoueurs: true, gagnants: ['A'], games: { hasard: false, lien: 'fusion' } });
     expect(tirage!.games!.parJoueur[0]!.visees.map((g) => g.numero)).toEqual([1, 2]);
     expect(JSON.stringify(tirage)).not.toMatch(/"id"|joueurId/);
+  });
+});
+
+describe('le compte rendu d’une ouverture', () => {
+  it('« Neige Mêlée » : qui a échangé quelle game, et ce que chacun y gagne ou y perd', () => {
+    const db = ligue('a', 'b');
+    const o = ouvre(db, 'neige-melee', ['a', 'b']);
+    const [ea, eb] = o.games!.parJoueur;
+    // Deux scores différents, pour que l'un gagne et l'autre perde.
+    const ga = db.games.find((g) => g.id === ea!.visees[0].id)!;
+    const gb = db.games.find((g) => g.id === eb!.visees[0].id)!;
+    if (ga.score === gb.score) ga.score += 3;
+    const [sa, sb] = [ga.score, gb.score];
+    revele(db, o);
+    const vue = vueOuverture(db, o);
+    const de = (pseudo: string) => vue.effets.find((e) => e.pseudo === pseudo)!;
+    expect(de('A').bilan).toBe(sb - sa);
+    expect(de('B').bilan).toBe(sa - sb);
+    expect(de('A').resultat).toContain(`la game ${ea!.visees[0].numero}`);
+    expect(de('A').resultat).toContain(`la game ${eb!.visees[0].numero} de B`);
+    const gagnant = sb > sa ? 'A' : 'B';
+    expect(de(gagnant).sens).toBe('gain');
+    expect(de(gagnant === 'A' ? 'B' : 'A').sens).toBe('perte');
+    // Celui qui gagne en tête.
+    expect(vue.effets[0].pseudo).toBe(gagnant);
+  });
+
+  it('« Triple Écho » : trois gains, la game doublée nommée', () => {
+    const db = ligue('a', 'b', 'c');
+    const o = ouvre(db, 'triple-echo', ['a', 'b', 'c']);
+    revele(db, o);
+    const vue = vueOuverture(db, o);
+    expect(vue.effets).toHaveLength(3);
+    vue.effets.forEach((e) => {
+      expect(e.sens).toBe('gain');
+      expect(e.bilan).toBeGreaterThan(0);
+      expect(e.resultat).toMatch(/tirée au sort, la game \d+ \(\d+ pts\), ×2/);
+    });
+  });
+
+  it('« Déneigement » : la pire game rendue est un gain, pas une perte', () => {
+    const db = ligue('a', 'b');
+    const o = ouvre(db, 'deneigement', ['a', 'b']);
+    revele(db, o);
+    const vue = vueOuverture(db, o);
+    expect(vue.effets.every((e) => e.bilan === 0 && e.sens === 'gain')).toBe(true);
   });
 });
