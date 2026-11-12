@@ -1593,6 +1593,71 @@
     line-height: 1;
     color: var(--aurora);
   }
+  /*
+   * Le verdict d'un échange (12/11/2026) : sous les games, qui y gagne, qui y
+   * perd, de combien — avant même que la carte soit révélée.
+   */
+  .verdict-echange {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem 0.75rem;
+    margin-top: 0.4rem;
+    animation: game-se-pose 0.45s cubic-bezier(0.2, 1.4, 0.35, 1) both;
+  }
+  .verdict-ligne {
+    --sens: var(--faint);
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.4rem 0.5rem 0.4rem 0.9rem;
+    border-radius: var(--r-pilule);
+    background: color-mix(in srgb, var(--sens) 12%, var(--fond));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--sens) 40%, transparent);
+    font-size: 0.9375rem;
+    color: var(--ink-2);
+  }
+  .verdict-ligne[data-sens='gain'] {
+    --sens: var(--aurora);
+  }
+  .verdict-ligne[data-sens='perte'] {
+    --sens: var(--danger);
+  }
+  .verdict-ligne b {
+    font-family: var(--font-display);
+    font-weight: 900;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--ink);
+  }
+  .verdict-badge {
+    padding: 0.15rem 0.6rem;
+    border-radius: var(--r-pilule);
+    background: color-mix(in srgb, var(--sens) 22%, transparent);
+    font-family: var(--font-display);
+    font-weight: 900;
+    white-space: nowrap;
+    color: var(--sens);
+  }
+  /* Sous les games posées, le verdict arrive après la dernière. */
+  .games-posees-verdict {
+    animation: game-se-pose 0.45s cubic-bezier(0.2, 1.4, 0.35, 1) both;
+    animation-delay: calc(var(--i, 0) * 260ms + 300ms);
+  }
+  .games-posees-verdict:empty {
+    display: none;
+  }
+  .ov-games .verdict-ligne,
+  .ov-rail .verdict-ligne {
+    font-size: 24px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .verdict-echange,
+    .games-posees-verdict {
+      animation: none;
+    }
+  }
+
   @keyframes game-se-pose {
     from {
       opacity: 0;

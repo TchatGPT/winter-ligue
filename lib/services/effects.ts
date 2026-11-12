@@ -764,6 +764,8 @@ export function choisitGamesRoue(db: Database, card: CardDefinition, joueurs: re
       const libresB = gamesSansCarte(db, b.id);
       if (libresA.length === 0 || libresB.length === 0) return null;
       if (action.quoi === 'echange_hasard') {
+        // Du hasard pur (12/11/2026) : une game au sort chez chacun, toutes à
+        // chances égales. Qui y gagne suit les deux scores tirés.
         return fait(
           true,
           [pour(a, 'une game au hasard', [pick(libresA)], libresA), pour(b, 'une game au hasard', [pick(libresB)], libresB)],

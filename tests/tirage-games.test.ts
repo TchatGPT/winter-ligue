@@ -196,12 +196,15 @@ describe('le tirage des games', () => {
 describe('le compte rendu d’une ouverture', () => {
   it('« Neige Mêlée » : qui a échangé quelle game, et ce que chacun y gagne ou y perd', () => {
     const db = ligue('a', 'b');
+    // Les games de B valent toutes plus que celles de A : l'un gagne, l'autre perd.
+    for (const g of db.games.filter((x) => x.playerId === 'b')) {
+      g.kills += 10;
+      g.score = scoreGame({ kills: g.kills, placement: null, bonusPoints: 0 }).total;
+    }
     const o = ouvre(db, 'neige-melee', ['a', 'b']);
     const [ea, eb] = o.games!.parJoueur;
-    // Deux scores différents, pour que l'un gagne et l'autre perde.
     const ga = db.games.find((g) => g.id === ea!.visees[0].id)!;
     const gb = db.games.find((g) => g.id === eb!.visees[0].id)!;
-    if (ga.score === gb.score) ga.score += 3;
     const [sa, sb] = [ga.score, gb.score];
     revele(db, o);
     const vue = vueOuverture(db, o);
