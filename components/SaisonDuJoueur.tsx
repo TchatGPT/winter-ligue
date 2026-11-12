@@ -82,21 +82,36 @@ const JOKER = 'joker-givre';
 
 /* ================================ Les colonnes ================================ */
 
+type Niveau = 'haut' | 'milieu' | 'bas';
+
 /**
- * Une vague de fond, à la hauteur d'une moyenne (de 0 à 1) : sa crête ondule
- * doucement, et elle remplit tout le dessous. Dessinée sur une largeur et
- * demie, elle glisse d'une longueur d'onde en boucle — sans à-coup.
+ * Les moyennes ne se tracent plus sur le graphique : ce sont les blocs qui
+ * disent où tombe chaque game (12/11/2026). Au-dessus des deux moyennes — la
+ * sienne, celle de la ligue —, la glace est éclatante ; entre les deux, elle
+ * est franche ; sous les deux, elle s'assombrit. Sans moyenne de la ligue, il
+ * n'y a que deux niveaux : au-dessus de la sienne, ou dessous.
  */
-function vague(niveau: number): string {
-  const onde = 125;
-  const ampleur = 1.6;
-  const y = 100 - niveau * 100;
-  let d = `M0 ${y.toFixed(2)}`;
-  for (let x = 0, k = 0; x < 1000 + onde; x += onde / 2, k += 1) {
-    const creux = y + (k % 2 ? ampleur : -ampleur);
-    d += ` Q${(x + onde / 4).toFixed(1)} ${creux.toFixed(2)} ${(x + onde / 2).toFixed(1)} ${y.toFixed(2)}`;
+function niveaux(moyenne: number, moyenneLigue: number | null) {
+  if (moyenneLigue === null) {
+    return {
+      de: (score: number): Niveau => (score >= moyenne ? 'haut' : 'bas'),
+      legende: [
+        { niveau: 'haut' as Niveau, texte: `Au-dessus de sa moyenne` },
+        { niveau: 'bas' as Niveau, texte: `Sous sa moyenne` },
+      ],
+    };
   }
-  return `${d} L${1000 + onde} 100 L0 100 Z`;
+  const persoDevant = moyenne >= moyenneLigue;
+  const haute = Math.max(moyenne, moyenneLigue);
+  const basse = Math.min(moyenne, moyenneLigue);
+  return {
+    de: (score: number): Niveau => (score >= haute ? 'haut' : score >= basse ? 'milieu' : 'bas'),
+    legende: [
+      { niveau: 'haut' as Niveau, texte: persoDevant ? 'Au-dessus de sa moyenne' : 'Au-dessus de la ligue' },
+      { niveau: 'milieu' as Niveau, texte: persoDevant ? 'Au-dessus de la ligue' : 'Au-dessus de sa moyenne' },
+      { niveau: 'bas' as Niveau, texte: persoDevant ? 'Sous la ligue' : 'Sous sa moyenne' },
+    ],
+  };
 }
 
 export function ColonnesSaison({
@@ -129,6 +144,7 @@ export function ColonnesSaison({
   const echelle = graduations(Math.max(1, moyenneLigue ?? 0, ...chronologie.map((g) => g.score)));
   const haut = echelle[echelle.length - 1];
   const part = (score: number) => Math.max(0, Math.min(1, score / haut));
+  const repere = niveaux(moyenne, moyenneLigue);
 
   // Les deux moyennes dans la marge : trop proches, leurs étiquettes s'écartent.
   const etiquettes = useMemo(() => {
@@ -179,15 +195,14 @@ export function ColonnesSaison({
               <IconJoker className="h-4 w-4 text-ice" /> Joker
             </span>
           </span>
-          <span className="saison-moyennes">
-            <span className="saison-legende-moyenne">
-              <i className="saison-trait" /> Sa moyenne <b className="num">{decimal(moyenne)}</b>
-            </span>
-            {moyenneLigue !== null && (
-              <span className="saison-legende-moyenne" data-ligue="">
-                <i className="saison-trait" data-ligue="" /> La ligue <b className="num">{decimal(moyenneLigue)}</b>
+          {/* Ce que dit l'éclat d'un bloc : où tombe la game, face aux deux moyennes. */}
+          <span className="saison-niveaux">
+            {repere.legende.map((l) => (
+              <span key={l.niveau}>
+                <i className="saison-echantillon" data-niveau={l.niveau} />
+                {l.texte}
               </span>
-            )}
+            ))}
           </span>
         </figcaption>
 
@@ -212,17 +227,6 @@ export function ColonnesSaison({
             {echelle.map((v) => (
               <i key={v} className="saison-ligne" style={{ ['--y' as string]: v / haut } as CSSProperties} aria-hidden="true" />
             ))}
-            {/* Les deux moyennes, en vagues de fond : les blocs se dressent dedans, rien ne les barre. */}
-            <svg className="saison-vagues" viewBox="0 0 1000 100" preserveAspectRatio="none" aria-hidden="true">
-              {[
-                { cle: 'perso', niveau: part(moyenne) },
-                ...(moyenneLigue !== null ? [{ cle: 'ligue', niveau: part(moyenneLigue) }] : []),
-              ]
-                .sort((a, b) => b.niveau - a.niveau)
-                .map((v) => (
-                  <path key={v.cle} className="saison-vague" data-ligue={v.cle === 'ligue' ? '' : undefined} d={vague(v.niveau)} />
-                ))}
-            </svg>
             {/* Le palier du Booster Finisseur : la suite se joue une game par session. */}
             {palier < total && (
               <i
@@ -249,6 +253,7 @@ export function ColonnesSaison({
                   data-joker={c.skipped ? '' : undefined}
                   data-eteinte={garde(c) ? undefined : ''}
                   data-podium={place ?? undefined}
+                  data-niveau={c.skipped ? undefined : repere.de(c.score)}
                   onMouseEnter={() => setSurvolee(i)}
                   onFocus={() => setSurvolee(i)}
                   onBlur={() => setSurvolee(null)}
@@ -305,7 +310,7 @@ export function ColonnesSaison({
               </div>
             )}
           </div>
-          {/* Les moyennes, nommées dans la marge, à la hauteur de leur vague. */}
+          {/* Les moyennes, nommées dans la marge, à leur hauteur sur l'échelle. */}
           <div className="saison-marge" aria-hidden="true">
             <span className="saison-etiquette" style={{ ['--y' as string]: etiquettes.perso } as CSSProperties}>
               <small>Sa moyenne</small>

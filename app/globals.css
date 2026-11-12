@@ -17728,85 +17728,59 @@ a.rgs-usage b::after {
   border-top: 1px solid color-mix(in srgb, var(--ink) 7%, transparent);
 }
 /* Les deux moyennes : franches, et nommées dans la marge à leur hauteur. */
-/*
- * Les moyennes en vagues de fond : chacune remplit le graphique jusqu'à son
- * niveau, sa crête ondule, et les blocs se dressent devant — rien ne les barre.
- */
-.saison-vagues {
-  position: absolute;
-  z-index: 0;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: calc(100% - var(--bas));
-  overflow: hidden;
-  pointer-events: none;
-}
-.saison-vague {
-  fill: color-mix(in srgb, var(--frost) 13%, transparent);
-  stroke: color-mix(in srgb, var(--frost) 70%, transparent);
-  stroke-width: 2;
-  vector-effect: non-scaling-stroke;
-  animation: saison-houle 9s linear infinite;
-}
-.saison-vague[data-ligue] {
-  fill: color-mix(in srgb, var(--aurora) 15%, transparent);
-  stroke: color-mix(in srgb, var(--aurora) 80%, transparent);
-  animation-duration: 13s;
-  animation-direction: reverse;
-}
-@keyframes saison-houle {
-  to {
-    transform: translateX(-125px);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .saison-vague {
-    animation: none;
-  }
-}
-.saison-moyennes {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  font-family: var(--font-sans, inherit);
-  letter-spacing: 0;
-  text-transform: none;
-}
 /* La moyenne de la ligue : en tirets, verte — elle ne se confond pas avec la sienne. */
 
-.saison-trait {
-  display: inline-block;
-  width: 22px;
-  height: 3px;
-  border-radius: 2px;
-  background: var(--frost);
+/*
+ * L'éclat d'un bloc : au-dessus des deux moyennes, la glace éclatante ;
+ * entre les deux, franche ; sous les deux, sombre. La légende en montre un
+ * échantillon de chaque.
+ */
+.saison-colonne[data-niveau='haut'] .saison-bloc {
+  filter: brightness(1.12) saturate(1.1);
 }
-.saison-trait[data-ligue] {
-  background: var(--aurora);
+.saison-colonne[data-niveau='milieu'] .saison-bloc {
+  filter: brightness(0.78);
 }
-.saison-legende-moyenne {
+.saison-colonne[data-niveau='bas'] .saison-bloc {
+  filter: brightness(0.5) saturate(0.55);
+}
+.saison-niveaux {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 0.9rem;
+  font-family: var(--font-sans, inherit);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--muted);
+}
+.saison-niveaux > span {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  padding: 0.2rem 0.6rem;
-  border: 0;
-  border-radius: var(--r-pilule);
-  background: color-mix(in srgb, var(--frost) 10%, transparent);
-  font: inherit;
-  font-size: 0.75rem;
-  color: var(--ink-2);
 }
-.saison-legende-moyenne b {
-  font-weight: 800;
-  color: var(--ink);
+.saison-echantillon {
+  display: inline-block;
+  width: 9px;
+  height: 14px;
+  border-radius: 2px 2px 0 0;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--frost) 85%, var(--fond)),
+    color-mix(in srgb, var(--ice) 60%, var(--fond)) 30%,
+    color-mix(in srgb, var(--ice-3) 65%, var(--fond))
+  );
+  box-shadow: inset 0 1px 0 var(--frost);
 }
-.saison-legende-moyenne[data-ligue] {
-  background: color-mix(in srgb, var(--aurora) 12%, transparent);
+.saison-echantillon[data-niveau='haut'] {
+  filter: brightness(1.12) saturate(1.1);
 }
-
-.saison-legende-moyenne[data-ligue] b {
-  color: var(--aurora);
+.saison-echantillon[data-niveau='milieu'] {
+  filter: brightness(0.78);
+}
+.saison-echantillon[data-niveau='bas'] {
+  filter: brightness(0.5) saturate(0.55);
 }
 .saison-marge {
   position: relative;
@@ -17970,10 +17944,6 @@ a.rgs-usage b::after {
   );
   transform: skewY(-45deg);
   transform-origin: bottom left;
-}
-/* Un podium : un bloc un peu plus clair, qui accroche la lumière. */
-.saison-colonne[data-podium] .saison-bloc {
-  filter: brightness(1.12) saturate(1.1);
 }
 .saison-colonnes:hover .saison-colonne:not([data-survolee]) .saison-bloc {
   opacity: 0.55;
