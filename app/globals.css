@@ -19130,6 +19130,130 @@ button.case:focus-visible {
   line-height: 1.4;
   color: var(--muted);
 }
+.detail-boutons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+/* L'historique d'une game : sa saisie, puis chaque carte passée dessus. */
+.historique-voile {
+  z-index: 97;
+}
+.fenetre-carte.histo-game {
+  max-width: 34rem;
+  gap: 0.9rem;
+  padding: 1.1rem 1.1rem 1.2rem;
+}
+.histo-tete {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.8rem;
+}
+.histo-sur {
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ice);
+}
+.histo-tete h2 {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 900;
+  line-height: 1.05;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.histo-liste {
+  position: relative;
+  display: grid;
+  gap: 0.45rem;
+  overflow-y: auto;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.histo-ligne {
+  display: grid;
+  grid-template-columns: 2.75rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.55rem 0.75rem 0.55rem 0.55rem;
+  border-radius: var(--r-sm);
+  background: color-mix(in srgb, var(--bg-deep) 35%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--frost) 10%, transparent);
+}
+.histo-ligne[data-saisie] {
+  background: color-mix(in srgb, var(--ice) 10%, transparent);
+}
+.histo-pastille {
+  display: grid;
+  width: 2.75rem;
+  height: 2.75rem;
+  place-items: center;
+  border-radius: var(--r-sm);
+  background: color-mix(in srgb, var(--bg-deep) 45%, transparent);
+}
+.histo-visuel {
+  display: block;
+  width: 2.75rem;
+}
+.histo-texte {
+  display: grid;
+  min-width: 0;
+  gap: 0.15rem;
+  font-size: 0.8125rem;
+  line-height: 1.35;
+  color: var(--ink-2);
+}
+.histo-texte b {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.9375rem;
+  color: var(--ink);
+}
+.histo-texte small {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.histo-booster {
+  padding: 0.05rem 0.45rem;
+  border-radius: var(--r-pilule);
+  background: color-mix(in srgb, var(--ice) 14%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ice) 30%, transparent);
+  font-family: var(--font-display);
+  font-size: 0.625rem;
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.histo-points {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 900;
+  white-space: nowrap;
+  color: var(--ink);
+}
+.histo-points[data-sens='haut'] {
+  color: var(--aurora);
+}
+.histo-points[data-sens='bas'] {
+  color: var(--danger);
+}
+.histo-total {
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+.histo-total b {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  color: var(--ink);
+}
 .detail-corriger {
   display: inline-flex;
   align-items: center;

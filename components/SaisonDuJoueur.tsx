@@ -658,6 +658,8 @@ export function DetailGame({
   onFerme: () => void;
 }) {
   const etroit = useEcranEtroit();
+  const [historique, setHistorique] = useState(false);
+  useEffect(() => setHistorique(false), [game?.id]);
   useEffect(() => {
     if (!ouvert) return;
     const echap = (e: KeyboardEvent) => e.key === 'Escape' && onFerme();
@@ -776,13 +778,101 @@ export function DetailGame({
           !game.skipped && <p className="detail-note">Aucune carte jouée sur cette game.</p>
         )}
 
-        {moderation && (
-          <button type="button" className="btn btn-sm detail-corriger" onClick={() => onCorrige(game)}>
-            <IconCrayon className="h-4 w-4" />
-            Corriger ou supprimer
+        <div className="detail-boutons">
+          <button type="button" className="btn btn-sm" onClick={() => setHistorique(true)}>
+            Historique{game.historique.length > 0 ? ` · ${game.historique.length}` : ''}
           </button>
-        )}
+          {moderation && (
+            <button type="button" className="btn btn-sm detail-corriger" onClick={() => onCorrige(game)}>
+              <IconCrayon className="h-4 w-4" />
+              Corriger ou supprimer
+            </button>
+          )}
+        </div>
       </aside>
+      {historique && (
+        <HistoriqueGame
+          game={game}
+          titre={game.skipped ? 'Game passée au Joker' : `Game ${numero}`}
+          onClose={() => setHistorique(false)}
+        />
+      )}
     </>,
+  );
+}
+
+/* ================================= L'historique ================================= */
+
+/**
+ * Tout ce qui est arrivé à une game (13/11/2026) : sa saisie, puis chaque carte
+ * passée dessus — du Perso, d'un Commu, d'un Folie, d'un Finisseur, un
+ * échange, un clone, un Pacte —, d'où elle vient, quand, et ce qu'elle a fait.
+ */
+function HistoriqueGame({ game, titre, onClose }: { game: GameDuJoueur; titre: string; onClose: () => void }) {
+  useEffect(() => {
+    const echap = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    window.addEventListener('keydown', echap);
+    return () => window.removeEventListener('keydown', echap);
+  }, [onClose]);
+  const parCartes = game.historique.reduce((s, e) => s + e.points, 0);
+  const base = game.score - parCartes;
+  return createPortal(
+    <div className="fenetre-voile historique-voile" role="dialog" aria-modal="true" aria-labelledby="histo-titre" onClick={onClose}>
+      <div className="fenetre-carte histo-game glass" onClick={(e) => e.stopPropagation()}>
+        <header className="histo-tete">
+          <span className="min-w-0 flex-1">
+            <p className="histo-sur">Historique</p>
+            <h2 id="histo-titre">{titre}</h2>
+          </span>
+          <button type="button" className="btn btn-sm" onClick={onClose} aria-label="Fermer" autoFocus>
+            ✕
+          </button>
+        </header>
+        <ol className="histo-liste">
+          <li className="histo-ligne" data-saisie="">
+            <span className="histo-pastille">
+              <CraneGlace className="h-5 w-5" />
+            </span>
+            <span className="histo-texte">
+              <b>Game saisie</b>
+              <span>
+                {game.placement !== null ? `Top ${game.placement}` : 'Pas top'} · {game.kills} kill
+                {game.kills > 1 ? 's' : ''}
+              </span>
+              <small>{shortDateTime(game.playedAt)}</small>
+            </span>
+            <span className="histo-points num">{game.skipped ? '—' : pts(base)}</span>
+          </li>
+          {game.historique.map((e, i) => (
+            <li key={i} className="histo-ligne">
+              <span className="histo-visuel">
+                <CardFrame cardId={e.cardId} name={e.nom} rarity={e.rarity} glyph={e.glyph} nature={e.nature} largeur="44px" />
+              </span>
+              <span className="histo-texte">
+                <b>
+                  {e.nom}
+                  {e.booster && <em className="histo-booster">{e.booster.replace(/^Booster\s+/, '')}</em>}
+                </b>
+                {e.texte && <span>{e.texte}</span>}
+                <small>{shortDateTime(e.le)}</small>
+              </span>
+              <span className="histo-points num" data-sens={e.points > 0 ? 'haut' : e.points < 0 ? 'bas' : undefined}>
+                {e.points === 0 ? '±0' : `${e.points > 0 ? '+' : '−'}${Math.abs(e.points)}`}
+              </span>
+            </li>
+          ))}
+        </ol>
+        <p className="histo-total">
+          {game.skipped ? (
+            'Joker servi : cette game ne compte pas.'
+          ) : (
+            <>
+              Score de la game : <b className="num">{pts(game.score)}</b>
+            </>
+          )}
+        </p>
+      </div>
+    </div>,
+    document.body,
   );
 }

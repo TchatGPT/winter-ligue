@@ -8,7 +8,8 @@ import 'server-only';
  */
 
 import { chaineDeLaLigue } from '@/lib/auth/twitch';
-import { CAMP_BOT, type Database } from '@/lib/db/entities';
+import { CAMP_BOT, type Database, type Game } from '@/lib/db/entities';
+import { getCard, getPack } from '@/lib/domain/catalog';
 import { getStore } from '@/lib/db/store';
 import { chanceDe, parametresSaison } from '@/lib/domain/rules';
 import { estLaStreameuse } from '@/lib/domain/streameuse';
@@ -19,6 +20,68 @@ import {
   type OuvertureVue,
   vueOuverture,
 } from './packs';
+
+/**
+ * Une carte passée sur une game (13/11/2026) : celle du Perso posée dessus,
+ * mais aussi un Commu, un Folie, un Finisseur, un échange, un clone, un Pacte
+ * — d'où elle vient, quand, ce qu'elle a fait, et ses points.
+ */
+export interface EvenementDeGame {
+  cardId: string;
+  nom: string;
+  rarity: string;
+  glyph: string;
+  nature: 'bonus' | 'malus';
+  /** Le booster d'où elle sort ; nul pour un Joker de départ ou une trace. */
+  booster: string | null;
+  points: number;
+  le: string;
+  texte: string | null;
+}
+
+/** L'historique d'une game : ses cartes, de la plus ancienne à la plus récente. */
+function historiqueDe(db: Database, g: Game): EvenementDeGame[] {
+  const sur = db.cartesEnAttente.filter((c) => c.gameId === g.id && c.consommeeA !== null);
+  const boosterDe = (ouvertureId: string | null) => {
+    const o = ouvertureId ? db.ouvertures.find((x) => x.id === ouvertureId) : undefined;
+    return o ? (getPack(o.packId)?.name ?? null) : null;
+  };
+  const vus = new Set<string>();
+  const evenements: EvenementDeGame[] = [];
+  for (const a of g.applied) {
+    const carte = getCard(a.cardId);
+    const pendante = sur.find((c) => c.cardId === a.cardId && c.ouvertureId === a.ouvertureId && !vus.has(c.id));
+    if (pendante) vus.add(pendante.id);
+    evenements.push({
+      cardId: a.cardId,
+      nom: carte?.name ?? a.cardId,
+      rarity: carte?.rarity ?? 'C',
+      glyph: carte?.glyph ?? '',
+      nature: carte?.nature ?? 'bonus',
+      booster: boosterDe(a.ouvertureId),
+      points: a.points,
+      le: a.at,
+      texte: pendante?.resultat ?? null,
+    });
+  }
+  // Les cartes jouées sans rien changer au score — un Joker, un bonus sans effet.
+  for (const c of sur) {
+    if (vus.has(c.id)) continue;
+    const carte = getCard(c.cardId);
+    evenements.push({
+      cardId: c.cardId,
+      nom: carte?.name ?? c.cardId,
+      rarity: carte?.rarity ?? 'C',
+      glyph: carte?.glyph ?? '',
+      nature: carte?.nature ?? 'bonus',
+      booster: boosterDe(c.ouvertureId),
+      points: 0,
+      le: c.consommeeA ?? g.createdAt,
+      texte: c.resultat ?? null,
+    });
+  }
+  return evenements.sort((x, y) => x.le.localeCompare(y.le));
+}
 
 export interface ProfileView {
   id: string;
@@ -45,6 +108,8 @@ export interface ProfileView {
     note: string | null;
     applied: { cardId: string; points: number }[];
     cartes: ReturnType<typeof cartesJoueesSur>;
+    /** Tout ce qui est arrivé à la game, dans l'ordre : chaque carte passée dessus. */
+    historique: EvenementDeGame[];
   }[];
   ledger: { delta: number; balanceAfter: number; reason: string; createdAt: string }[];
 }
@@ -84,6 +149,7 @@ function buildProfile(db: Database, playerId: string): ProfileView | null {
       // La carte jouée sur la game, même sans effet — une Luge hors du Top 1 —,
       // et ce qu'elle deviendrait si la modération corrigeait la game.
       cartes: cartesJoueesSur(db, g),
+      historique: historiqueDe(db, g),
     })),
     ledger: db.ledger
       .filter((e) => e.playerId === playerId)
