@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { CouronneGlace } from '@/components/CouronneGlace';
 import { MedailleGlace } from '@/components/MedailleGlace';
 import { SnowCap } from '@/components/SnowCap';
@@ -636,7 +637,8 @@ function CarteActive({
     ...uniques.filter((c) => c.genre === 'joker'),
   ];
   const nombres = combienDeChaque(row);
-  if (cartes.length >= 2) return <PileDeCartes cartes={cartes} nombres={nombres} onOuvrir={onOuvrir} />;
+  if (cartes.length >= 2)
+    return <PileDeCartes pseudo={row.pseudo} cartes={cartes} nombres={nombres} onOuvrir={onOuvrir} />;
   const c = cartes[0];
   if (!c) return <span className="text-[13px] text-faint">—</span>;
   return (
@@ -679,25 +681,34 @@ const TEINTE: Record<CarteDuClassement['rarity'], string> = {
   L: 'text-r-l',
 };
 
+/** Les cartes montrées dans la pile ; au-delà, « +N » ouvre toute sa main. */
+const CARTES_VISIBLES = 3;
+
 /**
  * Plusieurs cartes, l'une sur l'autre, un peu décalées : on voit d'un coup
- * d'œil qu'il en a plusieurs, et chacune s'ouvre d'un clic.
+ * d'œil qu'il en a plusieurs, et chacune s'ouvre d'un clic. Trois au plus
+ * (13/11/2026) : au-delà, « +N » ouvre toute sa main.
  */
 function PileDeCartes({
+  pseudo,
   cartes,
   nombres,
   onOuvrir,
 }: {
+  pseudo: string;
   cartes: (CarteDuClassement | CarteGardee)[];
   /** Combien il en garde de chaque : une carte en double porte son nombre en pastille. */
   nombres: Map<string, number>;
   onOuvrir: (carte: CarteDuClassement | CarteGardee) => void;
 }) {
-  const [premiere, ...autres] = cartes;
+  const [main, setMain] = useState(false);
+  const visibles = cartes.slice(0, CARTES_VISIBLES);
+  const cachees = cartes.length - visibles.length;
+  const [premiere, ...autres] = visibles;
   return (
     <span className="flex min-w-0 items-center gap-3">
       <span className="pile-cartes shrink-0">
-        {cartes.map((c, i) => (
+        {visibles.map((c, i) => (
           <button
             key={'id' in c ? c.id : `active-${c.cardId}`}
             type="button"
@@ -731,8 +742,92 @@ function PileDeCartes({
             + {(nombres.get(c.cardId) ?? 1) > 1 && 'id' in c ? `${nombres.get(c.cardId)} × ${c.nom}` : c.nom}
           </span>
         ))}
+        {cachees > 0 && (
+          <button type="button" className="pile-plus" onClick={() => setMain(true)}>
+            +{cachees} carte{cachees > 1 ? 's' : ''} · tout voir
+          </button>
+        )}
       </span>
+      {main && (
+        <MainDuJoueur
+          pseudo={pseudo}
+          cartes={cartes}
+          nombres={nombres}
+          onClose={() => setMain(false)}
+          onOuvrir={(c) => {
+            setMain(false);
+            onOuvrir(c);
+          }}
+        />
+      )}
     </span>
+  );
+}
+
+/**
+ * Toute la main d'un joueur (13/11/2026) : ses cartes défilent et se posent
+ * l'une après l'autre, comme à l'ouverture d'un booster. Une carte touchée
+ * s'ouvre en grand — et la modération peut l'y jouer pour lui.
+ */
+function MainDuJoueur({
+  pseudo,
+  cartes,
+  nombres,
+  onClose,
+  onOuvrir,
+}: {
+  pseudo: string;
+  cartes: (CarteDuClassement | CarteGardee)[];
+  nombres: Map<string, number>;
+  onClose: () => void;
+  onOuvrir: (carte: CarteDuClassement | CarteGardee) => void;
+}) {
+  useEffect(() => {
+    const echap = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    window.addEventListener('keydown', echap);
+    return () => window.removeEventListener('keydown', echap);
+  }, [onClose]);
+  const total = cartes.reduce((s, c) => s + ('id' in c ? (nombres.get(c.cardId) ?? 1) : 1), 0);
+  return createPortal(
+    <div className="fenetre-voile" role="dialog" aria-modal="true" aria-labelledby="main-titre" onClick={onClose}>
+      <div className="fenetre-carte main-joueur glass glass-reflet" onClick={(e) => e.stopPropagation()}>
+        <header className="main-tete">
+          <span className="min-w-0 flex-1">
+            <p className="main-sur">Les cartes en main de</p>
+            <h2 id="main-titre">{pseudo}</h2>
+            <p className="main-compte">
+              {total} carte{total > 1 ? 's' : ''} · touche une carte pour la voir en grand
+            </p>
+          </span>
+          <button type="button" className="btn btn-sm" onClick={onClose} aria-label="Fermer" autoFocus>
+            ✕
+          </button>
+        </header>
+        <ul className="main-cartes">
+          {cartes.map((c, i) => (
+            <li key={'id' in c ? c.id : `active-${c.cardId}`} style={{ ['--i' as string]: i } as React.CSSProperties}>
+              <button type="button" className="main-carte" onClick={() => onOuvrir(c)} aria-label={`Voir la carte ${c.nom}`}>
+                <span className="main-carte-visuel">
+                  <CardFrame
+                    cardId={c.cardId}
+                    name={c.nom}
+                    description={c.description}
+                    rarity={c.rarity}
+                    glyph={c.glyph}
+                    nature={c.nature}
+                    largeur="160px"
+                  />
+                  <PastilleCarte carte={c} nombres={nombres} />
+                </span>
+                <b>{c.nom}</b>
+                <small>{'id' in c ? 'gardée' : 'sur sa prochaine game'}</small>
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>,
+    document.body,
   );
 }
 
