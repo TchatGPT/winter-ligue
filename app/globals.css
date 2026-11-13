@@ -19748,3 +19748,245 @@ button.case:focus-visible {
 .correction-carte[data-correction='bloque'] .correction-carte-suite {
   color: var(--gold);
 }
+
+/* ==========================================================================
+   L'ESSAI DE LA GLACE — voir components/EssaiGlace (prototype, page cachée).
+   ==========================================================================
+   Le bloc de glace rendu dans Blender, en vidéo : la boucle, et l'éclat
+   par-dessus, au même cadrage. Puis trois cartes qui jaillissent du booster,
+   s'envolent en éventail et se retournent, un reflet qui les traverse. */
+main:has(> .essai) {
+  display: grid;
+  padding: 0;
+}
+.essai {
+  --essai-h: min(80dvh, 56rem, 108vw);
+  --carte-l: min(15rem, 27vw, calc(38dvh / 1.47));
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 0.75rem;
+  min-height: calc(100dvh - 8rem);
+  padding: 1.5rem 1rem 3rem;
+  overflow: clip;
+  background: radial-gradient(60% 50% at 50% 45%, color-mix(in srgb, var(--ice-3) 22%, var(--bg)), var(--bg) 70%);
+}
+.essai-sur {
+  font-family: var(--font-display);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--aurora);
+}
+.essai-scene {
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+.essai-bloc {
+  position: relative;
+  display: block;
+  height: var(--essai-h);
+  aspect-ratio: 960 / 1080;
+  cursor: pointer;
+  transition:
+    opacity 0.8s ease,
+    transform 0.8s cubic-bezier(0.2, 0.9, 0.25, 1),
+    filter 0.8s ease;
+}
+.essai-bloc:focus-visible {
+  outline: 2px solid var(--frost);
+  outline-offset: 4px;
+  border-radius: var(--r-sm);
+}
+.essai-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  /* Les éclats qui sortent du cadre s'effacent au lieu d'être coupés net. */
+  -webkit-mask-image: radial-gradient(closest-side, #000 72%, transparent 100%);
+  mask-image: radial-gradient(closest-side, #000 72%, transparent 100%);
+}
+.essai-eclat {
+  opacity: 0;
+}
+.essai[data-phase='eclat'] .essai-eclat,
+.essai[data-phase='cartes'] .essai-eclat {
+  opacity: 1;
+}
+.essai[data-phase='eclat'] .essai-boucle,
+.essai[data-phase='cartes'] .essai-boucle {
+  opacity: 0;
+}
+.essai[data-phase='glace'] .essai-bloc:hover {
+  transform: scale(1.015);
+}
+/* Les cartes sorties, le booster recule dans la nuit. */
+.essai[data-phase='cartes'] .essai-bloc {
+  opacity: 0.22;
+  filter: blur(3px);
+  transform: scale(0.86) translateY(4%);
+  cursor: default;
+}
+.essai-cartes {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  pointer-events: none;
+}
+.essai-cartes li {
+  --o-abs: max(var(--o), calc(var(--o) * -1));
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: grid;
+  width: var(--carte-l);
+  justify-items: center;
+  gap: 0.7rem;
+  opacity: 0;
+  transform: translate(-50%, -45%) scale(0.2);
+}
+.essai[data-phase='cartes'] .essai-cartes li {
+  animation:
+    essai-jaillit 0.9s cubic-bezier(0.2, 1.25, 0.3, 1) forwards,
+    essai-flotte 4.8s ease-in-out 1.6s infinite alternate;
+  animation-delay: calc(var(--i) * 0.12s), calc(1.6s + var(--i) * 0.4s);
+}
+@keyframes essai-jaillit {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -45%) scale(0.2) rotate(0deg);
+  }
+  25% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    transform: translate(calc(-50% + var(--o) * 112%), calc(-50% + var(--o-abs) * 8%)) rotate(calc(var(--o) * 8deg))
+      scale(1);
+  }
+}
+@keyframes essai-flotte {
+  from {
+    opacity: 1;
+    transform: translate(calc(-50% + var(--o) * 112%), calc(-50% + var(--o-abs) * 8%)) rotate(calc(var(--o) * 8deg))
+      scale(1);
+  }
+  to {
+    opacity: 1;
+    transform: translate(calc(-50% + var(--o) * 112%), calc(-52% + var(--o-abs) * 8%))
+      rotate(calc(var(--o) * 8deg + 1deg)) scale(1);
+  }
+}
+.essai-carte {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 1514 / 2231;
+  perspective: 1200px;
+  transform-style: preserve-3d;
+  transform: rotateY(180deg);
+}
+.essai[data-phase='cartes'] .essai-carte {
+  animation: essai-retourne 0.8s cubic-bezier(0.3, 1.25, 0.4, 1) forwards;
+  animation-delay: calc(0.55s + var(--i) * 0.18s);
+}
+@keyframes essai-retourne {
+  to {
+    transform: rotateY(0deg);
+  }
+}
+.essai-carte-dos,
+.essai-carte-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+}
+/* Le dos : de la glace sombre, un givre fin, un liseré clair. */
+.essai-carte-dos {
+  border-radius: 7% / 5%;
+  transform: rotateY(180deg);
+  background:
+    linear-gradient(125deg, transparent 32%, color-mix(in srgb, var(--frost) 22%, transparent) 42%, transparent 52%),
+    radial-gradient(circle at 50% 42%, color-mix(in srgb, var(--ice-3) 75%, var(--fond)), var(--bg-deep) 82%);
+  box-shadow:
+    inset 0 0 0 2px color-mix(in srgb, var(--frost) 60%, transparent),
+    inset 0 0 0 7px color-mix(in srgb, var(--ice-3) 55%, transparent),
+    inset 0 0 0 8px color-mix(in srgb, var(--frost) 30%, transparent);
+}
+/* Le reflet qui traverse la carte une fois retournée. */
+.essai-carte-reflet {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: 7% / 5%;
+  pointer-events: none;
+}
+.essai-carte-reflet::after {
+  content: '';
+  position: absolute;
+  inset: -20% -60%;
+  background: linear-gradient(
+    105deg,
+    transparent 40%,
+    color-mix(in srgb, var(--neige-1) 55%, transparent) 50%,
+    transparent 60%
+  );
+  transform: translateX(-70%);
+}
+.essai[data-phase='cartes'] .essai-carte-reflet::after {
+  animation: essai-reflet 1.1s ease-in-out forwards;
+  animation-delay: calc(1.25s + var(--i) * 0.18s);
+}
+@keyframes essai-reflet {
+  to {
+    transform: translateX(70%);
+  }
+}
+.essai-rarete {
+  padding: 0.2rem 0.7rem;
+  border-radius: var(--r-pilule);
+  background: color-mix(in srgb, var(--r) 16%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--r) 55%, transparent);
+  font-family: var(--font-display);
+  font-size: 0.8125rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: color-mix(in srgb, var(--r) 70%, var(--frost));
+  opacity: 0;
+}
+.essai[data-phase='cartes'] .essai-rarete {
+  animation: essai-apparait 0.5s ease forwards;
+  animation-delay: calc(1.3s + var(--i) * 0.18s);
+}
+@keyframes essai-apparait {
+  to {
+    opacity: 1;
+  }
+}
+.essai-indice {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+.essai-fin {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.6rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.6s ease 1.6s;
+}
+.essai[data-phase='cartes'] .essai-fin {
+  opacity: 1;
+  pointer-events: auto;
+}
