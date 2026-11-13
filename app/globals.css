@@ -13621,8 +13621,14 @@ main:has(> .accueil) {
     display: none;
   }
 }
-/* Un grand écran : les blocs sont larges, leur texte prend un cran. */
-@container accueil (min-width: 96rem) and (min-height: 44rem) {
+/* Les réglages selon la taille se lisent sur la fenêtre, pas sur la page :
+   une règle de conteneur était réévaluée à chaque seconde du compte à
+   rebours, et relançait l'arrivée de ce qu'elle cachait — la phrase sous le
+   bouton clignotait. La page fait la hauteur de la fenêtre moins le pied de
+   page, 133 px.
+
+   Un grand écran : les blocs sont larges, leur texte prend un cran. */
+@media (min-width: 1630px) and (min-height: 840px) {
   .acc-etape {
     padding: 1rem 1.15rem 1.2rem;
   }
@@ -13634,7 +13640,7 @@ main:has(> .accueil) {
   }
 }
 /* Une fenêtre basse : la phrase de réassurance s'en va, tout se resserre. */
-@container accueil (max-height: 40rem) {
+@media (min-width: 1024px) and (max-height: 773px) {
   .acc-note {
     display: none;
   }
@@ -13658,7 +13664,7 @@ main:has(> .accueil) {
 }
 /* Plus basse encore : le texte se cale en haut, pour rester sur la nuit, et
    la phrase s'arrête à sa première moitié. */
-@container accueil (max-height: 35rem) {
+@media (min-width: 1024px) and (max-height: 693px) {
   .acc-texte {
     align-self: start;
     padding-bottom: 0;
