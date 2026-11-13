@@ -14074,6 +14074,16 @@ main:has(> .accueil) {
   .calendrier {
     zoom: 1.2;
   }
+  .paquet {
+    --l-carte: 28rem;
+    --h-carte: 15.5rem;
+  }
+  .paquet-etape-titre {
+    font-size: 2rem;
+  }
+  .paquet-etape-texte {
+    font-size: 1.125rem;
+  }
 }
 /* Plus basse encore : le surtitre, la phrase et l'indice s'en vont. */
 @media (min-width: 1024px) and (max-height: 693px) {
