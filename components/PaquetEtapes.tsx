@@ -13,9 +13,6 @@ import {
 /** Une étape de la ligue, dans le paquet. */
 export interface EtapeDuPaquet {
   cle: string;
-  numero: number;
-  /** Une couleur du thème : `var(--gold)`… la lumière prise dans la carte. */
-  teinte: string;
   theme: string;
   icone: ReactNode;
   titre: string;
@@ -23,13 +20,16 @@ export interface EtapeDuPaquet {
 }
 
 /**
- * La ligue en cinq étapes, en paquet de cartes de verre (13/11/2026, refait
- * d'après le paquet du premier accueil).
+ * La ligue en cinq étapes, en paquet de blocs de glace (13/11/2026, d'après
+ * le paquet du premier accueil).
  *
- * La carte au centre fait face ; ses voisines s'écartent, pivotent, reculent
- * et s'enfoncent dans la nuit — plus loin, plus sombres et plus floues,
- * jusqu'à s'y fondre. Le paquet tourne en boucle : après la dernière revient
- * la première.
+ * Chaque carte est un bloc de glace rendu dans Blender (`public/glace/
+ * bloc-N.webp`) : arêtes fondues qui prennent la lumière, masse claire,
+ * quelques bulles. Le texte est posé dedans, en blanc.
+ *
+ * Le bloc au centre fait face ; ses voisins s'écartent, pivotent, reculent
+ * et s'éteignent dans la nuit — sans flou : ils s'y fondent jusqu'à
+ * disparaître, et en reviennent. Le paquet tourne en boucle.
  *
  * On le fait tourner comme on veut : en le **tirant**, à la souris ou au
  * doigt, avec de l'élan ; au pavé tactile ; au clavier (← →) ; en touchant une
@@ -285,7 +285,6 @@ export function PaquetEtapes({ etapes, label }: { etapes: EtapeDuPaquet[]; label
           aller(k);
         }}
       >
-        <span className="paquet-sol" aria-hidden="true" />
         {etapes.map((etape, i) => {
           const { d, ad } = distance(i, 0, n);
           return (
@@ -301,13 +300,13 @@ export function PaquetEtapes({ etapes, label }: { etapes: EtapeDuPaquet[]; label
               data-actif={i === actif ? '' : undefined}
               data-proche={ad < PROCHE ? '' : undefined}
               data-loin={ad > loinDe(n) ? '' : undefined}
+              data-bloc={(i % 5) + 1}
               inert={i !== actif}
               style={
                 {
                   ['--d' as string]: d,
                   ['--ad' as string]: ad,
-                  ['--teinte' as string]: etape.teinte,
-                  ['--rang' as string]: i,
+
                   zIndex: 50 - Math.round(ad * 10),
                 } as CSSProperties
               }
@@ -316,9 +315,6 @@ export function PaquetEtapes({ etapes, label }: { etapes: EtapeDuPaquet[]; label
             >
               <div className="paquet-etape">
                 <header className="paquet-etape-tete">
-                  <span className="paquet-etape-num" aria-hidden="true">
-                    {String(etape.numero).padStart(2, '0')}
-                  </span>
                   <span className="paquet-etape-theme">{etape.theme}</span>
                   <span className="paquet-etape-icone" aria-hidden="true">
                     {etape.icone}
@@ -327,7 +323,6 @@ export function PaquetEtapes({ etapes, label }: { etapes: EtapeDuPaquet[]; label
                 <h3 className="paquet-etape-titre">{etape.titre}</h3>
                 <p className="paquet-etape-texte">{etape.texte}</p>
               </div>
-              <span className="paquet-carte-voile" aria-hidden="true" />
             </div>
           );
         })}

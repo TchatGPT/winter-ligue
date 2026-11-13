@@ -314,14 +314,16 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   le début au premier `router.refresh()`. Valeurs stables seulement (`SANS_RELANCE`,
   `useMemo`, `useState`).
 - **L'accueil déconnecté** (`components/Accueil.tsx`, 13/11/2026) tient sur un ordinateur en un
-  seul écran, sans défiler (de 1024×620 à 2830×1400 : `scrollHeight <= innerHeight`) ; sur
-  téléphone et tablette debout, il s'empile. Le calendrier (`CalendrierSaisons`) montre le compte
-  à rebours et les deux saisons (Mini Ligue, puis Saison 2 qui repart de zéro) ; les cinq étapes
-  sont un paquet de cartes de glace qu'on fait tourner (`PaquetEtapes`), l'essentiel seulement.
-  Leur matière est une photo de glace en gris (`public/glace/glace.webp`, ambientCG, CC0) que le
-  CSS teinte ; le reflet de studio glisse avec la rotation des cartes (`--d`) et la souris.
-  Ses réglages selon la taille passent par `@media`, jamais par `@container` : le compte à rebours
-  réévaluait les règles de conteneur chaque seconde et relançait les animations d'arrivée.
+  seul écran, sans défiler (de 1024×620 à 2560×1267 : `scrollHeight <= innerHeight`) ; sur
+  téléphone et tablette debout, il s'empile. Composition centrée : le nom, une phrase, l'entrée
+  Twitch, puis le calendrier (`CalendrierSaisons` : compte à rebours, Mini Ligue et Saison 2) ;
+  les quatre boosters encadrent le titre, deux de chaque côté (`VitrineBoosters`) ; en bas, la
+  ligue en cinq étapes, un paquet de blocs de glace qu'on fait tourner (`PaquetEtapes`). Les
+  blocs sont des images rendues dans Blender (`public/glace/bloc-1…5.webp`) : pas de glace
+  imitée en CSS, pas de texture photo plaquée, pas de flou ni de reflet sur les cartes de côté
+  — elles s'éteignent dans la nuit. Ses réglages selon la taille passent par `@media`, jamais
+  par `@container` : le compte à rebours réévaluait les règles de conteneur chaque seconde et
+  relançait les animations d'arrivée.
 - Les couleurs viennent des variables CSS de `app/globals.css`, jamais codées en dur.
 - Avant de livrer : `npm run typecheck && npm test && npm run build`.
 
