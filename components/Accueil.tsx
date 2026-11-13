@@ -1,6 +1,5 @@
 import { CalendrierSaisons, type SaisonDuCalendrier } from '@/components/CalendrierSaisons';
-import { EtapeAccueil } from '@/components/EtapeAccueil';
-import { RailEtapes } from '@/components/RailEtapes';
+import { type EtapeDuPaquet, PaquetEtapes } from '@/components/PaquetEtapes';
 import { type BoosterEnVitrine, VitrineBoosters } from '@/components/VitrineBoosters';
 import { IconJauge, IconPack, IconSnowflake, IconSwords, IconTrophy, IconTwitch } from '@/components/icons';
 import { GEMME_DU_PACK, PACKS, packArt } from '@/lib/domain/catalog';
@@ -32,11 +31,9 @@ import {
  *  - à droite, la vitrine (`VitrineBoosters`) : les quatre boosters en
  *    lévitation au-dessus d'une banquise, leur reflet dans la glace, et un
  *    cartel par booster : pour qui il est, ce qui le fait tomber ;
- *  - en bas, sur la glace, la ligue en cinq étapes (`EtapeAccueil`), dans
- *    l'ordre où on la vit — l'essentiel, le détail est dans les règles une
- *    fois connecté (13/11/2026). Si la fenêtre est trop
- *    étroite pour les cinq, c'est le rail qui défile, de gauche à droite
- *    (`RailEtapes`), jamais la page.
+ *  - en bas, sur la glace, la ligue en cinq étapes en paquet de cartes de
+ *    verre (`PaquetEtapes`), qu'on fait tourner à la souris, au doigt, au
+ *    clavier — l'essentiel, le détail est dans les règles une fois connecté.
  *
  * Sur un téléphone ou une tablette debout, tout s'empile et la page défile :
  * la vitrine, le nom et l'entrée, le calendrier, puis les étapes.
@@ -120,6 +117,78 @@ export function Accueil({ twitchEnabled, devLogin }: { twitchEnabled: boolean; d
     rarete: GEMME_DU_PACK[p.id],
   }));
 
+  const etapes: EtapeDuPaquet[] = [
+    {
+      cle: 'classement',
+      numero: 1,
+      teinte: 'var(--gold)',
+      theme: 'Le classement',
+      icone: <IconTrophy />,
+      titre: 'Marque des points',
+      texte: (
+        <>
+          <b>1 point</b> par kill, <b>+{PLACEMENT_POINTS['1']}</b> le Top 1, <b>+{PLACEMENT_POINTS['2']}</b> le Top
+          2, <b>+{PLACEMENT_POINTS['3']}</b> le Top 3. Tes {saison.games} games font ton total.
+        </>
+      ),
+    },
+    {
+      cle: 'flocons',
+      numero: 2,
+      teinte: 'var(--ice)',
+      theme: 'Les flocons',
+      icone: <IconSnowflake />,
+      titre: 'Gagne des flocons',
+      texte: (
+        <>
+          <b>+{ECONOMY.perKill} ❄</b> par kill, <b>+{ECONOMY.perPlacement['1']} ❄</b> le Top 1,{' '}
+          <b>+{CADEAU_DU_JOUR.parJour} ❄</b> chaque jour. Ils ne s’achètent pas : ils se gagnent.
+        </>
+      ),
+    },
+    {
+      cle: 'boosters',
+      numero: 3,
+      teinte: 'var(--violet)',
+      theme: 'Les boosters',
+      icone: <IconPack />,
+      titre: 'Ouvre des boosters',
+      texte: (
+        <>
+          Les subs du live en font tomber, ouverts <b>en direct</b>. Chacun donne <b>une carte</b> qui change une
+          game : bonus ou malus.
+        </>
+      ),
+    },
+    {
+      cle: 'chance',
+      numero: 4,
+      teinte: 'var(--aurora)',
+      theme: 'La chance',
+      icone: <IconJauge />,
+      titre: 'Vise les cartes rares',
+      texte: (
+        <>
+          Garde tes flocons : plus ta réserve est grosse, plus tu tires rare. Jusqu’à <b>×{1 + CHANCE.max} de chance</b>.
+        </>
+      ),
+    },
+    {
+      cle: 'duels',
+      numero: 5,
+      teinte: 'color-mix(in srgb, var(--live) 55%, var(--violet))',
+      theme: 'Les duels',
+      icone: <IconSwords />,
+      titre: 'Défie les autres',
+      texte: (
+        <>
+          Mise de <b>{num(DUEL.miseMin)} à {num(DUEL.miseMax)} ❄</b> contre un joueur. Une course en direct,{' '}
+          <b>une chance sur deux</b> : le gagnant rafle les deux mises.
+        </>
+      ),
+    },
+  ];
+
   return (
     <div className="accueil">
       {/* ---- La nuit à gauche, la vitrine à droite ---- */}
@@ -154,70 +223,22 @@ export function Accueil({ twitchEnabled, devLogin }: { twitchEnabled: boolean; d
         <VitrineBoosters boosters={boosters} />
       </section>
 
-      {/* ---- La ligue en cinq étapes, en blocs de glace ---- */}
+      {/* ---- La ligue en cinq étapes, en paquet de cartes de verre ---- */}
       <section className="acc-etapes" aria-labelledby="etapes-titre">
-        <RailEtapes
-          titre={
-            <>
-              <h2 id="etapes-titre">
-                <span className="acc-etapes-sur">Comment ça marche</span>
-                <span className="acc-etapes-grand">La ligue en cinq étapes</span>
-              </h2>
-              <span className="acc-etapes-trait" aria-hidden="true" />
-            </>
-          }
-        >
-          <EtapeAccueil
-            numero={1}
-            teinte="var(--gold)"
-            theme="Le classement"
-            icone={<IconTrophy />}
-            titre="Marque des points"
-          >
-            <b>1 point</b> par kill, <b>+{PLACEMENT_POINTS['1']}</b> le Top 1, <b>+{PLACEMENT_POINTS['2']}</b> le
-            Top 2, <b>+{PLACEMENT_POINTS['3']}</b> le Top 3. Tes {saison.games} games font ton total.
-          </EtapeAccueil>
-          <EtapeAccueil
-            numero={2}
-            teinte="var(--ice)"
-            theme="Les flocons"
-            icone={<IconSnowflake />}
-            titre="Gagne des flocons"
-          >
-            <b>+{ECONOMY.perKill} ❄</b> par kill, <b>+{ECONOMY.perPlacement['1']} ❄</b> le Top 1,{' '}
-            <b>+{CADEAU_DU_JOUR.parJour} ❄</b> chaque jour. Ils ne s’achètent pas : ils se gagnent.
-          </EtapeAccueil>
-          <EtapeAccueil
-            numero={3}
-            teinte="var(--violet)"
-            theme="Les boosters"
-            icone={<IconPack />}
-            titre="Ouvre des boosters"
-          >
-            Les subs du live en font tomber, ouverts <b>en direct</b>. Chacun donne <b>une carte</b> qui change une
-            game : bonus ou malus.
-          </EtapeAccueil>
-          <EtapeAccueil
-            numero={4}
-            teinte="var(--aurora)"
-            theme="La chance"
-            icone={<IconJauge />}
-            titre="Vise les cartes rares"
-          >
-            Garde tes flocons : plus ta réserve est grosse, plus tu tires rare. Jusqu’à{' '}
-            <b>×{1 + CHANCE.max} de chance</b>.
-          </EtapeAccueil>
-          <EtapeAccueil
-            numero={5}
-            teinte="color-mix(in srgb, var(--live) 55%, var(--violet))"
-            theme="Les duels"
-            icone={<IconSwords />}
-            titre="Défie les autres"
-          >
-            Mise de <b>{num(DUEL.miseMin)} à {num(DUEL.miseMax)} ❄</b> contre un joueur. Une course en direct,{' '}
-            <b>une chance sur deux</b> : le gagnant rafle les deux mises.
-          </EtapeAccueil>
-        </RailEtapes>
+        <header className="acc-etapes-tete">
+          <h2 id="etapes-titre">
+            <span className="acc-etapes-sur">Comment ça marche</span>
+            <span className="acc-etapes-grand">La ligue en cinq étapes</span>
+          </h2>
+          <span className="acc-etapes-trait" aria-hidden="true" />
+          <p className="acc-etapes-indice">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M8 9 5 12l3 3M16 9l3 3-3 3M5 12h14" />
+            </svg>
+            Fais glisser les cartes
+          </p>
+        </header>
+        <PaquetEtapes label="La ligue en cinq étapes" etapes={etapes} />
         <div className="acc-fin">{rejoindre}</div>
       </section>
     </div>

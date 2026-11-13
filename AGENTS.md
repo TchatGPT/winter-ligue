@@ -317,7 +317,9 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   seul écran, sans défiler (de 1024×620 à 2830×1400 : `scrollHeight <= innerHeight`) ; sur
   téléphone et tablette debout, il s'empile. Le calendrier (`CalendrierSaisons`) montre le compte
   à rebours et les deux saisons (Mini Ligue, puis Saison 2 qui repart de zéro) ; les cinq étapes
-  disent l'essentiel, sans fenêtre de détail (`EtapeAccueil`).
+  sont un paquet de cartes de glace qu'on fait tourner (`PaquetEtapes`), l'essentiel seulement.
+  Leur matière est une photo de glace en gris (`public/glace/glace.webp`, ambientCG, CC0) que le
+  CSS teinte ; le reflet de studio glisse avec la rotation des cartes (`--d`) et la souris.
   Ses réglages selon la taille passent par `@media`, jamais par `@container` : le compte à rebours
   réévaluait les règles de conteneur chaque seconde et relançait les animations d'arrivée.
 - Les couleurs viennent des variables CSS de `app/globals.css`, jamais codées en dur.
