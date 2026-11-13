@@ -720,11 +720,15 @@ function laGame(db: Database, g: Game): string {
   return `la game ${montre(db, g).numero}`;
 }
 
-/** Une game telle que l'écran du tirage la montre. */
+/**
+ * Une game telle que l'écran la montre, numérotée comme sur la fiche du joueur
+ * (13/11/2026) : dans l'ordre où elles ont été jouées, sans les games passées
+ * au Joker, qui ne comptent pas et n'ont pas de numéro.
+ */
 function montre(db: Database, g: Game): GameMontree {
   const siennes = db.games
-    .filter((x) => x.playerId === g.playerId)
-    .sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id));
+    .filter((x) => x.playerId === g.playerId && (!x.skipped || x.id === g.id))
+    .sort((a, b) => a.playedAt.localeCompare(b.playedAt) || a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id));
   return { id: g.id, numero: siennes.indexOf(g) + 1, score: g.score, kills: g.kills, top: g.placement };
 }
 
