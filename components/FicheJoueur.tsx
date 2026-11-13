@@ -7,7 +7,7 @@ import { CardFrame } from '@/components/CardFrame';
 import { CorrectionGame, type GameACorriger } from '@/components/CorrectionGame';
 import { CouronneGlace } from '@/components/CouronneGlace';
 import { MedailleGlace } from '@/components/MedailleGlace';
-import { ColonnesSaison, DetailGame, GrilleGames } from '@/components/SaisonDuJoueur';
+import { ColonnesSaison, DetailGame, GrilleGames, numerotation } from '@/components/SaisonDuJoueur';
 import { SnowCap } from '@/components/SnowCap';
 import { flakes } from '@/components/ui';
 import { getPack } from '@/lib/domain/catalog';
@@ -100,7 +100,8 @@ export function FicheJoueur({
 
   // Les games dans l'ordre où elles ont été jouées, numérotées.
   const chronologie = useMemo(() => [...p.games].sort((a, b) => a.playedAt.localeCompare(b.playedAt)), [p.games]);
-  const numeroDe = useMemo(() => new Map(chronologie.map((g, i) => [g.id, i + 1])), [chronologie]);
+  // Le numéro des games qui comptent : un Joker n'en a pas, la suivante prend le suivant.
+  const numeroDe = useMemo(() => numerotation(chronologie), [chronologie]);
   const restantes = Math.max(0, fiche.creneaux - t.countedGames);
   const boostersPerso = p.packsDus.filter((b) => b.pack === 'perso').length;
   const avecCarte = chronologie.filter((g) => g.applied.length > 0).length;

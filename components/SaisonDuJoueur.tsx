@@ -32,6 +32,33 @@ import type { FicheJoueur } from '@/lib/services/profile';
 export type GameDuJoueur = FicheJoueur['profil']['games'][number];
 
 /**
+ * Le numéro de chaque game (13/11/2026) : une game passée au Joker ne compte
+ * pas, elle n'a pas de numéro, et la suivante prend le numéro suivant — le
+ * joueur doit toujours jouer toutes ses games.
+ */
+export function numerotation(chronologie: readonly GameDuJoueur[]): Map<string, number | null> {
+  let n = 0;
+  return new Map(chronologie.map((g) => [g.id, g.skipped ? null : (n += 1)]));
+}
+
+/**
+ * Les créneaux de la saison, dans l'ordre : chaque game jouée — un Joker
+ * compris, à sa place, sans numéro —, puis les créneaux encore libres
+ * jusqu'au dernier de la saison.
+ */
+export function creneauxDe(
+  chronologie: readonly GameDuJoueur[],
+  creneaux: number,
+): { game: GameDuJoueur | null; numero: number | null }[] {
+  const numeros = numerotation(chronologie);
+  const comptees = chronologie.filter((g) => !g.skipped).length;
+  return [
+    ...chronologie.map((g) => ({ game: g, numero: numeros.get(g.id) ?? null })),
+    ...Array.from({ length: Math.max(0, creneaux - comptees) }, (_, k) => ({ game: null, numero: comptees + k + 1 })),
+  ];
+}
+
+/**
  * Le haut du glaçon qui fond, sur le bloc survolé ou choisi (sur ordinateur,
  * 12/11/2026). La barre garde son aspect : seule son arête du dessus se
  * ramollit — un sommet arrondi, dans la même glace — et deux ou trois coulées
@@ -206,8 +233,11 @@ export function ColonnesSaison({
   garde: (g: GameDuJoueur) => boolean;
 }) {
   const [survolee, setSurvolee] = useState<number | null>(null);
-  const total = Math.max(creneaux, chronologie.length);
+  const cases = useMemo(() => creneauxDe(chronologie, creneaux), [chronologie, creneaux]);
+  const total = cases.length;
   const comptees = chronologie.filter((g) => !g.skipped);
+  const fin = Math.max(creneaux, comptees.length);
+  const xPalier = cases.findIndex((c) => c.numero === palier);
   // De la marge au-dessus de la meilleure game : sa couronne tient dans le graphique.
   const echelle = graduations(Math.max(1, moyenneLigue ?? 0, ...chronologie.map((g) => g.score)) * 1.18);
   /**
@@ -299,17 +329,16 @@ export function ColonnesSaison({
               <i key={v} className="saison-ligne" style={{ ['--y' as string]: v / haut } as CSSProperties} aria-hidden="true" />
             ))}
             {/* Le palier du Booster Finisseur : la suite se joue une game par session. */}
-            {palier < total && (
+            {palier < fin && xPalier >= 0 && (
               <i
                 className="saison-palier"
-                style={{ ['--x' as string]: palier / total } as CSSProperties}
+                style={{ ['--x' as string]: (xPalier + 1) / total } as CSSProperties}
                 aria-hidden="true"
               >
                 <span>Finisseur</span>
               </i>
             )}
-            {Array.from({ length: total }, (_, i) => {
-              const c = chronologie[i];
+            {cases.map(({ game: c, numero }, i) => {
               if (!c) {
                 return <span key={`vide-${i}`} className="saison-colonne" data-vide="" aria-hidden="true" />;
               }
@@ -330,7 +359,7 @@ export function ColonnesSaison({
                   onFocus={(e) => e.currentTarget.matches(':focus-visible') && survole(i, e.currentTarget)}
                   onBlur={() => setSurvolee(null)}
                   onClick={() => onChoisit(c.id)}
-                  aria-label={`Game ${i + 1} : ${c.skipped ? 'Joker' : pts(c.score)}`}
+                  aria-label={c.skipped ? 'Game passée au Joker' : `Game ${numero} : ${pts(c.score)}`}
                   style={{ ['--part' as string]: c.skipped ? 0 : part(c.score) } as CSSProperties}
                 >
                   <span className="saison-bloc" />
@@ -356,7 +385,7 @@ export function ColonnesSaison({
               role="status"
             >
               <b>
-                Game {survolee + 1} · {g.skipped ? 'Joker' : pts(g.score)}
+                {g.skipped ? 'Joker · ne compte pas' : `Game ${cases[survolee]?.numero} · ${pts(g.score)}`}
               </b>
               <span>
                 {g.placement !== null ? `Top ${g.placement}` : 'Pas top'} · {g.kills} kill{g.kills > 1 ? 's' : ''} ·{' '}
@@ -404,10 +433,10 @@ export function ColonnesSaison({
         <div className="saison-abscisse" aria-hidden="true">
           <span className="saison-abscisse-bord">Game 1</span>
           <span>
-            {chronologie.length} jouée{chronologie.length > 1 ? 's' : ''} sur {total}
+            {comptees.length} jouée{comptees.length > 1 ? 's' : ''} sur {fin}
           </span>
           <span className="saison-abscisse-glisse">← glisse pour remonter</span>
-          <span className="saison-abscisse-bord">Game {total}</span>
+          <span className="saison-abscisse-bord">Game {fin}</span>
         </div>
       </figure>
 
@@ -469,17 +498,22 @@ export function GrilleGames({
   meilleureId: string | null;
   pireId: string | null;
 }) {
-  const total = Math.max(creneaux, chronologie.length);
+  const cases = creneauxDe(chronologie, creneaux);
+  const comptees = chronologie.filter((g) => !g.skipped).length;
   return (
-    <ol className="grille-games" aria-label={`Ses games : ${chronologie.length} jouées sur ${total}`}>
-      {Array.from({ length: total }, (_, i) => {
-        const numero = i + 1;
-        const g = chronologie[i];
+    <ol className="grille-games" aria-label={`Ses games : ${comptees} jouées sur ${Math.max(creneaux, comptees)}`}>
+      {cases.map(({ game: g, numero }, i) => {
         const repere =
-          numero === palier ? 'finisseur' : uneParSessionApres !== null && numero > uneParSessionApres ? 'session' : undefined;
+          numero === null
+            ? undefined
+            : numero === palier
+              ? 'finisseur'
+              : uneParSessionApres !== null && numero > uneParSessionApres
+                ? 'session'
+                : undefined;
         if (!g) {
           return (
-            <li key={`vide-${numero}`}>
+            <li key={`vide-${numero ?? i}`}>
               <span className="case" data-vide="" data-repere={repere}>
                 <span className="case-num">{numero}</span>
                 {repere === 'finisseur' && <span className="case-repere">Finisseur</span>}
@@ -506,7 +540,7 @@ export function GrilleGames({
               data-eteinte={garde(g) ? undefined : ''}
               aria-pressed={choisie === g.id}
               onClick={() => onChoisit(g.id)}
-              aria-label={`Game ${numero} : ${g.skipped ? 'Joker' : pts(g.score)}${
+              aria-label={`${g.skipped ? 'Game passée au Joker' : `Game ${numero} : ${pts(g.score)}`}${
                 g.placement !== null ? `, Top ${g.placement}` : ''
               }${carte ? `, ${getCard(carte.cardId)?.name ?? ''} ${effetCourt(carte.cardId, carte.points)}` : ''}`}
             >
@@ -642,14 +676,15 @@ export function DetailGame({
     );
   }
   const place = podiumDe(game);
-  const cartes = cartesDe(game);
+  // Sur une game passée au Joker, le Joker est déjà montré : pas deux fois.
+  const cartes = game.skipped ? cartesDe(game).filter((c) => c.cardId !== JOKER) : cartesDe(game);
   return pose(
     <>
       {ouvert && <div className="detail-voile" onClick={onFerme} aria-hidden="true" />}
       <aside className="detail-game" data-ouvert={ouvert ? '' : undefined} aria-label={`La game ${numero}`}>
         <header className="detail-tete">
           <span>
-            <b>Game {numero}</b>
+            <b>{game.skipped ? 'Joker' : `Game ${numero}`}</b>
             <small>{shortDateTime(game.playedAt)}</small>
           </span>
           {extreme && (

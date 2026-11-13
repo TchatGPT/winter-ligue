@@ -151,7 +151,7 @@ export function CorrectionGame({
       className="fenetre-voile"
       role="dialog"
       aria-modal="true"
-      aria-label={`Corriger la game ${numero}`}
+      aria-label={game.skipped ? 'Corriger la game passée au Joker' : `Corriger la game ${numero}`}
       onClick={() => !busy && onClose()}
     >
       <div className="fenetre-carte correction-fenetre glass glass-reflet relative" onClick={(e) => e.stopPropagation()}>
@@ -168,7 +168,7 @@ export function CorrectionGame({
 
         <header className="correction-tete">
           <p className="correction-surtitre">Modération · {pseudo}</p>
-          <h2 className="correction-titre">Game {numero}</h2>
+          <h2 className="correction-titre">{game.skipped ? 'Game passée au Joker' : `Game ${numero}`}</h2>
           <p className="correction-sous-titre">
             {shortDateTime(game.playedAt)} · {game.score} pts aujourd’hui
             {game.skipped && ' · ne compte pas'}
