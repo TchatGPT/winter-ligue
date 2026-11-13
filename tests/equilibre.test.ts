@@ -9,6 +9,7 @@ import { totalsOf } from '@/lib/services/league';
 import {
   appliqueCartesEnAttente,
   cartesQuiFigentLaGame,
+  gamesPrenables,
   gamesSansCarte,
   joueEchangeChoisi,
   joueVerglas,
@@ -389,6 +390,17 @@ describe('le Pacte du Givre', () => {
     bonus.applied.push({ id: 'y', cardId: 'congere', ouvertureId: 'o', points: 4, at: bonus.createdAt });
     expect(joueEchangeChoisi(db, garde.id, mienne.id, bonus.id)).not.toBe('AUTRE_GAME');
     expect(enAttente(db, 'a')).toHaveLength(0);
+  });
+
+  it('ne fige pas la game pactée : elle se reprend derrière (13/11/2026)', () => {
+    const db = base('a', 'b');
+    pose(db, 'a', 'pacte-du-givre', 1);
+    const garde = enAttente(db, 'a')[0];
+    const mienne = porteur(db, 30, 4);
+    const sienne = game(db, 'b', 40, 1);
+    joueEchangeChoisi(db, garde.id, mienne.id, sienne.id);
+    expect(gamesPrenables(db, 'b').some((g) => g.id === sienne.id)).toBe(true);
+    expect(gamesPrenables(db, 'a').some((g) => g.id === mienne.id)).toBe(true);
   });
 
   it('tombe si celui qui y perdrait est immunisé', () => {

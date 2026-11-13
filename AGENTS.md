@@ -79,8 +79,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   — l'échanger, la copier, la figer : Neige Mêlée, Contre-Vent, Calque, les chaînes,
   le Troc, le Pacte, la Cryogénisation et les « fige » — vise toute game comptée
   **qui n'est pas figée** (`gamesPrenables`, décidé le 13/11/2026) : une carte déjà
-  jouée dessus (un ×2, un bonus) ne la protège pas ; seules une carte qui fige
-  (`estFigee`), la trace d'un Pacte (`PACTE_SUBI`) et l'immunité du joueur le font.
+  jouée dessus (un ×2, un bonus, un Pacte) ne la protège pas ; seules une carte qui
+  fige (`estFigee`) et l'immunité du joueur le font.
   Les bonus qu'on pose sur sa propre game gardent « une game, une carte »
   (`gamesSansCarte`). Les games ne changent pas de main : leurs scores s'échangent
   (`applyPoints`), et un clone ou un vol de score arrive en points hors game. Leur
@@ -149,7 +149,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   choisit une de ses games et une game d'un autre joueur, toutes deux pas figées ;
   la modération fait l'échange depuis la fiche de la carte au classement
   (`/api/admin/cartes/echange`, `joueEchangeChoisi`) : chaque game repart avec le score de
-  l'autre. Sur la game de l'autre, une trace (`PACTE_SUBI`, hors de `CARDS`) la fige.
+  l'autre. Sur la game de l'autre, une trace (`PACTE_SUBI`, hors de `CARDS`) dit d'où
+  vient l'échange ; elle ne la fige pas : une game pactée se reprend derrière.
   L'immunité de celui qui y perdrait fait tomber l'échange. Les deux games ne se
   corrigent pas, et une game supprimée ne rend pas le Pacte.
 - **Les tops** : une game se saisit Top 1, 2, 3, 6, 8, 10 ou « pas top » (`TOPS`). Seuls

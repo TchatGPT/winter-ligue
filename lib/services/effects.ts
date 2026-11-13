@@ -164,22 +164,17 @@ export function gamesSansCarte(db: Database, joueurId: string): Game[] {
 /**
  * Les games qu'une carte peut **prendre** — échanger, copier, figer —
  * (décidé le 13/11/2026) : toute game comptée qui n'est pas figée. Une carte
- * déjà posée dessus (un ×2, un « +10 si Top 3 »…) ne la protège pas ; seules
- * une carte qui fige (Cryogénisation, « fige ») et la trace d'un Pacte du Givre
- * le font. L'immunité du joueur se vérifie à part. Les plus récentes en tête.
+ * déjà posée dessus (un ×2, un « +10 si Top 3 », un Pacte…) ne la protège
+ * pas ; seule une carte qui fige (Cryogénisation, « fige ») le fait. Une game
+ * échangée par un Pacte se reprend donc derrière. L'immunité du joueur se
+ * vérifie à part. Les plus récentes en tête.
  *
  * Les bonus qu'un joueur pose sur sa propre game gardent, eux, la règle
  * « une game, une carte » (`gamesSansCarte`).
  */
 export function gamesPrenables(db: Database, joueurId: string): Game[] {
   return db.games
-    .filter(
-      (g) =>
-        g.playerId === joueurId &&
-        !g.skipped &&
-        !estFigee(g) &&
-        !g.applied.some((a) => a.cardId === PACTE_SUBI.id),
-    )
+    .filter((g) => g.playerId === joueurId && !g.skipped && !estFigee(g))
     .sort((a, b) => b.playedAt.localeCompare(a.playedAt));
 }
 
