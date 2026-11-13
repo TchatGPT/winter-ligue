@@ -563,7 +563,7 @@ export const CARDS: readonly CardDefinition[] = [
     rarity: 'R',
     glyph: '⛰',
     description:
-      'La meilleure game de chaque joueur compte ×1,5, même si une carte du Booster Perso l’a déjà multipliée. Une seule fois par game : si elle l’a déjà eu, c’est la suivante. Jamais une game figée.',
+      'La meilleure game de chaque joueur compte ×1,5. Une game qui a déjà un multiplicateur n’en reçoit pas un second : c’est alors la meilleure qui n’en a pas. Jamais une game figée.',
     effect: { kind: 'roue', action: { quoi: 'meilleure_fois', facteur: 1.5 } },
     nature: 'bonus',
     power: 38,

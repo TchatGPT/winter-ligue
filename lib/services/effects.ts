@@ -562,6 +562,25 @@ export function estFigee(game: Game): boolean {
   });
 }
 
+/**
+ * Une game déjà multipliée : un multiplicateur du Perso (« Game ×1,2 »…), un
+ * multiplicateur sur une game jouée, ou un « ×2 / ×1,5 » des roues. La
+ * « Meilleure game ×1,5 » la laisse et passe à la suivante (13/11/2026).
+ */
+export function estMultipliee(game: Game): boolean {
+  return game.applied.some((a) => {
+    const c = getCard(a.cardId);
+    if (!c) return false;
+    if (c.effect.kind === 'multiplicateur_game' || c.effect.kind === 'multiplie_jouee') return true;
+    return (
+      c.effect.kind === 'roue' &&
+      (c.effect.action.quoi === 'meilleure_fois' ||
+        c.effect.action.quoi === 'pire_fois' ||
+        c.effect.action.quoi === 'hasard_fois')
+    );
+  });
+}
+
 /** Les games comptées d'un joueur. */
 const comptees = (db: Database, joueurId: string) => db.games.filter((g) => g.playerId === joueurId && !g.skipped);
 
@@ -900,13 +919,11 @@ function regleRoue(
       break;
 
     case 'meilleure_fois':
-      // La meilleure game de chacun, même si une carte du Perso l'a déjà
-      // multipliée ; une seule fois par game, et jamais une game figée
-      // (décidé le 12/11/2026).
+      // La meilleure game de chacun qui n'a pas déjà de multiplicateur — ni
+      // du Perso, ni des roues : sinon, la suivante (13/11/2026) —, et
+      // jamais une game figée.
       for (const m of groupe) {
-        const candidates = comptees(db, m.joueur.id).filter(
-          (g) => g.score > 0 && !estFigee(g) && !g.applied.some((a) => a.cardId === card.id),
-        );
+        const candidates = comptees(db, m.joueur.id).filter((g) => g.score > 0 && !estFigee(g) && !estMultipliee(g));
         if (candidates.length === 0) {
           pour(m, sansEffet('aucune game à multiplier, sans effet'));
           continue;
