@@ -316,9 +316,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - **L'accueil déconnecté** (`components/Accueil.tsx`, 13/11/2026) tient sur un ordinateur en un
   seul écran, sans défiler (de 1024×620 à 2830×1400 : `scrollHeight <= innerHeight`) ; sur
   téléphone et tablette debout, il s'empile. Le calendrier (`CalendrierSaisons`) montre le compte
-  à rebours et les deux saisons (Mini Ligue, puis Saison 2 qui repart de zéro) ; chaque booster
-  est pris dans un bloc de glace (`BlocDeGlace`) qu'un clic fait éclater (`EclatBooster`) pour
-  montrer **trois** de ses cartes, pas toutes ; chaque étape ouvre son détail (`EtapeAccueil`).
+  à rebours et les deux saisons (Mini Ligue, puis Saison 2 qui repart de zéro) ; les cinq étapes
+  disent l'essentiel, sans fenêtre de détail (`EtapeAccueil`).
   Ses réglages selon la taille passent par `@media`, jamais par `@container` : le compte à rebours
   réévaluait les règles de conteneur chaque seconde et relançait les animations d'arrivée.
 - Les couleurs viennent des variables CSS de `app/globals.css`, jamais codées en dur.

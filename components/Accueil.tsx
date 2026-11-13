@@ -7,15 +7,11 @@ import { GEMME_DU_PACK, PACKS, packArt } from '@/lib/domain/catalog';
 import { num } from '@/lib/format';
 import {
   ACHAT_PERSO,
-  AVALANCHE_FLOCONS,
   CADEAU_DU_JOUR,
   CHANCE,
   DUEL,
   ECONOMY,
-  EVENEMENTS_SUBS,
-  JOKERS,
   PACKS_REGLES,
-  PALIERS_CHANCE,
   PLACEMENT_POINTS,
   SAISONS,
   SUB_MILESTONES,
@@ -34,11 +30,11 @@ import {
  *    saisons de l'hiver, la Mini Ligue pour se chauffer et la Saison 2, la
  *    vraie, qui repart de zéro le 4 janvier ;
  *  - à droite, la vitrine (`VitrineBoosters`) : les quatre boosters en
- *    lévitation au-dessus d'une banquise, chacun pris dans un bloc de glace,
- *    et un cartel par booster. Un clic brise la glace et montre trois de ses
- *    cartes ;
+ *    lévitation au-dessus d'une banquise, leur reflet dans la glace, et un
+ *    cartel par booster : pour qui il est, ce qui le fait tomber ;
  *  - en bas, sur la glace, la ligue en cinq étapes (`EtapeAccueil`), dans
- *    l'ordre où on la vit. Chacune ouvre son détail. Si la fenêtre est trop
+ *    l'ordre où on la vit — l'essentiel, le détail est dans les règles une
+ *    fois connecté (13/11/2026). Si la fenêtre est trop
  *    étroite pour les cinq, c'est le rail qui défile, de gauche à droite
  *    (`RailEtapes`), jamais la page.
  *
@@ -87,7 +83,6 @@ export function Accueil({ twitchEnabled, devLogin }: { twitchEnabled: boolean; d
   // Ce qui fait tomber chaque booster : en quelques mots sur son cartel, en
   // entier dans sa fenêtre.
   const palier = (id: string) => SUB_MILESTONES.find((m) => m.packId === id)?.every ?? 0;
-  const avalanche = EVENEMENTS_SUBS.find((e) => e.kind === 'FLOCONS_A_TOUS');
   const sortDesigne = 'Le sort désigne sur qui tombe sa carte : un joueur, deux, trois… ou toute la ligue.';
   const PRESENTATION: Record<string, Pick<BoosterEnVitrine, 'quand' | 'pour' | 'comment' | 'qui'>> = {
     perso: {
@@ -125,10 +120,6 @@ export function Accueil({ twitchEnabled, devLogin }: { twitchEnabled: boolean; d
     rarete: GEMME_DU_PACK[p.id],
   }));
 
-  // Quelques paliers de chance, du premier au plafond.
-  const paliers = PALIERS_CHANCE.filter((p) => [1.1, 1.5, 2, 3, 4].includes(p.multiplicateur));
-  const virgule = (x: number) => String(x).replace('.', ',');
-
   return (
     <div className="accueil">
       {/* ---- La nuit à gauche, la vitrine à droite ---- */}
@@ -160,7 +151,7 @@ export function Accueil({ twitchEnabled, devLogin }: { twitchEnabled: boolean; d
           <CalendrierSaisons saisons={saisons} maintenant={Date.now()} />
         </div>
 
-        <VitrineBoosters boosters={boosters} entree={entree} />
+        <VitrineBoosters boosters={boosters} />
       </section>
 
       {/* ---- La ligue en cinq étapes, en blocs de glace ---- */}
@@ -182,31 +173,6 @@ export function Accueil({ twitchEnabled, devLogin }: { twitchEnabled: boolean; d
             theme="Le classement"
             icone={<IconTrophy />}
             titre="Marque des points"
-            detail={
-              <>
-                <ol className="etape-liste">
-                  <li>
-                    <b>Chaque kill : 1 point.</b> Ta game est saisie par la modération, d’après ta capture de fin de
-                    partie.
-                  </li>
-                  <li>
-                    <b>Le top en plus :</b> +{PLACEMENT_POINTS['1']} pour un Top 1, +{PLACEMENT_POINTS['2']} pour un Top
-                    2, +{PLACEMENT_POINTS['3']} pour un Top 3.
-                  </li>
-                  <li>
-                    <b>Les cartes s’en mêlent :</b> bonus, malus, échanges — elles changent le score de tes games.
-                  </li>
-                  <li>
-                    <b>{JOKERS.depart} Jokers au départ :</b> une game passée au Joker ne compte pas, ni en bien ni en
-                    mal.
-                  </li>
-                </ol>
-                <p className="etape-note">
-                  {nomCourt(mini)} : {mini.games} games, pas de finale. {nomCourt(deuxieme)} : {deuxieme.games} games,
-                  puis la finale des {deuxieme.finalistes} premiers.
-                </p>
-              </>
-            }
           >
             <b>1 point</b> par kill, <b>+{PLACEMENT_POINTS['1']}</b> le Top 1, <b>+{PLACEMENT_POINTS['2']}</b> le
             Top 2, <b>+{PLACEMENT_POINTS['3']}</b> le Top 3. Tes {saison.games} games font ton total.
@@ -217,31 +183,6 @@ export function Accueil({ twitchEnabled, devLogin }: { twitchEnabled: boolean; d
             theme="Les flocons"
             icone={<IconSnowflake />}
             titre="Gagne des flocons"
-            detail={
-              <>
-                <ol className="etape-liste">
-                  <li>
-                    <b>En jouant :</b> +{ECONOMY.perKill} ❄ par kill, +{ECONOMY.perPlacement['1']} ❄ le Top 1, +
-                    {ECONOMY.perPlacement['2']} ❄ le Top 2, +{ECONOMY.perPlacement['3']} ❄ le Top 3.
-                  </li>
-                  <li>
-                    <b>Chaque jour :</b> le cadeau du jour, +{CADEAU_DU_JOUR.parJour} ❄ — et le {CADEAU_DU_JOUR.cycle}ᵉ
-                    jour d’affilée, un Booster Perso à la place.
-                  </li>
-                  <li>
-                    <b>Pendant le live :</b> des codes cadeaux, et tous les {avalanche?.every ?? 100} subs une
-                    Avalanche : +{AVALANCHE_FLOCONS} ❄ à chaque joueur qui a joué.
-                  </li>
-                  <li>
-                    <b>Ils servent à :</b> miser en duel, augmenter ta chance aux boosters, ou t’offrir un Booster Perso
-                    ({num(ACHAT_PERSO.prix)} ❄).
-                  </li>
-                </ol>
-                <p className="etape-note">
-                  Les flocons ne s’achètent pas : ils se gagnent. Plafond : {num(ECONOMY.soldeMax)} ❄.
-                </p>
-              </>
-            }
           >
             <b>+{ECONOMY.perKill} ❄</b> par kill, <b>+{ECONOMY.perPlacement['1']} ❄</b> le Top 1,{' '}
             <b>+{CADEAU_DU_JOUR.parJour} ❄</b> chaque jour. Ils ne s’achètent pas : ils se gagnent.
@@ -252,25 +193,6 @@ export function Accueil({ twitchEnabled, devLogin }: { twitchEnabled: boolean; d
             theme="Les boosters"
             icone={<IconPack />}
             titre="Ouvre des boosters"
-            detail={
-              <>
-                <ol className="etape-liste">
-                  {boosters.map((b) => (
-                    <li key={b.id}>
-                      <b>
-                        {b.nom} — {b.pour === 'toi' ? 'pour toi' : 'pour la ligue'} :
-                      </b>{' '}
-                      {b.comment}
-                    </li>
-                  ))}
-                </ol>
-                <p className="etape-note">
-                  Chaque booster donne une carte, ouverte en direct sur le stream. Une carte à la fois : tant que la
-                  tienne n’a pas joué, ton prochain booster attend son tour. Brise la glace d’un booster, en haut,
-                  pour voir quelques-unes de ses cartes.
-                </p>
-              </>
-            }
           >
             Les subs du live en font tomber, ouverts <b>en direct</b>. Chacun donne <b>une carte</b> qui change une
             game : bonus ou malus.
@@ -281,28 +203,6 @@ export function Accueil({ twitchEnabled, devLogin }: { twitchEnabled: boolean; d
             theme="La chance"
             icone={<IconJauge />}
             titre="Vise les cartes rares"
-            detail={
-              <>
-                <ol className="etape-liste">
-                  <li>
-                    <b>Quand un booster s’ouvre pour toi</b> — Perso ou Finisseur —, ton solde de flocons pousse le
-                    tirage vers les cartes rares.
-                  </li>
-                  <li>
-                    <b>Plus tu en gardes, plus tu tires haut :</b>{' '}
-                    {paliers.map((p) => `${num(p.des)} ❄ → ×${virgule(p.multiplicateur)}`).join(' · ')}.
-                  </li>
-                  <li>
-                    <b>Ouvrir ne coûte rien :</b> tes flocons restent. Les dépenser — un achat, un duel perdu — fait
-                    baisser ta chance.
-                  </li>
-                </ol>
-                <p className="etape-note">
-                  Au plafond, quatre fois plus de chances pour chaque carte rare, ultra rare et légendaire. Les Boosters
-                  Commu et Folie, eux, ne s’ouvrent pour personne : le sort décide seul.
-                </p>
-              </>
-            }
           >
             Garde tes flocons : plus ta réserve est grosse, plus tu tires rare. Jusqu’à{' '}
             <b>×{1 + CHANCE.max} de chance</b>.
@@ -313,31 +213,6 @@ export function Accueil({ twitchEnabled, devLogin }: { twitchEnabled: boolean; d
             theme="Les duels"
             icone={<IconSwords />}
             titre="Défie les autres"
-            detail={
-              <>
-                <ol className="etape-liste etape-liste-duel">
-                  <li>
-                    <b>Tu lances un duel</b> et tu choisis ta mise :{' '}
-                    {DUEL.mises.slice(0, -1).map(num).join(', ')} ou {num(DUEL.miseMax)} ❄. Elle est mise de côté
-                    tout de suite.
-                  </li>
-                  <li>
-                    <b>Un autre joueur le relève</b>, avec la même mise. Personne ? Tu annules, et ta mise te revient.
-                  </li>
-                  <li>
-                    <b>La course se joue en direct</b>, sous vos yeux. Une chance sur deux : ni ton solde, ni ton rang
-                    ne comptent.
-                  </li>
-                  <li>
-                    <b>Le gagnant rafle tout :</b> les deux mises, soit le double de la sienne. Le perdant perd sa mise.
-                  </li>
-                </ol>
-                <p className="etape-note">
-                  On ne mise que des flocons, jamais des points du classement, et le site ne prend rien au passage.{' '}
-                  {DUEL.enAttenteMax} duels en attente au plus.
-                </p>
-              </>
-            }
           >
             Mise de <b>{num(DUEL.miseMin)} à {num(DUEL.miseMax)} ❄</b> contre un joueur. Une course en direct,{' '}
             <b>une chance sur deux</b> : le gagnant rafle les deux mises.

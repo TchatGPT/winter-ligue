@@ -2,7 +2,6 @@
 
 import { type CSSProperties, useEffect, useRef, useState } from 'react';
 import { BoosterPack3D } from '@/components/BoosterPack3D';
-import { BlocDeGlace, EclatBooster } from '@/components/GlaceBooster';
 
 /** Un booster de la vitrine : sa planche, son nom court et ce qui le fait tomber. */
 export interface BoosterEnVitrine {
@@ -34,23 +33,18 @@ export interface BoosterEnVitrine {
  * brille, et rien de noir sous eux (13/11/2026 : les ombres de contact sont
  * parties).
  *
- * Trois gestes :
+ * Deux gestes :
  *  - la souris déplace l'éventail de quelques pixels, chaque booster selon sa
  *    profondeur (`--px`, `--py`, une fois par image au plus) ;
  *  - un booster survolé, ou son cartel, se redresse et monte, son reflet avec
- *    lui, pendant que les autres s'effacent un peu ;
- *  - un clic, ou un doigt, brise sa glace : il s'ouvre en grand, la glace
- *    éclate, et trois de ses cartes en sortent (`EclatBooster`).
- *
- * Chaque booster est pris dans un bloc de glace (`BlocDeGlace`).
+ *    lui, pendant que les autres s'effacent un peu.
  *
  * Le reflet est le même éventail, retourné : il lévite et suit la souris à
  * l'envers, comme un vrai reflet.
  */
-export function VitrineBoosters({ boosters, entree }: { boosters: BoosterEnVitrine[]; entree: string }) {
+export function VitrineBoosters({ boosters }: { boosters: BoosterEnVitrine[] }) {
   const ref = useRef<HTMLDivElement>(null);
   const [choix, setChoix] = useState<string | null>(null);
-  const [ouvert, setOuvert] = useState<BoosterEnVitrine | null>(null);
 
   useEffect(() => {
     const el = ref.current;
@@ -92,9 +86,7 @@ export function VitrineBoosters({ boosters, entree }: { boosters: BoosterEnVitri
   const sachet = (b: BoosterEnVitrine) => (
     <div className="acc-eventail-leve">
       <div className="acc-eventail-parallaxe">
-        <BlocDeGlace graine={`vitrine-${b.id}`}>
-          <BoosterPack3D name={b.nom} cardCount={1} gradient={b.gradient} art={b.art} rarete={b.rarete} vignette frozen />
-        </BlocDeGlace>
+        <BoosterPack3D name={b.nom} cardCount={1} gradient={b.gradient} art={b.art} rarete={b.rarete} vignette />
       </div>
     </div>
   );
@@ -123,7 +115,6 @@ export function VitrineBoosters({ boosters, entree }: { boosters: BoosterEnVitri
               data-choisi={choix === b.id ? '' : undefined}
               style={place(i)}
               {...gestes(b.id)}
-              onClick={() => setOuvert(b)}
             >
               {sachet(b)}
             </div>
@@ -132,27 +123,20 @@ export function VitrineBoosters({ boosters, entree }: { boosters: BoosterEnVitri
         <ul className="acc-cartels" aria-label="Les quatre boosters">
           {boosters.map((b, i) => (
             <li key={b.id} className="acc-cartel" data-choisi={choix === b.id ? '' : undefined} style={place(i)}>
-              <button type="button" {...gestes(b.id)} onClick={() => setOuvert(b)}>
+              <div className="acc-cartel-corps" {...gestes(b.id)}>
                 <b>
-                  <span className="sr-only">Voir les cartes du Booster </span>
+                  <span className="sr-only">Booster </span>
                   {b.court}
                 </b>
                 <span className="acc-cartel-pour" data-pour={b.pour}>
                   {b.pour === 'toi' ? 'pour toi' : 'pour la ligue'}
                 </span>
                 <span className="acc-cartel-quand">{b.quand}</span>
-              </button>
+              </div>
             </li>
           ))}
         </ul>
       </div>
-      <p className="acc-vitrine-indice">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M9 11.5V5.8a1.6 1.6 0 0 1 3.2 0V11m0-1.2a1.6 1.6 0 0 1 3.2 0v1.6m0-.6a1.6 1.6 0 0 1 3.2 0v3.4a6 6 0 0 1-6 6h-.6a6 6 0 0 1-4.8-2.4L4.6 14a1.6 1.6 0 0 1 2.5-2l1.9 2" />
-        </svg>
-        Brise la glace d’un booster pour voir ses cartes
-      </p>
-      {ouvert && <EclatBooster booster={ouvert} entree={entree} onClose={() => setOuvert(null)} />}
     </div>
   );
 }
