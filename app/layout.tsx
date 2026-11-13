@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from 'next';
 import { Barlow, Barlow_Condensed } from 'next/font/google';
 import { headers } from 'next/headers';
 import { Analytics } from '@vercel/analytics/next';
-import { FondAurores } from '@/components/FondAurores';
 import { FondHiver } from '@/components/FondHiver';
 import { Sidebar, SIDEBAR_WIDTH } from '@/components/Sidebar';
 import { InscriptionWarzone } from '@/components/InscriptionWarzone';
@@ -59,8 +58,8 @@ export const viewport: Viewport = {
  * Ossature de la page.
  *
  * L'empilement est volontaire, du fond vers la surface :
- *   0. le décor — un bleu nuit uni, voir FondHiver ; déconnecté, le ciel
- *      des boosters par-dessus, voir FondAurores,
+ *   0. le décor — un bleu nuit uni, voir FondHiver ; l'accueil déconnecté
+ *      peint sa propre nuit et sa banquise, voir Accueil,
  *   1. le contenu, en verre translucide.
  *
  * Déconnecté, il n'y a ni colonne ni barre : l'accueil et la connexion
@@ -106,7 +105,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang="fr" className={`${barlow.variable} ${barlowCondensed.variable}`}>
       <body className="flex min-h-dvh flex-col">
         <FondHiver />
-        {!connecte && <FondAurores />}
 
         {connecte && <Sidebar />}
 

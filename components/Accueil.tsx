@@ -1,132 +1,100 @@
 import type { CSSProperties, ReactNode } from 'react';
-import { BoosterPack3D } from '@/components/BoosterPack3D';
-import { Diaporama, type Diapositive } from '@/components/Diaporama';
-import { EventailBoosters } from '@/components/EventailBoosters';
-import { SnowCap } from '@/components/SnowCap';
+import { CompteARebours } from '@/components/CompteARebours';
+import { RailEtapes } from '@/components/RailEtapes';
+import { type BoosterEnVitrine, VitrineBoosters } from '@/components/VitrineBoosters';
 import { IconJauge, IconPack, IconSnowflake, IconSwords, IconTrophy, IconTwitch } from '@/components/icons';
 import { GEMME_DU_PACK, PACKS, packArt } from '@/lib/domain/catalog';
-import { CADEAU_DU_JOUR, CHANCE, ECONOMY, PLACEMENT_POINTS, saisonDuMoment } from '@/lib/domain/rules';
+import {
+  CADEAU_DU_JOUR,
+  CHANCE,
+  ECONOMY,
+  PACKS_REGLES,
+  PLACEMENT_POINTS,
+  SUB_MILESTONES,
+  saisonDuMoment,
+} from '@/lib/domain/rules';
 
 /**
  * L'accueil, quand on n'est pas connecté.
  *
  * Rien de la ligue n'est visible sans compte : ni classement, ni joueurs, ni
- * duels en cours. La page dit l'essentiel, et le montre :
+ * duels en cours. La page dit ce qu'est la ligue, et comment y entrer — sur un
+ * ordinateur, **en un seul écran, sans défiler** (13/11/2026) :
  *
- *  - le hero, à même le ciel des boosters : le nom, une phrase, l'entrée par
- *    Twitch, et les quatre boosters distribués en éventail à l'arrivée, qui
- *    suivent la souris ;
- *  - puis la ligue en cinq dalles de glace (`Diaporama`), qu'on tire du doigt
- *    ou à la souris : le classement, les flocons, les boosters, la chance,
- *    les duels. Chacune porte un grand nombre taillé dans la glace, une
- *    légende, un titre et une phrase ; derrière le paquet, des nappes
- *    d'aurore que le verre floute et dont il se colore.
+ *  - à gauche, sur la nuit : la saison et ses dates, le nom, une phrase,
+ *    l'entrée par Twitch, et le compte à rebours du coup d'envoi ;
+ *  - à droite, la vitrine (`VitrineBoosters`) : les quatre boosters en
+ *    lévitation au-dessus d'une banquise, leur reflet dans la glace, et un
+ *    cartel par booster — son nom, ce qui le fait tomber ;
+ *  - en bas, posés sur la banquise, cinq blocs de glace : la ligue en cinq
+ *    étapes, dans l'ordre où on la vit. Un verbe, une phrase, les chiffres en
+ *    gras. Si la fenêtre est trop étroite pour les cinq, c'est le rail qui
+ *    défile, de gauche à droite (`RailEtapes`), jamais la page.
  *
- * Le détail est dans les règles, une fois connecté. Toutes les valeurs
- * viennent de `lib/domain/rules` et du catalogue : la page ne peut pas dire
- * autre chose que ce que le serveur applique.
+ * Sur un téléphone ou une tablette debout, tout s'empile et la page défile :
+ * la vitrine, le nom et l'entrée, puis les étapes, et l'entrée à nouveau.
+ *
+ * Toutes les valeurs viennent de `lib/domain/rules` et du catalogue : la page
+ * ne peut pas dire autre chose que ce que le serveur applique.
  */
 
-const MOIS = [
-  'janvier',
-  'février',
-  'mars',
-  'avril',
-  'mai',
-  'juin',
-  'juillet',
-  'août',
-  'septembre',
-  'octobre',
-  'novembre',
-  'décembre',
-];
-
-/** Vrai tant que la date n'est pas atteinte. La page est rendue à chaque visite. */
-function avantLe(iso: string): boolean {
-  return Date.now() < Date.parse(iso);
-}
-
-/** « 1er décembre », « 15 mars ». Les bornes de la saison sont à minuit UTC. */
+/** « 22 novembre », « 1er mars » : un jour de la saison, à l'heure de Paris. */
 function jourDe(iso: string): string {
-  const d = new Date(iso);
-  const jour = d.getUTCDate();
-  return `${jour === 1 ? '1er' : jour} ${MOIS[d.getUTCMonth()]}`;
+  const [jour, mois] = new Intl.DateTimeFormat('fr-FR', { timeZone: 'Europe/Paris', day: 'numeric', month: 'long' })
+    .format(new Date(iso))
+    .split(' ');
+  return `${jour === '1' ? '1er' : jour} ${mois}`;
 }
 
 /**
- * Une dalle de la ligue, taillée dans la glace : le givre sur la face, son
- * épaisseur, le thème en haut, au cœur un grand nombre en glace et sa
- * légende, puis le titre et la phrase. La lumière prise dans la glace est à
- * la couleur de la dalle (`teinte`).
+ * Une étape de la ligue : un bloc de glace, en relief — sa face, son dessus,
+ * son côté. Le numéro et le thème en haut, l'icône gravée dans une bille, un
+ * verbe en titre, puis la phrase, ses chiffres en gras. La lumière prise dans
+ * la glace est à la couleur de l'étape (`teinte`).
  */
-function Dalle({
+function Etape({
   numero,
-  total,
   teinte,
-  eyebrow,
+  theme,
   icone,
-  chiffre,
-  flocon = false,
-  legende,
   titre,
   children,
 }: {
   numero: number;
-  total: number;
   /** Une couleur du thème : `var(--gold)`… */
   teinte: string;
-  eyebrow: string;
+  theme: string;
   icone: ReactNode;
-  /** Le nombre, en grand : « +20 », « ×4 ». */
-  chiffre: string;
-  /** Un flocon après le nombre. */
-  flocon?: boolean;
-  legende: string;
   titre: string;
   children: ReactNode;
 }) {
-  const deux = (x: number) => String(x).padStart(2, '0');
   return (
-    <article className="carte-glace" style={{ ['--teinte' as string]: teinte } as CSSProperties}>
-      <span className="carte-glace-givre" aria-hidden="true" />
-      <span className="carte-glace-epaisseur" aria-hidden="true" />
-      <SnowCap radius="30px" seed={`dalle-${numero}`} epaisseur={14} />
-      <header className="carte-glace-tete">
-        <span className="carte-glace-icone" aria-hidden="true">
+    <li
+      className="acc-etape"
+      style={{ ['--teinte' as string]: teinte, ['--rang' as string]: numero - 1 } as CSSProperties}
+    >
+      <header className="acc-etape-tete">
+        <span className="acc-etape-num" aria-hidden="true">
+          {String(numero).padStart(2, '0')}
+        </span>
+        <span className="acc-etape-theme">{theme}</span>
+        <span className="acc-etape-icone" aria-hidden="true">
           {icone}
         </span>
-        <p className="eyebrow">{eyebrow}</p>
-        <span className="carte-glace-num" aria-hidden="true">
-          {deux(numero)}/{deux(total)}
-        </span>
       </header>
-      <div className="carte-glace-coeur">
-        <p className="carte-glace-chiffre">
-          <b className="glace" data-text={chiffre}>
-            {chiffre}
-          </b>
-          {flocon && <IconSnowflake />}
-        </p>
-        <p className="carte-glace-legende">{legende}</p>
-      </div>
-      <div className="carte-glace-texte">
-        <h3>{titre}</h3>
-        <p>{children}</p>
-      </div>
-    </article>
+      <h3>{titre}</h3>
+      <p>{children}</p>
+    </li>
   );
 }
 
 export function Accueil({ twitchEnabled, devLogin }: { twitchEnabled: boolean; devLogin: boolean }) {
   // La saison du calendrier : la Mini Ligue jusqu'au 4 janvier, puis la saison 2.
   const saison = saisonDuMoment();
-  const debut = jourDe(saison.debut);
-  const fin = jourDe(saison.fin);
-  const avantLaSaison = avantLe(saison.debut);
+  const [nomSaison, surnom] = saison.nom.split(' · ');
 
   // Twitch branché, on part chez lui ; sinon la page de connexion dit que la
-  // connexion ouvre bientôt, et garde l'entrée de l'administration.
+  // connexion ouvre bientôt.
   const entree = twitchEnabled ? '/api/auth/twitch?returnTo=/' : '/connexion';
   const rejoindre = (
     <a href={entree} className="btn btn-twitch btn-lg no-underline">
@@ -135,89 +103,35 @@ export function Accueil({ twitchEnabled, devLogin }: { twitchEnabled: boolean; d
     </a>
   );
 
-  const DALLES: { cle: string; titre: string; dalle: Omit<Parameters<typeof Dalle>[0], 'numero' | 'total'> }[] = [
-    {
-      cle: 'classement',
-      titre: 'Le classement',
-      dalle: {
-        teinte: 'var(--gold)',
-        eyebrow: 'Le classement',
-        icone: <IconTrophy className="h-5 w-5" />,
-        chiffre: `+${PLACEMENT_POINTS['1']}`,
-        legende: 'le Top 1 · +1 par kill',
-        titre: 'Chaque kill compte',
-        children: 'Tes kills et tes Top 3 font ton score, game après game.',
-      },
-    },
-    {
-      cle: 'flocons',
-      titre: 'Les flocons',
-      dalle: {
-        teinte: 'var(--ice)',
-        eyebrow: 'Les flocons',
-        icone: <IconSnowflake className="h-5 w-5" />,
-        chiffre: `+${ECONOMY.perKill}`,
-        flocon: true,
-        legende: 'flocons par kill',
-        titre: 'Tes games rapportent des flocons',
-        children: `+${ECONOMY.perPlacement['1']} le Top 1, +${CADEAU_DU_JOUR.parJour} chaque jour. Ils ne s’achètent pas.`,
-      },
-    },
-    {
-      cle: 'boosters',
-      titre: 'Les boosters',
-      dalle: {
-        teinte: 'var(--violet)',
-        eyebrow: 'Les boosters',
-        icone: <IconPack className="h-5 w-5" />,
-        chiffre: String(PACKS.length),
-        legende: 'boosters, ouverts en live',
-        titre: 'Les subs font tomber des boosters',
-        children: 'Chacun donne une carte qui change une game, en bonus ou en malus.',
-      },
-    },
-    {
-      cle: 'chance',
-      titre: 'La chance',
-      dalle: {
-        teinte: 'var(--aurora)',
-        eyebrow: 'La chance',
-        icone: <IconJauge className="h-5 w-5" />,
-        chiffre: `×${1 + CHANCE.max}`,
-        legende: 'de chance, au plus',
-        titre: 'Garde tes flocons, tire plus haut',
-        children: 'Plus ta réserve est grosse, plus tu as de chances de tirer une carte rare.',
-      },
-    },
-    {
-      cle: 'duels',
-      titre: 'Les duels',
-      dalle: {
-        teinte: 'color-mix(in srgb, var(--live) 55%, var(--violet))',
-        eyebrow: 'Les duels',
-        icone: <IconSwords className="h-5 w-5" />,
-        chiffre: '×2',
-        legende: 'ta mise, si tu gagnes',
-        titre: 'Mise tes flocons en duel',
-        children: 'La même mise des deux côtés, une chance sur deux : le gagnant rafle tout.',
-      },
-    },
-  ];
-
-  const DIAPOS: Diapositive[] = DALLES.map(({ cle, titre, dalle }, i) => ({
-    cle,
-    titre,
-    contenu: <Dalle numero={i + 1} total={DALLES.length} {...dalle} />,
+  // Ce qui fait tomber chaque booster, en quelques mots, sur son cartel.
+  const palier = (id: string) => SUB_MILESTONES.find((m) => m.packId === id)?.every;
+  const quand: Record<string, string> = {
+    perso: `un T3 ou ${PACKS_REGLES.persoTousLes} subs offerts`,
+    commu: `tous les ${palier('commu')} subs`,
+    folie: `tous les ${palier('folie')} subs`,
+    finisseur: `à ta ${saison.finisseurA}ᵉ game`,
+  };
+  const boosters: BoosterEnVitrine[] = PACKS.map((p) => ({
+    id: p.id,
+    nom: p.name,
+    court: p.name.replace(/^Booster\s+/, ''),
+    quand: quand[p.id] ?? p.tagline,
+    gradient: p.gradient,
+    art: packArt(p.id),
+    rarete: GEMME_DU_PACK[p.id],
   }));
 
   return (
     <div className="accueil">
-      {/* ---- Le hero, à même le ciel : le nom, une phrase, l'entrée, et les
-              quatre boosters distribués en éventail dans leur fumée. ---- */}
-      <section className="acc-hero" aria-labelledby="accueil-titre">
-        <div className="acc-hero-texte">
-          <p className="eyebrow">
-            {saison.nom} · du {debut} au {fin}
+      {/* ---- La nuit à gauche, la vitrine à droite ---- */}
+      <section className="acc-scene" aria-labelledby="accueil-titre">
+        <div className="acc-texte">
+          <p className="acc-saison">
+            <b>
+              {nomSaison}
+              {surnom ? ` · ${surnom}` : ''}
+            </b>
+            <span>{saison.periode}</span>
           </p>
           <h1 id="accueil-titre" className="hero-titre acc-titre">
             <span className="glace" data-text="Winter">
@@ -227,82 +141,90 @@ export function Accueil({ twitchEnabled, devLogin }: { twitchEnabled: boolean; d
               Ligue
             </em>
           </h1>
-          <p className="acc-hero-lead">
-            La ligue Warzone de l’hiver, en direct sur Twitch. Joue, grimpe au classement, ouvre des boosters et défie
-            les autres joueurs.
+          <p className="acc-lead">
+            La ligue Warzone de l’hiver, en direct sur Twitch.{' '}
+            <span className="acc-lead-suite">
+              Joue tes games, grimpe au classement, ouvre des boosters et défie les autres joueurs.
+            </span>
           </p>
-          <div className="acc-hero-actions">
+          <div className="acc-actions">
             {rejoindre}
-            <a href="#ligue" className="btn btn-lg no-underline">
-              Comment ça marche
-            </a>
+            <CompteARebours jusqua={saison.debut} maintenant={Date.now()} jour={jourDe(saison.debut)} />
           </div>
-          {!twitchEnabled && (
-            <p className="acc-hero-note">
-              La connexion Twitch ouvre bientôt.
-              {devLogin ? ' La connexion de développement reste ouverte en local.' : ''}
-            </p>
-          )}
+          <p className="acc-note">
+            {twitchEnabled
+              ? 'Ton compte Twitch suffit : pas de mot de passe.'
+              : `La connexion Twitch ouvre bientôt.${devLogin ? ' La connexion de développement reste ouverte en local.' : ''}`}
+          </p>
         </div>
 
-        <EventailBoosters>
-          <div className="acc-eventail-cadre">
-            <div className="acc-eventail-fumee fumee" data-pack="finisseur" data-niveau="4">
-              <span className="fumee-nappe fumee-nappe-1" />
-              <span className="fumee-nappe fumee-nappe-2" />
-              <span className="fumee-nappe fumee-nappe-3" />
-            </div>
-          </div>
-          {PACKS.map((p, i) => (
-            <div
-              key={p.id}
-              className="acc-eventail-sachet"
-              // La place dans l'arc (-1,5 à gauche, +1,5 à droite) et le rang
-              // de distribution, du premier au dernier.
-              style={
-                {
-                  ['--o' as string]: i - 1.5,
-                  ['--o-abs' as string]: Math.abs(i - 1.5),
-                  ['--rang' as string]: i,
-                } as CSSProperties
-              }
-            >
-              <div className="acc-eventail-parallaxe">
-                <BoosterPack3D
-                  name={p.name}
-                  cardCount={1}
-                  gradient={p.gradient}
-                  art={packArt(p.id)}
-                  rarete={GEMME_DU_PACK[p.id]}
-                  vignette
-                />
-              </div>
-            </div>
-          ))}
-        </EventailBoosters>
+        <VitrineBoosters boosters={boosters} />
       </section>
 
-      {/* ---- La ligue, en cinq dalles de glace ---- */}
-      <section id="ligue" className="acc-ligue" aria-labelledby="ligue-titre">
-        <header className="acc-ligue-tete">
-          <p className="eyebrow">Comment ça marche</p>
-          <h2 id="ligue-titre" className="titre-glace titre-glace-page">
-            <span className="glace" data-text="La ligue en cinq cartes">
-              La ligue en cinq cartes
-            </span>
-          </h2>
-          <p className="acc-ligue-indice">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M8 9 5 12l3 3M16 9l3 3-3 3M5 12h14" />
-            </svg>
-            Fais glisser les cartes
-          </p>
-        </header>
-        <Diaporama label="La ligue en cinq cartes" diapositives={DIAPOS} />
-        <div className="acc-ligue-fin">
-          {rejoindre}
-          <p>{avantLaSaison ? `Coup d’envoi le ${debut}.` : `En jeu jusqu’au ${fin}.`}</p>
-        </div>
+      {/* ---- La ligue en cinq étapes, en blocs de glace ---- */}
+      <section className="acc-etapes" aria-labelledby="etapes-titre">
+        <RailEtapes
+          titre={
+            <>
+              <h2 id="etapes-titre">
+                <span className="acc-etapes-sur">Comment ça marche</span>
+                <span className="acc-etapes-grand">La ligue en cinq étapes</span>
+              </h2>
+              <span className="acc-etapes-trait" aria-hidden="true" />
+            </>
+          }
+        >
+          <Etape
+            numero={1}
+            teinte="var(--gold)"
+            theme="Le classement"
+            icone={<IconTrophy />}
+            titre="Marque des points"
+          >
+            <b>1 point</b> par kill, <b>+{PLACEMENT_POINTS['1']}</b> le Top 1, <b>+{PLACEMENT_POINTS['2']}</b> le
+            Top 2, <b>+{PLACEMENT_POINTS['3']}</b> le Top 3. Tes {saison.games} games font ton total.
+          </Etape>
+          <Etape
+            numero={2}
+            teinte="var(--ice)"
+            theme="Les flocons"
+            icone={<IconSnowflake />}
+            titre="Gagne des flocons"
+          >
+            <b>+{ECONOMY.perKill} ❄</b> par kill, <b>+{ECONOMY.perPlacement['1']} ❄</b> le Top 1,{' '}
+            <b>+{CADEAU_DU_JOUR.parJour} ❄</b> chaque jour. Ils ne s’achètent pas : ils se gagnent.
+          </Etape>
+          <Etape
+            numero={3}
+            teinte="var(--violet)"
+            theme="Les boosters"
+            icone={<IconPack />}
+            titre="Ouvre des boosters"
+          >
+            Les subs du live en font tomber, ouverts <b>en direct</b>. Chacun donne <b>une carte</b> qui change une
+            game : bonus ou malus.
+          </Etape>
+          <Etape
+            numero={4}
+            teinte="var(--aurora)"
+            theme="La chance"
+            icone={<IconJauge />}
+            titre="Vise les cartes rares"
+          >
+            Garde tes flocons : plus ta réserve est grosse, plus tu tires rare. Jusqu’à{' '}
+            <b>×{1 + CHANCE.max} de chance</b>.
+          </Etape>
+          <Etape
+            numero={5}
+            teinte="color-mix(in srgb, var(--live) 55%, var(--violet))"
+            theme="Les duels"
+            icone={<IconSwords />}
+            titre="Défie les autres"
+          >
+            Mise tes flocons contre un joueur : même mise, <b>une chance sur deux</b>, et le gagnant rafle tout.
+          </Etape>
+        </RailEtapes>
+        <div className="acc-fin">{rejoindre}</div>
       </section>
     </div>
   );
