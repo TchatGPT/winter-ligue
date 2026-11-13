@@ -161,6 +161,28 @@ export function gamesSansCarte(db: Database, joueurId: string): Game[] {
     .sort((a, b) => b.playedAt.localeCompare(a.playedAt));
 }
 
+/**
+ * Les games qu'une carte peut **prendre** — échanger, copier, figer —
+ * (décidé le 13/11/2026) : toute game comptée qui n'est pas figée. Une carte
+ * déjà posée dessus (un ×2, un « +10 si Top 3 »…) ne la protège pas ; seules
+ * une carte qui fige (Cryogénisation, « fige ») et la trace d'un Pacte du Givre
+ * le font. L'immunité du joueur se vérifie à part. Les plus récentes en tête.
+ *
+ * Les bonus qu'un joueur pose sur sa propre game gardent, eux, la règle
+ * « une game, une carte » (`gamesSansCarte`).
+ */
+export function gamesPrenables(db: Database, joueurId: string): Game[] {
+  return db.games
+    .filter(
+      (g) =>
+        g.playerId === joueurId &&
+        !g.skipped &&
+        !estFigee(g) &&
+        !g.applied.some((a) => a.cardId === PACTE_SUBI.id),
+    )
+    .sort((a, b) => b.playedAt.localeCompare(a.playedAt));
+}
+
 /* --------------------------- Ce qu'une carte demande --------------------- */
 
 interface Demande {
@@ -432,11 +454,11 @@ function regleSurJouee(db: Database, pendante: CarteEnAttente, card: CardDefinit
     };
   }
   if (effect.kind === 'fige_meilleure') {
-    // La meilleure game encore sans carte ; à égalité, la plus récente. La
-    // carte s'y pose sans en changer le score : elle prend la place, et plus
-    // aucune autre ne peut la toucher.
+    // Sa meilleure game pas encore figée — même si une carte y est déjà
+    // passée (13/11/2026) — ; à égalité, la plus récente. La carte s'y pose
+    // sans en changer le score, et plus aucune autre ne peut la toucher.
     // Jamais sa pire game : il doit pouvoir s'en débarrasser (12/11/2026).
-    const libres = gamesSansCarte(db, pendante.joueurId).filter((g) => g.id !== pireComptee(db, pendante.joueurId)?.id);
+    const libres = gamesPrenables(db, pendante.joueurId).filter((g) => g.id !== pireComptee(db, pendante.joueurId)?.id);
     if (libres.length === 0) return attend;
     const meilleure = [...libres].sort((a, b) => b.score - a.score)[0];
     // Inscrite sur la game, à zéro point : elle s'y voit, et la game n'est
@@ -739,7 +761,7 @@ export function choisitGamesRoue(db: Database, card: CardDefinition, joueurs: re
           const toutes = comptees(db, p.id);
           const pire = parScore(toutes)[0];
           const meilleure = parScore(toutes).at(-1);
-          let libres = gamesSansCarte(db, p.id).filter((g) => g.id !== pire?.id);
+          let libres = gamesPrenables(db, p.id).filter((g) => g.id !== pire?.id);
           if (action.meilleureExclue) libres = libres.filter((g) => g.id !== meilleure?.id);
           return libres.length ? pour(p, 'une game au hasard, figée', [pick(libres)], libres) : null;
         }),
@@ -751,7 +773,7 @@ export function choisitGamesRoue(db: Database, card: CardDefinition, joueurs: re
           const toutes = comptees(db, p.id);
           if (toutes.length < action.minGames) return null;
           const pire = parScore(toutes)[0];
-          const libres = gamesSansCarte(db, p.id).filter((g) => g.id !== pire?.id);
+          const libres = gamesPrenables(db, p.id).filter((g) => g.id !== pire?.id);
           const meilleure = parScore(libres).at(-1);
           return meilleure ? pour(p, 'sa meilleure game, figée', [meilleure], libres) : null;
         }),
@@ -760,8 +782,8 @@ export function choisitGamesRoue(db: Database, card: CardDefinition, joueurs: re
     case 'echange_meilleure_pire': {
       const [a, b] = joueurs;
       if (!a || !b) return null;
-      const libresA = gamesSansCarte(db, a.id);
-      const libresB = gamesSansCarte(db, b.id);
+      const libresA = gamesPrenables(db, a.id);
+      const libresB = gamesPrenables(db, b.id);
       if (libresA.length === 0 || libresB.length === 0) return null;
       if (action.quoi === 'echange_hasard') {
         // Du hasard pur (12/11/2026) : une game au sort chez chacun, toutes à
@@ -784,7 +806,7 @@ export function choisitGamesRoue(db: Database, card: CardDefinition, joueurs: re
     case 'clone_sur_pire': {
       const [a, b] = joueurs;
       if (!a || !b) return null;
-      const libresA = gamesSansCarte(db, a.id);
+      const libresA = gamesPrenables(db, a.id);
       const sources = comptees(db, b.id);
       if (libresA.length === 0 || sources.length === 0) return null;
       return fait(
@@ -959,8 +981,8 @@ function regleRoue(
         for (const m of groupe) pour(m, sansEffet('il faut deux joueurs, sans effet'));
         break;
       }
-      const libresA = gamesSansCarte(db, a.joueur.id);
-      const libresB = gamesSansCarte(db, b.joueur.id);
+      const libresA = gamesPrenables(db, a.joueur.id);
+      const libresB = gamesPrenables(db, b.joueur.id);
       if (action.quoi === 'clone_sur_pire') {
         // La pire game libre du premier prend le score de la meilleure du
         // second, qui la garde : elle est copiée, pas déplacée.
@@ -1095,7 +1117,7 @@ function regleRoue(
         // Jamais la pire game : il doit pouvoir s'en débarrasser.
         const pire = [...toutes].sort((x, y) => x.score - y.score)[0];
         const meilleure = [...toutes].sort((x, y) => y.score - x.score)[0];
-        let libres = gamesSansCarte(db, m.joueur.id).filter((g) => g.id !== pire?.id);
+        let libres = gamesPrenables(db, m.joueur.id).filter((g) => g.id !== pire?.id);
         if (action.quoi === 'fige_meilleure' && toutes.length < action.minGames) libres = [];
         if (action.quoi === 'fige_hasard' && action.meilleureExclue) libres = libres.filter((g) => g.id !== meilleure?.id);
         if (libres.length === 0) {
@@ -1118,7 +1140,7 @@ function regleRoue(
           pour(m, sansEffet('paré par l’immunité : hors de la chaîne'));
           continue;
         }
-        let libres = gamesSansCarte(db, m.joueur.id);
+        let libres = gamesPrenables(db, m.joueur.id);
         if (action.quoi === 'chaine_tete') {
           // Ni sa meilleure ni sa pire.
           const toutes = comptees(db, m.joueur.id);
@@ -1279,7 +1301,7 @@ export function joueFigeGarde(db: Database, carteId: string, now = new Date()): 
   const card = pendante ? getCard(pendante.cardId) : null;
   if (!pendante || !card || card.effect.kind !== 'fige_garde') return 'CARTE';
   const pire = pireComptee(db, pendante.joueurId);
-  const libres = gamesSansCarte(db, pendante.joueurId).filter((g) => g.id !== pire?.id);
+  const libres = gamesPrenables(db, pendante.joueurId).filter((g) => g.id !== pire?.id);
   if (libres.length === 0) return 'GAMES';
   const meilleure = [...libres].sort((a, b) => b.score - a.score)[0];
   applyPoints(db, meilleure, card, pendante.ouvertureId, 0);
@@ -1324,8 +1346,8 @@ export function joueEchangeCible(
     (c) => c.joueurId === pendante.joueurId && c.cardId === TROC_SUBI.id && c.paireId === cible.id,
   );
   if (dejaJoue && !revanche) return 'DEJA';
-  const miennes = gamesSansCarte(db, pendante.joueurId);
-  const siennes = gamesSansCarte(db, cible.id);
+  const miennes = gamesPrenables(db, pendante.joueurId);
+  const siennes = gamesPrenables(db, cible.id);
   if (miennes.length === 0 || siennes.length === 0) return 'GAMES';
   const pire = [...miennes].sort((a, b) => a.score - b.score)[0];
   const meilleure = [...siennes].sort((a, b) => b.score - a.score)[0];
@@ -1635,7 +1657,8 @@ export const gamesJouees = (db: Database, joueurId: string) =>
 
 /**
  * Joue un Pacte du Givre gardé par un joueur : une de ses games et une game
- * d'un autre joueur, toutes deux encore sans carte, échangent leur score —
+ * d'un autre joueur, toutes deux prenables — pas figées (`gamesPrenables`) —,
+ * échangent leur score —
  * chacune repart avec celui de l'autre, au grand livre des points de la game
  * (`applyPoints`). Le Pacte est consommé sur sa game ; sur celle de l'autre,
  * une trace (`PACTE_SUBI`) dit d'où vient l'échange, et en fait une game qui
@@ -1656,10 +1679,10 @@ export function joueEchangeChoisi(
   const card = pendante ? getCard(pendante.cardId) : null;
   if (!pendante || !card || card.effect.kind !== 'echange_choisi') return 'CARTE';
   if (gamesJouees(db, pendante.joueurId) < card.effect.minGames) return 'TROP_TOT';
-  const maGame = gamesSansCarte(db, pendante.joueurId).find((g) => g.id === maGameId);
+  const maGame = gamesPrenables(db, pendante.joueurId).find((g) => g.id === maGameId);
   if (!maGame) return 'MA_GAME';
   const autreGame = db.games.find((g) => g.id === autreGameId && g.playerId !== pendante.joueurId);
-  if (!autreGame || !gamesSansCarte(db, autreGame.playerId).some((g) => g.id === autreGame.id)) return 'AUTRE_GAME';
+  if (!autreGame || !gamesPrenables(db, autreGame.playerId).some((g) => g.id === autreGame.id)) return 'AUTRE_GAME';
 
   const moi = db.players.find((p) => p.id === pendante.joueurId);
   const lui = db.players.find((p) => p.id === autreGame.playerId);

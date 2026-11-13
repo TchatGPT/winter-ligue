@@ -169,6 +169,19 @@ describe('le tirage des games', () => {
     expect(o.games!.parJoueur[1]).toMatchObject({ libelle: 'sa pire game', visees: [{ numero: 1 }] });
   });
 
+  it('« Contre-Vent » prend la meilleure game même si une carte l’a doublée — pas une game figée (13/11/2026)', () => {
+    const db = ligue('a', 'b');
+    const top = db.games.filter((g) => g.playerId === 'a').sort((x, y) => y.score - x.score)[0];
+    top.applied.push({ id: 'x2', cardId: 'congere', ouvertureId: 'o', points: 5, at: top.createdAt });
+    top.score += 5;
+    let o = ouvre(db, 'contre-vent', ['a', 'b']);
+    expect(o.games!.parJoueur[0]!.visees[0].id).toBe(top.id);
+    // Figée, elle est protégée : c'est la suivante qui part.
+    top.applied.push({ id: 'f', cardId: 'cryogenisation', ouvertureId: 'o', points: 0, at: top.createdAt });
+    o = ouvre(db, 'contre-vent', ['a', 'b']);
+    expect(o.games!.parJoueur[0]!.visees[0].id).not.toBe(top.id);
+  });
+
   it('une carte pour toute la ligue ne déroule pas de games', () => {
     const db = ligue('a', 'b', 'c', 'd');
     expect(choisitGamesRoue(db, getCard('cime-eclatante')!, db.players)).toBeNull();

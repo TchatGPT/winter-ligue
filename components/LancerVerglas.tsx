@@ -29,7 +29,7 @@ function Avatar({ joueur, grand }: { joueur: Pick<RankingRow, 'pseudo' | 'avatar
  * Jouer une carte gardée qui vise un joueur, pour la modération : une fenêtre
  * à part, ouverte depuis la fiche de la carte. Le Verglas du Perso et
  * l'Éboulement du Finisseur retirent des points à la victime ; le Troc des
- * Neiges du Finisseur échange la pire game libre du porteur contre la
+ * Neiges du Finisseur échange la pire game, pas figée, du porteur contre la
  * meilleure de la cible — un immunisé ne peut pas être visé.
  *
  * En haut, le coup qui se prépare — le porteur, la glace, la victime choisie.
@@ -186,7 +186,7 @@ export function LancerVerglas({
                 <p className="verglas-sous-titre">
                   {troc ? (
                     <>
-                      Choisis la cible de <strong>{porteur.pseudo}</strong> : sa pire game libre et la meilleure de la
+                      Choisis la cible de <strong>{porteur.pseudo}</strong> : sa pire game et la meilleure de la
                       cible échangent leur score.
                     </>
                   ) : (

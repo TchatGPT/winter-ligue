@@ -535,7 +535,7 @@ export const CARDS: readonly CardDefinition[] = [
     rarity: 'R',
     glyph: '🧊',
     description:
-      'Trois joueurs tirés au sort parmi ceux qui ont joué au moins 30 games figent leur meilleure game libre.',
+      'Trois joueurs tirés au sort parmi ceux qui ont joué au moins 30 games figent leur meilleure game pas encore figée.',
     effect: { kind: 'roue', action: { quoi: 'fige_meilleure', minGames: 30 } },
     nature: 'bonus',
     power: 32,
@@ -591,7 +591,7 @@ export const CARDS: readonly CardDefinition[] = [
     rarity: 'R',
     glyph: '↔️',
     description:
-      'Deux joueurs tirés au sort : la meilleure game libre du premier et la pire du second échangent leur score.',
+      'Deux joueurs tirés au sort : la meilleure game du premier et la pire du second échangent leur score — une carte déjà jouée dessus n’y change rien, seule une game figée y échappe.',
     effect: { kind: 'roue', action: { quoi: 'echange_meilleure_pire' } },
     nature: 'bonus',
     power: 46,
@@ -633,7 +633,7 @@ export const CARDS: readonly CardDefinition[] = [
     rarity: 'UR',
     glyph: '📋',
     description:
-      'Deux joueurs tirés au sort : la pire game libre du premier prend le score de la meilleure game du second, qui garde la sienne.',
+      'Deux joueurs tirés au sort : la pire game du premier prend le score de la meilleure game du second, qui garde la sienne. Seule une game figée y échappe.',
     effect: { kind: 'roue', action: { quoi: 'clone_sur_pire' } },
     nature: 'bonus',
     power: 70,
@@ -721,7 +721,7 @@ export const CARDS: readonly CardDefinition[] = [
     rarity: 'UR',
     glyph: '🌪',
     description:
-      'Tous les joueurs qui ont une game libre entrent dans une chaîne tirée au sort : chacun donne une game au hasard au suivant. Les immunisés n’y entrent pas.',
+      'Tous les joueurs entrent dans une chaîne tirée au sort : chacun donne une game au hasard, pas figée, au suivant. Les immunisés n’y entrent pas.',
     effect: { kind: 'roue', action: { quoi: 'echange_general' } },
     nature: 'bonus',
     power: 76,
@@ -850,7 +850,7 @@ export const CARDS: readonly CardDefinition[] = [
     rarity: 'UR',
     glyph: '🗿',
     description:
-      'Ta meilleure game libre est figée — jamais ta pire : plus aucune carte ne peut la toucher. Si elle l’est déjà, c’est la suivante.',
+      'Ta meilleure game est figée — jamais ta pire : plus aucune carte ne peut la toucher. Si elle l’est déjà, c’est la suivante.',
     effect: { kind: 'roue', action: { quoi: 'fige_meilleure', minGames: 0 } },
     nature: 'bonus',
     power: 80,
@@ -864,7 +864,7 @@ export const CARDS: readonly CardDefinition[] = [
     rarity: 'L',
     glyph: '🔁',
     description:
-      'Tu la gardes et désignes un joueur : ta pire game libre et sa meilleure échangent leur score. Une seule fois par joueur, sauf la revanche contre qui t’a visé. Un joueur immunisé ne peut pas être visé.',
+      'Tu la gardes et désignes un joueur : ta pire game et sa meilleure, pas figées, échangent leur score. Une seule fois par joueur, sauf la revanche contre qui t’a visé. Un joueur immunisé ne peut pas être visé.',
     effect: { kind: 'echange_cible' },
     nature: 'bonus',
     power: 94,

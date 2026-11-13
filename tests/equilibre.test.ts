@@ -373,17 +373,22 @@ describe('le Pacte du Givre', () => {
     expect(enAttente(db, 'a')).toHaveLength(0);
   });
 
-  it('refuse une game qui porte déjà une carte, et la sienne pour l’autre', () => {
+  it('refuse une game figée, et la sienne pour l’autre — pas une game qui porte un simple bonus (13/11/2026)', () => {
     const db = base('a', 'b');
     pose(db, 'a', 'pacte-du-givre', 1);
     const garde = enAttente(db, 'a')[0];
     const mienne = porteur(db, 30);
     const autreDeMoi = game(db, 'a', 9);
     expect(joueEchangeChoisi(db, garde.id, mienne.id, autreDeMoi.id)).toBe('AUTRE_GAME');
-    const sienne = game(db, 'b', 20);
-    sienne.applied.push({ id: 'x', cardId: 'congere', ouvertureId: 'o', points: 4, at: sienne.createdAt });
-    expect(joueEchangeChoisi(db, garde.id, mienne.id, sienne.id)).toBe('AUTRE_GAME');
+    const figee = game(db, 'b', 20);
+    figee.applied.push({ id: 'x', cardId: 'cryogenisation', ouvertureId: 'o', points: 0, at: figee.createdAt });
+    expect(joueEchangeChoisi(db, garde.id, mienne.id, figee.id)).toBe('AUTRE_GAME');
     expect(enAttente(db, 'a')).toHaveLength(1);
+    // Une game qui porte un bonus se prend : l'échange a lieu.
+    const bonus = game(db, 'b', 25);
+    bonus.applied.push({ id: 'y', cardId: 'congere', ouvertureId: 'o', points: 4, at: bonus.createdAt });
+    expect(joueEchangeChoisi(db, garde.id, mienne.id, bonus.id)).not.toBe('AUTRE_GAME');
+    expect(enAttente(db, 'a')).toHaveLength(0);
   });
 
   it('tombe si celui qui y perdrait est immunisé', () => {

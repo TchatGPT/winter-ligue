@@ -75,9 +75,14 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   (`/api/admin/cartes/figer`, `joueFigeGarde`). **La pire game d'un joueur ne se fige
   jamais**, par aucune carte.
   Elles se règlent tout de suite, une fois la carte révélée, **une seule fois pour
-  tous les joueurs tirés** (les cartes d'une même ouverture). « Figée » veut dire :
-  qui porte déjà une carte ; une action qui change un score ne prend qu'une game
-  libre. Les games ne changent pas de main : leurs scores s'échangent
+  tous les joueurs tirés** (les cartes d'une même ouverture). **Prendre une game**
+  — l'échanger, la copier, la figer : Neige Mêlée, Contre-Vent, Calque, les chaînes,
+  le Troc, le Pacte, la Cryogénisation et les « fige » — vise toute game comptée
+  **qui n'est pas figée** (`gamesPrenables`, décidé le 13/11/2026) : une carte déjà
+  jouée dessus (un ×2, un bonus) ne la protège pas ; seules une carte qui fige
+  (`estFigee`), la trace d'un Pacte (`PACTE_SUBI`) et l'immunité du joueur le font.
+  Les bonus qu'on pose sur sa propre game gardent « une game, une carte »
+  (`gamesSansCarte`). Les games ne changent pas de main : leurs scores s'échangent
   (`applyPoints`), et un clone ou un vol de score arrive en points hors game. Leur
   tirage a ses cibles (`TROIS`, `SIX`, `DIX_PREMIERS`, `CINQ_DERNIERS`,
   `beneficiairesRoue`) et ignore la règle « pas de stock » : rien n'en reste en
@@ -141,7 +146,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   sous les points (« dont +N bonus », `totals.horsGame`), où ils sont déjà comptés.
 - **Le Pacte du Givre** (`kind: 'echange_choisi'`, légendaire du Booster Perso, décidé le
   02/11/2026) est gardé, et ne se joue qu'à partir de la 15ᵉ game de son porteur. Il
-  choisit une de ses games et une game d'un autre joueur, toutes deux encore sans carte ;
+  choisit une de ses games et une game d'un autre joueur, toutes deux pas figées ;
   la modération fait l'échange depuis la fiche de la carte au classement
   (`/api/admin/cartes/echange`, `joueEchangeChoisi`) : chaque game repart avec le score de
   l'autre. Sur la game de l'autre, une trace (`PACTE_SUBI`, hors de `CARDS`) la fige.

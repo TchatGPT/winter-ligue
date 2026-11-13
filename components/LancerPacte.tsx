@@ -14,7 +14,7 @@ const rienAEcouter = () => () => {};
 /** La carte elle-même, pour l'en-tête de la fenêtre. */
 const PACTE = getCard('pacte-du-givre');
 
-/** Une game qu'on peut choisir : encore sans carte. */
+/** Une game qu'on peut choisir : pas figée (`gamesPrenables`). */
 interface GameChoisissable {
   id: string;
   jouee: string;
@@ -74,7 +74,7 @@ function ChoixGame({
  * deux games changent de main, chacune repart avec le score de l'autre. Trois
  * choix, dans l'ordre où le joueur les donne : une de ses games, l'autre
  * joueur, une game de cet autre joueur — trois listes déroulantes ;
- * seulement des games encore sans carte. En bas, ce que l'échange va donner,
+ * seulement des games pas figées. En bas, ce que l'échange va donner,
  * et un seul bouton. Le serveur revérifie tout (`/api/admin/cartes/echange`).
  */
 export function LancerPacte({
@@ -242,7 +242,7 @@ export function LancerPacte({
                   <label htmlFor="pacte-mienne">1. La game de {porteur.pseudo} à céder</label>
                 </h3>
                 {choix.miennes.length === 0 ? (
-                  <p className="verglas-vide">Aucune game sans carte.</p>
+                  <p className="verglas-vide">Aucune game qui ne soit figée.</p>
                 ) : (
                   <ChoixGame id="pacte-mienne" games={choix.miennes} valeur={maGame} disabled={busy} onChoisir={setMaGame} />
                 )}
@@ -253,7 +253,7 @@ export function LancerPacte({
                   <label htmlFor="pacte-autre">2. Le joueur avec qui échanger</label>
                 </h3>
                 {autres.length === 0 ? (
-                  <p className="verglas-vide">Aucun autre joueur n’a de game sans carte.</p>
+                  <p className="verglas-vide">Aucun autre joueur n’a de game qui ne soit figée.</p>
                 ) : (
                   <select
                     id="pacte-autre"

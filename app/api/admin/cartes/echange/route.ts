@@ -6,7 +6,7 @@ import type { Database } from '@/lib/db/entities';
 import { getStore } from '@/lib/db/store';
 import { getCard } from '@/lib/domain/catalog';
 import { LIMITS } from '@/lib/security/ratelimit';
-import { gamesJouees, gamesSansCarte, joueEchangeChoisi } from '@/lib/services/effects';
+import { gamesJouees, gamesPrenables, joueEchangeChoisi } from '@/lib/services/effects';
 import { audit } from '@/lib/services/ledger';
 import { joueursEnLice } from '@/lib/services/packs';
 
@@ -39,7 +39,7 @@ export async function GET(request: Request): Promise<NextResponse> {
       const card = carte ? getCard(carte.cardId) : null;
       if (!carte || !card || card.effect.kind !== 'echange_choisi') return null;
       const choisissables = (joueurId: string): GameChoisissable[] =>
-        gamesSansCarte(db, joueurId).map((game) => ({
+        gamesPrenables(db, joueurId).map((game) => ({
           id: game.id,
           jouee: game.playedAt,
           kills: game.kills,
