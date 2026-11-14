@@ -455,17 +455,18 @@ export const CARDS: readonly CardDefinition[] = [
     cible: 'TOUS',
   },
   {
-    // Changée le 12/11/2026 : commune → rare, +3 au lieu de +5.
+    // Changée le 12/11/2026 : commune → rare, +3 au lieu de +5 ; revenue en
+    // commune le 14/11/2026.
     id: 'petits-pas',
     name: 'Petits Pas',
     subtitle: '+3 pts petites games',
-    rarity: 'R',
+    rarity: 'C',
     glyph: '👣',
     description:
       '+3 points pour chaque game de moins de 5 kills, à chaque joueur.',
     effect: { kind: 'roue', action: { quoi: 'petites_games', moinsDe: 5, points: 3 } },
     nature: 'bonus',
-    power: 18,
+    power: 12,
     packs: ['commu'],
     cible: 'TOUS',
   },
@@ -529,16 +530,17 @@ export const CARDS: readonly CardDefinition[] = [
     cible: 'TOUS',
   },
   {
+    // Rare → légendaire le 14/11/2026.
     id: 'trois-glacons',
     name: 'Trois Glaçons',
     subtitle: '3 joueurs figent leur meilleure game',
-    rarity: 'R',
+    rarity: 'L',
     glyph: '🧊',
     description:
       'Trois joueurs tirés au sort parmi ceux qui ont joué au moins 30 games figent leur meilleure game pas encore figée.',
     effect: { kind: 'roue', action: { quoi: 'fige_meilleure', minGames: 30 } },
     nature: 'bonus',
-    power: 32,
+    power: 91,
     packs: ['commu'],
     cible: 'TROIS',
   },
@@ -571,16 +573,17 @@ export const CARDS: readonly CardDefinition[] = [
     cible: 'TOUS',
   },
   {
+    // Rare → commune le 14/11/2026.
     id: 'triple-echo',
     name: 'Triple Écho',
     subtitle: 'Game aléatoire ×2 — 3 joueurs',
-    rarity: 'R',
+    rarity: 'C',
     glyph: '🎲',
     description:
       'Trois joueurs tirés au sort voient une game libre au hasard compter double.',
     effect: { kind: 'roue', action: { quoi: 'hasard_fois', facteur: 2 } },
     nature: 'bonus',
-    power: 42,
+    power: 12,
     packs: ['commu'],
     cible: 'TROIS',
   },
