@@ -34,7 +34,7 @@ Le même que pour le Booster Perso, calé sur la couleur du cadre :
 *+100 flocons pour tous*
 
 ```
-Semi-realistic painterly digital illustration, cinematic winter landscape key art. A calm clear winter sky suddenly filled with countless large sparkling snowflake crystals drifting down evenly over a wide snowy valley, every flake catching the pale light, the whole valley being gently covered. Soft natural winter daylight, cold blue-grey palette, no magic glow. One clear focal point in the centre, shallow depth of field, generous space around the edges. Portrait 5:6 composition. No people, no text, no letters, no logo, no border, no frame, no UI.
+Semi-realistic painterly digital illustration, cinematic winter key art, highly detailed, rich painterly brushwork. Above a cosy snowy mountain village at blue hour, the sky has turned into crystal: a huge, intricate six-branched snowflake made of clear faceted ice hangs high in the sky as the clear focal point, slowly breaking apart into hundreds of smaller detailed ice crystals that rain down gently onto every snowy rooftop of the village, each crystal catching the light. Snowy pine trees, smoke rising from chimneys, warm yellow light in every window. Cold blue palette, soft natural light, no aurora, no magical colour glow. Strong depth: crisp crystal in the foreground sky, softly blurred village below. Portrait 5:6 composition. No people, no text, no letters, no logo, no border, no frame, no UI.
 ```
 
 ### Premières Neiges — `petits-pas.webp`
