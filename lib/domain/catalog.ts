@@ -516,16 +516,17 @@ export const CARDS: readonly CardDefinition[] = [
   },
   {
     // Changée le 12/11/2026 : rare → ultra rare.
+    // Ultra rare → rare le 14/11/2026.
     id: 'deneigement',
     name: 'Déneigement',
     subtitle: 'Suppression de la pire game',
-    rarity: 'UR',
+    rarity: 'R',
     glyph: '🧹',
     description:
       'La pire game libre de chaque joueur est supprimée : elle ne compte plus, son créneau est rendu.',
     effect: { kind: 'roue', action: { quoi: 'supprime_pire' } },
     nature: 'bonus',
-    power: 73,
+    power: 56,
     packs: ['commu'],
     cible: 'TOUS',
   },
