@@ -439,11 +439,12 @@ export const CARDS: readonly CardDefinition[] = [
     cible: 'HASARD',
   },
   /* ===================== Booster Commu — la Roue Communautaire ===================== */
-  // Les roues de la Summer Ligue, reprises telles quelles le 03/11/2026.
+  // Les roues de la Summer Ligue, reprises telles quelles le 03/11/2026 ; leurs
+  // noms d'hiver refaits le 14/11/2026 (les identifiants ne changent pas).
   {
     // Changée le 12/11/2026 : plus de game sup, 100 flocons pour chacun.
     id: 'flocon-de-plus',
-    name: 'Flocon de Plus',
+    name: 'Tournée du Traîneau',
     subtitle: '+100 flocons pour tous',
     rarity: 'C',
     glyph: '❄️',
@@ -458,7 +459,7 @@ export const CARDS: readonly CardDefinition[] = [
     // Changée le 12/11/2026 : commune → rare, +3 au lieu de +5 ; revenue en
     // commune le 14/11/2026.
     id: 'petits-pas',
-    name: 'Petits Pas',
+    name: 'Raquettes à Neige',
     subtitle: '+3 pts petites games',
     rarity: 'C',
     glyph: '👣',
@@ -473,7 +474,7 @@ export const CARDS: readonly CardDefinition[] = [
   {
     // Changée le 12/11/2026 : commune → ultra rare.
     id: 'couronnes-de-givre',
-    name: 'Couronnes de Givre',
+    name: 'Coupe de Cristal',
     subtitle: '+5 pts par Top 1',
     rarity: 'UR',
     glyph: '👑',
@@ -488,7 +489,7 @@ export const CARDS: readonly CardDefinition[] = [
   {
     // Changée le 12/11/2026 : commune → ultra rare.
     id: 'givre-errant',
-    name: 'Givre Errant',
+    name: 'Haleine du Yéti',
     subtitle: '3 joueurs figent une game au hasard',
     rarity: 'UR',
     glyph: '🧊',
@@ -502,7 +503,7 @@ export const CARDS: readonly CardDefinition[] = [
   },
   {
     id: 'neige-melee',
-    name: 'Neige Mêlée',
+    name: 'Bataille de Neige',
     subtitle: 'Échange 2 games aléatoires',
     rarity: 'C',
     glyph: '🔀',
@@ -518,7 +519,7 @@ export const CARDS: readonly CardDefinition[] = [
     // Changée le 12/11/2026 : rare → ultra rare.
     // Ultra rare → rare le 14/11/2026.
     id: 'deneigement',
-    name: 'Déneigement',
+    name: 'Dameuse',
     subtitle: 'Suppression de la pire game',
     rarity: 'R',
     glyph: '🧹',
@@ -533,7 +534,7 @@ export const CARDS: readonly CardDefinition[] = [
   {
     // Rare → légendaire le 14/11/2026.
     id: 'trois-glacons',
-    name: 'Trois Glaçons',
+    name: 'Trois Flammes Gelées',
     subtitle: '3 joueurs figent leur meilleure game',
     rarity: 'L',
     glyph: '🧊',
@@ -547,7 +548,7 @@ export const CARDS: readonly CardDefinition[] = [
   },
   {
     id: 'degel-double',
-    name: 'Dégel Double',
+    name: 'Moufles Doublées',
     subtitle: 'Pire game ×2',
     rarity: 'R',
     glyph: '✖️',
@@ -561,7 +562,7 @@ export const CARDS: readonly CardDefinition[] = [
   },
   {
     id: 'cime-eclatante',
-    name: 'Cime Éclatante',
+    name: 'Sapin Illuminé',
     subtitle: 'Meilleure game ×1,5',
     rarity: 'R',
     glyph: '⛰',
@@ -576,7 +577,7 @@ export const CARDS: readonly CardDefinition[] = [
   {
     // Rare → commune le 14/11/2026.
     id: 'triple-echo',
-    name: 'Triple Écho',
+    name: 'Carillon de Glace',
     subtitle: 'Game aléatoire ×2 — 3 joueurs',
     rarity: 'C',
     glyph: '🎲',
@@ -590,7 +591,7 @@ export const CARDS: readonly CardDefinition[] = [
   },
   {
     id: 'contre-vent',
-    name: 'Contre-Vent',
+    name: 'Télésiège',
     subtitle: 'Échange meilleure ↔ pire',
     rarity: 'R',
     glyph: '↔️',
@@ -604,7 +605,7 @@ export const CARDS: readonly CardDefinition[] = [
   },
   {
     id: 'ronde-des-cimes',
-    name: 'Ronde des Cimes',
+    name: 'Ronde des Patineurs',
     subtitle: 'Échange entre les 10 premiers',
     rarity: 'R',
     glyph: '🔄',
@@ -618,7 +619,7 @@ export const CARDS: readonly CardDefinition[] = [
   },
   {
     id: 'miroir-des-cimes',
-    name: 'Miroir des Cimes',
+    name: 'Étoile Filante',
     subtitle: 'Clone meilleure → joueur aléatoire',
     rarity: 'UR',
     glyph: '🪞',
@@ -632,7 +633,7 @@ export const CARDS: readonly CardDefinition[] = [
   },
   {
     id: 'calque-de-givre',
-    name: 'Calque de Givre',
+    name: 'Sculpteur de Glace',
     subtitle: 'Clone meilleure → pire aléatoire',
     rarity: 'UR',
     glyph: '📋',
@@ -646,7 +647,7 @@ export const CARDS: readonly CardDefinition[] = [
   },
   {
     id: 'voleur-d-hiver',
-    name: 'Voleur d’Hiver',
+    name: 'Renard Polaire',
     subtitle: 'Vol de score',
     rarity: 'L',
     glyph: '🦹',
