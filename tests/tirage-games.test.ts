@@ -113,7 +113,7 @@ const touchee = (db: Database, cardId: string, playerId: string) =>
   db.games.filter((g) => g.playerId === playerId && g.applied.some((a) => a.cardId === cardId));
 
 describe('le tirage des games', () => {
-  it('« Carillon de Glace » tire une game par joueur, et la carte frappe celle-là', () => {
+  it('« Tonnerre de Neige » tire une game par joueur, et la carte frappe celle-là', () => {
     for (let essai = 0; essai < 6; essai += 1) {
       const db = ligue('a', 'b', 'c');
       const o = ouvre(db, 'triple-echo', ['a', 'b', 'c']);
@@ -129,7 +129,7 @@ describe('le tirage des games', () => {
     }
   });
 
-  it('« Bataille de Neige » échange les deux games tirées, et seulement elles', () => {
+  it('« Vents Croisés » échange les deux games tirées, et seulement elles', () => {
     for (let essai = 0; essai < 6; essai += 1) {
       const db = ligue('a', 'b');
       const o = ouvre(db, 'neige-melee', ['a', 'b']);
@@ -144,7 +144,7 @@ describe('le tirage des games', () => {
     }
   });
 
-  it('« Haleine du Yéti » ne tire jamais la pire ni la meilleure game', () => {
+  it('« Brouillard Givrant » ne tire jamais la pire ni la meilleure game', () => {
     for (let essai = 0; essai < 20; essai += 1) {
       const db = ligue('a', 'b', 'c');
       const o = ouvre(db, 'givre-errant', ['a', 'b', 'c']);
@@ -161,7 +161,7 @@ describe('le tirage des games', () => {
     }
   });
 
-  it('« Télésiège » désigne ses games sans hasard : la meilleure du premier, la pire du second', () => {
+  it('« Inversion Polaire » désigne ses games sans hasard : la meilleure du premier, la pire du second', () => {
     const db = ligue('a', 'b');
     const o = ouvre(db, 'contre-vent', ['a', 'b']);
     expect(o.games).toMatchObject({ hasard: false, lien: 'echange' });
@@ -169,7 +169,7 @@ describe('le tirage des games', () => {
     expect(o.games!.parJoueur[1]).toMatchObject({ libelle: 'sa pire game', visees: [{ numero: 1 }] });
   });
 
-  it('« Télésiège » prend la meilleure game même si une carte l’a doublée — pas une game figée (13/11/2026)', () => {
+  it('« Inversion Polaire » prend la meilleure game même si une carte l’a doublée — pas une game figée (13/11/2026)', () => {
     const db = ligue('a', 'b');
     const top = db.games.filter((g) => g.playerId === 'a').sort((x, y) => y.score - x.score)[0];
     top.applied.push({ id: 'x2', cardId: 'congere', ouvertureId: 'o', points: 5, at: top.createdAt });
@@ -207,7 +207,7 @@ describe('le tirage des games', () => {
 });
 
 describe('le compte rendu d’une ouverture', () => {
-  it('« Bataille de Neige » : qui a échangé quelle game, et ce que chacun y gagne ou y perd', () => {
+  it('« Vents Croisés » : qui a échangé quelle game, et ce que chacun y gagne ou y perd', () => {
     const db = ligue('a', 'b');
     // Les games de B valent toutes plus que celles de A : l'un gagne, l'autre perd.
     for (const g of db.games.filter((x) => x.playerId === 'b')) {
@@ -233,7 +233,7 @@ describe('le compte rendu d’une ouverture', () => {
     expect(vue.effets[0].pseudo).toBe(gagnant);
   });
 
-  it('« Carillon de Glace » : trois gains, la game doublée nommée', () => {
+  it('« Tonnerre de Neige » : trois gains, la game doublée nommée', () => {
     const db = ligue('a', 'b', 'c');
     const o = ouvre(db, 'triple-echo', ['a', 'b', 'c']);
     revele(db, o);
@@ -246,7 +246,7 @@ describe('le compte rendu d’une ouverture', () => {
     });
   });
 
-  it('« Dameuse » : la pire game rendue est un gain, pas une perte', () => {
+  it('« Fonte des Neiges » : la pire game rendue est un gain, pas une perte', () => {
     const db = ligue('a', 'b');
     const o = ouvre(db, 'deneigement', ['a', 'b']);
     revele(db, o);

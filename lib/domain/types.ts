@@ -70,7 +70,7 @@ export type ActionRoue =
   /** « Une game au hasard ÷ 2 » : arrondi au supérieur ; les immunisés y échappent. */
   | { quoi: 'hasard_divise'; diviseur: number }
   /** « Ajout d'une game sup » : un créneau de plus, comme la carte du Perso. */
-  /** Des flocons pour chacun (Tournée du Traîneau, 12/11/2026 : remplace la game sup). */
+  /** Des flocons pour chacun (Ciel de Cristal, 12/11/2026 : remplace la game sup). */
   | { quoi: 'flocons'; montant: number }
   /** « Suppression de la pire game » : elle ne compte plus, son créneau est rendu. */
   | { quoi: 'supprime_pire' }

@@ -77,7 +77,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   jamais**, par aucune carte.
   Elles se règlent tout de suite, une fois la carte révélée, **une seule fois pour
   tous les joueurs tirés** (les cartes d'une même ouverture). **Prendre une game**
-  — l'échanger, la copier, la figer : Bataille de Neige, Télésiège, Sculpteur, les chaînes,
+  — l'échanger, la copier, la figer : Vents Croisés, Inversion Polaire, Soleil Jumeau, les chaînes,
   le Troc, le Pacte, la Cryogénisation et les « fige » — vise toute game comptée
   **qui n'est pas figée** (`gamesPrenables`, décidé le 13/11/2026) : une carte déjà
   jouée dessus (un ×2, un bonus, un Pacte) ne la protège pas ; seules une carte qui
@@ -191,7 +191,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   carte touchera (`choisitGamesRoue`, `ouvertures.games`) — au sort sur un rail de
   games (`TirageGames`), ou désignées par la carte (sa pire, sa meilleure), posées sans
   rail ; un Finisseur ouvert pour un joueur ne déroule que ses games (`sansJoueurs`).
-  **Tournée du Traîneau** (Commu) verse 100 flocons à chaque joueur en lice (12/11/2026 : elle
+  **Ciel de Cristal** (Commu) verse 100 flocons à chaque joueur en lice (12/11/2026 : elle
   ajoutait une game sup), par `credit`, l'ouverture en référence.
   `regleRoue` frappe ces games-là tant qu'elles le peuvent encore (`retenue`). Pas de
   tirage des games pour une carte qui tombe sur toute la ligue.
@@ -199,8 +199,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   joueur ce que la carte a fait à son total (`CarteEnAttente.bilan`), ses textes nomment
   la game touchée (« la game 7 »), et `/api/admin/packs/revelee` rend la vue réglée —
   qui gagne, qui perd, combien (`EffetVue`, `DestinCarte`). Une pire game rendue
-  (Dameuse) compte comme un gain, pas une perte.
-  Un échange au hasard (Bataille de Neige) reste **du hasard pur** (décidé le 12/11/2026) :
+  (Fonte des Neiges) compte comme un gain, pas une perte.
+  Un échange au hasard (Vents Croisés) reste **du hasard pur** (décidé le 12/11/2026) :
   deux joueurs, puis une game au sort chez chacun, toutes à chances égales ; qui y gagne
   suit les deux scores tirés. Dès les games connues, l'écran dit le verdict — qui gagne,
   qui perd, de combien (`Verdict`, `TirageGames`) — avant la carte.

@@ -50,7 +50,7 @@ function ligue(...ids: string[]): Database {
 }
 
 describe('une carte des roues que personne ne peut encore jouer', () => {
-  it('« Trois Flammes Gelées » avant la 30ᵉ game : le booster s’ouvre, sur trois joueurs, sans game à dérouler', () => {
+  it('« Glaciation » avant la 30ᵉ game : le booster s’ouvre, sur trois joueurs, sans game à dérouler', () => {
     force.carte = 'trois-glacons';
     const db = ligue('a', 'b', 'c', 'd');
     const o = ouvreProchainDu(db, { packId: 'commu', idempotencyKey: 'k' }, 'modo');

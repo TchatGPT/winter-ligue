@@ -444,7 +444,7 @@ export const CARDS: readonly CardDefinition[] = [
   {
     // Changée le 12/11/2026 : plus de game sup, 100 flocons pour chacun.
     id: 'flocon-de-plus',
-    name: 'Tournée du Traîneau',
+    name: 'Ciel de Cristal',
     subtitle: '+100 flocons pour tous',
     rarity: 'C',
     glyph: '❄️',
@@ -459,7 +459,7 @@ export const CARDS: readonly CardDefinition[] = [
     // Changée le 12/11/2026 : commune → rare, +3 au lieu de +5 ; revenue en
     // commune le 14/11/2026.
     id: 'petits-pas',
-    name: 'Raquettes à Neige',
+    name: 'Premières Neiges',
     subtitle: '+3 pts petites games',
     rarity: 'C',
     glyph: '👣',
@@ -474,7 +474,7 @@ export const CARDS: readonly CardDefinition[] = [
   {
     // Changée le 12/11/2026 : commune → ultra rare.
     id: 'couronnes-de-givre',
-    name: 'Coupe de Cristal',
+    name: 'Aurore Triomphale',
     subtitle: '+5 pts par Top 1',
     rarity: 'UR',
     glyph: '👑',
@@ -489,7 +489,7 @@ export const CARDS: readonly CardDefinition[] = [
   {
     // Changée le 12/11/2026 : commune → ultra rare.
     id: 'givre-errant',
-    name: 'Haleine du Yéti',
+    name: 'Brouillard Givrant',
     subtitle: '3 joueurs figent une game au hasard',
     rarity: 'UR',
     glyph: '🧊',
@@ -503,7 +503,7 @@ export const CARDS: readonly CardDefinition[] = [
   },
   {
     id: 'neige-melee',
-    name: 'Bataille de Neige',
+    name: 'Vents Croisés',
     subtitle: 'Échange 2 games aléatoires',
     rarity: 'C',
     glyph: '🔀',
@@ -519,7 +519,7 @@ export const CARDS: readonly CardDefinition[] = [
     // Changée le 12/11/2026 : rare → ultra rare.
     // Ultra rare → rare le 14/11/2026.
     id: 'deneigement',
-    name: 'Dameuse',
+    name: 'Fonte des Neiges',
     subtitle: 'Suppression de la pire game',
     rarity: 'R',
     glyph: '🧹',
@@ -534,7 +534,7 @@ export const CARDS: readonly CardDefinition[] = [
   {
     // Rare → légendaire le 14/11/2026.
     id: 'trois-glacons',
-    name: 'Trois Flammes Gelées',
+    name: 'Glaciation',
     subtitle: '3 joueurs figent leur meilleure game',
     rarity: 'L',
     glyph: '🧊',
@@ -548,7 +548,7 @@ export const CARDS: readonly CardDefinition[] = [
   },
   {
     id: 'degel-double',
-    name: 'Moufles Doublées',
+    name: 'Réveil du Glacier',
     subtitle: 'Pire game ×2',
     rarity: 'R',
     glyph: '✖️',
@@ -562,7 +562,7 @@ export const CARDS: readonly CardDefinition[] = [
   },
   {
     id: 'cime-eclatante',
-    name: 'Sapin Illuminé',
+    name: 'Halo Solaire',
     subtitle: 'Meilleure game ×1,5',
     rarity: 'R',
     glyph: '⛰',
@@ -577,7 +577,7 @@ export const CARDS: readonly CardDefinition[] = [
   {
     // Rare → commune le 14/11/2026.
     id: 'triple-echo',
-    name: 'Carillon de Glace',
+    name: 'Tonnerre de Neige',
     subtitle: 'Game aléatoire ×2 — 3 joueurs',
     rarity: 'C',
     glyph: '🎲',
@@ -591,7 +591,7 @@ export const CARDS: readonly CardDefinition[] = [
   },
   {
     id: 'contre-vent',
-    name: 'Télésiège',
+    name: 'Inversion Polaire',
     subtitle: 'Échange meilleure ↔ pire',
     rarity: 'R',
     glyph: '↔️',
@@ -605,7 +605,7 @@ export const CARDS: readonly CardDefinition[] = [
   },
   {
     id: 'ronde-des-cimes',
-    name: 'Ronde des Patineurs',
+    name: 'Valse Boréale',
     subtitle: 'Échange entre les 10 premiers',
     rarity: 'R',
     glyph: '🔄',
@@ -619,7 +619,7 @@ export const CARDS: readonly CardDefinition[] = [
   },
   {
     id: 'miroir-des-cimes',
-    name: 'Étoile Filante',
+    name: 'Mirage Polaire',
     subtitle: 'Clone meilleure → joueur aléatoire',
     rarity: 'UR',
     glyph: '🪞',
@@ -633,7 +633,7 @@ export const CARDS: readonly CardDefinition[] = [
   },
   {
     id: 'calque-de-givre',
-    name: 'Sculpteur de Glace',
+    name: 'Soleil Jumeau',
     subtitle: 'Clone meilleure → pire aléatoire',
     rarity: 'UR',
     glyph: '📋',
@@ -647,7 +647,7 @@ export const CARDS: readonly CardDefinition[] = [
   },
   {
     id: 'voleur-d-hiver',
-    name: 'Renard Polaire',
+    name: 'Spectre des Neiges',
     subtitle: 'Vol de score',
     rarity: 'L',
     glyph: '🦹',
