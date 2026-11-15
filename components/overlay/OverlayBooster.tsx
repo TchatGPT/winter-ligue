@@ -75,19 +75,6 @@ const DUREES: Record<PhaseMinutee, number> = {
   sort: 900,
 };
 
-/**
- * Avec la vidéo d'ouverture (8 s : la montée, la lumière, la déchirure lente de
- * la bande, les cartes qui sortent et se mélangent), les quatre premières
- * phases prennent sa durée.
- */
-const DUREES_VIDEO: Record<PhaseMinutee, number> = {
-  ...DUREES,
-  surgit: 2000,
-  charge: 1500,
-  dechire: 3800,
-  eclate: 1700,
-};
-
 const SUITE: Record<PhaseMinutee, Phase | null> = {
   surgit: 'charge',
   charge: 'dechire',
@@ -222,15 +209,23 @@ function Ouverture({
   }, [phase]);
 
   // Le temps de chaque phase ; le rail, lui, dit quand il a fini.
+  const video = VIDEOS_OUVERTURE[booster.pack.id];
   useEffect(() => {
     if (phase === 'rail' || phase === 'joueurs') return;
+    // Avec la vidéo, c'est sa fin qui lance le rail (elle peut démarrer en
+    // retard, le temps de se charger) ; un filet de sécurité s'il ne vient pas.
+    if (video && (phase === 'surgit' || phase === 'charge' || phase === 'dechire' || phase === 'eclate')) {
+      if (phase !== 'surgit') return;
+      const filet = setTimeout(() => setPhase('rail'), 15000);
+      return () => clearTimeout(filet);
+    }
     const t = setTimeout(() => {
       const suite = SUITE[phase];
       if (suite) setPhase(suite);
       else onFini();
-    }, (VIDEOS_OUVERTURE[booster.pack.id] ? DUREES_VIDEO : DUREES)[phase]);
+    }, DUREES[phase]);
     return () => clearTimeout(t);
-  }, [phase, onFini, booster.pack.id]);
+  }, [phase, onFini, video]);
 
   const cartesDeFin = useMemo(
     () =>
@@ -278,7 +273,16 @@ function Ouverture({
       {VIDEOS_OUVERTURE[booster.pack.id] &&
         (phase === 'surgit' || phase === 'charge' || phase === 'dechire' || phase === 'eclate' || phase === 'rail') && (
           // Elle reste sous le rail le temps qu'il se peigne, puis s'efface.
-          <video className="ov-ouverture" src={VIDEOS_OUVERTURE[booster.pack.id]} autoPlay muted playsInline preload="auto" />
+          <video
+            className="ov-ouverture"
+            src={VIDEOS_OUVERTURE[booster.pack.id]}
+            autoPlay
+            muted
+            playsInline
+            preload="auto"
+            onEnded={() => setPhase((p) => (p === 'rail' ? p : 'rail'))}
+            onError={() => setPhase((p) => (p === 'rail' ? p : 'rail'))}
+          />
         )}
 
       {!VIDEOS_OUVERTURE[booster.pack.id] &&
