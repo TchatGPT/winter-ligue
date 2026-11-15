@@ -34,7 +34,7 @@ Le même que pour le Booster Perso, calé sur la couleur du cadre :
 *+100 flocons pour tous*
 
 ```
-Semi-realistic painterly digital illustration, cinematic winter key art, highly detailed. A heavy, generous snowfall in a snowy pine forest clearing: hundreds of large, detailed snowflakes raining down everywhere, the closest ones sharp and intricate in the foreground, the others softening into bokeh. Low winter sun shining from behind the trees, warm golden-white backlight catching every falling flake so the whole snowfall sparkles, soft sunbeams slanting through the pines, fresh powder piling up on the branches and on the ground. Cold blue and white palette with soft warm sunlight, natural light, no magic glow, no aurora. Portrait 5:6 composition. No people, no buildings, no text, no letters, no logo, no border, no frame, no UI.
+Semi-realistic painterly digital illustration, cinematic winter key art, highly detailed, photographic realism. A heavy, dense natural snowfall in a snowy pine forest clearing: thousands of tiny, fine snowflakes falling everywhere like a soft white rain, realistic small specks and soft blurred dots of snow, the air thick with falling snow. Low winter sun shining from behind the trees, warm golden-white backlight making the whole snowfall sparkle and glow softly, sunbeams slanting through the snowy pines, fresh powder piling up on the branches and on the ground. Cold blue and white palette with soft warm sunlight, natural light. Only tiny realistic snow particles, no big snowflakes, no visible snowflake shapes, no snowflake icons, no magic glow, no aurora. Portrait 5:6 composition. No people, no buildings, no text, no letters, no logo, no border, no frame, no UI.
 ```
 
 ### Premières Neiges — `petits-pas.webp`
