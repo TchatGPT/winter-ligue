@@ -63,6 +63,19 @@ const DUREES: Record<PhaseMinutee, number> = {
   sort: 900,
 };
 
+/**
+ * Avec la vidéo d'ouverture (8 s : la montée, la lumière, la déchirure lente de
+ * la bande, les cartes qui sortent et se mélangent), les quatre premières
+ * phases prennent sa durée.
+ */
+const DUREES_VIDEO: Record<PhaseMinutee, number> = {
+  ...DUREES,
+  surgit: 2000,
+  charge: 1500,
+  dechire: 3800,
+  eclate: 700,
+};
+
 const SUITE: Record<PhaseMinutee, Phase | null> = {
   surgit: 'charge',
   charge: 'dechire',
@@ -203,9 +216,9 @@ function Ouverture({
       const suite = SUITE[phase];
       if (suite) setPhase(suite);
       else onFini();
-    }, DUREES[phase]);
+    }, (VIDEOS_OUVERTURE[booster.pack.id] ? DUREES_VIDEO : DUREES)[phase]);
     return () => clearTimeout(t);
-  }, [phase, onFini]);
+  }, [phase, onFini, booster.pack.id]);
 
   /** Le haut du sachet est arraché : il le reste jusqu'à l'éclat. */
   const dechire = phase === 'dechire' || phase === 'eclate';
