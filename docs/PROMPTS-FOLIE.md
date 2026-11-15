@@ -15,6 +15,11 @@ de neige, de glace et de givre, des bleus de nuit et cyan glacier, une glace qui
 l'intérieur, un seul sujet fort, l'accent de lumière selon la rareté. Chaque prompt le redit
 dans sa dernière phrase de style : ne pas la retirer.
 
+## Déjà en ligne
+
+Pluie de Jokers et Blizzard Général ont leur illustration (15/11/2026) : leurs prompts
+sont retirés d'ici.
+
 ## Le ton
 
 Le Folie, c'est le chaos : des scènes en mouvement, jamais calmes, un seul sujet fort.
@@ -38,13 +43,6 @@ légendaires en réalisme cinématique, comme Spectre des Neiges.
 Stylized digital painting for a fantasy trading card game, illustrated, not photographic, hand-painted look, bold clean shapes, vibrant colours, strong contrast. A jagged snowy mountain range at dusk whose shape secretly forms the head of a giant wolf in profile: the ridges and peaks draw its ears, snout and open jaws, rows of huge icicles and sharp seracs form its fangs, a glacier pours out of its mouth like a frozen bite closing on the valley below, two ice caves glow like its eyes. You only guess it is a wolf at second glance: it is a landscape, not an animal. Lavender-violet light glowing in the eye caves and along the icy fangs, violet sparkles in the blowing snow. Cold blue palette with a violet accent light. Same art direction as the rest of the winter card set: a frozen world of snow, glacier ice and frost, deep night-blue and icy cyan tones, ice that glows from within, rich detail, one strong subject. Portrait composition. No people, no text, no letters, no logo, no border, no frame, no UI.
 ```
 
-### Pluie de Jokers — `pluie-de-jokers.webp`
-*1 Joker pour tout le monde*
-
-```
-Stylized digital painting for a fantasy trading card game, illustrated, not photographic, hand-painted look, bold clean shapes, vibrant colours, strong contrast. A wild, joyful storm of playing cards made of clear ice falling from a swirling violet night sky over a snowy valley, dozens of frosted crystal cards tumbling and spinning through the air, each one showing a simple white jester hat, some catching the light, some landing upright in the fresh snow. Lavender-violet magical sparkles and glowing violet trails following the falling cards. Chaotic, playful, magical. Cold blue palette with a violet accent light. Same art direction as the rest of the winter card set: a frozen world of snow, glacier ice and frost, deep night-blue and icy cyan tones, ice that glows from within, rich detail, one strong subject. Portrait composition. No people, no text, no letters, no numbers, no logo, no border, no frame, no UI.
-```
-
 ---
 
 ## Ultra rares
@@ -61,13 +59,6 @@ Stylized digital painting for a fantasy trading card game, illustrated, not phot
 
 ```
 Stylized digital painting for a fantasy trading card game, illustrated, not photographic, hand-painted look, bold clean shapes, vibrant colours, strong contrast. dramatic. A night being erased by white: under a huge pale full moon, a furious whiteout blizzard sweeps across a snowy mountain range and wipes it away, the peaks on one side still sharp and dark, the others dissolving into swirling pure white as if erased, the white swallowing the whole landscape. The last warm amber-orange glow of the horizon being swallowed by the storm, a few embers of light torn away by the wind. Haunting, intense. Deep midnight-blue and white palette with a strong warm amber accent light. Same art direction as the rest of the winter card set: a frozen world of snow, glacier ice and frost, deep night-blue and icy cyan tones, ice that glows from within, rich detail, one strong subject. Portrait composition. No people, no text, no letters, no logo, no border, no frame, no UI.
-```
-
-### Blizzard Général — `blizzard-general.webp`
-*Échange général*
-
-```
-Stylized digital painting for a fantasy trading card game, illustrated, not photographic, hand-painted look, bold clean shapes, vibrant colours, strong contrast, dramatic. A colossal blizzard vortex spinning over a snowy mountain valley, a giant spiral of wind and snow sucking everything into its rotation and throwing it back out elsewhere: chunks of ice, pine trees, snowdrifts and glowing lanterns whirling around the eye of the storm and swapping places. Warm amber-orange light glowing in the eye of the vortex, embers and lantern sparks swirling with the snow. Total chaos, powerful circular motion. Deep midnight-blue palette with a strong warm amber accent light. Same art direction as the rest of the winter card set: a frozen world of snow, glacier ice and frost, deep night-blue and icy cyan tones, ice that glows from within, rich detail, one strong subject. Portrait composition. No people, no text, no letters, no logo, no border, no frame, no UI.
 ```
 
 ---

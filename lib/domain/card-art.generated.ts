@@ -7,6 +7,7 @@
  */
 
 export const CARD_ART: Record<string, string> = {
+  'blizzard-general': '/cartes/blizzard-general.webp?v=79b93bdffc',
   'bocal-de-givre': '/cartes/bocal-de-givre.webp?v=31d96460f8',
   'bonhomme-de-neige': '/cartes/bonhomme-de-neige.webp?v=0cbedbb361',
   'calque-de-givre': '/cartes/calque-de-givre.webp?v=ec281a82c6',
@@ -38,6 +39,7 @@ export const CARD_ART: Record<string, string> = {
   'piste-damee': '/cartes/piste-damee.webp?v=db38f479ef',
   'plaque-verglas-coup': '/cartes/plaque-verglas-coup.webp?v=e0498f5df3',
   'plaque-verglas': '/cartes/plaque-verglas.webp?v=e0498f5df3',
+  'pluie-de-jokers': '/cartes/pluie-de-jokers.webp?v=98d6c07e24',
   'ronde-des-cimes': '/cartes/ronde-des-cimes.webp?v=57c80ab0c0',
   'souffle-polaire': '/cartes/souffle-polaire.webp?v=b1026c5296',
   'triple-echo': '/cartes/triple-echo.webp?v=5e8697643b',
@@ -59,6 +61,7 @@ export const BOOSTER_ART: Record<string, string> = {
  * `srcset` qui les propose au navigateur avec l’illustration entière.
  */
 export const CARD_VIGNETTES: Record<string, { petite: string; moyenne: string; srcset: string }> = {
+  'blizzard-general': { petite: '/cartes/vignettes/blizzard-general.79b93bdffc.200.webp', moyenne: '/cartes/vignettes/blizzard-general.79b93bdffc.480.webp', srcset: '/cartes/vignettes/blizzard-general.79b93bdffc.200.webp 200w, /cartes/vignettes/blizzard-general.79b93bdffc.480.webp 480w, /cartes/blizzard-general.webp?v=79b93bdffc 1000w' },
   'bocal-de-givre': { petite: '/cartes/vignettes/bocal-de-givre.31d96460f8.200.webp', moyenne: '/cartes/vignettes/bocal-de-givre.31d96460f8.480.webp', srcset: '/cartes/vignettes/bocal-de-givre.31d96460f8.200.webp 200w, /cartes/vignettes/bocal-de-givre.31d96460f8.480.webp 480w, /cartes/bocal-de-givre.webp?v=31d96460f8 1000w' },
   'bonhomme-de-neige': { petite: '/cartes/vignettes/bonhomme-de-neige.0cbedbb361.200.webp', moyenne: '/cartes/vignettes/bonhomme-de-neige.0cbedbb361.480.webp', srcset: '/cartes/vignettes/bonhomme-de-neige.0cbedbb361.200.webp 200w, /cartes/vignettes/bonhomme-de-neige.0cbedbb361.480.webp 480w, /cartes/bonhomme-de-neige.webp?v=0cbedbb361 1000w' },
   'calque-de-givre': { petite: '/cartes/vignettes/calque-de-givre.ec281a82c6.200.webp', moyenne: '/cartes/vignettes/calque-de-givre.ec281a82c6.480.webp', srcset: '/cartes/vignettes/calque-de-givre.ec281a82c6.200.webp 200w, /cartes/vignettes/calque-de-givre.ec281a82c6.480.webp 480w, /cartes/calque-de-givre.webp?v=ec281a82c6 1000w' },
@@ -90,6 +93,7 @@ export const CARD_VIGNETTES: Record<string, { petite: string; moyenne: string; s
   'piste-damee': { petite: '/cartes/vignettes/piste-damee.db38f479ef.200.webp', moyenne: '/cartes/vignettes/piste-damee.db38f479ef.480.webp', srcset: '/cartes/vignettes/piste-damee.db38f479ef.200.webp 200w, /cartes/vignettes/piste-damee.db38f479ef.480.webp 480w, /cartes/piste-damee.webp?v=db38f479ef 1000w' },
   'plaque-verglas-coup': { petite: '/cartes/vignettes/plaque-verglas-coup.e0498f5df3.200.webp', moyenne: '/cartes/vignettes/plaque-verglas-coup.e0498f5df3.480.webp', srcset: '/cartes/vignettes/plaque-verglas-coup.e0498f5df3.200.webp 200w, /cartes/vignettes/plaque-verglas-coup.e0498f5df3.480.webp 480w, /cartes/plaque-verglas-coup.webp?v=e0498f5df3 1000w' },
   'plaque-verglas': { petite: '/cartes/vignettes/plaque-verglas.e0498f5df3.200.webp', moyenne: '/cartes/vignettes/plaque-verglas.e0498f5df3.480.webp', srcset: '/cartes/vignettes/plaque-verglas.e0498f5df3.200.webp 200w, /cartes/vignettes/plaque-verglas.e0498f5df3.480.webp 480w, /cartes/plaque-verglas.webp?v=e0498f5df3 1000w' },
+  'pluie-de-jokers': { petite: '/cartes/vignettes/pluie-de-jokers.98d6c07e24.200.webp', moyenne: '/cartes/vignettes/pluie-de-jokers.98d6c07e24.480.webp', srcset: '/cartes/vignettes/pluie-de-jokers.98d6c07e24.200.webp 200w, /cartes/vignettes/pluie-de-jokers.98d6c07e24.480.webp 480w, /cartes/pluie-de-jokers.webp?v=98d6c07e24 1000w' },
   'ronde-des-cimes': { petite: '/cartes/vignettes/ronde-des-cimes.57c80ab0c0.200.webp', moyenne: '/cartes/vignettes/ronde-des-cimes.57c80ab0c0.480.webp', srcset: '/cartes/vignettes/ronde-des-cimes.57c80ab0c0.200.webp 200w, /cartes/vignettes/ronde-des-cimes.57c80ab0c0.480.webp 480w, /cartes/ronde-des-cimes.webp?v=57c80ab0c0 1000w' },
   'souffle-polaire': { petite: '/cartes/vignettes/souffle-polaire.b1026c5296.200.webp', moyenne: '/cartes/vignettes/souffle-polaire.b1026c5296.480.webp', srcset: '/cartes/vignettes/souffle-polaire.b1026c5296.200.webp 200w, /cartes/vignettes/souffle-polaire.b1026c5296.480.webp 480w, /cartes/souffle-polaire.webp?v=b1026c5296 1000w' },
   'triple-echo': { petite: '/cartes/vignettes/triple-echo.5e8697643b.200.webp', moyenne: '/cartes/vignettes/triple-echo.5e8697643b.480.webp', srcset: '/cartes/vignettes/triple-echo.5e8697643b.200.webp 200w, /cartes/vignettes/triple-echo.5e8697643b.480.webp 480w, /cartes/triple-echo.webp?v=5e8697643b 1000w' },
