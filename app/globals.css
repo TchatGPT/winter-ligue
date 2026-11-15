@@ -10843,7 +10843,7 @@
      le sachet en CSS, centré au même endroit. */
   .ov-ouverture {
     position: absolute;
-    top: -110px;
+    top: -10px;
     left: 50%;
     width: 1180px;
     height: 1180px;
