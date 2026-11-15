@@ -7550,8 +7550,7 @@
 /* Au-delà de trois cartes : « +N cartes · tout voir ». */
 .pile-plus {
   display: inline-flex;
-  margin-top: 0.2rem;
-  padding: 0.1rem 0.55rem;
+  padding: 0.15rem 0.6rem;
   border-radius: var(--r-pilule);
   background: color-mix(in srgb, var(--frost) 12%, transparent);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--frost) 30%, transparent);

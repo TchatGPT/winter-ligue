@@ -14,7 +14,7 @@ import { LancerVerglas } from '@/components/LancerVerglas';
 import { IconActivision } from '@/components/icons';
 import { flakes } from '@/components/ui';
 import { multiplicateurChance, RARITY_ORDER } from '@/lib/domain/rules';
-import { memeTexte, pourChercher } from '@/lib/domain/texte';
+import { pourChercher } from '@/lib/domain/texte';
 import type { CarteDuClassement, CarteGardee, RankingRow } from '@/lib/services/league';
 
 /**
@@ -616,8 +616,8 @@ function CompteurPerso({ row, moderation }: { row: RankingRow; moderation: Boost
  * La carte active : celle qui tombera sur la prochaine game du joueur.
  *
  * La carte elle-même, en vignette, dans son cadre peint — on la reconnaît à
- * sa silhouette et à sa couleur avant de lire quoi que ce soit. À côté, le nom
- * et l'effet en clair. Un clic l'ouvre en grand.
+ * sa silhouette et à sa couleur. Plus de texte à côté (15/11/2026 : trop
+ * d'informations) : le nom passe en infobulle, et un clic l'ouvre en grand.
  */
 function CarteActive({
   row,
@@ -661,25 +661,9 @@ function CarteActive({
         />
         <PastilleCarte carte={c} nombres={nombres} />
       </span>
-      <span className="min-w-0 leading-tight">
-        <span className="block truncate text-[14px] font-bold text-ink @min-[100rem]:text-[16px]">{c.nom}</span>
-        <span className="block truncate text-[13px] text-ink-2 @min-[100rem]:text-[15px]">{c.action}</span>
-        {/* Le résumé, s'il dit plus que l'intitulé : « Game ×1,2 » deux fois ne disait rien de plus. */}
-        {!memeTexte(c.resume, c.action) && (
-          <span className="block text-[13px] text-muted @min-[100rem]:text-[14px]">{c.resume}</span>
-        )}
-      </span>
     </button>
   );
 }
-
-/** La teinte d'une rareté, pour un texte : celle d'une carte gardée suit la sienne. */
-const TEINTE: Record<CarteDuClassement['rarity'], string> = {
-  C: 'text-r-c',
-  R: 'text-r-r',
-  UR: 'text-r-ur',
-  L: 'text-r-l',
-};
 
 /** Les cartes montrées dans la pile ; au-delà, « +N » ouvre toute sa main. */
 const CARTES_VISIBLES = 3;
@@ -704,7 +688,6 @@ function PileDeCartes({
   const [main, setMain] = useState(false);
   const visibles = cartes.slice(0, CARTES_VISIBLES);
   const cachees = cartes.length - visibles.length;
-  const [premiere, ...autres] = visibles;
   return (
     <span className="flex min-w-0 items-center gap-3">
       <span className="pile-cartes shrink-0">
@@ -731,23 +714,18 @@ function PileDeCartes({
           </button>
         ))}
       </span>
-      <span className="min-w-0 leading-tight">
-        <span className="block truncate text-[14px] font-bold text-ink @min-[100rem]:text-[16px]">{premiere.nom}</span>
-        <span className="block truncate text-[13px] text-ink-2 @min-[100rem]:text-[15px]">{premiere.action}</span>
-        {autres.map((c) => (
-          <span
-            key={'id' in c ? c.id : c.cardId}
-            className={`block truncate text-[13px] font-semibold @min-[100rem]:text-[14px] ${TEINTE[c.rarity]}`}
-          >
-            + {(nombres.get(c.cardId) ?? 1) > 1 && 'id' in c ? `${nombres.get(c.cardId)} × ${c.nom}` : c.nom}
-          </span>
-        ))}
-        {cachees > 0 && (
-          <button type="button" className="pile-plus" onClick={() => setMain(true)}>
-            +{cachees} carte{cachees > 1 ? 's' : ''} · tout voir
-          </button>
-        )}
-      </span>
+      {/* Les images et leurs pastilles seulement (15/11/2026) ; au-delà de
+          trois cartes, « +N » ouvre toute sa main. */}
+      {cachees > 0 && (
+        <button
+          type="button"
+          className="pile-plus"
+          onClick={() => setMain(true)}
+          aria-label={`${cachees} carte${cachees > 1 ? 's' : ''} de plus : voir toute la main de ${pseudo}`}
+        >
+          +{cachees}
+        </button>
+      )}
       {main && (
         <MainDuJoueur
           pseudo={pseudo}
