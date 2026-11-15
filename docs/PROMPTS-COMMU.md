@@ -42,19 +42,18 @@ Le même que pour le Booster Perso, calé sur la couleur du cadre :
 
 ## Légendaires
 
-Ces deux-là suivent le style du Pacte du Givre (Booster Perso) : glace taillée transparente,
-veines dorées comme de la lave, aurore et ciel étoilé.
+Ces deux-là sont les plus belles du Commu : réalisme cinématique, échelle immense, accent doré.
 
 ### Glaciation — `trois-glacons.webp`
 *3 joueurs figent leur meilleure game*
 
 ```
-Legendary fantasy card illustration, cinematic, ultra detailed, polished 3D render look, crystal-clear ice. A whole snowy mountain peak, like Everest, trapped and frozen in time inside a colossal block of faceted transparent ice, the mountain perfectly visible through the clear crystal, the ice block standing on a frozen plain, its facets sharp and glittering, thick frost and snow crusting its top edges, long icicles hanging from it. Bright golden glowing veins like molten gold running through the cracks of the ice and around the trapped mountain, warm golden light glowing from inside the block. Starry night sky with a vivid green and violet aurora borealis behind it. The frozen mountain in its block of ice as the single clear focal point, majestic and breathtaking. Portrait composition. No people, no text, no letters, no logo, no border, no frame, no UI.
+Legendary fantasy card illustration, epic cinematic realism, ultra detailed, breathtaking scale. The ice age arriving: an immense glacier several kilometres high pours over the highest mountain range on Earth like a frozen tsunami, a colossal wall of blue ice and snow rolling forward and swallowing the Himalayan peaks one by one. In the centre, a giant Everest-like summit is being engulfed, the ice wave crashing over its shoulders, its top still standing for a last instant. Clouds of frozen spray and ice dust exploding into the sky, frost racing across the valleys below. A low golden sun on the horizon, its rays piercing through the ice spray and lighting the crest of the glacier in molten gold. Aerial view, the whole world freezing. Deep blue, icy cyan and white palette with a dominant golden accent. Portrait composition. No people, no text, no letters, no logo, no border, no frame, no UI.
 ```
 
 ### Spectre des Neiges — `voleur-d-hiver.webp`
 *Vol de score*
 
 ```
-Legendary fantasy card illustration, cinematic, ultra detailed, polished 3D render look, crystal-clear ice. A giant ghost made entirely of faceted transparent ice, a hooded spectre with no face, only two glowing golden eyes in the dark of its icy hood, bright golden veins like molten lava glowing through the cracks of its crystal body, frost and snow crusting its shoulders, icicles dripping from its arms. It wraps its icy body around a snowy mountain peak as if hugging it, one huge crystal ice hand pressed down on the summit and crushing it, the top of the mountain cracking and breaking apart, chunks of rock, snow and ice tumbling down the slopes. The ghost is only a little taller than the mountain. Starry night sky with a vivid green and violet aurora borealis. Majestic, powerful, mysterious, not horror. Portrait composition. No people, no text, no letters, no logo, no border, no frame, no UI.
+Legendary fantasy card illustration, epic cinematic realism, ultra detailed, breathtaking scale. A mountain that has come alive: a colossal giant shaped from a mountain peak itself, made of dark rock, glacier ice and snow, has risen to its feet in the middle of a Himalayan range. It is the same size as its neighbour, a huge Everest-like summit, and leans against it, one massive arm wrapped around the mountain and its rocky hand resting on the summit, crushing it: the top of the peak breaks off and collapses in a realistic avalanche of rock, snow and ice. The giant has no face, its head is a hooded crest of rock and ice, with only two narrow, faint golden glints deep in the shadow, barely visible. Thin golden cracks glow in the ice of its body. Clouds wrap around their bases, snow plumes blowing from the peaks, starry night sky with a faint aurora. Seen from far away, landscape scale, majestic and threatening. Deep blue, icy white and grey palette with a golden accent. Portrait composition. No people, no text, no letters, no logo, no border, no frame, no UI.
 ```
