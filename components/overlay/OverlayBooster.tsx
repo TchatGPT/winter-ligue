@@ -194,6 +194,7 @@ function Ouverture({
   const lecteur = useRef<HTMLVideoElement>(null);
   const zoneRail = useRef<HTMLDivElement>(null);
   const [entame, setEntame] = useState(0);
+  const [depuis, setDepuis] = useState<number | undefined>(undefined);
   useFinVideo(lecteur, enVideo, () => setPhase('melange'));
   useEffect(() => {
     if (phase !== 'melange') return;
@@ -205,7 +206,8 @@ function Ouverture({
     }
     void joueMelange(cadre).then((fin) => {
       if (!vivant) return;
-      setEntame(ENTAME_MELANGE + (performance.now() - fin) + 16);
+      setDepuis(fin);
+      setEntame(ENTAME_MELANGE);
       setPhase('rail');
     });
     return () => {
@@ -333,6 +335,7 @@ function Ouverture({
             entree={depart}
             enAttente={enVideo || phase === 'melange'}
             entame={entame}
+            depuis={depuis}
             poids={booster.pack.weights}
             gagnante={{
               cardId: booster.carte.cardId,

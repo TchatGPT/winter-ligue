@@ -252,6 +252,12 @@ export interface ReglagesRail {
    * position, sans repartir de l'arrêt. Le son et les halos suivent.
    */
   entame?: number;
+  /**
+   * L'instant (`performance.now()`) où la course en était à `entame` : le rail
+   * ajoute le temps écoulé depuis, au moment même où il part — sans image figée
+   * entre l'élan du mélange et lui.
+   */
+  depuis?: number;
   /** Appelé une fois la dernière carte posée et regardée. */
   onFini: () => void;
 }
@@ -267,6 +273,7 @@ export function useSpinAnimation({
   sourdine = false,
   enAttente = false,
   entame = 0,
+  depuis,
   onFini,
 }: ReglagesRail): void {
 
@@ -310,7 +317,8 @@ export function useSpinAnimation({
     const total = direct ? 1 : duree;
     // Déjà lancé : le départ est dans le passé (un retard négatif), et tout ce
     // qui se cale dessus — son, halos, fin — avec lui.
-    const amorce = direct ? 0 : entame > 0 ? -entame : AMORCE;
+    const deja = entame > 0 ? entame + (depuis !== undefined ? performance.now() - depuis : 0) : 0;
+    const amorce = direct ? 0 : deja > 0 ? -deja : AMORCE;
 
     /* ---------------------- La géométrie, une fois ---------------------- */
 
@@ -598,7 +606,7 @@ export function useSpinAnimation({
          * plus long garde le cliquet vivant jusqu'au dernier arrêt, au lieu de
          * le couper pendant que deux rouleaux tournent encore.
          */
-        const crans = instantsDesCrans(durees[dernier], courbe).filter((ms) => ms >= entame);
+        const crans = instantsDesCrans(durees[dernier], courbe).filter((ms) => ms >= deja);
         // Une colonne relancée franchit deux fois le même trajet : le cliquet
         // repart avec elle, décalé du premier acte et de la pause.
         if (relance(dernier)) {
@@ -670,7 +678,7 @@ export function useSpinAnimation({
       // le son de celui qui tourne à côté de lui.
       if (!sourdine) arreteTout();
     };
-  }, [cadre, bandes, tuiles, relances, duree, courbe, axe, sourdine, enAttente, entame]);
+  }, [cadre, bandes, tuiles, relances, duree, courbe, axe, sourdine, enAttente, entame, depuis]);
 
   // Le contexte audio se réveille au clic, et l'ouverture en est un. Les
   // écouteurs globaux couvrent le reste, mais un appel explicite ici garantit

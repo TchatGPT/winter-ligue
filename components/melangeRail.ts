@@ -24,8 +24,8 @@ const attendre = (a: Animation) => a.finished.catch(() => undefined);
 const dors = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 /**
- * Joue le mélange dans le rail qui attend à son départ. Résout à la fin de
- * l'élan, avec l'instant (`performance.now()`) où il s'est achevé.
+ * Joue le mélange dans le rail qui attend à son départ. Résout juste avant la
+ * fin de l'élan, avec l'instant (`performance.now()`) où il s'achève.
  */
 export async function joueMelange(cadre: HTMLElement): Promise<number> {
   const ruban = cadre.querySelector<HTMLElement>('[data-rail-ruban]');
@@ -136,8 +136,10 @@ export async function joueMelange(cadre: HTMLElement): Promise<number> {
     ],
     { duration: ELAN_MS, easing: 'cubic-bezier(0.333, 0, 0.667, 0.333)', fill: 'forwards' },
   );
-  await attendre(elan);
-  const fin = performance.now();
+  // On rend la main un peu avant la fin de l'élan : le rail se monte pendant
+  // ses dernières images et part à l'instant exact où il finit (`depuis`).
+  const fin = performance.now() + ELAN_MS;
+  await dors(ELAN_MS - 40);
 
   // Le rail prend la main sur ce même élément : on range derrière lui.
   setTimeout(() => {
@@ -147,6 +149,6 @@ export async function joueMelange(cadre: HTMLElement): Promise<number> {
       tuiles[k].style.opacity = '';
     }
     delete cadre.dataset.melange;
-  }, 120);
+  }, 200);
   return fin;
 }

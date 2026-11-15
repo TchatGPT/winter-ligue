@@ -172,6 +172,7 @@ export function PackOpening({
   const [phase, setPhase] = useState<Phase>('repos');
   /** Les millisecondes de course que la vidéo d'ouverture a déjà faites. */
   const [entame, setEntame] = useState(0);
+  const [depuis, setDepuis] = useState<number | undefined>(undefined);
   const scene = useRef<HTMLDivElement>(null);
   const lecteur = useRef<HTMLVideoElement>(null);
   const [placeVideo, setPlaceVideo] = useState<CSSProperties | null>(null);
@@ -200,7 +201,8 @@ export function PackOpening({
     }
     void joueMelange(cadre).then((fin) => {
       if (!vivant) return;
-      setEntame(ENTAME_MELANGE + (performance.now() - fin) + 16);
+      setDepuis(fin);
+      setEntame(ENTAME_MELANGE);
       setPhase('tirage');
     });
     return () => {
@@ -656,6 +658,7 @@ export function PackOpening({
                 entree={VIDEOS_OUVERTURE[packOuvert.id] ? bandeDeDepart(packOuvert.id) : undefined}
                 enAttente={phase === 'ouverture' || phase === 'melange'}
                 entame={entame}
+                depuis={depuis}
                 duree={COURBE_MESUREE.duree}
                 onFini={() => setPhase(apresCarte())}
               />

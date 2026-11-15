@@ -48,6 +48,7 @@ export function RailPack({
   entree,
   enAttente = false,
   entame = 0,
+  depuis,
   onFini,
 }: {
   /** Tout ce qu'on peut montrer en leurre — les cartes du pack. */
@@ -71,6 +72,8 @@ export function RailPack({
   enAttente?: boolean;
   /** Les millisecondes de course déjà faites par la vidéo : il reprend là. */
   entame?: number;
+  /** L'instant où la course en était à `entame` (voir `useSpinAnimation`). */
+  depuis?: number;
   onFini: () => void;
 }) {
   // La bande est construite une fois, au montage, et plus jamais : un
@@ -140,6 +143,7 @@ export function RailPack({
     sourdine,
     enAttente,
     entame,
+    depuis,
     onFini,
   });
 
