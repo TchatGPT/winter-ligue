@@ -310,7 +310,7 @@ export function useSpinAnimation({
     const total = direct ? 1 : duree;
     // Déjà lancé : le départ est dans le passé (un retard négatif), et tout ce
     // qui se cale dessus — son, halos, fin — avec lui.
-    const amorce = direct ? 0 : AMORCE - Math.max(0, entame);
+    const amorce = direct ? 0 : entame > 0 ? -entame : AMORCE;
 
     /* ---------------------- La géométrie, une fois ---------------------- */
 
