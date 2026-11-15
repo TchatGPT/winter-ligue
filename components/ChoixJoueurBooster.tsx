@@ -197,6 +197,11 @@ export function ChoixJoueurBooster({
     if (montre) panneau.current?.querySelector('[data-actif]')?.scrollIntoView({ block: 'nearest' });
   }, [montre, indexActif]);
 
+  // Caché (un booster collectif), il ne garde que la hauteur d'un champ : son
+  // texte, invisible mais sur deux ou trois lignes, grandissait la scène du
+  // Commu, du Folie et du Finisseur par rapport au Perso (15/11/2026).
+  if (cache) return <p className="choix-joueur-vide invisible" aria-hidden="true" />;
+
   if (candidats.length === 0) {
     return (
       <p className={`choix-joueur-vide ${cache ? 'invisible' : ''}`} aria-hidden={cache || undefined}>
