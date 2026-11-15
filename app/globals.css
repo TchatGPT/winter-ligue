@@ -8968,11 +8968,15 @@
    * Position et taille mesurées sur l'image : la carte occupe x 122→1635 et
    * y 52→2282 dans le fichier d'origine, la fenêtre x 230→1529 et y 148→1692.
    */
+  /* Un pixel de plus de chaque côté, caché sous le cadre : en vignette (58 px
+     dans le contenu d'un booster), le bord gauche tombait sur un demi-pixel et
+     laissait un trait sombre entre le cadre et l'illustration, qui ne
+     disparaissait qu'au survol (15/11/2026). */
   .cadre-fenetre {
     position: absolute;
-    left: 7.13%;
+    left: calc(7.13% - 1px);
     top: 4.3%;
-    width: 85.8%;
+    width: calc(85.8% + 2px);
     height: 69.21%;
     overflow: hidden;
     border-radius: 3cqw;
