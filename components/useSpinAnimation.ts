@@ -23,6 +23,7 @@ import {
   instantsDesCrans,
   MARGE,
   PARCOURS,
+  translation,
 } from '@/lib/spin/courbe';
 import { RARITY_ORDER } from '@/lib/domain/rules';
 
@@ -239,6 +240,18 @@ export interface ReglagesRail {
    * voisin à chaque changement de manche. Un seul des deux parle.
    */
   sourdine?: boolean;
+  /**
+   * Le rail attend, posé à son départ, sans tourner (15/11/2026) : la vidéo
+   * d'ouverture d'un booster joue par-dessus et finit sur lui. Il part quand
+   * l'attente cesse.
+   */
+  enAttente?: boolean;
+  /**
+   * Combien de millisecondes de course sont déjà faites au départ : la vidéo
+   * d'ouverture a lancé la bande, le rail reprend à cette vitesse et à cette
+   * position, sans repartir de l'arrêt. Le son et les halos suivent.
+   */
+  entame?: number;
   /** Appelé une fois la dernière carte posée et regardée. */
   onFini: () => void;
 }
@@ -252,6 +265,8 @@ export function useSpinAnimation({
   courbe = COURBE_MESUREE,
   axe = 'y',
   sourdine = false,
+  enAttente = false,
+  entame = 0,
   onFini,
 }: ReglagesRail): void {
 
@@ -293,7 +308,9 @@ export function useSpinAnimation({
      */
     const direct = duree <= 0;
     const total = direct ? 1 : duree;
-    const amorce = direct ? 0 : AMORCE;
+    // Déjà lancé : le départ est dans le passé (un retard négatif), et tout ce
+    // qui se cale dessus — son, halos, fin — avec lui.
+    const amorce = direct ? 0 : AMORCE - Math.max(0, entame);
 
     /* ---------------------- La géométrie, une fois ---------------------- */
 
@@ -317,6 +334,12 @@ export function useSpinAnimation({
     // bandeau : c'est l'axe sur lequel le rouleau descend.
     const depart = departDeBande(geo.hauteur, geo.pas);
     const trajet = PARCOURS * geo.pas;
+
+    // En attente : la bande se pose à son départ, et rien d'autre.
+    if (enAttente) {
+      for (const piste of pistes) piste.style.transform = translation(axe, depart);
+      return;
+    }
 
     /*
      * Les durées propres à chaque rouleau.
@@ -575,7 +598,7 @@ export function useSpinAnimation({
          * plus long garde le cliquet vivant jusqu'au dernier arrêt, au lieu de
          * le couper pendant que deux rouleaux tournent encore.
          */
-        const crans = instantsDesCrans(durees[dernier], courbe);
+        const crans = instantsDesCrans(durees[dernier], courbe).filter((ms) => ms >= entame);
         // Une colonne relancée franchit deux fois le même trajet : le cliquet
         // repart avec elle, décalé du premier acte et de la pause.
         if (relance(dernier)) {
@@ -647,7 +670,7 @@ export function useSpinAnimation({
       // le son de celui qui tourne à côté de lui.
       if (!sourdine) arreteTout();
     };
-  }, [cadre, bandes, tuiles, relances, duree, courbe, axe, sourdine]);
+  }, [cadre, bandes, tuiles, relances, duree, courbe, axe, sourdine, enAttente, entame]);
 
   // Le contexte audio se réveille au clic, et l'ouverture en est un. Les
   // écouteurs globaux couvrent le reste, mais un appel explicite ici garantit

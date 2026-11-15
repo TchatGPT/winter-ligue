@@ -46,6 +46,8 @@ export function RailPack({
   duree,
   sourdine = false,
   entree,
+  enAttente = false,
+  entame = 0,
   onFini,
 }: {
   /** Tout ce qu'on peut montrer en leurre — les cartes du pack. */
@@ -65,6 +67,10 @@ export function RailPack({
    * que des leurres : la carte tirée reste au bout de la course.
    */
   entree?: CarteRailPack[];
+  /** Posé à son départ sans tourner, sous la vidéo d'ouverture. */
+  enAttente?: boolean;
+  /** Les millisecondes de course déjà faites par la vidéo : il reprend là. */
+  entame?: number;
   onFini: () => void;
 }) {
   // La bande est construite une fois, au montage, et plus jamais : un
@@ -132,6 +138,8 @@ export function RailPack({
     courbe: COURBE_MESUREE,
     axe: 'x',
     sourdine,
+    enAttente,
+    entame,
     onFini,
   });
 

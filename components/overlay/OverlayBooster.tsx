@@ -11,6 +11,7 @@ import { Scene } from '@/components/overlay/Scene';
 import { SnowCap } from '@/components/SnowCap';
 import { boosterDemo } from '@/components/overlay/demo';
 import { useFluxOverlay } from '@/components/overlay/useFluxOverlay';
+import { bandeDeDepart, useRelaisVideo, VIDEOS_OUVERTURE } from '@/components/ouvertureBooster';
 import { CARDS, RARITY_META } from '@/lib/domain/catalog';
 import type { BoosterOverlay } from '@/lib/services/overlay';
 import { COURBE_MESUREE } from '@/lib/spin/courbe';
@@ -38,30 +39,6 @@ import { questionDesGames, TirageGames } from '@/components/TirageGames';
  */
 
 type Phase = 'surgit' | 'charge' | 'dechire' | 'eclate' | 'rail' | 'joueurs' | 'carte' | 'sort';
-
-/**
- * L'ouverture rendue dans Blender (15/11/2026) : le booster monte, sa bande se
- * déchire et s'envole, et quatre vraies cartes du booster sortent de
- * l'ouverture en éventail. Une vidéo à fond transparent (VP9 avec alpha), de la
- * durée des quatre premières phases. Seuls les boosters que joue l'overlay en
- * ont une : sans elle, le sachet en CSS reprend sa place.
- */
-const VIDEOS_OUVERTURE: Partial<Record<string, string>> = {
-  perso: '/boosters/ouverture-perso.webm',
-  finisseur: '/boosters/ouverture-finisseur.webm',
-};
-
-/**
- * Les cinq cartes sur lesquelles la vidéo s'arrête, de gauche à droite : ce
- * sont les cinq premières cartes visibles du rail, posées à la même place
- * (mesurée sur le plateau de 1920 × 1080). Le rail les reprend telles quelles
- * et part de là : on ne voit pas le passage de la vidéo au site. À changer
- * avec la vidéo — `scratchpad/blender/ouverture/rendu.sh`.
- */
-const CARTES_DE_FIN: Partial<Record<string, string[]>> = {
-  perso: ['chocolat-chaud', 'souffle-polaire', 'ouragan-blanc', 'vortex-polaire', 'bonhomme-de-neige'],
-  finisseur: ['sommet-atteint', 'drapeau-plante', 'troc-des-neiges', 'statue-de-givre', 'soudure-de-glace'],
-};
 
 /** Les phases qui finissent d'elles-mêmes : les deux rails disent quand ils ont fini. */
 type PhaseMinutee = Exclude<Phase, 'rail' | 'joueurs'>;
@@ -208,33 +185,28 @@ function Ouverture({
     if (phase === 'carte') revelee.current();
   }, [phase]);
 
-  // Le temps de chaque phase ; le rail, lui, dit quand il a fini.
+  // Le temps de chaque phase ; le rail, lui, dit quand il a fini. Avec la
+  // vidéo, c'est sa dernière image qui lance le rail, déjà lancé
+  // (`useRelaisVideo`).
   const video = VIDEOS_OUVERTURE[booster.pack.id];
+  const enVideo = Boolean(video) && (phase === 'surgit' || phase === 'charge' || phase === 'dechire' || phase === 'eclate');
+  const lecteur = useRef<HTMLVideoElement>(null);
+  const [entame, setEntame] = useState(0);
+  useRelaisVideo(lecteur, enVideo, (ms) => {
+    setEntame(ms);
+    setPhase('rail');
+  });
   useEffect(() => {
-    if (phase === 'rail' || phase === 'joueurs') return;
-    // Avec la vidéo, c'est sa fin qui lance le rail (elle peut démarrer en
-    // retard, le temps de se charger) ; un filet de sécurité s'il ne vient pas.
-    if (video && (phase === 'surgit' || phase === 'charge' || phase === 'dechire' || phase === 'eclate')) {
-      if (phase !== 'surgit') return;
-      const filet = setTimeout(() => setPhase('rail'), 15000);
-      return () => clearTimeout(filet);
-    }
+    if (phase === 'rail' || phase === 'joueurs' || enVideo) return;
     const t = setTimeout(() => {
       const suite = SUITE[phase];
       if (suite) setPhase(suite);
       else onFini();
     }, DUREES[phase]);
     return () => clearTimeout(t);
-  }, [phase, onFini, video]);
+  }, [phase, onFini, enVideo]);
 
-  const cartesDeFin = useMemo(
-    () =>
-      (VIDEOS_OUVERTURE[booster.pack.id] ? (CARTES_DE_FIN[booster.pack.id] ?? []) : [])
-        .map((id) => CARDS.find((c) => c.id === id))
-        .filter((c) => c !== undefined)
-        .map((c) => ({ cardId: c.id, name: c.name, rarity: c.rarity, glyph: c.glyph, description: c.description, power: c.power, nature: c.nature })),
-    [booster.pack.id],
-  );
+  const depart = useMemo(() => (video ? bandeDeDepart(booster.pack.id) : []), [video, booster.pack.id]);
 
   /** Le haut du sachet est arraché : il le reste jusqu'à l'éclat. */
   const dechire = phase === 'dechire' || phase === 'eclate';
@@ -270,22 +242,11 @@ function Ouverture({
         </span>
       </header>
 
-      {VIDEOS_OUVERTURE[booster.pack.id] &&
-        (phase === 'surgit' || phase === 'charge' || phase === 'dechire' || phase === 'eclate' || phase === 'rail') && (
-          // Elle reste sous le rail le temps qu'il se peigne, puis s'efface.
-          <video
-            className="ov-ouverture"
-            src={VIDEOS_OUVERTURE[booster.pack.id]}
-            autoPlay
-            muted
-            playsInline
-            preload="auto"
-            onEnded={() => setPhase((p) => (p === 'rail' ? p : 'rail'))}
-            onError={() => setPhase((p) => (p === 'rail' ? p : 'rail'))}
-          />
-        )}
+      {enVideo && (
+        <video ref={lecteur} className="ov-ouverture" src={video} autoPlay muted playsInline preload="auto" />
+      )}
 
-      {!VIDEOS_OUVERTURE[booster.pack.id] &&
+      {!video &&
         (phase === 'surgit' || phase === 'charge' || phase === 'dechire' || phase === 'eclate') && (
         <div className="ov-sachet">
           <div className="ov-sachet-corps">
@@ -334,11 +295,18 @@ function Ouverture({
         </div>
       )}
 
-      {phase === 'rail' && (
-        <div className={`ov-rail rail-dans-scene${VIDEOS_OUVERTURE[booster.pack.id] ? ' ov-rail-relais' : ''}`}>
+      {/* Avec la vidéo, le rail est déjà là, posé à son départ et caché : la
+          vidéo finit sur ses cartes, il apparaît et reprend sa course. */}
+      {(phase === 'rail' || enVideo) && (
+        <div
+          className={`ov-rail rail-dans-scene${video ? ' ov-rail-relais' : ''}`}
+          style={enVideo ? { visibility: 'hidden' } : undefined}
+        >
           <RailPack
             pool={pool}
-            entree={cartesDeFin}
+            entree={depart}
+            enAttente={enVideo}
+            entame={entame}
             poids={booster.pack.weights}
             gagnante={{
               cardId: booster.carte.cardId,

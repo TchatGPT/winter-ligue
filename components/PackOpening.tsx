@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { type CSSProperties, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { ChoixJoueurBooster, type CandidatBooster } from '@/components/ChoixJoueurBooster';
 import { CourseRoulette } from '@/components/CourseRoulette';
 import { questionDesGames, TirageGames } from '@/components/TirageGames';
@@ -26,6 +26,7 @@ import { TitreGlace } from '@/components/TitreGlace';
 import { GlaceCartes, GlaceEpees, GlaceSachet } from '@/components/DessinsGlace';
 import { EmblemeRarete } from '@/components/EmblemeRarete';
 import { TirageEquitable } from '@/components/TirageEquitable';
+import { bandeDeDepart, REPERE_VIDEO, useRelaisVideo, VIDEOS_OUVERTURE } from '@/components/ouvertureBooster';
 
 const RARITY_LADDER: Rarity[] = ['C', 'R', 'UR', 'L'];
 
@@ -124,7 +125,7 @@ export interface JoueurOuverture {
  * Reste `tirage`, où le rail met en scène un résultat **déjà acquis** : le
  * serveur a tiré avant que la première tuile n'existe.
  */
-type Phase = 'repos' | 'demande' | 'tirage' | 'joueurs' | 'games' | 'reveal';
+type Phase = 'repos' | 'demande' | 'ouverture' | 'tirage' | 'joueurs' | 'games' | 'reveal';
 
 /** Une ouverture, et son second tirage quand la carte tombe sur des joueurs tirés au sort. */
 type OuvertureTiree = OuvertureVue & { tirage?: TirageJoueurs | null };
@@ -168,6 +169,35 @@ export function PackOpening({
   const [selected, setSelected] = useState<PackId>(packs[0]?.id ?? 'perso');
   const [joueurId, setJoueurId] = useState('');
   const [phase, setPhase] = useState<Phase>('repos');
+  /** Les millisecondes de course que la vidéo d'ouverture a déjà faites. */
+  const [entame, setEntame] = useState(0);
+  const scene = useRef<HTMLDivElement>(null);
+  const lecteur = useRef<HTMLVideoElement>(null);
+  const [placeVideo, setPlaceVideo] = useState<CSSProperties | null>(null);
+  useRelaisVideo(lecteur, phase === 'ouverture', (ms) => {
+    setEntame(ms);
+    setPhase('tirage');
+  });
+  /*
+   * La vidéo se cale sur le rail, posé à son départ sous elle : sa carte du
+   * milieu sur la quatrième de la bande, à la taille des cartes du rail. La
+   * gouttière du rail suit la carte (`--pas`), donc toutes tombent juste.
+   */
+  useLayoutEffect(() => {
+    if (phase !== 'ouverture') return;
+    const boite = scene.current;
+    const tuile = boite?.querySelector('[data-rail-ruban]')?.children[3];
+    if (!boite || !tuile) return;
+    const b = boite.getBoundingClientRect();
+    const r = tuile.getBoundingClientRect();
+    const s = r.width / REPERE_VIDEO.largeurCarte;
+    setPlaceVideo({
+      left: r.left - b.left + r.width / 2 - REPERE_VIDEO.x * s,
+      top: r.top - b.top + r.height / 2 - REPERE_VIDEO.y * s,
+      width: REPERE_VIDEO.largeur * s,
+      height: REPERE_VIDEO.hauteur * s,
+    });
+  }, [phase]);
   const [error, setError] = useState<string | null>(null);
   const [ouverture, setOuverture] = useState<OuvertureTiree | null>(null);
 
@@ -187,7 +217,8 @@ export function PackOpening({
   }, [aLaMain, cartesDesRails]);
 
   const pack = useMemo(() => packs.find((p) => p.id === selected) ?? packs[0], [packs, selected]);
-  const busy = phase === 'demande' || phase === 'tirage' || phase === 'joueurs' || phase === 'games';
+  const busy =
+    phase === 'demande' || phase === 'ouverture' || phase === 'tirage' || phase === 'joueurs' || phase === 'games';
   const pourUnJoueur = pack?.portee === 'JOUEUR';
 
   const choisir = useCallback((id: string) => {
@@ -265,7 +296,10 @@ export function PackOpening({
       // révélation la trouve prête.
       prechargeGrande((payload.data as OuvertureTiree).cardId);
       setOuverture(payload.data as OuvertureTiree);
-      setPhase('tirage');
+      // L'ouverture rendue dans Blender, quand le booster en a une : elle finit
+      // sur le rail, qui reprend sa course (`useRelaisVideo`).
+      setEntame(0);
+      setPhase(VIDEOS_OUVERTURE[(payload.data as OuvertureTiree).packId] ? 'ouverture' : 'tirage');
       // La file se recharge pendant que le rail tourne, caché sous lui : la
       // pastille d'un joueur qui n'a plus rien à ouvrir s'éteint, les compteurs
       // descendent.
@@ -355,8 +389,9 @@ export function PackOpening({
   /** Après la carte : les joueurs s'il y en a à tirer, puis les games, puis la révélation. */
   const apresCarte = (): Phase => (tirage && !tirage.sansJoueurs ? 'joueurs' : gamesTirees ? 'games' : 'reveal');
   const apresJoueurs = (): Phase => (gamesTirees ? 'games' : 'reveal');
+  const videoOuverture = phase === 'ouverture' && ouverture ? VIDEOS_OUVERTURE[ouverture.packId] : undefined;
   const surScene =
-    phase === 'tirage' && gagnante
+    (phase === 'tirage' || phase === 'ouverture') && gagnante
       ? 'tirage'
       : phase === 'joueurs' && tirage
         ? 'joueurs'
@@ -440,7 +475,7 @@ export function PackOpening({
             qui se posent par-dessus dans la même case. Changer de booster,
             choisir un joueur ou ouvrir ne fait donc rien bouger autour, ni la
             scène ni la colonne des taux, qui suit sa hauteur. */}
-        <div className="scene-boosters relative grid min-h-[400px] grid-cols-[minmax(0,1fr)] px-4 py-10 sm:min-h-[460px] xl:h-full min-[150rem]:py-6">
+        <div ref={scene} className="scene-boosters relative grid min-h-[400px] grid-cols-[minmax(0,1fr)] px-4 py-10 sm:min-h-[460px] xl:h-full min-[150rem]:py-6">
           <div
             className={`col-start-1 row-start-1 flex flex-col items-center justify-center gap-6 min-[150rem]:gap-4 ${
               surScene ? 'invisible' : ''
@@ -547,10 +582,27 @@ export function PackOpening({
             )}
           </div>
 
+          {/* L'ouverture rendue dans Blender, calée sur le rail qui attend dessous. */}
+          {videoOuverture && (
+            <video
+              ref={lecteur}
+              className="ouverture-video"
+              src={videoOuverture}
+              style={placeVideo ?? { visibility: 'hidden' }}
+              autoPlay
+              muted
+              playsInline
+              preload="auto"
+            />
+          )}
+
           {/* Le tirage, d'un bord à l'autre de la scène : il déborde de la marge
               de la grille, et le verre de la scène lui sert de fond. */}
           {surScene === 'tirage' && gagnante && (
-            <div className="rail-dans-scene col-start-1 row-start-1 -mx-4 self-center">
+            <div
+              className="rail-dans-scene col-start-1 row-start-1 -mx-4 self-center"
+              style={phase === 'ouverture' ? { visibility: 'hidden' } : undefined}
+            >
               <p className="mb-5 px-4 text-center font-display text-[15px] tracking-[0.12em] text-faint uppercase">
                 {packOuvert.name}
                 {ouverture?.pseudo ? ` — pour ${ouverture.pseudo}` : ` — pour ${packOuvert.pourQui}`}
@@ -565,6 +617,9 @@ export function PackOpening({
                 pool={packOuvert.cartes}
                 poids={packOuvert.weights}
                 gagnante={gagnante}
+                entree={VIDEOS_OUVERTURE[packOuvert.id] ? bandeDeDepart(packOuvert.id) : undefined}
+                enAttente={phase === 'ouverture'}
+                entame={entame}
                 duree={COURBE_MESUREE.duree}
                 onFini={() => setPhase(apresCarte())}
               />

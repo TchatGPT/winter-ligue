@@ -1371,12 +1371,23 @@
 
   .rail-dans-scene .rail-x {
     --carte-l: clamp(118px, min(30cqw, 34svh), 420px);
-    --pas: calc(var(--carte-l) + 28px);
+    /* La gouttière suit la carte (28 px pour 420) : la vidéo d'ouverture, mise
+       à l'échelle de la carte, tombe ainsi sur toutes les cartes du rail. */
+    --pas: calc(var(--carte-l) * 448 / 420);
     --rail-h: calc(var(--carte-h) + 64px);
     border: 0;
     border-radius: 0;
     background: none;
     mask-image: linear-gradient(90deg, transparent, #000 14%, #000 86%, transparent);
+  }
+
+  /* L'ouverture rendue dans Blender, sur la scène des boosters : placée par le
+     composant sur le rail qui attend dessous. */
+  .ouverture-video {
+    position: absolute;
+    z-index: 3;
+    max-width: none;
+    pointer-events: none;
   }
 
   .rail-dans-scene .rail-voile {
