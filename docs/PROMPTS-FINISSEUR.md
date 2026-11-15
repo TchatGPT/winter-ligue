@@ -36,6 +36,29 @@ carte est rare, plus elle est spectaculaire.
 ### Troc des Neiges — `troc-des-neiges.webp`
 *Échange pire contre meilleure*
 
+Quatre versions, à essayer : garder celle qui plaît.
+
+#### A — Les deux mains
+
 ```
-Legendary fantasy card illustration, epic cinematic realism, ultra detailed, jaw-dropping, never seen before. Two mountains are trading their summits: the proud, shining, snow-crowned summit of a giant Himalayan peak and the broken, dark summit of a smaller mountain have both been torn off and are flying across the valley through the sky, crossing each other in mid-air on their way to the other mountain, trailing avalanches, glaciers, falling rocks and long streams of snow and golden light behind them. Two arcs of molten gold light trace their swapped paths. Low angle from the valley, a vivid green and violet aurora across the starry sky. Surreal, colossal, unforgettable. Deep blue, glacier turquoise and white palette with a dominant golden accent. Same art direction as the rest of the winter card set: a frozen world of snow, glacier ice and frost, deep night-blue and icy cyan tones, ice that glows from within, rich detail, one strong subject. Portrait composition. No people, no text, no letters, no logo, no border, no frame, no UI.
+Legendary fantasy card illustration, epic cinematic realism, ultra detailed, jaw-dropping, never seen before. Two colossal hands made of glacier ice, each one as big as a mountain, rise out of two opposite Himalayan peaks and reach toward each other above a deep valley. Each hand is passing something to the other at the same instant: one gives away a blazing golden sun-like fire, the other gives away a dark, cold orb of black ice, the two crossing in mid-air between the fingers. Frost racing up the wrists, the fingers translucent turquoise ice glowing from within, molten golden light reflecting on both hands, glaciers and avalanches pouring off the arms, clouds swirling around the wrists. Night sky with a vivid green and violet aurora. Low angle from the valley. Overwhelming scale, powerful and beautiful. Deep blue, glacier turquoise and white palette with a dominant golden accent. Portrait composition. No people, no text, no letters, no logo, no border, no frame, no UI.
 ```
+
+#### B — Le sablier de glace
+
+```
+Legendary fantasy card illustration, epic cinematic realism, ultra detailed, jaw-dropping, never seen before. A gigantic hourglass carved from crystal-clear glacier ice, as tall as a mountain, embedded in a Himalayan range and caught in the very instant it is being flipped upside down, tilted at a dramatic angle: the upper bulb full of glowing molten golden snow now pouring down, the lower bulb full of dark frozen snow rising to the top, the two flows crossing violently through the narrow neck in a burst of golden sparks and ice shards. Cracks of golden light running through the ice, avalanches pouring off the surrounding peaks, clouds wrapping its base. Night sky with a vivid green and violet aurora. Low angle from the valley. Overwhelming scale, powerful and beautiful. Deep blue, glacier turquoise and white palette with a dominant golden accent. Portrait composition. No people, no text, no letters, no logo, no border, no frame, no UI.
+```
+
+#### C — Les titans qui échangent leur cœur
+
+```
+Legendary fantasy card illustration, epic cinematic realism, ultra detailed, jaw-dropping, never seen before. Two colossal titans made of rock, snow and glacier ice, as tall as mountains, stand face to face in the middle of a Himalayan range, clouds around their waists. Each one has torn open its own chest and holds out its heart to the other: one heart a blazing golden fire, the other a dark cold crystal of black ice, the two hearts crossing between their giant hands in a storm of golden sparks, frost and swirling snow. Glowing golden cracks running through their bodies, faceless heads with only a cold glint in the shadow, avalanches pouring off their shoulders. Night sky torn by a vivid green aurora. Low angle, epic composition. Overwhelming scale, powerful and beautiful. Deep blue, glacier turquoise and white palette with a dominant golden accent. Portrait composition. No people, no text, no letters, no logo, no border, no frame, no UI.
+```
+
+#### D — La balance des cimes
+
+```
+Legendary fantasy card illustration, epic cinematic realism, ultra detailed, jaw-dropping, never seen before. A colossal balance scale carved from glacier ice and rock, rising from the heart of a Himalayan range, its two immense pans each carrying a whole mountain: on one side a shining snow-capped peak glowing with molten gold, on the other a dark broken peak, and the scale is violently tipping over at this very instant, the two pans swinging past each other, snow, glaciers and rocks pouring off their edges into the valley, a burst of golden light at the pivot. Cracks of golden light in the ice, clouds swirling around its base. Night sky with a vivid green and violet aurora. Low angle from the valley. Overwhelming scale, powerful and beautiful. Deep blue, glacier turquoise and white palette with a dominant golden accent. Portrait composition. No people, no text, no letters, no logo, no border, no frame, no UI.
+```
+
