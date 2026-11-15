@@ -68,7 +68,7 @@ Stylized digital painting for a fantasy trading card game, illustrated, not phot
 *+5 pts par Top 1*
 
 ```
-Stylized digital painting for a fantasy trading card game, illustrated, not photographic, vibrant colours, soft painterly shading, clean readable shapes, dramatic cinematic winter landscape key art. A spectacular aurora in the night sky forming the shape of a great crown above a single frozen summit, warm amber-orange fire burning at the heart of the aurora, glowing embers drifting down onto the snow like a celebration. Deep midnight-blue palette with a strong warm amber accent light. One clear focal point in the centre, shallow depth of field, generous space around the edges. Portrait 5:6 composition. No people, no text, no letters, no logo, no border, no frame, no UI.
+Stylized digital painting for a fantasy trading card game, illustrated, not photographic, hand-painted look, bold clean shapes, vibrant colours, strong contrast. A colossal snowy mountain shaped exactly like a royal crown: a ring of sharp icy peaks of equal height rising in a circle around a hollow summit, like the points of a crown, frozen glaciers flowing down its sides, frost and icicles glittering on every point. Warm amber-orange light blazing from inside the crown and lighting the tips of the peaks like gold, glowing embers rising into the night, a triumphant aurora ribbon in the sky above it. Epic, majestic card-art composition, the crown mountain as the clear focal point in the centre. Deep midnight-blue palette with a strong warm amber accent light. Portrait composition. No people, no text, no letters, no logo, no border, no frame, no UI.
 ```
 
 ### Brouillard Givrant — `givre-errant.webp`
