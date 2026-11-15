@@ -15,7 +15,7 @@ function ligue() {
   db.config.numero = 1;
   db.config.maxGamesPerPlayer = parametresSaison(1).games;
   db.config.totalSubs = 37;
-  const vrai = rattacheCompteTwitch(db, { id: 'tw-vrai', login: 'vrai', displayName: 'Vrai', avatarUrl: null, roleChaine: 'joueur' });
+  const vrai = rattacheCompteTwitch(db, { id: 'tw-vrai', login: 'vrai', displayName: 'Vrai', avatarUrl: null, roleChaine: 'joueur' }, [], { bienvenue: false });
   credit(db, vrai.id, 1_234, 'AJUSTEMENT_ADMIN', null);
   return { db, vrai };
 }

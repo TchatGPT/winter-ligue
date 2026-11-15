@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Database } from '@/lib/db/entities';
 import { emptyDatabase } from '@/lib/db/store';
+import { BOOSTERS_DE_BIENVENUE, RAISON_BIENVENUE } from '@/lib/domain/rules';
 import { rattacheCompteTwitch, suisModerationTwitch, type ProfilTwitch } from '@/lib/services/comptes';
 
 /**
@@ -90,5 +91,25 @@ describe('les modérateurs suivis en direct', () => {
     expect(streameuse.role).toBe('admin');
     expect(manuel.role).toBe('admin');
     expect(db.players).toHaveLength(2);
+  });
+});
+
+describe('les boosters de bienvenue (15/11/2026)', () => {
+  const bienvenue = (db: Database, id: string) =>
+    db.packsDus.filter((p) => p.packId === 'perso' && p.joueurId === id && p.raison === RAISON_BIENVENUE);
+
+  it('trois Boosters Perso en file à l’inscription, une seule fois', () => {
+    const db = emptyDatabase();
+    const joueur = connecte(db, 't1', 'nouveau', 'joueur');
+    expect(bienvenue(db, joueur.id)).toHaveLength(BOOSTERS_DE_BIENVENUE);
+    expect(BOOSTERS_DE_BIENVENUE).toBe(3);
+    connecte(db, 't1', 'nouveau', 'joueur');
+    expect(bienvenue(db, joueur.id)).toHaveLength(BOOSTERS_DE_BIENVENUE);
+  });
+
+  it('rien pour les joueurs des données fictives', () => {
+    const db = emptyDatabase();
+    const fictif = rattacheCompteTwitch(db, profil('t9', 'fictif', 'joueur'), [], { bienvenue: false });
+    expect(bienvenue(db, fictif.id)).toHaveLength(0);
   });
 });

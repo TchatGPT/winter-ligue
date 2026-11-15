@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Database } from '@/lib/db/entities';
 import { emptyDatabase } from '@/lib/db/store';
+import { BOOSTERS_DE_BIENVENUE, RAISON_BIENVENUE } from '@/lib/domain/rules';
 import { bilanDesSubs, persoEnAttente, TYPE_TCHAT } from '@/lib/domain/twitchSubs';
 import { rattacheCompteTwitch } from '@/lib/services/comptes';
 import { donneBoosterCadeau } from '@/lib/services/packs';
@@ -53,7 +54,9 @@ const resub = (tier: string, prime = false) => ({
 });
 
 const joueur = (db: Database) => db.players.find((p) => p.twitchId === 'tw-joueur')!;
-const boostersPerso = (db: Database) => db.packsDus.filter((p) => p.packId === 'perso' && p.joueurId !== null);
+// Ceux que les subs valent : sans les boosters de bienvenue de l'inscription.
+const boostersPerso = (db: Database) =>
+  db.packsDus.filter((p) => p.packId === 'perso' && p.joueurId !== null && p.raison !== RAISON_BIENVENUE);
 
 describe('les subs de Twitch, au compteur de la saison', () => {
   it('s’inscrivent au registre des subs, un par message compté', () => {
@@ -244,7 +247,8 @@ describe('les boosters cadeau', () => {
 
     // Le premier se prend sur le plus ancien donateur.
     const r = donneBoosterCadeau(db, genereux.id, db.subsTwitch, 'modo');
-    expect(r).toMatchObject({ boostersPerso: 1, reserve: 2, donateur: 'X' });
+    // Sa file : le booster cadeau, et ses trois de bienvenue.
+    expect(r).toMatchObject({ boostersPerso: 1 + BOOSTERS_DE_BIENVENUE, reserve: 2, donateur: 'X' });
     expect(boostersPerso(db).filter((b) => b.joueurId === genereux.id)).toHaveLength(1);
 
     // Queen s'inscrit : elle ne reçoit que le booster qui n'a pas été redonné.
@@ -284,7 +288,7 @@ describe('les boosters cadeau', () => {
     expect(donneBoosterCadeau(db, un.id, db.subsTwitch, 'modo', { donateur: 'tw-queen', nombre: 2 })).toMatchObject({
       nombre: 2,
       reserve: 4,
-      boostersPerso: 3,
+      boostersPerso: 3 + BOOSTERS_DE_BIENVENUE,
     });
     expect(donneBoosterCadeau(db, autre.id, db.subsTwitch, 'modo', { donateur: 'tw-queen', nombre: 4 })).toMatchObject({
       nombre: 4,

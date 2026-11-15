@@ -824,6 +824,16 @@ export const JOKERS = {
 } as const;
 
 /**
+ * Les Boosters Perso offerts à qui rejoint la ligue (décidé le 15/11/2026,
+ * une semaine avant l'ouverture) : mis en file d'office à la création du
+ * compte, comme les Jokers de départ. La même chose pour tous : rien ne
+ * s'achète. La streameuse n'en reçoit pas.
+ */
+export const BOOSTERS_DE_BIENVENUE = 3;
+/** La raison écrite sur ces boosters dans la file. */
+export const RAISON_BIENVENUE = 'bienvenue dans la ligue';
+
+/**
  * Un Booster Perso contre des flocons, depuis le solde du menu (décidé le
  * 02/11/2026). Le prix est dépensé : le solde baisse, et la chance aux
  * boosters avec lui (`PALIERS_CHANCE`) — l'écran le dit avant l'achat. Ce

@@ -21,7 +21,8 @@ function base(numero = 1): { db: Database; id: string } {
   const db = emptyDatabase();
   db.config.numero = numero;
   db.config.maxGamesPerPlayer = parametresSaison(numero).games;
-  const p = rattacheCompteTwitch(db, { id: 'tw-a', login: 'alpha', displayName: 'Alpha', avatarUrl: null, roleChaine: 'joueur' });
+  // Sans les boosters de bienvenue : le bilan compte ceux que le test met en file.
+  const p = rattacheCompteTwitch(db, { id: 'tw-a', login: 'alpha', displayName: 'Alpha', avatarUrl: null, roleChaine: 'joueur' }, [], { bienvenue: false });
   return { db, id: p.id };
 }
 

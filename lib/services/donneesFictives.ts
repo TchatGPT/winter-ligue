@@ -243,7 +243,7 @@ function remplit(db: Database, acteur: string, now: Date): BilanFictif {
       displayName: pseudo,
       avatarUrl: null,
       roleChaine: 'joueur',
-    }),
+    }, [], { bienvenue: false }),
   );
   bilan.joueurs = joueurs.length;
 

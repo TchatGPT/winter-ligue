@@ -2,11 +2,13 @@ import 'server-only';
 
 import type { Database, Player, PlayerRole, SubTwitch } from '@/lib/db/entities';
 import { newId } from '@/lib/db/store';
-import { ECONOMY } from '@/lib/domain/rules';
+import { chaineDeLaLigue } from '@/lib/auth/twitch';
+import { BOOSTERS_DE_BIENVENUE, ECONOMY, RAISON_BIENVENUE } from '@/lib/domain/rules';
+import { estLaStreameuse } from '@/lib/domain/streameuse';
 import { donneJokersDeDepart } from '@/lib/services/effects';
 import { makeSlug } from '@/lib/services/league';
 import { audit, credit } from '@/lib/services/ledger';
-import { boostersCadeauDonnes, crediteBoostersPerso } from '@/lib/services/packs';
+import { ajoutePackDu, boostersCadeauDonnes, crediteBoostersPerso } from '@/lib/services/packs';
 
 /** Ce que la connexion Twitch sait de la personne. */
 export interface ProfilTwitch {
@@ -39,12 +41,16 @@ export interface ProfilTwitch {
  * (`registre`, lu à part : il ne se charge pas avec la base). Une seule fois :
  * à la création du compte.
  *
+ * Il reçoit aussi trois Boosters Perso de bienvenue (`BOOSTERS_DE_BIENVENUE`),
+ * sauf les joueurs des données fictives (`bienvenue: false`).
+ *
  * À appeler dans une transaction.
  */
 export function rattacheCompteTwitch(
   db: Database,
   profil: ProfilTwitch,
   registre: readonly SubTwitch[] = [],
+  { bienvenue = true }: { bienvenue?: boolean } = {},
 ): Player {
   const existant = db.players.find((p) => p.twitchId === profil.id);
   if (existant) {
@@ -82,6 +88,11 @@ export function rattacheCompteTwitch(
   if (ECONOMY.welcomeGrant > 0) credit(db, cree.id, ECONOMY.welcomeGrant, 'INSCRIPTION', null);
   // Trois Jokers pour commencer (`JOKERS.depart`).
   donneJokersDeDepart(db, cree.id);
+  // Et trois Boosters Perso de bienvenue, en file (`BOOSTERS_DE_BIENVENUE`).
+  if (bienvenue && !estLaStreameuse(cree, chaineDeLaLigue())) {
+    for (let i = 0; i < BOOSTERS_DE_BIENVENUE; i += 1) ajoutePackDu(db, 'perso', cree.id, RAISON_BIENVENUE);
+    audit(db, 'twitch', 'BOOSTERS_BIENVENUE', cree.id, `${cree.pseudo} : +${BOOSTERS_DE_BIENVENUE} Boosters Perso de bienvenue`);
+  }
   if (cree.role !== 'joueur') {
     audit(db, 'twitch', 'ROLE_CHAINE', cree.id, `${cree.pseudo} : ${cree.role}`);
   }

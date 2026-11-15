@@ -168,7 +168,9 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   `jokerDe`). La game est alors passée (`skipped`) — ni points, ni flocons, ni carte
   active, qui attend la suivante — et le Joker consommé (`utiliseJoker`). Chaque joueur
   en reçoit trois à son inscription (`donneJokersDeDepart`, `JOKERS`, décidé le
-  02/11/2026), et en garde cinq au plus : un sixième, tiré pendant qu'il en garde cinq,
+  02/11/2026) — et trois Boosters Perso de bienvenue, mis en file
+  (`BOOSTERS_DE_BIENVENUE`, `RAISON_BIENVENUE`, 15/11/2026 ; pas la streameuse, pas les
+  joueurs fictifs) —, et en garde cinq au plus : un sixième, tiré pendant qu'il en garde cinq,
   est consommé sans effet ; redescendu sous cinq, il peut remonter. Le classement les
   montre en une carte, avec leur nombre en pastille — comme toute carte gardée en
   plusieurs exemplaires (12/11/2026). Une game annulée par un Joker ne

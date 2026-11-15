@@ -16,7 +16,7 @@ const CLE_B = '0b9e6a52-6f5e-4c55-9d0a-3c1f4d1a2b02';
 
 function base(solde: number): { db: Database; id: string } {
   const db = emptyDatabase();
-  const p = rattacheCompteTwitch(db, { id: 'tw-a', login: 'alpha', displayName: 'Alpha', avatarUrl: null, roleChaine: 'joueur' });
+  const p = rattacheCompteTwitch(db, { id: 'tw-a', login: 'alpha', displayName: 'Alpha', avatarUrl: null, roleChaine: 'joueur' }, [], { bienvenue: false });
   if (solde > 0) credit(db, p.id, solde, 'AJUSTEMENT_ADMIN', null);
   return { db, id: p.id };
 }

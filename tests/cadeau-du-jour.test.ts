@@ -50,13 +50,12 @@ describe('prendre le cadeau du jour', () => {
 
   function base(avecGame = true): { db: Database; id: string } {
     const db = emptyDatabase();
-    const p = rattacheCompteTwitch(db, {
-      id: 'tw-a',
-      login: 'alpha',
-      displayName: 'Alpha',
-      avatarUrl: null,
-      roleChaine: 'joueur',
-    });
+    const p = rattacheCompteTwitch(
+      db,
+      { id: 'tw-a', login: 'alpha', displayName: 'Alpha', avatarUrl: null, roleChaine: 'joueur' },
+      [],
+      { bienvenue: false },
+    );
     if (avecGame) {
       db.games.push({ id: 'g1', playerId: p.id, kills: 5, placement: null, skipped: false } as Database['games'][number]);
     }
