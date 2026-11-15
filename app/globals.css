@@ -10839,6 +10839,27 @@
   }
 
   /* Le sachet : il surgit en tournant, se charge, puis éclate. */
+  /* L'ouverture rendue dans Blender : le booster y fait 332 px de large, comme
+     le sachet en CSS, centré au même endroit. */
+  .ov-ouverture {
+    position: absolute;
+    top: -110px;
+    left: 50%;
+    width: 1180px;
+    height: 1180px;
+    margin-left: -590px;
+    pointer-events: none;
+  }
+  .ov-booster[data-phase='eclate'] .ov-ouverture {
+    animation: ov-ouverture-sort 0.55s ease-in both;
+  }
+  @keyframes ov-ouverture-sort {
+    to {
+      opacity: 0;
+      transform: scale(1.06);
+    }
+  }
+
   /* 332 px de large : 619 de haut au rapport des planches, la hauteur pour
      laquelle la scène de l'overlay est composée. */
   .ov-sachet {

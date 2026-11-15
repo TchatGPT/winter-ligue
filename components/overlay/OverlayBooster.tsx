@@ -39,6 +39,18 @@ import { questionDesGames, TirageGames } from '@/components/TirageGames';
 
 type Phase = 'surgit' | 'charge' | 'dechire' | 'eclate' | 'rail' | 'joueurs' | 'carte' | 'sort';
 
+/**
+ * L'ouverture rendue dans Blender (15/11/2026) : le booster monte, sa bande se
+ * déchire et s'envole, et quatre vraies cartes du booster sortent de
+ * l'ouverture en éventail. Une vidéo à fond transparent (VP9 avec alpha), de la
+ * durée des quatre premières phases. Seuls les boosters que joue l'overlay en
+ * ont une : sans elle, le sachet en CSS reprend sa place.
+ */
+const VIDEOS_OUVERTURE: Partial<Record<string, string>> = {
+  perso: '/boosters/ouverture-perso.webm',
+  finisseur: '/boosters/ouverture-finisseur.webm',
+};
+
 /** Les phases qui finissent d'elles-mêmes : les deux rails disent quand ils ont fini. */
 type PhaseMinutee = Exclude<Phase, 'rail' | 'joueurs'>;
 
@@ -137,6 +149,20 @@ export function OverlayBooster({
     [cle, demo],
   );
 
+  // Les vidéos d'ouverture se chargent dès l'arrivée de l'overlay : la
+  // première ouverture du live ne doit pas attendre son fichier.
+  useEffect(() => {
+    const garde = Object.values(VIDEOS_OUVERTURE).map((src) => {
+      const v = document.createElement('video');
+      v.preload = 'auto';
+      v.muted = true;
+      v.src = src!;
+      v.load();
+      return v;
+    });
+    return () => garde.forEach((v) => v.removeAttribute('src'));
+  }, []);
+
   return (
     <Scene largeur={1920} hauteur={1080}>
       {actuel && (
@@ -215,7 +241,13 @@ function Ouverture({
         </span>
       </header>
 
-      {(phase === 'surgit' || phase === 'charge' || phase === 'dechire' || phase === 'eclate') && (
+      {VIDEOS_OUVERTURE[booster.pack.id] &&
+        (phase === 'surgit' || phase === 'charge' || phase === 'dechire' || phase === 'eclate') && (
+          <video className="ov-ouverture" src={VIDEOS_OUVERTURE[booster.pack.id]} autoPlay muted playsInline preload="auto" />
+        )}
+
+      {!VIDEOS_OUVERTURE[booster.pack.id] &&
+        (phase === 'surgit' || phase === 'charge' || phase === 'dechire' || phase === 'eclate') && (
         <div className="ov-sachet">
           <div className="ov-sachet-corps">
             {/* Le sachet reste le même élément du début à la fin ; à la
