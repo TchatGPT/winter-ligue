@@ -3445,8 +3445,9 @@
     align-items: center;
     gap: 0.9rem;
   }
+  /* Assez grande pour lire son nom et son action (15/11/2026). */
   .historique-visuel {
-    width: 4.5rem;
+    width: min(9rem, 38vw);
     flex-shrink: 0;
   }
   .historique-tete h2 {
@@ -3458,12 +3459,14 @@
     text-transform: uppercase;
     color: var(--ink);
   }
-  .historique-tete p {
+  /* « > span > » : la vignette de la carte a ses propres <p> (l'intitulé de
+     l'action), qui prenaient cette taille et débordaient du cadre (15/11/2026). */
+  .historique-tete > span > p {
     margin-top: 0.25rem;
     font-size: 0.875rem;
     color: var(--muted);
   }
-  .historique-tete p b {
+  .historique-tete > span > p b {
     color: var(--frost);
   }
   .historique-liste {

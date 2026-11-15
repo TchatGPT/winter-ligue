@@ -562,7 +562,7 @@ function HistoriqueCarte({
               rarity={carte.rarity}
               glyph={carte.glyph}
               nature={carte.nature}
-              largeur="88px"
+              largeur="144px"
             />
           </span>
           <span className="min-w-0 flex-1">
