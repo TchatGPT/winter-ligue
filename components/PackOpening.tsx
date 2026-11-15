@@ -512,9 +512,9 @@ export function PackOpening({
             qui se posent par-dessus dans la même case. Changer de booster,
             choisir un joueur ou ouvrir ne fait donc rien bouger autour, ni la
             scène ni la colonne des taux, qui suit sa hauteur. */}
-        <div ref={scene} className="scene-boosters relative grid min-h-[400px] grid-cols-[minmax(0,1fr)] px-4 py-10 sm:min-h-[460px] xl:h-full min-[150rem]:py-6">
+        <div ref={scene} className="scene-boosters relative grid min-h-[400px] grid-cols-[minmax(0,1fr)] px-4 py-10 sm:min-h-[460px] xl:h-full xl:py-6">
           <div
-            className={`col-start-1 row-start-1 flex flex-col items-center justify-center gap-6 min-[150rem]:gap-4 ${
+            className={`col-start-1 row-start-1 flex flex-col items-center justify-center gap-6 xl:gap-3 ${
               surScene ? 'invisible' : ''
             }`}
           >

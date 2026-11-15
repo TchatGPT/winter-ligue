@@ -10261,6 +10261,14 @@
     gap: var(--ecart);
     padding: 44px var(--marge) 48px;
   }
+  /* Sur ordinateur, la rangée se resserre en hauteur (15/11/2026) : la scène
+     reste plus basse que la colonne de droite, qui décide seule de la hauteur —
+     elle ne bouge plus d'un booster à l'autre. */
+  @media (min-width: 80rem) {
+    .rangee-piste {
+      padding-block: 26px 30px;
+    }
+  }
   /* À partir de 2 400 px de large, la page des boosters tient dans la fenêtre :
      les étapes sur une ligne, la scène dessous, sans défiler jusqu'aux taux.
      Sur un écran moins haut (2560 × 1305, celui d'un 1440p), les sachets se
