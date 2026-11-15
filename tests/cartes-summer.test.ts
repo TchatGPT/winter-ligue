@@ -132,7 +132,7 @@ describe('les boosters de la Summer', () => {
 });
 
 describe('les cartes de toute la ligue', () => {
-  it('« Ciel de Cristal » verse 100 flocons à chacun, au grand livre', () => {
+  it('« Pluie Blanche » verse 100 flocons à chacun, au grand livre', () => {
     const db = base('a', 'b', 'c');
     const o = ouvre(db, 'flocon-de-plus', ['a', 'b', 'c']);
     for (const id of ['a', 'b', 'c']) {

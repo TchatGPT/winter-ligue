@@ -444,7 +444,7 @@ export const CARDS: readonly CardDefinition[] = [
   {
     // Changée le 12/11/2026 : plus de game sup, 100 flocons pour chacun.
     id: 'flocon-de-plus',
-    name: 'Ciel de Cristal',
+    name: 'Pluie Blanche',
     subtitle: '+100 flocons pour tous',
     rarity: 'C',
     glyph: '❄️',

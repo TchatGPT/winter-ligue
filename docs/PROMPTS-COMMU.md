@@ -30,11 +30,11 @@ Le même que pour le Booster Perso, calé sur la couleur du cadre :
 
 ## Communes
 
-### Ciel de Cristal — `flocon-de-plus.webp`
+### Pluie Blanche — `flocon-de-plus.webp`
 *+100 flocons pour tous*
 
 ```
-Semi-realistic painterly digital illustration, cinematic winter landscape, highly detailed. Very low horizon: a thin line of snowy hills at the bottom, and a huge winter sky filling three quarters of the image. The sky itself looks like it is made of clear crystal: a glossy, polished, glass-like surface with the sheen of a mirror, a delicate lattice of fine frost lines and crystal veins woven across it, the low winter sun scattering into soft sparkling glints and thin rays across the glassy texture. The sky contains only light, frost patterns and shine, an empty clear crystal sky. Clear cold daylight, icy blue, silver and white palette, natural light. Without reflections of the landscape, without mountains in the sky, without floating objects or gems, without aurora. Portrait 5:6 composition. No people, no buildings, no text, no letters, no logo, no border, no frame, no UI.
+Semi-realistic painterly digital illustration, cinematic winter key art, highly detailed. A heavy, generous snowfall in a snowy pine forest clearing: hundreds of large, detailed snowflakes raining down everywhere, the closest ones sharp and intricate in the foreground, the others softening into bokeh. Low winter sun shining from behind the trees, warm golden-white backlight catching every falling flake so the whole snowfall sparkles, soft sunbeams slanting through the pines, fresh powder piling up on the branches and on the ground. Cold blue and white palette with soft warm sunlight, natural light, no magic glow, no aurora. Portrait 5:6 composition. No people, no buildings, no text, no letters, no logo, no border, no frame, no UI.
 ```
 
 ### Premières Neiges — `petits-pas.webp`
