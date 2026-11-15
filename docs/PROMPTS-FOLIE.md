@@ -28,7 +28,7 @@ légendaires en réalisme cinématique, comme Spectre des Neiges.
 *Une game au hasard ÷ 2*
 
 ```
-Stylized digital painting for a fantasy trading card game, illustrated, not photographic, hand-painted look, bold clean shapes, vibrant colours, strong contrast. A ferocious wolf made of blizzard and frost lunging out of a snowstorm, jaws wide open, its fangs of sharp ice closing on the viewer, its body dissolving into swirling snow and wind behind it, frost spreading from its bite and cracking the air into ice. Lavender-violet magical sparkles and violet light along its icy fangs and in the swirling snow. Dynamic, wild, aggressive motion. Cold blue palette with a violet accent light. Portrait composition. No people, no text, no letters, no logo, no border, no frame, no UI.
+Stylized digital painting for a fantasy trading card game, illustrated, not photographic, hand-painted look, bold clean shapes, vibrant colours, strong contrast. A wolf sculpted entirely out of ice, with no fur at all: its whole body made of translucent faceted blue ice like a living ice sculpture, sharp crystal plates for its mane, icicle fangs, cracks and frost inside its glassy body, cold light shining through it. It lunges forward with jaws wide open, biting the air, frost exploding from its bite and shards of ice breaking off its legs as it leaps through a snowstorm. Two small glowing lavender-violet eyes, violet light glowing inside the ice of its chest, lavender-violet sparkles swirling around it. Dynamic, aggressive motion. Cold blue palette with a violet accent light. Portrait composition. No real fur, no realistic animal, no people, no text, no letters, no logo, no border, no frame, no UI.
 ```
 
 ### Pluie de Jokers — `pluie-de-jokers.webp`
