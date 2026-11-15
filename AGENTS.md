@@ -56,6 +56,10 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   limite. Comptes, grand livre et journal restent ; le registre des subs ne compte que
   ce qui suit la remise à zéro (`config.remiseA`).
 - Les constantes de saison vivent dans `lib/domain/rules.ts`, nulle part ailleurs.
+- **Au palier du Finisseur** (30ᵉ game en saison 1, 60ᵉ en saison 2), les Boosters Perso
+  d'un joueur s'ouvrent en Boosters Finisseur — il n'ouvre plus de Perso ; repassé sous le
+  palier, ce sont de nouveau des Perso (`packEffectif`, `auPalierFinisseur`, 15/11/2026).
+  Le dû garde son type : l'ouverture décide.
 - Le catalogue de cartes vit dans `lib/domain/catalog.ts`. Les actions sont celles des
   roues de la Summer Ligue ; chaque carte porte un **nom d'hiver** (`name`) et
   l'**intitulé de son action** (`subtitle`). Ajouter une carte, c'est ajouter une entrée

@@ -385,6 +385,28 @@ export function verifieFinisseur(db: Database, joueurId: string): PackDu | null 
   return ajoutePackDu(db, 'finisseur', joueurId, `${jouees} games jouées`);
 }
 
+/**
+ * Le joueur est-il au palier du Finisseur (`finisseurA` : la 30ᵉ game de la
+ * Mini Ligue, la 60ᵉ de la saison 2 ; ses games jouées, sans les Jokers) ?
+ */
+export function auPalierFinisseur(db: Database, joueurId: string): boolean {
+  const jouees = gamesOf(db, joueurId).filter((g) => !g.skipped).length;
+  const seuil = Math.min(parametresSaison(db.config.numero).finisseurA, db.config.maxGamesPerPlayer);
+  return jouees >= seuil;
+}
+
+/**
+ * Le booster qu'un dû ouvre vraiment (décidé le 15/11/2026) : au palier du
+ * Finisseur, les Boosters Perso d'un joueur s'ouvrent en Boosters Finisseur —
+ * il n'ouvre plus que des Finisseur. Qu'il repasse sous le palier (une game
+ * supprimée), ce sont de nouveau des Perso. Le dû garde son type d'origine :
+ * c'est l'ouverture qui en décide, au moment où elle se fait.
+ */
+export function packEffectif(db: Database, du: Pick<PackDu, 'packId' | 'joueurId'>): PackId {
+  if (du.packId === 'perso' && du.joueurId && auPalierFinisseur(db, du.joueurId)) return 'finisseur';
+  return du.packId;
+}
+
 export interface PackDuVue {
   id: string;
   packId: PackId;
@@ -402,8 +424,8 @@ export function fileDesPacks(db: Database): PackDuVue[] {
     .sort((a, b) => a.creeA.localeCompare(b.creeA))
     .map((p) => ({
       id: p.id,
-      packId: p.packId,
-      nom: getPack(p.packId)?.name ?? p.packId,
+      packId: packEffectif(db, p),
+      nom: getPack(packEffectif(db, p))?.name ?? p.packId,
       joueurId: p.joueurId,
       pseudo: p.joueurId ? (db.players.find((j) => j.id === p.joueurId)?.pseudo ?? null) : null,
       raison: p.raison,
@@ -437,7 +459,7 @@ export function ouvreProchainDu(
   const du = db.packsDus
     .filter(
       (p) =>
-        p.packId === pack.id &&
+        packEffectif(db, p) === pack.id &&
         p.ouvertureId === null &&
         (pack.portee !== 'JOUEUR' || p.joueurId === demande.joueurId),
     )
@@ -657,7 +679,7 @@ export function ouvrePack(db: Database, demande: DemandeOuverture, ouvertPar: st
     du = db.packsDus.find((p) => p.id === demande.packDuId) ?? null;
     if (!du) throw new PackError('Ce pack n’est pas dans la file.', 'PACK_DU_INCONNU');
     if (du.ouvertureId) throw new PackError('Ce pack a déjà été ouvert.', 'DEJA_OUVERT');
-    packId = du.packId;
+    packId = packEffectif(db, du);
     joueurId = du.joueurId;
   }
 

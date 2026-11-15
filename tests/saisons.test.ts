@@ -6,7 +6,7 @@ import { rattacheCompteTwitch } from '@/lib/services/comptes';
 import { jokersDe } from '@/lib/services/effects';
 import { objectifGamesDe, prochaineGamePossible } from '@/lib/services/league';
 import { credit } from '@/lib/services/ledger';
-import { ajoutePackDu, verifieFinisseur } from '@/lib/services/packs';
+import { ajoutePackDu, fileDesPacks, ouvreProchainDu, packEffectif, verifieFinisseur } from '@/lib/services/packs';
 import { estResponsableSaison, nouvelleSaison } from '@/lib/services/saisons';
 
 /**
@@ -149,5 +149,31 @@ describe('lancer une saison', () => {
     // Trois Jokers pour repartir.
     expect(jokersDe(db, id)).toHaveLength(3);
     expect(db.audit.at(-1)?.action).toBe('NOUVELLE_SAISON');
+  });
+});
+
+describe('les Boosters Perso au palier du Finisseur (15/11/2026)', () => {
+  it('s’ouvrent en Finisseur au palier, et redeviennent des Perso en dessous', () => {
+    const { db, id } = base(1);
+    const du = ajoutePackDu(db, 'perso', id, 'test');
+    const jouees = joue(db, id, 29);
+    expect(packEffectif(db, du)).toBe('perso');
+    joue(db, id, 1, T0 + 100 * 3_600_000);
+    expect(packEffectif(db, du)).toBe('finisseur');
+    expect(fileDesPacks(db).filter((p) => p.joueurId === id).every((p) => p.packId === 'finisseur')).toBe(true);
+    // Une game de moins : de nouveau un Perso.
+    db.games = db.games.filter((g) => g.id !== jouees[0].id);
+    expect(packEffectif(db, du)).toBe('perso');
+  });
+
+  it('au palier, on n’ouvre plus de Perso : ils sortent en Finisseur', () => {
+    const { db, id } = base(1);
+    db.packsDus = db.packsDus.filter((p) => p.joueurId !== id);
+    ajoutePackDu(db, 'perso', id, 'test');
+    joue(db, id, 30);
+    db.packsDus = db.packsDus.filter((p) => p.packId !== 'finisseur');
+    expect(() => ouvreProchainDu(db, { packId: 'perso', joueurId: id, idempotencyKey: 'a' }, 'modo')).toThrow();
+    const o = ouvreProchainDu(db, { packId: 'finisseur', joueurId: id, idempotencyKey: 'b' }, 'modo');
+    expect(o.packId).toBe('finisseur');
   });
 });
