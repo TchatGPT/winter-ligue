@@ -10,7 +10,8 @@ import type { BoosterOverlay, DuelOverlay, SubsOverlay } from '@/lib/services/ov
  */
 
 const PSEUDOS = ['Intel', 'Boréal', 'Givre_', 'NordKill', 'Yeti77', 'Stalagmite'];
-const PACKS_DEMO: PackId[] = ['perso', 'commu', 'finisseur', 'folie'];
+// Le Commu et le Folie ne passent pas à l'overlay (15/11/2026, `HORS_OVERLAY`).
+const PACKS_DEMO: PackId[] = ['perso', 'finisseur'];
 
 function auHasard<T>(liste: readonly T[]): T {
   return liste[Math.floor(Math.random() * liste.length)];

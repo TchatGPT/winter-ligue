@@ -122,6 +122,13 @@ export function vueCarte(cardId: string): CarteOverlay | null {
   };
 }
 
+/**
+ * Les boosters que l'overlay ne joue pas (15/11/2026) : le Commu et le Folie,
+ * la streameuse les ouvre elle-même, à l'écran. L'overlay ne montre que les
+ * boosters ouverts pour un joueur — le Perso et le Finisseur.
+ */
+export const HORS_OVERLAY: readonly string[] = ['commu', 'folie'];
+
 export function vueBoosters(flux: FluxOverlay): BoosterOverlay[] {
   const vues: BoosterOverlay[] = [];
   // Ceux qui défilent au second tirage : les joueurs actifs, sans la
@@ -129,6 +136,7 @@ export function vueBoosters(flux: FluxOverlay): BoosterOverlay[] {
   const chaine = chaineDeLaLigue();
   const enLice = flux.joueurs.filter((j) => !estLaStreameuse(j, chaine)).map((j) => j.pseudo);
   for (const o of flux.ouvertures) {
+    if (HORS_OVERLAY.includes(o.packId)) continue;
     const pack = getPack(o.packId);
     const carte = vueCarte(o.cardId);
     const card = getCard(o.cardId);

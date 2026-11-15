@@ -145,13 +145,14 @@ describe('le tirage que voit l’overlay', () => {
     tempeteA: null,
   });
 
-  it('déroule le joueur tiré parmi les joueurs en lice, sans la streameuse', () => {
-    const [vue] = vueBoosters(flux(carteDeCible('HASARD').id, ['Bravo']));
-    expect(vue.tirage).toEqual({ gagnants: ['Bravo'], joueurs: ['Alpha', 'Bravo'], course: false, games: null });
+  it('ne joue ni le Commu ni le Folie : la streameuse les ouvre à l’écran (15/11/2026)', () => {
+    expect(vueBoosters(flux(carteDeCible('HASARD').id, ['Bravo']))).toEqual([]);
+    const folie = flux(CARDS.find((c) => c.packs.includes('folie'))!.id, ['Bravo']);
+    folie.ouvertures[0].packId = 'folie';
+    expect(vueBoosters(folie)).toEqual([]);
   });
 
-  it('ne déroule rien quand personne n’est tiré au sort', () => {
-    expect(vueBoosters(flux(carteDeCible('TETE').id, ['Alpha']))[0].tirage).toBeNull();
+  it('joue le Perso, sans rien dérouler', () => {
     const perso = CARDS.find((c) => c.packs.includes('perso'))!;
     expect(vueBoosters(flux(perso.id, ['Alpha'], 'Alpha'))[0].tirage).toBeNull();
   });

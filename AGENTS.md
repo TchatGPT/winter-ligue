@@ -304,6 +304,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   d'arrivée (`marqueFini`), jamais avant : il trahirait l'issue.
 - Les overlays OBS (`/overlay/…`) lisent par `Store.fluxOverlay`, jamais par `read()` :
   ils interrogent le serveur toutes les deux secondes pendant un live.
+  L'overlay des boosters ne joue que le Perso et le Finisseur : le Commu et le Folie,
+  la streameuse les ouvre elle-même à l'écran (`HORS_OVERLAY`, 15/11/2026).
 - **Les illustrations passent par `npm run cartes`** (`scripts/index-art.mjs`, lancé aussi
   avant chaque build) : l'index donne chaque image avec l'empreinte de son fichier
   (`?v=…`), ce qui permet de la garder un an en cache (`next.config.ts`), et fait les
