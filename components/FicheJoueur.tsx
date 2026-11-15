@@ -1,16 +1,16 @@
 'use client';
 
 import Link from 'next/link';
-import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
-import { createPortal } from 'react-dom';
+import { type ReactNode, useCallback, useMemo, useState } from 'react';
 import { CardFrame } from '@/components/CardFrame';
 import { CorrectionGame, type GameACorriger } from '@/components/CorrectionGame';
 import { CouronneGlace } from '@/components/CouronneGlace';
+import { FicheCarte } from '@/components/FicheCarte';
 import { MedailleGlace } from '@/components/MedailleGlace';
 import { ColonnesSaison, DetailGame, GrilleGames, numerotation } from '@/components/SaisonDuJoueur';
 import { SnowCap } from '@/components/SnowCap';
 import { flakes } from '@/components/ui';
-import { getPack } from '@/lib/domain/catalog';
+import { getCard, getPack } from '@/lib/domain/catalog';
 import { CHANCE, ECONOMY, libelleMultiplicateur, PACKS_REGLES } from '@/lib/domain/rules';
 import type { BilanSubs } from '@/lib/domain/twitchSubs';
 import { decimal, longDateTime, shortDateTime } from '@/lib/format';
@@ -452,19 +452,16 @@ export function FicheJoueur({
                 );
                 return (
                   <li key={o.cardId}>
-                    {/* Reçue plusieurs fois : un clic montre chaque déblocage. */}
-                    {fois > 1 ? (
-                      <button
-                        type="button"
-                        className="profil-carte profil-carte-bouton"
-                        onClick={() => setHistorique(o.cardId)}
-                        aria-label={`${o.nom}, reçue ${fois} fois : voir chaque déblocage`}
-                      >
-                        {visuel}
-                      </button>
-                    ) : (
-                      <span className="profil-carte">{visuel}</span>
-                    )}
+                    {/* Un clic ouvre la carte en grand, qui penche sous le pointeur, et
+                        chaque déblocage (15/11/2026). */}
+                    <button
+                      type="button"
+                      className="profil-carte profil-carte-bouton"
+                      onClick={() => setHistorique(o.cardId)}
+                      aria-label={`${o.nom}${fois > 1 ? `, reçue ${fois} fois` : ''} : voir la carte en grand`}
+                    >
+                      {visuel}
+                    </button>
                     <b>{o.nom}</b>
                     {/* Son booster, et quand elle est tombée — la dernière fois, si plusieurs. */}
                     <span className="profil-carte-booster">{o.pack.replace(/^Booster\s+/, '')}</span>
@@ -533,8 +530,9 @@ function leA(iso: string): string {
 }
 
 /**
- * Chaque déblocage d'une carte reçue plusieurs fois (12/11/2026) : quand, et
- * de quel booster, du plus récent au plus ancien.
+ * Une carte débloquée, en grand (15/11/2026) : la fiche de la carte, qui penche
+ * sous le pointeur comme à l'ouverture d'un booster, pour profiter de son
+ * illustration ; dessous, chaque déblocage, du plus récent au plus ancien.
  */
 function HistoriqueCarte({
   ouvertures,
@@ -543,38 +541,27 @@ function HistoriqueCarte({
   ouvertures: DonneesFiche['profil']['ouvertures'];
   onClose: () => void;
 }) {
-  useEffect(() => {
-    const echap = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
-    window.addEventListener('keydown', echap);
-    return () => window.removeEventListener('keydown', echap);
-  }, [onClose]);
   const carte = ouvertures[0];
   if (!carte) return null;
+  const definition = getCard(carte.cardId);
   const liste = [...ouvertures].sort((a, b) => b.openedAt.localeCompare(a.openedAt));
-  return createPortal(
-    <div className="fenetre-voile" role="dialog" aria-modal="true" aria-labelledby="historique-titre" onClick={onClose}>
-      <div className="fenetre-carte historique-carte glass" onClick={(e) => e.stopPropagation()}>
-        <header className="historique-tete">
-          <span className="historique-visuel">
-            <CardFrame
-              cardId={carte.cardId}
-              name={carte.nom}
-              rarity={carte.rarity}
-              glyph={carte.glyph}
-              nature={carte.nature}
-              largeur="144px"
-            />
-          </span>
-          <span className="min-w-0 flex-1">
-            <h2 id="historique-titre">{carte.nom}</h2>
-            <p>
-              Débloquée <b className="num">{liste.length} fois</b>
-            </p>
-          </span>
-          <button type="button" className="btn btn-sm" onClick={onClose} aria-label="Fermer" autoFocus>
-            ✕
-          </button>
-        </header>
+  return (
+    <FicheCarte
+      carte={{
+        cardId: carte.cardId,
+        nom: carte.nom,
+        action: definition?.subtitle,
+        rarity: carte.rarity,
+        glyph: carte.glyph,
+        description: definition?.description ?? '',
+        nature: carte.nature,
+      }}
+      legende={
+        <>
+          Débloquée <b className="num">{liste.length > 1 ? `${liste.length} fois` : 'une fois'}</b>
+        </>
+      }
+      action={
         <ol className="historique-liste">
           {liste.map((o, i) => (
             <li key={`${o.openedAt}-${i}`}>
@@ -584,9 +571,9 @@ function HistoriqueCarte({
             </li>
           ))}
         </ol>
-      </div>
-    </div>,
-    document.body,
+      }
+      onClose={onClose}
+    />
   );
 }
 
