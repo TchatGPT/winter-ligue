@@ -10760,6 +10760,13 @@
     border-color: transparent;
     border-width: var(--ov-verre, 36px);
     border-image: url('/overlay/verre.webp') 80 fill / var(--ov-verre, 36px) stretch;
+    /* Rien du biseau du verre du site, qui s'appliquait encore ici : son fond
+       et son masque dessinaient un cadre clair dans la plaque. */
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    -webkit-mask: none;
+    mask: none;
     pointer-events: none;
   }
   .ov-duel-plaque.glass::before,
