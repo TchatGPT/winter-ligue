@@ -17,7 +17,7 @@ dans sa dernière phrase de style : ne pas la retirer.
 
 ## Déjà en ligne
 
-Pluie de Jokers, Blizzard Général, Nuit Blanche, Grand Gel et Morsure du Froid ont leur illustration (15/11/2026) : leurs prompts
+Pluie de Jokers, Blizzard Général, Nuit Blanche, Grand Gel, Morsure du Froid et Duel de Glace ont leur illustration (15/11/2026) : leurs prompts
 sont retirés d'ici.
 
 ## Le ton
@@ -36,16 +36,9 @@ légendaires en réalisme cinématique, comme Spectre des Neiges.
 
 ## Légendaires
 
-### Duel de Glace — `barillet-de-glace.webp`
-*Course à six (ex-Roulette russe)*
-
-```
-Legendary fantasy card illustration, epic cinematic realism, ultra detailed, explosive action, colossal scale, jaw-dropping. Two mountains have risen up and become titans: each one is a whole snowy peak torn out of the Himalayan range, its body made of rock, glacier ice and snow, glaciers hanging from its shoulders like armour, translucent turquoise ice glowing from deep inside. Over-the-shoulder view from behind the first titan, huge in the foreground, facing the second titan across a vast valley; clouds drift around their waists and the mountain range below looks tiny. Their fists collide in the centre of the image in a blinding golden supernova, a ring-shaped shockwave of snow and light spreading across the whole range, the clouds blasted away, peaks below shattering, avalanches pouring down everywhere, giant blocks of ice and rock flung into the sky, golden sparks raining down. No faces, only a cold glint in the shadow of their heads. Night sky torn by a vivid green aurora. Overwhelming, unforgettable. Deep blue, glacier turquoise and white palette with a dominant golden accent. Same art direction as the rest of the winter card set: a frozen world of snow, glacier ice and frost, deep night-blue and icy cyan tones, ice that glows from within, rich detail, one strong subject. Portrait composition. No people, no weapons, no text, no letters, no numbers, no logo, no border, no frame, no UI.
-```
-
 ### Cryogénisation — `cryogenisation.webp`
 *Fige ta meilleure game, quand tu veux*
 
 ```
-Legendary fantasy card illustration, epic cinematic realism, ultra detailed, breathtaking, never seen before. A colossal volcano in the heart of a snowy mountain range, frozen solid at the very peak of its eruption: the towering eruption column, the fountains of lava and the burning rivers flowing down its slopes all turned instantly into ice, yet still glowing molten gold and amber from inside the ice, like fire preserved forever. Frozen lava bombs hang motionless in the sky, the ash cloud has become a giant cloud of frost and ice crystals, glowing golden veins running through every frozen flow, frost spreading across the snowy slopes. Time stopped at the most glorious moment. Night sky with a vivid green and violet aurora, golden light shafts bursting from the frozen crater. Awe-inspiring, surreal, the frozen eruption as the clear focal point. Deep blue, glacier turquoise and white palette with a dominant golden accent. Same art direction as the rest of the winter card set: a frozen world of snow, glacier ice and frost, deep night-blue and icy cyan tones, ice that glows from within, rich detail, one strong subject. Portrait composition. No people, no creatures, no text, no letters, no logo, no border, no frame, no UI.
+Legendary fantasy card illustration, epic cinematic realism, ultra detailed, colossal scale, jaw-dropping. The highest mountain of a Himalayan range is a gigantic eagle of stone and ice, frozen at the very instant it was taking flight: its head and hooked beak form the summit, its immense outstretched wings are the ridges of the range on both sides, their feathers carved from rock and draped with glaciers, long frozen waterfalls and icicles hanging from the wingtips, its chest a wall of translucent turquoise glacier ice. Deep inside its chest, a golden fire still burns, and cracks of molten gold light run through the ice of its wings and body, as if it could break free at any second. Clouds swirl around its talons far below, a tiny frozen pine forest at its feet gives the scale, snow plumes streaming from its wings, frozen ice shards suspended in the air. Low angle from the valley, epic composition. Night sky with a vivid green and violet aurora, radiant golden light shafts bursting from its chest. Majestic, eternal, awe-inspiring. Deep blue, glacier turquoise and white palette with a dominant golden accent. Same art direction as the rest of the winter card set: a frozen world of snow, glacier ice and frost, deep night-blue and icy cyan tones, ice that glows from within, rich detail, one strong subject. Portrait composition. No people, no text, no letters, no logo, no border, no frame, no UI.
 ```

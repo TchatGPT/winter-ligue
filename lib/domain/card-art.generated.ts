@@ -7,6 +7,7 @@
  */
 
 export const CARD_ART: Record<string, string> = {
+  'barillet-de-glace': '/cartes/barillet-de-glace.webp?v=e5b9c22aeb',
   'blizzard-general': '/cartes/blizzard-general.webp?v=79b93bdffc',
   'bocal-de-givre': '/cartes/bocal-de-givre.webp?v=31d96460f8',
   'bonhomme-de-neige': '/cartes/bonhomme-de-neige.webp?v=0cbedbb361',
@@ -64,6 +65,7 @@ export const BOOSTER_ART: Record<string, string> = {
  * `srcset` qui les propose au navigateur avec l’illustration entière.
  */
 export const CARD_VIGNETTES: Record<string, { petite: string; moyenne: string; srcset: string }> = {
+  'barillet-de-glace': { petite: '/cartes/vignettes/barillet-de-glace.e5b9c22aeb.200.webp', moyenne: '/cartes/vignettes/barillet-de-glace.e5b9c22aeb.480.webp', srcset: '/cartes/vignettes/barillet-de-glace.e5b9c22aeb.200.webp 200w, /cartes/vignettes/barillet-de-glace.e5b9c22aeb.480.webp 480w, /cartes/barillet-de-glace.webp?v=e5b9c22aeb 1000w' },
   'blizzard-general': { petite: '/cartes/vignettes/blizzard-general.79b93bdffc.200.webp', moyenne: '/cartes/vignettes/blizzard-general.79b93bdffc.480.webp', srcset: '/cartes/vignettes/blizzard-general.79b93bdffc.200.webp 200w, /cartes/vignettes/blizzard-general.79b93bdffc.480.webp 480w, /cartes/blizzard-general.webp?v=79b93bdffc 1000w' },
   'bocal-de-givre': { petite: '/cartes/vignettes/bocal-de-givre.31d96460f8.200.webp', moyenne: '/cartes/vignettes/bocal-de-givre.31d96460f8.480.webp', srcset: '/cartes/vignettes/bocal-de-givre.31d96460f8.200.webp 200w, /cartes/vignettes/bocal-de-givre.31d96460f8.480.webp 480w, /cartes/bocal-de-givre.webp?v=31d96460f8 1000w' },
   'bonhomme-de-neige': { petite: '/cartes/vignettes/bonhomme-de-neige.0cbedbb361.200.webp', moyenne: '/cartes/vignettes/bonhomme-de-neige.0cbedbb361.480.webp', srcset: '/cartes/vignettes/bonhomme-de-neige.0cbedbb361.200.webp 200w, /cartes/vignettes/bonhomme-de-neige.0cbedbb361.480.webp 480w, /cartes/bonhomme-de-neige.webp?v=0cbedbb361 1000w' },
