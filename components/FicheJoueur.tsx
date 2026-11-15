@@ -567,7 +567,7 @@ function HistoriqueCarte({
             <li key={`${o.openedAt}-${i}`}>
               <span className="historique-rang num">{liste.length - i}</span>
               <span className="historique-quand">{longDateTime(o.openedAt)}</span>
-              <span className="historique-pack">{o.pack}</span>
+              <span className="historique-pack">{o.pack.replace(/^Booster\s+/, '')}</span>
             </li>
           ))}
         </ol>
