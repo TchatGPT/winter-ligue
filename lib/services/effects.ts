@@ -584,6 +584,17 @@ export function estMultipliee(game: Game): boolean {
 /** Les games comptées d'un joueur. */
 const comptees = (db: Database, joueurId: string) => db.games.filter((g) => g.playerId === joueurId && !g.skipped);
 
+/**
+ * Les games qu'une carte des roues peut **multiplier** (Tonnerre de Neige,
+ * Réveil du Glacier — décidé le 15/11/2026) : toute game comptée qui marque,
+ * même si une carte y est déjà passée (un bonus de points ne bloque rien),
+ * sauf une game figée et une game qui a déjà un multiplicateur — comme la
+ * meilleure game ×1,5.
+ */
+function gamesAMultiplier(db: Database, joueurId: string): Game[] {
+  return comptees(db, joueurId).filter((g) => g.score > 0 && !estFigee(g) && !estMultipliee(g));
+}
+
 /** La pire game comptée d'un joueur : elle ne se fige jamais. */
 function pireComptee(db: Database, joueurId: string): Game | undefined {
   return [...comptees(db, joueurId)].sort((a, b) => a.score - b.score)[0];
@@ -768,7 +779,7 @@ export function choisitGamesRoue(db: Database, card: CardDefinition, joueurs: re
       return fait(
         true,
         joueurs.map((p) => {
-          const libres = gamesSansCarte(db, p.id).filter((g) => g.score > 0);
+          const libres = gamesAMultiplier(db, p.id);
           return libres.length ? pour(p, `une game au hasard, ×${fr(action.facteur)}`, [pick(libres)], libres) : null;
         }),
       );
@@ -942,9 +953,9 @@ function regleRoue(
     case 'pire_fois':
     case 'hasard_fois':
       for (const m of groupe) {
-        const libres = gamesSansCarte(db, m.joueur.id).filter((g) => g.score > 0);
+        const libres = gamesAMultiplier(db, m.joueur.id);
         if (libres.length === 0) {
-          pour(m, sansEffet('aucune game libre, sans effet'));
+          pour(m, sansEffet('aucune game à multiplier, sans effet'));
           continue;
         }
         const game =

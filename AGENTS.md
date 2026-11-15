@@ -83,7 +83,9 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   jouée dessus (un ×2, un bonus, un Pacte) ne la protège pas ; seules une carte qui
   fige (`estFigee`) et l'immunité du joueur le font.
   Les bonus qu'on pose sur sa propre game gardent « une game, une carte »
-  (`gamesSansCarte`). Les games ne changent pas de main : leurs scores s'échangent
+  (`gamesSansCarte`). Les **multiplicateurs des roues** (Tonnerre de Neige, Réveil du
+  Glacier) prennent toute game qui marque, même déjà touchée par un bonus, sauf une
+  game figée ou déjà multipliée (`gamesAMultiplier`, 15/11/2026). Les games ne changent pas de main : leurs scores s'échangent
   (`applyPoints`), et un clone ou un vol de score arrive en points hors game. Leur
   tirage a ses cibles (`TROIS`, `SIX`, `DIX_PREMIERS`, `CINQ_DERNIERS`,
   `beneficiairesRoue`) et ignore la règle « pas de stock » : rien n'en reste en

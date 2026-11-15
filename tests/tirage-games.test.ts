@@ -129,6 +129,23 @@ describe('le tirage des games', () => {
     }
   });
 
+  it('« Tonnerre de Neige » double aussi une game qui porte déjà un bonus — jamais une figée ni une déjà multipliée (15/11/2026)', () => {
+    for (let essai = 0; essai < 8; essai += 1) {
+      const db = emptyDatabase();
+      db.players.push(joueur('a'));
+      const bonus = game(db, 'a', 4);
+      bonus.applied.push({ id: 'b', cardId: 'congere', ouvertureId: 'o', points: 4, at: bonus.createdAt });
+      const figee = game(db, 'a', 8);
+      figee.applied.push({ id: 'f', cardId: 'cryogenisation', ouvertureId: 'o', points: 0, at: figee.createdAt });
+      const doublee = game(db, 'a', 9);
+      doublee.applied.push({ id: 'x', cardId: 'ouragan-blanc', ouvertureId: 'o', points: 9, at: doublee.createdAt });
+      const o = ouvre(db, 'triple-echo', ['a']);
+      expect(o.games!.parJoueur[0]!.parmi.map((g) => g.id)).toEqual([bonus.id]);
+      revele(db, o);
+      expect(touchee(db, 'triple-echo', 'a').map((g) => g.id)).toEqual([bonus.id]);
+    }
+  });
+
   it('« Vents Croisés » échange les deux games tirées, et seulement elles', () => {
     for (let essai = 0; essai < 6; essai += 1) {
       const db = ligue('a', 'b');

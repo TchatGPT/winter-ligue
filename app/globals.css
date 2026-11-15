@@ -8950,9 +8950,9 @@
   .cadre-fenetre {
     position: absolute;
     left: calc(7.13% - 1px);
-    top: 4.3%;
+    top: calc(4.3% - 1px);
     width: calc(85.8% + 2px);
-    height: 69.21%;
+    height: calc(69.21% + 2px);
     overflow: hidden;
     border-radius: 3cqw;
     background: #060d19;
@@ -17045,10 +17045,14 @@ a.rgs-usage b::after {
 }
 /* Juste assez grande pour glisser sans montrer de bord : à 1,12, la fiche
    rognait le haut et le bas de l'image — le reflet d'Écho Lointain y
-   disparaissait. */
+   disparaissait. Le glissement reste sous la marge que donne l'agrandissement :
+   à 1,08, l'image dépasse de 4 % de chaque côté, et un décalage de 4,5 %
+   (× 1,08, il s'applique après l'agrandissement) laissait voir le fond sombre
+   de la fenêtre en haut de la carte, pointeur au bord (15/11/2026). 3,5 % ×
+   1,08 = 3,8 % : jamais de bord. */
 .carte-3d .cadre-vecteur {
   transform: scale(1.08)
-    translate(calc((var(--mx) - 0.5) * -9%), calc((var(--my) - 0.5) * -9%));
+    translate(calc((var(--mx) - 0.5) * -7%), calc((var(--my) - 0.5) * -7%));
   transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.3, 1);
 }
 .carte-3d[data-actif] .cadre-vecteur {
