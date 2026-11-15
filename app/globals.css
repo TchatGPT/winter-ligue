@@ -10236,18 +10236,21 @@
   .rangee[data-defile] .rangee-piste {
     padding-inline: calc(50cqw - var(--l-sachet) / 2);
   }
-  /* Agrandis et écartés le 15/11/2026, à la demande : la hauteur ne retient
-     plus que 720 px (au lieu de 870) — sur un 1440p, ~315 px de large au lieu
-     de ~233, quitte à faire défiler la page de quelques pixels —, et l'écart
-     monte jusqu'à 96 px pour occuper la largeur de la scène. */
+  /* Agrandis et écartés le 15/11/2026, à la demande, sans faire défiler : la
+     scène rend 76 px de vide (marges de la rangée, de la scène et entre ses
+     blocs), que les boosters reprennent — la hauteur retient 795 px au lieu de
+     870 —, et l'écart monte jusqu'à 96 px pour occuper la largeur. (720 px
+     les rendait trop grands : les taux et le bouton Ouvrir passaient sous
+     l'écran.) */
   @media (min-width: 150rem) {
     .rangee-piste {
       --ecart: clamp(40px, 4.5cqw, 96px);
+      padding-block: 30px 34px;
       --l-sachet: clamp(
         180px,
         min(
           calc((100cqw - 3 * var(--ecart) - 2 * var(--marge) - 10px) / 4),
-          calc((100svh - 720px) / 1.865)
+          calc((100svh - 795px) / 1.865)
         ),
         360px
       );

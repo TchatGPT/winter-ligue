@@ -440,9 +440,9 @@ export function PackOpening({
             qui se posent par-dessus dans la même case. Changer de booster,
             choisir un joueur ou ouvrir ne fait donc rien bouger autour, ni la
             scène ni la colonne des taux, qui suit sa hauteur. */}
-        <div className="scene-boosters relative grid min-h-[400px] grid-cols-[minmax(0,1fr)] px-4 py-10 sm:min-h-[460px] xl:h-full">
+        <div className="scene-boosters relative grid min-h-[400px] grid-cols-[minmax(0,1fr)] px-4 py-10 sm:min-h-[460px] xl:h-full min-[150rem]:py-6">
           <div
-            className={`col-start-1 row-start-1 flex flex-col items-center justify-center gap-6 ${
+            className={`col-start-1 row-start-1 flex flex-col items-center justify-center gap-6 min-[150rem]:gap-4 ${
               surScene ? 'invisible' : ''
             }`}
           >
@@ -723,7 +723,9 @@ export function PackOpening({
           <div className="relative -mt-16 px-4 pb-4">
             <p className="eyebrow">Booster choisi</p>
             <TitreGlace taille="bloc">{pack.name}</TitreGlace>
-            <p className="mt-1 text-[16px] text-ink-2">{pack.tagline}</p>
+            {/* Deux lignes réservées, comme le déclencheur : la colonne garde sa
+                hauteur d'un booster à l'autre, et la scène à côté ne bouge pas. */}
+            <p className="mt-1 min-h-[3em] text-[16px] leading-normal text-ink-2">{pack.tagline}</p>
             <dl className="mt-4 grid grid-cols-2 gap-x-3 gap-y-3 text-[16px]">
               <div>
                 <dt className="text-[13px] tracking-[0.12em] text-faint uppercase">Contenu</dt>
@@ -740,7 +742,7 @@ export function PackOpening({
               </div>
               <div className="col-span-2">
                 <dt className="text-[13px] tracking-[0.12em] text-faint uppercase">Déclencheur</dt>
-                <dd className="mt-1 min-h-[3em] text-[16px] leading-normal text-ink">{pack.declencheur}</dd>
+                <dd className="mt-1 min-h-[4.5em] text-[16px] leading-normal text-ink">{pack.declencheur}</dd>
               </div>
             </dl>
           </div>
