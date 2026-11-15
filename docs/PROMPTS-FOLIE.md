@@ -17,7 +17,7 @@ dans sa dernière phrase de style : ne pas la retirer.
 
 ## Déjà en ligne
 
-Pluie de Jokers, Blizzard Général et Nuit Blanche ont leur illustration (15/11/2026) : leurs prompts
+Pluie de Jokers, Blizzard Général, Nuit Blanche, Grand Gel et Morsure du Froid ont leur illustration (15/11/2026) : leurs prompts
 sont retirés d'ici.
 
 ## Le ton
@@ -31,28 +31,6 @@ légendaires en réalisme cinématique, comme Spectre des Neiges.
 | Rare | paillettes et lueur **violet lavande** |
 | Ultra rare | lueur **ambre orangée**, braises |
 | Légendaire | **or**, rayons de lumière, épique |
-
----
-
-## Rares
-
-### Morsure du Froid — `morsure-du-froid.webp`
-*Une game au hasard ÷ 2*
-
-```
-Stylized digital painting for a fantasy trading card game, illustrated, not photographic, hand-painted look, bold clean shapes, vibrant colours, strong contrast. A wild, jagged snowy mountain ridge at night seen from far away, a natural rock formation whose dark silhouette against the violet aurora sky vaguely recalls the head of a howling wolf, only if you look twice, like a shape seen in the clouds. A deep crevasse cuts into the ridge like a bite, lined with rows of long, sharp hanging icicles and blue ice fangs, frost biting into the rock all around it, a freezing wind tearing snow off the crest. It is only rock, snow and ice: no animal drawn, no fur, no eyes, no nose, no face. Lavender-violet aurora light and violet sparkles in the blowing snow. Cold blue palette with a violet accent light. Same art direction as the rest of the winter card set: a frozen world of snow, glacier ice and frost, deep night-blue and icy cyan tones, ice that glows from within, rich detail, one strong subject. Portrait composition. No animal, no wolf face, no people, no text, no letters, no logo, no border, no frame, no UI.
-```
-
----
-
-## Ultra rares
-
-### Grand Gel — `grand-gel.webp`
-*Chacun fige une game au hasard*
-
-```
-Stylized digital painting for a fantasy trading card game, illustrated, not photographic, hand-painted look, bold clean shapes, vibrant colours, strong contrast. dramatic, ultra rare card. Low angle looking up at a monumental waterfall completely frozen solid, a cathedral of ice: gigantic columns of clear turquoise ice and curtains of huge icicles hanging from a cliff dozens of metres high, every drop frozen in its fall, frozen spray suspended in the air like glass beads, the pool at its foot turned to cracked ice. The ice glows from within in cyan and turquoise, and the setting sun pierces through the frozen curtains, lighting their edges in warm amber-orange and casting golden-amber rays through the ice. Majestic, crystalline, breathtaking, not a single drop of flowing water. Deep midnight-blue palette with a strong warm amber accent light. Same art direction as the rest of the winter card set: a frozen world of snow, glacier ice and frost, deep night-blue and icy cyan tones, ice that glows from within, rich detail, one strong subject. Portrait composition. No flowing water, no people, no text, no letters, no logo, no border, no frame, no UI.
-```
 
 ---
 
