@@ -45,6 +45,7 @@ export function RailPack({
   gagnante,
   duree,
   sourdine = false,
+  entree,
   onFini,
 }: {
   /** Tout ce qu'on peut montrer en leurre — les cartes du pack. */
@@ -57,11 +58,24 @@ export function RailPack({
   duree: number;
   /** Sans un bruit : l'overlay du stream ne sonne que si on le lui demande. */
   sourdine?: boolean;
+  /**
+   * Les cartes posées au départ, à partir du deuxième rang de la bande : les
+   * premières visibles. L'overlay y met celles sur lesquelles finit sa vidéo
+   * d'ouverture, pour que le rail en prenne le relais sans coupure. Ce ne sont
+   * que des leurres : la carte tirée reste au bout de la course.
+   */
+  entree?: CarteRailPack[];
   onFini: () => void;
 }) {
   // La bande est construite une fois, au montage, et plus jamais : un
   // `useMemo` pourrait être rejoué par React sous les pieds de l'animation.
-  const [bande] = useState(() => construitBande(pool, gagnante, poids, Math.random));
+  const [bande] = useState(() => {
+    const b = construitBande(pool, gagnante, poids, Math.random);
+    entree?.forEach((carte, i) => {
+      if (1 + i < RANG_GAGNANT) b[1 + i] = carte;
+    });
+    return b;
+  });
 
   const cadre = useRef<HTMLDivElement>(null);
 

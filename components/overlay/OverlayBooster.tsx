@@ -51,6 +51,18 @@ const VIDEOS_OUVERTURE: Partial<Record<string, string>> = {
   finisseur: '/boosters/ouverture-finisseur.webm',
 };
 
+/**
+ * Les cinq cartes sur lesquelles la vidéo s'arrête, de gauche à droite : ce
+ * sont les cinq premières cartes visibles du rail, posées à la même place
+ * (mesurée sur le plateau de 1920 × 1080). Le rail les reprend telles quelles
+ * et part de là : on ne voit pas le passage de la vidéo au site. À changer
+ * avec la vidéo — `scratchpad/blender/ouverture/rendu.sh`.
+ */
+const CARTES_DE_FIN: Partial<Record<string, string[]>> = {
+  perso: ['chocolat-chaud', 'souffle-polaire', 'ouragan-blanc', 'vortex-polaire', 'bonhomme-de-neige'],
+  finisseur: ['sommet-atteint', 'drapeau-plante', 'troc-des-neiges', 'statue-de-givre', 'soudure-de-glace'],
+};
+
 /** Les phases qui finissent d'elles-mêmes : les deux rails disent quand ils ont fini. */
 type PhaseMinutee = Exclude<Phase, 'rail' | 'joueurs'>;
 
@@ -73,7 +85,7 @@ const DUREES_VIDEO: Record<PhaseMinutee, number> = {
   surgit: 2000,
   charge: 1500,
   dechire: 3800,
-  eclate: 700,
+  eclate: 1700,
 };
 
 const SUITE: Record<PhaseMinutee, Phase | null> = {
@@ -220,6 +232,15 @@ function Ouverture({
     return () => clearTimeout(t);
   }, [phase, onFini, booster.pack.id]);
 
+  const cartesDeFin = useMemo(
+    () =>
+      (VIDEOS_OUVERTURE[booster.pack.id] ? (CARTES_DE_FIN[booster.pack.id] ?? []) : [])
+        .map((id) => CARDS.find((c) => c.id === id))
+        .filter((c) => c !== undefined)
+        .map((c) => ({ cardId: c.id, name: c.name, rarity: c.rarity, glyph: c.glyph, description: c.description, power: c.power, nature: c.nature })),
+    [booster.pack.id],
+  );
+
   /** Le haut du sachet est arraché : il le reste jusqu'à l'éclat. */
   const dechire = phase === 'dechire' || phase === 'eclate';
 
@@ -255,7 +276,8 @@ function Ouverture({
       </header>
 
       {VIDEOS_OUVERTURE[booster.pack.id] &&
-        (phase === 'surgit' || phase === 'charge' || phase === 'dechire' || phase === 'eclate') && (
+        (phase === 'surgit' || phase === 'charge' || phase === 'dechire' || phase === 'eclate' || phase === 'rail') && (
+          // Elle reste sous le rail le temps qu'il se peigne, puis s'efface.
           <video className="ov-ouverture" src={VIDEOS_OUVERTURE[booster.pack.id]} autoPlay muted playsInline preload="auto" />
         )}
 
@@ -309,9 +331,10 @@ function Ouverture({
       )}
 
       {phase === 'rail' && (
-        <div className="ov-rail rail-dans-scene">
+        <div className={`ov-rail rail-dans-scene${VIDEOS_OUVERTURE[booster.pack.id] ? ' ov-rail-relais' : ''}`}>
           <RailPack
             pool={pool}
+            entree={cartesDeFin}
             poids={booster.pack.weights}
             gagnante={{
               cardId: booster.carte.cardId,

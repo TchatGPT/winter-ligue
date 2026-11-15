@@ -10839,25 +10839,27 @@
   }
 
   /* Le sachet : il surgit en tournant, se charge, puis éclate. */
-  /* L'ouverture rendue dans Blender : le booster y fait 332 px de large, comme
-     le sachet en CSS, centré au même endroit. */
+  /* L'ouverture rendue dans Blender : tout le plateau (1920 × 1080) — sa
+     dernière image tombe sur le rail, carte pour carte. */
   .ov-ouverture {
     position: absolute;
-    top: -10px;
-    left: 50%;
-    width: 1180px;
-    height: 1180px;
-    margin-left: -590px;
+    inset: 0;
+    width: 1920px;
+    height: 1080px;
     pointer-events: none;
   }
-  .ov-booster[data-phase='eclate'] .ov-ouverture {
-    animation: ov-ouverture-sort 0.55s ease-in both;
+  /* Le relais : le rail se pose sur la dernière image de la vidéo, sans
+     apparaître en fondu ; la vidéo, dessous, s'efface ensuite. */
+  .ov-booster[data-phase='rail'] .ov-ouverture {
+    animation: ov-ouverture-sort 0.3s ease-in 0.25s both;
   }
   @keyframes ov-ouverture-sort {
     to {
       opacity: 0;
-      transform: scale(1.06);
     }
+  }
+  .ov-rail.ov-rail-relais {
+    animation: none;
   }
 
   /* 332 px de large : 619 de haut au rapport des planches, la hauteur pour
