@@ -10615,8 +10615,9 @@
    Posés sur la vidéo du stream : la page est transparente, et chaque overlay
    est un plateau dessiné à taille fixe, mis à l'échelle de la source. Les
    plaques ne comptent pas sur le flou d'arrière-plan — OBS compose la vidéo
-   après la page, il n'y aurait rien à flouter — : elles sont franchement
-   teintées, pour se lire sur n'importe quelle image de jeu.
+   après la page, il n'y aurait rien à flouter — : ce sont des plaques de verre
+   liquide, transparentes (15/11/2026), et c'est l'ombre de leur texte qui le
+   tient lisible sur n'importe quelle image de jeu.
    ========================================================================== */
 
 @layer components {
@@ -10640,15 +10641,52 @@
     transform-origin: center;
   }
 
-  /* La matière des plaques d'overlay : le verre du site, épaissi. */
+  /*
+   * La matière des plaques d'overlay : du verre liquide, transparent (décidé le
+   * 15/11/2026, « comme Apple »). Pas de flou — OBS pose la vidéo après la page,
+   * il n'y aurait rien à flouter — et presque pas de teinte : la plaque se voit
+   * à son arête, vive en haut, à l'épaisseur qui éclaircit ses bords, et au
+   * lustre qui glisse sur sa face. Le jeu se voit à travers. Le texte porte une
+   * ombre courte et un halo sombre : c'est lui qui le tient lisible sur
+   * n'importe quelle image.
+   */
   .ov-duel-plaque.glass,
   .ov-subs.glass,
   .ov-subs-palier.glass,
   .ov-legende.glass,
-  .ov-refus.glass {
-    background: linear-gradient(160deg, rgb(24 58 96 / 0.9) 0%, rgb(7 24 48 / 0.93) 100%);
+  .ov-refus.glass,
+  .ov-bandeau,
+  .ov-duel-appel {
+    --ov-teinte: transparent;
+    background:
+      radial-gradient(120% 90% at 16% -10%, rgb(255 255 255 / 0.2), transparent 55%),
+      linear-gradient(100deg, color-mix(in srgb, var(--ov-teinte) 14%, transparent) 0%, transparent 60%),
+      linear-gradient(165deg, rgb(255 255 255 / 0.08) 0%, rgb(255 255 255 / 0.015) 50%, rgb(190 230 255 / 0.07) 100%) !important;
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
+    box-shadow:
+      inset 0 2px 0 rgb(255 255 255 / 0.9),
+      inset 0 -1.5px 0 rgb(255 255 255 / 0.38),
+      inset 1.5px 0 0 rgb(255 255 255 / 0.45),
+      inset -1.5px 0 0 rgb(255 255 255 / 0.28),
+      inset 0 0 0 1px rgb(255 255 255 / 0.12),
+      inset 0 0 26px rgb(255 255 255 / 0.1),
+      inset 0 26px 34px -28px rgb(255 255 255 / 0.55),
+      inset 0 -22px 32px -26px rgb(180 230 255 / 0.35),
+      0 20px 40px -26px rgb(0 8 24 / 0.55);
+    text-shadow:
+      0 1px 2px rgb(0 8 24 / 0.9),
+      0 0 10px rgb(0 8 24 / 0.7),
+      0 0 24px rgb(0 8 24 / 0.45);
+  }
+  .ov-bandeau {
+    --ov-teinte: var(--teinte);
+  }
+  .ov-legende.glass {
+    --ov-teinte: var(--r);
+  }
+  .ov-subs-palier.glass {
+    --ov-teinte: var(--aurora);
   }
 
   /* ------------------------------ Boosters ------------------------------- */
@@ -10671,13 +10709,6 @@
     gap: 20px;
     padding: 22px 40px 20px 26px;
     border-radius: 28px;
-    background:
-      linear-gradient(100deg, color-mix(in srgb, var(--teinte) 22%, transparent) 0%, transparent 55%),
-      linear-gradient(160deg, rgb(24 58 96 / 0.92) 0%, rgb(7 24 48 / 0.94) 100%);
-    box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / 0.5),
-      inset 0 0 0 1px rgb(255 255 255 / 0.14),
-      0 24px 40px -22px rgb(0 8 24 / 0.95);
     white-space: nowrap;
     animation: ov-bandeau-entre 0.75s cubic-bezier(0.2, 1.35, 0.4, 1) both;
   }
@@ -11139,9 +11170,6 @@
     gap: 12px;
     padding: 40px 38px 32px;
     border-radius: 30px;
-    background:
-      linear-gradient(160deg, color-mix(in srgb, var(--r) 16%, transparent) 0%, transparent 60%),
-      linear-gradient(160deg, rgb(24 58 96 / 0.92) 0%, rgb(7 24 48 / 0.94) 100%) !important;
     animation: ov-legende-entre 0.7s cubic-bezier(0.2, 1.2, 0.4, 1) 0.35s both;
   }
   @keyframes ov-legende-entre {
@@ -11348,11 +11376,6 @@
     letter-spacing: 0.06em;
     text-transform: uppercase;
     color: var(--ink);
-    background: rgb(7 24 48 / 0.88);
-    box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / 0.3),
-      inset 0 0 0 1px rgb(255 255 255 / 0.12),
-      0 12px 18px -12px rgb(0 8 24 / 0.9);
     animation:
       ov-monte 0.5s ease-out 1.2s both,
       ov-appel 1.6s ease-in-out 1.8s infinite;
@@ -11598,9 +11621,6 @@
     padding: 0 28px;
     border-radius: var(--r-md);
     animation: ov-palier 6s ease both;
-  }
-  .ov-subs-palier.glass {
-    background: linear-gradient(160deg, rgb(20 88 96 / 0.95) 0%, rgb(7 30 52 / 0.95) 100%);
   }
   .ov-subs-palier > span {
     grid-column: 1 / -1;
