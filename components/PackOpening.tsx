@@ -174,6 +174,18 @@ export function PackOpening({
   const scene = useRef<HTMLDivElement>(null);
   const lecteur = useRef<HTMLVideoElement>(null);
   const [placeVideo, setPlaceVideo] = useState<CSSProperties | null>(null);
+  // La vidéo d'ouverture du booster choisi se charge d'avance : l'ouverture
+  // ne l'attend pas. Seule la modération ouvre.
+  const videoChoisie = moderateur ? VIDEOS_OUVERTURE[selected] : undefined;
+  useEffect(() => {
+    if (!videoChoisie) return;
+    const v = document.createElement('video');
+    v.preload = 'auto';
+    v.muted = true;
+    v.src = videoChoisie;
+    v.load();
+    return () => v.removeAttribute('src');
+  }, [videoChoisie]);
   useRelaisVideo(lecteur, phase === 'ouverture', (ms) => {
     setEntame(ms);
     setPhase('tirage');
