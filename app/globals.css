@@ -1390,6 +1390,42 @@
     pointer-events: none;
   }
 
+  /* La vidéo s'efface sous l'éclat, quand le mélange prend la suite. */
+  .ouverture-video[data-fin],
+  .ov-ouverture[data-fin] {
+    animation: ouverture-efface 0.38s ease-in 0.12s both;
+  }
+  @keyframes ouverture-efface {
+    to {
+      opacity: 0;
+    }
+  }
+
+  /* L'éclat qui couvre le passage de la vidéo aux cartes du rail : une lumière
+     froide qui naît au cœur du paquet et s'ouvre. */
+  .melange-eclat {
+    position: absolute;
+    z-index: 30;
+    border-radius: 50%;
+    pointer-events: none;
+    background: radial-gradient(
+      circle,
+      rgb(255 255 255 / 0.95) 0%,
+      color-mix(in srgb, var(--frost) 70%, transparent) 22%,
+      color-mix(in srgb, var(--ice) 35%, transparent) 45%,
+      transparent 70%
+    );
+    mix-blend-mode: screen;
+  }
+
+  /* Pendant le mélange, le repère du rail se tait ; il revient avec la course. */
+  .rail-x[data-melange] .rail-repere {
+    opacity: 0;
+  }
+  .rail-x .rail-repere {
+    transition: opacity 0.4s ease;
+  }
+
   .rail-dans-scene .rail-voile {
     display: none;
   }

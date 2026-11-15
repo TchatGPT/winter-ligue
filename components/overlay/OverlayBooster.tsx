@@ -11,7 +11,8 @@ import { Scene } from '@/components/overlay/Scene';
 import { SnowCap } from '@/components/SnowCap';
 import { boosterDemo } from '@/components/overlay/demo';
 import { useFluxOverlay } from '@/components/overlay/useFluxOverlay';
-import { bandeDeDepart, useRelaisVideo, VIDEOS_OUVERTURE } from '@/components/ouvertureBooster';
+import { ENTAME_MELANGE, joueMelange } from '@/components/melangeRail';
+import { bandeDeDepart, useFinVideo, VIDEOS_OUVERTURE } from '@/components/ouvertureBooster';
 import { CARDS, RARITY_META } from '@/lib/domain/catalog';
 import type { BoosterOverlay } from '@/lib/services/overlay';
 import { COURBE_MESUREE } from '@/lib/spin/courbe';
@@ -38,10 +39,10 @@ import { questionDesGames, TirageGames } from '@/components/TirageGames';
  * Jamais en aperçu.
  */
 
-type Phase = 'surgit' | 'charge' | 'dechire' | 'eclate' | 'rail' | 'joueurs' | 'carte' | 'sort';
+type Phase = 'surgit' | 'charge' | 'dechire' | 'eclate' | 'melange' | 'rail' | 'joueurs' | 'carte' | 'sort';
 
 /** Les phases qui finissent d'elles-mêmes : les deux rails disent quand ils ont fini. */
-type PhaseMinutee = Exclude<Phase, 'rail' | 'joueurs'>;
+type PhaseMinutee = Exclude<Phase, 'melange' | 'rail' | 'joueurs'>;
 
 const DUREES: Record<PhaseMinutee, number> = {
   surgit: 1400,
@@ -186,18 +187,33 @@ function Ouverture({
   }, [phase]);
 
   // Le temps de chaque phase ; le rail, lui, dit quand il a fini. Avec la
-  // vidéo, c'est sa dernière image qui lance le rail, déjà lancé
-  // (`useRelaisVideo`).
+  // vidéo : à sa dernière image, le mélange se joue sur les cartes du rail
+  // (`joueMelange`), puis le rail repart de là, déjà lancé.
   const video = VIDEOS_OUVERTURE[booster.pack.id];
   const enVideo = Boolean(video) && (phase === 'surgit' || phase === 'charge' || phase === 'dechire' || phase === 'eclate');
   const lecteur = useRef<HTMLVideoElement>(null);
+  const zoneRail = useRef<HTMLDivElement>(null);
   const [entame, setEntame] = useState(0);
-  useRelaisVideo(lecteur, enVideo, (ms) => {
-    setEntame(ms);
-    setPhase('rail');
-  });
+  useFinVideo(lecteur, enVideo, () => setPhase('melange'));
   useEffect(() => {
-    if (phase === 'rail' || phase === 'joueurs' || enVideo) return;
+    if (phase !== 'melange') return;
+    let vivant = true;
+    const cadre = zoneRail.current?.querySelector<HTMLElement>('.rail-x');
+    if (!cadre) {
+      setPhase('rail');
+      return;
+    }
+    void joueMelange(cadre).then((fin) => {
+      if (!vivant) return;
+      setEntame(ENTAME_MELANGE + (performance.now() - fin) + 16);
+      setPhase('rail');
+    });
+    return () => {
+      vivant = false;
+    };
+  }, [phase]);
+  useEffect(() => {
+    if (phase === 'rail' || phase === 'joueurs' || phase === 'melange' || enVideo) return;
     const t = setTimeout(() => {
       const suite = SUITE[phase];
       if (suite) setPhase(suite);
@@ -242,8 +258,17 @@ function Ouverture({
         </span>
       </header>
 
-      {enVideo && (
-        <video ref={lecteur} className="ov-ouverture" src={video} autoPlay muted playsInline preload="auto" />
+      {(enVideo || phase === 'melange') && (
+        <video
+          ref={lecteur}
+          className="ov-ouverture"
+          data-fin={phase === 'melange' ? '' : undefined}
+          src={video}
+          autoPlay
+          muted
+          playsInline
+          preload="auto"
+        />
       )}
 
       {!video &&
@@ -295,17 +320,18 @@ function Ouverture({
         </div>
       )}
 
-      {/* Avec la vidéo, le rail est déjà là, posé à son départ et caché : la
-          vidéo finit sur ses cartes, il apparaît et reprend sa course. */}
-      {(phase === 'rail' || enVideo) && (
+      {/* Avec la vidéo, le rail est déjà là, posé à son départ et caché : ses
+          cartes font le mélange, puis il reprend sa course. */}
+      {(phase === 'rail' || phase === 'melange' || enVideo) && (
         <div
+          ref={zoneRail}
           className={`ov-rail rail-dans-scene${video ? ' ov-rail-relais' : ''}`}
           style={enVideo ? { visibility: 'hidden' } : undefined}
         >
           <RailPack
             pool={pool}
             entree={depart}
-            enAttente={enVideo}
+            enAttente={enVideo || phase === 'melange'}
             entame={entame}
             poids={booster.pack.weights}
             gagnante={{

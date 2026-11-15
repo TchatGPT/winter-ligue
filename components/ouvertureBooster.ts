@@ -7,9 +7,8 @@ import { CARDS } from '@/lib/domain/catalog';
 /**
  * L'ouverture d'un booster rendue dans Blender (15/11/2026), la même sur le
  * site et dans l'overlay : le booster monte, sa bande se déchire lentement et
- * tombe, cinq vraies cartes du booster en sortent, viennent au milieu, s'y
- * mélangent, s'étalent à la place des cartes du rail — et la bande accélère
- * jusqu'à la vitesse du rail. Le rail reprend là, à cette vitesse, sans arrêt.
+ * tombe, et cinq cartes du booster en jaillissent. Là, la vidéo s'arrête : le
+ * mélange se joue sur les vraies cartes du rail (`joueMelange`).
  *
  * Une vidéo VP9 à fond transparent, du plateau entier de l'overlay (1920 ×
  * 1080), rendue par `scratchpad/blender/ouverture/rendu.sh`. Sa fin est
@@ -47,9 +46,6 @@ const BANDE_DE_DEPART: Partial<Record<string, string[]>> = {
   ],
 };
 
-/** Les millisecondes de course du rail que la vidéo a déjà faites à sa dernière image. */
-export const ENTAME_VIDEO = 200;
-
 /** La place de la carte du milieu dans la vidéo, sur le plateau de 1920 × 1080. */
 export const REPERE_VIDEO = { x: 946.6, y: 631.4, largeurCarte: 420, largeur: 1920, hauteur: 1080 };
 
@@ -72,18 +68,13 @@ export function bandeDeDepart(packId: string): CarteRailPack[] {
 }
 
 /**
- * Guette la dernière image de la vidéo, image par image, et passe la main au
- * rail à ce moment-là, avec la course déjà faite : la dernière image est
- * l'instant 200 ms du rail, et chaque milliseconde de retard s'y ajoute.
+ * Guette la fin de la vidéo, image par image, et prévient à sa dernière image
+ * (le mélange prend la suite sur les cartes du rail — `joueMelange`).
  */
-export function useRelaisVideo(
-  video: RefObject<HTMLVideoElement | null>,
-  actif: boolean,
-  relais: (entame: number) => void,
-): void {
-  const rappel = useRef(relais);
+export function useFinVideo(video: RefObject<HTMLVideoElement | null>, actif: boolean, finie: () => void): void {
+  const rappel = useRef(finie);
   useEffect(() => {
-    rappel.current = relais;
+    rappel.current = finie;
   });
   useEffect(() => {
     if (!actif) return;
@@ -92,12 +83,9 @@ export function useRelaisVideo(
     const guette = () => {
       const v = video.current;
       if (!fini && v && Number.isFinite(v.duration) && v.duration > 0) {
-        const derniere = v.duration - IMAGE;
-        if (v.ended || v.currentTime >= derniere - 0.004) {
+        if (v.ended || v.currentTime >= v.duration - IMAGE - 0.004) {
           fini = true;
-          const retard = Math.max(0, (v.ended ? v.duration : v.currentTime) - derniere) * 1000;
-          // Une image d'avance : le rail se peint à l'image suivante.
-          rappel.current(ENTAME_VIDEO + retard + 16);
+          rappel.current();
           return;
         }
       }
@@ -108,9 +96,9 @@ export function useRelaisVideo(
     const filet = setTimeout(() => {
       if (!fini) {
         fini = true;
-        rappel.current(0);
+        rappel.current();
       }
-    }, 15000);
+    }, 12000);
     return () => {
       cancelAnimationFrame(image);
       clearTimeout(filet);

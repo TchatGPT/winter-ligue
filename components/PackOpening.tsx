@@ -26,7 +26,8 @@ import { TitreGlace } from '@/components/TitreGlace';
 import { GlaceCartes, GlaceEpees, GlaceSachet } from '@/components/DessinsGlace';
 import { EmblemeRarete } from '@/components/EmblemeRarete';
 import { TirageEquitable } from '@/components/TirageEquitable';
-import { bandeDeDepart, REPERE_VIDEO, useRelaisVideo, VIDEOS_OUVERTURE } from '@/components/ouvertureBooster';
+import { ENTAME_MELANGE, joueMelange } from '@/components/melangeRail';
+import { bandeDeDepart, REPERE_VIDEO, useFinVideo, VIDEOS_OUVERTURE } from '@/components/ouvertureBooster';
 
 const RARITY_LADDER: Rarity[] = ['C', 'R', 'UR', 'L'];
 
@@ -125,7 +126,7 @@ export interface JoueurOuverture {
  * Reste `tirage`, où le rail met en scène un résultat **déjà acquis** : le
  * serveur a tiré avant que la première tuile n'existe.
  */
-type Phase = 'repos' | 'demande' | 'ouverture' | 'tirage' | 'joueurs' | 'games' | 'reveal';
+type Phase = 'repos' | 'demande' | 'ouverture' | 'melange' | 'tirage' | 'joueurs' | 'games' | 'reveal';
 
 /** Une ouverture, et son second tirage quand la carte tombe sur des joueurs tirés au sort. */
 type OuvertureTiree = OuvertureVue & { tirage?: TirageJoueurs | null };
@@ -186,10 +187,26 @@ export function PackOpening({
     v.load();
     return () => v.removeAttribute('src');
   }, [videoChoisie]);
-  useRelaisVideo(lecteur, phase === 'ouverture', (ms) => {
-    setEntame(ms);
-    setPhase('tirage');
-  });
+  // À la dernière image de la vidéo, le mélange se joue sur les cartes du rail
+  // (`joueMelange`), puis le rail repart de là, déjà lancé.
+  useFinVideo(lecteur, phase === 'ouverture', () => setPhase('melange'));
+  useEffect(() => {
+    if (phase !== 'melange') return;
+    let vivant = true;
+    const cadre = scene.current?.querySelector<HTMLElement>('.rail-dans-scene .rail-x');
+    if (!cadre) {
+      setPhase('tirage');
+      return;
+    }
+    void joueMelange(cadre).then((fin) => {
+      if (!vivant) return;
+      setEntame(ENTAME_MELANGE + (performance.now() - fin) + 16);
+      setPhase('tirage');
+    });
+    return () => {
+      vivant = false;
+    };
+  }, [phase]);
   /*
    * La vidéo se cale sur le rail, posé à son départ sous elle : sa carte du
    * milieu sur la quatrième de la bande, à la taille des cartes du rail. La
@@ -230,7 +247,12 @@ export function PackOpening({
 
   const pack = useMemo(() => packs.find((p) => p.id === selected) ?? packs[0], [packs, selected]);
   const busy =
-    phase === 'demande' || phase === 'ouverture' || phase === 'tirage' || phase === 'joueurs' || phase === 'games';
+    phase === 'demande' ||
+    phase === 'ouverture' ||
+    phase === 'melange' ||
+    phase === 'tirage' ||
+    phase === 'joueurs' ||
+    phase === 'games';
   const pourUnJoueur = pack?.portee === 'JOUEUR';
 
   const choisir = useCallback((id: string) => {
@@ -401,9 +423,10 @@ export function PackOpening({
   /** Après la carte : les joueurs s'il y en a à tirer, puis les games, puis la révélation. */
   const apresCarte = (): Phase => (tirage && !tirage.sansJoueurs ? 'joueurs' : gamesTirees ? 'games' : 'reveal');
   const apresJoueurs = (): Phase => (gamesTirees ? 'games' : 'reveal');
-  const videoOuverture = phase === 'ouverture' && ouverture ? VIDEOS_OUVERTURE[ouverture.packId] : undefined;
+  const videoOuverture =
+    (phase === 'ouverture' || phase === 'melange') && ouverture ? VIDEOS_OUVERTURE[ouverture.packId] : undefined;
   const surScene =
-    (phase === 'tirage' || phase === 'ouverture') && gagnante
+    (phase === 'tirage' || phase === 'ouverture' || phase === 'melange') && gagnante
       ? 'tirage'
       : phase === 'joueurs' && tirage
         ? 'joueurs'
@@ -599,6 +622,7 @@ export function PackOpening({
             <video
               ref={lecteur}
               className="ouverture-video"
+              data-fin={phase === 'melange' ? '' : undefined}
               src={videoOuverture}
               style={placeVideo ?? { visibility: 'hidden' }}
               autoPlay
@@ -630,7 +654,7 @@ export function PackOpening({
                 poids={packOuvert.weights}
                 gagnante={gagnante}
                 entree={VIDEOS_OUVERTURE[packOuvert.id] ? bandeDeDepart(packOuvert.id) : undefined}
-                enAttente={phase === 'ouverture'}
+                enAttente={phase === 'ouverture' || phase === 'melange'}
                 entame={entame}
                 duree={COURBE_MESUREE.duree}
                 onFini={() => setPhase(apresCarte())}
