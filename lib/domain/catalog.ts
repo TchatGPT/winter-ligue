@@ -1292,7 +1292,7 @@ export const PACKS: readonly PackDefinition[] = [
     id: 'finisseur',
     name: 'Booster Finisseur',
     tagline: 'Pour qui va au bout',
-    declencheur: 'À la 35ᵉ game de la Mini Ligue ; à la dernière game de la saison ensuite.',
+    declencheur: 'À la 30ᵉ game de la Mini Ligue ; à la dernière game de la saison ensuite.',
     glyph: '🏁',
     // Le vert de l'aurore qui couronne sa planche.
     gradient: ['#2e8b7a', '#0c2a26'],

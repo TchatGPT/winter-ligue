@@ -41,7 +41,7 @@ export function gamesComptees(db: Database, playerId: string): number {
 }
 
 /**
- * Passé le seuil de la saison (`uneParSessionApres` : la 35ᵉ game de la Mini
+ * Passé le seuil de la saison (`uneParSessionApres` : la 30ᵉ game de la Mini
  * Ligue), une seule game compte par session de jeu avec Lriaa. Rend l'heure à
  * partir de laquelle ce joueur peut de nouveau en jouer une, ou null s'il le
  * peut maintenant : sa dernière game comptée, au-delà du seuil, a moins d'une
@@ -155,7 +155,7 @@ export interface RankingRow {
   /**
    * Le nombre de games que la colonne « Games » montre après la barre
    * (12/11/2026) : le palier du Booster Finisseur (35, ou 60 en saison 2) tant
-   * qu'il n'est pas atteint, puis la limite de la saison (38, ou 65), créneaux
+   * qu'il n'est pas atteint, puis la limite de la saison (33, ou 65), créneaux
    * bonus compris.
    */
   objectifGames: number;

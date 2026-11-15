@@ -372,7 +372,7 @@ export function ajusteBoostersPerso(
 
 /**
  * Met en file le pack Finisseur d'un joueur qui vient d'atteindre le seuil de
- * la saison (`finisseurA` : la 35ᵉ game de la Mini Ligue, la dernière sinon).
+ * la saison (`finisseurA` : la 30ᵉ game de la Mini Ligue, la dernière sinon).
  * Une fois par joueur et par saison : la limite peut être relevée par la
  * modération, le pack n'en tombe pas une seconde fois.
  */

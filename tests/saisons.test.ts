@@ -10,8 +10,8 @@ import { ajoutePackDu, verifieFinisseur } from '@/lib/services/packs';
 import { estResponsableSaison, nouvelleSaison } from '@/lib/services/saisons';
 
 /**
- * Les saisons (12/11/2026) : la Mini Ligue — 38 games, le Finisseur à la 35ᵉ,
- * une game par session passé la 35ᵉ, pas de finale —, puis la saison 2, lancée
+ * Les saisons (12/11/2026) : la Mini Ligue — 33 games, le Finisseur à la 30ᵉ
+ * (15/11/2026), une game par session passé la 30ᵉ, pas de finale —, puis la saison 2, lancée
  * par une remise à zéro réservée au responsable.
  */
 
@@ -51,33 +51,33 @@ function joue(db: Database, id: string, n: number, depuis = T0): Game[] {
 }
 
 describe('la Mini Ligue', () => {
-  it('se joue en 38 games, sans finale', () => {
+  it('se joue en 33 games, sans finale', () => {
     const s = parametresSaison(1);
-    expect(s.games).toBe(38);
-    expect(s.finisseurA).toBe(35);
+    expect(s.games).toBe(33);
+    expect(s.finisseurA).toBe(30);
     expect(s.finalistes).toBe(0);
   });
 
-  it('ouvre le Booster Finisseur à la 35ᵉ game, pas avant, et une fois', () => {
+  it('ouvre le Booster Finisseur à la 30ᵉ game, pas avant, et une fois', () => {
     const { db, id } = base(1);
-    joue(db, id, 34);
+    joue(db, id, 29);
     expect(verifieFinisseur(db, id)).toBeNull();
     joue(db, id, 1, T0 + 100 * 3_600_000);
     expect(verifieFinisseur(db, id)?.packId).toBe('finisseur');
     expect(verifieFinisseur(db, id)).toBeNull();
   });
 
-  it('passé la 35ᵉ, une seule game par session', () => {
+  it('passé la 30ᵉ, une seule game par session', () => {
     const { db, id } = base(1);
-    const jouees = joue(db, id, 35);
+    const jouees = joue(db, id, 30);
     const derniere = Date.parse(jouees.at(-1)!.createdAt);
-    // La 36ᵉ, juste après la 35ᵉ : même session, refusée.
+    // La 31ᵉ, juste après la 30ᵉ : même session, refusée.
     expect(prochaineGamePossible(db, id, new Date(derniere + 10 * 60_000))).not.toBeNull();
     // Une session plus tard : permise.
     expect(prochaineGamePossible(db, id, new Date(derniere + SESSION_MINUTES * 60_000 + 1))).toBeNull();
   });
 
-  it('avant la 35ᵉ, autant de games qu’on veut dans une session', () => {
+  it('avant la 30ᵉ, autant de games qu’on veut dans une session', () => {
     const { db, id } = base(1);
     const jouees = joue(db, id, 20);
     expect(prochaineGamePossible(db, id, new Date(Date.parse(jouees.at(-1)!.createdAt) + 60_000))).toBeNull();
@@ -101,7 +101,7 @@ describe('la Mini Ligue', () => {
 describe('la colonne « Games » du classement', () => {
   it('compte sur le palier du Finisseur, puis sur la fin de la saison', () => {
     for (const [numero, palier, fin] of [
-      [1, 35, 38],
+      [1, 30, 33],
       [2, 60, 65],
     ] as const) {
       const { db, id } = base(numero);

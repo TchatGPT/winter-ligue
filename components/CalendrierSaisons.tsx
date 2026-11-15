@@ -11,7 +11,7 @@ export interface SaisonDuCalendrier {
   role: string;
   /** « 22 nov. → 4 janv. ». */
   dates: string;
-  /** « 38 games · pas de finale ». */
+  /** « 33 games · pas de finale ». */
   detail: string;
   debut: string;
   fin: string;

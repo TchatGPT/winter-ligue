@@ -77,8 +77,8 @@ export const DEFAULT_MAX_GAMES_PER_PLAYER = 60;
 /**
  * Les saisons de la Winter Ligue (décidé le 12/11/2026).
  *
- *  - **Saison 1, la Mini Ligue** (du 22 novembre au 4 janvier) : 38 games, le
- *    Booster Finisseur s'ouvre à la 35ᵉ ; passé la 35ᵉ, une seule game compte
+ *  - **Saison 1, la Mini Ligue** (du 22 novembre au 4 janvier) : 33 games, le
+ *    Booster Finisseur s'ouvre à la 30ᵉ ; passé la 30ᵉ, une seule game compte
  *    par session de jeu avec Lriaa (une heure et demie) ; pas de finale.
  *  - **Saison 2** (du 4 janvier à la mi-mars) : tout remis à zéro ; le Booster
  *    Finisseur à la 60ᵉ game, puis cinq games de plus, une par session — 65 en
@@ -115,9 +115,10 @@ export const SAISONS: readonly ParametresSaison[] = [
   {
     numero: 1,
     nom: 'Saison 1 · Mini Ligue',
-    games: 38,
-    finisseurA: 35,
-    uneParSessionApres: 35,
+    // 33 games, le Finisseur à la 30ᵉ (15/11/2026 ; 38 et 35 jusque-là).
+    games: 33,
+    finisseurA: 30,
+    uneParSessionApres: 30,
     finalistes: 0,
     periode: 'du 22 novembre au 4 janvier',
     debut: '2026-11-22T00:00:00.000+01:00',

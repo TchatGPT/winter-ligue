@@ -205,7 +205,7 @@ export function ChoixJoueurBooster({
   if (candidats.length === 0) {
     return (
       <p className={`choix-joueur-vide ${cache ? 'invisible' : ''}`} aria-hidden={cache || undefined}>
-        Aucun {nomBooster} à ouvrir pour l’instant. Le compteur de chaque joueur se règle dans Modération → Joueurs.
+        Aucun {nomBooster} à ouvrir pour l’instant.
       </p>
     );
   }
