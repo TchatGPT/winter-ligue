@@ -17,7 +17,7 @@ dans sa dernière phrase de style : ne pas la retirer.
 
 ## Déjà en ligne
 
-Pluie de Jokers et Blizzard Général ont leur illustration (15/11/2026) : leurs prompts
+Pluie de Jokers, Blizzard Général et Nuit Blanche ont leur illustration (15/11/2026) : leurs prompts
 sont retirés d'ici.
 
 ## Le ton
@@ -40,7 +40,7 @@ légendaires en réalisme cinématique, comme Spectre des Neiges.
 *Une game au hasard ÷ 2*
 
 ```
-Stylized digital painting for a fantasy trading card game, illustrated, not photographic, hand-painted look, bold clean shapes, vibrant colours, strong contrast. A jagged snowy mountain range at dusk whose shape secretly forms the head of a giant wolf in profile: the ridges and peaks draw its ears, snout and open jaws, rows of huge icicles and sharp seracs form its fangs, a glacier pours out of its mouth like a frozen bite closing on the valley below, two ice caves glow like its eyes. You only guess it is a wolf at second glance: it is a landscape, not an animal. Lavender-violet light glowing in the eye caves and along the icy fangs, violet sparkles in the blowing snow. Cold blue palette with a violet accent light. Same art direction as the rest of the winter card set: a frozen world of snow, glacier ice and frost, deep night-blue and icy cyan tones, ice that glows from within, rich detail, one strong subject. Portrait composition. No people, no text, no letters, no logo, no border, no frame, no UI.
+Stylized digital painting for a fantasy trading card game, illustrated, not photographic, hand-painted look, bold clean shapes, vibrant colours, strong contrast. A wild, jagged snowy mountain ridge at night seen from far away, a natural rock formation whose dark silhouette against the violet aurora sky vaguely recalls the head of a howling wolf, only if you look twice, like a shape seen in the clouds. A deep crevasse cuts into the ridge like a bite, lined with rows of long, sharp hanging icicles and blue ice fangs, frost biting into the rock all around it, a freezing wind tearing snow off the crest. It is only rock, snow and ice: no animal drawn, no fur, no eyes, no nose, no face. Lavender-violet aurora light and violet sparkles in the blowing snow. Cold blue palette with a violet accent light. Same art direction as the rest of the winter card set: a frozen world of snow, glacier ice and frost, deep night-blue and icy cyan tones, ice that glows from within, rich detail, one strong subject. Portrait composition. No animal, no wolf face, no people, no text, no letters, no logo, no border, no frame, no UI.
 ```
 
 ---
@@ -51,14 +51,7 @@ Stylized digital painting for a fantasy trading card game, illustrated, not phot
 *Chacun fige une game au hasard*
 
 ```
-Stylized digital painting for a fantasy trading card game, illustrated, not photographic, hand-painted look, bold clean shapes, vibrant colours, strong contrast. dramatic. A whole mountain valley frozen still in a single instant, time stopped: a colossal waterfall between two cliffs turned to solid ice in mid-fall, its frozen cascade glowing from within, the river below glazed into a sheet of ice, pine trees coated in thick rime, snowflakes hanging motionless in the air. A low winter sun shines through the frozen waterfall and lights it from inside with warm amber-orange light, a few glowing embers caught frozen in the air. Silent, majestic, nothing moving. Deep midnight-blue palette with a strong warm amber accent light. Same art direction as the rest of the winter card set: a frozen world of snow, glacier ice and frost, deep night-blue and icy cyan tones, ice that glows from within, rich detail, one strong subject. Portrait composition. No people, no text, no letters, no logo, no border, no frame, no UI.
-```
-
-### Nuit Blanche — `nuit-blanche.webp`
-*Pire game à 0*
-
-```
-Stylized digital painting for a fantasy trading card game, illustrated, not photographic, hand-painted look, bold clean shapes, vibrant colours, strong contrast. dramatic. A night being erased by white: under a huge pale full moon, a furious whiteout blizzard sweeps across a snowy mountain range and wipes it away, the peaks on one side still sharp and dark, the others dissolving into swirling pure white as if erased, the white swallowing the whole landscape. The last warm amber-orange glow of the horizon being swallowed by the storm, a few embers of light torn away by the wind. Haunting, intense. Deep midnight-blue and white palette with a strong warm amber accent light. Same art direction as the rest of the winter card set: a frozen world of snow, glacier ice and frost, deep night-blue and icy cyan tones, ice that glows from within, rich detail, one strong subject. Portrait composition. No people, no text, no letters, no logo, no border, no frame, no UI.
+Stylized digital painting for a fantasy trading card game, illustrated, not photographic, hand-painted look, bold clean shapes, vibrant colours, strong contrast. dramatic, ultra rare card. Low angle looking up at a monumental waterfall completely frozen solid, a cathedral of ice: gigantic columns of clear turquoise ice and curtains of huge icicles hanging from a cliff dozens of metres high, every drop frozen in its fall, frozen spray suspended in the air like glass beads, the pool at its foot turned to cracked ice. The ice glows from within in cyan and turquoise, and the setting sun pierces through the frozen curtains, lighting their edges in warm amber-orange and casting golden-amber rays through the ice. Majestic, crystalline, breathtaking, not a single drop of flowing water. Deep midnight-blue palette with a strong warm amber accent light. Same art direction as the rest of the winter card set: a frozen world of snow, glacier ice and frost, deep night-blue and icy cyan tones, ice that glows from within, rich detail, one strong subject. Portrait composition. No flowing water, no people, no text, no letters, no logo, no border, no frame, no UI.
 ```
 
 ---
