@@ -10214,7 +10214,8 @@
   .rangee-piste {
     --ecart: clamp(8px, 2.2cqw, 40px);
     --marge: 16px;
-    --l-sachet: clamp(48px, calc((100cqw - 3 * var(--ecart) - 2 * var(--marge) - 10px) / 4), 285px);
+    /* Plafond relevé de 285 à 340 px le 15/11/2026 : plus grands sur ordinateur. */
+    --l-sachet: clamp(48px, calc((100cqw - 3 * var(--ecart) - 2 * var(--marge) - 10px) / 4), 340px);
     gap: var(--ecart);
     padding: 44px var(--marge) 48px;
   }
@@ -10243,7 +10244,7 @@
           calc((100cqw - 3 * var(--ecart) - 2 * var(--marge) - 10px) / 4),
           calc((100svh - 870px) / 1.865)
         ),
-        285px
+        340px
       );
     }
   }
