@@ -189,7 +189,7 @@ describe('le tirage des games', () => {
     expect(choisitGamesRoue(db, getCard('voleur-d-hiver')!, db.players.slice(0, 1))).toBeNull();
   });
 
-  it('la Roulette russe montre la meilleure game du seul perdant', () => {
+  it('le Duel de Glace montre la meilleure game du seul perdant', () => {
     const db = ligue('a', 'b', 'c', 'd', 'e', 'f');
     const o = ouvre(db, 'barillet-de-glace', ['c', 'a', 'b', 'd', 'e', 'f']);
     expect(o.games!.parJoueur[0]).toMatchObject({ pseudo: 'C', visees: [{ numero: 10 }] });

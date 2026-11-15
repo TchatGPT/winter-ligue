@@ -68,8 +68,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   Retouchées le 12/11/2026 : « Booster Commu tous les 20 subs » et « Meilleure game aux
   5 derniers » retirées ; la **Meilleure game ×1,5** ne se pose jamais sur une game qui a
   déjà un multiplicateur (Perso ou roues, `estMultipliee`, 13/11/2026) : elle prend la
-  meilleure qui n'en a pas ; jamais une game figée ; la **Roulette
-  russe se court comme un duel à six** (`CourseRoulette`, `ecritCourseRoulette`) — le
+  meilleure qui n'en a pas ; jamais une game figée ; le **Duel de
+  Glace** (ex-Roulette russe, renommé le 15/11/2026) **se court comme un duel à six** (`CourseRoulette`, `ecritCourseRoulette`) — le
   perdant, seul à ne pas passer la ligne, est tiré à l'ouverture et mis **en tête des
   bénéficiaires**, que l'écran, l'overlay et la carte lisent ; la **Cryogénisation**
   (Folie, `fige_garde`) se garde et fige la meilleure game quand la modération la joue

@@ -228,7 +228,7 @@ describe('les cartes de toute la ligue', () => {
 });
 
 describe('les cartes qui tirent des joueurs', () => {
-  it('« Roulette russe » : celui qui ne passe pas la ligne — en tête du tirage — perd sa meilleure game', () => {
+  it('« Duel de Glace » : celui qui ne passe pas la ligne — en tête du tirage — perd sa meilleure game', () => {
     const db = base('a', 'b', 'c');
     for (const id of ['a', 'b', 'c']) {
       game(db, id, 20);
@@ -238,7 +238,7 @@ describe('les cartes qui tirent des joueurs', () => {
     expect(db.games.filter((g) => g.skipped).map((g) => g.playerId)).toEqual(['b']);
   });
 
-  it('« Roulette russe » : un seul des tirés perd sa meilleure game', () => {
+  it('« Duel de Glace » : un seul des tirés perd sa meilleure game', () => {
     const db = base('a', 'b', 'c', 'd', 'e', 'f');
     for (const id of ['a', 'b', 'c', 'd', 'e', 'f']) {
       game(db, id, 20);

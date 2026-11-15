@@ -100,7 +100,7 @@ export type ActionRoue =
   | { quoi: 'echange_general' }
   /** « +5 pts petites games » : par game de moins de N kills. */
   | { quoi: 'petites_games'; moinsDe: number; points: number }
-  /** « Roulette russe » : un des six perd sa meilleure game. */
+  /** « Duel de Glace » (ex-Roulette russe) : un des six perd sa meilleure game. */
   | { quoi: 'roulette' }
   /** « Pire game à 0 » : même déjà touchée, sauf figée ; les immunisés y échappent. */
   | { quoi: 'pire_a_zero' }

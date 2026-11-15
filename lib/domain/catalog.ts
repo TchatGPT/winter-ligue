@@ -735,10 +735,11 @@ export const CARDS: readonly CardDefinition[] = [
   },
   {
     id: 'barillet-de-glace',
-    name: 'Barillet de Glace',
-    subtitle: 'Roulette russe',
+    // Ex-Roulette russe (Barillet de Glace) : renommée le 15/11/2026, l'effet ne change pas.
+    name: 'Duel de Glace',
+    subtitle: 'Course à six',
     rarity: 'L',
-    glyph: '🔫',
+    glyph: '⚔️',
     description:
       'Six joueurs tirés au sort font la course, comme en duel : le seul qui ne passe pas la ligne perd définitivement sa meilleure game. Les immunisés n’y entrent pas.',
     effect: { kind: 'roue', action: { quoi: 'roulette' } },
@@ -969,7 +970,7 @@ export function joueursTires(cible: CibleCarte): number {
 }
 
 /**
- * La carte se joue-t-elle en course, comme un duel ? La Roulette russe du
+ * La carte se joue-t-elle en course, comme un duel ? Le Duel de Glace (ex-Roulette russe) du
  * Folie : pas de rail de joueurs, une course à six, où le premier tiré est
  * celui qui ne passe pas la ligne.
  */
@@ -1166,7 +1167,7 @@ function resumeRoue(action: ActionRoue): string {
     case 'petites_games':
       return `+${action.points} pts par petite game`;
     case 'roulette':
-      return 'roulette russe';
+      return 'course à six';
     case 'pire_a_zero':
       return 'pire game à 0';
     case 'jokers':

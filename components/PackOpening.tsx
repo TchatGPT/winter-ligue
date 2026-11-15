@@ -590,7 +590,7 @@ export function PackOpening({
                       : 'Sur qui tombe-t-elle ?'}
                 </span>
               </div>
-              {/* La Roulette russe se court comme un duel, à six ; les autres
+              {/* Le Duel de Glace se court comme un duel, à six ; les autres
                   cartes tirent leurs joueurs ensemble, une bande chacun. */}
               {tirage.course ? (
                 <div className="px-4">

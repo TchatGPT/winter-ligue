@@ -21,7 +21,7 @@ const MANTEAUX = [
 ];
 
 /**
- * La Roulette russe du Booster Folie (12/11/2026), courue comme un duel : six
+ * Le Duel de Glace (ex-Roulette russe) du Booster Folie (12/11/2026), courue comme un duel : six
  * pères Noël et leurs boules de neige, un couloir chacun. Tous passent la
  * ligne, sauf un, qui tombe — celui que le serveur a tiré à l'ouverture, le
  * premier des `pseudos`. La course est écrite par la graine (`ecritCourseRoulette`) :
@@ -100,7 +100,7 @@ export function CourseRoulette({
   }, [course, sourdine]);
 
   return (
-    <div className="course course-roulette" aria-label="La Roulette russe, courue comme un duel">
+    <div className="course course-roulette" aria-label="Le Duel de Glace, une course à six">
       {course.ordre.map((i) => {
         const perdant = i === 0;
         const etat = perdant ? (tombe ? 'chute' : 'course') : arrives ? 'victoire' : 'course';
