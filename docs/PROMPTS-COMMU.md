@@ -42,16 +42,19 @@ Le même que pour le Booster Perso, calé sur la couleur du cadre :
 
 ## Légendaires
 
+Ces deux-là suivent le style du Pacte du Givre (Booster Perso) : glace taillée transparente,
+veines dorées comme de la lave, aurore et ciel étoilé.
+
 ### Glaciation — `trois-glacons.webp`
 *3 joueurs figent leur meilleure game*
 
 ```
-Legendary fantasy trading card illustration, stylized hand-painted digital art, vibrant, high contrast, epic. Low angle view of a gigantic mountain like Everest being turned into ice before our eyes: from the summit downward, the mountain is transforming into one colossal crystal of glowing translucent blue ice, sharp faceted ice spikes bursting out of its slopes, the freezing front racing down the mountain with exploding frost, rock and snow below still untouched for a moment longer. The ice glows from inside with brilliant golden light, golden rays shooting out between the crystals, glittering frost sparks swirling in the cold wind. Dark dramatic sky behind to make the glowing ice pop. One single giant mountain filling the image, powerful and majestic. Portrait composition. No people, no text, no letters, no logo, no border, no frame, no UI.
+Legendary fantasy card illustration, cinematic, ultra detailed, polished 3D render look, crystal-clear ice. A whole snowy mountain peak, like Everest, trapped and frozen in time inside a colossal block of faceted transparent ice, the mountain perfectly visible through the clear crystal, the ice block standing on a frozen plain, its facets sharp and glittering, thick frost and snow crusting its top edges, long icicles hanging from it. Bright golden glowing veins like molten gold running through the cracks of the ice and around the trapped mountain, warm golden light glowing from inside the block. Starry night sky with a vivid green and violet aurora borealis behind it. The frozen mountain in its block of ice as the single clear focal point, majestic and breathtaking. Portrait composition. No people, no text, no letters, no logo, no border, no frame, no UI.
 ```
 
 ### Spectre des Neiges — `voleur-d-hiver.webp`
 *Vol de score*
 
 ```
-Stylized digital painting for a fantasy trading card game, illustrated, not photographic, hand-painted look, bold clean shapes, vibrant colours, strong contrast, legendary card art, breathtaking masterpiece. A faceless phantom made of icy mist and frozen fog, a dark hooded shape with no face, only two glowing golden eyes in the shadow of its hood, rising just behind a great snowy mountain peak, only slightly taller than the summit. Its misty cloak flows down and wraps around the whole mountain like a thick swirling fog, veils of frost and vapour coiling around the slopes as if it were claiming the mountain for itself, its misty arms embracing the peak. Soft drifting snow, cold moonlight, a faint aurora, radiant golden glow from its eyes and golden sparks drawn from the mountain into its mist. Mysterious, elegant and majestic, not horror, not a snake, not a giant towering over the scene. The phantom and the mountain it wraps as the clear focal point. Deep blue, icy white and silver palette with a dominant golden accent. Portrait composition. No people, no text, no letters, no logo, no border, no frame, no UI.
+Legendary fantasy card illustration, cinematic, ultra detailed, polished 3D render look, crystal-clear ice. A giant ghost made entirely of faceted transparent ice, a hooded spectre with no face, only two glowing golden eyes in the dark of its icy hood, bright golden veins like molten lava glowing through the cracks of its crystal body, frost and snow crusting its shoulders, icicles dripping from its arms. It wraps its icy body around a snowy mountain peak as if hugging it, one huge crystal ice hand pressed down on the summit and crushing it, the top of the mountain cracking and breaking apart, chunks of rock, snow and ice tumbling down the slopes. The ghost is only a little taller than the mountain. Starry night sky with a vivid green and violet aurora borealis. Majestic, powerful, mysterious, not horror. Portrait composition. No people, no text, no letters, no logo, no border, no frame, no UI.
 ```
