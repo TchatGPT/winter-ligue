@@ -8,7 +8,7 @@ le cadrage et l'accent de rareté y sont déjà.
 
 Pluie Blanche, Premières Neiges, Vents Croisés, Tonnerre de Neige, Fonte des Neiges,
 Réveil du Glacier, Halo Solaire, Inversion Polaire, Valse Boréale, Brouillard Givrant,
-Mirage Polaire, Soleil Jumeau et Aurore Triomphale ont leur illustration (15/11/2026) : leurs prompts sont
+Mirage Polaire, Soleil Jumeau, Aurore Triomphale et Spectre des Neiges ont leur illustration (15/11/2026) : leurs prompts sont
 retirés d'ici.
 Les images arrivent en 1536 × 2720 ; elles sont recadrées en 1000 × 1189, au centre sauf si le sujet touche le haut
 (Inversion Polaire : son sommet).
@@ -48,12 +48,7 @@ Ces deux-là sont les plus belles du Commu : réalisme cinématique, échelle im
 *3 joueurs figent leur meilleure game*
 
 ```
-Legendary fantasy card illustration, epic cinematic realism, ultra detailed, jaw-dropping, never seen before. The mountains themselves have become a tsunami: an entire Himalayan range has risen up from the earth and curled into one colossal breaking wave of rock, snow and glowing blue glacier ice, kilometres high, its snowy peaks forming the jagged crest of the wave, frozen solid at the exact instant it crashes down over the valley. Seen from the valley floor, looking up into the gigantic curl: inside the barrel, a tunnel of translucent turquoise ice lit from within, the setting sun blazing through it and turning the crest into molten gold. Frozen spray, ice shards and boulders hang motionless in mid-air as if time had stopped, frost racing across the valley floor toward the viewer, the ground cracking into ice. Overwhelming scale, powerful and beautiful. Deep blue, turquoise and white palette with a dominant golden accent. Portrait composition. No people, no text, no letters, no logo, no border, no frame, no UI.
+Legendary fantasy card illustration, epic cinematic realism, ultra detailed, explosive, jaw-dropping. A whole mountain range in the background has turned into a tsunami: the snowy peaks rear up, bend forward and break like a colossal wave of rock, glacier ice and snow, kilometres high, violently overflowing onto a second mountain range in the foreground and flooding the valley between them. The wave of mountains crashes over the front peaks and buries them, its crest exploding into towering plumes of snow and ice, huge chunks of glacier and boulders flung through the air, an avalanche of ice pouring down into the valley, everything it touches freezing instantly into jagged blue ice, frost and cracks racing across the valley floor. The setting sun bursts through the spray behind the crest and lights it in molten gold. Violent, overwhelming, unforgettable, nothing calm, the mountain tsunami crashing over the other range as the clear focal point. Deep blue, glacier turquoise and white palette with a dominant golden accent. Portrait composition. No people, no text, no letters, no logo, no border, no frame, no UI.
 ```
 
-### Spectre des Neiges — `voleur-d-hiver.webp`
-*Vol de score*
 
-```
-Legendary fantasy card illustration, epic cinematic realism, ultra detailed, explosive action, breathtaking scale. A colossal stone giant made of dark cracked rock, frost and snow, with thin glowing golden lava cracks running across its body and two small fierce golden eyes, rises behind a huge snowy Everest-like mountain and crushes its summit with one massive hand. The peak shatters under its grip: the whole top of the mountain explodes into a gigantic avalanche, huge blocks of rock and ice flying through the air, a roaring wave of snow pouring down every slope, billowing clouds of powder snow exploding outward at the base of the mountain, deep glowing golden fissures splitting the mountain from the summit down to its foot, golden sparks and ice shards bursting from the impact. The whole scene is in violent motion, nothing calm. Starry night sky with a vivid green aurora, dramatic rim light on the giant. Low angle, epic composition. Deep blue, icy white and dark grey palette with a strong golden accent. Portrait composition. No people, no text, no letters, no logo, no border, no frame, no UI.
-```

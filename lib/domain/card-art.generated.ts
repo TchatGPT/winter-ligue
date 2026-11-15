@@ -42,6 +42,7 @@ export const CARD_ART: Record<string, string> = {
   'souffle-polaire': '/cartes/souffle-polaire.webp?v=b1026c5296',
   'triple-echo': '/cartes/triple-echo.webp?v=5e8697643b',
   'vent-porteur': '/cartes/vent-porteur.webp?v=ca8060b2b0',
+  'voleur-d-hiver': '/cartes/voleur-d-hiver.webp?v=01181f0051',
   'vortex-polaire': '/cartes/vortex-polaire.webp?v=eddd604f09',
 };
 
@@ -92,5 +93,6 @@ export const CARD_VIGNETTES: Record<string, { petite: string; moyenne: string; s
   'souffle-polaire': { petite: '/cartes/vignettes/souffle-polaire.b1026c5296.200.webp', moyenne: '/cartes/vignettes/souffle-polaire.b1026c5296.480.webp', srcset: '/cartes/vignettes/souffle-polaire.b1026c5296.200.webp 200w, /cartes/vignettes/souffle-polaire.b1026c5296.480.webp 480w, /cartes/souffle-polaire.webp?v=b1026c5296 1000w' },
   'triple-echo': { petite: '/cartes/vignettes/triple-echo.5e8697643b.200.webp', moyenne: '/cartes/vignettes/triple-echo.5e8697643b.480.webp', srcset: '/cartes/vignettes/triple-echo.5e8697643b.200.webp 200w, /cartes/vignettes/triple-echo.5e8697643b.480.webp 480w, /cartes/triple-echo.webp?v=5e8697643b 1000w' },
   'vent-porteur': { petite: '/cartes/vignettes/vent-porteur.ca8060b2b0.200.webp', moyenne: '/cartes/vignettes/vent-porteur.ca8060b2b0.480.webp', srcset: '/cartes/vignettes/vent-porteur.ca8060b2b0.200.webp 200w, /cartes/vignettes/vent-porteur.ca8060b2b0.480.webp 480w, /cartes/vent-porteur.webp?v=ca8060b2b0 1000w' },
+  'voleur-d-hiver': { petite: '/cartes/vignettes/voleur-d-hiver.01181f0051.200.webp', moyenne: '/cartes/vignettes/voleur-d-hiver.01181f0051.480.webp', srcset: '/cartes/vignettes/voleur-d-hiver.01181f0051.200.webp 200w, /cartes/vignettes/voleur-d-hiver.01181f0051.480.webp 480w, /cartes/voleur-d-hiver.webp?v=01181f0051 1000w' },
   'vortex-polaire': { petite: '/cartes/vignettes/vortex-polaire.eddd604f09.200.webp', moyenne: '/cartes/vignettes/vortex-polaire.eddd604f09.480.webp', srcset: '/cartes/vignettes/vortex-polaire.eddd604f09.200.webp 200w, /cartes/vignettes/vortex-polaire.eddd604f09.480.webp 480w, /cartes/vortex-polaire.webp?v=eddd604f09 1000w' },
 };
