@@ -8,7 +8,7 @@ le cadrage et l'accent de rareté y sont déjà.
 
 Pluie Blanche, Premières Neiges, Vents Croisés, Tonnerre de Neige, Fonte des Neiges,
 Réveil du Glacier, Halo Solaire, Inversion Polaire, Valse Boréale, Brouillard Givrant,
-Mirage Polaire et Soleil Jumeau ont leur illustration (15/11/2026) : leurs prompts sont
+Mirage Polaire, Soleil Jumeau et Aurore Triomphale ont leur illustration (15/11/2026) : leurs prompts sont
 retirés d'ici.
 Les images arrivent en 1536 × 2720 ; elles sont recadrées en 1000 × 1189, au centre sauf si le sujet touche le haut
 (Inversion Polaire : son sommet).
@@ -37,17 +37,6 @@ Le même que pour le Booster Perso, calé sur la couleur du cadre :
 | Rare | paillettes et lueur **violet lavande** |
 | Ultra rare | lueur **ambre orangée**, braises, plus de drame |
 | Légendaire | **or**, rayons de lumière, aurore boréale, épique |
-
----
-
-## Ultra rares
-
-### Aurore Triomphale — `couronnes-de-givre.webp`
-*+5 pts par Top 1*
-
-```
-Stylized digital painting for a fantasy trading card game, illustrated, not photographic, hand-painted look, bold clean shapes, vibrant colours, strong contrast. A colossal snowy mountain shaped exactly like a royal crown: a ring of sharp icy peaks of equal height rising in a circle around a hollow summit, like the points of a crown, frozen glaciers flowing down its sides, frost and icicles glittering on every point. Warm amber-orange light blazing from inside the crown and lighting the tips of the peaks like gold, glowing embers rising into the night, a triumphant aurora ribbon in the sky above it. Epic, majestic card-art composition, the crown mountain as the clear focal point in the centre. Deep midnight-blue palette with a strong warm amber accent light. Portrait composition. No people, no text, no letters, no logo, no border, no frame, no UI.
-```
 
 ---
 
