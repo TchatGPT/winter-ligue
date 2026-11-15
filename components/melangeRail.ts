@@ -1,9 +1,8 @@
 /**
  * Le mélange avant le rail (15/11/2026), joué sur les **vraies cartes du rail**.
  *
- * La vidéo d'ouverture s'arrête quand les cartes jaillissent du booster. Un
- * éclat de lumière couvre le passage ; dessous, les cinq premières cartes de la
- * bande — celles qu'on voit au départ — apparaissent en paquet au milieu, se
+ * La vidéo d'ouverture s'arrête quand les cartes jaillissent du booster et
+ * s'efface ; les cinq premières cartes de la bande — celles qu'on voit au départ — apparaissent en paquet au milieu, se
  * mélangent, s'étalent à leur place, et la bande prend de l'élan jusqu'à la
  * vitesse du rail. Le rail reprend alors sa course là, déjà lancé
  * (`entame`) : ce sont les mêmes éléments du début à la fin, rien ne change à
@@ -52,22 +51,8 @@ export async function joueMelange(cadre: HTMLElement): Promise<number> {
     t.style.opacity = '0';
   }
 
-  // L'éclat : il naît où le booster s'ouvrait, couvre le passage, et s'efface.
-  const eclat = document.createElement('div');
-  eclat.className = 'melange-eclat';
-  eclat.style.left = `${depart + tuiles[3].offsetLeft + largeur / 2}px`;
-  eclat.style.top = `${tuiles[3].offsetTop + hauteur / 2}px`;
-  eclat.style.width = eclat.style.height = `${hauteur * 1.5}px`;
-  fenetre.appendChild(eclat);
-  const flash = eclat.animate(
-    [
-      { opacity: 0, transform: 'translate(-50%, -50%) scale(0.3)' },
-      { opacity: 1, transform: 'translate(-50%, -50%) scale(1)', offset: 0.35 },
-      { opacity: 0, transform: 'translate(-50%, -50%) scale(1.5)' },
-    ],
-    { duration: 900, easing: 'ease-out', fill: 'forwards' },
-  );
-  await dors(220);
+  // Les cartes apparaissent pendant que la vidéo s'efface dessous.
+  await dors(120);
   const apparitions = paquet.map((k) =>
     tuiles[k].animate(
       [
@@ -79,7 +64,6 @@ export async function joueMelange(cadre: HTMLElement): Promise<number> {
   );
   for (const k of paquet) tuiles[k].style.opacity = '1';
   await Promise.all(apparitions.map(attendre));
-  void attendre(flash).then(() => eclat.remove());
 
   // Le mélange : à tour de rôle, une carte sort du paquet par un côté et
   // revient devant.

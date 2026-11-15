@@ -1401,21 +1401,17 @@
     }
   }
 
-  /* L'éclat qui couvre le passage de la vidéo aux cartes du rail : une lumière
-     froide qui naît au cœur du paquet et s'ouvre. */
-  .melange-eclat {
-    position: absolute;
-    z-index: 30;
-    border-radius: 50%;
-    pointer-events: none;
-    background: radial-gradient(
-      circle,
-      rgb(255 255 255 / 0.95) 0%,
-      color-mix(in srgb, var(--frost) 70%, transparent) 22%,
-      color-mix(in srgb, var(--ice) 35%, transparent) 45%,
-      transparent 70%
-    );
-    mix-blend-mode: screen;
+  /* Après le mélange, le rail tourne sans lumière (15/11/2026) : ni le halo
+     derrière les cartes rares, ni le halo de passage. */
+  .ov-rail-relais .rail-carte[data-rang],
+  .rail-relais .rail-carte[data-rang] {
+    filter: none;
+  }
+  .ov-rail-relais .rail-fenetre::before,
+  .ov-rail-relais .rail-fenetre::after,
+  .rail-relais .rail-fenetre::before,
+  .rail-relais .rail-fenetre::after {
+    display: none;
   }
 
   /* Pendant le mélange, le repère du rail se tait ; il revient avec la course. */

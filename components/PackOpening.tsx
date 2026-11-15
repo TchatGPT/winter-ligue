@@ -638,7 +638,9 @@ export function PackOpening({
               de la grille, et le verre de la scène lui sert de fond. */}
           {surScene === 'tirage' && gagnante && (
             <div
-              className="rail-dans-scene col-start-1 row-start-1 -mx-4 self-center"
+              className={`rail-dans-scene col-start-1 row-start-1 -mx-4 self-center${
+                VIDEOS_OUVERTURE[packOuvert.id] ? ' rail-relais' : ''
+              }`}
               style={phase === 'ouverture' ? { visibility: 'hidden' } : undefined}
             >
               <p className="mb-5 px-4 text-center font-display text-[15px] tracking-[0.12em] text-faint uppercase">
