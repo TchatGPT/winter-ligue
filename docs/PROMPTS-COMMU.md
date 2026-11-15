@@ -4,6 +4,12 @@ Les quinze cartes du Booster Commu portent des noms de phénomènes d'hiver (14/
 pas d'objets, des scènes. Chaque prompt se colle tel quel dans le générateur : le style,
 le cadrage et l'accent de rareté y sont déjà.
 
+## Déjà en ligne
+
+Pluie Blanche, Premières Neiges, Vents Croisés, Tonnerre de Neige, Fonte des Neiges et
+Réveil du Glacier ont leur illustration (15/11/2026) : leurs prompts sont retirés d'ici.
+Les images arrivent en 1536 × 2720 ; elles sont recadrées au centre en 1000 × 1189.
+
 ## Gabarit
 
 | | |
@@ -31,59 +37,13 @@ Le même que pour le Booster Perso, calé sur la couleur du cadre :
 
 ---
 
-## Communes
-
-### Pluie Blanche — `flocon-de-plus.webp`
-*+100 flocons pour tous*
-
-```
-Stylized digital painting for a fantasy trading card game, illustrated, not photographic, vibrant colours, soft painterly shading, clean readable shapes, cinematic winter key art, highly detailed. A heavy, dense natural snowfall in a snowy pine forest clearing: thousands of tiny, fine snowflakes falling everywhere like a soft white rain, small specks and soft blurred dots of snow, the air thick with falling snow. Low winter sun shining from behind the trees, warm golden-white backlight making the whole snowfall sparkle and glow softly, sunbeams slanting through the snowy pines, fresh powder piling up on the branches and on the ground. Cold blue and white palette with soft warm sunlight, natural light. Only tiny snow particles, no big snowflakes, no visible snowflake shapes, no snowflake icons, no magic glow, no aurora. Portrait 5:6 composition. No people, no buildings, no text, no letters, no logo, no border, no frame, no UI.
-```
-
-### Premières Neiges — `petits-pas.webp`
-*+3 pts petites games*
-
-```
-Stylized digital painting for a fantasy trading card game, illustrated, not photographic, vibrant colours, soft painterly shading, clean readable shapes, cinematic winter key art. On a small hill, a lone young maple tree still holding its last bright red and orange leaves while the very first snow of the season falls on it, a thin fresh layer of white on the branches, on the leaves and on the grass, a few red leaves drifting down among the snowflakes, a soft snowy forest in the background. Gentle morning sunlight, cold blue and white palette with the warm red-orange leaves as the only touch of colour, cosy and peaceful mood, no magic glow, no aurora. Portrait 5:6 composition. No people, no buildings, no text, no letters, no logo, no border, no frame, no UI.
-```
-
-### Vents Croisés — `neige-melee.webp`
-*Échange 2 games aléatoires*
-
-```
-Stylized digital painting for a fantasy trading card game, illustrated, not photographic, vibrant colours, soft painterly shading, clean readable shapes, cinematic winter landscape key art. Two powerful gusts of wind-blown snow sweeping in from opposite sides of a mountain pass and crossing in the middle of the image, two streams of spindrift intertwining and swapping directions. Soft natural overcast winter light, cold blue-grey palette, no magic glow. One clear focal point in the centre, shallow depth of field, generous space around the edges. Portrait 5:6 composition. No people, no text, no letters, no logo, no border, no frame, no UI.
-```
-
-### Tonnerre de Neige — `triple-echo.webp`
-*Game aléatoire ×2 — 3 joueurs*
-
-```
-Stylized digital painting for a fantasy trading card game, illustrated, not photographic, vibrant colours, soft painterly shading, clean readable shapes, cinematic winter landscape key art. A thundersnow storm over a snowy plain: heavy snowfall lit from inside the clouds by three pale forks of lightning striking the ground at once, the snow briefly glowing white where they hit. Cold blue-grey palette, natural storm light, no coloured magic glow. One clear focal point in the centre, shallow depth of field, generous space around the edges. Portrait 5:6 composition. No people, no text, no letters, no logo, no border, no frame, no UI.
-```
-
----
-
 ## Rares
-
-### Fonte des Neiges — `deneigement.webp`
-*Suppression de la pire game*
-
-```
-Stylized digital painting for a fantasy trading card game, illustrated, not photographic, vibrant colours, soft painterly shading, clean readable shapes, cinematic winter landscape key art. A dirty, grey, broken patch of old snow on a mountainside melting away into clear meltwater streams, revealing fresh untouched snow beneath, steam rising softly, lavender-violet magical sparkles rising with the vapour. Cold blue palette with a violet accent light. One clear focal point in the centre, shallow depth of field, softly blurred peaks, generous space around the edges. Portrait 5:6 composition. No people, no text, no letters, no logo, no border, no frame, no UI.
-```
-
-### Réveil du Glacier — `degel-double.webp`
-*Pire game ×2*
-
-```
-Stylized digital painting for a fantasy trading card game, illustrated, not photographic, vibrant colours, soft painterly shading, clean readable shapes, cinematic winter landscape key art. An old dull grey glacier tongue awakening: deep cracks opening and glowing from within, its ice turning bright blue again and surging forward with doubled strength, chunks of snow lifting off, lavender-violet magical sparkles swirling around the fissures. Cold blue palette with a violet accent light. One clear focal point in the centre, shallow depth of field, generous space around the edges. Portrait 5:6 composition. No people, no text, no letters, no logo, no border, no frame, no UI.
-```
 
 ### Halo Solaire — `cime-eclatante.webp`
 *Meilleure game ×1,5*
 
 ```
-Stylized digital painting for a fantasy trading card game, illustrated, not photographic, vibrant colours, soft painterly shading, clean readable shapes, cinematic winter landscape key art. A brilliant 22-degree sun halo in a frozen sky above the highest snowy summit of a mountain range, the peak glowing brighter than all the others, diamond dust ice crystals glittering in the air, lavender-violet magical sparkles along the halo ring. Cold blue palette with a violet accent light. One clear focal point in the centre, shallow depth of field, generous space around the edges. Portrait 5:6 composition. No people, no text, no letters, no logo, no border, no frame, no UI.
+Stylized digital painting for a fantasy trading card game, illustrated, not photographic, hand-painted look, bold clean shapes, vibrant colours, strong contrast. A majestic snowy mountain peak seen from below, its summit crowned by a gigantic glowing ring of light, a sun halo encircling the top like a crown of light, the summit blazing brighter than everything around it, powerful light rays bursting outward from behind the peak, swirling streams of lavender-violet magical sparkles spiralling up around the mountain, glittering ice crystals in the air, deep blue sky. Epic, dynamic card-art composition, the shining summit as the clear focal point in the upper middle. Cold blue palette with a violet accent light. Portrait composition. No people, no text, no letters, no logo, no border, no frame, no UI.
 ```
 
 ### Inversion Polaire — `contre-vent.webp`
