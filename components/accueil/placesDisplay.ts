@@ -25,7 +25,7 @@ export const REQUETE_PORTRAIT = '(max-width: 1023px) and (orientation: portrait)
  * dissipe et laisse apparaître la page (`LEVEE`). Les boosters restent
  * au-dessus : le brouillard ne les couvre jamais.
  */
-export const BRUME = { debut: 3.2, montee: 2.4, levee: 3.4 } as const;
+export const BRUME = { debut: 3.3, montee: 1.2, levee: 1.8 } as const;
 
 /** L'avancée du brouillard, de 0 (rien) à 0,5 (la scène couverte) puis 1 (dissipé). */
 export function avanceeBrume(t: number): number {
@@ -66,7 +66,7 @@ export const PAYSAGE: FormatDisplay = {
     folie: { x: 1375, y: 345, inclinaison: -3.5 },
     finisseur: { x: 1650, y: 390, inclinaison: -7 },
   },
-  video: '/accueil/display-paysage.mp4?v=5',
+  video: '/accueil/display-paysage.mp4?v=6',
   pile: 'verticale',
 };
 
@@ -79,7 +79,7 @@ export const PORTRAIT: FormatDisplay = {
     folie: { x: 668, y: 372, inclinaison: -3 },
     finisseur: { x: 900, y: 400, inclinaison: -8 },
   },
-  video: '/accueil/display-portrait.mp4?v=5',
+  video: '/accueil/display-portrait.mp4?v=6',
   pile: 'horizontale',
 };
 
