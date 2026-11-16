@@ -185,8 +185,10 @@ export function Accueil({
             </em>
           </h1>
           <p className="acc-lead">Joue tes games, grimpe au classement, ouvre des boosters, défie les autres.</p>
+          <CalendrierSaisons saisons={saisons} maintenant={Date.now()} compact />
+          {/* L'entrée, sous le compte à rebours : un bouton simple, sans halo. */}
           <div className="acc-actions">
-            <a href={entree} className="btn btn-twitch btn-lg no-underline">
+            <a href={entree} className="btn btn-twitch btn-lg no-underline acc-rejoindre">
               <IconTwitch className="h-5 w-5" />
               Rejoindre avec Twitch
             </a>
@@ -197,7 +199,6 @@ export function Accueil({
               {devLogin ? ' La connexion de développement reste ouverte en local.' : ''}
             </p>
           )}
-          <CalendrierSaisons saisons={saisons} maintenant={Date.now()} compact />
         </section>
 
         {/* Les règles, en carrousel : une au milieu, ses voisines qui s'effacent dans le fond. */}
