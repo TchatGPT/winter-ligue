@@ -14383,7 +14383,12 @@ main:has(> .accueil) {
   grid-template-areas: 'twitch' 'compteur' 'regles' 'sauvegarde' 'changement';
 }
 .adm-grille[data-grille='overlays'] {
-  grid-template-areas: 'obs' 'booster' 'duel' 'subs';
+  grid-template-areas: 'obs' 'booster' 'subs';
+}
+/* Les phrases des overlays courent sur toute la largeur du panneau : à 62
+   caractères, elles se coupaient en lignes courtes (16/11/2026). */
+.adm-grille[data-grille='overlays'] .adm-panneau-phrase {
+  max-width: none;
 }
 /* La page de test : les données fictives, puis les cartes, qui prennent le reste. */
 .adm-grille[data-grille='test'] {
@@ -14425,13 +14430,20 @@ main:has(> .accueil) {
       'changement changement';
     overflow-y: auto;
   }
+  /* Deux overlays depuis le 16/11/2026 : celui des boosters, en 16:9, prend
+     plus de place que le compteur, plus allongé. Les étapes d'OBS tiennent
+     sur une ligne. */
   .adm-grille[data-grille='overlays'] {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
     grid-template-rows: auto minmax(0, 1fr);
     grid-template-areas:
-      'obs obs obs'
-      'booster duel subs';
+      'obs obs'
+      'booster subs';
     overflow-y: auto;
+  }
+  .adm-grille[data-grille='overlays'] .adm-etapes {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.6rem;
   }
   .adm-grille[data-grille='seul'] {
     grid-template-rows: minmax(0, 1fr);
