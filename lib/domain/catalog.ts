@@ -508,7 +508,7 @@ export const CARDS: readonly CardDefinition[] = [
     rarity: 'C',
     glyph: '🔀',
     description:
-      'Deux joueurs tirés au sort échangent une game au hasard : chacune prend le score de l’autre.',
+      'Deux joueurs tirés au sort échangent une game au hasard : chacun donne la sienne à l’autre, qui la garde avec ses kills, son top et son score.',
     effect: { kind: 'roue', action: { quoi: 'echange_hasard' } },
     nature: 'bonus',
     power: 10,
@@ -596,7 +596,7 @@ export const CARDS: readonly CardDefinition[] = [
     rarity: 'R',
     glyph: '↔️',
     description:
-      'Deux joueurs tirés au sort : la meilleure game du premier et la pire du second échangent leur score — une carte déjà jouée dessus n’y change rien, seule une game figée y échappe.',
+      'Deux joueurs tirés au sort échangent leurs games : la meilleure du premier passe chez le second, la pire du second passe chez le premier. Une carte déjà jouée dessus n’y change rien, seule une game figée y échappe.',
     effect: { kind: 'roue', action: { quoi: 'echange_meilleure_pire' } },
     nature: 'bonus',
     power: 46,
@@ -610,7 +610,7 @@ export const CARDS: readonly CardDefinition[] = [
     rarity: 'R',
     glyph: '🔄',
     description:
-      'Les dix premiers du classement échangent une game en chaîne, dans un ordre tiré au sort — ni leur meilleure ni leur pire. Aucun point n’est créé ni perdu.',
+      'Les dix premiers du classement échangent une game en chaîne, dans un ordre tiré au sort : chacun donne une game au suivant — ni sa meilleure ni sa pire — et reçoit celle du précédent.',
     effect: { kind: 'roue', action: { quoi: 'chaine_tete' } },
     nature: 'bonus',
     power: 50,
@@ -870,7 +870,7 @@ export const CARDS: readonly CardDefinition[] = [
     rarity: 'L',
     glyph: '🔁',
     description:
-      'Tu la gardes et désignes un joueur : ta pire game et sa meilleure, pas figées, échangent leur score. Une seule fois par joueur, sauf la revanche contre qui t’a visé. Un joueur immunisé ne peut pas être visé.',
+      'Tu la gardes et désignes un joueur : ta pire game passe chez lui, sa meilleure passe chez toi (pas figées). Une seule fois par joueur, sauf la revanche contre qui t’a visé. Un joueur immunisé ne peut pas être visé.',
     effect: { kind: 'echange_cible' },
     nature: 'bonus',
     power: 94,
@@ -925,7 +925,7 @@ export const PACTE_SUBI: CardDefinition = {
   subtitle: 'Game échangée',
   rarity: 'L',
   glyph: '🤝',
-  description: 'Ta game a échangé son score avec celle d’un autre joueur, qui a joué un Pacte du Givre.',
+  description: 'Un autre joueur a joué un Pacte du Givre : ta game est passée chez lui, et la sienne chez toi.',
   effect: { kind: 'echange_choisi', minGames: 0 },
   nature: 'malus',
   power: 94,
@@ -944,7 +944,7 @@ export const TROC_SUBI: CardDefinition = {
   subtitle: 'Game échangée',
   rarity: 'L',
   glyph: '🔁',
-  description: 'Ta meilleure game a échangé son score avec la pire game d’un finisseur, qui a joué un Troc des Neiges.',
+  description: 'Un finisseur a joué un Troc des Neiges : ta meilleure game est passée chez lui, et sa pire chez toi.',
   effect: { kind: 'echange_cible' },
   nature: 'malus',
   power: 94,

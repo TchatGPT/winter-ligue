@@ -51,8 +51,14 @@ function historiqueDe(db: Database, g: Game): EvenementDeGame[] {
   const pseudo = (id: string) => db.players.find((p) => p.id === id)?.pseudo ?? 'un joueur';
   for (const a of g.applied) {
     const carte = getCard(a.cardId);
-    // Le passage d'une game à un autre joueur (16/11/2026) : dit tel quel.
+    // Le passage d'une game à un autre joueur (16/11/2026) : une seule ligne,
+    // qui tient lieu de la carte d'échange posée sur cette game.
     if (a.de && a.vers) {
+      const liee = sur.find((c) => c.cardId === a.cardId && c.ouvertureId === a.ouvertureId && !vus.has(c.id));
+      if (liee) vus.add(liee.id);
+      // Le Pacte ou le Troc subi : la carte du joueur qui l'a fait.
+      const autre = sur.find((c) => c.ouvertureId === a.ouvertureId && !vus.has(c.id));
+      if (autre) vus.add(autre.id);
       evenements.push({
         cardId: a.cardId,
         nom: carte?.name ?? a.cardId,
