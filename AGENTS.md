@@ -343,8 +343,9 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   image, les vraies images des boosters prennent le relais au pixel près (`PLACES_BOOSTERS`,
   `placeEnPourcents` : à changer avec la vidéo). Restent, au milieu, le nom, une phrase, l'entrée
   Twitch et le compte à rebours (`CalendrierSaisons compact`), et en bas six tuiles de verre plat
-  pour les règles. Tout se pose dans une scène 16:9 et se mesure sur elle (`cqw`). Sans vidéo
-  (mouvement réduit, pas de WebGL, lecture refusée), tout arrive tout de suite. Ses réglages selon
+  pour les règles. Tout se pose dans une scène 16:9 et se mesure sur elle (`cqw`). La vidéo se
+  joue même si le système demande moins d'animations (Windows le dit quand ses effets sont
+  coupés) ; sans WebGL ou si la lecture est refusée, tout arrive tout de suite. Ses réglages selon
   la taille passent par `@media`, jamais par `@container` : le compte à rebours réévaluait les
   règles de conteneur chaque seconde et relançait les animations d'arrivée.
 - Les couleurs viennent des variables CSS de `app/globals.css`, jamais codées en dur.

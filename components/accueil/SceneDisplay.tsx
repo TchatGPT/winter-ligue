@@ -29,7 +29,7 @@ export interface BoosterDeLaScene {
 type Phase = 'charge' | 'video' | 'fini';
 
 /** Sans image au bout de ce délai, on n'attend plus la vidéo. */
-const ATTENTE_MAX_MS = 3500;
+const ATTENTE_MAX_MS = 6000;
 /** Une vidéo qui s'enlise : au-delà, la page s'affiche quand même. */
 const DUREE_MAX_MS = 12_000;
 
@@ -40,8 +40,13 @@ const DUREE_MAX_MS = 12_000;
  * même place, et le centre de la page (`children` : le nom, l'entrée, les
  * tuiles) apparaît. La vidéo se rejoue à chaque visite.
  *
- * Sans vidéo — mouvement réduit, WebGL absent, lecture refusée, réseau trop
- * lent —, les boosters et le centre arrivent tout de suite.
+ * Sans vidéo — WebGL absent, lecture refusée, réseau trop lent —, les
+ * boosters et le centre arrivent tout de suite.
+ *
+ * La vidéo se joue même quand le système demande moins d'animations
+ * (`prefers-reduced-motion`, décidé le 16/11/2026) : Windows le dit dès que
+ * ses effets d'animation sont coupés, ce que beaucoup font pour la
+ * performance, et l'accueil perdait alors sa display.
  */
 export function SceneDisplay({ boosters, children }: { boosters: BoosterDeLaScene[]; children: ReactNode }) {
   const canvas = useRef<HTMLCanvasElement>(null);
@@ -58,7 +63,7 @@ export function SceneDisplay({ boosters, children }: { boosters: BoosterDeLaScen
       setPhase('fini');
       setRevele(true);
     };
-    if (!c || !v || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    if (!c || !v) {
       sansVideo();
       return;
     }
