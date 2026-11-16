@@ -146,7 +146,7 @@ describe('le tirage des games', () => {
     }
   });
 
-  it('« Vents Croisés » échange les deux games tirées, et seulement elles', () => {
+  it('« Vents Croisés » échange les deux games tirées, et seulement elles : elles changent de main (16/11/2026)', () => {
     for (let essai = 0; essai < 6; essai += 1) {
       const db = ligue('a', 'b');
       const o = ouvre(db, 'neige-melee', ['a', 'b']);
@@ -155,8 +155,12 @@ describe('le tirage des games', () => {
       const [sa, sb] = [ga.score, gb.score];
       revele(db, o);
       if (sa !== sb) {
-        expect(ga.score).toBe(sb);
-        expect(gb.score).toBe(sa);
+        // Chaque game garde son score, et passe chez l'autre, avec la trace.
+        expect([ga.score, gb.score]).toEqual([sa, sb]);
+        expect([ga.playerId, gb.playerId]).toEqual(['b', 'a']);
+        expect(ga.applied.at(-1)).toMatchObject({ de: 'a', vers: 'b' });
+        expect(gb.applied.at(-1)).toMatchObject({ de: 'b', vers: 'a' });
+        expect(db.games.filter((g) => g.playerId === 'a')).toHaveLength(10);
       }
     }
   });

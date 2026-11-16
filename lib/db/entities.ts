@@ -94,6 +94,12 @@ export interface AppliedEffect {
   /** Points ajoutés (positif) ou retirés (négatif). */
   points: number;
   at: string;
+  /**
+   * Une game qui a changé de main par une carte d'échange (16/11/2026) : le
+   * joueur qui l'avait (`de`) et celui qui la reçoit (`vers`).
+   */
+  de?: string;
+  vers?: string;
 }
 
 export interface Game {

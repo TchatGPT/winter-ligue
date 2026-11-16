@@ -89,8 +89,12 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   Les bonus qu'on pose sur sa propre game gardent « une game, une carte »
   (`gamesSansCarte`). Les **multiplicateurs des roues** (Tonnerre de Neige, Réveil du
   Glacier) prennent toute game qui marque, même déjà touchée par un bonus, sauf une
-  game figée ou déjà multipliée (`gamesAMultiplier`, 15/11/2026). Les games ne changent pas de main : leurs scores s'échangent
-  (`applyPoints`), et un clone ou un vol de score arrive en points hors game. Leur
+  game figée ou déjà multipliée (`gamesAMultiplier`, 15/11/2026). Les **échanges font changer les games de main** (16/11/2026, `transfereGame`) :
+  kills, top, score et cartes posées partent avec la game, qui garde la trace de son passage
+  (`de`, `vers` dans `applied`, « game passée de X à Y » sur la fiche) ; ses flocons restent à
+  qui l'a jouée, une game transférée ne se corrige ni ne se supprime, et la règle d'une game
+  par session se compte sur les games jouées (`origineDe`). Un clone ou un vol de score
+  arrive en points hors game. Leur
   tirage a ses cibles (`TROIS`, `SIX`, `DIX_PREMIERS`, `CINQ_DERNIERS`,
   `beneficiairesRoue`) et ignore la règle « pas de stock » : rien n'en reste en
   attente. Une game qu'elles ont touchée ne se corrige pas : elle se supprime. Les

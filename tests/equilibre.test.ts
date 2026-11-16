@@ -352,7 +352,7 @@ describe('le Pacte du Givre', () => {
     expect(typeof joueEchangeChoisi(db, garde.id, quinzieme.id, sienne.id)).not.toBe('string');
   });
 
-  it('échange le score des deux games choisies, et les fige', () => {
+  it('échange les deux games choisies — elles changent de main (16/11/2026) — et elles ne se corrigent plus', () => {
     const db = base('a', 'b');
     pose(db, 'a', 'pacte-du-givre', 1);
     const garde = enAttente(db, 'a')[0];
@@ -361,12 +361,14 @@ describe('le Pacte du Givre', () => {
     const r = joueEchangeChoisi(db, garde.id, mienne.id, sienne.id);
     expect(typeof r).not.toBe('string');
     const sienneNue = 40 + placementPoints(1);
-    expect(mienne.score).toBe(sienneNue);
-    expect(sienne.score).toBe(4);
+    expect(sienne.score).toBe(sienneNue);
+    expect(mienne.score).toBe(4);
+    expect(sienne.playerId).toBe('a');
+    expect(mienne.playerId).toBe('b');
     expect(enAttente(db, 'a')).toHaveLength(0);
     // Plus aucune carte ne s'y pose, et elles ne se corrigent pas.
-    expect(gamesSansCarte(db, 'a').some((g) => g.id === mienne.id)).toBe(false);
-    expect(gamesSansCarte(db, 'b').some((g) => g.id === sienne.id)).toBe(false);
+    expect(gamesSansCarte(db, 'a').some((g) => g.id === sienne.id)).toBe(false);
+    expect(gamesSansCarte(db, 'b').some((g) => g.id === mienne.id)).toBe(false);
     expect(cartesQuiFigentLaGame(db, mienne)).not.toHaveLength(0);
     expect(cartesQuiFigentLaGame(db, sienne)).not.toHaveLength(0);
     // Supprimer l'une ne rend pas le Pacte.
@@ -399,8 +401,9 @@ describe('le Pacte du Givre', () => {
     const mienne = porteur(db, 30, 4);
     const sienne = game(db, 'b', 40, 1);
     joueEchangeChoisi(db, garde.id, mienne.id, sienne.id);
-    expect(gamesPrenables(db, 'b').some((g) => g.id === sienne.id)).toBe(true);
-    expect(gamesPrenables(db, 'a').some((g) => g.id === mienne.id)).toBe(true);
+    // Chacune chez son nouveau joueur, et toujours prenable.
+    expect(gamesPrenables(db, 'a').some((g) => g.id === sienne.id)).toBe(true);
+    expect(gamesPrenables(db, 'b').some((g) => g.id === mienne.id)).toBe(true);
   });
 
   it('tombe si celui qui y perdrait est immunisé', () => {

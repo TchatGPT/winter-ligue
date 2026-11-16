@@ -48,8 +48,24 @@ function historiqueDe(db: Database, g: Game): EvenementDeGame[] {
   };
   const vus = new Set<string>();
   const evenements: EvenementDeGame[] = [];
+  const pseudo = (id: string) => db.players.find((p) => p.id === id)?.pseudo ?? 'un joueur';
   for (const a of g.applied) {
     const carte = getCard(a.cardId);
+    // Le passage d'une game à un autre joueur (16/11/2026) : dit tel quel.
+    if (a.de && a.vers) {
+      evenements.push({
+        cardId: a.cardId,
+        nom: carte?.name ?? a.cardId,
+        rarity: carte?.rarity ?? 'C',
+        glyph: carte?.glyph ?? '',
+        nature: carte?.nature ?? 'bonus',
+        booster: boosterDe(a.ouvertureId),
+        points: 0,
+        le: a.at,
+        texte: `game passée de ${pseudo(a.de)} à ${pseudo(a.vers)}`,
+      });
+      continue;
+    }
     const pendante = sur.find((c) => c.cardId === a.cardId && c.ouvertureId === a.ouvertureId && !vus.has(c.id));
     if (pendante) vus.add(pendante.id);
     evenements.push({

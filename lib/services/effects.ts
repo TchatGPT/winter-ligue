@@ -137,6 +137,35 @@ function applyPoints(
   return effective;
 }
 
+/**
+ * Fait passer une game à un autre joueur (16/11/2026) : les échanges de cartes
+ * échangent les games elles-mêmes — kills, top, score et cartes déjà posées
+ * dessus partent avec elle —, pas seulement leurs points. La game garde la
+ * trace de son passage (`de`, `vers`). Les flocons qu'elle a rapportés restent
+ * à celui qui l'a jouée.
+ */
+function transfereGame(
+  db: Database,
+  game: Game,
+  card: CardDefinition,
+  ouvertureId: string,
+  vers: string,
+  now = new Date(),
+): void {
+  game.applied.push({ id: newId(), cardId: card.id, ouvertureId, points: 0, at: now.toISOString(), de: game.playerId, vers });
+  game.playerId = vers;
+}
+
+/** Le joueur qui a joué cette game, même si elle a changé de main depuis. */
+export function origineDe(game: Pick<Game, 'playerId' | 'applied'>): string {
+  return game.applied.find((a) => a.de)?.de ?? game.playerId;
+}
+
+/** La game a-t-elle changé de main par un échange ? */
+export function estTransferee(game: Pick<Game, 'applied'>): boolean {
+  return game.applied.some((a) => a.de);
+}
+
 /* ------------------------------ Les lectures ----------------------------- */
 
 /** Le score d'une game sans ses cartes : kills et top. */
@@ -682,20 +711,13 @@ function echangeDeuxGames(
     const texte = `égalité à ${sa} pts, sans effet`;
     return [sansEffet(texte, ga.id), sansEffet(texte, gb.id)];
   }
-  const pa = donneLeScore(db, ga, card, a.pendante.ouvertureId, sb);
-  const pb = donneLeScore(db, gb, card, b.pendante.ouvertureId, sa);
-  return [
-    regleSur(
-      `échange sa ${laGame(db, ga).slice(3)} (${sa} pts) contre ${laGame(db, gb)} de ${b.joueur.pseudo} (${sb} pts) → ${pts(pa)}`,
-      pa,
-      ga.id,
-    ),
-    regleSur(
-      `échange sa ${laGame(db, gb).slice(3)} (${sb} pts) contre ${laGame(db, ga)} de ${a.joueur.pseudo} (${sa} pts) → ${pts(pb)}`,
-      pb,
-      gb.id,
-    ),
-  ];
+  // Les textes nomment les games avant qu'elles ne changent de main.
+  const texteA = `échange sa ${laGame(db, ga).slice(3)} (${sa} pts) contre ${laGame(db, gb)} de ${b.joueur.pseudo} (${sb} pts) : les games changent de main → ${pts(sb - sa)}`;
+  const texteB = `échange sa ${laGame(db, gb).slice(3)} (${sb} pts) contre ${laGame(db, ga)} de ${a.joueur.pseudo} (${sa} pts) : les games changent de main → ${pts(sa - sb)}`;
+  transfereGame(db, ga, card, a.pendante.ouvertureId, b.joueur.id, now);
+  transfereGame(db, gb, card, b.pendante.ouvertureId, a.joueur.id, now);
+  // Chacun voit la carte sur la game qu'il a reçue.
+  return [regleSur(texteA, sb - sa, gb.id), regleSur(texteB, sa - sb, ga.id)];
 }
 
 /**
@@ -710,19 +732,25 @@ function chaine(
   resultats: Map<string, Reglement>,
 ): void {
   const scores = maillons.map((m) => m.game.score);
-  maillons.forEach((m, i) => {
+  const now = new Date();
+  // Les textes d'abord, tant que chaque game est encore chez son joueur.
+  const textes = maillons.map((m, i) => {
     const precedent = maillons[(i - 1 + maillons.length) % maillons.length];
     const suivant = maillons[(i + 1) % maillons.length];
     const recu = scores[(i - 1 + maillons.length) % maillons.length];
-    const points = donneLeScore(db, m.game, card, m.membre.pendante.ouvertureId, recu);
-    resultats.set(
-      m.membre.pendante.id,
-      regleSur(
-        `donne ${laGame(db, m.game)} (${scores[i]} pts) à ${suivant.membre.joueur.pseudo}, reçoit celle de ${precedent.membre.joueur.pseudo} (${recu} pts) → ${pts(points)}`,
-        points,
-        m.game.id,
-      ),
-    );
+    return {
+      texte: `donne ${laGame(db, m.game)} (${scores[i]} pts) à ${suivant.membre.joueur.pseudo}, reçoit celle de ${precedent.membre.joueur.pseudo} (${recu} pts) → ${pts(recu - scores[i])}`,
+      points: recu - scores[i],
+      recue: precedent.game.id,
+    };
+  });
+  // Puis chaque game passe au suivant.
+  maillons.forEach((m, i) => {
+    const suivant = maillons[(i + 1) % maillons.length];
+    transfereGame(db, m.game, card, m.membre.pendante.ouvertureId, suivant.membre.joueur.id, now);
+  });
+  maillons.forEach((m, i) => {
+    resultats.set(m.membre.pendante.id, regleSur(textes[i].texte, textes[i].points, textes[i].recue));
   });
 }
 
@@ -1381,8 +1409,11 @@ export function joueEchangeCible(
   const porteur = db.players.find((p) => p.id === pendante.joueurId)?.pseudo ?? 'un finisseur';
   const sa = pire.score;
   const sb = meilleure.score;
-  const points = donneLeScore(db, pire, card, pendante.ouvertureId, sb);
-  const rendu = donneLeScore(db, meilleure, TROC_SUBI, pendante.ouvertureId, sa);
+  const points = sb - sa;
+  const rendu = sa - sb;
+  // Les games changent de main (16/11/2026).
+  transfereGame(db, pire, card, pendante.ouvertureId, cible.id, now);
+  transfereGame(db, meilleure, TROC_SUBI, pendante.ouvertureId, pendante.joueurId, now);
   db.cartesEnAttente.push({
     id: newId(),
     joueurId: cible.id,
@@ -1390,8 +1421,8 @@ export function joueEchangeCible(
     ouvertureId: pendante.ouvertureId,
     creeA: now.toISOString(),
     consommeeA: now.toISOString(),
-    gameId: meilleure.id,
-    resultat: `Troc des Neiges de ${porteur} : sa meilleure game de ${sb} pts prend les ${sa} pts de la pire de ${porteur} → ${pts(rendu)}`,
+    gameId: pire.id,
+    resultat: `Troc des Neiges de ${porteur} : sa meilleure game (${sb} pts) part chez ${porteur}, il reçoit sa pire (${sa} pts) → ${pts(rendu)}`,
     // Qui l'a visé : pour la revanche.
     paireId: pendante.joueurId,
   });
@@ -1399,9 +1430,9 @@ export function joueEchangeCible(
     pendante,
     card,
     regleSur(
-      `${revanche && dejaJoue ? 'revanche sur' : 'joué sur'} ${cible.pseudo} : sa pire game de ${sa} pts prend les ${sb} pts de la meilleure de ${cible.pseudo} → ${pts(points)}`,
+      `${revanche && dejaJoue ? 'revanche sur' : 'joué sur'} ${cible.pseudo} : sa pire game (${sa} pts) part chez ${cible.pseudo}, il reçoit sa meilleure (${sb} pts) → ${pts(points)}`,
       points,
-      pire.id,
+      meilleure.id,
     ),
     now,
   );
@@ -1715,30 +1746,37 @@ export function joueEchangeChoisi(
   const lui = db.players.find((p) => p.id === autreGame.playerId);
   const porteur = moi?.pseudo ?? 'un joueur';
   const autre = lui?.pseudo ?? 'un joueur';
-  const ecart = scoreNu(autreGame) - scoreNu(maGame);
+  // Les games changent de main : c'est leur score entier qui compte.
+  const ecart = autreGame.score - maGame.score;
   const perdant = ecart > 0 ? lui : ecart < 0 ? moi : undefined;
   const pare = perdant !== undefined && estImmunise(perdant, now);
 
   let points = 0;
   let rendu = 0;
-  if (!pare && ecart !== 0) {
-    points = applyPoints(db, maGame, card, pendante.ouvertureId, ecart);
-    rendu = applyPoints(db, autreGame, PACTE_SUBI, pendante.ouvertureId, -ecart);
+  const echange = `${maGame.score} pts contre ${autreGame.score}`;
+  const moiId = maGame.playerId;
+  const luiId = autreGame.playerId;
+  const echangee = !pare && ecart !== 0;
+  if (echangee) {
+    // Les games changent de main (16/11/2026), cartes posées comprises.
+    points = autreGame.score - maGame.score;
+    rendu = -points;
+    transfereGame(db, maGame, card, pendante.ouvertureId, luiId, now);
+    transfereGame(db, autreGame, PACTE_SUBI, pendante.ouvertureId, moiId, now);
   }
-  const echange = `${scoreNu(maGame)} pts contre ${scoreNu(autreGame)}`;
   db.cartesEnAttente.push({
     id: newId(),
-    joueurId: autreGame.playerId,
+    joueurId: luiId,
     cardId: PACTE_SUBI.id,
     ouvertureId: pendante.ouvertureId,
     creeA: now.toISOString(),
     consommeeA: now.toISOString(),
-    gameId: autreGame.id,
+    gameId: echangee ? maGame.id : autreGame.id,
     resultat: pare
       ? `Pacte du Givre de ${porteur}, annulé : ${perdant?.pseudo} est immunisé`
       : ecart === 0
         ? `Pacte du Givre de ${porteur} : égalité, sans effet`
-        : `Pacte du Givre de ${porteur} : ${scoreNu(autreGame)} pts contre ${scoreNu(maGame)} → ${pts(rendu)}`,
+        : `Pacte du Givre de ${porteur} : sa game part chez ${porteur}, il reçoit la sienne (${echange}) → ${pts(rendu)}`,
     paireId: null,
   });
   return consomme(
@@ -1753,7 +1791,7 @@ export function joueEchangeChoisi(
           : `échange avec ${autre} : ${echange} → ${pts(points)}`,
       facteurFlocons: 1,
       regle: true,
-      gameId: maGame.id,
+      gameId: echangee ? autreGame.id : maGame.id,
     },
     now,
   );

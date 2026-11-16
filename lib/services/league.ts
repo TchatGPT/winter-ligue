@@ -50,8 +50,11 @@ export function gamesComptees(db: Database, playerId: string): number {
 export function prochaineGamePossible(db: Database, playerId: string, now = new Date()): Date | null {
   const seuil = parametresSaison(db.config.numero).uneParSessionApres;
   if (seuil === null) return null;
+  // Les games qu'il a jouées, même passées à un autre par un échange — et pas
+  // celles qu'il a reçues : la session se compte sur ce qu'il a joué.
+  const origine = (g: (typeof db.games)[number]) => g.applied.find((a) => a.de)?.de ?? g.playerId;
   const comptees = db.games
-    .filter((g) => g.playerId === playerId && !g.skipped)
+    .filter((g) => origine(g) === playerId && !g.skipped)
     .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
   // La game qu'on saisit serait la (n + 1)ᵉ : la règle vaut dès la 36ᵉ.
   if (comptees.length < seuil) return null;

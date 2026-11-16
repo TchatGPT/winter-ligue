@@ -53,6 +53,9 @@ export function corrigeGame(
 ): Correction | Refus {
   const game = db.games.find((g) => g.id === gameId);
   if (!game) return 'INTROUVABLE';
+  if (game.applied.some((a) => a.de)) {
+    return { refus: 'Cette game a changé de main par un échange : elle ne se corrige pas.' };
+  }
   const figees = cartesQuiFigentLaGame(db, game);
   if (figees.length > 0) {
     return {
@@ -113,7 +116,10 @@ export function supprimeGame(db: Database, acteur: string, gameId: string): Supp
   if (!game) return 'INTROUVABLE';
   // Un échange lie cette game à celle d'un autre joueur : la retirer laisserait
   // l'autre moitié sans contrepartie.
-  if (db.cartesEnAttente.some((c) => c.gameId === game.id && getCard(c.cardId)?.effect.kind === 'echange')) {
+  if (
+    game.applied.some((a) => a.de) ||
+    db.cartesEnAttente.some((c) => c.gameId === game.id && getCard(c.cardId)?.effect.kind === 'echange')
+  ) {
     return { refus: 'Cette game est liée à celle d’un autre joueur par un échange : elle ne se supprime pas.' };
   }
 
