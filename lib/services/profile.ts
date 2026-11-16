@@ -39,6 +39,21 @@ export interface EvenementDeGame {
   texte: string | null;
 }
 
+/** D'où vient une game : reçue par un échange, ou son score copié d'une autre. */
+function provenanceDe(db: Database, g: Game): { genre: 'echange' | 'copie'; de: string; carte: string } | null {
+  const pseudo = (id: string) => db.players.find((p) => p.id === id)?.pseudo ?? 'un joueur';
+  const nomCarte = (id: string) => getCard(id)?.name ?? id;
+  // Échangée : le joueur qui l'a jouée, et la carte qui l'a fait passer ici.
+  const premier = g.applied.find((a) => a.de);
+  const dernier = [...g.applied].reverse().find((a) => a.vers === g.playerId);
+  if (premier?.de && premier.de !== g.playerId) {
+    return { genre: 'echange', de: pseudo(premier.de), carte: nomCarte((dernier ?? premier).cardId) };
+  }
+  const copie = [...g.applied].reverse().find((a) => a.copieDe);
+  if (copie?.copieDe) return { genre: 'copie', de: pseudo(copie.copieDe), carte: nomCarte(copie.cardId) };
+  return null;
+}
+
 /** L'historique d'une game : ses cartes, de la plus ancienne à la plus récente. */
 function historiqueDe(db: Database, g: Game): EvenementDeGame[] {
   const sur = db.cartesEnAttente.filter((c) => c.gameId === g.id && c.consommeeA !== null);
@@ -132,6 +147,11 @@ export interface ProfileView {
     cartes: ReturnType<typeof cartesJoueesSur>;
     /** Tout ce qui est arrivé à la game, dans l'ordre : chaque carte passée dessus. */
     historique: EvenementDeGame[];
+    /**
+     * D'où vient la game (16/11/2026) : reçue par un échange — jouée par
+     * `de` —, ou son score copié de la game de `de`. Null pour une game à soi.
+     */
+    provenance: { genre: 'echange' | 'copie'; de: string; carte: string } | null;
   }[];
   ledger: { delta: number; balanceAfter: number; reason: string; createdAt: string }[];
 }
@@ -172,6 +192,7 @@ function buildProfile(db: Database, playerId: string): ProfileView | null {
       // et ce qu'elle deviendrait si la modération corrigeait la game.
       cartes: cartesJoueesSur(db, g),
       historique: historiqueDe(db, g),
+      provenance: provenanceDe(db, g),
     })),
     ledger: db.ledger
       .filter((e) => e.playerId === playerId)

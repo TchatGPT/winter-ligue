@@ -353,6 +353,7 @@ export function ColonnesSaison({
                   data-joker={c.skipped ? '' : undefined}
                   data-eteinte={garde(c) ? undefined : ''}
                   data-podium={place ?? undefined}
+                  data-provenance={c.provenance ? c.provenance.genre : undefined}
                   // La bulle : au survol d'une souris, ou au clavier — jamais au
                   // toucher, où le détail s'ouvre en bas de l'écran.
                   onPointerEnter={(e) => e.pointerType === 'mouse' && survole(i, e.currentTarget)}
@@ -391,6 +392,13 @@ export function ColonnesSaison({
                 {g.placement !== null ? `Top ${g.placement}` : 'Pas top'} · {g.kills} kill{g.kills > 1 ? 's' : ''} ·{' '}
                 {shortDateTime(g.playedAt)}
               </span>
+              {g.provenance && (
+                <span className="saison-bulle-provenance">
+                  {g.provenance.genre === 'echange'
+                    ? `Game de ${g.provenance.de} · reçue par échange`
+                    : `Score copié de ${g.provenance.de}`}
+                </span>
+              )}
               {g.applied.map((a, k) => (
                 <span key={k} className="saison-bulle-carte" data-malus={a.points < 0 ? '' : undefined}>
                   {getCard(a.cardId)?.name ?? a.cardId} <b>{effetCourt(a.cardId, a.points)}</b>
@@ -698,6 +706,20 @@ export function DetailGame({
             ✕
           </button>
         </header>
+        {/* D'où vient la game (16/11/2026) : à un autre joueur à l'origine. */}
+        {game.provenance && (
+          <p className="detail-provenance" data-genre={game.provenance.genre}>
+            {game.provenance.genre === 'echange' ? (
+              <>
+                Game de <b>{game.provenance.de}</b>, reçue par échange · {game.provenance.carte}
+              </>
+            ) : (
+              <>
+                Score copié de la game de <b>{game.provenance.de}</b> · {game.provenance.carte}
+              </>
+            )}
+          </p>
+        )}
 
         <div className="detail-score">
           <b className="num">{game.skipped ? '—' : game.score}</b>

@@ -1054,6 +1054,9 @@ function regleRoue(
         }
         const avant = pire.score;
         const points = donneLeScore(db, pire, card, o, source.score);
+        // D'où vient le score : la fiche le dit sur la game (16/11/2026).
+        const trace = pire.applied.at(-1);
+        if (trace) trace.copieDe = b.joueur.id;
         pour(a, regleSur(`sa pire game, ${laGame(db, pire)} (${avant} pts), prend les ${source.score} pts de ${laGame(db, source)} de ${b.joueur.pseudo} → ${pts(points)}`, points, pire.id));
         pour(b, sansEffet(`${laGame(db, source)} (${source.score} pts) est copiée chez ${a.joueur.pseudo} ; il la garde`));
         break;

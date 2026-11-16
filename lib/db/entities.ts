@@ -100,6 +100,8 @@ export interface AppliedEffect {
    */
   de?: string;
   vers?: string;
+  /** Le score de la game copié depuis la game d'un autre joueur (Soleil Jumeau). */
+  copieDe?: string;
 }
 
 export interface Game {
