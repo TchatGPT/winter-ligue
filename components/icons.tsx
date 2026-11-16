@@ -283,6 +283,17 @@ export function IconCorbeille(props: IconProps) {
 }
 
 /** Se déconnecter — le symbole marche-arrêt. */
+/** Regarder sans jouer — un œil : le mode visiteur. */
+export function IconOeil(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <Fond d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" />
+      <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" />
+      <circle cx="12" cy="12" r="2.8" />
+    </Svg>
+  );
+}
+
 export function IconQuitter(props: IconProps) {
   return (
     <Svg {...props}>

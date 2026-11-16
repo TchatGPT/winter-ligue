@@ -13453,29 +13453,60 @@ main:has(> .accueil .acc-scene[data-phase='fini']) {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: clamp(0.5rem, 0.7cqw, 0.9rem);
+  gap: clamp(0.75rem, 1cqw, 1.3rem);
   margin-top: clamp(1rem, 1.6cqw, 2.2rem);
 }
-/* Sous l'inscription, plus discret : regarder la ligue sans compte. */
-.acc-visiteur {
-  padding: 0.45rem 1.1rem;
-  border: 1px solid color-mix(in srgb, var(--ink) 28%, transparent);
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--bg-deep) 35%, transparent);
+/* « ou », entre les deux entrées : un mot, deux traits qui s'effacent. */
+.acc-ou {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  width: clamp(12rem, 17cqw, 21rem);
   font-family: var(--font-display);
-  font-size: clamp(0.8125rem, 0.85cqw, 1.05rem);
+  font-size: clamp(0.75rem, 0.8cqw, 1rem);
   font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
   color: var(--ink-2);
-  backdrop-filter: blur(6px);
-  transition:
-    border-color 0.2s ease,
-    color 0.2s ease;
 }
-.acc-visiteur:hover,
-.acc-visiteur:focus-visible {
-  border-color: color-mix(in srgb, var(--ice) 60%, transparent);
-  color: var(--ink);
+.acc-ou::before,
+.acc-ou::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+}
+.acc-ou::before {
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--ice) 70%, transparent));
+}
+.acc-ou::after {
+  background: linear-gradient(90deg, color-mix(in srgb, var(--ice) 70%, transparent), transparent);
+}
+/* Regarder la ligue sans compte : le bouton de verre du site, un cran sous
+   l'inscription. */
+.acc-centre .btn.acc-visiteur {
+  gap: 0.55rem;
+  padding: 0.8rem 1.6rem;
+  border-color: color-mix(in srgb, var(--ice) 75%, var(--ink));
+  /* Du givre clair, pas un trou sombre : le bleu glace du site, en verre. */
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, var(--ice) 42%, transparent) 0%,
+    color-mix(in srgb, var(--ice) 20%, transparent) 100%
+  );
+  backdrop-filter: blur(8px);
+  font-size: clamp(0.9375rem, 1cqw, 1.25rem);
+}
+.acc-centre .btn.acc-visiteur:hover:not(:disabled) {
+  border-color: var(--ink);
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, var(--ice) 58%, transparent) 0%,
+    color-mix(in srgb, var(--ice) 30%, transparent) 100%
+  );
+}
+.acc-centre .btn.acc-visiteur svg {
+  width: 1.2em;
+  height: 1.2em;
 }
 .acc-centre .btn-lg {
   font-size: clamp(0.875rem, 0.95cqw, 1.2rem);
@@ -13937,6 +13968,14 @@ main:has(> .accueil .acc-scene[data-phase='fini']) {
   }
 }
 @media (min-width: 1024px) and (max-height: 720px) {
+  .acc-actions {
+    gap: 0.45rem;
+    margin-top: 0.8rem;
+  }
+  .acc-centre .btn.acc-visiteur {
+    min-height: 0;
+    padding: 0.6rem 1.4rem;
+  }
   .acc-surtitre,
   .acc-note,
   .acc-lead {
@@ -13999,10 +14038,14 @@ main:has(> .accueil .acc-scene[data-phase='fini']) {
   }
   .acc-actions {
     margin-top: 4.5cqw;
-    gap: 2.2cqw;
+    gap: 2.6cqw;
   }
-  .acc-visiteur {
-    font-size: 3.4cqw;
+  .acc-ou {
+    width: 46cqw;
+    font-size: 3cqw;
+  }
+  .acc-centre .btn.acc-visiteur {
+    font-size: 3.6cqw;
   }
   .acc-centre .btn-lg {
     font-size: 4cqw;

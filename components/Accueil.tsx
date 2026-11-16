@@ -8,6 +8,7 @@ import {
   IconSnowflake,
   IconSwords,
   IconTrophy,
+  IconOeil,
   IconTwitch,
 } from '@/components/icons';
 import { PACKS, packArt } from '@/lib/domain/catalog';
@@ -113,8 +114,8 @@ export function Accueil({
       titre: 'Ouvre des boosters',
       texte: (
         <>
-          Les subs du live en font tomber, ouverts <b>en direct</b>. Trois Boosters Perso t’attendent à
-          l’inscription.
+          Offre <b>5 subs ou plus</b>, ou prends un <b>sub T3</b> : un Booster Perso pour toi. Et{' '}
+          <b>trois</b> t’attendent à l’inscription.
         </>
       ),
     },
@@ -125,7 +126,8 @@ export function Accueil({
       titre: 'Joue tes cartes',
       texte: (
         <>
-          Chaque booster donne <b>une carte</b> : bonus ou malus, elle change une game, puis disparaît.
+          Chaque booster contient des cartes <b>bonus</b> ou <b>malus</b> : elles changent des games au
+          classement.
         </>
       ),
     },
@@ -194,7 +196,11 @@ export function Accueil({
               <IconTwitch className="h-5 w-5" />
               M’inscrire avec Twitch
             </a>
-            <a href="/api/visiteur" className="acc-visiteur no-underline">
+            <span className="acc-ou" aria-hidden="true">
+              ou
+            </span>
+            <a href="/api/visiteur" className="btn btn-lg no-underline acc-visiteur">
+              <IconOeil className="h-5 w-5" />
               Entrer en mode visiteur
             </a>
           </div>
