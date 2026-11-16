@@ -1,36 +1,28 @@
 /**
- * La display de l'accueil, rendue dans Blender (16/11/2026) : ce que la vidéo
- * montre, et où elle laisse les boosters.
+ * La display de l'accueil, rendue dans Blender (EEVEE, 16/11/2026) : ce que la
+ * vidéo montre, et où elle laisse les boosters.
  *
- * La vidéo est rendue par `scratchpad/display/display3.py`, en deux cadrages :
- * le paysage des ordinateurs (plateau de 1920 × 1080) et le portrait des
- * téléphones (1080 × 1920), fond transparent. Le navigateur ne lit pas la
- * transparence d'une vidéo partout (Safari ignore celle du VP9) : elle est
- * encodée en H.264 avec sa transparence en niveaux de gris à côté de l'image —
- * dessous en paysage, à droite en portrait — et recomposée dans un `<canvas>`
- * (`detoureur`).
- *
- * La display tombe dans un champ de neige, s'y enfonce, se renverse un peu ;
- * son couvercle saute, des boosters sont éjectés dans la neige ; les quatre de
- * la ligue s'en dégagent et vont se placer ; un brouillard couvre tout, puis
- * se dissipe sur le fond de la page.
+ * La vidéo est rendue par `scratchpad/display/display4.py`, en deux cadrages :
+ * le paysage des ordinateurs (1920 × 1080) et le portrait des téléphones
+ * (1080 × 2160). La display tombe dans un champ de neige, s'y enfonce et se
+ * renverse un peu ; son couvercle saute, des boosters sont éjectés (corps
+ * rigides simulés) ; les quatre de la ligue s'élèvent et vont se placer. La
+ * vidéo couvre tout l'écran, comme une image de fond (`cover`).
  *
  * À sa dernière image, les quatre boosters sont exactement aux places
  * ci-dessous, face à l'écran et sans lumière de scène : le site y pose les
- * vraies images, et la vidéo s'efface sous elles. À changer avec la vidéo.
+ * vraies images, puis dissipe la scène dans un brouillard (`ecranBrume`) qui
+ * laisse apparaître la page. À changer avec la vidéo.
  */
 
 /** Le cadrage du téléphone et de la tablette debout. Le CSS dit la même chose (`.acc-scene`). */
 export const REQUETE_PORTRAIT = '(max-width: 1023px) and (orientation: portrait)';
 
-/** La vidéo dure 236 images à 30 i/s. */
-export const IMAGES_PAR_SECONDE = 30;
+/** La durée du brouillard qui dissipe la scène, une fois la vidéo finie. */
+export const DUREE_BRUME_MS = 3200;
 
-/**
- * L'image où le brouillard se lève : le centre de la page (le nom, l'entrée,
- * les tuiles) apparaît là.
- */
-export const IMAGE_REVELATION = 204;
+/** Le moment du brouillard (de 0 à 1) où le centre de la page apparaît. */
+export const REVELATION_BRUME = 0.55;
 
 /** Un booster à la fin de la vidéo : le centre de son image, en pixels du plateau, et son inclinaison. */
 export interface PlaceBooster {
@@ -47,37 +39,33 @@ export interface FormatDisplay {
   places: Record<string, PlaceBooster>;
   /** Les vidéos, de la plus fine à la plus légère, avec la largeur d'écran (en pixels réels) qu'elles servent. */
   videos: { src: string; pourLargeur: number }[];
-  /** Où est la transparence dans la vidéo : sous l'image, ou à sa droite. */
-  alpha: 'dessous' | 'droite';
 }
 
 export const PAYSAGE: FormatDisplay = {
   plateau: { largeur: 1920, hauteur: 1080 },
-  hauteurBooster: 500,
+  hauteurBooster: 480,
   places: {
-    perso: { x: 232, y: 455, inclinaison: 7 },
-    commu: { x: 520, y: 400, inclinaison: 3.5 },
-    folie: { x: 1400, y: 400, inclinaison: -3.5 },
-    finisseur: { x: 1688, y: 455, inclinaison: -7 },
+    perso: { x: 270, y: 390, inclinaison: 7 },
+    commu: { x: 545, y: 345, inclinaison: 3.5 },
+    folie: { x: 1375, y: 345, inclinaison: -3.5 },
+    finisseur: { x: 1650, y: 390, inclinaison: -7 },
   },
   videos: [
-    { src: '/accueil/display-2560.mp4?v=3', pourLargeur: 1800 },
-    { src: '/accueil/display-1600.mp4?v=3', pourLargeur: 0 },
+    { src: '/accueil/display-2560.mp4?v=4', pourLargeur: 1800 },
+    { src: '/accueil/display-1600.mp4?v=4', pourLargeur: 0 },
   ],
-  alpha: 'dessous',
 };
 
 export const PORTRAIT: FormatDisplay = {
-  plateau: { largeur: 1080, hauteur: 1920 },
-  hauteurBooster: 400,
+  plateau: { largeur: 1080, hauteur: 2160 },
+  hauteurBooster: 380,
   places: {
-    perso: { x: 150, y: 345, inclinaison: 8 },
-    commu: { x: 395, y: 315, inclinaison: 3 },
-    folie: { x: 685, y: 315, inclinaison: -3 },
-    finisseur: { x: 930, y: 345, inclinaison: -8 },
+    perso: { x: 180, y: 400, inclinaison: 8 },
+    commu: { x: 412, y: 372, inclinaison: 3 },
+    folie: { x: 668, y: 372, inclinaison: -3 },
+    finisseur: { x: 900, y: 400, inclinaison: -8 },
   },
-  videos: [{ src: '/accueil/display-portrait.mp4?v=3', pourLargeur: 0 }],
-  alpha: 'droite',
+  videos: [{ src: '/accueil/display-portrait.mp4?v=4', pourLargeur: 0 }],
 };
 
 /**

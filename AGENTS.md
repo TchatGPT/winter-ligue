@@ -334,24 +334,22 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   `useMemo`, `useState`).
 - **L'accueil déconnecté** (`components/Accueil.tsx`, refait le 16/11/2026) tient en un seul écran,
   sans défiler, sur un ordinateur (de 1024×620 à 2560×1267 : `scrollHeight <= innerHeight`) comme
-  sur un téléphone debout (la scène au milieu de l'écran, le pied de page dessous). Il s'ouvre,
-  **à chaque visite**, sur une vidéo rendue dans Blender (`SceneDisplay`,
-  `scratchpad/display/display3.py`) : une display de boosters en carton aux couleurs de la ligue
-  (sans neige dessus, sans cadre blanc) tombe dans un champ de neige, s'y enfonce — la neige gicle,
-  une poudre monte — et se renverse un peu ; son couvercle saute, des boosters sont éjectés et
-  retombent dans la neige ; les quatre de la ligue s'en dégagent et vont se placer ; un brouillard
-  arrive des bords, couvre tout, puis se dissipe sur le fond de la page (16/11/2026). Deux cadrages (`PAYSAGE`, `PORTRAIT`, `REQUETE_PORTRAIT`) ; la vidéo est en H.264, sa
-  transparence en niveaux de gris à côté de l'image (`public/accueil/display-*.mp4`), recomposée
-  dans un canvas WebGL (`videoDetouree`) — Safari ignore la transparence du VP9. À sa dernière
-  image, les vraies images des boosters prennent le relais au pixel près (`places`,
-  `placeEnVariables` : à changer avec la vidéo). Restent, au milieu, le nom, une phrase, l'entrée
-  Twitch et le compte à rebours (`CalendrierSaisons compact`), et six tuiles de verre plat pour les
-  règles (en bas ; sur téléphone, elles défilent du doigt de gauche à droite). Tout se pose dans
-  la scène et se mesure sur elle (`cqw`). La vidéo se joue même si le système demande moins
+  sur un téléphone debout. Il s'ouvre, **à chaque visite**, sur une vidéo rendue dans Blender (EEVEE,
+  `scratchpad/display/display4.py`, neige et ciel de Poly Haven) **qui couvre tout l'écran**, pied
+  de page compris (`.acc-calque`, plateau en `cover`) : une display de boosters (sans neige dessus,
+  sans cadre blanc) tombe dans un champ de neige, s'y enfonce et se renverse un peu ; son couvercle
+  saute, des boosters — de vrais sachets épais — et des mottes de neige sont éjectés (corps rigides
+  simulés, puis enregistrés) ; les quatre de la ligue s'élèvent et vont se placer. Deux cadrages
+  (`PAYSAGE` 16:9, `PORTRAIT` 1:2, `REQUETE_PORTRAIT`). À la dernière image, les vraies images des
+  boosters prennent le relais au pixel près (`places`, `placeEnVariables` : à changer avec la vidéo),
+  puis le site dissipe la scène dans un brouillard (`ecranBrume`, un shader WebGL) qui laisse
+  apparaître la page : au milieu, le nom, une phrase, l'entrée Twitch et le compte à rebours
+  (`CalendrierSaisons compact`) ; en bas, six tuiles de verre plat pour les règles (sur téléphone,
+  elles défilent du doigt de gauche à droite). La vidéo se joue même si le système demande moins
   d'animations (Windows le dit quand ses effets sont coupés) ; sans WebGL ou si la lecture est
-  refusée, tout arrive tout de suite. Ses réglages selon la taille passent par `@media`, jamais
-  par `@container` : le compte à rebours réévaluait les règles de conteneur chaque seconde et
-  relançait les animations d'arrivée.
+  refusée, tout arrive tout de suite. Ses réglages selon la taille passent par `@media`, jamais par
+  `@container` : le compte à rebours réévaluait les règles de conteneur chaque seconde et relançait
+  les animations d'arrivée.
 - Les couleurs viennent des variables CSS de `app/globals.css`, jamais codées en dur.
 - Avant de livrer : `npm run typecheck && npm test && npm run build`.
 

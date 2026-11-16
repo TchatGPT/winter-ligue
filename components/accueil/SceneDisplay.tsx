@@ -1,15 +1,15 @@
 'use client';
 
 import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from 'react';
+import { ecranBrume } from '@/components/accueil/ecranBrume';
 import {
-  IMAGE_REVELATION,
-  IMAGES_PAR_SECONDE,
+  DUREE_BRUME_MS,
   PAYSAGE,
   PORTRAIT,
   REQUETE_PORTRAIT,
+  REVELATION_BRUME,
   placeEnVariables,
 } from '@/components/accueil/placesDisplay';
-import { detoureur } from '@/components/accueil/videoDetouree';
 
 /** Un booster de l'accueil : son image, son nom court et ce qui le fait tomber. */
 export interface BoosterDeLaScene {
@@ -23,11 +23,12 @@ export interface BoosterDeLaScene {
 
 /**
  * - `charge` : la vidéo se prépare, rien ne se voit encore ;
- * - `video` : la display arrive, s'ouvre, les boosters en sortent ;
- * - `fini` : il ne reste que les boosters, les vrais, posés là où la vidéo
- *   les a laissés.
+ * - `video` : la display tombe dans la neige, les boosters en sortent ;
+ * - `brume` : les vraies images des boosters sont posées, la scène se dissipe
+ *   dans un brouillard (`ecranBrume`) ;
+ * - `fini` : il ne reste que les boosters et la page.
  */
-type Phase = 'charge' | 'video' | 'fini';
+type Phase = 'charge' | 'video' | 'brume' | 'fini';
 
 /** Sans image au bout de ce délai, on n'attend plus la vidéo. */
 const ATTENTE_MAX_MS = 6000;
@@ -35,19 +36,17 @@ const ATTENTE_MAX_MS = 6000;
 const DUREE_MAX_MS = 16_000;
 
 /**
- * La scène de l'accueil (16/11/2026) : la display de boosters rendue dans
- * Blender s'ouvre, les quatre boosters en sortent et se placent, la display
- * s'efface. Les vraies images des boosters prennent alors le relais, à la
- * même place, et le centre de la page (`children` : le nom, l'entrée, les
- * tuiles) apparaît. La vidéo se rejoue à chaque visite.
+ * La scène de l'accueil (16/11/2026) : la display de boosters, rendue dans
+ * Blender, couvre tout l'écran — elle tombe dans la neige, s'y renverse, des
+ * boosters en jaillissent et les quatre de la ligue vont se placer. Les vraies
+ * images des boosters prennent alors le relais, à la même place, et la scène se
+ * dissipe dans un brouillard qui laisse apparaître la page : le nom, l'entrée,
+ * les tuiles (`children`). La vidéo se rejoue à chaque visite, même si le
+ * système demande moins d'animations (Windows le dit dès que ses effets sont
+ * coupés).
  *
- * Sans vidéo — WebGL absent, lecture refusée, réseau trop lent —, les
- * boosters et le centre arrivent tout de suite.
- *
- * La vidéo se joue même quand le système demande moins d'animations
- * (`prefers-reduced-motion`, décidé le 16/11/2026) : Windows le dit dès que
- * ses effets d'animation sont coupés, ce que beaucoup font pour la
- * performance, et l'accueil perdait alors sa display.
+ * Sans vidéo — WebGL absent, lecture refusée, réseau trop lent —, les boosters
+ * et le centre arrivent tout de suite.
  */
 export function SceneDisplay({ boosters, children }: { boosters: BoosterDeLaScene[]; children: ReactNode }) {
   const canvas = useRef<HTMLCanvasElement>(null);
@@ -68,112 +67,124 @@ export function SceneDisplay({ boosters, children }: { boosters: BoosterDeLaScen
       sansVideo();
       return;
     }
-    // Le cadrage suit l'écran : portrait sur un téléphone debout, paysage ailleurs.
-    const format = window.matchMedia(REQUETE_PORTRAIT).matches ? PORTRAIT : PAYSAGE;
-    const d = detoureur(c, v, format.alpha);
-    if (!d) {
+    const ecran = ecranBrume(c, v);
+    if (!ecran) {
       sansVideo();
       return;
     }
 
-    let fini = false;
+    let arret = false;
     let lancee = false;
     let image = 0;
-    const termine = (parLaVideo: boolean) => {
-      if (fini) return;
-      fini = true;
-      if (parLaVideo) {
-        d.dessine();
-        setPhase('fini');
-        setRevele(true);
-      } else {
-        sansVideo();
-      }
+    const t0 = performance.now();
+    const temps = () => (performance.now() - t0) / 1000;
+
+    const boucleVideo = () => {
+      if (arret) return;
+      ecran.dessine(0, temps());
+      if ('requestVideoFrameCallback' in v) v.requestVideoFrameCallback(boucleVideo);
+      else image = requestAnimationFrame(boucleVideo);
     };
-    const dessine = () => {
-      d.dessine();
-      if (v.currentTime >= IMAGE_REVELATION / IMAGES_PAR_SECONDE) setRevele(true);
-    };
-    const boucle = () => {
-      if (fini) return;
-      dessine();
-      if ('requestVideoFrameCallback' in v) v.requestVideoFrameCallback(boucle);
-      else image = requestAnimationFrame(boucle);
+    // La vidéo finie : les vraies images sont posées, le brouillard dissipe la scène.
+    const brume = () => {
+      if (arret) return;
+      arret = true;
+      cancelAnimationFrame(image);
+      setPhase('brume');
+      const debut = performance.now();
+      const pas = () => {
+        const b = Math.min(1, (performance.now() - debut) / DUREE_BRUME_MS);
+        ecran.dessine(b, temps());
+        if (b >= REVELATION_BRUME) setRevele(true);
+        if (b < 1) image = requestAnimationFrame(pas);
+        else setPhase('fini');
+      };
+      image = requestAnimationFrame(pas);
     };
     const enLecture = () => {
       if (lancee) return;
       lancee = true;
       setPhase('video');
-      boucle();
+      boucleVideo();
+    };
+    const echec = () => {
+      if (arret) return;
+      arret = true;
+      sansVideo();
     };
 
-    // La vidéo la plus fine que l'écran mérite ; la plus légère si l'on économise les données.
+    // Le cadrage suit l'écran ; la vidéo la plus fine que l'écran mérite, la plus
+    // légère si l'on économise les données.
+    const format = window.matchMedia(REQUETE_PORTRAIT).matches ? PORTRAIT : PAYSAGE;
     const leger = (navigator as { connection?: { saveData?: boolean } }).connection?.saveData;
-    const pixels = window.innerWidth * (window.devicePixelRatio || 1);
+    const pixels = Math.max(window.innerWidth, window.innerHeight) * (window.devicePixelRatio || 1);
     const choix = leger ? format.videos.at(-1) : format.videos.find((x) => pixels >= x.pourLargeur);
     v.src = (choix ?? format.videos[0]).src;
     v.addEventListener('playing', enLecture);
-    v.addEventListener('ended', () => termine(true));
-    v.addEventListener('error', () => termine(false));
-    v.play().catch(() => termine(false));
-    const attente = window.setTimeout(() => !lancee && termine(false), ATTENTE_MAX_MS);
-    const garde = window.setTimeout(() => termine(lancee), DUREE_MAX_MS);
+    v.addEventListener('ended', brume);
+    v.addEventListener('error', echec);
+    v.play().catch(echec);
+    const attente = window.setTimeout(() => !lancee && echec(), ATTENTE_MAX_MS);
+    const garde = window.setTimeout(() => (lancee ? brume() : echec()), DUREE_MAX_MS);
 
     return () => {
-      fini = true;
+      arret = true;
       cancelAnimationFrame(image);
       window.clearTimeout(attente);
       window.clearTimeout(garde);
       v.removeEventListener('playing', enLecture);
+      v.removeEventListener('ended', brume);
       v.pause();
-      d.libere();
+      ecran.libere();
     };
   }, []);
 
   return (
     <div className="acc-scene" data-phase={phase} data-revele={revele ? '' : undefined} data-arrivee={arrivee}>
-      <div className="acc-plateau">
-        <video ref={video} className="acc-video" muted playsInline preload="auto" aria-hidden="true" />
-        <canvas ref={canvas} className="acc-canvas" aria-hidden="true" />
-        <ul className="acc-boosters" aria-label="Les quatre boosters">
-          {boosters.map((b, i) => {
-            const paysage = PAYSAGE.places[b.id];
-            const portrait = PORTRAIT.places[b.id];
-            if (!paysage || !portrait) return null;
-            return (
-              <li
-                key={b.id}
-                className="acc-booster"
-                style={
-                  {
-                    ...placeEnVariables('pa', PAYSAGE, paysage),
-                    ...placeEnVariables('po', PORTRAIT, portrait),
-                    ['--i' as string]: i,
-                  } as CSSProperties
-                }
-              >
-                <div className="acc-booster-flotte">
-                  {b.art && (
-                    // L'image entière, à la taille de la vidéo : c'est elle qui prend le relais.
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={b.art} alt="" draggable={false} decoding="async" />
-                  )}
-                </div>
-                <p className="acc-booster-nom">
-                  <b>
-                    <span className="sr-only">Booster </span>
-                    {b.court}
-                  </b>
-                  <span>{b.quand}</span>
-                </p>
-              </li>
-            );
-          })}
-        </ul>
+      <div className="acc-calque">
+        <div className="acc-plateau">
+          <video ref={video} className="acc-video" muted playsInline preload="auto" aria-hidden="true" />
+          <canvas ref={canvas} className="acc-canvas" aria-hidden="true" />
+          <ul className="acc-boosters" aria-label="Les quatre boosters">
+            {boosters.map((b, i) => {
+              const paysage = PAYSAGE.places[b.id];
+              const portrait = PORTRAIT.places[b.id];
+              if (!paysage || !portrait) return null;
+              return (
+                <li
+                  key={b.id}
+                  className="acc-booster"
+                  style={
+                    {
+                      ...placeEnVariables('pa', PAYSAGE, paysage),
+                      ...placeEnVariables('po', PORTRAIT, portrait),
+                      ['--i' as string]: i,
+                    } as CSSProperties
+                  }
+                >
+                  <div className="acc-booster-flotte">
+                    {b.art && (
+                      // L'image entière, à la taille de la vidéo : c'est elle qui prend le relais.
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={b.art} alt="" draggable={false} decoding="async" />
+                    )}
+                  </div>
+                  <p className="acc-booster-nom">
+                    <b>
+                      <span className="sr-only">Booster </span>
+                      {b.court}
+                    </b>
+                    <span>{b.quand}</span>
+                  </p>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
       </div>
       {children}
       <noscript>
-        <style>{'.acc-scene .acc-centre, .acc-scene .acc-tuiles, .acc-scene .acc-booster { opacity: 1 !important; }'}</style>
+        <style>{'.acc-scene .acc-centre > *, .acc-scene .acc-tuile, .acc-scene .acc-booster { opacity: 1 !important; }'}</style>
       </noscript>
     </div>
   );

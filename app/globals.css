@@ -13110,22 +13110,26 @@
 /* ==========================================================================
    L'ACCUEIL DÉCONNECTÉ — voir components/Accueil et components/accueil.
    ==========================================================================
-   Une scène au format de la vidéo (16:9), qui tient dans l'écran d'un
-   ordinateur sans défiler, pied de page compris. La vidéo de la display
-   (Blender) la remplit ; à sa fin, les quatre boosters sont des images posées
-   en pourcentages du plateau (`placeEnPourcents`), exactement là où la vidéo
-   les a laissés. Au milieu, le nom, une phrase, l'entrée par Twitch et le
-   compte à rebours ; en bas, six tuiles de verre.
+   La vidéo de la display (Blender) couvre tout l'écran, pied de page compris,
+   comme une image de fond (`cover`) : un calque (`.acc-calque`) à la taille
+   de la fenêtre, et dedans le plateau de la vidéo, centré et rogné. À sa fin,
+   les quatre boosters sont des images posées en pourcentages du plateau
+   (`placeEnVariables`), exactement là où la vidéo les a laissés, et la scène
+   se dissipe dans un brouillard qui laisse apparaître la page.
 
-   Tout ce qui est dans la scène se mesure sur elle (`cqw`) : elle grandit et
-   rapetisse d'un bloc. Sur un téléphone et une tablette debout, la scène ne
-   garde que la vidéo et les boosters ; le reste s'empile dessous.
+   La page, elle, se règle sur la fenêtre (`cqw`, la page est son repère) :
+   en haut, au milieu, le nom, une phrase, l'entrée par Twitch et le compte à
+   rebours ; en bas, six tuiles de verre. Sur un ordinateur, tout tient dans
+   l'écran sans défiler ; sur un téléphone debout aussi, le pied de page attend
+   dessous.
 
    Les réglages selon la taille passent par `@media`, jamais par
    `@container` : le compte à rebours réévaluerait les règles de conteneur
    chaque seconde, et relancerait les animations d'arrivée. */
 
 main:has(> .accueil) {
+  /* Au-dessus du pied de page : la vidéo le couvre tant qu'elle joue. */
+  z-index: 11;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   padding: 0;
@@ -13136,10 +13140,8 @@ main:has(> .accueil) {
   isolation: isolate;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  padding: 0.75rem var(--acc-marge) 3.5rem;
-  overflow: clip;
+  container: accueil / inline-size;
   background:
-    radial-gradient(60% 40% at 50% 62%, color-mix(in srgb, var(--ice-3) 14%, transparent), transparent 75%),
     radial-gradient(70% 45% at 50% 100%, color-mix(in srgb, var(--ice-3) 22%, transparent), transparent 75%),
     linear-gradient(180deg, var(--bg) 0, var(--fond) 100%);
 }
@@ -13170,70 +13172,49 @@ main:has(> .accueil) {
   }
 }
 
-/* -- La scène : la vidéo, les boosters -- */
-.acc-scene {
-  position: relative;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 1.75rem;
-  container-type: inline-size;
+/* -- Le calque de la vidéo : toute la fenêtre -- */
+.acc-calque {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 3;
+  width: 100%;
+  height: 100dvh;
+  overflow: hidden;
+  pointer-events: none;
 }
 .acc-plateau {
-  position: relative;
-  width: 100%;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: max(100%, 100dvh * 16 / 9);
   aspect-ratio: 16 / 9;
+  translate: -50% -50%;
 }
 .acc-video,
 .acc-canvas {
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
+  top: 0;
+  left: 0;
   pointer-events: none;
 }
-/* La vidéo ne se montre pas : le canvas la recompose avec sa transparence.
-   Elle reste dans l'écran, sans quoi un navigateur la mettrait en pause. */
+/* La vidéo ne se montre pas : le canvas la dessine, puis la dissipe. Elle
+   reste dans l'écran, sans quoi un navigateur la mettrait en pause. */
 .acc-video {
   width: 2px;
   height: 2px;
   opacity: 0;
 }
-/* La vidéo est une scène pleine (le champ de neige) jusqu'au brouillard : ses
-   bords se fondent dans la page. */
-@property --acc-bord-x {
-  syntax: '<percentage>';
-  inherits: false;
-  initial-value: 0%;
-}
-@property --acc-bord-y {
-  syntax: '<percentage>';
-  inherits: false;
-  initial-value: 0%;
-}
-/* Le fondu se relâche quand le brouillard se lève : à la fin, les boosters du
-   bord ne sont plus voilés, et les vraies images prennent le relais sans saut. */
 .acc-canvas {
-  --acc-bord-x: 9%;
-  --acc-bord-y: 12%;
-  -webkit-mask-image:
-    linear-gradient(90deg, transparent, #000 var(--acc-bord-x), #000 calc(100% - var(--acc-bord-x)), transparent),
-    linear-gradient(180deg, transparent, #000 var(--acc-bord-y), #000 calc(100% - var(--acc-bord-y)), transparent);
-  -webkit-mask-composite: source-in;
-  mask-image:
-    linear-gradient(90deg, transparent, #000 var(--acc-bord-x), #000 calc(100% - var(--acc-bord-x)), transparent),
-    linear-gradient(180deg, transparent, #000 var(--acc-bord-y), #000 calc(100% - var(--acc-bord-y)), transparent);
-  mask-composite: intersect;
-  transition:
-    --acc-bord-x 0.8s ease,
-    --acc-bord-y 0.8s ease;
-}
-.acc-scene[data-revele] .acc-canvas {
-  --acc-bord-x: 0%;
-  --acc-bord-y: 0%;
+  width: 100%;
+  height: 100%;
 }
 .acc-scene[data-phase='fini'] .acc-canvas {
   visibility: hidden;
 }
+
+/* -- Les boosters : leur place à la fin de la vidéo, en pourcentages du
+   plateau — le jeu du paysage (`--pa-…`) ou celui du portrait (`--po-…`). -- */
 .acc-boosters {
   position: absolute;
   inset: 0;
@@ -13242,8 +13223,6 @@ main:has(> .accueil) {
   padding: 0;
   list-style: none;
 }
-/* Sa place à la fin de la vidéo, en pourcentages du plateau : le jeu du
-   paysage (`--pa-…`) ou celui du portrait (`--po-…`, voir plus bas). */
 .acc-booster {
   --g: var(--pa-g);
   --h: var(--pa-h);
@@ -13257,7 +13236,9 @@ main:has(> .accueil) {
   height: var(--t);
   rotate: var(--r);
   opacity: 0;
+  pointer-events: auto;
 }
+.acc-scene[data-phase='brume'] .acc-booster,
 .acc-scene[data-phase='fini'] .acc-booster {
   opacity: 1;
 }
@@ -13272,9 +13253,10 @@ main:has(> .accueil) {
 }
 /* Ils flottent, chacun à son rythme — en partant de leur place exacte : pas de
    saut au moment où l'image prend le relais de la vidéo. */
+.acc-scene[data-phase='brume'] .acc-booster-flotte,
 .acc-scene[data-phase='fini'] .acc-booster-flotte {
   animation: acc-flotte 6.5s ease-in-out infinite;
-  animation-delay: calc(0.6s + var(--i) * 0.8s);
+  animation-delay: calc(1.2s + var(--i) * 0.8s);
 }
 .acc-booster img {
   display: block;
@@ -13291,7 +13273,7 @@ main:has(> .accueil) {
   top: 101%;
   left: 50%;
   display: grid;
-  width: 160%;
+  width: 170%;
   justify-items: center;
   gap: 0.1rem;
   translate: -50% 0;
@@ -13302,28 +13284,41 @@ main:has(> .accueil) {
 }
 .acc-scene[data-revele] .acc-booster-nom {
   animation: acc-apparait 0.8s ease both;
-  animation-delay: calc(0.5s + var(--i) * 0.08s);
+  animation-delay: calc(0.3s + var(--i) * 0.08s);
   opacity: 1;
 }
 .acc-booster-nom b {
   font-family: var(--font-display);
-  font-size: clamp(0.8125rem, 1.2cqw, 1.4rem);
+  font-size: clamp(0.8125rem, 1.1cqw, 1.4rem);
   font-weight: 800;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--frost);
 }
 .acc-booster-nom > span:not(.sr-only) {
-  font-size: clamp(0.6875rem, 0.92cqw, 1.1rem);
+  font-size: clamp(0.6875rem, 0.85cqw, 1.1rem);
   color: var(--muted);
 }
 
-/* -- Le centre : le nom, l'entrée, le compte à rebours -- */
+/* -- La page : le centre en haut, les tuiles en bas -- */
+.acc-scene {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  min-height: 100%;
+}
+.acc-scene > .acc-centre {
+  grid-row: 1;
+}
+.acc-scene > .acc-tuiles {
+  grid-row: 3;
+  align-self: end;
+}
 .acc-centre {
   position: relative;
-  z-index: 2;
+  z-index: 4;
   display: grid;
   justify-items: center;
+  justify-self: center;
   text-align: center;
 }
 .acc-centre > *,
@@ -13345,7 +13340,7 @@ main:has(> .accueil) {
 }
 .acc-surtitre {
   font-family: var(--font-display);
-  font-size: clamp(0.75rem, 0.85cqw, 1.0625rem);
+  font-size: clamp(0.6875rem, 0.85cqw, 1.0625rem);
   font-weight: 700;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -13353,7 +13348,7 @@ main:has(> .accueil) {
 }
 .hero-titre.acc-titre {
   margin-top: 0.3rem;
-  font-size: clamp(2.6rem, 13cqw, 6rem);
+  font-size: clamp(2.4rem, 5.4cqw, 9rem);
   white-space: nowrap;
 }
 .acc-titre .glace {
@@ -13361,8 +13356,8 @@ main:has(> .accueil) {
 }
 .acc-lead {
   max-width: 30rem;
-  margin-top: 0.7rem;
-  font-size: clamp(0.9375rem, 1.05cqw, 1.3rem);
+  margin-top: 0.6rem;
+  font-size: clamp(0.875rem, 1cqw, 1.35rem);
   line-height: 1.45;
   text-wrap: balance;
   color: var(--ink-2);
@@ -13370,7 +13365,10 @@ main:has(> .accueil) {
 .acc-actions {
   display: flex;
   justify-content: center;
-  margin-top: 1.2rem;
+  margin-top: clamp(0.8rem, 1.2cqw, 1.6rem);
+}
+.acc-centre .btn-lg {
+  font-size: clamp(0.875rem, 0.95cqw, 1.2rem);
 }
 .acc-note {
   margin-top: 0.6rem;
@@ -13378,7 +13376,22 @@ main:has(> .accueil) {
   color: var(--faint);
 }
 .acc-centre .calendrier {
-  margin-top: 1.3rem;
+  margin-top: clamp(0.9rem, 1.4cqw, 2rem);
+}
+.acc-centre .rebours-titre {
+  font-size: clamp(0.6875rem, 0.78cqw, 1rem);
+}
+.acc-centre .rebours-cases li {
+  min-width: clamp(2.75rem, 4.2cqw, 6rem);
+}
+.acc-centre .rebours-cases b {
+  font-size: clamp(1.75rem, 2.8cqw, 4rem);
+}
+.acc-centre .rebours-cases li:not([data-dernier])::after {
+  font-size: clamp(1.5rem, 2.3cqw, 3.3rem);
+}
+.acc-centre .rebours-cases span {
+  font-size: clamp(0.5625rem, 0.62cqw, 0.85rem);
 }
 
 /* -- Les tuiles : les règles, en verre -- */
@@ -13642,40 +13655,91 @@ main:has(> .accueil) {
   color: var(--faint);
 }
 
-/* -- Un téléphone couché, une petite fenêtre : la scène, puis le reste -- */
-@media (max-width: 1023px) {
+/* -- Un ordinateur, une fenêtre couchée : tout dans l'écran --
+   La page prend la hauteur que lui laisse le pied de page ; le centre en haut,
+   entre les boosters, les tuiles en bas. */
+@media (min-width: 1024px), (orientation: landscape) {
+  body:has(.accueil) {
+    height: 100dvh;
+  }
+  main:has(> .accueil) + .pied-de-page {
+    margin-top: -46px;
+  }
+  .accueil {
+    min-height: 26rem;
+    padding: clamp(0.6rem, 3.5dvh, 2.4rem) var(--acc-marge) 3.6rem;
+  }
+  .acc-centre {
+    width: min(32cqw, 40rem);
+  }
+  .acc-tuiles {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: clamp(0.5rem, 0.75cqw, 1.2rem);
+    width: min(100%, 120rem);
+    justify-self: center;
+  }
+  .acc-tuile {
+    gap: 0.3rem;
+    padding: clamp(0.7rem, 0.9cqw, 1.4rem) clamp(0.75rem, 0.95cqw, 1.5rem);
+    border-radius: clamp(12px, 0.95cqw, 22px);
+    overflow: hidden;
+  }
+  .acc-tuile-icone {
+    width: clamp(1.375rem, 1.6cqw, 2.4rem);
+    height: clamp(1.375rem, 1.6cqw, 2.4rem);
+  }
+  .acc-tuile-icone svg {
+    width: clamp(0.8125rem, 0.95cqw, 1.4rem);
+    height: clamp(0.8125rem, 0.95cqw, 1.4rem);
+  }
+  .acc-tuile-theme {
+    font-size: clamp(0.625rem, 0.72cqw, 1rem);
+  }
+  .acc-tuile h2 {
+    font-size: clamp(0.9375rem, 1.35cqw, 2rem);
+  }
+  .acc-tuile p {
+    font-size: clamp(0.75rem, 0.95cqw, 1.3rem);
+    line-height: 1.4;
+  }
+}
+/* Un petit écran d'ordinateur : l'essentiel au centre ; les tuiles ne
+   gardent que leur titre, et s'ouvrent au survol. */
+@media (min-width: 1024px) and (max-height: 860px) {
   .acc-booster-nom {
     display: none;
   }
-  .acc-centre {
-    margin-top: -0.5rem;
+}
+@media (min-width: 1024px) and (max-height: 720px) {
+  .acc-surtitre,
+  .acc-note,
+  .acc-lead {
+    display: none;
+  }
+  .acc-tuile p {
+    display: none;
+  }
+  .acc-tuile:hover p {
+    display: block;
   }
 }
 
 /* -- Un téléphone, une tablette debout : tout dans l'écran --
-   La vidéo en portrait (9:16), au milieu de l'écran. À sa fin, les boosters
-   en éventail en haut ; au milieu, le nom, l'entrée et le compte à rebours ;
-   en bas, les tuiles, qu'on fait défiler du doigt de gauche à droite. Le pied
-   de page attend dessous. */
+   La vidéo en portrait couvre l'écran. À sa fin, les boosters en éventail en
+   haut ; au milieu, le nom, l'entrée et le compte à rebours ; en bas, les
+   tuiles, qu'on fait défiler du doigt de gauche à droite. */
 @media (max-width: 1023px) and (orientation: portrait) {
-  main:has(> .accueil) {
-    padding: 0;
-  }
   .accueil {
-    min-height: 100svh;
-    align-content: center;
-    padding: 0;
+    height: 100svh;
+    min-height: 34rem;
+    overflow: hidden;
   }
-  .acc-scene {
-    display: block;
-    width: min(100%, 100svh * 9 / 16);
-    aspect-ratio: 9 / 16;
-    margin-inline: auto;
+  .acc-calque {
+    height: 100%;
   }
   .acc-plateau {
-    position: absolute;
-    inset: 0;
-    aspect-ratio: auto;
+    width: max(100%, 100svh / 2);
+    aspect-ratio: 1 / 2;
   }
   .acc-booster {
     --g: var(--po-g);
@@ -13684,12 +13748,17 @@ main:has(> .accueil) {
     --t: var(--po-t);
     --r: var(--po-r);
   }
+  .acc-booster-nom {
+    display: none;
+  }
+  .acc-scene {
+    display: block;
+  }
   .acc-centre {
     position: absolute;
-    top: 30.5%;
+    top: 29%;
     left: 5%;
     width: 90%;
-    margin: 0;
   }
   .acc-surtitre {
     font-size: 2.7cqw;
@@ -13728,9 +13797,8 @@ main:has(> .accueil) {
   }
   .acc-tuiles {
     position: absolute;
-    top: 76.5%;
     right: 0;
-    bottom: 2%;
+    bottom: 3%;
     left: 0;
     display: flex;
     gap: 3cqw;
@@ -13759,129 +13827,6 @@ main:has(> .accueil) {
   .acc-tuile p {
     font-size: 3.5cqw;
     line-height: 1.4;
-  }
-}
-
-/* -- Un ordinateur : la scène entière dans l'écran --
-   La page prend la hauteur que lui laisse le pied de page, et la scène s'y
-   loge au format 16:9 (`cqw`, `cqh` : la page est son repère). Le centre et
-   les tuiles se posent dessus, en pourcentages du plateau. */
-@media (min-width: 1024px) {
-  body:has(.accueil) {
-    height: 100dvh;
-  }
-  main:has(> .accueil) + .pied-de-page {
-    margin-top: -46px;
-  }
-  .accueil {
-    container: accueil / size;
-    min-height: 30rem;
-    padding: 0.5rem var(--acc-marge) 3.6rem;
-  }
-  .acc-scene {
-    display: block;
-    width: min(100cqw, 100cqh * 16 / 9);
-    aspect-ratio: 16 / 9;
-    margin: auto;
-  }
-  .acc-plateau {
-    position: absolute;
-    inset: 0;
-  }
-  .acc-centre {
-    position: absolute;
-    top: 4%;
-    left: 35.5%;
-    width: 29%;
-  }
-  .hero-titre.acc-titre {
-    font-size: 5.6cqw;
-  }
-  .acc-surtitre {
-    font-size: max(0.6875rem, 0.85cqw);
-  }
-  .acc-lead {
-    max-width: 100%;
-    margin-top: 0.6cqw;
-    font-size: max(0.8125rem, 1cqw);
-  }
-  .acc-actions {
-    margin-top: 1.25cqw;
-  }
-  .acc-centre .btn-lg {
-    font-size: max(0.875rem, 0.95cqw);
-  }
-  .acc-centre .calendrier {
-    margin-top: 1.5cqw;
-  }
-  .acc-centre .rebours-titre {
-    font-size: max(0.6875rem, 0.78cqw);
-  }
-  .acc-centre .rebours-cases li {
-    min-width: max(2.75rem, 4.4cqw);
-  }
-  .acc-centre .rebours-cases b {
-    font-size: max(1.75rem, 2.9cqw);
-  }
-  .acc-centre .rebours-cases li:not([data-dernier])::after {
-    font-size: max(1.5rem, 2.4cqw);
-  }
-  .acc-centre .rebours-cases span {
-    font-size: max(0.5625rem, 0.62cqw);
-  }
-  /* Les tuiles se posent sous les boosters, à la hauteur de leur texte. */
-  .acc-tuiles {
-    position: absolute;
-    top: 73.5%;
-    right: 1.5%;
-    left: 1.5%;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-    gap: 0.75cqw;
-  }
-  .acc-tuile {
-    gap: 0.3cqw;
-    padding: 0.85cqw 0.95cqw;
-    border-radius: max(12px, 0.95cqw);
-    overflow: hidden;
-  }
-  .acc-tuile-icone {
-    width: max(1.375rem, 1.6cqw);
-    height: max(1.375rem, 1.6cqw);
-  }
-  .acc-tuile-icone svg {
-    width: max(0.8125rem, 0.95cqw);
-    height: max(0.8125rem, 0.95cqw);
-  }
-  .acc-tuile-theme {
-    font-size: max(0.625rem, 0.72cqw);
-  }
-  .acc-tuile h2 {
-    font-size: max(0.9375rem, 1.4cqw);
-  }
-  .acc-tuile p {
-    font-size: max(0.75rem, 0.98cqw);
-    line-height: 1.4;
-  }
-}
-/* Un petit écran d'ordinateur : l'essentiel au centre ; les tuiles ne
-   gardent que leur titre, et s'ouvrent vers le haut au survol. */
-@media (min-width: 1024px) and (max-height: 700px) {
-  .acc-surtitre,
-  .acc-note,
-  .acc-lead {
-    display: none;
-  }
-  .acc-tuiles {
-    top: auto;
-    bottom: 1%;
-    align-items: end;
-  }
-  .acc-tuile p {
-    display: none;
-  }
-  .acc-tuile:hover p,
-  .acc-tuile:focus-within p {
-    display: block;
   }
 }
 
