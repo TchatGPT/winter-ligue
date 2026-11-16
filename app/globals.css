@@ -2610,6 +2610,42 @@
   .menu-quitter:disabled {
     opacity: 0.45;
   }
+  /* Le mode visiteur : à la place du compte, l'inscription et le retour à l'accueil. */
+  .menu-visiteur {
+    padding: 0 4px;
+    font-size: 0.8125rem;
+    line-height: 1.4;
+    color: var(--muted);
+  }
+  .menu-visiteur span {
+    display: block;
+    margin-bottom: 2px;
+    font-family: var(--font-display);
+    font-size: 0.8125rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ice);
+  }
+  .menu-inscription {
+    display: flex;
+    width: 100%;
+    gap: 0.5rem;
+    justify-content: center;
+  }
+  .menu-quitter-visite {
+    display: block;
+    width: 100%;
+    padding: 4px;
+    font-size: 0.8125rem;
+    color: var(--faint);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .menu-quitter-visite:hover:not(:disabled),
+  .menu-quitter-visite:focus-visible {
+    color: var(--ice);
+  }
 
   /* Mouvement réduit : le reflet et le scintillement s'arrêtent. */
   @media (prefers-reduced-motion: reduce) {
@@ -13415,8 +13451,31 @@ main:has(> .accueil .acc-scene[data-phase='fini']) {
 }
 .acc-actions {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(0.5rem, 0.7cqw, 0.9rem);
   margin-top: clamp(1rem, 1.6cqw, 2.2rem);
+}
+/* Sous l'inscription, plus discret : regarder la ligue sans compte. */
+.acc-visiteur {
+  padding: 0.45rem 1.1rem;
+  border: 1px solid color-mix(in srgb, var(--ink) 28%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--bg-deep) 35%, transparent);
+  font-family: var(--font-display);
+  font-size: clamp(0.8125rem, 0.85cqw, 1.05rem);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--ink-2);
+  backdrop-filter: blur(6px);
+  transition:
+    border-color 0.2s ease,
+    color 0.2s ease;
+}
+.acc-visiteur:hover,
+.acc-visiteur:focus-visible {
+  border-color: color-mix(in srgb, var(--ice) 60%, transparent);
+  color: var(--ink);
 }
 .acc-centre .btn-lg {
   font-size: clamp(0.875rem, 0.95cqw, 1.2rem);
@@ -13940,6 +13999,10 @@ main:has(> .accueil .acc-scene[data-phase='fini']) {
   }
   .acc-actions {
     margin-top: 4.5cqw;
+    gap: 2.2cqw;
+  }
+  .acc-visiteur {
+    font-size: 3.4cqw;
   }
   .acc-centre .btn-lg {
     font-size: 4cqw;

@@ -5,7 +5,7 @@ import { useState, useTransition } from 'react';
 import { AchatBooster } from '@/components/AchatBooster';
 import { CadeauDuJour } from '@/components/CadeauDuJour';
 import { CodeCadeau } from '@/components/CodeCadeau';
-import { IconQuitter } from '@/components/icons';
+import { IconQuitter, IconTwitch } from '@/components/icons';
 import { num } from '@/lib/format';
 import type { EtatCadeau } from '@/lib/services/cadeauDuJour';
 
@@ -21,6 +21,7 @@ export function SessionBadge({
   pseudo,
   balance,
   cadeau = null,
+  visiteur = null,
   stacked = false,
 }: {
   role: 'admin' | 'joueur' | null;
@@ -28,6 +29,11 @@ export function SessionBadge({
   balance: number | null;
   /** Le cadeau du jour, s'il y a un joueur. */
   cadeau?: EtatCadeau | null;
+  /**
+   * En mode visiteur, sans session : l'adresse de l'inscription par Twitch. À
+   * la place du compte, de quoi s'inscrire, et de quoi revenir à l'accueil.
+   */
+  visiteur?: string | null;
   /** Disposition verticale, dans le bloc compte de la colonne. */
   stacked?: boolean;
 }) {
@@ -51,6 +57,48 @@ export function SessionBadge({
       </svg>
     </span>
   );
+
+  async function quitteVisite() {
+    setBusy(true);
+    await fetch('/api/visiteur', { method: 'POST' });
+    // Retour à l'accueil, page entière : la mise en page change de forme.
+    window.location.assign('/');
+  }
+
+  if (!role && visiteur) {
+    return stacked ? (
+      <div className="space-y-3">
+        <p className="menu-visiteur">
+          <span>Mode visiteur</span>
+          Tu regardes la ligue sans y jouer.
+        </p>
+        <a href={visiteur} className="btn btn-twitch menu-inscription no-underline">
+          <IconTwitch className="h-[18px] w-[18px]" />
+          M’inscrire avec Twitch
+        </a>
+        <button type="button" className="menu-quitter-visite" onClick={quitteVisite} disabled={busy}>
+          Revenir à l’accueil
+        </button>
+      </div>
+    ) : (
+      <div className="flex items-center gap-2">
+        <a href={visiteur} className="btn btn-sm btn-twitch no-underline">
+          <IconTwitch className="h-4 w-4" />
+          M’inscrire
+        </a>
+        <button
+          type="button"
+          className="btn btn-sm btn-ghost"
+          onClick={quitteVisite}
+          disabled={busy}
+          aria-label="Quitter le mode visiteur"
+          title="Quitter le mode visiteur"
+        >
+          <IconQuitter className="h-4 w-4" />
+        </button>
+      </div>
+    );
+  }
 
   if (!role) {
     return stacked ? (

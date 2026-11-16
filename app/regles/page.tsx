@@ -1,5 +1,5 @@
 import { Regles } from '@/components/Regles';
-import { exigeSession } from '@/lib/auth/acces';
+import { exigeLecteur } from '@/lib/auth/acces';
 import { getStore } from '@/lib/db/store';
 import { parametresSaison } from '@/lib/domain/rules';
 import { resolvedPacks } from '@/lib/services/packs';
@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 
 /** Les règles de la saison : le contenu est dans `components/Regles`. */
 export default async function ReglesPage() {
-  await exigeSession();
+  await exigeLecteur();
   const { maxGames, saison, packs } = await getStore().read((db) => ({
     maxGames: db.config.maxGamesPerPlayer,
     saison: parametresSaison(db.config.numero),

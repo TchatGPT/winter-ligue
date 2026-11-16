@@ -1,6 +1,5 @@
 import { PackOpening, type JoueurOuverture, type PackVitrine } from '@/components/PackOpening';
-import { getSession } from '@/lib/auth/session';
-import { exigeSession } from '@/lib/auth/acces';
+import { exigeLecteur } from '@/lib/auth/acces';
 import { getStore } from '@/lib/db/store';
 import { CARDS, cartesDuPack, getCard, impactMax, momentDe } from '@/lib/domain/catalog';
 import type { CarteSaison } from '@/components/CartesParRarete';
@@ -17,8 +16,8 @@ export const metadata = { title: 'Boosters' };
  * qu'à la modération ; la route d'API revérifie le rôle de son côté.
  */
 export default async function PacksPage(){
-  await exigeSession();
-  const session = await getSession();
+  // Un visiteur voit les boosters et leurs cartes, sans rien ouvrir.
+  const { session } = await exigeLecteur();
   const moderateur = session?.role === 'admin';
   // Le choix du joueur et le bouton d'ouverture : la modération seule. On
   // n'ouvre que ce qui est dû, et la route le revérifie.

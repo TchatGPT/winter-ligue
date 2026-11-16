@@ -7,6 +7,7 @@ import { Sidebar, SIDEBAR_WIDTH } from '@/components/Sidebar';
 import { InscriptionWarzone } from '@/components/InscriptionWarzone';
 import { MesureVitesse } from '@/components/MesureVitesse';
 import { getSession, playerIdOf } from '@/lib/auth/session';
+import { estVisiteur } from '@/lib/auth/visiteur';
 import { chaineDeLaLigue } from '@/lib/auth/twitch';
 import { estLaStreameuse } from '@/lib/domain/streameuse';
 import './globals.css';
@@ -83,12 +84,16 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   const session = await getSession();
   const connecte = session !== null;
+  // Le mode visiteur (16/11/2026) : sans compte, on voit la ligue — menu
+  // compris —, sans rien pouvoir y faire. Une session prime toujours.
+  const visiteur = !connecte && (await estVisiteur());
+  const dansLaLigue = connecte || visiteur;
   // Les évènements de subs en cours, pour le bandeau du haut sur téléphone
   // (sur ordinateur, ils sont dans la colonne de gauche), et
   // l'inscription : un joueur sans pseudo Warzone le donne avant tout le
   // reste — sauf la streameuse, qui ne joue pas. La base est déjà chargée pour
   // la page : la lecture est gardée le temps du rendu.
-  const { enCours, inscription } = connecte
+  const { enCours, inscription } = dansLaLigue
     ? await getStore().read((db) => {
         const id = playerIdOf(session);
         const moi = id ? db.players.find((p) => p.id === id) : undefined;
@@ -96,7 +101,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           enCours: evenementsActifs(db),
           inscription:
             moi && moi.activisionId === null && !moi.pseudoJeuPasseA && !estLaStreameuse(moi, chaineDeLaLigue())
-              ? { pseudo: moi.pseudo, admin: session.role === 'admin' }
+              ? { pseudo: moi.pseudo, admin: session?.role === 'admin' }
               : null,
         };
       })
@@ -106,14 +111,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body className="flex min-h-dvh flex-col">
         <FondHiver />
 
-        {connecte && <Sidebar />}
+        {dansLaLigue && <Sidebar />}
 
         {/* Le contenu se décale de la largeur de la colonne à partir de lg.
             En dessous, la colonne n'existe pas : l'entête et la barre du bas
             prennent le relais. */}
         <div
           className="flex min-h-dvh flex-1 flex-col"
-          style={{ ['--sidebar' as string]: connecte ? `${SIDEBAR_WIDTH}px` : '0px' }}
+          style={{ ['--sidebar' as string]: dansLaLigue ? `${SIDEBAR_WIDTH}px` : '0px' }}
         >
           <div className="flex flex-1 flex-col lg:pl-[var(--sidebar)]">
             {/* Toute la largeur, sans plafond : sur un grand écran, ce sont les
@@ -125,7 +130,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <EvenementsFlottants evenements={enCours} variante="bandeau" />
               {children}
             </main>
-            <PiedDePage barreMobile={connecte} />
+            <PiedDePage barreMobile={dansLaLigue} />
           </div>
         </div>
         {inscription && <InscriptionWarzone pseudoTwitch={inscription.pseudo} admin={inscription.admin} />}

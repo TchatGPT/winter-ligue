@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { getSession, playerIdOf } from '@/lib/auth/session';
+import { isTwitchEnabled } from '@/lib/auth/twitch';
 import { getStore } from '@/lib/db/store';
 import { BottomNav, SidebarNav } from './NavTabs';
 import { SessionBadge } from './SessionBadge';
@@ -30,6 +31,10 @@ export async function Sidebar() {
   const session = await getSession();
   const isAdmin = session?.role === 'admin';
   const isPlayer = playerIdOf(session) !== null;
+  // Sans session, la colonne n'est là que pour un visiteur (voir la mise en page) :
+  // à la place du compte, l'inscription.
+  const visiteur = session === null;
+  const inscription = isTwitchEnabled() ? '/api/auth/twitch?returnTo=/' : '/connexion';
 
   const { player, cadeau, evenements, numero } = await getStore().read((db) => {
     const found = isPlayer ? db.players.find((p) => p.id === session!.sub) : undefined;
@@ -69,6 +74,7 @@ export async function Sidebar() {
               pseudo={player?.pseudo ?? null}
               balance={player?.snowflakes ?? null}
               cadeau={cadeau}
+              visiteur={visiteur ? inscription : null}
               stacked
             />
           </div>
@@ -93,6 +99,7 @@ export async function Sidebar() {
               pseudo={player?.pseudo ?? null}
               balance={player?.snowflakes ?? null}
               cadeau={cadeau}
+              visiteur={visiteur ? inscription : null}
             />
           </div>
         </div>

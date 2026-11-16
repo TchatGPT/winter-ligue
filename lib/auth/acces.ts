@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { aLeRang, getSession, playerIdOf, type Role, type SessionPayload } from '@/lib/auth/session';
 import { getStore } from '@/lib/db/store';
 import { destination } from '@/lib/domain/aiguillage';
+import { estVisiteur } from '@/lib/auth/visiteur';
 
 /**
  * L'accès aux pages du site.
@@ -27,6 +28,18 @@ export async function exigeSession(): Promise<SessionPayload> {
   if (ou || !session) redirect(ou ?? '/');
 
   return session;
+}
+
+/**
+ * L'accès à une page de lecture — le classement, les boosters, les duels, les
+ * fiches, les règles : un joueur connecté, ou un visiteur (`lib/auth/visiteur.ts`,
+ * 16/11/2026). Le visiteur n'a pas de session : la page s'affiche sans rien de
+ * ce qui agit, et chaque route qui écrit le refuse de toute façon.
+ */
+export async function exigeLecteur(): Promise<{ session: SessionPayload | null }> {
+  if (await getSession()) return { session: await exigeSession() };
+  if (await estVisiteur()) return { session: null };
+  redirect('/');
 }
 
 /**

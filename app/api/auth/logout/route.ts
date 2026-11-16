@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { clearSessionCookie } from '@/lib/auth/session';
+import { fermeModeVisiteur } from '@/lib/auth/visiteur';
 import { guard, ok } from '@/lib/api/respond';
 import { LIMITS } from '@/lib/security/ratelimit';
 
@@ -20,5 +21,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   const g = await guard(request, { scope: 'logout', limit: LIMITS.mutation });
   if (!g.ok) return g.response;
   await clearSessionCookie();
+  // Déconnecté, on revient à l'accueil, pas au mode visiteur d'avant l'inscription.
+  await fermeModeVisiteur();
   return ok({ deconnecte: true });
 }

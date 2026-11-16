@@ -282,6 +282,14 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   la streameuse et ses modérateurs sont admin, les autres joueurs. Les rôles ne se
   choisissent pas à la main, et un joueur ne s'inscrit que par Twitch. Il n'y a ni mot
   de passe ni session sans joueur : ne pas en rouvrir.
+- **Le mode visiteur** (16/11/2026, `lib/auth/visiteur.ts`) : sous « M'inscrire avec Twitch »,
+  l'accueil propose « Entrer en mode visiteur » (`/api/visiteur`), qui pose un cookie
+  `wl_visiteur` — **pas une session** : il ne désigne personne et ne porte aucun rôle. Les pages
+  de lecture (`/`, `/boosters`, `/duels`, `/joueurs/[slug]`, `/regles`) passent par
+  `exigeLecteur()` : un joueur, ou un visiteur, qui voit tout sans rien pouvoir faire (ni
+  modération, ni solde, ni duel ; le menu lui propose de s'inscrire, ou de revenir à
+  l'accueil). Seul `GET /api/affrontements` se lit aussi en visiteur ; toute route qui écrit
+  exige toujours une session. La déconnexion efface aussi le cookie.
 - **Les flocons se donnent par codes cadeaux** (`lib/services/codes.ts`) : la modération
   fixe le montant et le nombre d'utilisations, chaque joueur tape le code une fois, et
   chaque utilisation est un `credit()` avec le code en référence — c'est le grand livre

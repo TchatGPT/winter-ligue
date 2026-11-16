@@ -4,8 +4,9 @@ import { SubsBanner } from '@/components/SubsBanner';
 import { Hero } from '@/components/Hero';
 import { Accueil } from '@/components/Accueil';
 import { SaisieGames } from '@/components/SaisieGames';
-import { exigeSession } from '@/lib/auth/acces';
+import { exigeLecteur } from '@/lib/auth/acces';
 import { getSession } from '@/lib/auth/session';
+import { estVisiteur } from '@/lib/auth/visiteur';
 import { chaineDeLaLigue, isTwitchEnabled } from '@/lib/auth/twitch';
 import { parametresSaison } from '@/lib/domain/rules';
 import { estLaStreameuse } from '@/lib/domain/streameuse';
@@ -18,17 +19,17 @@ export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Classement général' };
 
 export default async function ClassementPage() {
-  // Déconnecté, on ne voit rien de la ligue : seulement ce qu'elle est, et
-  // comment y entrer.
-  if ((await getSession()) === null) {
+  // Déconnecté, on voit ce qu'est la ligue et comment y entrer — sauf à être
+  // entré en mode visiteur, qui montre le classement sans rien pouvoir y faire.
+  if ((await getSession()) === null && !(await estVisiteur())) {
     return (
       <Accueil twitchEnabled={isTwitchEnabled()} devLogin={connexionDeDeveloppement()} chaine={chaineDeLaLigue()} />
     );
   }
-  const session = await exigeSession();
+  const { session } = await exigeLecteur();
   // La saisie par capture vit ici, au-dessus du classement : c'est là que la
   // modération regarde le résultat. La route revérifie le rôle.
-  const moderateur = session.role === 'admin';
+  const moderateur = session?.role === 'admin';
 
   const [ranking, overview, subs] = await Promise.all([
     getRanking(),

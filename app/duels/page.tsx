@@ -1,8 +1,8 @@
 import { Affrontements } from '@/components/Affrontements';
 import { EnTetePage } from '@/components/EnTetePage';
 import { ReglesDuel } from '@/components/ReglesDuel';
-import { exigeSession } from '@/lib/auth/acces';
-import { getSession, playerIdOf } from '@/lib/auth/session';
+import { exigeLecteur } from '@/lib/auth/acces';
+import { playerIdOf } from '@/lib/auth/session';
 import { getStore } from '@/lib/db/store';
 import { MANCHES_MAX, MANCHES_MIN } from '@/lib/domain/bataille';
 import { DUEL, ECONOMY } from '@/lib/domain/rules';
@@ -26,8 +26,8 @@ export const metadata = { title: 'Duels' };
  * pied compris, en trois colonnes.
  */
 export default async function DuelsPage() {
-  await exigeSession();
-  const session = await getSession();
+  // Un visiteur regarde les duels, sans en lancer ni en relever.
+  const { session } = await exigeLecteur();
   const playerId = playerIdOf(session);
 
   const { batailles, top, balance, pseudo } = await getStore().read((db) => {
@@ -58,6 +58,7 @@ export default async function DuelsPage() {
           moiId: playerId,
         }}
         moiPseudo={pseudo}
+        visiteur={session === null}
         soldeMax={ECONOMY.soldeMax}
       />
     </div>

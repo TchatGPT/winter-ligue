@@ -110,9 +110,12 @@ lors d'une navigation entre onglets, et une requête fabriquée peut demander la
 page. Chaque route d'API revérifie la session de son côté. Taper l'URL directement ne
 donne rien.
 
-Rien de la ligue ne se lit sans compte : le classement (`GET /api/players`), les duels
-(`GET /api/affrontements`) et le compteur de subs (`GET /api/admin/subs`) exigent une
-session, comme les pages.
+Sans compte, la ligue ne se lit qu'en **mode visiteur** (16/11/2026, `lib/auth/visiteur.ts`) :
+un cookie `wl_visiteur` posé par `/api/visiteur`, qui n'est pas une session — il ne désigne
+personne, ne porte aucun rôle, et le forger ne donne rien de plus que le bouton de l'accueil.
+Il ouvre les pages de lecture et `GET /api/affrontements`, rien d'autre : le classement par
+API (`GET /api/players`) et le compteur de subs (`GET /api/admin/subs`) exigent toujours une
+session, et toute route qui écrit aussi.
 
 Le profil public (`getPublicProfile`) retire le grand livre **avant** l'envoi : ces informations ne transitent jamais, elles ne sont pas
 seulement masquées à l'affichage.
@@ -262,9 +265,11 @@ retournent le sens de lecture : une ligne du journal ne peut pas se déguiser.
 
 ### 14. Accès, pseudo Activision et lecture des captures
 
-**Déconnecté, on ne voit que l'accueil.** `lib/auth/acces.ts` expose `exigeSession()`,
-appelé en tête de chaque page de membre (`/`, `/boosters`, `/duels`, `/regles`,
-`/joueurs/[slug]`) : sans session, redirection vers `/`. Un joueur sans pseudo
+**Déconnecté, on ne voit que l'accueil — ou la ligue en visiteur.** `lib/auth/acces.ts`
+expose `exigeLecteur()`, appelé en tête de chaque page de lecture (`/`, `/boosters`,
+`/duels`, `/regles`, `/joueurs/[slug]`) : une session (vérifiée par `exigeSession()`), ou le
+cookie du mode visiteur, qui affiche la page sans rien de ce qui agit ; sinon, redirection
+vers `/`. Un joueur sans pseudo
 Warzone entre, et la fenêtre d'inscription (`components/InscriptionWarzone.tsx`,
 posée par la mise en page) le lui demande par-dessus la page. L'espace
 `/admin` garde son propre garde. Ce n'est qu'un aiguillage d'affichage : les

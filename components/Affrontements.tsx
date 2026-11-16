@@ -400,10 +400,13 @@ async function poste(url: string, corps: unknown): Promise<Resultat> {
 export function Affrontements({
   initial,
   moiPseudo,
+  visiteur = false,
   soldeMax,
 }: {
   initial: Charge;
   moiPseudo: string | null;
+  /** En mode visiteur : on regarde, on ne joue pas. */
+  visiteur?: boolean;
   soldeMax: number;
 }) {
   const [etat, setEtat] = useState<Charge>(initial);
@@ -896,7 +899,18 @@ export function Affrontements({
           <>
             {/* La session s'est perdue en route — expirée, ou sans joueur derrière
               elle. On le dit, et on donne de quoi repartir. */}
-            {!joueur && (
+            {!joueur && visiteur && (
+              <div className="duels-avis">
+                <p>
+                  <strong>Tu regardes en visiteur.</strong> Pour lancer un duel ou en relever un, inscris-toi à la
+                  ligue avec Twitch.
+                </p>
+                <a href="/api/auth/twitch?returnTo=/duels" className="btn btn-twitch no-underline">
+                  M’inscrire avec Twitch
+                </a>
+              </div>
+            )}
+            {!joueur && !visiteur && (
               <div className="duels-avis">
                 <p>
                   <strong>Ta session ne permet pas de jouer.</strong> Elle a expiré, ou elle n’est rattachée à aucun

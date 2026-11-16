@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { FicheJoueur } from '@/components/FicheJoueur';
-import { exigeSession } from '@/lib/auth/acces';
+import { exigeLecteur } from '@/lib/auth/acces';
 import { getFicheJoueur, getPublicProfile, subsDuJoueur } from '@/lib/services/profile';
 
 export const dynamic = 'force-dynamic';
@@ -16,7 +16,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
  * corrige ou supprime une game mal saisie ; la route le revérifie.
  */
 export default async function FicheJoueurPage({ params }: { params: Promise<{ slug: string }> }) {
-  const session = await exigeSession();
+  const { session } = await exigeLecteur();
   const { slug } = await params;
   const fiche = await getFicheJoueur(slug);
   if (!fiche) notFound();
@@ -24,7 +24,7 @@ export default async function FicheJoueurPage({ params }: { params: Promise<{ sl
     <FicheJoueur
       fiche={fiche}
       subs={await subsDuJoueur(fiche.twitchId)}
-      moderation={session.role === 'admin'}
+      moderation={session?.role === 'admin'}
     />
   );
 }

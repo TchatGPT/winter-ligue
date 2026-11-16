@@ -3,6 +3,7 @@ import { toResponse } from '@/lib/api/errors';
 import { fail, guard, ok } from '@/lib/api/respond';
 import { createBatailleSchema } from '@/lib/api/schemas';
 import { playerIdOf } from '@/lib/auth/session';
+import { estVisiteur } from '@/lib/auth/visiteur';
 import { getStore } from '@/lib/db/store';
 import { MANCHES_MAX, MANCHES_MIN } from '@/lib/domain/bataille';
 import { DUEL } from '@/lib/domain/rules';
@@ -21,9 +22,11 @@ export const dynamic = 'force-dynamic';
  * en un clic, deux secondes de latence n'ont jamais fait rater personne.
  */
 export async function GET(request: Request): Promise<NextResponse> {
-  // Les duels, comme tout le reste de la ligue, ne se lisent qu'avec un compte.
-  const g = await guard(request, { scope: 'batailles-read', role: 'joueur' });
+  // Les duels se lisent avec un compte, ou en mode visiteur (16/11/2026) —
+  // comme la page. Lancer ou relever un duel exige toujours un joueur.
+  const g = await guard(request, { scope: 'batailles-read' });
   if (!g.ok) return g.response;
+  if (!g.session && !(await estVisiteur())) return fail('NON_AUTHENTIFIE', 'Connexion requise.');
 
   const { batailles, top, balance } = await getStore().read((db) => {
     const joueurId = playerIdOf(g.session);

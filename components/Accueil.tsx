@@ -187,10 +187,15 @@ export function Accueil({
           <p className="acc-lead">Joue tes games, grimpe au classement, ouvre des boosters, défie les autres.</p>
           <CalendrierSaisons saisons={saisons} maintenant={Date.now()} compact />
           {/* L'entrée, sous le compte à rebours : un bouton simple, sans halo. */}
+          {/* S'inscrire, ou regarder d'abord : le mode visiteur montre la ligue
+              sans rien pouvoir y faire (`lib/auth/visiteur.ts`). */}
           <div className="acc-actions">
             <a href={entree} className="btn btn-twitch btn-lg no-underline acc-rejoindre">
               <IconTwitch className="h-5 w-5" />
-              Rejoindre avec Twitch
+              M’inscrire avec Twitch
+            </a>
+            <a href="/api/visiteur" className="acc-visiteur no-underline">
+              Entrer en mode visiteur
             </a>
           </div>
           {!twitchEnabled && (
