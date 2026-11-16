@@ -332,22 +332,25 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   sa course (`useSpinAnimation`), et un tableau neuf à chaque rendu la relançait depuis
   le début au premier `router.refresh()`. Valeurs stables seulement (`SANS_RELANCE`,
   `useMemo`, `useState`).
-- **L'accueil déconnecté** (`components/Accueil.tsx`, refait le 16/11/2026) tient sur un ordinateur
-  en un seul écran, sans défiler (de 1024×620 à 2560×1267 : `scrollHeight <= innerHeight`) ; sur
-  téléphone et tablette debout, il s'empile. Il s'ouvre, **à chaque visite**, sur une vidéo rendue
-  dans Blender (`SceneDisplay`, `scratchpad/display/display.py`) : une display de boosters en carton
-  aux couleurs de la ligue se pose, s'ouvre, les quatre boosters en sortent et se placent, deux de
-  chaque côté, puis la display s'efface en fondu. La vidéo est en H.264, l'image en haut et sa
-  transparence en bas (`public/accueil/display.mp4`, `-960` pour les petits écrans), recomposée
+- **L'accueil déconnecté** (`components/Accueil.tsx`, refait le 16/11/2026) tient en un seul écran,
+  sans défiler, sur un ordinateur (de 1024×620 à 2560×1267 : `scrollHeight <= innerHeight`) comme
+  sur un téléphone debout (la scène au milieu de l'écran, le pied de page dessous). Il s'ouvre,
+  **à chaque visite**, sur une vidéo rendue dans Blender (`SceneDisplay`,
+  `scratchpad/display/display2.py`) : une display de boosters en carton aux couleurs de la ligue se
+  pose dans une brume d'hiver, son couvercle se soulève, s'incline — la neige glisse, tombe et reste
+  au sol — puis s'enlève, les quatre boosters en sortent et se placent, et la display s'efface en
+  fondu. Deux cadrages (`PAYSAGE`, `PORTRAIT`, `REQUETE_PORTRAIT`) ; la vidéo est en H.264, sa
+  transparence en niveaux de gris à côté de l'image (`public/accueil/display-*.mp4`), recomposée
   dans un canvas WebGL (`videoDetouree`) — Safari ignore la transparence du VP9. À sa dernière
-  image, les vraies images des boosters prennent le relais au pixel près (`PLACES_BOOSTERS`,
-  `placeEnPourcents` : à changer avec la vidéo). Restent, au milieu, le nom, une phrase, l'entrée
-  Twitch et le compte à rebours (`CalendrierSaisons compact`), et en bas six tuiles de verre plat
-  pour les règles. Tout se pose dans une scène 16:9 et se mesure sur elle (`cqw`). La vidéo se
-  joue même si le système demande moins d'animations (Windows le dit quand ses effets sont
-  coupés) ; sans WebGL ou si la lecture est refusée, tout arrive tout de suite. Ses réglages selon
-  la taille passent par `@media`, jamais par `@container` : le compte à rebours réévaluait les
-  règles de conteneur chaque seconde et relançait les animations d'arrivée.
+  image, les vraies images des boosters prennent le relais au pixel près (`places`,
+  `placeEnVariables` : à changer avec la vidéo). Restent, au milieu, le nom, une phrase, l'entrée
+  Twitch et le compte à rebours (`CalendrierSaisons compact`), et six tuiles de verre plat pour les
+  règles (en bas ; sur téléphone, elles défilent du doigt de gauche à droite). Tout se pose dans
+  la scène et se mesure sur elle (`cqw`). La vidéo se joue même si le système demande moins
+  d'animations (Windows le dit quand ses effets sont coupés) ; sans WebGL ou si la lecture est
+  refusée, tout arrive tout de suite. Ses réglages selon la taille passent par `@media`, jamais
+  par `@container` : le compte à rebours réévaluait les règles de conteneur chaque seconde et
+  relançait les animations d'arrivée.
 - Les couleurs viennent des variables CSS de `app/globals.css`, jamais codées en dur.
 - Avant de livrer : `npm run typecheck && npm test && npm run build`.
 

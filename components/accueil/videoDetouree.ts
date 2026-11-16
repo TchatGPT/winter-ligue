@@ -1,9 +1,9 @@
 'use client';
 
 /**
- * Une vidéo détourée dans un `<canvas>` : la vidéo porte l'image en haut et
- * sa transparence en niveaux de gris en bas ; un petit shader WebGL les
- * recompose. Ça marche partout où il y a du H.264 et WebGL — Safari compris,
+ * Une vidéo détourée dans un `<canvas>` : la vidéo porte l'image et, à côté
+ * (dessous ou à droite), sa transparence en niveaux de gris ; un petit shader
+ * WebGL les recompose. Ça marche partout où il y a du H.264 et WebGL — Safari compris,
  * qui ignore la transparence du VP9.
  */
 
@@ -18,10 +18,13 @@ void main() {
 const PIXELS = `
 precision mediump float;
 uniform sampler2D video;
+uniform float droite;
 varying vec2 uv;
 void main() {
-  vec3 couleur = texture2D(video, vec2(uv.x, uv.y * 0.5)).rgb;
-  float alpha = texture2D(video, vec2(uv.x, 0.5 + uv.y * 0.5)).r;
+  vec2 a = mix(vec2(uv.x, uv.y * 0.5), vec2(uv.x * 0.5, uv.y), droite);
+  vec2 b = mix(vec2(uv.x, 0.5 + uv.y * 0.5), vec2(0.5 + uv.x * 0.5, uv.y), droite);
+  vec3 couleur = texture2D(video, a).rgb;
+  float alpha = texture2D(video, b).r;
   gl_FragColor = vec4(couleur * alpha, alpha);
 }`;
 
@@ -40,7 +43,11 @@ function shader(gl: WebGLRenderingContext, type: number, source: string): WebGLS
 }
 
 /** Prépare le canvas, ou rend `null` si WebGL manque : l'accueil saute alors la vidéo. */
-export function detoureur(canvas: HTMLCanvasElement, video: HTMLVideoElement): Detoureur | null {
+export function detoureur(
+  canvas: HTMLCanvasElement,
+  video: HTMLVideoElement,
+  alpha: 'dessous' | 'droite',
+): Detoureur | null {
   const gl = canvas.getContext('webgl', { premultipliedAlpha: true, alpha: true, antialias: false });
   if (!gl) return null;
   const vs = shader(gl, gl.VERTEX_SHADER, SOMMETS);
@@ -52,6 +59,7 @@ export function detoureur(canvas: HTMLCanvasElement, video: HTMLVideoElement): D
   gl.linkProgram(prog);
   if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return null;
   gl.useProgram(prog);
+  gl.uniform1f(gl.getUniformLocation(prog, 'droite'), alpha === 'droite' ? 1 : 0);
 
   const tampon = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, tampon);
@@ -71,8 +79,8 @@ export function detoureur(canvas: HTMLCanvasElement, video: HTMLVideoElement): D
   return {
     dessine() {
       if (video.readyState < 2 || !video.videoWidth) return;
-      const l = video.videoWidth;
-      const h = video.videoHeight / 2;
+      const l = alpha === 'droite' ? video.videoWidth / 2 : video.videoWidth;
+      const h = alpha === 'droite' ? video.videoHeight : video.videoHeight / 2;
       if (canvas.width !== l || canvas.height !== h) {
         canvas.width = l;
         canvas.height = h;

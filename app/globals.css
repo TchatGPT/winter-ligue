@@ -13194,6 +13194,8 @@ main:has(> .accueil) {
 /* La vidéo ne se montre pas : le canvas la recompose avec sa transparence.
    Elle reste dans l'écran, sans quoi un navigateur la mettrait en pause. */
 .acc-video {
+  width: 2px;
+  height: 2px;
   opacity: 0;
 }
 .acc-scene[data-phase='fini'] .acc-canvas {
@@ -13207,8 +13209,20 @@ main:has(> .accueil) {
   padding: 0;
   list-style: none;
 }
+/* Sa place à la fin de la vidéo, en pourcentages du plateau : le jeu du
+   paysage (`--pa-…`) ou celui du portrait (`--po-…`, voir plus bas). */
 .acc-booster {
+  --g: var(--pa-g);
+  --h: var(--pa-h);
+  --l: var(--pa-l);
+  --t: var(--pa-t);
+  --r: var(--pa-r);
   position: absolute;
+  top: var(--h);
+  left: var(--g);
+  width: var(--l);
+  height: var(--t);
+  rotate: var(--r);
   opacity: 0;
 }
 .acc-scene[data-phase='fini'] .acc-booster {
@@ -13248,7 +13262,7 @@ main:has(> .accueil) {
   justify-items: center;
   gap: 0.1rem;
   translate: -50% 0;
-  rotate: calc(-1 * var(--incl, 0deg));
+  rotate: calc(-1 * var(--r));
   line-height: 1.2;
   text-align: center;
   opacity: 0;
@@ -13595,13 +13609,123 @@ main:has(> .accueil) {
   color: var(--faint);
 }
 
-/* -- Un téléphone, une tablette debout : la scène, puis le reste -- */
+/* -- Un téléphone couché, une petite fenêtre : la scène, puis le reste -- */
 @media (max-width: 1023px) {
   .acc-booster-nom {
     display: none;
   }
   .acc-centre {
     margin-top: -0.5rem;
+  }
+}
+
+/* -- Un téléphone, une tablette debout : tout dans l'écran --
+   La vidéo en portrait (9:16), au milieu de l'écran. À sa fin, les boosters
+   en éventail en haut ; au milieu, le nom, l'entrée et le compte à rebours ;
+   en bas, les tuiles, qu'on fait défiler du doigt de gauche à droite. Le pied
+   de page attend dessous. */
+@media (max-width: 1023px) and (orientation: portrait) {
+  main:has(> .accueil) {
+    padding: 0;
+  }
+  .accueil {
+    min-height: 100svh;
+    align-content: center;
+    padding: 0;
+  }
+  .acc-scene {
+    display: block;
+    width: min(100%, 100svh * 9 / 16);
+    aspect-ratio: 9 / 16;
+    margin-inline: auto;
+  }
+  .acc-plateau {
+    position: absolute;
+    inset: 0;
+    aspect-ratio: auto;
+  }
+  .acc-booster {
+    --g: var(--po-g);
+    --h: var(--po-h);
+    --l: var(--po-l);
+    --t: var(--po-t);
+    --r: var(--po-r);
+  }
+  .acc-centre {
+    position: absolute;
+    top: 30.5%;
+    left: 5%;
+    width: 90%;
+    margin: 0;
+  }
+  .acc-surtitre {
+    font-size: 2.7cqw;
+  }
+  .hero-titre.acc-titre {
+    margin-top: 0.8cqw;
+    font-size: 14.5cqw;
+  }
+  .acc-lead {
+    margin-top: 1.6cqw;
+    font-size: 3.9cqw;
+  }
+  .acc-actions {
+    margin-top: 4.5cqw;
+  }
+  .acc-centre .btn-lg {
+    font-size: 4cqw;
+  }
+  .acc-centre .calendrier {
+    margin-top: 5cqw;
+  }
+  .acc-centre .rebours-titre {
+    font-size: 2.8cqw;
+  }
+  .acc-centre .rebours-cases li {
+    min-width: 15cqw;
+  }
+  .acc-centre .rebours-cases b {
+    font-size: 9.5cqw;
+  }
+  .acc-centre .rebours-cases li:not([data-dernier])::after {
+    font-size: 8cqw;
+  }
+  .acc-centre .rebours-cases span {
+    font-size: 2.3cqw;
+  }
+  .acc-tuiles {
+    position: absolute;
+    top: 76.5%;
+    right: 0;
+    bottom: 2%;
+    left: 0;
+    display: flex;
+    gap: 3cqw;
+    padding-inline: 6cqw;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: 6cqw;
+    scrollbar-width: none;
+  }
+  .acc-tuiles::-webkit-scrollbar {
+    display: none;
+  }
+  .acc-tuile {
+    flex: 0 0 72%;
+    gap: 1.2cqw;
+    padding: 4cqw 4.5cqw;
+    scroll-snap-align: start;
+  }
+  .acc-tuile-theme {
+    font-size: 2.6cqw;
+  }
+  .acc-tuile h2 {
+    font-size: 5.2cqw;
+  }
+  .acc-tuile p {
+    font-size: 3.5cqw;
+    line-height: 1.4;
   }
 }
 

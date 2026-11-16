@@ -4,9 +4,10 @@ import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from 
 import {
   IMAGE_REVELATION,
   IMAGES_PAR_SECONDE,
-  PLACES_BOOSTERS,
-  VIDEO_DISPLAY,
-  placeEnPourcents,
+  PAYSAGE,
+  PORTRAIT,
+  REQUETE_PORTRAIT,
+  placeEnVariables,
 } from '@/components/accueil/placesDisplay';
 import { detoureur } from '@/components/accueil/videoDetouree';
 
@@ -67,7 +68,9 @@ export function SceneDisplay({ boosters, children }: { boosters: BoosterDeLaScen
       sansVideo();
       return;
     }
-    const d = detoureur(c, v);
+    // Le cadrage suit l'écran : portrait sur un téléphone debout, paysage ailleurs.
+    const format = window.matchMedia(REQUETE_PORTRAIT).matches ? PORTRAIT : PAYSAGE;
+    const d = detoureur(c, v, format.alpha);
     if (!d) {
       sansVideo();
       return;
@@ -104,8 +107,11 @@ export function SceneDisplay({ boosters, children }: { boosters: BoosterDeLaScen
       boucle();
     };
 
-    const petite = window.innerWidth < 900 || (navigator as { connection?: { saveData?: boolean } }).connection?.saveData;
-    v.src = petite ? VIDEO_DISPLAY.petite : VIDEO_DISPLAY.grande;
+    // La vidéo la plus fine que l'écran mérite ; la plus légère si l'on économise les données.
+    const leger = (navigator as { connection?: { saveData?: boolean } }).connection?.saveData;
+    const pixels = window.innerWidth * (window.devicePixelRatio || 1);
+    const choix = leger ? format.videos.at(-1) : format.videos.find((x) => pixels >= x.pourLargeur);
+    v.src = (choix ?? format.videos[0]).src;
     v.addEventListener('playing', enLecture);
     v.addEventListener('ended', () => termine(true));
     v.addEventListener('error', () => termine(false));
@@ -131,17 +137,18 @@ export function SceneDisplay({ boosters, children }: { boosters: BoosterDeLaScen
         <canvas ref={canvas} className="acc-canvas" aria-hidden="true" />
         <ul className="acc-boosters" aria-label="Les quatre boosters">
           {boosters.map((b, i) => {
-            const place = PLACES_BOOSTERS[b.id];
-            if (!place) return null;
+            const paysage = PAYSAGE.places[b.id];
+            const portrait = PORTRAIT.places[b.id];
+            if (!paysage || !portrait) return null;
             return (
               <li
                 key={b.id}
                 className="acc-booster"
                 style={
                   {
-                    ...placeEnPourcents(place),
+                    ...placeEnVariables('pa', PAYSAGE, paysage),
+                    ...placeEnVariables('po', PORTRAIT, portrait),
                     ['--i' as string]: i,
-                    ['--incl' as string]: `${place.inclinaison}deg`,
                   } as CSSProperties
                 }
               >
