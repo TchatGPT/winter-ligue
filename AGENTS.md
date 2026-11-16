@@ -353,7 +353,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   transparence) qu'un shader WebGL assemble (`ecranBrume`) : dès qu'ils se relèvent, un brouillard
   monte **sous eux** (`BRUME`, `avanceeBrume`), couvre la scène, puis se dissipe sur la page. À la
   dernière image, les vraies images des boosters prennent le relais au pixel près (`places`,
-  `placeEnVariables` : à changer avec la vidéo). Une fois tout posé, « Revoir l'animation »
+  `placeEnVariables` : à changer avec la vidéo). Pendant la vidéo, « Passer l'animation » (`.acc-passer`, en bas au milieu) l'arrête : les boosters et la page arrivent tout de suite. Une fois tout posé, « Revoir l'animation »
   (`.acc-revoir`) la relance. La page apparaît : au milieu, le nom, une phrase, l'entrée Twitch et le compte à rebours
   (`CalendrierSaisons compact`) ; en bas, six tuiles de verre coloré pour les règles, en carrousel
   (`CarrouselTuiles` : une au milieu, ses voisines en arc qui s'effacent dans le fond ; on glisse, à la

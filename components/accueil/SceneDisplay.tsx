@@ -54,7 +54,10 @@ export function SceneDisplay({ boosters, children }: { boosters: BoosterDeLaScen
   const video = useRef<HTMLVideoElement>(null);
   const [phase, setPhase] = useState<Phase>('charge');
   const [revele, setRevele] = useState(false);
-  const [arrivee, setArrivee] = useState<'video' | 'directe'>('video');
+  /** `passee` : le visiteur a passé l'animation — les boosters arrivent d'eux-mêmes. */
+  const [arrivee, setArrivee] = useState<'video' | 'directe' | 'passee'>('video');
+  /** Arrête la vidéo en cours et ce qui la suit : posé par l'effet, appelé pour la passer. */
+  const arreteVideo = useRef<() => void>(() => {});
   // Revoir l'animation : chaque essai relance la vidéo depuis le début.
   const [essai, setEssai] = useState(0);
 
@@ -129,6 +132,13 @@ export function SceneDisplay({ boosters, children }: { boosters: BoosterDeLaScen
     v.play().catch(echec);
     const attente = window.setTimeout(() => !lancee && echec(), ATTENTE_MAX_MS);
     const garde = window.setTimeout(() => (lancee ? brume() : echec()), DUREE_MAX_MS);
+    arreteVideo.current = () => {
+      arret = true;
+      cancelAnimationFrame(image);
+      window.clearTimeout(attente);
+      window.clearTimeout(garde);
+      v.pause();
+    };
 
     return () => {
       arret = true;
@@ -141,6 +151,14 @@ export function SceneDisplay({ boosters, children }: { boosters: BoosterDeLaScen
       ecran.libere();
     };
   }, [essai]);
+
+  // Passer l'animation : la vidéo s'arrête, les boosters et la page arrivent tout de suite.
+  const passer = () => {
+    arreteVideo.current();
+    setArrivee('passee');
+    setPhase('fini');
+    setRevele(true);
+  };
 
   const revoir = () => {
     setPhase('charge');
@@ -194,7 +212,12 @@ export function SceneDisplay({ boosters, children }: { boosters: BoosterDeLaScen
         </div>
       </div>
       {children}
-      {phase === 'fini' && arrivee === 'video' && (
+      {(phase === 'charge' || phase === 'video') && (
+        <button type="button" className="acc-passer" onClick={passer}>
+          Passer l’animation <span aria-hidden="true">»</span>
+        </button>
+      )}
+      {phase === 'fini' && arrivee !== 'directe' && (
         <button type="button" className="acc-revoir" onClick={revoir}>
           <span aria-hidden="true">↻</span> Revoir l’animation
         </button>

@@ -13282,8 +13282,9 @@ main:has(> .accueil .acc-scene[data-phase='fini']) {
 .acc-scene[data-phase='fini'] .acc-booster {
   opacity: 1;
 }
-/* Sans la vidéo, les boosters arrivent d'eux-mêmes. */
-.acc-scene[data-phase='fini'][data-arrivee='directe'] .acc-booster {
+/* Sans la vidéo, ou l'animation passée, les boosters arrivent d'eux-mêmes. */
+.acc-scene[data-phase='fini'][data-arrivee='directe'] .acc-booster,
+.acc-scene[data-phase='fini'][data-arrivee='passee'] .acc-booster {
   animation: acc-booster-arrive 0.9s cubic-bezier(0.2, 0.9, 0.25, 1) both;
   animation-delay: calc(var(--i) * 90ms);
 }
@@ -13373,6 +13374,48 @@ main:has(> .accueil .acc-scene[data-phase='fini']) {
 }
 .acc-revoir span {
   font-size: 1rem;
+  letter-spacing: 0;
+}
+
+/* -- Passer l'animation : un petit bouton translucide, en bas au milieu, le
+   temps de la vidéo -- */
+.acc-passer {
+  position: absolute;
+  bottom: clamp(1rem, 4dvh, 2.5rem);
+  left: 50%;
+  translate: -50% 0;
+  z-index: 6;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1.05rem;
+  border-radius: var(--r-pilule);
+  background: color-mix(in srgb, var(--bg-deep) 30%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--frost) 32%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  font-family: var(--font-display);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  opacity: 0.8;
+  cursor: pointer;
+  animation: acc-apparait 0.8s ease 0.6s both;
+  transition:
+    opacity 0.2s ease,
+    color 0.2s ease,
+    background-color 0.2s ease;
+}
+.acc-passer:hover,
+.acc-passer:focus-visible {
+  opacity: 1;
+  color: var(--frost);
+  background-color: color-mix(in srgb, var(--bg-deep) 55%, transparent);
+}
+.acc-passer span {
+  font-size: 1.05rem;
   letter-spacing: 0;
 }
 
