@@ -13382,7 +13382,8 @@ main:has(> .accueil .acc-scene[data-phase='fini']) {
 .acc-passer {
   /* En bas de l'écran, pas de la scène : la vidéo couvre aussi le pied de page. */
   position: fixed;
-  bottom: clamp(1rem, 4dvh, 2.5rem);
+  /* Près du bas, sans le toucher, et au-dessus de la barre d'un téléphone. */
+  bottom: calc(clamp(1.25rem, 5dvh, 3rem) + env(safe-area-inset-bottom, 0px));
   left: 50%;
   translate: -50% 0;
   z-index: 6;

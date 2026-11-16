@@ -212,7 +212,8 @@ export function SceneDisplay({ boosters, children }: { boosters: BoosterDeLaScen
         </div>
       </div>
       {children}
-      {(phase === 'charge' || phase === 'video') && (
+      {/* Le temps de la vidéo seulement : dès que la page commence à apparaître, il s'en va. */}
+      {(phase === 'charge' || (phase === 'video' && !revele)) && (
         <button type="button" className="acc-passer" onClick={passer}>
           Passer l’animation <span aria-hidden="true">»</span>
         </button>
