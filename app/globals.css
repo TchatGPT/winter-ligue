@@ -13380,7 +13380,8 @@ main:has(> .accueil .acc-scene[data-phase='fini']) {
 /* -- Passer l'animation : un petit bouton translucide, en bas au milieu, le
    temps de la vidéo -- */
 .acc-passer {
-  position: absolute;
+  /* En bas de l'écran, pas de la scène : la vidéo couvre aussi le pied de page. */
+  position: fixed;
   bottom: clamp(1rem, 4dvh, 2.5rem);
   left: 50%;
   translate: -50% 0;
