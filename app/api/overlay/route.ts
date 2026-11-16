@@ -34,10 +34,12 @@ export async function GET(request: Request): Promise<NextResponse> {
   const flux = await getStore().fluxOverlay(depuis);
   if (flux.generation !== generation) return fail('NON_AUTORISE', 'Lien d’overlay révoqué.');
 
+  // Les alertes coupées dans Modération → Alertes ne se jouent pas.
+  const alertes = { tchatBoosters: true, overlayBoosters: true, overlayDuels: true, ...(flux.alertes ?? {}) };
   return ok({
     maintenant: flux.maintenant,
-    boosters: vueBoosters(flux),
-    duels: vueDuels(flux),
+    boosters: alertes.overlayBoosters ? vueBoosters(flux) : [],
+    duels: alertes.overlayDuels ? vueDuels(flux) : [],
     subs: vueSubs(flux),
   });
 }

@@ -9,8 +9,8 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 /**
- * Réglages de saison : la limite de games par joueur. C'est une règle de la
- * saison, pas son animation : réservé aux administrateurs.
+ * Réglages de saison : la limite de games par joueur, et les alertes du live
+ * (16/11/2026). Réservé aux administrateurs.
  */
 export async function PATCH(request: Request): Promise<NextResponse> {
   const g = await guard(request, {
@@ -24,6 +24,9 @@ export async function PATCH(request: Request): Promise<NextResponse> {
   const config = await getStore().transaction((db) => {
     if (g.body.maxGamesPerPlayer !== undefined) {
       db.config.maxGamesPerPlayer = g.body.maxGamesPerPlayer;
+    }
+    if (g.body.alertes) {
+      db.config.alertes = { ...(db.config.alertes ?? {}), ...g.body.alertes };
     }
     audit(db, g.session?.sub ?? 'admin', 'CONFIG_MODIFIEE', null, JSON.stringify(g.body));
     return db.config;

@@ -15614,6 +15614,58 @@ a.adm-tuile:hover .adm-tuile-fleche {
   color: var(--ink);
 }
 
+/* -- Alertes du live (16/11/2026) -- */
+.adm-alertes {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.adm-alertes label {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.9rem 1.1rem;
+  border-radius: var(--r-md);
+  background: color-mix(in srgb, var(--bg-deep) 35%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--frost) 12%, transparent);
+  cursor: pointer;
+}
+.adm-alertes input {
+  width: 1.35rem;
+  height: 1.35rem;
+  accent-color: var(--aurora);
+}
+.adm-alertes span {
+  display: grid;
+  gap: 0.15rem;
+}
+.adm-alertes b {
+  font-size: 1rem;
+  color: var(--ink);
+}
+.adm-alertes small {
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+.adm-alertes em {
+  font-family: var(--font-display);
+  font-size: 0.8125rem;
+  font-style: normal;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--aurora);
+}
+.adm-alertes [data-coupee] label {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--r-ur) 45%, transparent);
+}
+.adm-alertes [data-coupee] em {
+  color: var(--r-ur);
+}
+
 /* -- Journal -- */
 .adm-journal {
   display: grid;

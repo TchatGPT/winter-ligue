@@ -1,5 +1,6 @@
 import 'server-only';
 
+import { alertesDe } from '@/lib/db/entities';
 import { getStore } from '@/lib/db/store';
 import { messageOuverture } from '@/lib/domain/annonceBooster';
 import { getCard, getPack, RARITY_META } from '@/lib/domain/catalog';
@@ -11,7 +12,7 @@ import { annonceDansLeTchat } from '@/lib/services/twitchChat';
 /** Une ouverture plus ancienne ne s'annonce plus : on ne réveille pas la soirée. */
 const FRAICHEUR_MS = 30 * 60_000;
 
-export type ResultatAnnonce = 'envoye' | 'deja' | 'introuvable' | 'echec';
+export type ResultatAnnonce = 'envoye' | 'deja' | 'introuvable' | 'echec' | 'coupee';
 
 /**
  * Annonce une ouverture de booster dans le tchat de la chaîne, une fois et
@@ -38,6 +39,9 @@ export async function annonceOuverture(ouvertureId: string, acteur: string): Pro
     o.annonceeA = new Date().toISOString();
     // La carte est à l'écran : ce qu'elle verse peut se voir, maintenant.
     regleApresRevelation(db, o.id);
+    // L'annonce du tchat coupée (Modération → Alertes) : la carte se règle
+    // quand même, seul le message ne part pas.
+    if (!alertesDe(db.config).tchatBoosters) return { etat: 'coupee' as const };
 
     const touteLaLigue =
       o.joueurId === null && card.cible === 'TOUS' && o.beneficiaires.length >= joueursEnLice(db).length;

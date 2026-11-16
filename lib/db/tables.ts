@@ -466,6 +466,8 @@ alter table cartes_en_attente add column if not exists bilan integer;
 alter table saison add column if not exists twitch_vus jsonb not null default '[]';
 alter table saison add column if not exists numero integer not null default 1;
 alter table saison add column if not exists remise_a timestamptz;
+-- Les alertes du live qu'on coupe pour tester (16/11/2026).
+alter table saison add column if not exists alertes jsonb not null default '{}';
 
 -- Les Top 6, 8 et 10 : ils ne rapportent rien, ils servent aux cartes.
 alter table games drop constraint if exists games_top_check;
@@ -582,6 +584,7 @@ export async function chargeBase(sql: postgres.Sql | postgres.TransactionSql): P
       twitchVus: Array.isArray(saison.twitch_vus) ? (saison.twitch_vus as LeagueConfig['twitchVus']) : [],
       numero: (saison.numero as number | undefined) ?? 1,
       remiseA: saison.remise_a ? new Date(saison.remise_a as string).toISOString() : null,
+      alertes: (saison.alertes as LeagueConfig['alertes'] | undefined) ?? {},
     } satisfies LeagueConfig;
   }
   for (const col of CHARGEES) {
@@ -661,17 +664,18 @@ export async function enregistreBase(tx: postgres.TransactionSql, db: Database, 
 
   if (avant.get('saison')?.get('1') !== apres.get('saison')?.get('1')) {
     await tx`
-      insert into saison (id, version, total_subs, games_max_par_joueur, debut, fin, mis_a_jour, overlay_generation, twitch_vus, numero, remise_a)
+      insert into saison (id, version, total_subs, games_max_par_joueur, debut, fin, mis_a_jour, overlay_generation, twitch_vus, numero, remise_a, alertes)
       values (1, ${db.version}, ${db.config.totalSubs}, ${db.config.maxGamesPerPlayer},
               ${db.config.seasonStartsAt}, ${db.config.seasonEndsAt}, now(), ${db.config.overlayGeneration},
               ${tx.json(db.config.twitchVus as unknown as postgres.JSONValue)},
-              ${db.config.numero ?? 1}, ${db.config.remiseA ?? null})
+              ${db.config.numero ?? 1}, ${db.config.remiseA ?? null},
+              ${tx.json((db.config.alertes ?? {}) as unknown as postgres.JSONValue)})
       on conflict (id) do update set
         version = excluded.version, total_subs = excluded.total_subs,
         games_max_par_joueur = excluded.games_max_par_joueur,
         debut = excluded.debut, fin = excluded.fin, mis_a_jour = now(),
         overlay_generation = excluded.overlay_generation, twitch_vus = excluded.twitch_vus,
-        numero = excluded.numero, remise_a = excluded.remise_a`;
+        numero = excluded.numero, remise_a = excluded.remise_a, alertes = excluded.alertes`;
     touchees += 1;
   }
 

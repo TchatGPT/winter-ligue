@@ -206,6 +206,15 @@ export const eventSubSchema = z.object({
 
 export const adminConfigSchema = z.object({
   maxGamesPerPlayer: z.number().int().min(1).max(100).optional(),
+  /** Les alertes du live (Modération → Alertes). */
+  alertes: z
+    .object({
+      tchatBoosters: z.boolean().optional(),
+      overlayBoosters: z.boolean().optional(),
+      overlayDuels: z.boolean().optional(),
+    })
+    .strict()
+    .optional(),
 });
 
 /* ----------------------------- Cadeau du jour ----------------------------- */
