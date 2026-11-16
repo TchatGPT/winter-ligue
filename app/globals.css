@@ -13446,31 +13446,37 @@ main:has(> .accueil .acc-scene[data-phase='fini']) {
 }
 
 /* -- Les tuiles : les règles, en verre -- */
-/* Elles défilent en boucle (la piste porte deux fois la série et glisse de
-   la moitié de sa longueur), se fondent sur les côtés, et s'arrêtent sous la
-   souris. */
-@keyframes acc-defile {
-  to {
-    transform: translateX(-50%);
-  }
-}
+/* On les fait défiler soi-même (`Defilement`) : au doigt, à la souris en les
+   attrapant, ou à la molette. Elles se fondent sur les côtés. */
 .acc-tuiles {
   --l-tuile: min(78vw, 17rem);
   --g-tuile: 0.75rem;
+  --bord-fondu: 9%;
   position: relative;
   z-index: 2;
-  overflow: hidden;
-  padding-block: 0.4rem;
-  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 12%, #000 88%, transparent 100%);
-  mask-image: linear-gradient(90deg, transparent 0, #000 12%, #000 88%, transparent 100%);
-}
-.acc-tuiles-piste {
   display: flex;
-  width: max-content;
-  animation: acc-defile 70s linear infinite;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  padding-block: 0.4rem;
+  padding-inline: var(--bord-fondu);
+  scroll-padding-inline: var(--bord-fondu);
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+  cursor: grab;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 var(--bord-fondu), #000 calc(100% - var(--bord-fondu)), transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0, #000 var(--bord-fondu), #000 calc(100% - var(--bord-fondu)), transparent 100%);
 }
-.acc-tuiles:hover .acc-tuiles-piste {
-  animation-play-state: paused;
+.acc-tuiles::-webkit-scrollbar {
+  display: none;
+}
+.acc-tuiles[data-attrape] {
+  cursor: grabbing;
+  scroll-snap-type: none;
+  user-select: none;
+}
+.acc-tuiles:focus-visible {
+  outline: 2px solid var(--ice);
+  outline-offset: 2px;
 }
 /* Du verre liquide, comme les plaques de l'overlay : presque transparent, une
    teinte glace et violette qui glisse dessus, un bord clair et net. */
@@ -13482,6 +13488,7 @@ main:has(> .accueil .acc-scene[data-phase='fini']) {
   gap: 0.35rem;
   margin-right: var(--g-tuile);
   padding: 1rem 1.1rem 1.05rem;
+  scroll-snap-align: start;
   border-radius: var(--r-sm);
   background:
     linear-gradient(115deg, color-mix(in srgb, var(--ice) 16%, transparent) 0%, transparent 46%, color-mix(in srgb, var(--violet) 14%, transparent) 100%),
@@ -13753,8 +13760,8 @@ main:has(> .accueil .acc-scene[data-phase='fini']) {
   }
   /* Toute la largeur, et un peu sous le pied de page. */
   .acc-tuiles {
-    --l-tuile: clamp(15rem, 19cqw, 26rem);
-    --g-tuile: clamp(0.6rem, 0.9cqw, 1.3rem);
+    --l-tuile: clamp(18rem, 24cqw, 32rem);
+    --g-tuile: clamp(0.7rem, 1cqw, 1.4rem);
     margin-inline: calc(-1 * var(--acc-marge));
     margin-bottom: -2.1rem;
   }
@@ -13776,11 +13783,27 @@ main:has(> .accueil .acc-scene[data-phase='fini']) {
     font-size: clamp(0.625rem, 0.72cqw, 1rem);
   }
   .acc-tuile h2 {
-    font-size: clamp(0.9375rem, 1.35cqw, 2rem);
+    font-size: clamp(1.0625rem, 1.6cqw, 2.3rem);
   }
   .acc-tuile p {
-    font-size: clamp(0.75rem, 0.95cqw, 1.3rem);
+    font-size: clamp(0.8125rem, 1.08cqw, 1.45rem);
     line-height: 1.4;
+  }
+  /* Le compte à rebours, plus gros sur un ordinateur. */
+  .acc-centre .rebours-cases li {
+    min-width: clamp(3.6rem, 5.6cqw, 8rem);
+  }
+  .acc-centre .rebours-cases b {
+    font-size: clamp(2.5rem, 4cqw, 5.8rem);
+  }
+  .acc-centre .rebours-cases li:not([data-dernier])::after {
+    font-size: clamp(2.1rem, 3.3cqw, 4.8rem);
+  }
+  .acc-centre .rebours-cases span {
+    font-size: clamp(0.6875rem, 0.78cqw, 1.05rem);
+  }
+  .acc-centre .rebours-titre {
+    font-size: clamp(0.75rem, 0.9cqw, 1.2rem);
   }
 }
 /* Un petit écran d'ordinateur : l'essentiel au centre ; les tuiles ne
@@ -13876,8 +13899,9 @@ main:has(> .accueil .acc-scene[data-phase='fini']) {
     font-size: 2.3cqw;
   }
   .acc-tuiles {
-    --l-tuile: 72cqw;
+    --l-tuile: 74cqw;
     --g-tuile: 3cqw;
+    --bord-fondu: 6%;
     position: absolute;
     right: 0;
     bottom: 3%;

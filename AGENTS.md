@@ -347,8 +347,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   dernière image, les vraies images des boosters prennent le relais au pixel près (`places`,
   `placeEnVariables` : à changer avec la vidéo). Une fois tout posé, « Revoir l'animation »
   (`.acc-revoir`) la relance. La page apparaît : au milieu, le nom, une phrase, l'entrée Twitch et le compte à rebours
-  (`CalendrierSaisons compact`) ; en bas, six tuiles de verre plat pour les règles (sur téléphone,
-  elles défilent du doigt de gauche à droite). La vidéo se joue même si le système demande moins
+  (`CalendrierSaisons compact`) ; en bas, six tuiles de verre coloré pour les règles, qu'on fait défiler
+  soi-même (`Defilement` : doigt, souris, molette), fondues sur les côtés, un peu sous le pied de page. La vidéo se joue même si le système demande moins
   d'animations (Windows le dit quand ses effets sont coupés) ; sans WebGL ou si la lecture est
   refusée, tout arrive tout de suite. Ses réglages selon la taille passent par `@media`, jamais par
   `@container` : le compte à rebours réévaluait les règles de conteneur chaque seconde et relançait

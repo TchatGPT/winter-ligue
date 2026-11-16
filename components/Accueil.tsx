@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode } from 'react';
+import { Defilement } from '@/components/accueil/Defilement';
 import { type BoosterDeLaScene, SceneDisplay } from '@/components/accueil/SceneDisplay';
 import { CalendrierSaisons, type SaisonDuCalendrier } from '@/components/CalendrierSaisons';
 import {
@@ -207,31 +208,21 @@ export function Accueil({
           <CalendrierSaisons saisons={saisons} maintenant={Date.now()} compact />
         </section>
 
-        {/* Les tuiles défilent en boucle et se fondent sur les côtés : la piste
-            porte deux fois la série, la seconde muette pour un lecteur d'écran. */}
-        <section className="acc-tuiles" aria-label="Comment ça marche">
-          <div className="acc-tuiles-piste">
-            {[0, 1].map((tour) =>
-              tuiles.map((t, i) => (
-                <article
-                  key={`${tour}-${t.cle}`}
-                  className="acc-tuile"
-                  aria-hidden={tour === 1 ? true : undefined}
-                  style={{ ['--i' as string]: i } as CSSProperties}
-                >
-                  <header>
-                    <span className="acc-tuile-icone" aria-hidden="true">
-                      {t.icone}
-                    </span>
-                    <span className="acc-tuile-theme">{t.theme}</span>
-                  </header>
-                  <h2>{t.titre}</h2>
-                  <p>{t.texte}</p>
-                </article>
-              )),
-            )}
-          </div>
-        </section>
+        {/* Les tuiles : on les fait défiler soi-même, à gauche ou à droite. */}
+        <Defilement className="acc-tuiles" label="Comment ça marche">
+          {tuiles.map((t, i) => (
+            <article key={t.cle} className="acc-tuile" style={{ ['--i' as string]: i } as CSSProperties}>
+              <header>
+                <span className="acc-tuile-icone" aria-hidden="true">
+                  {t.icone}
+                </span>
+                <span className="acc-tuile-theme">{t.theme}</span>
+              </header>
+              <h2>{t.titre}</h2>
+              <p>{t.texte}</p>
+            </article>
+          ))}
+        </Defilement>
       </SceneDisplay>
     </div>
   );
