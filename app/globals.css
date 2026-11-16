@@ -13300,6 +13300,42 @@ main:has(> .accueil) {
   color: var(--muted);
 }
 
+/* -- Revoir l'animation : un bouton discret, en haut à droite, une fois tout posé -- */
+.acc-revoir {
+  position: absolute;
+  top: clamp(0.75rem, 2dvh, 1.5rem);
+  right: var(--acc-marge);
+  z-index: 6;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.5rem 0.95rem;
+  border-radius: var(--r-pilule);
+  background: color-mix(in srgb, var(--bg-deep) 40%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--frost) 28%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  font-family: var(--font-display);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  cursor: pointer;
+  animation: acc-apparait 0.8s ease both;
+  transition:
+    color 0.2s ease,
+    background-color 0.2s ease;
+}
+.acc-revoir:hover {
+  color: var(--frost);
+  background-color: color-mix(in srgb, var(--bg-deep) 60%, transparent);
+}
+.acc-revoir span {
+  font-size: 1rem;
+  letter-spacing: 0;
+}
+
 /* -- La page : le centre en haut, les tuiles en bas -- */
 .acc-scene {
   display: grid;

@@ -339,11 +339,14 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   de page compris (`.acc-calque`, plateau en `cover`) : une display de boosters (sans neige dessus,
   sans cadre blanc) tombe dans un champ de neige, s'y enfonce et se renverse un peu ; son couvercle
   saute, des boosters — de vrais sachets épais — et des mottes de neige sont éjectés (corps rigides
-  simulés, puis enregistrés) ; les quatre de la ligue s'élèvent et vont se placer. Deux cadrages
-  (`PAYSAGE` 16:9, `PORTRAIT` 1:2, `REQUETE_PORTRAIT`). À la dernière image, les vraies images des
-  boosters prennent le relais au pixel près (`places`, `placeEnVariables` : à changer avec la vidéo),
-  puis le site dissipe la scène dans un brouillard (`ecranBrume`, un shader WebGL) qui laisse
-  apparaître la page : au milieu, le nom, une phrase, l'entrée Twitch et le compte à rebours
+  simulés, puis enregistrés), y laissent leur empreinte ; les quatre de la ligue se relèvent
+  ensemble et vont prendre leur pose. Deux cadrages (`PAYSAGE` 16:9, `PORTRAIT` 1:2,
+  `REQUETE_PORTRAIT`). La vidéo porte trois images (la scène, les quatre boosters, leur
+  transparence) qu'un shader WebGL assemble (`ecranBrume`) : dès qu'ils se relèvent, un brouillard
+  monte **sous eux** (`BRUME`, `avanceeBrume`), couvre la scène, puis se dissipe sur la page. À la
+  dernière image, les vraies images des boosters prennent le relais au pixel près (`places`,
+  `placeEnVariables` : à changer avec la vidéo). Une fois tout posé, « Revoir l'animation »
+  (`.acc-revoir`) la relance. La page apparaît : au milieu, le nom, une phrase, l'entrée Twitch et le compte à rebours
   (`CalendrierSaisons compact`) ; en bas, six tuiles de verre plat pour les règles (sur téléphone,
   elles défilent du doigt de gauche à droite). La vidéo se joue même si le système demande moins
   d'animations (Windows le dit quand ses effets sont coupés) ; sans WebGL ou si la lecture est

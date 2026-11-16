@@ -18,11 +18,25 @@
 /** Le cadrage du téléphone et de la tablette debout. Le CSS dit la même chose (`.acc-scene`). */
 export const REQUETE_PORTRAIT = '(max-width: 1023px) and (orientation: portrait)';
 
-/** La durée du brouillard qui dissipe la scène, une fois la vidéo finie. */
-export const DUREE_BRUME_MS = 3200;
+/**
+ * Le brouillard (`ecranBrume`), en secondes depuis le début de la vidéo : il
+ * monte quand les quatre boosters se relèvent de la neige (`DEBUT`), couvre la
+ * scène sous eux pendant qu'ils vont prendre leur pose (`MONTEE`), puis se
+ * dissipe et laisse apparaître la page (`LEVEE`). Les boosters restent
+ * au-dessus : le brouillard ne les couvre jamais.
+ */
+export const BRUME = { debut: 3.2, montee: 2.4, levee: 3.4 } as const;
+
+/** L'avancée du brouillard, de 0 (rien) à 0,5 (la scène couverte) puis 1 (dissipé). */
+export function avanceeBrume(t: number): number {
+  const { debut, montee, levee } = BRUME;
+  if (t <= debut) return 0;
+  if (t <= debut + montee) return (0.5 * (t - debut)) / montee;
+  return Math.min(1, 0.5 + (0.5 * (t - debut - montee)) / levee);
+}
 
 /** Le moment du brouillard (de 0 à 1) où le centre de la page apparaît. */
-export const REVELATION_BRUME = 0.55;
+export const REVELATION_BRUME = 0.62;
 
 /** Un booster à la fin de la vidéo : le centre de son image, en pixels du plateau, et son inclinaison. */
 export interface PlaceBooster {
@@ -37,8 +51,10 @@ export interface FormatDisplay {
   /** La hauteur d'un booster à la fin, en pixels du plateau (image de 600 × 1119). */
   hauteurBooster: number;
   places: Record<string, PlaceBooster>;
-  /** Les vidéos, de la plus fine à la plus légère, avec la largeur d'écran (en pixels réels) qu'elles servent. */
-  videos: { src: string; pourLargeur: number }[];
+  /** La vidéo : la scène, l'image des boosters de la ligue et leur transparence, côte à côte. */
+  video: string;
+  /** Comment les trois images sont rangées : l'une sous l'autre, ou côte à côte. */
+  pile: 'verticale' | 'horizontale';
 }
 
 export const PAYSAGE: FormatDisplay = {
@@ -50,10 +66,8 @@ export const PAYSAGE: FormatDisplay = {
     folie: { x: 1375, y: 345, inclinaison: -3.5 },
     finisseur: { x: 1650, y: 390, inclinaison: -7 },
   },
-  videos: [
-    { src: '/accueil/display-2560.mp4?v=4', pourLargeur: 1800 },
-    { src: '/accueil/display-1600.mp4?v=4', pourLargeur: 0 },
-  ],
+  video: '/accueil/display-paysage.mp4?v=5',
+  pile: 'verticale',
 };
 
 export const PORTRAIT: FormatDisplay = {
@@ -65,7 +79,8 @@ export const PORTRAIT: FormatDisplay = {
     folie: { x: 668, y: 372, inclinaison: -3 },
     finisseur: { x: 900, y: 400, inclinaison: -8 },
   },
-  videos: [{ src: '/accueil/display-portrait.mp4?v=4', pourLargeur: 0 }],
+  video: '/accueil/display-portrait.mp4?v=5',
+  pile: 'horizontale',
 };
 
 /**

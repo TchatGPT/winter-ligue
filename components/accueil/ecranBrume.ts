@@ -1,14 +1,18 @@
 'use client';
 
 /**
- * L'écran de la display : la vidéo dessinée dans un `<canvas>` WebGL, puis
- * dissipée dans un brouillard (16/11/2026).
+ * L'écran de la display : la vidéo dessinée dans un `<canvas>` WebGL, avec son
+ * brouillard (16/11/2026).
  *
- * `brume` va de 0 à 1 : de 0 à 0,45, un brouillard monte des bords et couvre
- * la scène ; de 0,45 à 1, il se déchire — des trouées s'ouvrent là où il est le
- * plus mince, s'agrandissent, et ne laissent que des volutes qui s'effacent :
- * la page apparaît dessous. Le bruit qui fait le brouillard bouge avec `temps`.
- * Tout se calcule ici, net à toutes les tailles d'écran.
+ * La vidéo porte trois images côte à côte : la scène (la neige, la display),
+ * l'image des quatre boosters de la ligue, et leur transparence. Le shader pose
+ * la scène, le brouillard par-dessus, puis les boosters au-dessus de tout : le
+ * brouillard passe sous eux, jamais devant.
+ *
+ * `brume` va de 0 à 1 : de 0 à 0,5, il monte des bords et couvre la scène ; de
+ * 0,5 à 1, il se déchire — des trouées s'ouvrent là où il est le plus mince,
+ * s'agrandissent, et ne laissent que des volutes qui s'effacent : la page
+ * apparaît dessous. Le bruit qui le fait bouge avec `temps`.
  */
 
 const SOMMETS = `
@@ -22,6 +26,7 @@ void main() {
 const PIXELS = `
 precision highp float;
 uniform sampler2D video;
+uniform float horizontal;
 uniform float brume;
 uniform float temps;
 uniform vec2 taille;
@@ -50,8 +55,14 @@ float fbm(vec2 p) {
   return v;
 }
 
+vec2 tranche(float k) {
+  return mix(vec2(uv.x, (uv.y + k) / 3.0), vec2((uv.x + k) / 3.0, uv.y), horizontal);
+}
+
 void main() {
-  vec3 scene = texture2D(video, uv).rgb;
+  vec3 scene = texture2D(video, tranche(0.0)).rgb;
+  vec3 heros = texture2D(video, tranche(1.0)).rgb;
+  float alphaHeros = smoothstep(0.02, 0.98, texture2D(video, tranche(2.0)).r);
   vec2 q = (uv - 0.5) * vec2(taille.x / taille.y, 1.0);
   vec2 p = q * 2.4;
   float t = temps;
@@ -60,14 +71,14 @@ void main() {
   float n2 = fbm(p * 1.6 + n1 * 1.4 - vec2(t * 0.11, t * 0.05));
   float nuage = clamp(n1 * 0.5 + n2 * 0.5, 0.0, 1.0);
 
-  float monte = smoothstep(0.0, 0.45, brume);
-  float leve = smoothstep(0.45, 1.0, brume);
+  float monte = smoothstep(0.0, 0.5, brume);
+  float leve = smoothstep(0.5, 1.0, brume);
 
   // Le brouillard arrive des bords vers le centre, épais et inégal.
   float bord = length(q * vec2(0.9, 1.25));
   float front = mix(1.25, -0.35, monte);
   float dens = smoothstep(front - 0.25, front + 0.15, bord + (nuage - 0.5) * 0.9);
-  dens = clamp(dens * (0.75 + 0.35 * nuage), 0.0, 1.0);
+  dens = clamp(dens * (0.9 + 0.3 * nuage), 0.0, 1.0);
 
   vec3 clair = vec3(0.93, 0.95, 0.99);
   vec3 ombre = vec3(0.70, 0.76, 0.86);
@@ -77,7 +88,9 @@ void main() {
   // Il se lève : des trouées s'ouvrent là où il est le plus mince.
   float trouee = smoothstep(nuage - 0.12, nuage + 0.12, leve * 1.35 - 0.12);
   float alpha = 1.0 - trouee;
-  gl_FragColor = vec4(couleur * alpha, alpha);
+  // Les boosters de la ligue, au-dessus du brouillard.
+  vec3 rgb = heros * alphaHeros + couleur * alpha * (1.0 - alphaHeros);
+  gl_FragColor = vec4(rgb, alphaHeros + alpha * (1.0 - alphaHeros));
 }`;
 
 export interface EcranBrume {
@@ -95,7 +108,11 @@ function shader(gl: WebGLRenderingContext, type: number, source: string): WebGLS
 }
 
 /** Prépare le canvas, ou rend `null` si WebGL manque : l'accueil saute alors la vidéo. */
-export function ecranBrume(canvas: HTMLCanvasElement, video: HTMLVideoElement): EcranBrume | null {
+export function ecranBrume(
+  canvas: HTMLCanvasElement,
+  video: HTMLVideoElement,
+  pile: 'verticale' | 'horizontale',
+): EcranBrume | null {
   const gl = canvas.getContext('webgl', { premultipliedAlpha: true, alpha: true, antialias: false });
   if (!gl) return null;
   const vs = shader(gl, gl.VERTEX_SHADER, SOMMETS);
@@ -107,6 +124,7 @@ export function ecranBrume(canvas: HTMLCanvasElement, video: HTMLVideoElement): 
   gl.linkProgram(prog);
   if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return null;
   gl.useProgram(prog);
+  gl.uniform1f(gl.getUniformLocation(prog, 'horizontal'), pile === 'horizontale' ? 1 : 0);
   const uBrume = gl.getUniformLocation(prog, 'brume');
   const uTemps = gl.getUniformLocation(prog, 'temps');
   const uTaille = gl.getUniformLocation(prog, 'taille');
@@ -129,8 +147,8 @@ export function ecranBrume(canvas: HTMLCanvasElement, video: HTMLVideoElement): 
   return {
     dessine(brume, temps) {
       if (video.readyState < 2 || !video.videoWidth) return;
-      const l = video.videoWidth;
-      const h = video.videoHeight;
+      const l = pile === 'horizontale' ? video.videoWidth / 3 : video.videoWidth;
+      const h = pile === 'horizontale' ? video.videoHeight : video.videoHeight / 3;
       if (canvas.width !== l || canvas.height !== h) {
         canvas.width = l;
         canvas.height = h;

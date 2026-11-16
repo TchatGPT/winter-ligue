@@ -3,11 +3,11 @@
 import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from 'react';
 import { ecranBrume } from '@/components/accueil/ecranBrume';
 import {
-  DUREE_BRUME_MS,
   PAYSAGE,
   PORTRAIT,
   REQUETE_PORTRAIT,
   REVELATION_BRUME,
+  avanceeBrume,
   placeEnVariables,
 } from '@/components/accueil/placesDisplay';
 
@@ -23,9 +23,10 @@ export interface BoosterDeLaScene {
 
 /**
  * - `charge` : la vidéo se prépare, rien ne se voit encore ;
- * - `video` : la display tombe dans la neige, les boosters en sortent ;
- * - `brume` : les vraies images des boosters sont posées, la scène se dissipe
- *   dans un brouillard (`ecranBrume`) ;
+ * - `video` : la display tombe dans la neige, les boosters en sortent ; quand
+ *   les quatre de la ligue se relèvent, le brouillard monte sous eux ;
+ * - `brume` : ils ont pris leur pose ; les vraies images sont posées à leur
+ *   place, et le brouillard se dissipe sur la page ;
  * - `fini` : il ne reste que les boosters et la page.
  */
 type Phase = 'charge' | 'video' | 'brume' | 'fini';
@@ -54,6 +55,8 @@ export function SceneDisplay({ boosters, children }: { boosters: BoosterDeLaScen
   const [phase, setPhase] = useState<Phase>('charge');
   const [revele, setRevele] = useState(false);
   const [arrivee, setArrivee] = useState<'video' | 'directe'>('video');
+  // Revoir l'animation : chaque essai relance la vidéo depuis le début.
+  const [essai, setEssai] = useState(0);
 
   useEffect(() => {
     const c = canvas.current;
@@ -67,7 +70,9 @@ export function SceneDisplay({ boosters, children }: { boosters: BoosterDeLaScen
       sansVideo();
       return;
     }
-    const ecran = ecranBrume(c, v);
+    // Le cadrage suit l'écran : portrait sur un téléphone debout, paysage ailleurs.
+    const format = window.matchMedia(REQUETE_PORTRAIT).matches ? PORTRAIT : PAYSAGE;
+    const ecran = ecranBrume(c, v, format.pile);
     if (!ecran) {
       sansVideo();
       return;
@@ -79,21 +84,24 @@ export function SceneDisplay({ boosters, children }: { boosters: BoosterDeLaScen
     const t0 = performance.now();
     const temps = () => (performance.now() - t0) / 1000;
 
+    // Pendant la vidéo, à chaque image : le brouillard suit le temps de la vidéo.
     const boucleVideo = () => {
       if (arret) return;
-      ecran.dessine(0, temps());
-      if ('requestVideoFrameCallback' in v) v.requestVideoFrameCallback(boucleVideo);
-      else image = requestAnimationFrame(boucleVideo);
+      const b = avanceeBrume(v.currentTime);
+      ecran.dessine(b, temps());
+      if (b >= REVELATION_BRUME) setRevele(true);
+      image = requestAnimationFrame(boucleVideo);
     };
-    // La vidéo finie : les vraies images sont posées, le brouillard dissipe la scène.
+    // La vidéo finie : les vraies images sont posées, le brouillard finit de se dissiper.
     const brume = () => {
       if (arret) return;
       arret = true;
       cancelAnimationFrame(image);
       setPhase('brume');
+      const fin = Number.isFinite(v.duration) ? v.duration : v.currentTime;
       const debut = performance.now();
       const pas = () => {
-        const b = Math.min(1, (performance.now() - debut) / DUREE_BRUME_MS);
+        const b = avanceeBrume(fin + (performance.now() - debut) / 1000);
         ecran.dessine(b, temps());
         if (b >= REVELATION_BRUME) setRevele(true);
         if (b < 1) image = requestAnimationFrame(pas);
@@ -113,13 +121,8 @@ export function SceneDisplay({ boosters, children }: { boosters: BoosterDeLaScen
       sansVideo();
     };
 
-    // Le cadrage suit l'écran ; la vidéo la plus fine que l'écran mérite, la plus
-    // légère si l'on économise les données.
-    const format = window.matchMedia(REQUETE_PORTRAIT).matches ? PORTRAIT : PAYSAGE;
-    const leger = (navigator as { connection?: { saveData?: boolean } }).connection?.saveData;
-    const pixels = Math.max(window.innerWidth, window.innerHeight) * (window.devicePixelRatio || 1);
-    const choix = leger ? format.videos.at(-1) : format.videos.find((x) => pixels >= x.pourLargeur);
-    v.src = (choix ?? format.videos[0]).src;
+    v.src = format.video;
+    v.currentTime = 0;
     v.addEventListener('playing', enLecture);
     v.addEventListener('ended', brume);
     v.addEventListener('error', echec);
@@ -137,14 +140,22 @@ export function SceneDisplay({ boosters, children }: { boosters: BoosterDeLaScen
       v.pause();
       ecran.libere();
     };
-  }, []);
+  }, [essai]);
+
+  const revoir = () => {
+    setPhase('charge');
+    setRevele(false);
+    setArrivee('video');
+    setEssai((e) => e + 1);
+  };
 
   return (
     <div className="acc-scene" data-phase={phase} data-revele={revele ? '' : undefined} data-arrivee={arrivee}>
       <div className="acc-calque">
         <div className="acc-plateau">
           <video ref={video} className="acc-video" muted playsInline preload="auto" aria-hidden="true" />
-          <canvas ref={canvas} className="acc-canvas" aria-hidden="true" />
+          {/* Un canvas neuf à chaque essai : l'ancien a rendu son contexte WebGL. */}
+          <canvas key={essai} ref={canvas} className="acc-canvas" aria-hidden="true" />
           <ul className="acc-boosters" aria-label="Les quatre boosters">
             {boosters.map((b, i) => {
               const paysage = PAYSAGE.places[b.id];
@@ -183,6 +194,11 @@ export function SceneDisplay({ boosters, children }: { boosters: BoosterDeLaScen
         </div>
       </div>
       {children}
+      {phase === 'fini' && arrivee === 'video' && (
+        <button type="button" className="acc-revoir" onClick={revoir}>
+          <span aria-hidden="true">↻</span> Revoir l’animation
+        </button>
+      )}
       <noscript>
         <style>{'.acc-scene .acc-centre > *, .acc-scene .acc-tuile, .acc-scene .acc-booster { opacity: 1 !important; }'}</style>
       </noscript>
