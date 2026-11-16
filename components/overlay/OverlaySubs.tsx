@@ -1,13 +1,14 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { IconSwords } from '@/components/icons';
 import { Scene } from '@/components/overlay/Scene';
 import { useFluxOverlay, type FluxRecu } from '@/components/overlay/useFluxOverlay';
 import { SnowCap } from '@/components/SnowCap';
-import { vueSubsDemo } from '@/components/overlay/demo';
+import { duelDemo, vueSubsDemo } from '@/components/overlay/demo';
 import { flakes } from '@/components/ui';
 import { crossedMilestones } from '@/lib/domain/rules';
-import type { SubsOverlay } from '@/lib/services/overlay';
+import type { DuelOverlay, SubsOverlay } from '@/lib/services/overlay';
 
 /**
  * Le compteur de subs du stream, toujours affiché.
@@ -16,9 +17,19 @@ import type { SubsOverlay } from '@/lib/services/overlay';
  * nouvelle valeur, et le « +N » s'inscrit dessous — il recouvrait le texte
  * d'à côté. À droite, les paliers — Booster Commu, Avalanche, Booster Folie,
  * Tempête de neige — défilent l'un après l'autre (`DEFILE_MS`), chacun avec ce
- * qu'il reste et ce qu'il fait. Quand un palier tombe, une bannière l'annonce
- * **sous** le compteur, sans le cacher : le nombre qui monte reste à l'écran.
+ * qu'il reste. Le seul overlay du stream avec celui des boosters (16/11/2026) :
+ * au-dessus du compteur, une ligne apparaît quand un joueur lance un duel ou
+ * qu'un palier tombe, puis repart — une à la fois. Fait pour être petit,
+ * au-dessus de la caméra : de gros caractères, rien de superflu.
  */
+
+/** Une ligne au-dessus du compteur : un duel lancé, ou un palier franchi. */
+type Annonce =
+  | { genre: 'duel'; cle: string; duel: DuelOverlay }
+  | { genre: 'palier'; cle: string; label: string };
+
+/** Le temps qu'une annonce reste affichée. */
+const ANNONCE_MS = 8000;
 
 /** Le temps qu'un palier reste affiché avant le suivant. */
 const DEFILE_MS = 6000;
@@ -45,7 +56,10 @@ export function OverlaySubs({
   const [vue, setVue] = useState<SubsOverlay>(initial);
   const [affiche, setAffiche] = useState(initial.total);
   const [gain, setGain] = useState<{ n: number; cle: number } | null>(null);
-  const [palier, setPalier] = useState<{ label: string; description: string; cle: number } | null>(null);
+  const [annonces, setAnnonces] = useState<Annonce[]>([]);
+  const annonce = annonces[0] ?? null;
+  // Trois en file au plus : une rafale ne tient pas l'écran des minutes.
+  const ajoute = useCallback((a: Annonce) => setAnnonces((f) => [...f, a].slice(0, 3)), []);
   const [horloge, setHorloge] = useState(() => Date.now());
   const [tour, setTour] = useState(0);
   const precedent = useRef(initial.total);
@@ -61,11 +75,29 @@ export function OverlaySubs({
     setGain({ n: suivante.total - avant, cle: Date.now() });
     const franchis = crossedMilestones(avant, suivante.total);
     const dernier = franchis[franchis.length - 1];
-    if (dernier) setPalier({ label: dernier.label, description: dernier.description, cle: Date.now() });
-  }, []);
+    if (dernier) ajoute({ genre: 'palier', cle: `p-${Date.now()}`, label: dernier.label });
+  }, [ajoute]);
 
-  const surFlux = useCallback((flux: FluxRecu) => recoit(flux.subs), [recoit]);
-  useFluxOverlay({ cle, depart, intervalle: 4000, actif: !demo, surFlux });
+  const surFlux = useCallback(
+    (flux: FluxRecu, nouveaux: { duels: DuelOverlay[] }) => {
+      recoit(flux.subs);
+      for (const d of nouveaux.duels) ajoute({ genre: 'duel', cle: d.id, duel: d });
+    },
+    [recoit, ajoute],
+  );
+  useFluxOverlay({ cle, depart, intervalle: 3000, actif: !demo, surFlux });
+
+  // L'aperçu : un duel de temps en temps.
+  useEffect(() => {
+    if (!demo) return;
+    let n = 0;
+    const t = setInterval(() => {
+      n += 1;
+      const d = duelDemo(n);
+      ajoute({ genre: 'duel', cle: d.id, duel: d });
+    }, 11000);
+    return () => clearInterval(t);
+  }, [demo, ajoute]);
 
   // L'aperçu : des subs qui tombent, par petits paquets.
   useEffect(() => {
@@ -96,10 +128,10 @@ export function OverlaySubs({
   }, [vue.total]);
 
   useEffect(() => {
-    if (!palier) return;
-    const t = setTimeout(() => setPalier(null), 6000);
+    if (!annonce) return;
+    const t = setTimeout(() => setAnnonces((f) => f.slice(1)), ANNONCE_MS);
     return () => clearTimeout(t);
-  }, [palier]);
+  }, [annonce]);
 
   useEffect(() => {
     if (!gain) return;
@@ -127,6 +159,28 @@ export function OverlaySubs({
 
   return (
     <Scene largeur={880} hauteur={360}>
+      {/* La ligne au-dessus : un duel, ou un palier franchi. */}
+      {annonce && (
+        <div className="ov-annonce glass" key={annonce.cle} data-genre={annonce.genre}>
+          {annonce.genre === 'duel' ? (
+            <>
+              <IconSwords className="ov-annonce-icone" />
+              <span className="ov-annonce-texte">
+                <b>{annonce.duel.hote}</b> lance un duel · ❄ {flakes(annonce.duel.mise)}
+              </span>
+              <kbd>!duel</kbd>
+            </>
+          ) : (
+            <>
+              <span className="ov-annonce-surtitre">Palier</span>
+              <span className="ov-annonce-texte">
+                <b>{annonce.label}</b> débloqué
+              </span>
+            </>
+          )}
+        </div>
+      )}
+
       <div className="ov-subs glass">
         <SnowCap radius="var(--r-lg)" seed="ov-subs" epaisseur={16} />
 
@@ -154,7 +208,6 @@ export function OverlaySubs({
               <span className="ov-subs-jauge" aria-hidden="true">
                 <b style={{ width: `${Math.round(montre.progression * 100)}%` }} />
               </span>
-              <p className="ov-subs-effet">{montre.description}</p>
             </div>
           )}
           <div className="ov-subs-pied">
@@ -174,14 +227,6 @@ export function OverlaySubs({
           </div>
         </div>
       </div>
-
-      {palier && (
-        <div className="ov-subs-palier glass" key={palier.cle}>
-          <span>Palier franchi</span>
-          <strong>{palier.label}</strong>
-          <em>{palier.description}</em>
-        </div>
-      )}
     </Scene>
   );
 }

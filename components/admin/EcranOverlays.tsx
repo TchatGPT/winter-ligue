@@ -4,11 +4,10 @@ import { useState } from 'react';
 import { useAction } from '@/components/admin/action';
 import { EcranAdmin, Panneau } from '@/components/admin/Kit';
 import { OverlayBooster } from '@/components/overlay/OverlayBooster';
-import { OverlayDuel } from '@/components/overlay/OverlayDuel';
 import { OverlaySubs } from '@/components/overlay/OverlaySubs';
 import { vueSubsDemo } from '@/components/overlay/demo';
 
-type IdOverlay = 'booster' | 'duel' | 'subs';
+type IdOverlay = 'booster' | 'subs';
 
 const OVERLAYS: { id: IdOverlay; titre: string; aide: string; largeur: number; hauteur: number }[] = [
   {
@@ -19,16 +18,9 @@ const OVERLAYS: { id: IdOverlay; titre: string; aide: string; largeur: number; h
     hauteur: 1080,
   },
   {
-    id: 'duel',
-    titre: 'Duel lancé',
-    aide: 'Quand un joueur lance un duel et attend un adversaire : son nom, sa mise, et « !duel » dans le tchat en dessous.',
-    largeur: 1200,
-    hauteur: 420,
-  },
-  {
     id: 'subs',
-    titre: 'Compteur de subs',
-    aide: 'Toujours affiché : les subs de la saison, et les paliers qui défilent avec ce qu’il reste. Un palier franchi s’annonce en dessous.',
+    titre: 'Compteur de subs et duels',
+    aide: 'Toujours affiché, lisible même en petit (au-dessus de la caméra) : les subs de la saison et le prochain palier. Au-dessus, une ligne apparaît quand un joueur lance un duel ou qu’un palier est franchi.',
     largeur: 880,
     hauteur: 360,
   },
@@ -84,7 +76,7 @@ export function EcranOverlays({
 
   return (
     <EcranAdmin
-      intro="Trois sources pour OBS, aux couleurs du site. Elles suivent la ligue en direct : rien à déclencher à la main."
+      intro="Deux sources pour OBS, aux couleurs du site. Elles suivent la ligue en direct : rien à déclencher à la main."
       grille="overlays"
       message={message}
       onFermeMessage={() => setMessage(null)}
@@ -116,7 +108,6 @@ export function EcranOverlays({
         <Panneau key={o.id} zone={o.id} titre={o.titre} sousTitre={o.aide}>
           <div className="admin-apercu" style={{ aspectRatio: `${o.largeur} / ${o.hauteur}` }}>
             {o.id === 'booster' && <OverlayBooster cle="" depart={depart} demo />}
-            {o.id === 'duel' && <OverlayDuel cle="" depart={depart} demo />}
             {o.id === 'subs' && <OverlaySubs cle="" depart={depart} initial={vueSubsDemo(42)} demo />}
           </div>
 

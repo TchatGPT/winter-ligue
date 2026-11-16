@@ -316,6 +316,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   ils interrogent le serveur toutes les deux secondes pendant un live.
   L'overlay des boosters ne joue que le Perso et le Finisseur : le Commu et le Folie,
   la streameuse les ouvre elle-même à l'écran (`HORS_OVERLAY`, 15/11/2026).
+  Il n'y a plus d'overlay des duels (16/11/2026) : le compteur de subs (`OverlaySubs`) annonce
+  un duel lancé, ou un palier franchi, par une ligne au-dessus de lui.
 - **Les illustrations passent par `npm run cartes`** (`scripts/index-art.mjs`, lancé aussi
   avant chaque build) : l'index donne chaque image avec l'empreinte de son fichier
   (`?v=…`), ce qui permet de la garder un an en cache (`next.config.ts`), et fait les

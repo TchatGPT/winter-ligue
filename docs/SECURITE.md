@@ -288,7 +288,7 @@ par un autre joueur est refusé (comparé sans suffixe, casse ni accents,
 l'autre. Tant qu'il manque, la fenêtre d'inscription s'ouvre sur chaque page,
 sauf pour la streameuse, qui ne joue pas.
 
-**Les overlays OBS** (`/overlay/booster`, `/overlay/duel`, `/overlay/subs`) n'ont
+**Les overlays OBS** (`/overlay/booster`, `/overlay/subs`) n'ont
 pas de session : ils s'ouvrent par un lien qui porte une clé signée (dérivée
 d'`AUTH_SECRET`) et une **génération** ; « Régénérer les liens » (admin) avance la
 génération et révoque tous les liens donnés. Une clé mal signée est refusée sans

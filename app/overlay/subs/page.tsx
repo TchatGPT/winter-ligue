@@ -6,7 +6,7 @@ import { accesOverlay } from '@/lib/services/overlay';
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Overlay — subs', robots: { index: false, follow: false } };
 
-/** L'overlay OBS du compteur de subs. Source conseillée : 880 × 260. */
+/** L'overlay OBS du compteur de subs, et des duels lancés. Source conseillée : 880 × 360. */
 export default async function OverlaySubsPage({
   searchParams,
 }: {
