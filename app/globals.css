@@ -13362,7 +13362,7 @@ main:has(> .accueil .acc-scene[data-phase='fini']) {
   text-align: center;
 }
 .acc-centre > *,
-.acc-tuile {
+.acc-carrousel {
   opacity: 0;
 }
 .acc-scene[data-revele] .acc-centre > * {
@@ -13446,55 +13446,101 @@ main:has(> .accueil .acc-scene[data-phase='fini']) {
 }
 
 /* -- Les tuiles : les règles, en verre -- */
-/* On les fait défiler soi-même (`Defilement`) : au doigt, à la souris en les
-   attrapant, ou à la molette. Elles se fondent sur les côtés. */
-.acc-tuiles {
-  --l-tuile: min(78vw, 17rem);
-  --g-tuile: 0.75rem;
-  --bord-fondu: 9%;
+/* Les règles en carrousel (`CarrouselTuiles`) : une tuile au milieu ; ses
+   voisines, une de chaque côté, plus petites, tournées sur un arc de cercle,
+   qui s'effacent dans le fond ; les autres attendent derrière, invisibles.
+   Toutes sont empilées dans la même case : la plus haute donne la hauteur.
+   Chacune reçoit sa distance au milieu (`--d`, `--ad`). */
+.acc-carrousel {
+  --l-tuile: min(80vw, 24rem);
   position: relative;
   z-index: 2;
-  display: flex;
-  overflow-x: auto;
-  overscroll-behavior-x: contain;
-  padding-block: 0.4rem;
-  padding-inline: var(--bord-fondu);
-  scroll-padding-inline: var(--bord-fondu);
-  scroll-snap-type: x proximity;
-  scrollbar-width: none;
-  cursor: grab;
-  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 var(--bord-fondu), #000 calc(100% - var(--bord-fondu)), transparent 100%);
-  mask-image: linear-gradient(90deg, transparent 0, #000 var(--bord-fondu), #000 calc(100% - var(--bord-fondu)), transparent 100%);
+  display: grid;
+  justify-items: center;
+  overflow-x: clip;
+  outline: none;
 }
-.acc-tuiles::-webkit-scrollbar {
-  display: none;
-}
-.acc-tuiles[data-attrape] {
-  cursor: grabbing;
-  scroll-snap-type: none;
-  user-select: none;
-}
-.acc-tuiles:focus-visible {
+.acc-carrousel:focus-visible .acc-tuile[data-centre] {
   outline: 2px solid var(--ice);
-  outline-offset: 2px;
+  outline-offset: 3px;
+}
+.acc-carrousel-scene {
+  display: grid;
+  width: 100%;
+  place-items: stretch center;
+  padding-top: 0.6rem;
+  perspective: 1400px;
+  touch-action: pan-y;
+  cursor: grab;
+  user-select: none;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 16%, #000 84%, transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0, #000 16%, #000 84%, transparent 100%);
+}
+.acc-carrousel-scene:active {
+  cursor: grabbing;
+}
+.acc-carrousel .acc-tuile {
+  grid-area: 1 / 1;
+  width: var(--l-tuile);
+  z-index: calc(10 - var(--ad));
+  transform: translateX(calc(var(--d) * 104%)) translateZ(calc(var(--ad) * -260px))
+    rotateY(calc(var(--d) * -28deg));
+  opacity: max(0, 1 - var(--ad) * 0.48);
+  filter: brightness(calc(1 - var(--ad) * 0.28)) saturate(calc(1 - var(--ad) * 0.2));
+  transition:
+    transform 0.75s cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 0.75s ease,
+    filter 0.75s ease;
+}
+.acc-carrousel .acc-tuile:not([data-centre]) {
+  cursor: pointer;
+}
+/* Au-dessus des tuiles, au milieu : un point par règle, cliquable. Rien ne
+   passe sur le texte. */
+.acc-carrousel-nav {
+  order: -1;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+.acc-carrousel-nav ol {
+  display: flex;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.acc-carrousel-nav ol button {
+  display: block;
+  width: 0.5rem;
+  height: 0.5rem;
+  /* Une zone de clic plus large que le point, pour le doigt. */
+  outline: 0.45rem solid transparent;
+  border-radius: var(--r-pilule);
+  background: color-mix(in srgb, var(--frost) 35%, transparent);
+  cursor: pointer;
+  transition:
+    width 0.3s ease,
+    background-color 0.3s ease;
+}
+.acc-carrousel-nav ol button[aria-current] {
+  width: 1.4rem;
+  background: var(--ice);
 }
 /* Du verre liquide, comme les plaques de l'overlay : presque transparent, une
    teinte glace et violette qui glisse dessus, un bord clair et net. */
 .acc-tuile {
   position: relative;
   display: grid;
-  flex: 0 0 var(--l-tuile);
   align-content: start;
   gap: 0.35rem;
-  margin-right: var(--g-tuile);
   padding: 1rem 1.1rem 1.05rem;
-  scroll-snap-align: start;
   border-radius: var(--r-sm);
   background:
     linear-gradient(115deg, color-mix(in srgb, var(--ice) 16%, transparent) 0%, transparent 46%, color-mix(in srgb, var(--violet) 14%, transparent) 100%),
     linear-gradient(180deg, color-mix(in srgb, var(--frost) 8%, transparent) 0%, transparent 42%),
-    color-mix(in srgb, var(--bg-deep) 18%, transparent);
-  backdrop-filter: blur(6px) saturate(1.45);
+    color-mix(in srgb, var(--bg-deep) 32%, transparent);
+  backdrop-filter: blur(10px) saturate(1.45);
   -webkit-backdrop-filter: blur(6px) saturate(1.45);
   box-shadow:
     inset 0 1px 10px color-mix(in srgb, var(--frost) 8%, transparent),
@@ -13523,13 +13569,10 @@ main:has(> .accueil .acc-scene[data-phase='fini']) {
   mask-composite: exclude;
   pointer-events: none;
 }
-.acc-scene[data-revele] .acc-tuile {
+.acc-scene[data-revele] .acc-carrousel {
   animation: acc-monte 0.8s cubic-bezier(0.2, 0.9, 0.25, 1) both;
-  animation-delay: calc(0.35s + var(--i) * 0.07s);
+  animation-delay: 0.35s;
   opacity: 1;
-}
-.acc-tuile:hover {
-  transform: translateY(-3px);
 }
 .acc-tuile header {
   display: flex;
@@ -13760,8 +13803,7 @@ main:has(> .accueil .acc-scene[data-phase='fini']) {
   }
   /* Toute la largeur, et un peu sous le pied de page. */
   .acc-tuiles {
-    --l-tuile: clamp(18rem, 24cqw, 32rem);
-    --g-tuile: clamp(0.7rem, 1cqw, 1.4rem);
+    --l-tuile: clamp(21rem, 30cqw, 42rem);
     margin-inline: calc(-1 * var(--acc-marge));
     margin-bottom: -2.1rem;
   }
@@ -13783,10 +13825,10 @@ main:has(> .accueil .acc-scene[data-phase='fini']) {
     font-size: clamp(0.625rem, 0.72cqw, 1rem);
   }
   .acc-tuile h2 {
-    font-size: clamp(1.0625rem, 1.6cqw, 2.3rem);
+    font-size: clamp(1.2rem, 1.9cqw, 2.7rem);
   }
   .acc-tuile p {
-    font-size: clamp(0.8125rem, 1.08cqw, 1.45rem);
+    font-size: clamp(0.875rem, 1.2cqw, 1.6rem);
     line-height: 1.4;
   }
   /* Le compte à rebours, plus gros sur un ordinateur. */
@@ -13899,9 +13941,7 @@ main:has(> .accueil .acc-scene[data-phase='fini']) {
     font-size: 2.3cqw;
   }
   .acc-tuiles {
-    --l-tuile: 74cqw;
-    --g-tuile: 3cqw;
-    --bord-fondu: 6%;
+    --l-tuile: 76cqw;
     position: absolute;
     right: 0;
     bottom: 3%;

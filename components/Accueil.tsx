@@ -1,5 +1,4 @@
-import type { CSSProperties, ReactNode } from 'react';
-import { Defilement } from '@/components/accueil/Defilement';
+import { CarrouselTuiles, type TuileRegle } from '@/components/accueil/CarrouselTuiles';
 import { type BoosterDeLaScene, SceneDisplay } from '@/components/accueil/SceneDisplay';
 import { CalendrierSaisons, type SaisonDuCalendrier } from '@/components/CalendrierSaisons';
 import {
@@ -49,13 +48,6 @@ function fleche(periode: string): string {
   return m ? `${m[1]} → ${m[2]}` : periode;
 }
 
-interface Tuile {
-  cle: string;
-  theme: string;
-  icone: ReactNode;
-  titre: string;
-  texte: ReactNode;
-}
 
 export function Accueil({
   twitchEnabled,
@@ -101,7 +93,7 @@ export function Accueil({
   }));
 
   const [s1, s2] = saisons;
-  const tuiles: Tuile[] = [
+  const tuiles: TuileRegle[] = [
     {
       cle: 'games',
       theme: 'Le classement',
@@ -208,21 +200,8 @@ export function Accueil({
           <CalendrierSaisons saisons={saisons} maintenant={Date.now()} compact />
         </section>
 
-        {/* Les tuiles : on les fait défiler soi-même, à gauche ou à droite. */}
-        <Defilement className="acc-tuiles" label="Comment ça marche">
-          {tuiles.map((t, i) => (
-            <article key={t.cle} className="acc-tuile" style={{ ['--i' as string]: i } as CSSProperties}>
-              <header>
-                <span className="acc-tuile-icone" aria-hidden="true">
-                  {t.icone}
-                </span>
-                <span className="acc-tuile-theme">{t.theme}</span>
-              </header>
-              <h2>{t.titre}</h2>
-              <p>{t.texte}</p>
-            </article>
-          ))}
-        </Defilement>
+        {/* Les règles, en carrousel : une au milieu, ses voisines qui s'effacent dans le fond. */}
+        <CarrouselTuiles tuiles={tuiles} label="Comment ça marche" />
       </SceneDisplay>
     </div>
   );
