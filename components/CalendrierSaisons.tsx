@@ -32,10 +32,13 @@ export interface SaisonDuCalendrier {
 export function CalendrierSaisons({
   saisons,
   maintenant,
+  compact = false,
 }: {
   saisons: SaisonDuCalendrier[];
   /** L'heure du serveur au rendu, en millisecondes. */
   maintenant: number;
+  /** Le compte à rebours seul, sans les saisons (l'accueil les dit dans une tuile). */
+  compact?: boolean;
 }) {
   const [t, setT] = useState(maintenant);
   useEffect(() => {
@@ -53,7 +56,7 @@ export function CalendrierSaisons({
   const suivante = saisons.slice(1).find((s) => Date.parse(s.debut) > t) ?? null;
 
   return (
-    <div className="calendrier">
+    <div className="calendrier" data-compact={compact ? '' : undefined}>
       {prochaine ? (
         <Rebours
           titre={prochaine === saisons[0] ? `Coup d’envoi de la ${prochaine.nom}` : `La ${prochaine.nom} commence dans`}
@@ -67,6 +70,7 @@ export function CalendrierSaisons({
         </p>
       )}
 
+      {!compact && (
       <ol className="calendrier-saisons" aria-label="Les saisons de l’hiver">
         {saisons.map((s) => {
           const a = Date.parse(s.debut);
@@ -99,7 +103,8 @@ export function CalendrierSaisons({
           );
         })}
       </ol>
-      {suivante && (
+      )}
+      {!compact && suivante && (
         <p className="calendrier-zero">
           Le {suivante.dates.split(' → ')[0]}, classement et flocons repartent de zéro : ton compte reste.
         </p>

@@ -1,8 +1,16 @@
+import type { CSSProperties, ReactNode } from 'react';
+import { type BoosterDeLaScene, SceneDisplay } from '@/components/accueil/SceneDisplay';
 import { CalendrierSaisons, type SaisonDuCalendrier } from '@/components/CalendrierSaisons';
-import { type EtapeDuPaquet, PaquetEtapes } from '@/components/PaquetEtapes';
-import { type BoosterEnVitrine, VitrineBoosters } from '@/components/VitrineBoosters';
-import { IconJauge, IconPack, IconSnowflake, IconSwords, IconTrophy, IconTwitch } from '@/components/icons';
-import { GEMME_DU_PACK, PACKS, packArt } from '@/lib/domain/catalog';
+import {
+  IconCarte,
+  IconJauge,
+  IconPack,
+  IconSnowflake,
+  IconSwords,
+  IconTrophy,
+  IconTwitch,
+} from '@/components/icons';
+import { PACKS, packArt } from '@/lib/domain/catalog';
 import { num } from '@/lib/format';
 import {
   CADEAU_DU_JOUR,
@@ -17,22 +25,18 @@ import {
 } from '@/lib/domain/rules';
 
 /**
- * L'accueil, quand on n'est pas connecté.
+ * L'accueil, quand on n'est pas connecté (16/11/2026).
  *
  * Rien de la ligue n'est visible sans compte : ni classement, ni joueurs, ni
- * duels en cours. La page dit ce qu'est la ligue, et comment y entrer — sur un
- * ordinateur, **en un seul écran, sans défiler** (13/11/2026) :
+ * duels en cours. La page dit ce qu'est la ligue, et comment y entrer.
  *
- *  - au centre, le nom, une phrase, l'entrée par Twitch, puis le calendrier
- *    (`CalendrierSaisons`) : le compte à rebours, et les deux saisons de
- *    l'hiver — la Mini Ligue pour se chauffer, la Saison 2, la vraie, qui
- *    repart de zéro le 4 janvier ;
- *  - autour du titre, les quatre boosters (`VitrineBoosters`), deux de chaque
- *    côté, chacun avec son nom et ce qui le fait tomber ;
- *  - en bas, la ligue en cinq étapes : un paquet de blocs de glace
- *    (`PaquetEtapes`) qu'on fait tourner, l'essentiel seulement.
- *
- * Sur un téléphone ou une tablette debout, tout s'empile et la page défile.
+ * Une vidéo rendue dans Blender ouvre la page, à chaque visite : une display
+ * de boosters aux couleurs de la ligue se pose, s'ouvre, et les quatre
+ * boosters en sortent pour se placer, deux de chaque côté ; la display
+ * s'efface (`SceneDisplay`). Restent les boosters et, au milieu, le nom, une
+ * phrase, l'entrée par Twitch et le compte à rebours ; en bas, six tuiles de
+ * verre disent les règles. Sur un ordinateur, tout tient dans l'écran, sans
+ * défiler ; sur un téléphone, tout s'empile.
  *
  * Toutes les valeurs viennent de `lib/domain/rules` et du catalogue : la page
  * ne peut pas dire autre chose que ce que le serveur applique.
@@ -44,8 +48,15 @@ function fleche(periode: string): string {
   return m ? `${m[1]} → ${m[2]}` : periode;
 }
 
+interface Tuile {
+  cle: string;
+  theme: string;
+  icone: ReactNode;
+  titre: string;
+  texte: ReactNode;
+}
+
 export function Accueil({ twitchEnabled, devLogin }: { twitchEnabled: boolean; devLogin: boolean }) {
-  // La saison du calendrier : la Mini Ligue jusqu'au 4 janvier, puis la saison 2.
   const saison = saisonDuMoment();
   const nomCourt = (s: (typeof SAISONS)[number]) => s.nom.split(' · ').at(-1) ?? s.nom;
 
@@ -55,9 +66,7 @@ export function Accueil({ twitchEnabled, devLogin }: { twitchEnabled: boolean; d
     role: s.numero === 1 ? 'l’échauffement' : 'la vraie saison',
     dates: fleche(s.periode),
     detail:
-      s.finalistes > 0
-        ? `${s.games} games · finale · tout repart de zéro`
-        : `${s.games} games · pas de finale`,
+      s.finalistes > 0 ? `${s.games} games · finale · tout repart de zéro` : `${s.games} games · pas de finale`,
     debut: s.debut,
     fin: s.fin,
   }));
@@ -65,14 +74,8 @@ export function Accueil({ twitchEnabled, devLogin }: { twitchEnabled: boolean; d
   // Twitch branché, on part chez lui ; sinon la page de connexion dit que la
   // connexion ouvre bientôt.
   const entree = twitchEnabled ? '/api/auth/twitch?returnTo=/' : '/connexion';
-  const rejoindre = (
-    <a href={entree} className="btn btn-twitch btn-lg no-underline">
-      <IconTwitch className="h-5 w-5" />
-      Rejoindre avec Twitch
-    </a>
-  );
 
-  // Ce qui fait tomber chaque booster, en quelques mots, sous sa planche.
+  // Ce qui fait tomber chaque booster, en quelques mots, sous son image.
   const palier = (id: string) => SUB_MILESTONES.find((m) => m.packId === id)?.every ?? 0;
   const QUAND: Record<string, string> = {
     perso: `1 sub T3 ou ${PACKS_REGLES.persoTousLes} subs offerts`,
@@ -80,38 +83,24 @@ export function Accueil({ twitchEnabled, devLogin }: { twitchEnabled: boolean; d
     folie: `tous les ${palier('folie')} subs`,
     finisseur: `à ta ${saison.finisseurA}ᵉ game`,
   };
-  const boosters: BoosterEnVitrine[] = PACKS.map((p) => ({
+  const boosters: BoosterDeLaScene[] = PACKS.map((p) => ({
     id: p.id,
-    nom: p.name,
     court: p.name.replace(/^Booster\s+/, ''),
     quand: QUAND[p.id] ?? p.tagline,
-    gradient: p.gradient,
     art: packArt(p.id),
-    rarete: GEMME_DU_PACK[p.id],
   }));
 
-  const etapes: EtapeDuPaquet[] = [
+  const [s1, s2] = saisons;
+  const tuiles: Tuile[] = [
     {
-      cle: 'classement',
+      cle: 'games',
       theme: 'Le classement',
       icone: <IconTrophy />,
       titre: 'Marque des points',
       texte: (
         <>
-          <b>1 point</b> par kill, <b>+{PLACEMENT_POINTS['1']}</b> le Top 1, <b>+{PLACEMENT_POINTS['2']}</b> le Top
-          2, <b>+{PLACEMENT_POINTS['3']}</b> le Top 3. Tes {saison.games} games font ton total.
-        </>
-      ),
-    },
-    {
-      cle: 'flocons',
-      theme: 'Les flocons',
-      icone: <IconSnowflake />,
-      titre: 'Gagne des flocons',
-      texte: (
-        <>
-          <b>+{ECONOMY.perKill} ❄</b> par kill, <b>+{ECONOMY.perPlacement['1']} ❄</b> le Top 1,{' '}
-          <b>+{CADEAU_DU_JOUR.parJour} ❄</b> chaque jour. Ils ne s’achètent pas : ils se gagnent.
+          <b>1 pt</b> par kill, <b>+{PLACEMENT_POINTS['1']}</b> le Top 1, <b>+{PLACEMENT_POINTS['2']}</b> le Top 2,{' '}
+          <b>+{PLACEMENT_POINTS['3']}</b> le Top 3. Tes {saison.games} games font ton total.
         </>
       ),
     },
@@ -122,19 +111,31 @@ export function Accueil({ twitchEnabled, devLogin }: { twitchEnabled: boolean; d
       titre: 'Ouvre des boosters',
       texte: (
         <>
-          Les subs du live en font tomber, ouverts <b>en direct</b>. Chacun donne <b>une carte</b> qui change une
-          game, en bonus ou en malus.
+          Les subs du live en font tomber, ouverts <b>en direct</b>. Trois Boosters Perso t’attendent à
+          l’inscription.
         </>
       ),
     },
     {
-      cle: 'chance',
-      theme: 'La chance',
-      icone: <IconJauge />,
-      titre: 'Vise les cartes rares',
+      cle: 'cartes',
+      theme: 'Les cartes',
+      icone: <IconCarte />,
+      titre: 'Joue tes cartes',
       texte: (
         <>
-          Garde tes flocons : plus ta réserve est grosse, plus tu tires rare. Jusqu’à <b>×{1 + CHANCE.max} de chance</b>.
+          Chaque booster donne <b>une carte</b> : bonus ou malus, elle change une game, puis disparaît.
+        </>
+      ),
+    },
+    {
+      cle: 'flocons',
+      theme: 'Les flocons',
+      icone: <IconSnowflake />,
+      titre: 'Gagne des flocons',
+      texte: (
+        <>
+          <b>+{ECONOMY.perKill} ❄</b> par kill, <b>+{CADEAU_DU_JOUR.parJour} ❄</b> par jour. Plus ta réserve est
+          grosse, plus tu tires rare : jusqu’à <b>×{1 + CHANCE.max}</b>.
         </>
       ),
     },
@@ -145,8 +146,19 @@ export function Accueil({ twitchEnabled, devLogin }: { twitchEnabled: boolean; d
       titre: 'Défie les autres',
       texte: (
         <>
-          Mise de <b>{num(DUEL.miseMin)} à {num(DUEL.miseMax)} ❄</b> contre un joueur. Une course en direct,{' '}
-          <b>une chance sur deux</b> : le gagnant rafle les deux mises.
+          Mise de <b>{num(DUEL.miseMin)} à {num(DUEL.miseMax)} ❄</b>, une course en direct : le gagnant rafle les
+          deux mises.
+        </>
+      ),
+    },
+    {
+      cle: 'saisons',
+      theme: 'Les saisons',
+      icone: <IconJauge />,
+      titre: 'Deux saisons',
+      texte: (
+        <>
+          <b>{s1?.nom}</b> du {s1?.dates}, puis <b>{s2?.nom}</b> du {s2?.dates} : tout y repart de zéro.
         </>
       ),
     },
@@ -154,10 +166,8 @@ export function Accueil({ twitchEnabled, devLogin }: { twitchEnabled: boolean; d
 
   return (
     <div className="accueil">
-      {/* ---- Le centre, et les boosters autour ---- */}
-      <section className="acc-hero" aria-labelledby="accueil-titre">
-        <VitrineBoosters boosters={boosters} />
-        <div className="acc-centre">
+      <SceneDisplay boosters={boosters}>
+        <section className="acc-centre" aria-labelledby="accueil-titre">
           <p className="acc-surtitre">Warzone · en direct sur Twitch</p>
           <h1 id="accueil-titre" className="hero-titre acc-titre">
             <span className="glace" data-text="Winter">
@@ -167,30 +177,37 @@ export function Accueil({ twitchEnabled, devLogin }: { twitchEnabled: boolean; d
               Ligue
             </em>
           </h1>
-          <p className="acc-lead">
-            Joue tes games, grimpe au classement, ouvre des boosters, défie les autres.
-          </p>
-          <div className="acc-actions">{rejoindre}</div>
+          <p className="acc-lead">Joue tes games, grimpe au classement, ouvre des boosters, défie les autres.</p>
+          <div className="acc-actions">
+            <a href={entree} className="btn btn-twitch btn-lg no-underline">
+              <IconTwitch className="h-5 w-5" />
+              Rejoindre avec Twitch
+            </a>
+          </div>
           {!twitchEnabled && (
             <p className="acc-note">
               La connexion Twitch ouvre bientôt.
               {devLogin ? ' La connexion de développement reste ouverte en local.' : ''}
             </p>
           )}
-          <CalendrierSaisons saisons={saisons} maintenant={Date.now()} />
-        </div>
-      </section>
+          <CalendrierSaisons saisons={saisons} maintenant={Date.now()} compact />
+        </section>
 
-      {/* ---- La ligue en cinq étapes, en blocs de glace ---- */}
-      <section className="acc-etapes" aria-labelledby="etapes-titre">
-        <header className="acc-etapes-tete">
-          <span className="acc-etapes-trait" aria-hidden="true" />
-          <h2 id="etapes-titre">Comment ça marche</h2>
-          <span className="acc-etapes-trait" aria-hidden="true" />
-        </header>
-        <PaquetEtapes label="La ligue en cinq étapes" etapes={etapes} />
-        <div className="acc-fin">{rejoindre}</div>
-      </section>
+        <section className="acc-tuiles" aria-label="Comment ça marche">
+          {tuiles.map((t, i) => (
+            <article key={t.cle} className="acc-tuile" style={{ ['--i' as string]: i } as CSSProperties}>
+              <header>
+                <span className="acc-tuile-icone" aria-hidden="true">
+                  {t.icone}
+                </span>
+                <span className="acc-tuile-theme">{t.theme}</span>
+              </header>
+              <h2>{t.titre}</h2>
+              <p>{t.texte}</p>
+            </article>
+          ))}
+        </section>
+      </SceneDisplay>
     </div>
   );
 }

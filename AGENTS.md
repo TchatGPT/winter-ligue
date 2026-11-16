@@ -332,17 +332,21 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   sa course (`useSpinAnimation`), et un tableau neuf à chaque rendu la relançait depuis
   le début au premier `router.refresh()`. Valeurs stables seulement (`SANS_RELANCE`,
   `useMemo`, `useState`).
-- **L'accueil déconnecté** (`components/Accueil.tsx`, 13/11/2026) tient sur un ordinateur en un
-  seul écran, sans défiler (de 1024×620 à 2560×1267 : `scrollHeight <= innerHeight`) ; sur
-  téléphone et tablette debout, il s'empile. Composition centrée : le nom, une phrase, l'entrée
-  Twitch, puis le calendrier (`CalendrierSaisons` : compte à rebours, Mini Ligue et Saison 2) ;
-  les quatre boosters encadrent le titre, deux de chaque côté (`VitrineBoosters`) ; en bas, la
-  ligue en cinq étapes, un paquet de blocs de glace qu'on fait tourner (`PaquetEtapes`). Les
-  blocs sont des images rendues dans Blender (`public/glace/bloc-1…5.webp`) : pas de glace
-  imitée en CSS, pas de texture photo plaquée, pas de flou ni de reflet sur les cartes de côté
-  — elles s'éteignent dans la nuit. Ses réglages selon la taille passent par `@media`, jamais
-  par `@container` : le compte à rebours réévaluait les règles de conteneur chaque seconde et
-  relançait les animations d'arrivée.
+- **L'accueil déconnecté** (`components/Accueil.tsx`, refait le 16/11/2026) tient sur un ordinateur
+  en un seul écran, sans défiler (de 1024×620 à 2560×1267 : `scrollHeight <= innerHeight`) ; sur
+  téléphone et tablette debout, il s'empile. Il s'ouvre, **à chaque visite**, sur une vidéo rendue
+  dans Blender (`SceneDisplay`, `scratchpad/display/display.py`) : une display de boosters en carton
+  aux couleurs de la ligue se pose, s'ouvre, les quatre boosters en sortent et se placent, deux de
+  chaque côté, puis la display s'efface en fondu. La vidéo est en H.264, l'image en haut et sa
+  transparence en bas (`public/accueil/display.mp4`, `-960` pour les petits écrans), recomposée
+  dans un canvas WebGL (`videoDetouree`) — Safari ignore la transparence du VP9. À sa dernière
+  image, les vraies images des boosters prennent le relais au pixel près (`PLACES_BOOSTERS`,
+  `placeEnPourcents` : à changer avec la vidéo). Restent, au milieu, le nom, une phrase, l'entrée
+  Twitch et le compte à rebours (`CalendrierSaisons compact`), et en bas six tuiles de verre plat
+  pour les règles. Tout se pose dans une scène 16:9 et se mesure sur elle (`cqw`). Sans vidéo
+  (mouvement réduit, pas de WebGL, lecture refusée), tout arrive tout de suite. Ses réglages selon
+  la taille passent par `@media`, jamais par `@container` : le compte à rebours réévaluait les
+  règles de conteneur chaque seconde et relançait les animations d'arrivée.
 - Les couleurs viennent des variables CSS de `app/globals.css`, jamais codées en dur.
 - Avant de livrer : `npm run typecheck && npm test && npm run build`.
 

@@ -34,6 +34,12 @@ const nextConfig: NextConfig = {
         has: [{ type: "query", key: "v" }],
         headers: IMMUABLE,
       },
+      // La vidéo de la display de l'accueil : son adresse porte sa version (`?v=…`).
+      {
+        source: "/accueil/:fichier([\\w.-]+\\.mp4)",
+        has: [{ type: "query", key: "v" }],
+        headers: IMMUABLE,
+      },
     ];
   },
 };

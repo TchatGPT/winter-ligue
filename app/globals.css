@@ -13108,16 +13108,18 @@
 }
 
 /* ==========================================================================
-   L'ACCUEIL DÉCONNECTÉ — voir components/Accueil.
+   L'ACCUEIL DÉCONNECTÉ — voir components/Accueil et components/accueil.
    ==========================================================================
-   Une composition centrée. Au centre : le nom, une phrase, l'entrée par
-   Twitch, le compte à rebours et les deux saisons. Autour du titre, les
-   quatre boosters, deux de chaque côté, tournés vers lui. En bas, la ligue
-   en cinq étapes : un paquet de blocs de glace qu'on fait tourner.
+   Une scène au format de la vidéo (16:9), qui tient dans l'écran d'un
+   ordinateur sans défiler, pied de page compris. La vidéo de la display
+   (Blender) la remplit ; à sa fin, les quatre boosters sont des images posées
+   en pourcentages du plateau (`placeEnPourcents`), exactement là où la vidéo
+   les a laissés. Au milieu, le nom, une phrase, l'entrée par Twitch et le
+   compte à rebours ; en bas, six tuiles de verre.
 
-   Sur un ordinateur, tout tient dans l'écran : la page fait la hauteur de la
-   fenêtre moins le pied de page, et s'y mesure (`cqh`). Sur un téléphone,
-   tout s'empile et la page défile.
+   Tout ce qui est dans la scène se mesure sur elle (`cqw`) : elle grandit et
+   rapetisse d'un bloc. Sur un téléphone et une tablette debout, la scène ne
+   garde que la vidéo et les boosters ; le reste s'empile dessous.
 
    Les réglages selon la taille passent par `@media`, jamais par
    `@container` : le compte à rebours réévaluerait les règles de conteneur
@@ -13129,25 +13131,22 @@ main:has(> .accueil) {
   padding: 0;
 }
 .accueil {
-  --amp-acc: 1;
   --acc-marge: clamp(1rem, 2.4vw, 4rem);
-  /* La largeur d'un booster : le centre se règle dessus. */
-  --lb: min(22vw, 6.6rem);
   position: relative;
   isolation: isolate;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 2.5rem;
-  padding: 1.5rem var(--acc-marge) 3.25rem;
+  padding: 0.75rem var(--acc-marge) 3.5rem;
   overflow: clip;
   background:
-    radial-gradient(70% 45% at 50% 100%, color-mix(in srgb, var(--ice-3) 26%, transparent), transparent 75%),
+    radial-gradient(60% 40% at 50% 62%, color-mix(in srgb, var(--ice-3) 14%, transparent), transparent 75%),
+    radial-gradient(70% 45% at 50% 100%, color-mix(in srgb, var(--ice-3) 22%, transparent), transparent 75%),
     linear-gradient(180deg, var(--bg) 0, var(--fond) 100%);
 }
 @keyframes acc-monte {
   from {
     opacity: 0;
-    transform: translateY(calc(22px * var(--amp-acc)));
+    transform: translateY(18px);
   }
 }
 @keyframes acc-apparait {
@@ -13155,55 +13154,168 @@ main:has(> .accueil) {
     opacity: 0;
   }
 }
+@keyframes acc-booster-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(8%) scale(0.94);
+  }
+}
+@keyframes acc-flotte {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2.2%);
+  }
+}
 
-/* -- Le haut : les boosters autour, le centre -- */
-.acc-hero {
+/* -- La scène : la vidéo, les boosters -- */
+.acc-scene {
   position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  justify-items: center;
   gap: 1.75rem;
+  container-type: inline-size;
 }
+.acc-plateau {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+}
+.acc-video,
+.acc-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+/* La vidéo ne se montre pas : le canvas la recompose avec sa transparence.
+   Elle reste dans l'écran, sans quoi un navigateur la mettrait en pause. */
+.acc-video {
+  opacity: 0;
+}
+.acc-scene[data-phase='fini'] .acc-canvas {
+  visibility: hidden;
+}
+.acc-boosters {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.acc-booster {
+  position: absolute;
+  opacity: 0;
+}
+.acc-scene[data-phase='fini'] .acc-booster {
+  opacity: 1;
+}
+/* Sans la vidéo, les boosters arrivent d'eux-mêmes. */
+.acc-scene[data-phase='fini'][data-arrivee='directe'] .acc-booster {
+  animation: acc-booster-arrive 0.9s cubic-bezier(0.2, 0.9, 0.25, 1) both;
+  animation-delay: calc(var(--i) * 90ms);
+}
+.acc-booster-flotte {
+  width: 100%;
+  height: 100%;
+}
+/* Ils flottent, chacun à son rythme — en partant de leur place exacte : pas de
+   saut au moment où l'image prend le relais de la vidéo. */
+.acc-scene[data-phase='fini'] .acc-booster-flotte {
+  animation: acc-flotte 6.5s ease-in-out infinite;
+  animation-delay: calc(0.6s + var(--i) * 0.8s);
+}
+.acc-booster img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  user-select: none;
+  transition: transform 0.5s cubic-bezier(0.2, 0.9, 0.25, 1);
+}
+.acc-booster:hover img {
+  transform: translateY(-3%) scale(1.04);
+}
+.acc-booster-nom {
+  position: absolute;
+  top: 101%;
+  left: 50%;
+  display: grid;
+  width: 160%;
+  justify-items: center;
+  gap: 0.1rem;
+  translate: -50% 0;
+  rotate: calc(-1 * var(--incl, 0deg));
+  line-height: 1.2;
+  text-align: center;
+  opacity: 0;
+}
+.acc-scene[data-revele] .acc-booster-nom {
+  animation: acc-apparait 0.8s ease both;
+  animation-delay: calc(0.5s + var(--i) * 0.08s);
+  opacity: 1;
+}
+.acc-booster-nom b {
+  font-family: var(--font-display);
+  font-size: clamp(0.8125rem, 1.2cqw, 1.4rem);
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--frost);
+}
+.acc-booster-nom > span:not(.sr-only) {
+  font-size: clamp(0.6875rem, 0.92cqw, 1.1rem);
+  color: var(--muted);
+}
+
+/* -- Le centre : le nom, l'entrée, le compte à rebours -- */
 .acc-centre {
   position: relative;
   z-index: 2;
   display: grid;
-  width: min(100%, 46rem);
   justify-items: center;
-  container-type: inline-size;
   text-align: center;
 }
-.acc-centre > * {
-  animation: acc-monte 0.9s cubic-bezier(0.2, 0.9, 0.25, 1) both;
+.acc-centre > *,
+.acc-tuile {
+  opacity: 0;
 }
-.acc-centre > :nth-child(2) {
+.acc-scene[data-revele] .acc-centre > * {
+  animation: acc-monte 0.9s cubic-bezier(0.2, 0.9, 0.25, 1) both;
+  opacity: 1;
+}
+.acc-scene[data-revele] .acc-centre > :nth-child(2) {
   animation-delay: 0.08s;
 }
-.acc-centre > :nth-child(3) {
+.acc-scene[data-revele] .acc-centre > :nth-child(3) {
   animation-delay: 0.16s;
 }
-.acc-centre > :nth-child(n + 4) {
+.acc-scene[data-revele] .acc-centre > :nth-child(n + 4) {
   animation-delay: 0.24s;
 }
 .acc-surtitre {
   font-family: var(--font-display);
-  font-size: 0.875rem;
+  font-size: clamp(0.75rem, 0.85cqw, 1.0625rem);
   font-weight: 700;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--ice);
 }
 .hero-titre.acc-titre {
-  margin-top: 0.4rem;
-  font-size: clamp(2.6rem, 15cqw, 8.5rem);
+  margin-top: 0.3rem;
+  font-size: clamp(2.6rem, 13cqw, 6rem);
+  white-space: nowrap;
 }
 .acc-titre .glace {
   filter: drop-shadow(0 2px 0 color-mix(in srgb, var(--bg-deep) 60%, transparent));
 }
 .acc-lead {
-  max-width: 32rem;
-  margin-top: 0.8rem;
-  font-size: clamp(1rem, 0.94rem + 0.3vw, 1.25rem);
+  max-width: 30rem;
+  margin-top: 0.7rem;
+  font-size: clamp(0.9375rem, 1.05cqw, 1.3rem);
   line-height: 1.45;
   text-wrap: balance;
   color: var(--ink-2);
@@ -13211,85 +13323,113 @@ main:has(> .accueil) {
 .acc-actions {
   display: flex;
   justify-content: center;
-  margin-top: 1.4rem;
+  margin-top: 1.2rem;
 }
 .acc-note {
   margin-top: 0.6rem;
   font-size: 0.8125rem;
   color: var(--faint);
 }
+.acc-centre .calendrier {
+  margin-top: 1.3rem;
+}
 
-/* -- Les boosters -- */
-.acc-boosters {
-  --px: 0;
-  --py: 0;
+/* -- Les tuiles : les règles, en verre -- */
+.acc-tuiles {
   position: relative;
-  z-index: 1;
-  width: 100%;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+  gap: 0.75rem;
 }
-.acc-boosters ul {
-  display: flex;
-  justify-content: center;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.acc-booster {
+.acc-tuile {
   position: relative;
   display: grid;
-  width: var(--lb);
-  flex: none;
-  justify-items: center;
+  align-content: start;
   gap: 0.35rem;
-  margin-inline: -0.35rem;
-  animation: acc-apparait 0.9s ease both;
-  animation-delay: calc(0.15s + var(--i) * 0.1s);
-}
-.acc-booster-leve {
-  width: 100%;
-  transform: rotate(calc((var(--i) - 1.5) * 6deg));
-  transform-origin: 50% 90%;
+  padding: 1rem 1.1rem 1.05rem;
+  border-radius: var(--r-sm);
+  background: color-mix(in srgb, var(--bg-deep) 34%, transparent);
+  backdrop-filter: blur(14px) saturate(1.15);
+  -webkit-backdrop-filter: blur(14px) saturate(1.15);
   transition:
-    transform 0.45s cubic-bezier(0.2, 0.9, 0.25, 1),
-    filter 0.3s ease;
+    transform 0.4s cubic-bezier(0.2, 0.9, 0.25, 1),
+    background-color 0.3s ease;
 }
-.acc-booster-parallaxe {
-  transform: translate(
-    calc(var(--px) * (1 + var(--pres)) * 1.3rem),
-    calc(var(--py) * (1 + var(--pres)) * 0.8rem)
+/* Une arête fine, plus claire en haut : du verre plat, ni bombé ni halo. */
+.acc-tuile::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  padding: 1px;
+  border-radius: inherit;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--frost) 42%, transparent),
+    color-mix(in srgb, var(--ice) 10%, transparent) 60%,
+    color-mix(in srgb, var(--ice) 18%, transparent)
   );
-  transition: transform 0.7s cubic-bezier(0.2, 0.8, 0.3, 1);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
 }
-.acc-boosters .sachet-lueur {
-  display: none;
+.acc-scene[data-revele] .acc-tuile {
+  animation: acc-monte 0.8s cubic-bezier(0.2, 0.9, 0.25, 1) both;
+  animation-delay: calc(0.35s + var(--i) * 0.07s);
+  opacity: 1;
 }
-.acc-boosters .sachet-scene {
-  touch-action: auto;
+.acc-tuile:hover {
+  transform: translateY(-3px);
+  background-color: color-mix(in srgb, var(--bg-deep) 48%, transparent);
 }
-.acc-booster-nom {
+.acc-tuile header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.acc-tuile-icone {
   display: grid;
-  justify-items: center;
-  gap: 0.1rem;
-  line-height: 1.2;
+  width: 1.75rem;
+  height: 1.75rem;
+  flex: none;
+  place-items: center;
+  border-radius: 0.55rem;
+  background: color-mix(in srgb, var(--ice) 14%, transparent);
+  color: var(--ice);
 }
-.acc-booster-nom b {
+.acc-tuile-icone svg {
+  width: 1rem;
+  height: 1rem;
+}
+.acc-tuile-theme {
   font-family: var(--font-display);
-  font-size: 0.9375rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ice);
+}
+.acc-tuile h2 {
+  margin-top: 0.15rem;
+  font-family: var(--font-display);
+  font-size: 1.3rem;
   font-weight: 800;
-  letter-spacing: 0.08em;
+  line-height: 1.05;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
   color: var(--frost);
 }
-.acc-booster-nom > span:not(.sr-only) {
-  display: none;
-  font-size: 0.8125rem;
-  color: var(--muted);
+.acc-tuile p {
+  font-size: 0.875rem;
+  line-height: 1.42;
+  color: var(--ink-2);
 }
-.acc-booster[data-choisi] .acc-booster-leve {
-  transform: translateY(-5%) rotate(0deg) scale(1.05);
-}
-.acc-boosters[data-choix] .acc-booster:not([data-choisi]) .acc-booster-leve {
-  filter: brightness(0.7);
+.acc-tuile p b {
+  font-weight: 700;
+  color: var(--frost);
 }
 
 /* -- Le calendrier : le compte à rebours, puis les deux saisons -- */
@@ -13455,312 +13595,20 @@ main:has(> .accueil) {
   color: var(--faint);
 }
 
-/* -- La ligue en cinq étapes -- */
-.acc-etapes {
-  position: relative;
-  z-index: 1;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 0.6rem;
-}
-.acc-etapes-tete {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 1rem;
-}
-.acc-etapes-tete h2 {
-  font-family: var(--font-display);
-  font-size: 0.875rem;
-  font-weight: 700;
-  letter-spacing: 0.18em;
-  white-space: nowrap;
-  text-transform: uppercase;
-  color: var(--ink-2);
-}
-.acc-etapes-trait {
-  height: 1px;
-  flex: 0 1 8rem;
-  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--frost) 40%, transparent));
-}
-.acc-etapes-trait:last-child {
-  background: linear-gradient(270deg, transparent, color-mix(in srgb, var(--frost) 40%, transparent));
-}
-.acc-fin {
-  display: flex;
-  justify-content: center;
-  margin-top: 0.5rem;
-}
-
-/* ==========================================================================
-   LE PAQUET — voir components/PaquetEtapes.
-   ==========================================================================
-   Des blocs de glace en éventail dans l'espace. Chacun reçoit sa distance au
-   centre (`--d`, et sa valeur absolue `--ad`), et tout le reste en découle :
-   son écart, son pivot vers le centre, son recul — et sa lumière : il
-   s'éteint dans la nuit en s'éloignant, sans flou, jusqu'à disparaître.
-
-   La matière est une image : un bloc de glace rendu dans Blender (Cycles,
-   éclairage de studio), cinq variantes (`public/glace/bloc-N.webp`). Le texte
-   y est posé en blanc. */
-@property --mx {
-  syntax: '<number>';
-  inherits: true;
-  initial-value: 0.5;
-}
-@property --my {
-  syntax: '<number>';
-  inherits: true;
-  initial-value: 0.5;
-}
-@property --incl {
-  syntax: '<number>';
-  inherits: true;
-  initial-value: 0;
-}
-.paquet {
-  --l-carte: min(84vw, 20rem);
-  --h-carte: calc(var(--l-carte) / 1.495);
-  --ecart: 1.02;
-  --duree-carte: 6s;
-  position: relative;
-}
-@media (min-width: 640px) {
-  .paquet {
-    --l-carte: 21rem;
+/* -- Un téléphone, une tablette debout : la scène, puis le reste -- */
+@media (max-width: 1023px) {
+  .acc-booster-nom {
+    display: none;
   }
-}
-.paquet-scene {
-  position: relative;
-  height: calc(var(--h-carte) + 1.2rem);
-  overflow-x: clip;
-  perspective: 1600px;
-  perspective-origin: 50% 45%;
-  touch-action: pan-y;
-  cursor: grab;
-  user-select: none;
-  -webkit-user-select: none;
-  outline: none;
-  -webkit-mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent);
-  mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent);
-}
-.paquet-scene[data-glisse] {
-  cursor: grabbing;
-}
-.paquet-scene:focus-visible .paquet-carte[data-actif] {
-  outline: 2px solid var(--ice);
-  outline-offset: 2px;
-  border-radius: 6%;
-}
-.paquet-carte {
-  --incl: 0;
-  position: absolute;
-  top: 0.6rem;
-  left: 50%;
-  width: var(--l-carte);
-  height: var(--h-carte);
-  margin-left: calc(var(--l-carte) / -2);
-  container-type: inline-size;
-  transform:
-    translateX(calc(var(--d) * var(--l-carte) * (var(--ecart) - var(--ad) * 0.16)))
-    translateZ(calc(var(--ad) * -10rem)) rotateY(clamp(-40deg, calc(var(--d) * -26deg), 40deg))
-    rotateX(calc((0.5 - var(--my)) * var(--incl) * 1deg)) rotateY(calc((var(--mx) - 0.5) * var(--incl) * 1deg));
-  /* Loin du centre, le bloc s'éteint dans la nuit, jusqu'à disparaître. */
-  opacity: clamp(0, calc(1 - var(--ad) * 0.45), 1);
-  filter: brightness(calc(1 - min(var(--ad), 2) * 0.3));
-  background: var(--bloc) center / 100% 100% no-repeat;
-  will-change: transform, opacity;
-  transition: --incl 0.45s ease-out;
-}
-.paquet-carte[data-bloc='1'] {
-  --bloc: url('/glace/bloc-1.webp');
-}
-.paquet-carte[data-bloc='2'] {
-  --bloc: url('/glace/bloc-2.webp');
-}
-.paquet-carte[data-bloc='3'] {
-  --bloc: url('/glace/bloc-3.webp');
-}
-.paquet-carte[data-bloc='4'] {
-  --bloc: url('/glace/bloc-4.webp');
-}
-.paquet-carte[data-bloc='5'] {
-  --bloc: url('/glace/bloc-5.webp');
-}
-.paquet-carte[data-loin] {
-  visibility: hidden;
-}
-.paquet-carte[data-actif][data-survol] {
-  --incl: 7;
-}
-/* Le contenu d'un bloc : le thème et son icône en haut, un verbe en titre,
-   la phrase. Blanc sur la glace. */
-.paquet-etape {
-  display: flex;
-  height: 100%;
-  flex-direction: column;
-  padding: 9% 10% 9.5%;
-  text-shadow: 0 1px 3px color-mix(in srgb, var(--bg-deep) 70%, transparent);
-}
-.paquet-etape-tete {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-}
-.paquet-etape-theme {
-  min-width: 0;
-  flex: 1 1 auto;
-  overflow: hidden;
-  font-family: var(--font-display);
-  font-size: clamp(0.75rem, 3.9cqw, 0.875rem);
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  text-overflow: ellipsis;
-  text-transform: uppercase;
-  white-space: nowrap;
-  color: var(--ice);
-}
-.paquet-etape-icone {
-  display: grid;
-  flex: none;
-  place-items: center;
-  color: var(--frost);
-  opacity: 0.85;
-}
-.paquet-etape-icone svg {
-  width: 1.3rem;
-  height: 1.3rem;
-}
-.paquet-etape-titre {
-  margin-top: auto;
-  font-family: var(--font-display);
-  font-size: clamp(1.3rem, 8cqw, 1.9rem);
-  font-weight: 900;
-  letter-spacing: 0.01em;
-  line-height: 1;
-  text-transform: uppercase;
-  color: var(--neige-1);
-}
-.paquet-etape-texte {
-  margin-top: 0.45rem;
-  font-size: clamp(0.8125rem, 4.4cqw, 1rem);
-  line-height: 1.4;
-  text-wrap: pretty;
-  color: var(--ink-2);
-}
-.paquet-etape-texte b {
-  font-weight: 700;
-  white-space: nowrap;
-  color: var(--neige-1);
-}
-/* La navigation : flèche, points, flèche, pause. */
-.paquet-nav {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  margin-top: 0.2rem;
-}
-.paquet-fleche,
-.paquet-pause {
-  display: grid;
-  width: 2.5rem;
-  height: 2.5rem;
-  flex: none;
-  place-items: center;
-  border-radius: var(--r-pilule);
-  color: var(--frost);
-  background: color-mix(in srgb, var(--frost) 10%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--frost) 22%, transparent);
-  cursor: pointer;
-  transition:
-    background-color 0.15s ease,
-    transform 0.15s ease;
-}
-.paquet-fleche:hover,
-.paquet-pause:hover {
-  background: color-mix(in srgb, var(--frost) 22%, transparent);
-}
-.paquet-fleche:active {
-  transform: scale(0.94);
-}
-.paquet-fleche svg,
-.paquet-pause svg {
-  width: 1.3rem;
-  height: 1.3rem;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2.2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-.paquet-pause {
-  width: 2.1rem;
-  height: 2.1rem;
-  margin-left: 0.25rem;
-  color: var(--muted);
-}
-.paquet-pause svg {
-  width: 1rem;
-  height: 1rem;
-}
-.paquet-points {
-  display: flex;
-  align-items: center;
-}
-.paquet-points button {
-  display: grid;
-  height: 2.5rem;
-  min-width: 1.4rem;
-  place-items: center;
-  cursor: pointer;
-}
-.paquet-point {
-  position: relative;
-  display: block;
-  width: 0.5rem;
-  height: 0.5rem;
-  overflow: hidden;
-  border-radius: var(--r-pilule);
-  background: color-mix(in srgb, var(--frost) 30%, transparent);
-  transition:
-    width 0.35s cubic-bezier(0.22, 1, 0.36, 1),
-    background-color 0.2s ease;
-}
-.paquet-points button:hover .paquet-point {
-  background: color-mix(in srgb, var(--frost) 55%, transparent);
-}
-.paquet-points button[aria-current] .paquet-point {
-  width: 2rem;
-  background: var(--ice);
-}
-.paquet-points button[aria-current]:has(.paquet-jauge) .paquet-point {
-  background: color-mix(in srgb, var(--frost) 22%, transparent);
-}
-.paquet-jauge {
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: var(--ice);
-  transform-origin: 0 50%;
-  animation: paquet-jauge var(--duree-carte) linear both paused;
-}
-.paquet[data-defile] .paquet-jauge {
-  animation-play-state: running;
-}
-@keyframes paquet-jauge {
-  from {
-    transform: scaleX(0);
-  }
-  to {
-    transform: scaleX(1);
+  .acc-centre {
+    margin-top: -0.5rem;
   }
 }
 
-/* -- Un ordinateur : tout dans l'écran --
-   La page prend la hauteur que lui laisse le pied de page : elle est son
-   propre repère (`cqh`). Les boosters encadrent le centre, et leur taille se
-   règle sur la hauteur qui reste au-dessus du paquet. */
+/* -- Un ordinateur : la scène entière dans l'écran --
+   La page prend la hauteur que lui laisse le pied de page, et la scène s'y
+   loge au format 16:9 (`cqw`, `cqh` : la page est son repère). Le centre et
+   les tuiles se posent dessus, en pourcentages du plateau. */
 @media (min-width: 1024px) {
   body:has(.accueil) {
     height: 100dvh;
@@ -13769,203 +13617,114 @@ main:has(> .accueil) {
     margin-top: -46px;
   }
   .accueil {
-    --bas: 22rem;
-    --lb: clamp(5.5rem, min(10.5vw, (100cqh - var(--bas) - 6rem) / 1.865), 14rem);
     container: accueil / size;
-    grid-template-rows: minmax(0, 1fr) auto;
-    gap: 0;
-    min-height: 27rem;
-    padding: clamp(0.5rem, 2.5dvh, 2rem) var(--acc-marge) 0;
+    min-height: 30rem;
+    padding: 0.5rem var(--acc-marge) 3.6rem;
   }
-  .acc-hero {
-    align-content: center;
-    min-height: 0;
+  .acc-scene {
+    display: block;
+    width: min(100cqw, 100cqh * 16 / 9);
+    aspect-ratio: 16 / 9;
+    margin: auto;
   }
-  .acc-centre {
-    width: min(46rem, 100% - var(--lb) * 5);
-  }
-  .hero-titre.acc-titre {
-    font-size: clamp(2.6rem, min(15cqw, 11cqh), 8.5rem);
-  }
-  .calendrier {
-    margin-top: 1.2rem;
-    gap: 0.8rem;
-  }
-  .acc-actions {
-    margin-top: 1.1rem;
-  }
-  .acc-boosters {
+  .acc-plateau {
     position: absolute;
     inset: 0;
-    pointer-events: none;
   }
-  .acc-boosters ul {
-    display: block;
-    height: 100%;
-  }
-  .acc-booster {
+  .acc-centre {
     position: absolute;
-    top: calc(50% + (1 - var(--pres)) * min(2.6rem, var(--lb) * 0.3));
-    margin: 0;
-    gap: 0.6rem;
-    pointer-events: auto;
-    z-index: calc(1 + var(--pres));
-    transform: translate(-50%, -50%);
+    top: 4%;
+    left: 35.5%;
+    width: 29%;
   }
-  .acc-booster[data-cote='g'] {
-    left: calc(var(--lb) * (0.56 + var(--pres) * 1.12));
-    animation-name: acc-vient-g;
+  .hero-titre.acc-titre {
+    font-size: 5.6cqw;
   }
-  .acc-booster[data-cote='d'] {
-    left: calc(100% - var(--lb) * (0.56 + var(--pres) * 1.12));
-    animation-name: acc-vient-d;
-  }
-  /* Tournés vers le titre ; celui du bord un peu plus bas, un peu plus penché. */
-  .acc-booster[data-cote='g'] .acc-booster-leve {
-    transform: rotate(calc((2 - var(--pres)) * 4deg));
-  }
-  .acc-booster[data-cote='d'] .acc-booster-leve {
-    transform: rotate(calc((2 - var(--pres)) * -4deg));
-  }
-  .acc-booster[data-choisi] .acc-booster-leve {
-    transform: translateY(-4%) rotate(0deg) scale(1.05);
-  }
-  .acc-booster-nom b {
-    font-size: 1.05rem;
-  }
-  .acc-booster-nom > span:not(.sr-only) {
-    display: block;
-    white-space: nowrap;
-  }
-  .acc-etapes {
-    gap: 0.4rem;
-    padding-bottom: 2.6rem;
-  }
-  .acc-fin {
-    display: none;
-  }
-}
-@keyframes acc-vient-g {
-  from {
-    opacity: 0;
-    transform: translate(-90%, -50%);
-  }
-}
-@keyframes acc-vient-d {
-  from {
-    opacity: 0;
-    transform: translate(-10%, -50%);
-  }
-}
-/* Un écran haut : un bloc plus grand. */
-/* La remise à zéro du 4 janvier se dit déjà dans « Saison 2 » : sous 1 000 px
-   de haut, elle laisse sa ligne. */
-@media (min-width: 1024px) and (max-height: 1000px) {
-  .calendrier-zero {
-    display: none;
+  .acc-surtitre {
+    font-size: max(0.6875rem, 0.85cqw);
   }
   .acc-lead {
-    max-width: 40rem;
-  }
-  .calendrier {
-    width: min(100%, 44rem);
-    grid-template-columns: auto minmax(0, 1fr);
-    align-items: center;
-    column-gap: 2rem;
-  }
-}
-@media (min-width: 1630px) and (min-height: 840px) {
-  .accueil {
-    --bas: 22rem;
-  }
-  .paquet {
-    --l-carte: 21rem;
-  }
-  .rebours-cases b {
-    font-size: 3rem;
-  }
-  .rebours-cases li {
-    min-width: 4.6rem;
-  }
-}
-@media (min-width: 2200px) and (min-height: 1100px) {
-  .accueil {
-    --bas: 28rem;
-  }
-  .paquet {
-    --l-carte: 27rem;
-  }
-  .acc-centre {
-    zoom: 1.12;
-  }
-}
-/* Un écran bas : le compte à rebours et les saisons côte à côte, le paquet
-   tassé, ses flèches sur les côtés. */
-@media (min-width: 1024px) and (max-height: 860px) {
-  .accueil {
-    --bas: 18rem;
-  }
-  .paquet {
-    --l-carte: 18rem;
-  }
-  .calendrier {
-    margin-top: 1rem;
+    max-width: 100%;
+    margin-top: 0.6cqw;
+    font-size: max(0.8125rem, 1cqw);
   }
   .acc-actions {
-    margin-top: 1rem;
+    margin-top: 1.25cqw;
   }
-  .acc-booster-nom > span:not(.sr-only) {
-    display: none;
+  .acc-centre .btn-lg {
+    font-size: max(0.875rem, 0.95cqw);
   }
-  .paquet-scene {
-    height: calc(var(--h-carte) + 0.8rem);
+  .acc-centre .calendrier {
+    margin-top: 1.5cqw;
   }
-  .paquet-carte {
-    top: 0.4rem;
+  .acc-centre .rebours-titre {
+    font-size: max(0.6875rem, 0.78cqw);
   }
-  .paquet-nav {
+  .acc-centre .rebours-cases li {
+    min-width: max(2.75rem, 4.4cqw);
+  }
+  .acc-centre .rebours-cases b {
+    font-size: max(1.75rem, 2.9cqw);
+  }
+  .acc-centre .rebours-cases li:not([data-dernier])::after {
+    font-size: max(1.5rem, 2.4cqw);
+  }
+  .acc-centre .rebours-cases span {
+    font-size: max(0.5625rem, 0.62cqw);
+  }
+  /* Les tuiles se posent sous les boosters, à la hauteur de leur texte. */
+  .acc-tuiles {
     position: absolute;
-    inset: 0;
-    z-index: 60;
-    justify-content: space-between;
-    margin: 0;
-    padding: 0 0.5rem;
-    pointer-events: none;
+    top: 73.5%;
+    right: 1.5%;
+    left: 1.5%;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 0.75cqw;
   }
-  .paquet-nav > .paquet-fleche {
-    pointer-events: auto;
+  .acc-tuile {
+    gap: 0.3cqw;
+    padding: 0.85cqw 0.95cqw;
+    border-radius: max(12px, 0.95cqw);
+    overflow: hidden;
   }
-  .paquet-points,
-  .paquet-pause {
-    display: none;
+  .acc-tuile-icone {
+    width: max(1.375rem, 1.6cqw);
+    height: max(1.375rem, 1.6cqw);
   }
-  .acc-etapes {
-    padding-bottom: 1.9rem;
+  .acc-tuile-icone svg {
+    width: max(0.8125rem, 0.95cqw);
+    height: max(0.8125rem, 0.95cqw);
+  }
+  .acc-tuile-theme {
+    font-size: max(0.625rem, 0.72cqw);
+  }
+  .acc-tuile h2 {
+    font-size: max(0.9375rem, 1.4cqw);
+  }
+  .acc-tuile p {
+    font-size: max(0.75rem, 0.98cqw);
+    line-height: 1.4;
   }
 }
-@media (min-width: 1024px) and (max-height: 760px) {
-  .accueil {
-    --bas: 15.5rem;
-  }
-  .paquet {
-    --l-carte: 15.5rem;
-  }
+/* Un petit écran d'ordinateur : l'essentiel au centre ; les tuiles ne
+   gardent que leur titre, et s'ouvrent vers le haut au survol. */
+@media (min-width: 1024px) and (max-height: 700px) {
   .acc-surtitre,
-  .acc-lead,
-  .calendrier-detail,
-  .calendrier-zero {
+  .acc-note,
+  .acc-lead {
     display: none;
   }
-  .hero-titre.acc-titre {
-    margin-top: 0;
+  .acc-tuiles {
+    top: auto;
+    bottom: 1%;
+    align-items: end;
   }
-  .rebours-cases b {
-    font-size: 2.1rem;
+  .acc-tuile p {
+    display: none;
   }
-}
-@media (prefers-reduced-motion: reduce) {
-  .accueil {
-    --amp-acc: 0.5;
+  .acc-tuile:hover p,
+  .acc-tuile:focus-within p {
+    display: block;
   }
 }
 
