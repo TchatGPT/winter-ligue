@@ -2,13 +2,18 @@
  * La display de l'accueil, rendue dans Blender (16/11/2026) : ce que la vidéo
  * montre, et où elle laisse les boosters.
  *
- * La vidéo est rendue par `scratchpad/display/display2.py`, en deux cadrages :
+ * La vidéo est rendue par `scratchpad/display/display3.py`, en deux cadrages :
  * le paysage des ordinateurs (plateau de 1920 × 1080) et le portrait des
  * téléphones (1080 × 1920), fond transparent. Le navigateur ne lit pas la
  * transparence d'une vidéo partout (Safari ignore celle du VP9) : elle est
  * encodée en H.264 avec sa transparence en niveaux de gris à côté de l'image —
  * dessous en paysage, à droite en portrait — et recomposée dans un `<canvas>`
  * (`detoureur`).
+ *
+ * La display tombe dans un champ de neige, s'y enfonce, se renverse un peu ;
+ * son couvercle saute, des boosters sont éjectés dans la neige ; les quatre de
+ * la ligue s'en dégagent et vont se placer ; un brouillard couvre tout, puis
+ * se dissipe sur le fond de la page.
  *
  * À sa dernière image, les quatre boosters sont exactement aux places
  * ci-dessous, face à l'écran et sans lumière de scène : le site y pose les
@@ -18,14 +23,14 @@
 /** Le cadrage du téléphone et de la tablette debout. Le CSS dit la même chose (`.acc-scene`). */
 export const REQUETE_PORTRAIT = '(max-width: 1023px) and (orientation: portrait)';
 
-/** La vidéo dure 188 images à 30 i/s. */
+/** La vidéo dure 236 images à 30 i/s. */
 export const IMAGES_PAR_SECONDE = 30;
 
 /**
- * L'image où la display commence à s'effacer : le centre de la page (le nom,
- * l'entrée, les tuiles) apparaît là.
+ * L'image où le brouillard se lève : le centre de la page (le nom, l'entrée,
+ * les tuiles) apparaît là.
  */
-export const IMAGE_REVELATION = 160;
+export const IMAGE_REVELATION = 204;
 
 /** Un booster à la fin de la vidéo : le centre de son image, en pixels du plateau, et son inclinaison. */
 export interface PlaceBooster {
@@ -56,8 +61,8 @@ export const PAYSAGE: FormatDisplay = {
     finisseur: { x: 1688, y: 455, inclinaison: -7 },
   },
   videos: [
-    { src: '/accueil/display-2560.mp4?v=2', pourLargeur: 1800 },
-    { src: '/accueil/display-1600.mp4?v=2', pourLargeur: 0 },
+    { src: '/accueil/display-2560.mp4?v=3', pourLargeur: 1800 },
+    { src: '/accueil/display-1600.mp4?v=3', pourLargeur: 0 },
   ],
   alpha: 'dessous',
 };
@@ -71,7 +76,7 @@ export const PORTRAIT: FormatDisplay = {
     folie: { x: 685, y: 315, inclinaison: -3 },
     finisseur: { x: 930, y: 345, inclinaison: -8 },
   },
-  videos: [{ src: '/accueil/display-portrait.mp4?v=2', pourLargeur: 0 }],
+  videos: [{ src: '/accueil/display-portrait.mp4?v=3', pourLargeur: 0 }],
   alpha: 'droite',
 };
 

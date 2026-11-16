@@ -336,10 +336,11 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   sans défiler, sur un ordinateur (de 1024×620 à 2560×1267 : `scrollHeight <= innerHeight`) comme
   sur un téléphone debout (la scène au milieu de l'écran, le pied de page dessous). Il s'ouvre,
   **à chaque visite**, sur une vidéo rendue dans Blender (`SceneDisplay`,
-  `scratchpad/display/display2.py`) : une display de boosters en carton aux couleurs de la ligue se
-  pose dans une brume d'hiver, son couvercle se soulève, s'incline — la neige glisse, tombe et reste
-  au sol — puis s'enlève, les quatre boosters en sortent et se placent, et la display s'efface en
-  fondu. Deux cadrages (`PAYSAGE`, `PORTRAIT`, `REQUETE_PORTRAIT`) ; la vidéo est en H.264, sa
+  `scratchpad/display/display3.py`) : une display de boosters en carton aux couleurs de la ligue
+  (sans neige dessus, sans cadre blanc) tombe dans un champ de neige, s'y enfonce — la neige gicle,
+  une poudre monte — et se renverse un peu ; son couvercle saute, des boosters sont éjectés et
+  retombent dans la neige ; les quatre de la ligue s'en dégagent et vont se placer ; un brouillard
+  arrive des bords, couvre tout, puis se dissipe sur le fond de la page (16/11/2026). Deux cadrages (`PAYSAGE`, `PORTRAIT`, `REQUETE_PORTRAIT`) ; la vidéo est en H.264, sa
   transparence en niveaux de gris à côté de l'image (`public/accueil/display-*.mp4`), recomposée
   dans un canvas WebGL (`videoDetouree`) — Safari ignore la transparence du VP9. À sa dernière
   image, les vraies images des boosters prennent le relais au pixel près (`places`,

@@ -13198,6 +13198,39 @@ main:has(> .accueil) {
   height: 2px;
   opacity: 0;
 }
+/* La vidéo est une scène pleine (le champ de neige) jusqu'au brouillard : ses
+   bords se fondent dans la page. */
+@property --acc-bord-x {
+  syntax: '<percentage>';
+  inherits: false;
+  initial-value: 0%;
+}
+@property --acc-bord-y {
+  syntax: '<percentage>';
+  inherits: false;
+  initial-value: 0%;
+}
+/* Le fondu se relâche quand le brouillard se lève : à la fin, les boosters du
+   bord ne sont plus voilés, et les vraies images prennent le relais sans saut. */
+.acc-canvas {
+  --acc-bord-x: 9%;
+  --acc-bord-y: 12%;
+  -webkit-mask-image:
+    linear-gradient(90deg, transparent, #000 var(--acc-bord-x), #000 calc(100% - var(--acc-bord-x)), transparent),
+    linear-gradient(180deg, transparent, #000 var(--acc-bord-y), #000 calc(100% - var(--acc-bord-y)), transparent);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(90deg, transparent, #000 var(--acc-bord-x), #000 calc(100% - var(--acc-bord-x)), transparent),
+    linear-gradient(180deg, transparent, #000 var(--acc-bord-y), #000 calc(100% - var(--acc-bord-y)), transparent);
+  mask-composite: intersect;
+  transition:
+    --acc-bord-x 0.8s ease,
+    --acc-bord-y 0.8s ease;
+}
+.acc-scene[data-revele] .acc-canvas {
+  --acc-bord-x: 0%;
+  --acc-bord-y: 0%;
+}
 .acc-scene[data-phase='fini'] .acc-canvas {
   visibility: hidden;
 }

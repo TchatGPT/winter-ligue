@@ -32,7 +32,7 @@ type Phase = 'charge' | 'video' | 'fini';
 /** Sans image au bout de ce délai, on n'attend plus la vidéo. */
 const ATTENTE_MAX_MS = 6000;
 /** Une vidéo qui s'enlise : au-delà, la page s'affiche quand même. */
-const DUREE_MAX_MS = 12_000;
+const DUREE_MAX_MS = 16_000;
 
 /**
  * La scène de l'accueil (16/11/2026) : la display de boosters rendue dans
