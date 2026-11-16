@@ -210,8 +210,6 @@ export const adminConfigSchema = z.object({
   alertes: z
     .object({
       tchatBoosters: z.boolean().optional(),
-      overlayBoosters: z.boolean().optional(),
-      overlayDuels: z.boolean().optional(),
     })
     .strict()
     .optional(),

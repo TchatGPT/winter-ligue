@@ -319,8 +319,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   Il n'y a plus d'overlay des duels (16/11/2026) : le compteur de subs (`OverlaySubs`) annonce
   un duel lancé, ou un palier franchi, par une ligne au-dessus de lui.
   **Modération → Alertes** (16/11/2026, `config.alertes`, `alertesDe`) coupe, pour tester
-  pendant un live, le message du tchat des boosters, les ouvertures dans l'overlay ou les
-  duels dans l'overlay. Les cartes se règlent quand même : seule l'annonce est coupée.
+  pendant un live, le message du tchat des boosters — l'overlay OBS n'y est pas soumis. Les
+  cartes se règlent quand même : seul le message est coupé.
 - **Les illustrations passent par `npm run cartes`** (`scripts/index-art.mjs`, lancé aussi
   avant chaque build) : l'index donne chaque image avec l'empreinte de son fichier
   (`?v=…`), ce qui permet de la garder un an en cache (`next.config.ts`), et fait les

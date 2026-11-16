@@ -296,26 +296,22 @@ export interface LeagueConfig {
    */
   remiseA?: string | null;
   /**
-   * Les alertes du live (16/11/2026) : couper l'annonce des boosters dans le
-   * tchat, les ouvertures ou les duels dans l'overlay — pour tester pendant
-   * que la streameuse est en live. Absent : tout est allumé.
+   * Les alertes du tchat (16/11/2026) : couper l'annonce des boosters dans le
+   * tchat, pour tester pendant que la streameuse est en live. L'overlay n'y
+   * est pas soumis. Absent : tout est allumé.
    */
   alertes?: Partial<AlertesLive>;
 }
 
-/** Ce que les alertes du live laissent passer. */
+/** Ce que les alertes du tchat laissent passer. */
 export interface AlertesLive {
   /** Le message du tchat à chaque ouverture de booster. */
   tchatBoosters: boolean;
-  /** Les ouvertures de booster dans l'overlay. */
-  overlayBoosters: boolean;
-  /** Les duels lancés, sur la ligne de l'overlay du compteur. */
-  overlayDuels: boolean;
 }
 
-/** Les alertes du live, réglage par réglage : tout est allumé par défaut. */
+/** Les alertes du tchat, réglage par réglage : tout est allumé par défaut. */
 export function alertesDe(config: Pick<LeagueConfig, 'alertes'>): AlertesLive {
-  return { tchatBoosters: true, overlayBoosters: true, overlayDuels: true, ...(config.alertes ?? {}) };
+  return { tchatBoosters: config.alertes?.tchatBoosters ?? true };
 }
 
 /** Un versement déclenché par les subs Twitch, conservé pour l'historique. */

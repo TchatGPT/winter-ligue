@@ -10,23 +10,13 @@ const REGLAGES: { cle: keyof AlertesLive; titre: string; aide: string }[] = [
     titre: 'Message dans le tchat à chaque booster ouvert',
     aide: 'Le message « Booster ouvert ! … a obtenu la carte … » envoyé dans le tchat de la chaîne.',
   },
-  {
-    cle: 'overlayBoosters',
-    titre: 'Ouverture des boosters dans l’overlay',
-    aide: 'L’animation d’ouverture et la carte tirée sur le stream (Perso et Finisseur).',
-  },
-  {
-    cle: 'overlayDuels',
-    titre: 'Duels lancés dans l’overlay',
-    aide: 'La ligne « … lance un duel » au-dessus du compteur de subs.',
-  },
 ];
 
 /**
- * Les alertes du live (16/11/2026) : de quoi tester — ouvrir des boosters,
- * lancer des duels — pendant que la streameuse est en live, sans que rien ne
- * passe sur le stream ni dans le tchat. Les cartes se règlent quand même :
- * seule l'annonce est coupée.
+ * Les alertes du tchat (16/11/2026) : de quoi tester — ouvrir des boosters —
+ * pendant que la streameuse est en live, sans rien écrire dans le tchat.
+ * L'overlay OBS n'y est pas soumis. Les cartes se règlent quand même : seul le
+ * message est coupé.
  */
 export function EcranAlertes({ alertes }: { alertes: AlertesLive }) {
   const { busy, message, envoie, setMessage } = useAction();
@@ -35,7 +25,7 @@ export function EcranAlertes({ alertes }: { alertes: AlertesLive }) {
     void envoie(
       '/api/admin/config',
       { alertes: { [cle]: valeur } },
-      { methode: 'PATCH', cle, succes: valeur ? 'Alerte rallumée : elle passe sur le live.' : 'Alerte coupée : elle ne passe plus sur le live.' },
+      { methode: 'PATCH', cle, succes: valeur ? 'Rallumé : les messages repartent dans le tchat.' : 'Coupé : plus aucun message de booster dans le tchat.' },
     );
   }
 
@@ -43,17 +33,17 @@ export function EcranAlertes({ alertes }: { alertes: AlertesLive }) {
 
   return (
     <EcranAdmin
-      intro="Coupe une alerte pour faire tes tests pendant le live : les boosters s’ouvrent et les duels se jouent pour de vrai, mais rien ne s’affiche sur le stream ni dans le tchat. Pense à tout rallumer après."
+      intro="Coupe le message du tchat pour faire tes tests pendant le live : les boosters s’ouvrent pour de vrai, mais rien n’est écrit dans le tchat. L’overlay OBS, lui, n’est pas touché. Les duels n’écrivent rien dans le tchat. Pense à rallumer après."
       grille="seul"
       message={message}
       onFermeMessage={() => setMessage(null)}
     >
       <Panneau
-        titre="Alertes du live"
+        titre="Alertes du tchat"
         sousTitre={
           coupees === 0
-            ? 'Tout passe sur le live.'
-            : `${coupees} alerte${coupees > 1 ? 's' : ''} coupée${coupees > 1 ? 's' : ''} : elle${coupees > 1 ? 's' : ''} ne passe${coupees > 1 ? 'nt' : ''} pas sur le live.`
+            ? 'Les messages partent dans le tchat.'
+            : 'Coupé : aucun message de booster ne part dans le tchat.'
         }
       >
         <ul className="adm-alertes">
@@ -70,7 +60,7 @@ export function EcranAlertes({ alertes }: { alertes: AlertesLive }) {
                   <b>{r.titre}</b>
                   <small>{r.aide}</small>
                 </span>
-                <em>{alertes[r.cle] ? 'Sur le live' : 'Coupée'}</em>
+                <em>{alertes[r.cle] ? 'Dans le tchat' : 'Coupé'}</em>
               </label>
             </li>
           ))}

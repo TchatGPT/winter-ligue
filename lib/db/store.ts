@@ -23,7 +23,7 @@ import { synchroniseCatalogue } from './lecture';
 import { chargeBase, empreintes, enregistreBase, lisJournal, lisSubsTwitch, SCHEMA_SQL, TABLES } from './tables';
 import { dirname, join } from 'node:path';
 import { DEFAULT_MAX_GAMES_PER_PLAYER, ECONOMY, EVENEMENT_KINDS, PREFIXE_OUVERTURE_TEST, SEASON } from '@/lib/domain/rules';
-import type { AlertesLive, AuditEntry, Database, GamesTirees, PlayerRole, SubTwitch } from './entities';
+import type { AuditEntry, Database, GamesTirees, PlayerRole, SubTwitch } from './entities';
 import type { Rarity } from '@/lib/domain/types';
 
 /*
@@ -113,8 +113,6 @@ export interface FluxOverlay {
    * Booster Commu compte alors son palier accéléré depuis lui.
    */
   tempeteA: number | null;
-  /** Les alertes du live : ce que l'overlay a le droit de jouer. */
-  alertes?: Partial<AlertesLive>;
 }
 
 /** Ce qu'un overlay remonte au plus par lecture : il les joue l'un après l'autre. */
@@ -292,7 +290,6 @@ class JsonFileStore implements Store {
       maintenant,
       generation: db.config.overlayGeneration ?? 1,
       totalSubs: db.config.totalSubs,
-      alertes: db.config.alertes ?? {},
       ouvertures: ouvertures.map((o) => ({
         id: o.id,
         packId: o.packId,
@@ -379,7 +376,7 @@ function versModeTransaction(url: string): string {
 /** Le document que renvoie la requête des overlays, tel que Postgres le rend. */
 interface DocOverlay {
   maintenant: string;
-  saison: { generation: number; subs: number; alertes?: Partial<AlertesLive> } | null;
+  saison: { generation: number; subs: number } | null;
   ouvertures: {
     id: string;
     booster_id: string;
@@ -681,7 +678,7 @@ class PostgresStore implements Store {
       const [ligne] = await this.sql<{ doc: DocOverlay }[]>`
         select json_build_object(
           'maintenant', now(),
-          'saison', (select json_build_object('generation', overlay_generation, 'subs', total_subs, 'alertes', alertes)
+          'saison', (select json_build_object('generation', overlay_generation, 'subs', total_subs)
                        from saison where id = 1),
           'ouvertures', coalesce((
             select json_agg(x order by x.le) from (
@@ -732,7 +729,6 @@ class PostgresStore implements Store {
         maintenant: iso(doc.maintenant),
         generation: doc.saison?.generation ?? 1,
         totalSubs: doc.saison?.subs ?? 0,
-        alertes: doc.saison?.alertes ?? {},
         ouvertures: doc.ouvertures.map((o) => ({
           id: o.id,
           packId: o.booster_id,
