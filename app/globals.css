@@ -13134,6 +13134,10 @@ main:has(> .accueil) {
   grid-template-columns: minmax(0, 1fr);
   padding: 0;
 }
+/* Tout posé, la page repasse sous le pied de page : les tuiles glissent dessous. */
+main:has(> .accueil .acc-scene[data-phase='fini']) {
+  z-index: 9;
+}
 .accueil {
   --acc-marge: clamp(1rem, 2.4vw, 4rem);
   position: relative;
@@ -13382,6 +13386,17 @@ main:has(> .accueil) {
   text-transform: uppercase;
   color: var(--ice);
 }
+.acc-surtitre a {
+  color: var(--frost);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--ice) 50%, transparent);
+  text-underline-offset: 0.2em;
+  text-transform: none;
+  letter-spacing: 0.06em;
+}
+.acc-surtitre a:hover {
+  color: var(--ice);
+}
 .hero-titre.acc-titre {
   margin-top: 0.3rem;
   font-size: clamp(2.4rem, 5.4cqw, 9rem);
@@ -13431,39 +13446,68 @@ main:has(> .accueil) {
 }
 
 /* -- Les tuiles : les règles, en verre -- */
+/* Elles défilent en boucle (la piste porte deux fois la série et glisse de
+   la moitié de sa longueur), se fondent sur les côtés, et s'arrêtent sous la
+   souris. */
+@keyframes acc-defile {
+  to {
+    transform: translateX(-50%);
+  }
+}
 .acc-tuiles {
+  --l-tuile: min(78vw, 17rem);
+  --g-tuile: 0.75rem;
   position: relative;
   z-index: 2;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
-  gap: 0.75rem;
+  overflow: hidden;
+  padding-block: 0.4rem;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 12%, #000 88%, transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0, #000 12%, #000 88%, transparent 100%);
 }
+.acc-tuiles-piste {
+  display: flex;
+  width: max-content;
+  animation: acc-defile 70s linear infinite;
+}
+.acc-tuiles:hover .acc-tuiles-piste {
+  animation-play-state: paused;
+}
+/* Du verre liquide, comme les plaques de l'overlay : presque transparent, une
+   teinte glace et violette qui glisse dessus, un bord clair et net. */
 .acc-tuile {
   position: relative;
   display: grid;
+  flex: 0 0 var(--l-tuile);
   align-content: start;
   gap: 0.35rem;
+  margin-right: var(--g-tuile);
   padding: 1rem 1.1rem 1.05rem;
   border-radius: var(--r-sm);
-  background: color-mix(in srgb, var(--bg-deep) 34%, transparent);
-  backdrop-filter: blur(14px) saturate(1.15);
-  -webkit-backdrop-filter: blur(14px) saturate(1.15);
-  transition:
-    transform 0.4s cubic-bezier(0.2, 0.9, 0.25, 1),
-    background-color 0.3s ease;
+  background:
+    linear-gradient(115deg, color-mix(in srgb, var(--ice) 16%, transparent) 0%, transparent 46%, color-mix(in srgb, var(--violet) 14%, transparent) 100%),
+    linear-gradient(180deg, color-mix(in srgb, var(--frost) 8%, transparent) 0%, transparent 42%),
+    color-mix(in srgb, var(--bg-deep) 18%, transparent);
+  backdrop-filter: blur(6px) saturate(1.45);
+  -webkit-backdrop-filter: blur(6px) saturate(1.45);
+  box-shadow:
+    inset 0 1px 10px color-mix(in srgb, var(--frost) 8%, transparent),
+    0 18px 40px -24px color-mix(in srgb, var(--bg-deep) 70%, transparent);
+  text-shadow: 0 1px 2px color-mix(in srgb, var(--bg-deep) 60%, transparent);
+  transition: transform 0.4s cubic-bezier(0.2, 0.9, 0.25, 1);
 }
-/* Une arête fine, plus claire en haut : du verre plat, ni bombé ni halo. */
+/* Le bord : clair en haut, glace et violet sur les côtés. */
 .acc-tuile::before {
   content: '';
   position: absolute;
   inset: 0;
-  padding: 1px;
+  padding: 1.5px;
   border-radius: inherit;
   background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--frost) 42%, transparent),
-    color-mix(in srgb, var(--ice) 10%, transparent) 60%,
-    color-mix(in srgb, var(--ice) 18%, transparent)
+    160deg,
+    color-mix(in srgb, var(--frost) 70%, transparent) 0%,
+    color-mix(in srgb, var(--ice) 34%, transparent) 40%,
+    color-mix(in srgb, var(--violet) 30%, transparent) 70%,
+    color-mix(in srgb, var(--frost) 45%, transparent) 100%
   );
   -webkit-mask:
     linear-gradient(#000 0 0) content-box,
@@ -13479,7 +13523,6 @@ main:has(> .accueil) {
 }
 .acc-tuile:hover {
   transform: translateY(-3px);
-  background-color: color-mix(in srgb, var(--bg-deep) 48%, transparent);
 }
 .acc-tuile header {
   display: flex;
@@ -13708,11 +13751,12 @@ main:has(> .accueil) {
   .acc-centre {
     width: min(32cqw, 40rem);
   }
+  /* Toute la largeur, et un peu sous le pied de page. */
   .acc-tuiles {
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-    gap: clamp(0.5rem, 0.75cqw, 1.2rem);
-    width: min(100%, 120rem);
-    justify-self: center;
+    --l-tuile: clamp(15rem, 19cqw, 26rem);
+    --g-tuile: clamp(0.6rem, 0.9cqw, 1.3rem);
+    margin-inline: calc(-1 * var(--acc-marge));
+    margin-bottom: -2.1rem;
   }
   .acc-tuile {
     gap: 0.3rem;
@@ -13832,27 +13876,25 @@ main:has(> .accueil) {
     font-size: 2.3cqw;
   }
   .acc-tuiles {
+    --l-tuile: 72cqw;
+    --g-tuile: 3cqw;
     position: absolute;
     right: 0;
     bottom: 3%;
     left: 0;
-    display: flex;
-    gap: 3cqw;
-    padding-inline: 6cqw;
-    overflow-x: auto;
-    overscroll-behavior-x: contain;
-    scroll-snap-type: x mandatory;
-    scroll-padding-inline: 6cqw;
-    scrollbar-width: none;
-  }
-  .acc-tuiles::-webkit-scrollbar {
-    display: none;
   }
   .acc-tuile {
-    flex: 0 0 72%;
     gap: 1.2cqw;
     padding: 4cqw 4.5cqw;
-    scroll-snap-align: start;
+  }
+  /* Le bouton pour revoir l'animation : en haut, au milieu, au-dessus des boosters. */
+  .acc-revoir {
+    top: 0.6rem;
+    right: auto;
+    left: 50%;
+    translate: -50% 0;
+    padding: 0.4rem 0.8rem;
+    font-size: 0.6875rem;
   }
   .acc-tuile-theme {
     font-size: 2.6cqw;

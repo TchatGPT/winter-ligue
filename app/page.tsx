@@ -21,7 +21,9 @@ export default async function ClassementPage() {
   // Déconnecté, on ne voit rien de la ligue : seulement ce qu'elle est, et
   // comment y entrer.
   if ((await getSession()) === null) {
-    return <Accueil twitchEnabled={isTwitchEnabled()} devLogin={connexionDeDeveloppement()} />;
+    return (
+      <Accueil twitchEnabled={isTwitchEnabled()} devLogin={connexionDeDeveloppement()} chaine={chaineDeLaLigue()} />
+    );
   }
   const session = await exigeSession();
   // La saisie par capture vit ici, au-dessus du classement : c'est là que la

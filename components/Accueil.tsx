@@ -56,7 +56,16 @@ interface Tuile {
   texte: ReactNode;
 }
 
-export function Accueil({ twitchEnabled, devLogin }: { twitchEnabled: boolean; devLogin: boolean }) {
+export function Accueil({
+  twitchEnabled,
+  devLogin,
+  chaine,
+}: {
+  twitchEnabled: boolean;
+  devLogin: boolean;
+  /** La chaîne Twitch de la streameuse (`chaineDeLaLigue`). */
+  chaine: string;
+}) {
   const saison = saisonDuMoment();
   const nomCourt = (s: (typeof SAISONS)[number]) => s.nom.split(' · ').at(-1) ?? s.nom;
 
@@ -168,7 +177,12 @@ export function Accueil({ twitchEnabled, devLogin }: { twitchEnabled: boolean; d
     <div className="accueil">
       <SceneDisplay boosters={boosters}>
         <section className="acc-centre" aria-labelledby="accueil-titre">
-          <p className="acc-surtitre">Warzone · en direct sur Twitch</p>
+          <p className="acc-surtitre">
+            Warzone · en direct sur{' '}
+            <a href={`https://www.twitch.tv/${chaine}`} target="_blank" rel="noopener noreferrer">
+              twitch.tv/{chaine}
+            </a>
+          </p>
           <h1 id="accueil-titre" className="hero-titre acc-titre">
             <span className="glace" data-text="Winter">
               Winter
@@ -193,19 +207,30 @@ export function Accueil({ twitchEnabled, devLogin }: { twitchEnabled: boolean; d
           <CalendrierSaisons saisons={saisons} maintenant={Date.now()} compact />
         </section>
 
+        {/* Les tuiles défilent en boucle et se fondent sur les côtés : la piste
+            porte deux fois la série, la seconde muette pour un lecteur d'écran. */}
         <section className="acc-tuiles" aria-label="Comment ça marche">
-          {tuiles.map((t, i) => (
-            <article key={t.cle} className="acc-tuile" style={{ ['--i' as string]: i } as CSSProperties}>
-              <header>
-                <span className="acc-tuile-icone" aria-hidden="true">
-                  {t.icone}
-                </span>
-                <span className="acc-tuile-theme">{t.theme}</span>
-              </header>
-              <h2>{t.titre}</h2>
-              <p>{t.texte}</p>
-            </article>
-          ))}
+          <div className="acc-tuiles-piste">
+            {[0, 1].map((tour) =>
+              tuiles.map((t, i) => (
+                <article
+                  key={`${tour}-${t.cle}`}
+                  className="acc-tuile"
+                  aria-hidden={tour === 1 ? true : undefined}
+                  style={{ ['--i' as string]: i } as CSSProperties}
+                >
+                  <header>
+                    <span className="acc-tuile-icone" aria-hidden="true">
+                      {t.icone}
+                    </span>
+                    <span className="acc-tuile-theme">{t.theme}</span>
+                  </header>
+                  <h2>{t.titre}</h2>
+                  <p>{t.texte}</p>
+                </article>
+              )),
+            )}
+          </div>
         </section>
       </SceneDisplay>
     </div>
