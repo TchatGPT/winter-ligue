@@ -497,7 +497,7 @@ export function Regles({
             Départ à <b>0 ❄</b>
           </li>
           <li>
-            Plafond <b>{nombre(ECONOMY.soldeMax)} ❄</b> : au-delà, perdu
+            Solde maximum : <b>{nombre(ECONOMY.soldeMax)} ❄</b>
           </li>
           {avalanche && (
             <li>
