@@ -40,7 +40,8 @@ type Etape = 'saisie' | 'verification' | 'inscrit';
  *     case à cocher : « c'est exactement mon pseudo en jeu ».
  *  3. **Inscrit** — et l'on entre dans la ligue.
  *
- * Il ne se donne qu'une fois : ensuite, seule la modération le corrige. La
+ * Ensuite, le joueur le change lui-même depuis sa fiche s'il change de pseudo
+ * en jeu (`PseudoActivision`, 17/11/2026), et la modération peut le corriger. La
  * fenêtre ne s'ouvre qu'à la première connexion : la mise en page ne la pose
  * que pour un joueur sans pseudo qui ne l'a pas passée, jamais pour la
  * streameuse. Passée, c'est noté sur le compte : elle ne revient plus.
@@ -211,9 +212,20 @@ export function InscriptionWarzone({ pseudoTwitch }: { pseudoTwitch: string; adm
                 C’est <b>exactement</b> mon pseudo en jeu sur Warzone.
               </span>
             </label>
-            <p className="insc-note">
-              Une fois inscrit, tu ne pourras plus le changer toi-même : seule la modération le pourra.
-            </p>
+            <div className="insc-consigne">
+              <p className="insc-consigne-titre">Pendant toute la ligue</p>
+              <ul>
+                <li>Idéalement, garde ce pseudo du début à la fin.</li>
+                <li>
+                  Si tu en changes en jeu, mets-le à jour sur ta fiche de joueur : « Changer », à côté de ton pseudo
+                  Activision.
+                </li>
+                <li>
+                  Joue toujours sur ton propre compte, jamais sur celui de quelqu’un d’autre : sinon, la reconnaissance
+                  des captures ne te retrouvera pas.
+                </li>
+              </ul>
+            </div>
             <div className="insc-actions">
               <button type="button" className="btn" disabled={busy} onClick={() => setEtape('saisie')}>
                 ← Corriger

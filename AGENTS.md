@@ -287,6 +287,11 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   la streameuse et ses modérateurs sont admin, les autres joueurs. Les rôles ne se
   choisissent pas à la main, et un joueur ne s'inscrit que par Twitch. Il n'y a ni mot
   de passe ni session sans joueur : ne pas en rouvrir.
+- **Le pseudo en jeu** (identifiant Activision) se donne à l'inscription (`InscriptionWarzone`),
+  qui demande de le garder toute la ligue et de jouer sur son propre compte ; s'il en change,
+  le joueur le met à jour lui-même sur sa fiche (`PseudoActivision`, `PATCH /api/me`,
+  17/11/2026) — jamais un pseudo déjà pris, et le journal garde l'ancien et le nouveau
+  (`ACTIVISION_CHANGE`). La modération peut toujours le corriger.
 - **Le mode visiteur** (16/11/2026, `lib/auth/visiteur.ts`) : sous « M'inscrire avec Twitch »,
   l'accueil propose « Entrer en mode visiteur » (`/api/visiteur`), qui pose un cookie
   `wl_visiteur` — **pas une session** : il ne désigne personne et ne porte aucun rôle. Les pages

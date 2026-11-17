@@ -2949,6 +2949,86 @@
     background: rgb(255 255 255 / 0.14);
   }
 
+  /* Le pseudo en jeu, sous le nom ; sur sa propre fiche, le joueur le change
+     (`PseudoActivision`, 17/11/2026). */
+  .profil-activision {
+    margin-top: 0.6rem;
+    max-width: 26rem;
+  }
+  .profil-activision-ligne {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--ink-2);
+  }
+  .profil-activision-ligne > span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .profil-activision-ligne em {
+    font-style: normal;
+    font-weight: 400;
+    color: var(--faint);
+  }
+  .profil-activision-logo {
+    width: auto;
+    height: 0.6rem;
+    flex: none;
+    color: var(--faint);
+  }
+  .profil-activision-changer {
+    flex: none;
+    padding: 0.1rem 0.55rem;
+    border-radius: var(--r-pilule);
+    background: color-mix(in srgb, var(--ice) 14%, transparent);
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--ice);
+    transition: background-color 0.15s ease;
+  }
+  .profil-activision-changer:hover {
+    background: color-mix(in srgb, var(--ice) 24%, transparent);
+  }
+  .profil-activision-form {
+    display: grid;
+    gap: 0.55rem;
+    margin-top: 0.6rem;
+    padding: 0.75rem;
+    border-radius: var(--r-md);
+    background: color-mix(in srgb, var(--bg-deep) 35%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--frost) 12%, transparent);
+  }
+  .profil-activision-note {
+    font-size: 0.8125rem;
+    line-height: 1.4;
+    color: var(--muted);
+  }
+  .profil-activision-case {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    font-size: 0.8125rem;
+    color: var(--ink-2);
+  }
+  .profil-activision-case input {
+    margin-top: 0.2rem;
+  }
+  .profil-activision-erreur {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--danger);
+  }
+  .profil-activision-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+  }
+
   /* Les cinq chiffres de l'en-tête : séparés d'un filet, alignés sur la base. */
   .profil-chiffres {
     display: grid;

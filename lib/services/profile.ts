@@ -247,6 +247,8 @@ export interface FicheJoueur {
   role: 'joueur' | 'admin';
   /** Son compte Twitch : il dit, au registre, les subs qu'il a payés. */
   twitchId: string | null;
+  /** Son pseudo en jeu (identifiant Activision), public comme au classement. */
+  activisionId: string | null;
   /** La streameuse : hors classement, elle ne joue pas de game. */
   streameuse: boolean;
   /**
@@ -313,6 +315,7 @@ export async function getFicheJoueur(slug: string): Promise<FicheJoueur | null> 
       profil,
       role: player.role,
       twitchId: player.twitchId,
+      activisionId: player.activisionId,
       streameuse: estLaStreameuse(player, chaineDeLaLigue()),
       rang,
       creneaux: db.config.maxGamesPerPlayer + (player.creneauxBonus ?? 0),

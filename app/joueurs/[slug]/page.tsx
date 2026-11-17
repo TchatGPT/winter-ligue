@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { FicheJoueur } from '@/components/FicheJoueur';
 import { exigeLecteur } from '@/lib/auth/acces';
+import { playerIdOf } from '@/lib/auth/session';
 import { getFicheJoueur, getPublicProfile, subsDuJoueur } from '@/lib/services/profile';
 
 export const dynamic = 'force-dynamic';
@@ -25,6 +26,7 @@ export default async function FicheJoueurPage({ params }: { params: Promise<{ sl
       fiche={fiche}
       subs={await subsDuJoueur(fiche.twitchId)}
       moderation={session?.role === 'admin'}
+      moi={playerIdOf(session) === fiche.profil.id}
     />
   );
 }

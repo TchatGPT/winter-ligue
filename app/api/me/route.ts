@@ -39,12 +39,12 @@ export async function GET(request: Request): Promise<NextResponse> {
 }
 
 /**
- * L'inscription : le joueur donne son pseudo Warzone (identifiant Activision).
- *
- * C'est la seule chose qu'un joueur écrit sur son propre compte, et une seule
- * fois : ensuite, seule la modération le corrige (`PATCH /api/players`). Elle
- * ne touche ni score ni flocons : elle sert à le reconnaître sur les captures
- * de fin de game.
+ * Le pseudo Warzone (identifiant Activision) du joueur : donné à l'inscription,
+ * et changé par lui-même depuis sa fiche s'il en change en jeu (17/11/2026 :
+ * jusque-là, seule la modération le corrigeait). C'est la seule chose qu'un
+ * joueur écrit sur son propre compte. Il ne touche ni score ni flocons : il
+ * sert à le reconnaître sur les captures de fin de game. Le journal garde
+ * l'ancien et le nouveau.
  *
  * Un nom déjà pris par un autre joueur est refusé : sinon l'un se ferait
  * attribuer les games de l'autre.
@@ -67,15 +67,14 @@ export async function PATCH(request: Request): Promise<NextResponse> {
     const resultat = await getStore().transaction((db) => {
       const player = db.players.find((p) => p.id === playerId);
       if (!player) throw new Error('Joueur introuvable.');
-      if (player.activisionId !== null) return 'DEJA' as const;
+      const avant = player.activisionId;
+      if (avant === g.body.activisionId) return { activisionId: avant };
       if (activisionPris(g.body.activisionId, db.players, player.id)) return 'PRIS' as const;
       player.activisionId = g.body.activisionId;
-      audit(db, playerId, 'ACTIVISION_RENSEIGNE', playerId, g.body.activisionId);
+      if (avant === null) audit(db, playerId, 'ACTIVISION_RENSEIGNE', playerId, g.body.activisionId);
+      else audit(db, playerId, 'ACTIVISION_CHANGE', playerId, `${avant} → ${g.body.activisionId}`);
       return { activisionId: player.activisionId };
     });
-    if (resultat === 'DEJA') {
-      return fail('CONFLIT', 'Ton pseudo Warzone est déjà enregistré : seule la modération peut le corriger.');
-    }
     if (resultat === 'PRIS') {
       return fail(
         'CONFLIT',

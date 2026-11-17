@@ -7,6 +7,7 @@ import { CorrectionGame, type GameACorriger } from '@/components/CorrectionGame'
 import { CouronneGlace } from '@/components/CouronneGlace';
 import { FicheCarte } from '@/components/FicheCarte';
 import { MedailleGlace } from '@/components/MedailleGlace';
+import { PseudoActivision } from '@/components/PseudoActivision';
 import { ColonnesSaison, DetailGame, GrilleGames, numerotation } from '@/components/SaisonDuJoueur';
 import { SnowCap } from '@/components/SnowCap';
 import { flakes } from '@/components/ui';
@@ -67,11 +68,14 @@ export function FicheJoueur({
   fiche,
   subs,
   moderation = false,
+  moi = false,
 }: {
   fiche: DonneesFiche;
   subs: BilanSubs;
   /** La session est celle d'un membre de la modération : les games se corrigent. */
   moderation?: boolean;
+  /** C'est sa propre fiche : il y change son pseudo en jeu. */
+  moi?: boolean;
 }) {
   const { profil: p, rang, duels } = fiche;
   const t = p.totals;
@@ -176,6 +180,7 @@ export function FicheJoueur({
                 ← Classement
               </Link>
             </div>
+            {!fiche.streameuse && <PseudoActivision activisionId={fiche.activisionId} moi={moi} />}
           </div>
         </div>
 
