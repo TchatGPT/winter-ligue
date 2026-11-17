@@ -77,11 +77,7 @@ export function proxy(request: NextRequest): NextResponse {
   // est vérifiée ici ; un jeton révoqué ou un compte désactivé, prolongés,
   // restent refusés par `getSession()`, qui confronte chaque jeton à la base.
   // Jamais sur un overlay : son lien ne porte pas de session.
-  // Jamais non plus sur la connexion et la déconnexion (`/api/auth/…`) : la
-  // route y pose une session neuve, ou l'efface, et l'ancienne prolongée
-  // viendrait la contredire dans la même réponse.
-  const auth = request.nextUrl.pathname.startsWith('/api/auth/');
-  if (!overlay && !auth) {
+  if (!overlay) {
     const prolongee = prolonge(request.cookies.get(SESSION_COOKIE)?.value);
     if (prolongee) {
       response.cookies.set(SESSION_COOKIE, prolongee.jeton, { ...COOKIE_OPTIONS, maxAge: prolongee.maxAge });
@@ -92,7 +88,6 @@ export function proxy(request: NextRequest): NextResponse {
 }
 
 export const config = {
-  // On applique tout sauf les fichiers statiques, qui n'ont pas besoin de CSP :
-  // images, vidéos, sons et polices.
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif|mp4|webm|mp3|woff2)$).*)'],
+  // On applique tout sauf les fichiers statiques, qui n'ont pas besoin de CSP.
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
 };
