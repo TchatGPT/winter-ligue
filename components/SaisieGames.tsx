@@ -673,8 +673,14 @@ function LigneResultat({
 
       <div className="saisie-points" data-joker={jokerJoue || undefined}>
         <b className="num">{!assigne ? '—' : jokerJoue ? '0 pt' : `${total} pts`}</b>
-        {assigne && <span className="num">{detail}</span>}
       </div>
+
+      {/* Le détail du total, sur une ligne fine, sous la ligne et au-dessus du Joker. */}
+      {assigne && (
+        <p className="saisie-detail num" data-joker={jokerJoue || undefined}>
+          {jokerJoue ? 'Game annulée par le Joker' : `${total} pts = ${detail}`}
+        </p>
+      )}
 
       {/* Le Joker : un interrupteur, en clair. */}
       {assigne && joker && (

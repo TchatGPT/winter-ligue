@@ -18270,10 +18270,23 @@ a.rgs-usage b::after {
   white-space: nowrap;
   color: var(--gold);
 }
-.saisie-points span {
-  font-size: 0.6875rem;
-  line-height: 1.3;
-  color: var(--faint);
+/* Le détail du total : une ligne fine, vert clair, sur toute la largeur. */
+.saisie-detail {
+  grid-column: 1 / -1;
+  margin-top: -0.2rem;
+  padding-top: 0.35rem;
+  border-top: 1px solid color-mix(in srgb, var(--aurora) 16%, transparent);
+  text-align: right;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: color-mix(in srgb, var(--aurora) 75%, var(--ink));
+}
+.saisie-detail[data-joker] {
+  border-top-color: color-mix(in srgb, var(--r-ur) 20%, transparent);
+  color: var(--r-ur);
 }
 .saisie-points[data-joker] b {
   color: var(--r-ur);
@@ -18351,6 +18364,12 @@ a.rgs-usage b::after {
   }
   .saisie-kills {
     justify-self: start;
+  }
+}
+/* Sur un téléphone, la rareté se lit à la couleur de la tuile : le nom a la place. */
+@media (max-width: 640px) {
+  .saisie-carte-texte span {
+    display: none;
   }
 }
 
