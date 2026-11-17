@@ -639,22 +639,17 @@ function LigneResultat({
             </option>
           ))}
         </select>
-        {/* Ce qui a été lu, à quel point c'est sûr, et le pseudo Activision du
-            joueur choisi : les deux doivent se ressembler. */}
+        {/* À quel point la lecture est sûre, et le pseudo Activision : celui du
+            joueur choisi s'il l'a donné, sinon le nom lu sur la capture. */}
         <span className="saisie-lu" title={`Lu sur la capture : ${l.lu}`}>
           {assigne && (
             <b className="saisie-sure" data-sure={sure} title={sureTexte}>
               {Math.round(l.confiance * 100)} %
             </b>
           )}
-          <span>lu : {sansTagClan(l.lu) || l.lu}</span>
+          <IconActivision className="saisie-activision-logo" />
+          <span>{choisi?.activision ?? (sansTagClan(l.lu) || l.lu)}</span>
         </span>
-        {assigne && (
-          <span className="saisie-activision" title="Son pseudo Activision">
-            <IconActivision className="h-2.5 w-auto" />
-            {choisi?.activision ?? <em>pas de pseudo Activision</em>}
-          </span>
-        )}
       </div>
 
       <div className="saisie-kills" role="group" aria-label="Kills">

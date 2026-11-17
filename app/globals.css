@@ -18154,28 +18154,12 @@ a.rgs-usage b::after {
   background: color-mix(in srgb, var(--danger) 16%, transparent);
   color: var(--danger);
 }
-/* Le pseudo Activision du joueur choisi. */
-.saisie-activision {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  gap: 0.35rem;
-  overflow: hidden;
-  padding-left: 0.2rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  color: var(--ink-2);
-}
-.saisie-activision svg {
+/* Le logo d'Activision, devant le pseudo. */
+.saisie-activision-logo {
+  width: auto;
+  height: 0.55rem;
   flex: none;
   opacity: 0.7;
-}
-.saisie-activision em {
-  font-style: normal;
-  font-weight: 400;
-  color: var(--faint);
 }
 
 /* L'analyse en cours : un faisceau balaie la capture ; à droite, un flocon
