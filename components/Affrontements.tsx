@@ -310,7 +310,9 @@ function Annonce({ message, ferme }: { message: Message; ferme: () => void }) {
 type Fenetre =
   | { etat: 'attente'; jeton: number; gauche: CampApercu; droite: CampApercu; moi: 'gauche' | 'droite'; mise: number }
   | { etat: 'duel'; bataille: BatailleVueClient; anime: boolean; tour: number; fini: boolean; depart?: number }
-  | { etat: 'erreur'; message: string };
+  | { etat: 'erreur'; message: string }
+  /** Un de mes duels, joué pendant mon absence : voir le replay, ou passer (17/11/2026). */
+  | { etat: 'absence'; bataille: BatailleVueClient; autres: number };
 
 type Resultat = { ok: true; data: BatailleVueClient } | { ok: false; message: string };
 
@@ -322,8 +324,17 @@ const nouveauNumero = () => ++dernierNumero;
 /* La course de celui qui a lancé le duel                                     */
 /* ------------------------------------------------------------------------ */
 
-/** Un duel relevé il y a plus longtemps ne rouvre plus l'arène. */
-const COURSE_FRAICHE_MS = 15 * 60_000;
+/**
+ * Un duel relevé il y a plus longtemps ne s'annonce plus : ni course, ni
+ * fenêtre « pendant ton absence ».
+ */
+const COURSE_FRAICHE_MS = 24 * 60 * 60_000;
+/**
+ * Présent sur la page : sa dernière lecture date de moins que cela. Un duel
+ * relevé pendant qu'on regarde se joue en direct ; sinon — page fermée, onglet
+ * caché, retour sur la page —, il a été joué pendant l'absence.
+ */
+const PRESENCE_MS = 15_000;
 const CLE_VUES = 'wl-courses-vues';
 /** Sans mémoire du navigateur (navigation privée), celle de la page suffit. */
 const vuesEnMemoire = new Set<string>();
@@ -465,6 +476,19 @@ export function Affrontements({
   const [fenetre, setFenetre] = useState<Fenetre | null>(null);
   /** Les courses de mes duels relevés, en attente d'une fenêtre libre. */
   const aMontrer = useRef<BatailleVueClient[]>([]);
+  /** Le dernier de mes duels joués pendant mon absence, et combien d'autres avec lui. */
+  const absence = useRef<{ bataille: BatailleVueClient; autres: number } | null>(null);
+  /** L'heure de la dernière lecture réussie : elle dit si j'étais sur la page. */
+  const derniereLecture = useRef<number | null>(null);
+  /** La fenêtre suivante : une course en direct d'abord, puis ce qui s'est joué sans moi. */
+  const prochaineFenetre = useCallback((): Fenetre | null => {
+    const course = prochaineCourse(aMontrer.current);
+    if (course) return course;
+    const a = absence.current;
+    if (!a) return null;
+    absence.current = null;
+    return { etat: 'absence', bataille: a.bataille, autres: a.autres };
+  }, []);
   /** Vrai tant qu'une fenêtre est ouverte : le sondage le lit hors du rendu. */
   const fenetreLa = useRef(false);
   useEffect(() => {
@@ -521,28 +545,33 @@ export function Affrontements({
     }
     setEtat(suivant);
 
-    // Un de mes duels vient d'être relevé : la course se joue chez moi aussi,
-    // dès que la fenêtre est libre — si elle est encore en cours. Finie pendant
-    // mon absence, elle ne se rejoue pas : seul le dernier s'annonce.
+    // Un de mes duels vient d'être relevé. Si j'étais là — la page lue il y a
+    // un instant —, la course se joue chez moi aussi, dès que la fenêtre est
+    // libre. Sinon il a été joué pendant mon absence : une fenêtre le dit,
+    // gagné ou perdu, et propose le replay (17/11/2026).
+    const present = derniereLecture.current !== null && Date.now() - derniereLecture.current < PRESENCE_MS;
+    derniereLecture.current = Date.now();
     const nouvelles = coursesAMontrer(suivant, Date.now());
-    const manquees = nouvelles.filter(courseFinie).sort((a, b) => (b.resolueA ?? '').localeCompare(a.resolueA ?? ''));
+    const manquees = nouvelles
+      .filter((b) => !present || courseFinie(b))
+      .sort((a, b) => (b.resolueA ?? '').localeCompare(a.resolueA ?? ''));
     for (const b of manquees) marqueVue(b.id);
     if (manquees[0]) {
-      const bilan = bilanDe(manquees[0], suivant.moiId);
-      annonceBilan({ gagne: bilan.gagne, texte: `Pendant ton absence — ${bilan.texte}` });
+      const avant = absence.current;
+      absence.current = { bataille: manquees[0], autres: manquees.length - 1 + (avant ? avant.autres + 1 : 0) };
       router.refresh();
     }
     for (const b of nouvelles) {
-      if (!courseFinie(b) && !aMontrer.current.some((x) => x.id === b.id)) aMontrer.current.push(b);
+      if (!manquees.includes(b) && !aMontrer.current.some((x) => x.id === b.id)) aMontrer.current.push(b);
     }
     if (!fenetreLa.current) {
-      const course = prochaineCourse(aMontrer.current);
-      if (course) {
+      const suivante = prochaineFenetre();
+      if (suivante) {
         fenetreLa.current = true;
-        setFenetre(course);
+        setFenetre(suivante);
       }
     }
-  }, [annonceBilan, router]);
+  }, [prochaineFenetre, router]);
 
   const rechargeRef = useRef(recharge);
   useEffect(() => {
@@ -674,10 +703,20 @@ export function Affrontements({
     // Fermée à la main sur le verdict, la fenêtre laisse l'issue dans le salon —
     // et la place à la course suivante, s'il y en a une en file.
     if (fenetre?.etat === 'duel') annonceBilan(bilanDe(fenetre.bataille, etat.moiId));
-    const suivante = prochaineCourse(aMontrer.current);
+    const suivante = prochaineFenetre();
     fenetreLa.current = suivante !== null;
     setFenetre(suivante);
+    // Le temps passé devant la fenêtre compte comme une présence : un duel
+    // relevé entre-temps se joue en direct.
+    if (derniereLecture.current !== null) derniereLecture.current = Date.now();
     void recharge();
+  }
+
+  /** « Voir le replay » : la course depuis le départ, le verdict déjà connu. */
+  function voirReplay(b: BatailleVueClient) {
+    // Le son se réveille pendant ce clic.
+    reveilleSonsDuel();
+    setFenetre({ etat: 'duel', bataille: b, anime: true, tour: nouveauNumero(), fini: false, depart: Date.now() });
   }
 
   /**
@@ -772,6 +811,40 @@ export function Affrontements({
       <button type="button" className="btn btn-ice" onClick={ferme}>
         Revenir aux duels
       </button>
+    );
+  } else if (fenetre?.etat === 'absence') {
+    const b = fenetre.bataille;
+    const bilan = bilanDe(b, etat.moiId);
+    const adverse = b.camps.find((c) => c.id !== etat.moiId)?.pseudo ?? 'ton adversaire';
+    const n = fenetre.autres;
+    contenuFenetre = (
+      <div className="duel-absence" data-issue={bilan.gagne ? 'gain' : 'perte'}>
+        <p className="eyebrow">Pendant ton absence</p>
+        <h2 className="duel-absence-titre">Ton duel contre {adverse} a été joué</h2>
+        <p className="duel-absence-issue">
+          <strong>{bilan.gagne ? 'Gagné' : 'Perdu'}</strong>
+          <span className="num">
+            {bilan.gagne ? `+${flakes(pot(b))}` : `−${flakes(b.mise)}`} <span className="text-ice">❄</span>
+          </span>
+        </p>
+        <p className="duel-absence-texte">Tu veux voir le replay de la course ?</p>
+        {n > 0 && (
+          <p className="duel-absence-autres">
+            {n > 1 ? `Et ${n} autres duels joués sans toi` : 'Et un autre duel joué sans toi'} : à retrouver dans
+            « Les miens ».
+          </p>
+        )}
+      </div>
+    );
+    piedFenetre = (
+      <>
+        <button type="button" className="btn btn-ice" onClick={() => voirReplay(b)}>
+          Voir le replay
+        </button>
+        <button type="button" className="btn btn-ghost" onClick={ferme}>
+          Passer
+        </button>
+      </>
     );
   } else if (fenetre?.etat === 'duel') {
     const b = fenetre.bataille;
@@ -1155,8 +1228,8 @@ export function Affrontements({
         <FenetreDuel
           titre="L’arène du duel"
           ferme={ferme}
-          fermable={fenetre.etat === 'erreur' || (fenetre.etat === 'duel' && fenetre.fini)}
-          large={fenetre.etat !== 'erreur'}
+          fermable={fenetre.etat === 'erreur' || fenetre.etat === 'absence' || (fenetre.etat === 'duel' && fenetre.fini)}
+          large={fenetre.etat !== 'erreur' && fenetre.etat !== 'absence'}
           pied={piedFenetre}
         >
           {contenuFenetre}

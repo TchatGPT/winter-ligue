@@ -175,7 +175,11 @@ export function authorizeUrl(state: string, origine: string, subs = false): stri
     // d'écrire dans son tchat pour y annoncer les codes cadeaux.
     scope: subs ? [PORTEE_BASE, PORTEE_SUBS, ...PORTEES_TCHAT, PORTEE_MODERATION].join(' ') : PORTEE_BASE,
     state,
-    force_verify: 'true',
+    // La connexion d'un joueur ne redemande pas l'accord à chaque fois
+    // (17/11/2026) : déjà accordé, Twitch renvoie tout de suite sur le site,
+    // et le téléphone ne retape ni mot de passe ni code. Le branchement de la
+    // chaîne, lui, le redemande toujours : on y relit les portées accordées.
+    ...(subs ? { force_verify: 'true' } : {}),
   });
   return `${AUTHORIZE_URL}?${params.toString()}`;
 }

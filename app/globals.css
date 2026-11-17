@@ -5285,6 +5285,69 @@
   .duels-resultat[data-issue='perte'] .duels-resultat-mise strong {
     color: color-mix(in srgb, var(--danger) 70%, var(--ink));
   }
+  /* Un duel joué pendant l'absence : gagné ou perdu, le replay ou passer (17/11/2026). */
+  .fenetre-carte:has(.duel-absence) {
+    max-width: 30rem;
+  }
+  .duel-absence {
+    display: grid;
+    justify-items: center;
+    gap: 0.6rem;
+    padding-block: 0.5rem;
+    text-align: center;
+  }
+  .duel-absence-titre {
+    font-family: var(--font-display);
+    font-size: 1.35rem;
+    font-weight: 800;
+    line-height: 1.2;
+    color: var(--ink);
+    text-wrap: balance;
+  }
+  .duel-absence-issue {
+    display: grid;
+    justify-items: center;
+    gap: 0.1rem;
+    margin-block: 0.4rem;
+    padding: 0.8rem 1.6rem;
+    border-radius: var(--r-md);
+    background: color-mix(in srgb, var(--frost) 6%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--frost) 14%, transparent);
+  }
+  .duel-absence-issue strong {
+    font-family: var(--font-display);
+    font-size: 0.8rem;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  .duel-absence-issue .num {
+    font-family: var(--font-display);
+    font-size: 2rem;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+  }
+  .duel-absence[data-issue='gain'] .duel-absence-issue {
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--aurora) 40%, transparent);
+  }
+  .duel-absence[data-issue='gain'] .duel-absence-issue strong {
+    color: var(--aurora);
+  }
+  .duel-absence[data-issue='perte'] .duel-absence-issue {
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--danger) 35%, transparent);
+  }
+  .duel-absence[data-issue='perte'] .duel-absence-issue strong {
+    color: color-mix(in srgb, var(--danger) 70%, var(--ink));
+  }
+  .duel-absence-texte {
+    font-size: 1rem;
+    color: var(--muted);
+  }
+  .duel-absence-autres {
+    font-size: 0.875rem;
+    color: var(--faint);
+  }
   .duels-resultat-mise small {
     font-family: var(--font-display);
     font-size: 0.75rem;
@@ -21123,4 +21186,43 @@ button.case:focus-visible {
 }
 .correction-carte[data-correction='bloque'] .correction-carte-suite {
   color: var(--gold);
+}
+
+/* Le navigateur d'une appli (Twitch, Discord, Instagram…) : un bandeau par-dessus
+   la page, en haut, pour l'ouvrir dans le vrai navigateur et rester connecté
+   (17/11/2026, `NavigateurIntegre`). Fixe : rien ne bouge dessous. */
+.nav-integre {
+  position: fixed;
+  top: max(0.5rem, env(safe-area-inset-top));
+  left: 0.5rem;
+  right: 0.5rem;
+  z-index: 100;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin-inline: auto;
+  max-width: 40rem;
+  padding: 0.7rem 0.8rem 0.7rem 1rem;
+  border-radius: var(--r-md);
+  background: color-mix(in srgb, var(--bg) 88%, var(--ice));
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--ice) 35%, transparent),
+    0 12px 30px color-mix(in srgb, var(--bg) 70%, transparent);
+  color: var(--ink);
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+.nav-integre p {
+  flex: 1 1 16rem;
+  min-width: 0;
+}
+.nav-integre b {
+  color: var(--ice);
+}
+.nav-integre-gestes {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 0.4rem;
+  margin-left: auto;
 }

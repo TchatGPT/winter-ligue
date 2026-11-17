@@ -283,6 +283,10 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - **Une session dure trente jours**, prolongée par le proxy à chaque visite
   (`lib/auth/jeton.ts`), six mois au plus. La prolongation ne touche jamais `iat` :
   c'est lui que confronte la révocation.
+- **Rester connecté sur mobile** (17/11/2026) : la connexion d'un joueur ne force plus l'accord
+  Twitch (`force_verify` réservé au branchement de la chaîne) ; le proxy ne prolonge jamais la
+  session sur `/api/auth/…` ; dans le navigateur d'une appli (Twitch, Discord, Instagram…), un
+  bandeau propose d'ouvrir le site dans Safari ou Chrome (`NavigateurIntegre`).
 - **Twitch est la seule porte d'entrée**, et le rôle suit la chaîne à chaque connexion :
   la streameuse et ses modérateurs sont admin, les autres joueurs. Les rôles ne se
   choisissent pas à la main, et un joueur ne s'inscrit que par Twitch. Il n'y a ni mot
@@ -333,6 +337,10 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   (`ajusteBoostersPerso`) ; plus de − / + dans Modération → Joueurs.
 - Les duels se jouent entre joueurs : il n'y a plus de bot. `CAMP_BOT` ne sert plus
   qu'à afficher les anciens duels.
+- **Un duel joué pendant l'absence** (17/11/2026) : présent sur la page (lue il y a moins de
+  `PRESENCE_MS`), on voit la course en direct ; sinon — page fermée, onglet caché, retour sur
+  `/duels` —, une fenêtre dit « Pendant ton absence », gagné ou perdu et combien, et propose
+  « Voir le replay » ou « Passer » (`etat: 'absence'`). Un onglet caché ne sonde pas.
 - **La fenêtre d'un duel ne se ferme qu'à la main** (décidé le 20/10/2026) : ni pendant
   la course — un duel ne se saute pas —, ni d'elle-même une fois le verdict tombé. Le
   solde du menu, rendu par le serveur, suit par `router.refresh()` dès la ligne

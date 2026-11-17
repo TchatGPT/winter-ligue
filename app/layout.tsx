@@ -6,6 +6,7 @@ import { FondHiver } from '@/components/FondHiver';
 import { Sidebar, SIDEBAR_WIDTH } from '@/components/Sidebar';
 import { InscriptionWarzone } from '@/components/InscriptionWarzone';
 import { MesureVitesse } from '@/components/MesureVitesse';
+import { NavigateurIntegre } from '@/components/NavigateurIntegre';
 import { getSession, playerIdOf } from '@/lib/auth/session';
 import { estVisiteur } from '@/lib/auth/visiteur';
 import { chaineDeLaLigue } from '@/lib/auth/twitch';
@@ -134,6 +135,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           </div>
         </div>
         {inscription && <InscriptionWarzone pseudoTwitch={inscription.pseudo} admin={inscription.admin} />}
+        <NavigateurIntegre />
         <Analytics />
         <MesureVitesse />
       </body>
