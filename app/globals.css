@@ -3070,6 +3070,42 @@
     opacity: 0.4;
     cursor: default;
   }
+  /* Sur un ordinateur, la pilule grandit : la même taille que sur un téléphone
+     s'y perdait. */
+  @media (min-width: 1024px) {
+    .profil-activision {
+      height: 2.9rem;
+      gap: 0.7rem;
+      padding: 0 0.45rem 0 1.1rem;
+    }
+    .profil-activision:not(:has(.profil-activision-changer)):not([data-edition]) {
+      padding-right: 1.2rem;
+    }
+    .profil-activision[data-edition] {
+      width: min(100%, 26rem);
+    }
+    .profil-activision-logo {
+      height: 0.62rem;
+    }
+    .profil-activision-pseudo {
+      font-size: 1.2rem;
+    }
+    .profil-activision-changer {
+      height: 2.05rem;
+      padding: 0 0.95rem;
+      font-size: 0.8125rem;
+    }
+    .profil-activision-champ {
+      height: 2.15rem;
+      padding: 0 0.8rem;
+      font-size: 1rem;
+    }
+    .profil-activision-icone {
+      width: 2.15rem;
+      height: 2.15rem;
+      font-size: 0.9375rem;
+    }
+  }
   /* La consigne, ou le refus, en bulle sous la pilule : par-dessus, sans rien pousser. */
   .profil-activision-bulle {
     position: absolute;
