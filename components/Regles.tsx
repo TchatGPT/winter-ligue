@@ -214,7 +214,7 @@ export function Regles({
     // Trois dès l'inscription, pour tout le monde (17/11/2026).
     {
       id: 'perso',
-      quand: `${BOOSTERS_DE_BIENVENUE} dès ton inscription. Puis 1 sub T3, ou ${PACKS_REGLES.persoTousLes} subs offerts`,
+      quand: `${BOOSTERS_DE_BIENVENUE} dès ton inscription. Puis 1 sub T3, ${PACKS_REGLES.persoTousLes} subs offerts, ou ${nombre(ACHAT_PERSO.prix)} ❄ en cliquant sur ton solde`,
       pourToi: true,
     },
     { id: 'finisseur', quand: quandFinisseur, pourToi: true },
