@@ -1453,7 +1453,12 @@
     /* La gouttière suit la carte (28 px pour 420) : la vidéo d'ouverture, mise
        à l'échelle de la carte, tombe ainsi sur toutes les cartes du rail. */
     --pas: calc(var(--carte-l) * 448 / 420);
-    --rail-h: calc(var(--carte-h) + 64px);
+    /* 76 px au-dessus et au-dessous de la carte (17/11/2026), dont 44 pris sur
+       ses voisins par des marges négatives : le bandeau occupe la même place,
+       mais le néon de la gagnante a la hauteur de s'éteindre avant son bord —
+       à 32 px, il y était coupé net, en deux traits. */
+    --rail-h: calc(var(--carte-h) + 152px);
+    margin-block: -44px;
     border: 0;
     border-radius: 0;
     background: none;
@@ -1524,6 +1529,7 @@
     --carte-h: calc(var(--carte-l) * 0.42);
     --pas: calc(var(--carte-l) + 22px);
     --rail-h: calc(var(--carte-h) + 56px);
+    margin-block: 0;
   }
 
   .rail-joueurs .rail-carte {
@@ -11016,6 +11022,9 @@
   .ov-ouverture {
     position: absolute;
     inset: 0;
+    /* Sa carte du milieu (x = 946,6) sur le repère du rail, qui centre ses
+       cartes depuis le 17/11/2026 : une demi-gouttière (14 px) plus loin. */
+    left: 14px;
     width: 1920px;
     height: 1080px;
     pointer-events: none;

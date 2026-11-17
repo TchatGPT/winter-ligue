@@ -121,6 +121,12 @@ export interface Geometrie {
   pas: number;
   /** La hauteur du bandeau, donc de chaque fenêtre. */
   hauteur: number;
+  /**
+   * De combien le centre d'une tuile s'écarte du milieu de son pas : la tuile
+   * est posée au début de son pas, la gouttière après elle. Sans ce décalage,
+   * la gagnante s'arrêtait d'une demi-gouttière à côté du repère (17/11/2026).
+   */
+  decalage: number;
 }
 
 /**
@@ -153,14 +159,20 @@ export function geometrie(
   // Sur l'axe horizontal, le pas est l'écart entre deux tuiles en largeur, et
   // la « hauteur » de la fenêtre est sa largeur : c'est la longueur sur
   // laquelle le rouleau se déplace, quel que soit son nom.
-  const pas =
-    axe === 'x'
-      ? (tuiles[1] as HTMLElement).offsetLeft - (tuiles[0] as HTMLElement).offsetLeft
-      : (tuiles[1] as HTMLElement).offsetTop - (tuiles[0] as HTMLElement).offsetTop;
+  //
+  // Le pas se mesure de la première tuile à la dernière, pas entre deux
+  // voisines : les positions sont arrondies au pixel, et un pas de 275,6 px lu
+  // 276 décalait la gagnante de dix pixels au bout de vingt-sept tuiles.
+  const premiere = tuiles[0] as HTMLElement;
+  const derniere = tuiles[tuiles.length - 1] as HTMLElement;
+  const debut = (t: HTMLElement) => (axe === 'x' ? t.offsetLeft : t.offsetTop);
+  const pas = (debut(derniere) - debut(premiere)) / (tuiles.length - 1);
   const hauteur = axe === 'x' ? boite.clientWidth : boite.clientHeight;
   if (!(pas > 0) || !(hauteur > 0)) return null;
+  const taille = axe === 'x' ? premiere.offsetWidth : premiere.offsetHeight;
+  const decalage = debut(premiere) + taille / 2 - pas / 2;
 
-  return { pas, hauteur };
+  return { pas, hauteur, decalage };
 }
 
 /* --------------------------------------------------------------------------
@@ -343,7 +355,7 @@ export function useSpinAnimation({
 
     // Le trajet se mesure sur la hauteur de la fenêtre, pas sur la largeur du
     // bandeau : c'est l'axe sur lequel le rouleau descend.
-    const depart = departDeBande(geo.hauteur, geo.pas);
+    const depart = departDeBande(geo.hauteur, geo.pas) - geo.decalage;
     const trajet = PARCOURS * geo.pas;
 
     // En attente : la bande se pose à son départ, et rien d'autre.
