@@ -1145,17 +1145,32 @@ function regleRoue(
       break;
     }
 
-    case 'petites_games':
+    case 'petites_games': {
+      // Comme l'Aurore Triomphale (17/11/2026) : seules les games jouées depuis
+      // la dernière fois que cette carte est tombée comptent — une petite game
+      // ne rapporte qu'une fois. La première fois, depuis le début de la saison.
+      const precedente = db.ouvertures
+        .filter((x) => x.cardId === card.id && x.id !== o)
+        .sort((x, y) => y.openedAt.localeCompare(x.openedAt))[0];
+      const depuis = precedente?.openedAt ?? '';
       for (const m of groupe) {
-        const petites = comptees(db, m.joueur.id).filter((g) => g.kills < action.moinsDe).length;
+        const petites = comptees(db, m.joueur.id).filter((g) => g.kills < action.moinsDe && g.createdAt > depuis).length;
         if (petites === 0) {
-          pour(m, sansEffet(`aucune game de moins de ${action.moinsDe} kills, sans effet`));
+          pour(
+            m,
+            sansEffet(
+              depuis
+                ? `aucune game de moins de ${action.moinsDe} kills depuis la dernière fois, sans effet`
+                : `aucune game de moins de ${action.moinsDe} kills, sans effet`,
+            ),
+          );
           continue;
         }
         m.pendante.points = petites * action.points;
         pour(m, sansEffet(`${petites} game${petites > 1 ? 's' : ''} de moins de ${action.moinsDe} kills → ${pts(petites * action.points)} sur le total`));
       }
       break;
+    }
 
     case 'vol_score': {
       const ordre = rank(

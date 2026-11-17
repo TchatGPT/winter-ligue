@@ -226,6 +226,23 @@ describe('les cartes de toute la ligue', () => {
     ouvre(db, 'couronnes-de-givre', ['a'], '2027-01-20T00:00:00.000Z');
     expect(pointsHorsGame(db, 'a')).toBe(15);
   });
+
+  it('« +3 pts petites games » ne compte une petite game qu’une fois : depuis la dernière fois que la carte est tombée (17/11/2026)', () => {
+    const db = base('a');
+    game(db, 'a', 2);
+    game(db, 'a', 4);
+    game(db, 'a', 12);
+    ouvre(db, 'petits-pas', ['a'], '2027-01-18T00:00:00.000Z');
+    expect(pointsHorsGame(db, 'a')).toBe(6);
+    // Une nouvelle petite game après : la carte suivante ne compte qu'elle.
+    const nouvelle = game(db, 'a', 3);
+    nouvelle.createdAt = '2027-01-19T00:00:00.000Z';
+    ouvre(db, 'petits-pas', ['a'], '2027-01-20T00:00:00.000Z');
+    expect(pointsHorsGame(db, 'a')).toBe(9);
+    // Et rien de neuf : sans effet.
+    ouvre(db, 'petits-pas', ['a'], '2027-01-21T00:00:00.000Z');
+    expect(pointsHorsGame(db, 'a')).toBe(9);
+  });
 });
 
 describe('les cartes qui tirent des joueurs', () => {

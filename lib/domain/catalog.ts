@@ -459,7 +459,7 @@ export const CARDS: readonly CardDefinition[] = [
     subtitle: '+3 pts petites games',
     rarity: 'C',
     glyph: '👣',
-    description: '+3 pts par game de moins de 5 kills, pour chaque joueur.',
+    description: '+3 pts par game de moins de 5 kills jouée depuis la dernière fois, pour chaque joueur.',
     effect: { kind: 'roue', action: { quoi: 'petites_games', moinsDe: 5, points: 3 } },
     nature: 'bonus',
     power: 12,
