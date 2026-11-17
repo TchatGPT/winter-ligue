@@ -16,7 +16,7 @@ import { CarteInclinable } from '@/components/CarteInclinable';
 import { DestinCarte } from '@/components/DestinCarte';
 import { CardTile, Notice, flakes, rarityMeta } from '@/components/ui';
 import { packArt } from '@/lib/domain/catalog';
-import { ECONOMY, libelleMultiplicateur, PACKS_REGLES, rarityPercent, SUB_MILESTONES } from '@/lib/domain/rules';
+import { ECONOMY, HORS_OVERLAY, libelleMultiplicateur, PACKS_REGLES, rarityPercent, SUB_MILESTONES } from '@/lib/domain/rules';
 import { CE_QUI_COMPTE, CE_QUI_NE_COMPTE_PAS } from '@/lib/domain/twitchSubs';
 import { IconCoche, IconCroix } from '@/components/icons';
 import type { PackDefinition, PackId, Rarity } from '@/lib/domain/types';
@@ -37,6 +37,12 @@ const RARITY_LADDER: Rarity[] = ['C', 'R', 'UR', 'L'];
  * entrée (4,25 s) et sa lecture du flux (2 s) — : le secours ne le devance pas.
  */
 const SECOURS_ANNONCE_MS = 9000;
+/**
+ * Le Commu et le Folie ne passent pas à l'overlay (`HORS_OVERLAY`) : c'est cet
+ * écran, montré au stream, qui les révèle. Leur message part peu après la
+ * carte, le temps que l'image du stream arrive chez les viewers (17/11/2026).
+ */
+const ANNONCE_HORS_OVERLAY_MS = 3000;
 
 /**
  * Tant que la carte du joueur choisi attend sa game, l'écran se relit à ce
@@ -369,6 +375,7 @@ export function PackOpening({
   // relais, neuf secondes après la révélation ; une ouverture ne s'annonce
   // qu'une fois. Le minuteur survit à la suivante : on ne l'annule pas.
   const ouvertureRevelee = phase === 'reveal' ? ouverture?.id : undefined;
+  const horsOverlay = phase === 'reveal' && ouverture ? HORS_OVERLAY.includes(ouverture.packId) : false;
   useEffect(() => {
     if (!ouvertureRevelee) return;
     // La carte est à l'écran : ses flocons peuvent se voir, tout de suite. Le
@@ -390,8 +397,9 @@ export function PackOpening({
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ ouvertureId: ouvertureRevelee }),
       }).catch(() => undefined);
-    }, SECOURS_ANNONCE_MS);
-  }, [ouvertureRevelee]);
+    }, horsOverlay ? ANNONCE_HORS_OVERLAY_MS : SECOURS_ANNONCE_MS);
+    // `horsOverlay` naît et change avec l'ouverture révélée : il ne relance rien seul.
+  }, [ouvertureRevelee, horsOverlay]);
 
   // En arrivant, la modération règle ce qui attend sa révélation depuis trop
   // longtemps : une ouverture interrompue, un onglet fermé.
