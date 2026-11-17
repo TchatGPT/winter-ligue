@@ -145,8 +145,12 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   (`LancerVerglas`, `/api/admin/cartes/verglas`) : le Verglas du Perso et l'Éboulement
   du Finisseur (`malus_choisi`, −10 et −15), et le Troc des Neiges du Finisseur
   (`echange_cible`, `joueEchangeCible`) — la pire game libre du porteur et la meilleure
-  de la cible échangent leur score ; une fois par joueur, sauf la revanche contre qui
-  l'a visé (la trace `TROC_SUBI` retient qui, dans `paireId`) ; jamais sur un immunisé.
+  de la cible échangent leur score ; autant de fois qu'il a de Trocs, sur qui il veut —
+  reprendre une game à qui la lui a prise compris, sauf figée entre-temps (17/11/2026 ; la
+  trace `TROC_SUBI` retient qui, dans `paireId`) ; jamais sur un immunisé.
+- **Le tirage d'une carte des roues ne tombe jamais sur un immunisé** quand son immunité
+  la parerait — échanges, Soleil Jumeau, Morsure du Froid, Duel de Glace
+  (`PAREES_PAR_L_IMMUNITE`, 17/11/2026) : elle ne ferait rien.
 - **Le Verglas** (`kind: 'malus_choisi'`, ultra rare du Booster Perso, décidé par
   l'organisation le 13/10/2026) est la seule exception aux règles des malus : il sort d'un
   booster ouvert pour un joueur, qui le garde et **choisit sa victime**. La modération le

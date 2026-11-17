@@ -49,6 +49,28 @@ function ligue(...ids: string[]): Database {
   return db;
 }
 
+describe('un immunisé tiré au sort', () => {
+  it('ne l’est jamais pour une carte que son immunité parerait, toujours pour une qui lui profite', () => {
+    const tires = { echange: 0, bonus: 0 };
+    for (let k = 0; k < 60; k += 1) {
+      for (const [carte, quoi] of [['contre-vent', 'echange'], ['triple-echo', 'bonus']] as const) {
+        force.carte = carte;
+        const db = ligue('a', 'b', 'c');
+        for (const id of ['a', 'b', 'c']) {
+          for (const kills of [3, 9]) {
+            db.games.push({ id: `${id}-${kills}`, playerId: id, kills, placement: null, bonusPoints: 0, skipped: false, score: kills, note: null, playedAt: '2027-01-02T00:00:00.000Z', createdAt: '2027-01-02T00:00:00.000Z', applied: [] });
+          }
+        }
+        db.players.find((p) => p.id === 'c')!.immuniseJusqua = '2999-01-01T00:00:00.000Z';
+        const o = ouvreProchainDu(db, { packId: 'commu', idempotencyKey: `k${k}${carte}` }, 'modo');
+        if (o.beneficiaires.includes('c')) tires[quoi] += 1;
+      }
+    }
+    expect(tires.echange).toBe(0);
+    expect(tires.bonus).toBeGreaterThan(0);
+  });
+});
+
 describe('une carte des roues que personne ne peut encore jouer', () => {
   it('« Glaciation » avant la 30ᵉ game : le booster s’ouvre, sur trois joueurs, sans game à dérouler', () => {
     force.carte = 'trois-glacons';

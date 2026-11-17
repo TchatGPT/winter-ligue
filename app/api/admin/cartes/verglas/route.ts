@@ -17,7 +17,7 @@ export const dynamic = 'force-dynamic';
  * sa cible, la modération valide. Un Verglas (ou l'Éboulement du Finisseur) :
  * la victime perd les points de la carte sur son total, tout de suite. Un Troc
  * des Neiges (Finisseur) : la pire game libre du porteur et la meilleure de la
- * cible échangent leur score — une fois par joueur, sauf la revanche.
+ * cible échangent leur score — autant de fois qu'il a de Trocs (17/11/2026).
  *
  * Le serveur vérifie tout : la carte est bien un Verglas encore gardé, la
  * victime est en lice (ni la streameuse, ni un compte inactif) et n'est pas
@@ -57,9 +57,6 @@ export async function POST(request: Request): Promise<NextResponse> {
     if (resultat === 'CARTE') return fail('INTROUVABLE', 'Cette carte n’est plus en main : elle a déjà été jouée.');
     if (resultat === 'CIBLE') return fail('CONFLIT', 'Ce joueur ne peut pas être visé par cette carte.');
     if (resultat === 'IMMUNISE') return fail('CONFLIT', 'Ce joueur est immunisé : il ne peut pas être visé.');
-    if (resultat === 'DEJA') {
-      return fail('CONFLIT', 'Le Troc des Neiges ne se joue qu’une fois par joueur — sauf en revanche, contre qui l’a visé.');
-    }
     if (resultat === 'GAMES') return fail('CONFLIT', 'Il faut une game libre de chaque côté pour cet échange.');
     return ok(resultat);
   } catch (error) {

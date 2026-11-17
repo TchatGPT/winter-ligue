@@ -239,8 +239,8 @@ export type CardEffect =
   /**
    * « Échange pire contre meilleure » (Finisseur, roues de la Summer) : le
    * joueur la garde et désigne un joueur ; sa pire game libre et la meilleure
-   * de l'autre échangent leur score. Une fois par joueur, sauf la revanche
-   * contre qui l'a visé ; un immunisé ne peut pas être visé.
+   * de l'autre échangent leur score. Sans limite par joueur (17/11/2026) ; un
+   * immunisé ne peut pas être visé, une game figée ne se prend pas.
    */
   | { kind: 'echange_cible' }
   /**

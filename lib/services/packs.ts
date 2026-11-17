@@ -43,6 +43,7 @@ import {
 import { rank, totalsFor } from '@/lib/domain/scoring';
 import { estLaStreameuse } from '@/lib/domain/streameuse';
 import {
+  type ActionRoue,
   type CardDefinition,
   type MomentCarte,
   type PackDefinition,
@@ -668,6 +669,15 @@ function tireDistincts(joueurs: Player[], n: number): Player[] {
  * le barillet laisse dehors les immunisés ; « 3 joueurs figent leur meilleure
  * game » ne tire que parmi ceux qui ont joué assez de games.
  */
+/** Les actions tirées au sort que l'immunité d'un joueur tiré rendrait sans effet. */
+const PAREES_PAR_L_IMMUNITE: readonly ActionRoue['quoi'][] = [
+  'roulette',
+  'echange_hasard',
+  'echange_meilleure_pire',
+  'clone_sur_pire',
+  'hasard_divise',
+];
+
 function beneficiairesRoue(db: Database, card: CardDefinition): Player[] {
   if (card.effect.kind !== 'roue') return [];
   const action = card.effect.action;
@@ -685,7 +695,10 @@ function beneficiairesRoue(db: Database, card: CardDefinition): Player[] {
     const assez = pool.filter((p) => comptees(p) >= action.minGames);
     if (assez.length > 0) pool = assez;
   }
-  if (action.quoi === 'roulette') pool = pool.filter((p) => !estImmunise(p));
+  // Jamais un immunisé tiré pour une carte que son immunité parerait (17/11/2026) :
+  // elle tomberait sur lui pour ne rien faire — un échange annulé, une game
+  // épargnée. Il reste tiré pour ce qui lui profite ou le laisse tel quel.
+  if (PAREES_PAR_L_IMMUNITE.includes(action.quoi)) pool = pool.filter((p) => !estImmunise(p));
   switch (card.cible) {
     case 'TOUS':
       return enLice;

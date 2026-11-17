@@ -135,9 +135,12 @@ describe('les boosters de la Summer', () => {
 describe('les cartes de toute la ligue', () => {
   it('« Pluie Blanche » verse 100 flocons à chacun, au grand livre', () => {
     const db = base('a', 'b', 'c');
+    // Un solde déjà garni : le compte rendu dit ce qui est versé, pas le solde
+    // (17/11/2026 — il écrivait « +6 405 flocons »).
+    for (const p of db.players) p.snowflakes = 6_305;
     const o = ouvre(db, 'flocon-de-plus', ['a', 'b', 'c']);
     for (const id of ['a', 'b', 'c']) {
-      expect(db.players.find((p) => p.id === id)!.snowflakes).toBe(100);
+      expect(db.players.find((p) => p.id === id)!.snowflakes).toBe(6_405);
       expect(db.ledger.filter((l) => l.playerId === id && l.refId === o)).toHaveLength(1);
     }
     expect(cartesDe(db, o).every((c) => c.resultat === '+100 flocons')).toBe(true);
@@ -315,7 +318,7 @@ describe('les cartes du Finisseur', () => {
     expect(total(db, 'a')).toBe(10);
   });
 
-  it('le Troc des Neiges : une fois par joueur, sauf la revanche ; jamais sur un immunisé', () => {
+  it('le Troc des Neiges : sans limite par joueur, revanche comprise ; jamais sur un immunisé', () => {
     const db = base('a', 'b', 'c');
     game(db, 'a', 4);
     game(db, 'b', 30);
@@ -346,18 +349,22 @@ describe('les cartes du Finisseur', () => {
     expect(total(db, 'b')).toBe(4);
     expect(db.cartesEnAttente.some((x) => x.cardId === TROC_SUBI.id && x.joueurId === 'b' && x.paireId === 'a')).toBe(true);
 
-    // Un second Troc pour a : refusé.
+    // Un second Troc pour a, sur un autre joueur : il passe (17/11/2026).
     game(db, 'a', 2);
-    expect(joueEchangeCible(db, garde('a', '2027-01-16T10:00:00.000Z'), c, MAINTENANT)).toBe('DEJA');
+    const second = joueEchangeCible(db, garde('a', '2027-01-16T10:00:00.000Z'), c, MAINTENANT);
+    expect(typeof second).not.toBe('string');
 
     // Jamais sur un immunisé.
     immunise(db, 'c');
     expect(joueEchangeCible(db, garde('b', '2027-01-17T10:00:00.000Z'), c, MAINTENANT)).toBe('IMMUNISE');
 
-    // b, visé par a, joue le sien sur a : la revanche passe même après un premier Troc.
+    // b, visé par a, lui reprend une game : la revanche passe, et se dit.
     game(db, 'b', 1);
     const revanche = joueEchangeCible(db, garde('b', '2027-01-18T10:00:00.000Z'), a, MAINTENANT);
-    expect(typeof revanche).not.toBe('string');
+    expect(typeof revanche === 'string' ? revanche : revanche.resultat).toMatch(/^revanche sur/);
+    // Un troisième pour b, encore sur a : rien ne l'empêche.
+    game(db, 'b', 0);
+    expect(typeof joueEchangeCible(db, garde('b', '2027-01-19T10:00:00.000Z'), a, MAINTENANT)).not.toBe('string');
   });
 });
 

@@ -966,7 +966,10 @@ function regleRoue(
     case 'flocons':
       // Au grand livre, l'ouverture en référence ; jamais au-delà du plafond.
       for (const m of groupe) {
-        const verses = credit(db, m.joueur.id, action.montant, 'CARTE', o);
+        // `credit` rend le nouveau solde : ce qui est versé, c'est la différence
+        // (17/11/2026 — l'écran écrivait le solde, « +6 405 flocons »).
+        const avant = m.joueur.snowflakes;
+        const verses = credit(db, m.joueur.id, action.montant, 'CARTE', o) - avant;
         pour(m, sansEffet(verses > 0 ? `+${fr(verses)} flocons` : 'solde déjà au plafond, sans effet'));
       }
       break;
@@ -1396,15 +1399,15 @@ export function joueFigeGarde(db: Database, carteId: string, now = new Date()): 
   );
 }
 
-export type RefusEchangeCible = 'CARTE' | 'CIBLE' | 'IMMUNISE' | 'DEJA' | 'GAMES';
+export type RefusEchangeCible = 'CARTE' | 'CIBLE' | 'IMMUNISE' | 'GAMES';
 
 /**
  * Joue un Troc des Neiges gardé par un finisseur, sur le joueur qu'il
  * désigne : sa pire game libre et la meilleure game libre de l'autre
- * échangent leur score. Une fois par joueur — sauf la revanche : visé par
- * quelqu'un, on peut le viser à son tour même si on a déjà joué le sien. Un
- * immunisé ne peut pas être visé. Sur la game de l'autre, une trace
- * (`TROC_SUBI`) retient qui l'a visé.
+ * échangent leur score. Autant de fois qu'il a de Trocs, sur qui il veut
+ * (17/11/2026) — reprendre une game à qui la lui a prise compris, sauf s'il
+ * l'a figée entre-temps. Un immunisé ne peut pas être visé. Sur la game de
+ * l'autre, une trace (`TROC_SUBI`) retient qui l'a visé.
  */
 export function joueEchangeCible(
   db: Database,
@@ -1417,18 +1420,9 @@ export function joueEchangeCible(
   if (!pendante || !card || card.effect.kind !== 'echange_cible') return 'CARTE';
   if (cible.id === pendante.joueurId) return 'CIBLE';
   if (estImmunise(cible, now)) return 'IMMUNISE';
-  const dejaJoue = db.cartesEnAttente.some(
-    (c) =>
-      c.joueurId === pendante.joueurId &&
-      c.consommeeA !== null &&
-      c.gameId !== null &&
-      getCard(c.cardId)?.effect.kind === 'echange_cible' &&
-      c.cardId !== TROC_SUBI.id,
-  );
   const revanche = db.cartesEnAttente.some(
     (c) => c.joueurId === pendante.joueurId && c.cardId === TROC_SUBI.id && c.paireId === cible.id,
   );
-  if (dejaJoue && !revanche) return 'DEJA';
   const miennes = gamesPrenables(db, pendante.joueurId);
   const siennes = gamesPrenables(db, cible.id);
   if (miennes.length === 0 || siennes.length === 0) return 'GAMES';
@@ -1451,14 +1445,14 @@ export function joueEchangeCible(
     consommeeA: now.toISOString(),
     gameId: pire.id,
     resultat: `Troc des Neiges de ${porteur} : sa meilleure game (${sb} pts) part chez ${porteur}, il reçoit sa pire (${sa} pts) → ${pts(rendu)}`,
-    // Qui l'a visé : pour la revanche.
+    // Qui l'a visé : le compte rendu dit « revanche » quand il le vise à son tour.
     paireId: pendante.joueurId,
   });
   return consomme(
     pendante,
     card,
     regleSur(
-      `${revanche && dejaJoue ? 'revanche sur' : 'joué sur'} ${cible.pseudo} : sa pire game (${sa} pts) part chez ${cible.pseudo}, il reçoit sa meilleure (${sb} pts) → ${pts(points)}`,
+      `${revanche ? 'revanche sur' : 'joué sur'} ${cible.pseudo} : sa pire game (${sa} pts) part chez ${cible.pseudo}, il reçoit sa meilleure (${sb} pts) → ${pts(points)}`,
       points,
       meilleure.id,
     ),
