@@ -180,6 +180,8 @@ function FenetreIA({ joueurs, active, ferme }: { joueurs: Joueur[]; active: bool
   const [lignes, setLignes] = useState<Ligne[] | null>(null);
   const [placement, setPlacement] = useState<Placement>(null);
   const [busy, setBusy] = useState<'lecture' | 'validation' | null>(null);
+  // La capture en grand, par-dessus tout, pour comparer ligne à ligne.
+  const [loupe, setLoupe] = useState(false);
   const [message, setMessage] = useState<Message>(null);
   const [apercus, setApercus] = useState<Record<string, Apercu>>({});
 
@@ -396,9 +398,20 @@ function FenetreIA({ joueurs, active, ferme }: { joueurs: Joueur[]; active: bool
           >
             {apercu ? (
               <>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={apercu} alt="Capture de fin de game" />
+                <button
+                  type="button"
+                  className="saisie-capture-image"
+                  onClick={() => setLoupe(true)}
+                  aria-label="Voir la capture en grand"
+                  title="Voir en grand"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={apercu} alt="Capture de fin de game" />
+                </button>
                 <div className="saisie-capture-actions">
+                  <button type="button" onClick={() => setLoupe(true)} aria-label="Voir la capture en grand">
+                    ⤢ Agrandir
+                  </button>
                   <button type="button" disabled={busy !== null} onClick={() => fichier.current?.click()}>
                     Changer
                   </button>
@@ -502,7 +515,37 @@ function FenetreIA({ joueurs, active, ferme }: { joueurs: Joueur[]; active: bool
           )}
         </div>
       </div>
+      {loupe && apercu && <Loupe src={apercu} ferme={() => setLoupe(false)} />}
     </Fenetre>
+  );
+}
+
+/**
+ * La capture en grand, sur tout l'écran : pour comparer les noms et les kills
+ * lus avec ce qu'elle montre. Échap, la croix ou un clic à côté la referment —
+ * sans fermer la saisie dessous.
+ */
+function Loupe({ src, ferme }: { src: string; ferme: () => void }) {
+  useEffect(() => {
+    // En phase de capture : la saisie écoute aussi Échap, elle ne doit pas se fermer.
+    const surTouche = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      e.stopImmediatePropagation();
+      ferme();
+    };
+    window.addEventListener('keydown', surTouche, true);
+    return () => window.removeEventListener('keydown', surTouche, true);
+  }, [ferme]);
+
+  return createPortal(
+    <div className="saisie-loupe" role="dialog" aria-modal="true" aria-label="La capture en grand" onClick={ferme}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={src} alt="Capture de fin de game" onClick={(e) => e.stopPropagation()} />
+      <button type="button" className="btn btn-sm saisie-loupe-fermer" onClick={ferme} aria-label="Fermer la capture">
+        ✕
+      </button>
+    </div>,
+    document.body,
   );
 }
 

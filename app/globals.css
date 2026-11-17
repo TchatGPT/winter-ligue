@@ -17843,7 +17843,7 @@ a.rgs-usage b::after {
   .saisie {
     min-height: 0;
     flex: 1;
-    grid-template-columns: minmax(16rem, 20rem) minmax(0, 1fr);
+    grid-template-columns: minmax(17rem, 22rem) minmax(0, 1fr);
     gap: 1.25rem;
     padding: 1.1rem 1.25rem 1.25rem;
   }
@@ -17911,6 +17911,11 @@ a.rgs-usage b::after {
   font-size: 0.8125rem;
   color: var(--faint);
 }
+.saisie-capture-image {
+  display: block;
+  width: 100%;
+  cursor: zoom-in;
+}
 .saisie-capture img {
   display: block;
   width: 100%;
@@ -17919,8 +17924,32 @@ a.rgs-usage b::after {
 }
 @media (min-width: 900px) {
   .saisie-capture img {
-    max-height: 15rem;
+    max-height: 17rem;
   }
+}
+/* La capture en grand, sur tout l'écran. */
+.saisie-loupe {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: grid;
+  place-items: center;
+  padding: clamp(0.5rem, 3vw, 2.5rem);
+  background: color-mix(in srgb, var(--bg-deep) 88%, transparent);
+  backdrop-filter: blur(6px);
+  cursor: zoom-out;
+}
+.saisie-loupe img {
+  max-width: 100%;
+  max-height: calc(100dvh - 2 * clamp(0.5rem, 3vw, 2.5rem));
+  border-radius: var(--r-sm);
+  box-shadow: 0 20px 60px -20px color-mix(in srgb, var(--bg-deep) 90%, transparent);
+  cursor: default;
+}
+.saisie-loupe-fermer {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
 }
 .saisie-capture-actions {
   position: absolute;
