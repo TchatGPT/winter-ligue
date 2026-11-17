@@ -216,6 +216,7 @@ export function ColonnesSaison({
   moyenneLigue,
   choisie,
   onChoisit,
+  onHistorique,
   garde,
 }: {
   /** Les games, de la première à la dernière. */
@@ -229,6 +230,8 @@ export function ColonnesSaison({
   moyenneLigue: number | null;
   choisie: string | null;
   onChoisit: (id: string) => void;
+  /** Un double-clic sur une game : son historique (17/11/2026). */
+  onHistorique?: (id: string) => void;
   /** Les games que le filtre garde ; les autres s'effacent. */
   garde: (g: GameDuJoueur) => boolean;
 }) {
@@ -360,6 +363,8 @@ export function ColonnesSaison({
                   onFocus={(e) => e.currentTarget.matches(':focus-visible') && survole(i, e.currentTarget)}
                   onBlur={() => setSurvolee(null)}
                   onClick={() => onChoisit(c.id)}
+                  onDoubleClick={() => onHistorique?.(c.id)}
+                  title="Double-clic : l’historique de la game"
                   aria-label={c.skipped ? 'Game passée au Joker' : `Game ${numero} : ${pts(c.score)}`}
                   style={{ ['--part' as string]: c.skipped ? 0 : part(c.score) } as CSSProperties}
                 >
@@ -492,6 +497,7 @@ export function GrilleGames({
   uneParSessionApres,
   choisie,
   onChoisit,
+  onHistorique,
   garde,
   meilleureId,
   pireId,
@@ -502,6 +508,8 @@ export function GrilleGames({
   uneParSessionApres: number | null;
   choisie: string | null;
   onChoisit: (id: string) => void;
+  /** Un double-clic sur une game : son historique (17/11/2026). */
+  onHistorique?: (id: string) => void;
   garde: (g: GameDuJoueur) => boolean;
   meilleureId: string | null;
   pireId: string | null;
@@ -548,6 +556,8 @@ export function GrilleGames({
               data-eteinte={garde(g) ? undefined : ''}
               aria-pressed={choisie === g.id}
               onClick={() => onChoisit(g.id)}
+              onDoubleClick={() => onHistorique?.(g.id)}
+              title="Double-clic : l’historique de la game"
               aria-label={`${g.skipped ? 'Game passée au Joker' : `Game ${numero} : ${pts(g.score)}`}${
                 g.placement !== null ? `, Top ${g.placement}` : ''
               }${carte ? `, ${getCard(carte.cardId)?.name ?? ''} ${effetCourt(carte.cardId, carte.points)}` : ''}`}
@@ -653,6 +663,8 @@ export function DetailGame({
   onCorrige,
   ouvert,
   onFerme,
+  historique,
+  onHistorique,
 }: {
   game: GameDuJoueur | null;
   numero: number;
@@ -664,10 +676,14 @@ export function DetailGame({
   /** Sur téléphone, le détail s'ouvre en feuille, par-dessus. */
   ouvert: boolean;
   onFerme: () => void;
+  /**
+   * L'historique de la game, ouvert. Sur un ordinateur, il s'ouvre d'un
+   * double-clic sur la game (17/11/2026) ; sur un téléphone, d'un bouton.
+   */
+  historique: boolean;
+  onHistorique: (ouvert: boolean) => void;
 }) {
   const etroit = useEcranEtroit();
-  const [historique, setHistorique] = useState(false);
-  useEffect(() => setHistorique(false), [game?.id]);
   useEffect(() => {
     if (!ouvert) return;
     const echap = (e: KeyboardEvent) => e.key === 'Escape' && onFerme();
@@ -800,23 +816,29 @@ export function DetailGame({
           !game.skipped && <p className="detail-note">Aucune carte jouée sur cette game.</p>
         )}
 
-        <div className="detail-boutons">
-          <button type="button" className="btn btn-sm" onClick={() => setHistorique(true)}>
-            Historique{game.historique.length > 0 ? ` · ${game.historique.length}` : ''}
-          </button>
-          {moderation && (
-            <button type="button" className="btn btn-sm detail-corriger" onClick={() => onCorrige(game)}>
-              <IconCrayon className="h-4 w-4" />
-              Corriger ou supprimer
-            </button>
-          )}
-        </div>
+        {(etroit || moderation) && (
+          <div className="detail-boutons">
+            {/* Au doigt, pas de double-clic : un bouton. */}
+            {etroit && (
+              <button type="button" className="btn btn-sm" onClick={() => onHistorique(true)}>
+                Historique{game.historique.length > 0 ? ` · ${game.historique.length}` : ''}
+              </button>
+            )}
+            {moderation && (
+              <button type="button" className="btn btn-sm detail-corriger" onClick={() => onCorrige(game)}>
+                <IconCrayon className="h-4 w-4" />
+                Corriger ou supprimer
+              </button>
+            )}
+          </div>
+        )}
+        {!etroit && <p className="detail-astuce">Double-clic sur une game : son historique.</p>}
       </aside>
       {historique && (
         <HistoriqueGame
           game={game}
           titre={game.skipped ? 'Game passée au Joker' : `Game ${numero}`}
-          onClose={() => setHistorique(false)}
+          onClose={() => onHistorique(false)}
         />
       )}
     </>,

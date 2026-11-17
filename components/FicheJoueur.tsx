@@ -132,6 +132,12 @@ export function FicheJoueur({
     setFeuille(true);
   }, []);
   const fermeFeuille = useCallback(() => setFeuille(false), []);
+  /** La game dont l'historique est ouvert : d'un double-clic sur elle (17/11/2026). */
+  const [historiqueDe, setHistoriqueDe] = useState<string | null>(null);
+  const ouvreHistorique = useCallback((id: string) => {
+    setChoisieId(id);
+    setHistoriqueDe(id);
+  }, []);
 
 
   const ONGLETS: { cle: Onglet; nom: string; compte?: number }[] = [
@@ -280,6 +286,9 @@ export function FicheJoueur({
                 </Chiffre>
               </dl>
 
+              {/* Sur un ordinateur, le détail de la game à droite, en haut et qui
+                  suit la page (`.saison-corps`, 17/11/2026). */}
+              <div className="saison-corps">
               {/* La saison en colonnes de glace, et sa forme. */}
               <ColonnesSaison
                 chronologie={chronologie}
@@ -289,6 +298,7 @@ export function FicheJoueur({
                 moyenneLigue={fiche.moyenneLigue}
                 choisie={choisie?.id ?? null}
                 onChoisit={choisit}
+                onHistorique={ouvreHistorique}
                 garde={garde}
               />
 
@@ -318,6 +328,7 @@ export function FicheJoueur({
                   uneParSessionApres={fiche.paliers.uneParSessionApres}
                   choisie={choisie?.id ?? null}
                   onChoisit={choisit}
+                  onHistorique={ouvreHistorique}
                   garde={garde}
                   meilleureId={meilleureId}
                   pireId={pireId}
@@ -335,7 +346,10 @@ export function FicheJoueur({
                   }}
                   ouvert={feuille}
                   onFerme={fermeFeuille}
+                  historique={choisie !== null && historiqueDe === choisie.id}
+                  onHistorique={(o) => setHistoriqueDe(o && choisie ? choisie.id : null)}
                 />
+              </div>
               </div>
               {aCorriger && (
                 <CorrectionGame

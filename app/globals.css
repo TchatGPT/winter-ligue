@@ -21226,3 +21226,52 @@ button.case:focus-visible {
   gap: 0.4rem;
   margin-left: auto;
 }
+
+/* La saison d'un joueur, sur un ordinateur (17/11/2026) : le détail de la game
+   choisie en haut à droite, à côté des colonnes, et qui suit la page — plus
+   besoin de descendre pour le voir. La forme passe en ligne sous les colonnes.
+   Un double-clic sur une game ouvre son historique. */
+.saison-corps {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.1rem;
+}
+@media (min-width: 1500px) {
+  .saison-corps {
+    grid-template-columns: minmax(0, 1fr) 21rem;
+    grid-template-areas:
+      'graphe detail'
+      'forme detail'
+      'reglages detail'
+      'grille detail';
+    align-items: start;
+    gap: 0.9rem 1.1rem;
+  }
+  .saison-corps > .saison,
+  .saison-corps > .saison-bas {
+    display: contents;
+  }
+  .saison-corps .saison-graphe {
+    grid-area: graphe;
+  }
+  .saison-corps .saison-forme {
+    grid-area: forme;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .saison-corps .profil-reglages {
+    grid-area: reglages;
+  }
+  .saison-corps .grille-games {
+    grid-area: grille;
+  }
+  .saison-corps .detail-game {
+    grid-area: detail;
+    position: sticky;
+    top: 1rem;
+  }
+}
+.detail-astuce {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--faint);
+}
