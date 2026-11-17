@@ -62,7 +62,7 @@ export default async function AdminAccueilPage() {
         dons: db.packsDus
           .filter((p) => p.donDe)
           .sort((a, b) => b.creeA.localeCompare(a.creeA))
-          .slice(0, 20)
+          .slice(0, 200)
           .map((p) => ({ id: p.id, le: p.creeA, joueur: pseudoDe.get(p.joueurId ?? '') ?? '?', donDe: p.donDe! })),
         totalSubs: db.config.totalSubs,
         evenements: evenementsActifs(db),

@@ -332,10 +332,13 @@ type FiltreFil = 'tout' | 'joueurs' | 'viewers' | 'offerts';
  *     (et ceux à qui il manque un pseudo Activision) ;
  *  3. les boosters cadeau : payés par des viewers qui ne jouent pas. Le
  *     viewer dit à qui les donner : la modération répartit les siens, à quel
- *     joueur et combien ;
+ *     joueur et combien ; et, à part, ceux déjà donnés (17/11/2026) ;
  *  4. le fil des subs, jour par jour : qui, quoi, joueur de la ligue ou
  *     viewer, et le booster que ça a rapporté ;
- *  5. sur un très grand écran, les paliers du compteur.
+ *  5. sur un très grand écran, les paliers du compteur, au-dessus des dons.
+ *
+ * Sur un ordinateur, les panneaux descendent jusqu'au bas de l'écran, et ce
+ * qui est long défile dans son panneau : pas de vide sous eux.
  *
  * Un sub de niveau 3, ou cinq subs offerts, valent un Booster Perso : à qui
  * les paie s'il joue dans la ligue, sinon c'est un booster cadeau. S'il
@@ -377,6 +380,7 @@ export function TableauDeBord({
   const [montres, setMontres] = useState(PAS);
 
   const reserve = donateurs.reduce((n, d) => n + d.restants, 0);
+  const donnes = dons.length;
   const aRedonner = donateurs.filter((d) => d.restants > 0).sort((a, b) => b.restants - a.restants);
   const totalOuvrir = aOuvrir.perso + aOuvrir.ligue;
 
@@ -607,23 +611,36 @@ export function TableauDeBord({
           </section>
         )}
 
-        {dons.length > 0 && (
-          <section className="adm-bloc">
-            <h3 className="adm-intertitre">Déjà donnés</h3>
-            <ul className="adm-dons">
-              {regroupeDons(dons)
-                .slice(0, 8)
-                .map((d) => (
-                  <li key={d.id}>
-                    <p>
-                      <b>{d.joueur}</b> a reçu {d.nombre > 1 ? `${d.nombre} boosters payés` : 'un booster payé'} par{' '}
-                      {d.donateur}
-                    </p>
-                    <time dateTime={d.le}>{quand(d.le, maintenant)}</time>
-                  </li>
-                ))}
-            </ul>
-          </section>
+      </Panneau>
+
+      {/* ------------------------- Les boosters cadeau donnés ------------------------- */}
+      <Panneau
+        zone="dons"
+        ton="aurore"
+        surtitre="L’historique"
+        titre="Déjà donnés"
+        actions={
+          <p className="adm-reserve" data-vide={donnes === 0 ? '' : undefined}>
+            <strong className="num">{flakes(donnes)}</strong>
+            <span>donné{donnes > 1 ? 's' : ''}</span>
+          </p>
+        }
+        defile
+      >
+        {dons.length === 0 ? (
+          <Vide>Aucun booster cadeau donné pour l’instant.</Vide>
+        ) : (
+          <ul className="adm-dons">
+            {regroupeDons(dons).map((d) => (
+              <li key={d.id}>
+                <p>
+                  <b>{d.joueur}</b> a reçu {d.nombre > 1 ? `${d.nombre} boosters payés` : 'un booster payé'} par{' '}
+                  {d.donateur}
+                </p>
+                <time dateTime={d.le}>{quand(d.le, maintenant)}</time>
+              </li>
+            ))}
+          </ul>
         )}
       </Panneau>
 

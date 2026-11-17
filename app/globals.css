@@ -14607,6 +14607,12 @@ main:has(> .accueil .acc-scene[data-phase='fini']) {
   .adm-ecran {
     grid-template-rows: auto minmax(0, 1fr);
   }
+  /* Sans phrase d'introduction, la grille est seule : elle prend toute la
+     hauteur (elle tombait dans la rangée « auto », et laissait l'écran à
+     moitié vide — 17/11/2026). */
+  .adm-ecran:not(:has(> .adm-intro)) {
+    grid-template-rows: minmax(0, 1fr);
+  }
 }
 .adm-intro {
   padding-inline: 0.25rem;
@@ -14845,7 +14851,7 @@ main:has(> .accueil .acc-scene[data-phase='fini']) {
 /* Les dispositions. Sur un téléphone, une colonne, dans l'ordre des zones. */
 .adm-grille[data-grille='tableau'],
 .adm-grille[data-grille='tableau-alerte'] {
-  grid-template-areas: 'alerte' 'tuiles' 'cadeau' 'fil' 'paliers';
+  grid-template-areas: 'alerte' 'tuiles' 'cadeau' 'fil' 'paliers' 'dons';
 }
 .adm-grille[data-grille='codes'] {
   grid-template-areas: 'creer' 'liste';
@@ -14867,20 +14873,24 @@ main:has(> .accueil .acc-scene[data-phase='fini']) {
   grid-template-rows: auto minmax(0, 1fr);
 }
 @media (min-width: 1024px) {
+  /* Deux colonnes : les boosters cadeau au-dessus de ceux déjà donnés, et le
+     fil des subs sur toute la hauteur. */
   .adm-grille[data-grille='tableau'] {
     grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
-    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 3fr) minmax(0, 2fr);
     grid-template-areas:
       'tuiles tuiles'
-      'cadeau fil';
+      'cadeau fil'
+      'dons fil';
   }
   .adm-grille[data-grille='tableau-alerte'] {
     grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
-    grid-template-rows: auto auto minmax(0, 1fr);
+    grid-template-rows: auto auto minmax(0, 3fr) minmax(0, 2fr);
     grid-template-areas:
       'alerte alerte'
       'tuiles tuiles'
-      'cadeau fil';
+      'cadeau fil'
+      'dons fil';
   }
   /* Les paliers n'ont de place qu'en troisième colonne, sur un très grand
      écran ; la tuile des subs dit déjà le prochain. */
@@ -14925,19 +14935,25 @@ main:has(> .accueil .acc-scene[data-phase='fini']) {
     height: 100%;
   }
 }
+/* Trois colonnes : les boosters cadeau, le fil des subs, et les paliers
+   au-dessus des boosters déjà donnés — chacun jusqu'au bas de l'écran. */
 @media (min-width: 1800px) {
   .adm-grille[data-grille='tableau'] {
     grid-template-columns: minmax(0, 4fr) minmax(0, 6fr) minmax(0, 4fr);
+    grid-template-rows: auto auto minmax(0, 1fr);
     grid-template-areas:
       'tuiles tuiles tuiles'
-      'cadeau fil paliers';
+      'cadeau fil paliers'
+      'cadeau fil dons';
   }
   .adm-grille[data-grille='tableau-alerte'] {
     grid-template-columns: minmax(0, 4fr) minmax(0, 6fr) minmax(0, 4fr);
+    grid-template-rows: auto auto auto minmax(0, 1fr);
     grid-template-areas:
       'alerte alerte alerte'
       'tuiles tuiles tuiles'
-      'cadeau fil paliers';
+      'cadeau fil paliers'
+      'cadeau fil dons';
   }
   .adm-panneau[data-zone='paliers'] {
     display: flex;
