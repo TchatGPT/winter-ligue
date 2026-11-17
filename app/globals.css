@@ -2950,25 +2950,30 @@
   }
 
   /*
-   * Le pseudo en jeu, au milieu de l'en-tête, dans un puits creusé
-   * (`PseudoActivision`, 17/11/2026). Ses trois rangs ont une hauteur fixe :
-   * passer en édition ne change ni le puits, ni l'en-tête.
+   * Le pseudo en jeu, au milieu de l'en-tête : une pilule fine, légèrement
+   * creusée (`PseudoActivision`, 17/11/2026). Sa hauteur est fixe : passer en
+   * édition ne change ni la pilule, ni l'en-tête.
    */
   .profil-activision {
-    display: grid;
-    width: 100%;
-    max-width: 24rem;
-    justify-items: center;
-    gap: 0.3rem;
-    padding: 0.8rem 1.25rem 0.75rem;
-    border-radius: var(--r-lg);
-    background: color-mix(in srgb, var(--bg-deep) 42%, transparent);
+    position: relative;
+    display: flex;
+    width: fit-content;
+    max-width: 100%;
+    height: 2.3rem;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0 0.35rem 0 0.85rem;
+    border-radius: var(--r-pilule);
+    background: color-mix(in srgb, var(--bg-deep) 28%, transparent);
     box-shadow:
-      inset 0 3px 8px color-mix(in srgb, var(--bg-deep) 85%, transparent),
-      inset 0 1px 2px color-mix(in srgb, var(--bg-deep) 90%, transparent),
-      inset 0 -1px 0 color-mix(in srgb, var(--frost) 16%, transparent),
-      inset 0 0 0 1px color-mix(in srgb, var(--frost) 6%, transparent);
-    text-align: center;
+      inset 0 1px 3px color-mix(in srgb, var(--bg-deep) 70%, transparent),
+      inset 0 -1px 0 color-mix(in srgb, var(--frost) 12%, transparent);
+  }
+  .profil-activision:not(:has(.profil-activision-changer)):not([data-edition]) {
+    padding-right: 0.95rem;
+  }
+  .profil-activision[data-edition] {
+    width: min(100%, 21rem);
   }
   @media (min-width: 1500px) {
     .profil-tete {
@@ -2981,79 +2986,75 @@
       grid-column: 3;
     }
   }
-  .profil-activision-titre {
-    display: flex;
-    align-items: center;
-    gap: 0.45rem;
-    font-family: var(--font-display);
-    font-size: 0.6875rem;
-    font-weight: 800;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--faint);
-  }
   .profil-activision-logo {
     width: auto;
-    height: 0.55rem;
+    height: 0.5rem;
     flex: none;
+    color: var(--faint);
   }
-  .profil-activision-valeur {
-    display: flex;
-    width: 100%;
-    height: 2.4rem;
-    min-width: 0;
-    align-items: center;
-    justify-content: center;
-    gap: 0.35rem;
-  }
-  .profil-activision-valeur > span,
-  .profil-activision-valeur > em {
+  .profil-activision-pseudo {
     min-width: 0;
     overflow: hidden;
+    font-size: 0.9375rem;
+    font-weight: 700;
     text-overflow: ellipsis;
     white-space: nowrap;
-  }
-  .profil-activision-valeur > span {
-    font-family: var(--font-display);
-    font-size: 1.6rem;
-    font-weight: 800;
-    letter-spacing: 0.02em;
     color: var(--ink);
   }
-  .profil-activision-valeur > em {
+  em.profil-activision-pseudo {
     font-style: normal;
-    font-size: 0.9375rem;
+    font-weight: 500;
     color: var(--faint);
+  }
+  .profil-activision-changer {
+    flex: none;
+    height: 1.65rem;
+    padding: 0 0.7rem;
+    border-radius: var(--r-pilule);
+    background: color-mix(in srgb, var(--ice) 12%, transparent);
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--ice);
+    transition: background-color 0.15s ease;
+  }
+  .profil-activision-changer:hover {
+    background: color-mix(in srgb, var(--ice) 22%, transparent);
+  }
+  .profil-activision-form {
+    display: flex;
+    min-width: 0;
+    flex: 1;
+    align-items: center;
+    gap: 0.3rem;
   }
   .profil-activision-champ {
     min-width: 0;
-    height: 2.2rem;
+    height: 1.75rem;
     flex: 1;
-    padding: 0 0.7rem;
-    border-radius: var(--r-sm);
-    border: 1px solid color-mix(in srgb, var(--ice) 55%, transparent);
-    background: color-mix(in srgb, var(--bg-deep) 70%, transparent);
-    font-size: 1rem;
+    padding: 0 0.6rem;
+    border-radius: var(--r-pilule);
+    border: 1px solid color-mix(in srgb, var(--ice) 45%, transparent);
+    background: color-mix(in srgb, var(--bg-deep) 60%, transparent);
+    font-size: 0.875rem;
     font-weight: 700;
-    text-align: center;
     color: var(--ink);
   }
   .profil-activision-champ:focus {
     outline: none;
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--ice) 35%, transparent);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--ice) 30%, transparent);
   }
   .profil-activision-champ[aria-invalid] {
     border-color: var(--danger);
   }
   .profil-activision-icone {
     display: grid;
-    width: 2.2rem;
-    height: 2.2rem;
+    width: 1.75rem;
+    height: 1.75rem;
     flex: none;
     place-items: center;
-    border-radius: var(--r-sm);
+    border-radius: 50%;
     background: color-mix(in srgb, var(--frost) 10%, transparent);
-    font-size: 1rem;
+    font-size: 0.8125rem;
     font-weight: 800;
     color: var(--ink-2);
     transition: background-color 0.15s ease;
@@ -3065,41 +3066,32 @@
     background: color-mix(in srgb, var(--aurora) 20%, transparent);
     color: var(--aurora);
   }
-  .profil-activision-icone[data-ton='ok']:hover:not(:disabled) {
-    background: color-mix(in srgb, var(--aurora) 30%, transparent);
-  }
   .profil-activision-icone:disabled {
     opacity: 0.4;
     cursor: default;
   }
-  .profil-activision-pied {
-    display: flex;
-    width: 100%;
-    height: 1.5rem;
-    min-width: 0;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
+  /* La consigne, ou le refus, en bulle sous la pilule : par-dessus, sans rien pousser. */
+  .profil-activision-bulle {
+    position: absolute;
+    top: calc(100% + 0.35rem);
+    left: 50%;
+    z-index: 5;
+    max-width: 20rem;
+    translate: -50% 0;
+    padding: 0.25rem 0.65rem;
+    border-radius: var(--r-pilule);
+    background: color-mix(in srgb, var(--fond) 94%, transparent);
+    box-shadow: 0 6px 16px -8px color-mix(in srgb, var(--bg-deep) 90%, transparent);
     font-size: 0.75rem;
     white-space: nowrap;
-    text-overflow: ellipsis;
-    color: var(--faint);
+    color: var(--muted);
+    pointer-events: none;
   }
-  .profil-activision-pied[data-erreur] {
+  .profil-activision-bulle[data-erreur] {
     font-weight: 600;
+    white-space: normal;
+    text-align: center;
     color: var(--danger);
-  }
-  .profil-activision-changer {
-    padding: 0.15rem 0.75rem;
-    border-radius: var(--r-pilule);
-    background: color-mix(in srgb, var(--ice) 14%, transparent);
-    font-size: 0.75rem;
-    font-weight: 700;
-    color: var(--ice);
-    transition: background-color 0.15s ease;
-  }
-  .profil-activision-changer:hover {
-    background: color-mix(in srgb, var(--ice) 24%, transparent);
   }
 
   /* Les cinq chiffres de l'en-tête : séparés d'un filet, alignés sur la base. */

@@ -8,15 +8,15 @@ import { sansInvisibles } from '@/lib/domain/texte';
 
 /**
  * Le pseudo en jeu d'un joueur (identifiant Activision), au milieu de l'en-tête
- * de sa fiche, dans un puits creusé. Sur sa propre fiche, le joueur le change
+ * de sa fiche, en pilule fine. Sur sa propre fiche, le joueur le change
  * lui-même (17/11/2026) : s'il change de pseudo en jeu en cours de ligue, c'est
  * ici qu'il le dit, sinon la modération ne le retrouve plus sur les captures.
  * Le serveur refuse un pseudo déjà pris, et le journal garde l'ancien et le
  * nouveau.
  *
  * Le changement se fait **sur place** : le pseudo devient un champ, suivi de ✓
- * et ✕, à la même hauteur ; dessous, la consigne ou le refus prennent la place
- * du bouton. Le puits ne change jamais de taille, l'en-tête non plus.
+ * et ✕, à la même hauteur ; la consigne ou le refus s'affichent en bulle
+ * dessous, par-dessus. La pilule ne change pas de hauteur, l'en-tête non plus.
  */
 export function PseudoActivision({ activisionId, moi }: { activisionId: string | null; moi: boolean }) {
   const router = useRouter();
@@ -61,15 +61,11 @@ export function PseudoActivision({ activisionId, moi }: { activisionId: string |
   }
 
   return (
-    <div className="profil-activision" data-edition={edition || undefined}>
-      <p className="profil-activision-titre">
-        <IconActivision className="profil-activision-logo" />
-        Pseudo en jeu
-      </p>
-
+    <div className="profil-activision" data-edition={edition || undefined} title="Pseudo en jeu (Activision)">
+      <IconActivision className="profil-activision-logo" />
       {edition ? (
         <form
-          className="profil-activision-valeur"
+          className="profil-activision-form"
           onSubmit={(e) => {
             e.preventDefault();
             if (pret && !busy) void enregistre();
@@ -89,7 +85,7 @@ export function PseudoActivision({ activisionId, moi }: { activisionId: string |
             onKeyDown={(e) => {
               if (e.key === 'Escape') ferme();
             }}
-            placeholder="Ton nouveau pseudo"
+            placeholder="Nouveau pseudo, sans le #"
             maxLength={LONGUEUR_ACTIVISION.max * 2}
             autoComplete="off"
             autoCapitalize="off"
@@ -97,7 +93,7 @@ export function PseudoActivision({ activisionId, moi }: { activisionId: string |
             spellCheck={false}
             autoFocus
             aria-invalid={erreur ? true : undefined}
-            aria-describedby={`${id}-pied`}
+            aria-describedby={`${id}-bulle`}
           />
           <button
             type="submit"
@@ -119,22 +115,26 @@ export function PseudoActivision({ activisionId, moi }: { activisionId: string |
           >
             ✕
           </button>
+          {/* La consigne, ou le refus : en bulle sous la pilule, par-dessus. */}
+          <span
+            id={`${id}-bulle`}
+            className="profil-activision-bulle"
+            data-erreur={erreur ? '' : undefined}
+            role={erreur ? 'alert' : undefined}
+          >
+            {erreur ?? 'Exactement comme en jeu, sans le #'}
+          </span>
         </form>
       ) : (
-        <p className="profil-activision-valeur">
+        <>
           {activisionId ? (
-            <span translate="no">{activisionId}</span>
+            <span className="profil-activision-pseudo" translate="no">
+              {activisionId}
+            </span>
           ) : (
-            <em>{moi ? 'Pas encore donné' : 'Pas de pseudo en jeu'}</em>
+            <em className="profil-activision-pseudo">{moi ? 'Pseudo en jeu à donner' : 'Pas de pseudo en jeu'}</em>
           )}
-        </p>
-      )}
-
-      {moi && (
-        <p id={`${id}-pied`} className="profil-activision-pied" data-erreur={edition && erreur ? '' : undefined}>
-          {edition ? (
-            (erreur ?? 'Exactement comme en jeu, sans le #')
-          ) : (
+          {moi && (
             <button
               type="button"
               className="profil-activision-changer"
@@ -147,7 +147,7 @@ export function PseudoActivision({ activisionId, moi }: { activisionId: string |
               {activisionId ? 'Changer' : 'Le donner'}
             </button>
           )}
-        </p>
+        </>
       )}
     </div>
   );
