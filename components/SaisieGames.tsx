@@ -445,9 +445,17 @@ function FenetreIA({ joueurs, active, ferme }: { joueurs: Joueur[]; active: bool
 
         {/* ---- À droite : une ligne par joueur, et la validation ---- */}
         <div className="saisie-droite">
-          {lignes && lignes.length > 0 ? (
-            <ul className="saisie-lignes">
-              {lignes.map((l, i) => (
+          {lignes && lignes.some((l) => !l.streameuse) ? (
+            <div className="saisie-lignes">
+              {/* Les colonnes, nommées une fois : on lit chaque ligne sans légende. */}
+              <div className="saisie-colonnes" aria-hidden="true">
+                <span>Joueur</span>
+                <span>Kills</span>
+                <span>Carte active</span>
+                <span>Points</span>
+              </div>
+              <ul>
+              {lignes.map((l, i) => l.streameuse ? null : (
                 <LigneResultat
                   key={`${l.lu}-${i}`}
                   ligne={l}
@@ -458,7 +466,8 @@ function FenetreIA({ joueurs, active, ferme }: { joueurs: Joueur[]; active: bool
                   onChange={(patch) => modifie(i, patch)}
                 />
               ))}
-            </ul>
+              </ul>
+            </div>
           ) : (
             <p className="saisie-attente">
               {lignes
@@ -526,23 +535,6 @@ function LigneResultat({
   meilleur: { nom: string; kills: number } | null;
   onChange: (patch: Partial<Ligne>) => void;
 }) {
-  // La ligne de la streameuse : montrée pour qu'on voie qu'elle a été lue, et
-  // ses kills comptent dans le total de l'escouade, mais elle n'a pas de game.
-  if (l.streameuse) {
-    return (
-      <li className="saisie-ligne" data-etat="hors">
-        <div className="saisie-ligne-haut">
-          <div className="saisie-qui">
-            <span className="saisie-hors">{sansTagClan(l.lu) || l.lu}</span>
-            <span className="saisie-lu">Streameuse — hors ligue, aucune game</span>
-          </div>
-          <span className="saisie-kills-fixes num">{l.kills} élim.</span>
-          <span />
-        </div>
-      </li>
-    );
-  }
-
   const assigne = l.joueurId !== null;
   const sure = l.confiance >= 0.9 ? 'sure' : l.confiance >= 0.6 ? 'moyenne' : 'faible';
   const top = placementPoints(placement);
@@ -563,127 +555,145 @@ function LigneResultat({
         : `meilleur tueur lui-même : ${points(carte.points)} de consolation`
       : (carte?.resultat ?? '');
   const sureTexte = `Lecture sûre à ${Math.round(l.confiance * 100)} %`;
+  const pseudo = joueurs.find((j) => j.id === l.joueurId)?.pseudo ?? '';
+  // Le détail du total, terme à terme : kills + top + carte.
+  const detail = jokerJoue
+    ? 'game annulée'
+    : [`${kills} kill${kills > 1 ? 's' : ''}`, `${top} top`, ...(carte && !clone ? [`${carte.points < 0 ? '−' : ''}${Math.abs(carte.points)} carte`] : [])].join(' + ');
 
   return (
     <li className="saisie-ligne" data-etat={!assigne ? 'libre' : jokerJoue ? 'joker' : 'compte'}>
-      <div className="saisie-ligne-haut">
-        <div className="saisie-qui">
-          <select
-            className="field saisie-joueur"
-            value={l.joueurId ?? ''}
-            onChange={(e) => onChange({ joueurId: e.target.value || null, confiance: e.target.value ? 1 : 0, joker: false })}
-            aria-label={`Joueur pour ${l.lu}`}
-          >
-            <option value="">— non assigné —</option>
-            {joueurs.map((j) => (
-              <option key={j.id} value={j.id}>
-                {j.pseudo}
-              </option>
-            ))}
-          </select>
-          <span className="saisie-lu" title={`Lu sur la capture : ${l.lu}`}>
-            {assigne && <i className="saisie-sure" data-sure={sure} title={sureTexte} aria-label={sureTexte} />}
-            lu : {sansTagClan(l.lu) || l.lu}
-          </span>
-        </div>
-
-        <div className="saisie-kills" role="group" aria-label="Éliminations">
-          <button
-            type="button"
-            onClick={() => onChange({ kills: Math.max(GAME_LIMITS.minKills, l.kills - 1) })}
-            aria-label="Un kill de moins"
-          >
-            −
-          </button>
-          <span
-            className="num saisie-kills-n"
-            data-controle={controle === null ? undefined : controle ? 'ok' : 'ecart'}
-            title={
-              controle === null
-                ? undefined
-                : controle
-                  ? `Vérifié : ${l.kills} = élim./assist. − assist.`
-                  : `Élim./assist. − assist. donne ${l.attendu} : vérifie sur la capture`
-            }
-          >
-            {l.kills}
-          </span>
-          <button
-            type="button"
-            onClick={() => onChange({ kills: Math.min(GAME_LIMITS.maxKills, l.kills + 1) })}
-            aria-label="Un kill de plus"
-          >
-            +
-          </button>
-        </div>
-
-        <span className="saisie-total-ligne num" data-joker={jokerJoue || undefined}>
-          {!assigne ? '—' : jokerJoue ? '0 pt' : `${total} pts`}
+      <div className="saisie-qui">
+        <select
+          className="field saisie-joueur"
+          value={l.joueurId ?? ''}
+          onChange={(e) => onChange({ joueurId: e.target.value || null, confiance: e.target.value ? 1 : 0, joker: false })}
+          aria-label={`Joueur pour ${l.lu}`}
+        >
+          <option value="">— pas dans la ligue —</option>
+          {joueurs.map((j) => (
+            <option key={j.id} value={j.id}>
+              {j.pseudo}
+            </option>
+          ))}
+        </select>
+        <span className="saisie-lu" title={`Lu sur la capture : ${l.lu}`}>
+          {assigne && <i className="saisie-sure" data-sure={sure} title={sureTexte} aria-label={sureTexte} />}
+          lu : {sansTagClan(l.lu) || l.lu}
         </span>
       </div>
 
-      {(assigne || controle === false) && (
-        <div className="saisie-ligne-bas">
-          {controle === false && (
-            <span className="saisie-puce" data-ton="alerte">
-              ⚠ élim./assist. − assist. = {l.attendu}
-            </span>
-          )}
-          {assigne && (
-            <span className="saisie-calcul" data-barre={jokerJoue || undefined}>
-              {clone ? `${l.kills} → ${kills}` : kills} kill{kills > 1 ? 's' : ''} · {placement === null ? 'pas top' : `Top ${placement} +${top}`}
-            </span>
-          )}
-          {assigne && carte && !jokerJoue && (
-            <CarteDeLaGame cardId={carte.cardId} donne={clone ? `${kills} kills` : points(carte.points)} ici={ici} />
-          )}
-          {/* Le Joker : un choix, pas une case qu'on rate. */}
-          {assigne && joker && (
-            <button
-              type="button"
-              className="saisie-joker"
-              aria-pressed={jokerJoue}
-              onClick={() => onChange({ joker: !jokerJoue })}
-              title={
-                jokerJoue
-                  ? `Cette game ne comptera pas : 0 point, 0 flocon${carte ? `, et ${carte.nom} attend la suivante` : ''}.`
-                  : 'Le jouer annule cette game : elle ne comptera pas. Sinon, il garde son Joker.'
-              }
-            >
-              🃏 {jokerJoue ? 'Joker joué · annuler' : 'Jouer le Joker'}
-            </button>
-          )}
-        </div>
+      <div className="saisie-kills" role="group" aria-label="Kills">
+        <button
+          type="button"
+          onClick={() => onChange({ kills: Math.max(GAME_LIMITS.minKills, l.kills - 1) })}
+          aria-label="Un kill de moins"
+        >
+          −
+        </button>
+        <span
+          className="num saisie-kills-n"
+          data-controle={controle === null ? undefined : controle ? 'ok' : 'ecart'}
+          title={
+            controle === null
+              ? undefined
+              : controle
+                ? `Vérifié : ${l.kills} = élim./assist. − assist.`
+                : `Élim./assist. − assist. donne ${l.attendu} : vérifie sur la capture`
+          }
+        >
+          {l.kills}
+        </span>
+        <button
+          type="button"
+          onClick={() => onChange({ kills: Math.min(GAME_LIMITS.maxKills, l.kills + 1) })}
+          aria-label="Un kill de plus"
+        >
+          +
+        </button>
+      </div>
+
+      <div className="saisie-effet">
+        {controle === false && (
+          <span className="saisie-puce" data-ton="alerte" title="Élim./assist. − assist., lus sur la capture">
+            ⚠ La capture donne {l.attendu} kills
+          </span>
+        )}
+        {!assigne ? (
+          <span className="saisie-sans">Pas de game : il n’est pas dans la ligue</span>
+        ) : carte ? (
+          <CarteDeLaGame cardId={carte.cardId} donne={clone ? `${kills} kills` : points(carte.points)} ici={ici} eteinte={jokerJoue} />
+        ) : (
+          <span className="saisie-sans">Aucune carte active</span>
+        )}
+      </div>
+
+      <div className="saisie-points" data-joker={jokerJoue || undefined}>
+        <b className="num">{!assigne ? '—' : jokerJoue ? '0 pt' : `${total} pts`}</b>
+        {assigne && <span className="num">{detail}</span>}
+      </div>
+
+      {/* Le Joker : un interrupteur, en clair. */}
+      {assigne && joker && (
+        <button
+          type="button"
+          role="switch"
+          aria-checked={jokerJoue}
+          className="saisie-joker"
+          onClick={() => onChange({ joker: !jokerJoue })}
+        >
+          <span className="saisie-joker-icone" aria-hidden="true">
+            🃏
+          </span>
+          <span className="saisie-joker-texte">
+            {jokerJoue ? (
+              <>
+                <b>Joker joué</b> : la game de {pseudo} ne compte pas — 0 point, 0 flocon
+                {carte ? `, ${carte.nom} attend la suivante` : ''}.
+              </>
+            ) : (
+              <>
+                <b>{pseudo} a un Joker</b> : le jouer annule cette game.
+              </>
+            )}
+          </span>
+          <span className="saisie-interrupteur" aria-hidden="true" />
+        </button>
       )}
     </li>
   );
 }
 
 /**
- * La carte active d'un joueur, dans sa ligne : sa vignette, son nom, ce
- * qu'elle fait sur cette game et ce qu'elle lui donne. Ce qu'elle fait en
- * général est au survol.
+ * La carte active d'un joueur, dans sa ligne : sa vignette, son nom et sa
+ * rareté, ce qu'elle fait sur cette game, et ce qu'elle lui donne.
  */
-function CarteDeLaGame({ cardId, donne, ici }: { cardId: string; donne: string; ici: string }) {
+function CarteDeLaGame({ cardId, donne, ici, eteinte }: { cardId: string; donne: string; ici: string; eteinte?: boolean }) {
   const def = getCard(cardId);
   if (!def) return null;
   const meta = RARITY_META[def.rarity];
   return (
-    <span
+    <div
       className="saisie-carte"
+      data-eteinte={eteinte || undefined}
       style={{ ['--r' as string]: meta.color }}
-      title={`${def.name} (${meta.label}) — ${def.description}${ici ? `\nSur cette game : ${ici}` : ''}`}
+      title={`${def.name} (${meta.label}) — ${def.description}`}
     >
       <span className="saisie-carte-vignette" aria-hidden="true">
-        <CardFrame cardId={def.id} name={def.name} rarity={def.rarity} glyph={def.glyph} nature={def.nature} largeur="24px" />
+        <CardFrame cardId={def.id} name={def.name} rarity={def.rarity} glyph={def.glyph} nature={def.nature} largeur="34px" />
       </span>
-      <span className="saisie-carte-texte">
-        <b>{def.name}</b>
-        {ici && <span> · {ici}</span>}
-      </span>
-      <b className="saisie-carte-donne num" data-signe={donne.startsWith('−') ? 'moins' : undefined}>
-        {donne}
-      </b>
-    </span>
+      <div className="saisie-carte-texte">
+        <p>
+          <b>{def.name}</b>
+          <span>{meta.label}</span>
+        </p>
+        <p>{eteinte ? 'attend la game suivante' : ici}</p>
+      </div>
+      {!eteinte && (
+        <b className="saisie-carte-donne num" data-signe={donne.startsWith('−') ? 'moins' : undefined}>
+          {donne}
+        </b>
+      )}
+    </div>
   );
 }
