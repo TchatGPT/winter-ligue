@@ -180,9 +180,11 @@ export function FicheJoueur({
                 ← Classement
               </Link>
             </div>
-            {!fiche.streameuse && <PseudoActivision activisionId={fiche.activisionId} moi={moi} />}
           </div>
         </div>
+
+        {/* Le pseudo en jeu, au milieu de l'en-tête, dans un puits creusé. */}
+        {!fiche.streameuse && <PseudoActivision activisionId={fiche.activisionId} moi={moi} />}
 
         <dl className="profil-chiffres">
           <Chiffre

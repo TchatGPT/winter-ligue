@@ -2949,41 +2949,148 @@
     background: rgb(255 255 255 / 0.14);
   }
 
-  /* Le pseudo en jeu, sous le nom ; sur sa propre fiche, le joueur le change
-     (`PseudoActivision`, 17/11/2026). */
+  /*
+   * Le pseudo en jeu, au milieu de l'en-tête, dans un puits creusé
+   * (`PseudoActivision`, 17/11/2026). Ses trois rangs ont une hauteur fixe :
+   * passer en édition ne change ni le puits, ni l'en-tête.
+   */
   .profil-activision {
-    margin-top: 0.6rem;
-    max-width: 26rem;
+    display: grid;
+    width: 100%;
+    max-width: 24rem;
+    justify-items: center;
+    gap: 0.3rem;
+    padding: 0.8rem 1.25rem 0.75rem;
+    border-radius: var(--r-lg);
+    background: color-mix(in srgb, var(--bg-deep) 42%, transparent);
+    box-shadow:
+      inset 0 3px 8px color-mix(in srgb, var(--bg-deep) 85%, transparent),
+      inset 0 1px 2px color-mix(in srgb, var(--bg-deep) 90%, transparent),
+      inset 0 -1px 0 color-mix(in srgb, var(--frost) 16%, transparent),
+      inset 0 0 0 1px color-mix(in srgb, var(--frost) 6%, transparent);
+    text-align: center;
   }
-  .profil-activision-ligne {
+  @media (min-width: 1500px) {
+    .profil-tete {
+      grid-template-columns: auto minmax(0, 1fr) auto;
+    }
+    .profil-activision {
+      justify-self: center;
+    }
+    .profil-tete > .profil-chiffres {
+      grid-column: 3;
+    }
+  }
+  .profil-activision-titre {
     display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-family: var(--font-display);
+    font-size: 0.6875rem;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--faint);
+  }
+  .profil-activision-logo {
+    width: auto;
+    height: 0.55rem;
+    flex: none;
+  }
+  .profil-activision-valeur {
+    display: flex;
+    width: 100%;
+    height: 2.4rem;
     min-width: 0;
     align-items: center;
-    gap: 0.5rem;
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: var(--ink-2);
+    justify-content: center;
+    gap: 0.35rem;
   }
-  .profil-activision-ligne > span {
+  .profil-activision-valeur > span,
+  .profil-activision-valeur > em {
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .profil-activision-ligne em {
+  .profil-activision-valeur > span {
+    font-family: var(--font-display);
+    font-size: 1.6rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    color: var(--ink);
+  }
+  .profil-activision-valeur > em {
     font-style: normal;
-    font-weight: 400;
+    font-size: 0.9375rem;
     color: var(--faint);
   }
-  .profil-activision-logo {
-    width: auto;
-    height: 0.6rem;
+  .profil-activision-champ {
+    min-width: 0;
+    height: 2.2rem;
+    flex: 1;
+    padding: 0 0.7rem;
+    border-radius: var(--r-sm);
+    border: 1px solid color-mix(in srgb, var(--ice) 55%, transparent);
+    background: color-mix(in srgb, var(--bg-deep) 70%, transparent);
+    font-size: 1rem;
+    font-weight: 700;
+    text-align: center;
+    color: var(--ink);
+  }
+  .profil-activision-champ:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--ice) 35%, transparent);
+  }
+  .profil-activision-champ[aria-invalid] {
+    border-color: var(--danger);
+  }
+  .profil-activision-icone {
+    display: grid;
+    width: 2.2rem;
+    height: 2.2rem;
     flex: none;
+    place-items: center;
+    border-radius: var(--r-sm);
+    background: color-mix(in srgb, var(--frost) 10%, transparent);
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--ink-2);
+    transition: background-color 0.15s ease;
+  }
+  .profil-activision-icone:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--frost) 18%, transparent);
+  }
+  .profil-activision-icone[data-ton='ok'] {
+    background: color-mix(in srgb, var(--aurora) 20%, transparent);
+    color: var(--aurora);
+  }
+  .profil-activision-icone[data-ton='ok']:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--aurora) 30%, transparent);
+  }
+  .profil-activision-icone:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+  .profil-activision-pied {
+    display: flex;
+    width: 100%;
+    height: 1.5rem;
+    min-width: 0;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    text-overflow: ellipsis;
     color: var(--faint);
+  }
+  .profil-activision-pied[data-erreur] {
+    font-weight: 600;
+    color: var(--danger);
   }
   .profil-activision-changer {
-    flex: none;
-    padding: 0.1rem 0.55rem;
+    padding: 0.15rem 0.75rem;
     border-radius: var(--r-pilule);
     background: color-mix(in srgb, var(--ice) 14%, transparent);
     font-size: 0.75rem;
@@ -2993,40 +3100,6 @@
   }
   .profil-activision-changer:hover {
     background: color-mix(in srgb, var(--ice) 24%, transparent);
-  }
-  .profil-activision-form {
-    display: grid;
-    gap: 0.55rem;
-    margin-top: 0.6rem;
-    padding: 0.75rem;
-    border-radius: var(--r-md);
-    background: color-mix(in srgb, var(--bg-deep) 35%, transparent);
-    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--frost) 12%, transparent);
-  }
-  .profil-activision-note {
-    font-size: 0.8125rem;
-    line-height: 1.4;
-    color: var(--muted);
-  }
-  .profil-activision-case {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.5rem;
-    font-size: 0.8125rem;
-    color: var(--ink-2);
-  }
-  .profil-activision-case input {
-    margin-top: 0.2rem;
-  }
-  .profil-activision-erreur {
-    font-size: 0.8125rem;
-    font-weight: 600;
-    color: var(--danger);
-  }
-  .profil-activision-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 0.5rem;
   }
 
   /* Les cinq chiffres de l'en-tête : séparés d'un filet, alignés sur la base. */
