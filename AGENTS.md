@@ -220,8 +220,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   (Fonte des Neiges) compte comme un gain, pas une perte.
   Un échange au hasard (Vents Croisés) reste **du hasard pur** (décidé le 12/11/2026) :
   deux joueurs, puis une game au sort chez chacun, toutes à chances égales ; qui y gagne
-  suit les deux scores tirés. Dès les games connues, l'écran dit le verdict — qui gagne,
-  qui perd, de combien (`Verdict`, `TirageGames`) — avant la carte.
+  suit les deux scores tirés. Les games tirées, l'écran passe droit à la carte et à son
+  compte rendu : plus de verdict sous le rail (17/11/2026).
 - Les paliers de subs profitent à **tous les joueurs actifs** (boosters de la ligue,
   évènements). Seule l'**Avalanche** verse des flocons : la même somme
   (`AVALANCHE_FLOCONS`) à chaque joueur qui a au moins une game, tout de suite

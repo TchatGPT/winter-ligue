@@ -84,93 +84,24 @@ export function TirageGames({
   // se pose, comme une game désignée.
   const tournent = games.hasard && lignes.every((e) => e.visees.length === 1 && e.parmi.length > 1);
   return tournent ? (
-    <RailGames lignes={lignes} lien={games.lien} sourdine={sourdine} onFini={onFini} />
+    <RailGames lignes={lignes} sourdine={sourdine} onFini={onFini} />
   ) : (
     <GamesPosees lignes={lignes} lien={games.lien} onFini={onFini} />
   );
 }
 
-/** Combien de temps le verdict reste à l'écran, une fois les games posées. */
-const VERDICT_MS = 2600;
+type Ligne = Exclude<GamesAuTirage['parJoueur'][number], null>;
 
-/** « +13 pts », « −13 pts », « 1 pt ». */
-function enPoints(n: number): string {
-  return `${n > 0 ? '+' : n < 0 ? '−' : ''}${Math.abs(n)} pt${Math.abs(n) > 1 ? 's' : ''}`;
-}
-
-/**
- * Ce que l'échange — ou la copie — fera à chacun des deux, dit dès que les
- * games sont connues (12/11/2026) : qui y gagne, qui y perd, de combien. Le
- * compte rendu de la carte révélée le confirme.
- */
-function Verdict({ lignes, lien }: { lignes: Ligne[]; lien: GamesAuTirage['lien'] }) {
-  if ((lien !== 'echange' && lien !== 'copie') || lignes.length !== 2) return null;
-  const [a, b] = lignes;
-  const sa = a.visees[0]?.score;
-  const sb = b.visees[0]?.score;
-  if (sa === undefined || sb === undefined) return null;
-  const rangs =
-    lien === 'echange'
-      ? [
-          { l: a, avant: sa, apres: sb },
-          { l: b, avant: sb, apres: sa },
-        ]
-      : [
-          { l: a, avant: sa, apres: sb },
-          { l: b, avant: sb, apres: sb },
-        ];
-  return (
-    <div className="verdict-echange" role="status">
-      {rangs.map(({ l, avant, apres }) => {
-        const d = apres - avant;
-        const sens = d > 0 ? 'gain' : d < 0 ? 'perte' : 'neutre';
-        return (
-          <p key={l.pseudo} className="verdict-ligne" data-sens={sens}>
-            <b>{l.pseudo}</b>
-            <span className="num">
-              {avant} → {apres} pts
-            </span>
-            <span className="verdict-badge num">
-              {d === 0 ? (lien === 'copie' ? 'garde sa game' : '=') : enPoints(d)}
-            </span>
-          </p>
-        );
-      })}
-    </div>
-  );
-}
-
-/** Après le rail : le verdict, le temps de le lire, puis la suite. */
-function useVerdict(actif: boolean, onFini: () => void): [boolean, () => void] {
-  const [montre, setMontre] = useState(false);
+/** Le rail des games tirées au sort : une bande par joueur, ensemble. */
+function RailGames({ lignes, sourdine, onFini }: { lignes: Ligne[]; sourdine: boolean; onFini: () => void }) {
+  // Les games posées, on passe droit à la carte et à son compte rendu
+  // (17/11/2026) : plus de verdict sous le rail. Un rappel stable : le rail
+  // ne se relance jamais sur un rendu.
   const rappel = useRef(onFini);
   useEffect(() => {
     rappel.current = onFini;
   }, [onFini]);
-  useEffect(() => {
-    if (!montre) return;
-    const t = window.setTimeout(() => rappel.current(), VERDICT_MS);
-    return () => window.clearTimeout(t);
-  }, [montre]);
-  const fin = useCallback(() => (actif ? setMontre(true) : rappel.current()), [actif]);
-  return [montre, fin];
-}
-
-type Ligne = Exclude<GamesAuTirage['parJoueur'][number], null>;
-
-/** Le rail des games tirées au sort : une bande par joueur, ensemble. */
-function RailGames({
-  lignes,
-  lien,
-  sourdine,
-  onFini,
-}: {
-  lignes: Ligne[];
-  lien: GamesAuTirage['lien'];
-  sourdine: boolean;
-  onFini: () => void;
-}) {
-  const [verdict, fin] = useVerdict(lien === 'echange' || lien === 'copie', onFini);
+  const fin = useCallback(() => rappel.current(), []);
   // La bande défile des numéros de game : ceux du joueur, parmi lesquels le
   // serveur a tiré ; elle s'arrête sur la sienne.
   const [bandes] = useState(() =>
@@ -238,7 +169,6 @@ function RailGames({
         <span className="rail-voile rail-voile-avant" aria-hidden="true" />
         <span className="rail-voile rail-voile-apres" aria-hidden="true" />
       </div>
-      {verdict && <Verdict lignes={lignes} lien={lien} />}
     </div>
   );
 }
@@ -293,9 +223,6 @@ function GamesPosees({
           </div>
         </div>
       ))}
-      <div className="games-posees-verdict" style={{ ['--i' as string]: rang }}>
-        <Verdict lignes={lignes} lien={lien} />
-      </div>
     </div>
   );
 }
