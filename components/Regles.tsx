@@ -24,7 +24,6 @@ import {
   CADEAU_DU_JOUR,
   CHANCE,
   COMMU_ACCELERE_TOUS_LES,
-  CRENEAUX_BONUS,
   DUEL,
   ECONOMY,
   EVENEMENTS_SUBS,
@@ -304,7 +303,6 @@ export function Regles({
                   Passé la {saison.uneParSessionApres}ᵉ, <b>une game par session</b>.
                 </li>
               )}
-              <li>« Game supplémentaire » en ajoute une, {CRENEAUX_BONUS.max} au plus.</li>
               <li>Top 6, 8 et 10 ne rapportent rien seuls : ils servent aux cartes.</li>
             </Puces>
           </Encart>
