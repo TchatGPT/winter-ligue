@@ -575,18 +575,18 @@ export const CARDS: readonly CardDefinition[] = [
     cible: 'TOUS',
   },
   {
-    // Rare → commune le 14/11/2026 ; rare de nouveau le 17/11/2026, ×1,5 pour
-    // deux joueurs (×2 pour trois jusque-là).
+    // Rare → commune le 14/11/2026 ; ultra rare le 17/11/2026, ×2 pour deux
+    // joueurs (trois jusque-là).
     id: 'triple-echo',
     name: 'Tonnerre de Neige',
-    subtitle: 'Game aléatoire ×1,5 — 2 joueurs',
-    rarity: 'R',
+    subtitle: 'Game aléatoire ×2 — 2 joueurs',
+    rarity: 'UR',
     glyph: '🎲',
     description:
-      'Deux joueurs tirés au sort voient une game libre au hasard compter une fois et demie.',
-    effect: { kind: 'roue', action: { quoi: 'hasard_fois', facteur: 1.5 } },
+      'Deux joueurs tirés au sort voient une game libre au hasard compter double.',
+    effect: { kind: 'roue', action: { quoi: 'hasard_fois', facteur: 2 } },
     nature: 'bonus',
-    power: 35,
+    power: 64,
     packs: ['commu'],
     cible: 'DEUX',
   },

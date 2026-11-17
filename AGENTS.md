@@ -71,7 +71,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   rareté selon leur force : genre `roue` (`ActionRoue`), réglé dans `regleRoue`.
   Retouchées le 12/11/2026 : « Booster Commu tous les 20 subs » et « Meilleure game aux
   5 derniers » retirées ; le 17/11/2026, la Valse Boréale retirée, le **Tonnerre de
-  Neige** passé en rare, ×1,5 pour deux joueurs, et la **Morsure du Froid** (÷2) sur deux
+  Neige** passé en ultra rare, ×2 pour deux joueurs, et la **Morsure du Froid** (÷2) sur deux
   joueurs tirés, sa game tirée à l’ouverture ; la **Meilleure game ×1,5** ne se pose jamais sur une game qui a
   déjà un multiplicateur (Perso ou roues, `estMultipliee`, 13/11/2026) : elle prend la
   meilleure qui n'en a pas ; jamais une game figée ; le **Duel de

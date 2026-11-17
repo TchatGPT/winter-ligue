@@ -275,7 +275,7 @@ describe('le compte rendu d’une ouverture', () => {
     vue.effets.forEach((e) => {
       expect(e.sens).toBe('gain');
       expect(e.bilan).toBeGreaterThan(0);
-      expect(e.resultat).toMatch(/tirée au sort, la game \d+ \(\d+ pts\), ×1,5/);
+      expect(e.resultat).toMatch(/tirée au sort, la game \d+ \(\d+ pts\), ×2/);
     });
   });
 
