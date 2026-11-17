@@ -8,6 +8,7 @@ import { RARITY_ORDER } from '@/lib/domain/rules';
 import type { Rarity } from '@/lib/domain/types';
 import { construitBande } from '@/lib/spin/bande';
 import { COURBE_MESUREE, RANG_GAGNANT } from '@/lib/spin/courbe';
+import { REPOS_OUVERTURE } from '@/components/melangeRail';
 
 /**
  * Le rail d'un pack : une seule bande, horizontale, une carte au bout.
@@ -144,6 +145,7 @@ export function RailPack({
     enAttente,
     entame,
     depuis,
+    repos: REPOS_OUVERTURE,
     onFini,
   });
 
@@ -154,7 +156,7 @@ export function RailPack({
       <div
         className="rail rail-x"
         ref={cadre}
-        style={{ ['--bandes' as string]: 1 }}
+        style={{ ['--bandes' as string]: 1, ['--gagne' as string]: meta.color }}
         role="img"
         aria-label="Tirage d’une carte en cours"
       >

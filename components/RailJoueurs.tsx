@@ -25,7 +25,7 @@ import { COURBE_MESUREE, RANG_GAGNANT } from '@/lib/spin/courbe';
  */
 
 /** Plus court que le tirage de la carte, qui a déjà fait monter la tension. */
-export const DUREE_TIRAGE_JOUEUR = Math.round(COURBE_MESUREE.duree * 0.6);
+export const DUREE_TIRAGE_JOUEUR = Math.round(COURBE_MESUREE.duree * 0.45);
 
 /** La première lettre d'un pseudo, pour sa pastille. */
 function initiale(pseudo: string): string {

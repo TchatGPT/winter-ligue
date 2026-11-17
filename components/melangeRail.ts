@@ -12,12 +12,31 @@
  * l'overlay est mis à l'échelle de sa source.
  */
 
-/** Le rail a fait ces millisecondes de course à la fin de l'élan. */
-export const ENTAME_MELANGE = 200;
-/** La distance de l'élan, en cartes : la course du rail à 200 ms. */
+import { COURBE_MESUREE } from '@/lib/spin/courbe';
+
+/**
+ * L'allure d'une ouverture de booster (17/11/2026) : la course du rail est
+ * jouée en accéléré — la même forme, en 70 % du temps —, la vidéo plus vite,
+ * le mélange plus court. Le site et l'overlay la partagent.
+ */
+export const ALLURE_OUVERTURE = 0.7;
+/** La durée de la course du rail d'une ouverture, en ms. */
+export const DUREE_OUVERTURE = Math.round(COURBE_MESUREE.duree * ALLURE_OUVERTURE);
+/** La vitesse de lecture de la vidéo d'ouverture. */
+export const VITESSE_VIDEO = 1.35;
+/** Le temps laissé sur la carte posée avant la suite. */
+export const REPOS_OUVERTURE = 800;
+
+/** Le rail a fait ces millisecondes de course à la fin de l'élan : 200 ms du barème nominal. */
+export const ENTAME_MELANGE = Math.round(200 * ALLURE_OUVERTURE);
+/** La distance de l'élan, en cartes : la course du rail à 200 ms du barème nominal. */
 const ELAN_CARTES = 6.2203;
-/** La durée de l'élan : une accélération constante jusqu'à sa vitesse. */
-const ELAN_MS = 500;
+/**
+ * La durée de l'élan : une accélération constante jusqu'à la vitesse du rail.
+ * Le rail allant plus vite, l'élan est plus court d'autant — la même distance,
+ * une vitesse d'arrivée plus haute.
+ */
+const ELAN_MS = Math.round(500 * ALLURE_OUVERTURE);
 
 const attendre = (a: Animation) => a.finished.catch(() => undefined);
 const dors = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
@@ -52,23 +71,23 @@ export async function joueMelange(cadre: HTMLElement): Promise<number> {
   }
 
   // Les cartes apparaissent pendant que la vidéo s'efface dessous.
-  await dors(120);
+  await dors(80);
   const apparitions = paquet.map((k) =>
     tuiles[k].animate(
       [
         { opacity: 0, transform: `${pile(k)} scale(0.86)` },
         { opacity: 1, transform: `${pile(k)} scale(1)` },
       ],
-      { duration: 420, easing: 'cubic-bezier(0.2, 0.8, 0.3, 1)' },
+      { duration: 300, easing: 'cubic-bezier(0.2, 0.8, 0.3, 1)' },
     ),
   );
   for (const k of paquet) tuiles[k].style.opacity = '1';
   await Promise.all(apparitions.map(attendre));
 
   // Le mélange : à tour de rôle, une carte sort du paquet par un côté et
-  // revient devant.
+  // revient devant — trois passes (cinq jusqu'au 17/11/2026).
   let dessus = 6;
-  for (let passe = 0; passe < 5; passe += 1) {
+  for (let passe = 0; passe < 3; passe += 1) {
     const k = paquet[(passe * 2) % 5];
     const t = tuiles[k];
     const sens = passe % 2 === 0 ? 1 : -1;
@@ -79,7 +98,7 @@ export async function joueMelange(cadre: HTMLElement): Promise<number> {
           transform: `${pile(k)} translate(${sens * largeur * 0.62}px, -${hauteur * 0.04}px) rotate(${sens * 7}deg)`,
         },
       ],
-      { duration: 170, easing: 'cubic-bezier(0.3, 0, 0.4, 1)', fill: 'forwards' },
+      { duration: 130, easing: 'cubic-bezier(0.3, 0, 0.4, 1)', fill: 'forwards' },
     );
     await attendre(sortie);
     t.style.zIndex = String(dessus++);
@@ -90,7 +109,7 @@ export async function joueMelange(cadre: HTMLElement): Promise<number> {
         },
         { transform: pile(k) },
       ],
-      { duration: 190, easing: 'cubic-bezier(0.4, 0, 0.3, 1)' },
+      { duration: 150, easing: 'cubic-bezier(0.4, 0, 0.3, 1)' },
     );
     await attendre(retour);
     sortie.cancel();
@@ -100,13 +119,13 @@ export async function joueMelange(cadre: HTMLElement): Promise<number> {
   // cartes de la bande reparaissent.
   const etalement = paquet.map((k) =>
     tuiles[k].animate([{ transform: pile(k) }, { transform: 'none' }], {
-      duration: 520,
+      duration: 380,
       easing: 'cubic-bezier(0.25, 0.8, 0.3, 1)',
     }),
   );
   for (const k of paquet) tuiles[k].style.transform = '';
   for (const t of autres) {
-    t.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 300 });
+    t.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 240 });
     t.style.opacity = '';
   }
   await Promise.all(etalement.map(attendre));

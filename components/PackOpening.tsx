@@ -21,12 +21,11 @@ import { CE_QUI_COMPTE, CE_QUI_NE_COMPTE_PAS } from '@/lib/domain/twitchSubs';
 import { IconCoche, IconCroix } from '@/components/icons';
 import type { PackDefinition, PackId, Rarity } from '@/lib/domain/types';
 import type { OuvertureVue, PackDuVue, TirageJoueurs } from '@/lib/services/packs';
-import { COURBE_MESUREE } from '@/lib/spin/courbe';
 import { TitreGlace } from '@/components/TitreGlace';
 import { GlaceCartes, GlaceEpees, GlaceSachet } from '@/components/DessinsGlace';
 import { EmblemeRarete } from '@/components/EmblemeRarete';
 import { TirageEquitable } from '@/components/TirageEquitable';
-import { ENTAME_MELANGE, joueMelange } from '@/components/melangeRail';
+import { DUREE_OUVERTURE, ENTAME_MELANGE, joueMelange, VITESSE_VIDEO } from '@/components/melangeRail';
 import { bandeDeDepart, REPERE_VIDEO, useFinVideo, VIDEOS_OUVERTURE } from '@/components/ouvertureBooster';
 
 const RARITY_LADDER: Rarity[] = ['C', 'R', 'UR', 'L'];
@@ -627,6 +626,8 @@ export function PackOpening({
               data-fin={phase === 'melange' ? '' : undefined}
               src={videoOuverture}
               style={placeVideo ?? { visibility: 'hidden' }}
+              onLoadedMetadata={(e) => (e.currentTarget.playbackRate = VITESSE_VIDEO)}
+              onPlay={(e) => (e.currentTarget.playbackRate = VITESSE_VIDEO)}
               autoPlay
               muted
               playsInline
@@ -661,7 +662,7 @@ export function PackOpening({
                 enAttente={phase === 'ouverture' || phase === 'melange'}
                 entame={entame}
                 depuis={depuis}
-                duree={COURBE_MESUREE.duree}
+                duree={DUREE_OUVERTURE}
                 onFini={() => setPhase(apresCarte())}
               />
             </div>

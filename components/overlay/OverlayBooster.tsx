@@ -11,11 +11,10 @@ import { Scene } from '@/components/overlay/Scene';
 import { SnowCap } from '@/components/SnowCap';
 import { boosterDemo } from '@/components/overlay/demo';
 import { useFluxOverlay } from '@/components/overlay/useFluxOverlay';
-import { ENTAME_MELANGE, joueMelange } from '@/components/melangeRail';
+import { DUREE_OUVERTURE, ENTAME_MELANGE, joueMelange, VITESSE_VIDEO } from '@/components/melangeRail';
 import { bandeDeDepart, useFinVideo, VIDEOS_OUVERTURE } from '@/components/ouvertureBooster';
 import { CARDS, RARITY_META } from '@/lib/domain/catalog';
 import type { BoosterOverlay } from '@/lib/services/overlay';
-import { COURBE_MESUREE } from '@/lib/spin/courbe';
 import { CourseRoulette } from '@/components/CourseRoulette';
 import { questionDesGames, TirageGames } from '@/components/TirageGames';
 
@@ -49,7 +48,7 @@ const DUREES: Record<PhaseMinutee, number> = {
   charge: 1300,
   dechire: 1000,
   eclate: 550,
-  carte: 7000,
+  carte: 5500,
   sort: 900,
 };
 
@@ -266,6 +265,8 @@ function Ouverture({
           className="ov-ouverture"
           data-fin={phase === 'melange' ? '' : undefined}
           src={video}
+          onLoadedMetadata={(e) => (e.currentTarget.playbackRate = VITESSE_VIDEO)}
+          onPlay={(e) => (e.currentTarget.playbackRate = VITESSE_VIDEO)}
           autoPlay
           muted
           playsInline
@@ -346,7 +347,7 @@ function Ouverture({
               power: booster.carte.power,
               nature: booster.carte.nature,
             }}
-            duree={COURBE_MESUREE.duree}
+            duree={DUREE_OUVERTURE}
             sourdine={!son}
             onFini={() => setPhase(booster.tirage?.gagnants.length ? 'joueurs' : 'carte')}
           />

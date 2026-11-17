@@ -258,6 +258,8 @@ export interface ReglagesRail {
    * entre l'élan du mélange et lui.
    */
   depuis?: number;
+  /** Le temps laissé sur la carte posée avant `onFini` (`REPOS` par défaut). */
+  repos?: number;
   /** Appelé une fois la dernière carte posée et regardée. */
   onFini: () => void;
 }
@@ -274,6 +276,7 @@ export function useSpinAnimation({
   enAttente = false,
   entame = 0,
   depuis,
+  repos = REPOS,
   onFini,
 }: ReglagesRail): void {
 
@@ -643,7 +646,7 @@ export function useSpinAnimation({
       termine = true;
       for (let k = 0; k < vues.length; k += 1) immobilise(k);
       minuteries.push(
-        setTimeout(() => fini.current(), direct ? REPOS_IMMEDIAT : REPOS),
+        setTimeout(() => fini.current(), direct ? REPOS_IMMEDIAT : repos),
       );
     };
 
@@ -678,7 +681,7 @@ export function useSpinAnimation({
       // le son de celui qui tourne à côté de lui.
       if (!sourdine) arreteTout();
     };
-  }, [cadre, bandes, tuiles, relances, duree, courbe, axe, sourdine, enAttente, entame, depuis]);
+  }, [cadre, bandes, tuiles, relances, duree, courbe, axe, sourdine, enAttente, entame, depuis, repos]);
 
   // Le contexte audio se réveille au clic, et l'ouverture en est un. Les
   // écouteurs globaux couvrent le reste, mais un appel explicite ici garantit

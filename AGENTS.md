@@ -328,6 +328,9 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   ils interrogent le serveur toutes les deux secondes pendant un live.
   L'overlay des boosters ne joue que le Perso et le Finisseur : le Commu et le Folie,
   la streameuse les ouvre elle-même à l'écran (`HORS_OVERLAY`, 15/11/2026).
+  L'ouverture, sur le site comme sur l'overlay, va à `ALLURE_OUVERTURE` (`melangeRail.ts`,
+  17/11/2026) : vidéo plus rapide, mélange en trois passes, rail en 70 % du temps ; le repère
+  du rail est fait de deux flèches de glace qui pincent la carte à l'arrêt.
   Il n'y a plus d'overlay des duels (16/11/2026) : le compteur de subs (`OverlaySubs`) annonce
   un duel lancé, ou un palier franchi, par une ligne au-dessus de lui.
   **Modération → Alertes** (16/11/2026, `config.alertes`, `alertesDe`) coupe, pour tester

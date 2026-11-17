@@ -1311,24 +1311,103 @@
     );
   }
 
-  /* Le repère, vertical, au milieu du bandeau. */
+  /*
+   * Le repère : deux pointes de glace, au-dessus et au-dessous de la carte du
+   * milieu, qui la désignent (17/11/2026 — c'était un trait bleu en travers de
+   * la carte). Taillées en facettes, une claire et une froide ; elles battent
+   * doucement pendant la course, puis pincent la carte à l'arrêt et prennent la
+   * couleur de sa rareté (`--gagne`, posée par le rail des cartes).
+   *
+   * Leur taille suit la marge entre la carte et le bord du bandeau, qu'elles
+   * occupent sans jamais toucher la carte.
+   */
   .rail-x .rail-repere {
+    --marge-repere: calc((var(--rail-h) - var(--carte-h)) / 2);
+    --fleche-h: clamp(10px, min(calc(var(--marge-repere) * 0.8), calc(var(--carte-l) * 0.12)), 30px);
+    --fleche-teinte: var(--ice);
     top: 0;
     bottom: 0;
     right: auto;
     left: 50%;
-    width: 2px;
+    width: calc(var(--fleche-h) * 1.5);
     height: auto;
-    margin-top: 0;
-    margin-left: -1px;
+    margin: 0;
+    translate: -50% 0;
+    background: none;
+    box-shadow: none;
+    filter: drop-shadow(0 2px 2px color-mix(in srgb, var(--bg-deep) 85%, transparent));
+  }
+  .rail-x .rail-repere::before,
+  .rail-x .rail-repere::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    left: 0;
+    height: var(--fleche-h);
     background: linear-gradient(
-      180deg,
-      transparent 0%,
-      var(--ice) 6%,
-      var(--frost) 50%,
-      var(--ice) 94%,
-      transparent 100%
+      90deg,
+      color-mix(in srgb, var(--ink) 85%, var(--fleche-teinte)) 0 50%,
+      var(--fleche-teinte) 50% 100%
     );
+    transition: background-color 0.3s ease;
+    animation: repere-haut 0.9s ease-in-out infinite alternate;
+  }
+  /* En haut, la pointe vers le bas ; une encoche à l'arrière, comme un fer de flèche. */
+  .rail-x .rail-repere::before {
+    top: max(0px, calc(var(--marge-repere) - var(--fleche-h) - 3px));
+    clip-path: polygon(0 0, 50% 34%, 100% 0, 50% 100%);
+  }
+  /* En bas, la même, retournée. */
+  .rail-x .rail-repere::after {
+    bottom: max(0px, calc(var(--marge-repere) - var(--fleche-h) - 3px));
+    clip-path: polygon(0 100%, 50% 66%, 100% 100%, 50% 0);
+    animation-name: repere-bas;
+  }
+  @keyframes repere-haut {
+    to {
+      translate: 0 -2px;
+    }
+  }
+  @keyframes repere-bas {
+    to {
+      translate: 0 2px;
+    }
+  }
+  /* À l'arrêt : elles pincent la carte, à la couleur de sa rareté. */
+  .rail-x:has(.rail-fenetre[data-arrete='true']) .rail-repere {
+    --fleche-teinte: var(--gagne, var(--ice));
+  }
+  .rail-x:has(.rail-fenetre[data-arrete='true']) .rail-repere::before {
+    animation: repere-pince-haut 0.5s cubic-bezier(0.3, 1.6, 0.5, 1) both;
+  }
+  .rail-x:has(.rail-fenetre[data-arrete='true']) .rail-repere::after {
+    animation: repere-pince-bas 0.5s cubic-bezier(0.3, 1.6, 0.5, 1) both;
+  }
+  @keyframes repere-pince-haut {
+    from {
+      translate: 0 -4px;
+      scale: 0.9;
+    }
+    to {
+      translate: 0 2px;
+      scale: 1.12;
+    }
+  }
+  @keyframes repere-pince-bas {
+    from {
+      translate: 0 4px;
+      scale: 0.9;
+    }
+    to {
+      translate: 0 -2px;
+      scale: 1.12;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .rail-x .rail-repere::before,
+    .rail-x .rail-repere::after {
+      animation: none;
+    }
   }
 
   /* Les fondus, à gauche et à droite. */
