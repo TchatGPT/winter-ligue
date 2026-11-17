@@ -811,6 +811,16 @@ export function choisitGamesRoue(db: Database, card: CardDefinition, joueurs: re
           return libres.length ? pour(p, `une game au hasard, ×${fr(action.facteur)}`, [pick(libres)], libres) : null;
         }),
       );
+    case 'hasard_divise':
+      // Deux joueurs tirés depuis le 17/11/2026 : la game se tire à l'ouverture,
+      // comme pour le Tonnerre de Neige. L'immunité, elle, se juge à la révélation.
+      return fait(
+        true,
+        joueurs.map((p) => {
+          const libres = gamesSansCarte(db, p.id).filter((g) => g.score > 0);
+          return libres.length ? pour(p, `une game au hasard, ÷${fr(action.diviseur)}`, [pick(libres)], libres) : null;
+        }),
+      );
     case 'fige_hasard':
       return fait(
         true,
@@ -1006,7 +1016,7 @@ function regleRoue(
           pour(m, sansEffet('aucune game libre, sans effet'));
           continue;
         }
-        const game = pick(libres);
+        const game = retenue(m, libres) ?? pick(libres);
         const avant = game.score;
         const apres = Math.ceil(avant / action.diviseur);
         const points = donneLeScore(db, game, card, o, apres);

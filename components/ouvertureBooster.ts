@@ -38,7 +38,7 @@ const BANDE_DE_DEPART: Partial<Record<string, string[]>> = {
   ],
   commu: [
     'flocon-de-plus', 'triple-echo', 'trois-glacons', 'miroir-des-cimes', 'petits-pas', 'neige-melee',
-    'deneigement', 'degel-double', 'cime-eclatante', 'contre-vent', 'ronde-des-cimes', 'givre-errant',
+    'deneigement', 'degel-double', 'cime-eclatante', 'contre-vent', 'voleur-d-hiver', 'givre-errant',
   ],
   folie: [
     'morsure-du-froid', 'pluie-de-jokers', 'barillet-de-glace', 'blizzard-general', 'grand-gel', 'nuit-blanche',

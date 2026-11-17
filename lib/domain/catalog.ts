@@ -575,19 +575,20 @@ export const CARDS: readonly CardDefinition[] = [
     cible: 'TOUS',
   },
   {
-    // Rare → commune le 14/11/2026.
+    // Rare → commune le 14/11/2026 ; rare de nouveau le 17/11/2026, ×1,5 pour
+    // deux joueurs (×2 pour trois jusque-là).
     id: 'triple-echo',
     name: 'Tonnerre de Neige',
-    subtitle: 'Game aléatoire ×2 — 3 joueurs',
-    rarity: 'C',
+    subtitle: 'Game aléatoire ×1,5 — 2 joueurs',
+    rarity: 'R',
     glyph: '🎲',
     description:
-      'Trois joueurs tirés au sort voient une game libre au hasard compter double.',
-    effect: { kind: 'roue', action: { quoi: 'hasard_fois', facteur: 2 } },
+      'Deux joueurs tirés au sort voient une game libre au hasard compter une fois et demie.',
+    effect: { kind: 'roue', action: { quoi: 'hasard_fois', facteur: 1.5 } },
     nature: 'bonus',
-    power: 12,
+    power: 35,
     packs: ['commu'],
-    cible: 'TROIS',
+    cible: 'DEUX',
   },
   {
     id: 'contre-vent',
@@ -602,20 +603,6 @@ export const CARDS: readonly CardDefinition[] = [
     power: 46,
     packs: ['commu'],
     cible: 'DEUX',
-  },
-  {
-    id: 'ronde-des-cimes',
-    name: 'Valse Boréale',
-    subtitle: 'Échange entre les 10 premiers',
-    rarity: 'R',
-    glyph: '🔄',
-    description:
-      'Les dix premiers du classement échangent une game en chaîne, dans un ordre tiré au sort : chacun donne une game au suivant — ni sa meilleure ni sa pire — et reçoit celle du précédent.',
-    effect: { kind: 'roue', action: { quoi: 'chaine_tete' } },
-    nature: 'bonus',
-    power: 50,
-    packs: ['commu'],
-    cible: 'DIX_PREMIERS',
   },
   {
     id: 'miroir-des-cimes',
@@ -664,16 +651,17 @@ export const CARDS: readonly CardDefinition[] = [
   {
     id: 'morsure-du-froid',
     name: 'Morsure du Froid',
-    subtitle: 'Une game au hasard ÷ 2',
+    subtitle: 'Une game au hasard ÷ 2 — 2 joueurs',
     rarity: 'R',
     glyph: '🥶',
     description:
-      'Pour chaque joueur, une game libre tirée au hasard est divisée par 2 (÷2, arrondi au supérieur). Les joueurs immunisés y échappent.',
+      'Deux joueurs tirés au sort voient une game libre au hasard divisée par 2 (÷2, arrondi au supérieur). Les joueurs immunisés y échappent.',
     effect: { kind: 'roue', action: { quoi: 'hasard_divise', diviseur: 2 } },
     nature: 'malus',
     power: 36,
     packs: ['folie'],
-    cible: 'TOUS',
+    // Toute la ligue jusqu'au 17/11/2026 ; deux joueurs depuis.
+    cible: 'DEUX',
   },
   {
     // Changée le 12/11/2026 : rare → ultra rare.

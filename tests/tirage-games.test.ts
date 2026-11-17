@@ -129,6 +129,18 @@ describe('le tirage des games', () => {
     }
   });
 
+  it('« Morsure du Froid » tire une game chez chacun des deux joueurs, et la divise (17/11/2026)', () => {
+    for (let essai = 0; essai < 6; essai += 1) {
+      const db = ligue('a', 'b');
+      const o = ouvre(db, 'morsure-du-froid', ['a', 'b']);
+      expect(o.games).toMatchObject({ hasard: true, lien: null });
+      expect(o.games!.parJoueur).toHaveLength(2);
+      const visees = o.games!.parJoueur.map((e) => e!.visees[0].id);
+      revele(db, o);
+      ['a', 'b'].forEach((id, i) => expect(touchee(db, 'morsure-du-froid', id).map((g) => g.id)).toEqual([visees[i]]));
+    }
+  });
+
   it('« Tonnerre de Neige » double aussi une game qui porte déjà un bonus — jamais une figée ni une déjà multipliée (15/11/2026)', () => {
     for (let essai = 0; essai < 8; essai += 1) {
       const db = emptyDatabase();
@@ -254,7 +266,7 @@ describe('le compte rendu d’une ouverture', () => {
     expect(vue.effets[0].pseudo).toBe(gagnant);
   });
 
-  it('« Tonnerre de Neige » : trois gains, la game doublée nommée', () => {
+  it('« Tonnerre de Neige » : un gain par joueur tiré, la game multipliée nommée', () => {
     const db = ligue('a', 'b', 'c');
     const o = ouvre(db, 'triple-echo', ['a', 'b', 'c']);
     revele(db, o);
@@ -263,7 +275,7 @@ describe('le compte rendu d’une ouverture', () => {
     vue.effets.forEach((e) => {
       expect(e.sens).toBe('gain');
       expect(e.bilan).toBeGreaterThan(0);
-      expect(e.resultat).toMatch(/tirée au sort, la game \d+ \(\d+ pts\), ×2/);
+      expect(e.resultat).toMatch(/tirée au sort, la game \d+ \(\d+ pts\), ×1,5/);
     });
   });
 

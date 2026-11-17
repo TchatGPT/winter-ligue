@@ -929,6 +929,21 @@ export const CARTES_RETIREES: readonly CardDefinition[] = [
     packs: ['folie'],
     cible: 'CINQ_DERNIERS',
   },
+  // Retirée du Commu le 17/11/2026, à la demande de l'organisation.
+  {
+    id: 'ronde-des-cimes',
+    name: 'Valse Boréale',
+    subtitle: 'Échange entre les 10 premiers',
+    rarity: 'R',
+    glyph: '🔄',
+    description:
+      'Les dix premiers du classement échangent une game en chaîne, dans un ordre tiré au sort : chacun donne une game au suivant — ni sa meilleure ni sa pire — et reçoit celle du précédent.',
+    effect: { kind: 'roue', action: { quoi: 'chaine_tete' } },
+    nature: 'bonus',
+    power: 50,
+    packs: ['commu'],
+    cible: 'DIX_PREMIERS',
+  },
 ];
 
 /**

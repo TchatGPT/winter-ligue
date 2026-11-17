@@ -106,10 +106,11 @@ const immunise = (db: Database, id: string) => {
 };
 
 describe('les boosters de la Summer', () => {
-  it('Commu, Folie et Finisseur tirent les cartes de la Summer : 15, 7 et 9', () => {
+  it('Commu, Folie et Finisseur tirent les cartes de la Summer : 14, 7 et 9', () => {
     // 12/11/2026 : « Booster Commu tous les 20 subs » et « Meilleure game aux
-    // 5 derniers » retirées, la Cryogénisation ajoutée au Folie.
-    expect(cartesDuPack('commu')).toHaveLength(15);
+    // 5 derniers » retirées, la Cryogénisation ajoutée au Folie. 17/11/2026 :
+    // la Valse Boréale retirée du Commu.
+    expect(cartesDuPack('commu')).toHaveLength(14);
     expect(cartesDuPack('folie')).toHaveLength(7);
     expect(cartesDuPack('finisseur')).toHaveLength(9);
     // Le Perso garde les siennes : aucune carte de la Summer n'en sort.
