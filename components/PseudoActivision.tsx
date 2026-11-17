@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useId, useState } from 'react';
 import { IconActivision } from '@/components/icons';
-import { LONGUEUR_ACTIVISION } from '@/lib/domain/activision';
+import { LONGUEUR_ACTIVISION, sansSuffixeActivision } from '@/lib/domain/activision';
 import { sansInvisibles } from '@/lib/domain/texte';
 
 /**
@@ -22,7 +22,8 @@ export function PseudoActivision({ activisionId, moi }: { activisionId: string |
   const [busy, setBusy] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
 
-  const pseudo = sansInvisibles(valeur);
+  // Enregistré sans le « #1234567 », comme le fait le serveur.
+  const pseudo = sansSuffixeActivision(sansInvisibles(valeur));
   const pret =
     pseudo.length >= LONGUEUR_ACTIVISION.min &&
     pseudo.length <= LONGUEUR_ACTIVISION.max &&
@@ -96,7 +97,7 @@ export function PseudoActivision({ activisionId, moi }: { activisionId: string |
               setValeur(e.target.value);
               setErreur(null);
             }}
-            placeholder="Exactement comme en jeu"
+            placeholder="Exactement comme en jeu, sans le #"
             autoComplete="off"
             autoCapitalize="off"
             autoCorrect="off"

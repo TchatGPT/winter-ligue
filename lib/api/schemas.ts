@@ -8,7 +8,7 @@
 
 import { z } from 'zod';
 import { MANCHES_POSSIBLES } from '@/lib/domain/bataille';
-import { LONGUEUR_ACTIVISION } from '@/lib/domain/activision';
+import { LONGUEUR_ACTIVISION, sansSuffixeActivision } from '@/lib/domain/activision';
 import { UTILISATIONS_MAX } from '@/lib/domain/codes';
 import { DUEL, ECONOMY, GAME_LIMITS } from '@/lib/domain/rules';
 import { sansInvisibles } from '@/lib/domain/texte';
@@ -59,7 +59,8 @@ export const pseudo = z
 export const activisionId = z
   .string()
   .max(LONGUEUR_ACTIVISION.max * 2, 'Soixante caractères au plus.')
-  .transform(sansInvisibles)
+  // Sans le « #1234567 » : les captures ne le montrent pas (17/11/2026).
+  .transform((s) => sansSuffixeActivision(sansInvisibles(s)))
   .pipe(
     z
       .string()

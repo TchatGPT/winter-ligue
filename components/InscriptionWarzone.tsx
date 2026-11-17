@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useId, useState, useSyncExternalStore } from 'react';
 import { SnowCap } from '@/components/SnowCap';
-import { LONGUEUR_ACTIVISION } from '@/lib/domain/activision';
+import { LONGUEUR_ACTIVISION, sansSuffixeActivision } from '@/lib/domain/activision';
 import { sansInvisibles } from '@/lib/domain/texte';
 
 /**
@@ -76,7 +76,8 @@ export function InscriptionWarzone({ pseudoTwitch }: { pseudoTwitch: string; adm
 
   if (!ouverte) return null;
 
-  const pseudo = sansInvisibles(valeur);
+  // Enregistré sans le « #1234567 », comme le fait le serveur.
+  const pseudo = sansSuffixeActivision(sansInvisibles(valeur));
   const tropLong = pseudo.length > LONGUEUR_ACTIVISION.max;
   const pret = pseudo.length >= LONGUEUR_ACTIVISION.min && !tropLong;
 
@@ -149,7 +150,7 @@ export function InscriptionWarzone({ pseudoTwitch }: { pseudoTwitch: string; adm
                 setValeur(e.target.value);
                 setErreur(null);
               }}
-              placeholder="Exactement comme en jeu"
+              placeholder="Exactement comme en jeu, sans le #"
               autoComplete="off"
               autoCapitalize="off"
               autoCorrect="off"
@@ -168,6 +169,10 @@ export function InscriptionWarzone({ pseudoTwitch }: { pseudoTwitch: string; adm
               <p className="insc-consigne-titre">Exactement comme il s’affiche en jeu</p>
               <ul>
                 <li>Même orthographe, mêmes majuscules, mêmes symboles.</li>
+                <li>
+                  Sans le <b>#</b> ni les chiffres qui le suivent : seulement le pseudo, comme sur les captures de fin
+                  de game.
+                </li>
                 <li>Pas un pseudo approchant, ni ton pseudo Twitch.</li>
                 <li>Sinon, la modération ne te retrouvera pas sur les captures : tes games ne compteront pas.</li>
               </ul>

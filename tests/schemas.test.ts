@@ -28,9 +28,11 @@ describe('les textes libres', () => {
 
 describe('le pseudo en jeu', () => {
   it('accepte tout ce qui se voit : symboles, katakana, dièse, un seul caractère', () => {
-    for (const p of ['」モモメヨ', '★Givre★', 'xX_Dark#Angel_Xx', 'Givre#1234567', 'Ω', 'Le Pingouin (FR)']) {
+    for (const p of ['」モモメヨ', '★Givre★', 'xX_Dark#Angel_Xx', 'Ω', 'Le Pingouin (FR)']) {
       expect(activisionId.parse(p)).toBe(p);
     }
+    // Le « #1234567 » d'Activision, lui, ne s'enregistre pas (17/11/2026).
+    expect(activisionId.parse('Givre#1234567')).toBe('Givre');
   });
 
   it('perd ses caractères invisibles et ses espaces autour, rien d’autre', () => {

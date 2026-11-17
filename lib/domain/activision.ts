@@ -9,6 +9,15 @@
 export const LONGUEUR_ACTIVISION = { min: 1, max: 60 } as const;
 
 /**
+ * Le pseudo tel qu'on l'enregistre : sans le « #1234567 » d'Activision
+ * (17/11/2026). Les captures de fin de game ne le montrent pas — c'est le
+ * pseudo seul que la modération et la lecture y cherchent.
+ */
+export function sansSuffixeActivision(pseudo: string): string {
+  return pseudo.replace(/\s*#\d*\s*$/, '').trim();
+}
+
+/**
  * La forme sous laquelle deux pseudos Activision se comparent.
  *
  * La lecture des captures compare le nom affiché au tableau de fin de game,
