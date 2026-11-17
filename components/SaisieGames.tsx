@@ -619,8 +619,8 @@ function LigneResultat({
   const choisi = joueurs.find((j) => j.id === l.joueurId);
   const pseudo = choisi?.pseudo ?? '';
   // Le détail du total, terme à terme, en points écrits en toutes lettres
-  // (« + 4 carte » se lisait « 4K ») : 10 kills + 0 pt de top + 4 pts de carte.
-  const pts = (n: number) => `${n} pt${Math.abs(n) > 1 ? 's' : ''}`;
+  // (« + 4 carte » se lisait « 4K ») : 10 kills + 0 pts de top + 4 pts de carte.
+  const pts = (n: number) => `${n} pts`;
   const detail = jokerJoue
     ? 'game annulée'
     : `${kills} kill${kills > 1 ? 's' : ''} + ${pts(top)} de top` +
