@@ -220,7 +220,7 @@ export function SceneDisplay({ boosters, children }: { boosters: BoosterDeLaScen
       )}
       {phase === 'fini' && arrivee !== 'directe' && (
         <button type="button" className="acc-revoir" onClick={revoir}>
-          <span aria-hidden="true">↻</span> Revoir l’animation
+          <span aria-hidden="true">↻</span> Revoir<span className="acc-revoir-suite"> l’animation</span>
         </button>
       )}
       <noscript>

@@ -13170,6 +13170,11 @@ main:has(> .accueil) {
   grid-template-columns: minmax(0, 1fr);
   padding: 0;
 }
+/* Pendant la vidéo, la page ne défile pas : on ne descend pas voir le pied de page. */
+html:has(.acc-scene:not([data-phase='fini'])),
+html:has(.acc-scene:not([data-phase='fini'])) body {
+  overflow: hidden;
+}
 /* Tout posé, la page repasse sous le pied de page : les tuiles glissent dessous. */
 main:has(> .accueil .acc-scene[data-phase='fini']) {
   z-index: 9;
@@ -14040,16 +14045,27 @@ main:has(> .accueil .acc-scene[data-phase='fini']) {
    tuiles, qu'on fait défiler du doigt de gauche à droite. */
 @media (max-width: 1023px) and (orientation: portrait) {
   .accueil {
-    height: 100svh;
-    min-height: 34rem;
+    /* L'unité de la page : la largeur, sauf sur un écran court — un téléphone
+       moins haut que 2,16 fois sa largeur —, où c'est la hauteur qui règle
+       tout. Sans elle, le centre descendait sur les tuiles. */
+    --u: min(1cqw, 0.46dvh);
+    /* La largeur du plateau (1:2), et son haut : centré, mais jamais rogné de
+       plus de 8 % en haut — sur une tablette debout, les boosters sortaient
+       de l'écran. */
+    --pl: max(100vw, 50dvh);
+    --pl-haut: max(calc(50dvh - var(--pl)), calc(var(--pl) * -0.08));
+    height: 100dvh;
+    min-height: 30rem;
     overflow: hidden;
   }
   .acc-calque {
     height: 100%;
   }
   .acc-plateau {
-    width: max(100%, 100svh / 2);
+    top: var(--pl-haut);
+    width: var(--pl);
     aspect-ratio: 1 / 2;
+    translate: -50% 0;
   }
   .acc-booster {
     --g: var(--po-g);
@@ -14066,52 +14082,60 @@ main:has(> .accueil .acc-scene[data-phase='fini']) {
   }
   .acc-centre {
     position: absolute;
-    top: 29%;
+    /* Sous les boosters, qui finissent à 28,5 % de la hauteur du plateau. */
+    top: max(29%, calc(var(--pl-haut) + var(--pl) * 0.6));
     left: 5%;
     width: 90%;
   }
   .acc-surtitre {
-    font-size: 2.7cqw;
+    font-size: calc(2.7 * var(--u));
   }
   .hero-titre.acc-titre {
-    margin-top: 0.8cqw;
-    font-size: 14.5cqw;
+    margin-top: calc(0.8 * var(--u));
+    font-size: calc(14.5 * var(--u));
   }
   .acc-lead {
-    margin-top: 1.6cqw;
-    font-size: 3.9cqw;
+    margin-top: calc(1.6 * var(--u));
+    font-size: calc(3.9 * var(--u));
   }
   .acc-actions {
-    margin-top: 4.5cqw;
-    gap: 2.6cqw;
+    margin-top: calc(4.5 * var(--u));
+    gap: calc(2.6 * var(--u));
   }
   .acc-ou {
     width: 46cqw;
-    font-size: 3cqw;
+    font-size: calc(3 * var(--u));
   }
   .acc-centre .btn.acc-visiteur {
-    font-size: 3.6cqw;
+    min-height: 0;
+    padding: 0.8em 1.5em;
+    font-size: calc(3.6 * var(--u));
+  }
+  .acc-centre .btn-twitch.acc-rejoindre {
+    min-height: 0;
+    padding: 0.85em 1.6em;
+    font-size: calc(4.1 * var(--u));
   }
   .acc-centre .btn-lg {
-    font-size: 4cqw;
+    font-size: calc(4 * var(--u));
   }
   .acc-centre .calendrier {
-    margin-top: 5cqw;
+    margin-top: calc(5 * var(--u));
   }
   .acc-centre .rebours-titre {
-    font-size: 2.8cqw;
+    font-size: calc(2.8 * var(--u));
   }
   .acc-centre .rebours-cases li {
-    min-width: 15cqw;
+    min-width: calc(15 * var(--u));
   }
   .acc-centre .rebours-cases b {
-    font-size: 9.5cqw;
+    font-size: calc(9.5 * var(--u));
   }
   .acc-centre .rebours-cases li:not([data-dernier])::after {
-    font-size: 8cqw;
+    font-size: calc(8 * var(--u));
   }
   .acc-centre .rebours-cases span {
-    font-size: 2.3cqw;
+    font-size: calc(2.3 * var(--u));
   }
   .acc-tuiles {
     --l-tuile: 76cqw;
@@ -14121,27 +14145,39 @@ main:has(> .accueil .acc-scene[data-phase='fini']) {
     left: 0;
   }
   .acc-tuile {
-    gap: 1.2cqw;
-    padding: 4cqw 4.5cqw;
+    gap: calc(1.2 * var(--u));
+    padding: calc(4 * var(--u)) calc(4.5 * var(--u));
   }
-  /* Le bouton pour revoir l'animation : en haut, au milieu, au-dessus des boosters. */
+  /* Le bouton pour revoir l'animation : petit, dans le coin en haut à gauche,
+     où les boosters ne vont pas. */
   .acc-revoir {
-    top: 0.6rem;
+    top: 0.45rem;
     right: auto;
-    left: 50%;
-    translate: -50% 0;
-    padding: 0.4rem 0.8rem;
-    font-size: 0.6875rem;
+    left: 0.45rem;
+    gap: 0.3rem;
+    padding: 0.3rem 0.65rem;
+    font-size: 0.625rem;
+  }
+  .acc-revoir-suite {
+    display: none;
   }
   .acc-tuile-theme {
-    font-size: 2.6cqw;
+    font-size: calc(2.6 * var(--u));
   }
   .acc-tuile h2 {
-    font-size: 5.2cqw;
+    font-size: calc(5.2 * var(--u));
   }
   .acc-tuile p {
-    font-size: 3.5cqw;
+    font-size: calc(3.5 * var(--u));
     line-height: 1.4;
+  }
+}
+
+/* Une tablette debout, moins élancée qu'un téléphone : les boosters prennent
+   plus de hauteur, la page se fait un peu plus petite. */
+@media (max-width: 1023px) and (orientation: portrait) and (min-aspect-ratio: 5 / 8) {
+  .accueil {
+    --u: min(1cqw, 0.4dvh);
   }
 }
 
