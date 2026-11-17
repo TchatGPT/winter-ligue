@@ -320,8 +320,9 @@ export const AVALANCHE_FLOCONS = 100;
  * Les paliers qui déclenchent un évènement, et ce qu'ils déclenchent.
  *
  * Ils s'ajoutent aux paliers des boosters de la ligue. L'Avalanche verse ses
- * flocons tout de suite ; la Tempête de neige change les règles quatre jours
- * durant, et fait tomber le Booster Commu bien plus souvent.
+ * flocons tout de suite ; la Tempête de neige — tous les 250 subs, deux jours
+ * durant (17/11/2026 ; 500 subs et quatre jours avant) — change les règles,
+ * et fait tomber le Booster Commu bien plus souvent.
  *
  * Tous profitent à tout le monde, et pareil : l'Avalanche verse la même somme
  * à chaque joueur qui a joué, quel que soit celui qui a payé les subs.
@@ -337,11 +338,11 @@ export const EVENEMENTS_SUBS: readonly EvenementSubs[] = [
     flocons: AVALANCHE_FLOCONS,
   },
   {
-    every: 500,
+    every: 250,
     kind: 'COMMU_ACCELERE',
-    dureeMinutes: 4 * 24 * 60,
+    dureeMinutes: 2 * 24 * 60,
     label: 'Tempête de neige',
-    description: `Pendant 4 jours, le Booster Commu tombe tous les ${COMMU_ACCELERE_TOUS_LES} subs au lieu de ${SUB_MILESTONES[0].every}.`,
+    description: `Pendant 2 jours, le Booster Commu tombe tous les ${COMMU_ACCELERE_TOUS_LES} subs au lieu de ${SUB_MILESTONES[0].every}.`,
     resume: `Commu tous les ${COMMU_ACCELERE_TOUS_LES} subs`,
   },
 ];

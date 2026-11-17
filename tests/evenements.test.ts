@@ -349,8 +349,8 @@ describe('addSubs déclenche les évènements', () => {
     const a = db.players.find((p) => p.id === 'a')!.snowflakes;
     const b = db.players.find((p) => p.id === 'b')!.snowflakes;
     expect(a).toBe(b);
-    // Cinq Avalanches franchies, rien d'autre ne verse de flocons.
-    expect(a).toBe((tempete.every / avalanche.every) * AVALANCHE_FLOCONS);
+    // Les Avalanches franchies, et rien d'autre ne verse de flocons.
+    expect(a).toBe(Math.floor(tempete.every / avalanche.every) * AVALANCHE_FLOCONS);
     expect(r.packs.length).toBeGreaterThan(0);
     expect(db.ledger.every((l) => l.reason === 'AVALANCHE')).toBe(true);
   });
