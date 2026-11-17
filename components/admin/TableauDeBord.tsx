@@ -574,6 +574,7 @@ export function TableauDeBord({
                       <p className="adm-personne-nom">{d.pseudo}</p>
                       <p className="adm-personne-detail">
                         {[
+                          d.twitchId.startsWith('joueur:') ? 'ne joue pas dans la ligue' : null,
                           d.offerts > 0 ? `${pluriel(d.offerts, 'sub')} offert${d.offerts > 1 ? 's' : ''}` : null,
                           d.niveau3 > 0 ? `${pluriel(d.niveau3, 'sub')} de niveau 3` : null,
                           d.donnes > 0 ? `${flakes(d.donnes)} déjà donné${d.donnes > 1 ? 's' : ''}` : null,

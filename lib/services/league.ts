@@ -180,8 +180,9 @@ export function objectifGamesDe(db: Database, player: Player): number {
 /** Classement complet, calculé sur une base déjà lue. */
 export function classementDe(db: Database): RankingRow[] {
   const chaine = chaineDeLaLigue();
-  // La streameuse n'est pas une concurrente : elle n'apparaît pas.
-  const active = db.players.filter((p) => p.active && !estLaStreameuse(p, chaine));
+  // La streameuse n'est pas une concurrente : elle n'apparaît pas, ni qui ne
+  // joue pas dans la ligue (`horsLigue`).
+  const active = db.players.filter((p) => p.active && !p.horsLigue && !estLaStreameuse(p, chaine));
   const entries = active.map((player) => ({
     player,
     totals: totalsFor(db.games.filter((g) => g.playerId === player.id).map(toScored), pointsHorsGame(db, player.id)),

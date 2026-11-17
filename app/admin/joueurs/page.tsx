@@ -13,6 +13,7 @@ const FILTRES: Record<string, FiltreJoueurs> = {
   'sans-pseudo': 'sansActivision',
   'boosters-perso': 'boosters',
   moderation: 'modo',
+  'ne-joue-pas': 'horsLigue',
 };
 
 export default async function AdminJoueursPage({
@@ -41,6 +42,7 @@ export default async function AdminJoueursPage({
             (d) => d.packId === 'perso' && d.joueurId === p.id && d.ouvertureId === null,
           ).length,
           streameuse: estLaStreameuse(p, chaine),
+          horsLigue: Boolean(p.horsLigue),
           games: totals.countedGames,
           score: totals.totalScore,
           inscritLe: p.joinedAt,

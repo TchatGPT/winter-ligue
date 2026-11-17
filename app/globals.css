@@ -15874,13 +15874,32 @@ a.adm-tuile:hover .adm-tuile-fleche {
 }
 .adm-activision .field {
   min-width: 0;
-  min-height: 36px;
+  min-height: 32px;
   flex: 1 1 auto;
-  padding-block: 0.25rem;
-  font-size: 0.875rem;
+  padding-block: 0.2rem;
+  padding-inline: 0.65rem;
+  font-size: 0.8125rem;
 }
 .adm-activision .field[data-vide] {
   border-color: color-mix(in srgb, var(--gold) 45%, transparent);
+}
+/* « Ne joue pas » : une case, cochée à la main par la modération (17/11/2026). */
+.adm-case {
+  display: inline-grid;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+}
+.adm-case:hover {
+  background: color-mix(in srgb, var(--frost) 8%, transparent);
+}
+.adm-case input {
+  width: 1.05rem;
+  height: 1.05rem;
+  accent-color: var(--ice);
+  cursor: pointer;
 }
 
 /* -- Changer de saison (EcranSaison, 12/11/2026) : son panneau, en bas. -- */

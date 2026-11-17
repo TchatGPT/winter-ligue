@@ -6,7 +6,7 @@ import { getStore } from '@/lib/db/store';
 import { estLaStreameuse } from '@/lib/domain/streameuse';
 import { boostersParLigne, persoEnAttente } from '@/lib/domain/twitchSubs';
 import { evenementsActifs } from '@/lib/services/evenements';
-import { boostersCadeauDonnes } from '@/lib/services/packs';
+import { boostersCadeauDonnes, reserveHorsLigue, SOURCE_HORS_LIGUE } from '@/lib/services/packs';
 import { etatSubsTwitch } from '@/lib/services/twitchSubs';
 
 export const dynamic = 'force-dynamic';
@@ -39,6 +39,7 @@ export default async function AdminAccueilPage() {
     store.read((db) => {
       const pseudoDe = new Map(db.players.map((p) => [p.id, p.pseudo]));
       const enFile = new Map<string, number>();
+      const horsLigue = new Set(db.players.filter((p) => p.horsLigue).map((p) => p.id));
       for (const p of db.packsDus) {
         if (p.packId === 'perso' && p.joueurId && p.ouvertureId === null) {
           enFile.set(p.joueurId, (enFile.get(p.joueurId) ?? 0) + 1);
@@ -49,16 +50,21 @@ export default async function AdminAccueilPage() {
         joueurs: {
           inscrits: actifs.length,
           // Comme le filtre de l'écran des joueurs : la streameuse ne joue pas.
-          sansPseudo: actifs.filter((p) => !p.activisionId && !estLaStreameuse(p, chaine)).length,
+          sansPseudo: actifs.filter((p) => !p.activisionId && !p.horsLigue && !estLaStreameuse(p, chaine)).length,
         },
         receveurs: actifs
-          .filter((p) => !estLaStreameuse(p, chaine))
+          .filter((p) => !p.horsLigue && !estLaStreameuse(p, chaine))
           .map((p) => ({ id: p.id, pseudo: p.pseudo, boostersPerso: enFile.get(p.id) ?? 0 }))
           .sort((a, b) => a.pseudo.localeCompare(b.pseudo, 'fr')),
         // Tous les comptes Twitch connus, actifs ou non : un compte désactivé
         // n'est pas « pas sur le site ».
         twitchIds: db.players.map((p) => p.twitchId).filter((id): id is string => Boolean(id)),
         donnes: [...boostersCadeauDonnes(db)],
+        // Les boosters des comptes qui ne jouent pas : une réserve à part (17/11/2026).
+        horsLigue: reserveHorsLigue(db),
+        pseudosHorsLigue: db.players
+          .filter((p) => p.horsLigue)
+          .map((p) => [SOURCE_HORS_LIGUE + p.id, p.pseudo] as [string, string]),
         dons: db.packsDus
           .filter((p) => p.donDe)
           .sort((a, b) => b.creeA.localeCompare(a.creeA))
@@ -67,7 +73,9 @@ export default async function AdminAccueilPage() {
         totalSubs: db.config.totalSubs,
         evenements: evenementsActifs(db),
         aOuvrir: {
-          perso: db.packsDus.filter((p) => p.packId === 'perso' && p.joueurId && p.ouvertureId === null).length,
+          perso: db.packsDus.filter(
+            (p) => p.packId === 'perso' && p.joueurId && !horsLigue.has(p.joueurId) && p.ouvertureId === null,
+          ).length,
           ligue: db.packsDus.filter((p) => p.joueurId === null && p.ouvertureId === null).length,
         },
       };
@@ -77,8 +85,11 @@ export default async function AdminAccueilPage() {
   ]);
 
   const inscrits = new Set(ligue.twitchIds);
-  const donateurs = persoEnAttente(registre, inscrits, new Map(ligue.donnes));
-  const pseudoTwitch = new Map(registre.map((s) => [s.twitchId, s.pseudo]));
+  const donateurs = [...persoEnAttente(registre, inscrits, new Map(ligue.donnes)), ...ligue.horsLigue];
+  const pseudoTwitch = new Map<string | null, string>([
+    ...registre.map((s) => [s.twitchId, s.pseudo] as [string | null, string]),
+    ...ligue.pseudosHorsLigue,
+  ]);
   const gagnes = boostersParLigne(registre);
   const subs: SubVue[] = registre.map((s) => ({
     id: s.id,

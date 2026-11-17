@@ -302,7 +302,7 @@ class JsonFileStore implements Store {
       })),
       joueurs: ouvertures.length
         ? db.players
-            .filter((p) => p.active)
+            .filter((p) => p.active && !p.horsLigue)
             .sort((a, b) => a.pseudo.localeCompare(b.pseudo))
             .slice(0, JOUEURS_OVERLAY)
             .map((p) => ({ pseudo: p.pseudo, slug: p.slug, twitchLogin: p.twitchLogin }))
@@ -704,7 +704,7 @@ class PostgresStore implements Store {
             then coalesce((
               select json_agg(x) from (
                 select pseudo, slug, twitch_login from joueurs
-                 where actif
+                 where actif and not hors_ligue
                  order by pseudo
                  limit ${JOUEURS_OVERLAY}) x), '[]'::json)
             else '[]'::json end,
@@ -799,6 +799,7 @@ function migrate(db: Partial<Database>): Database {
       immuniseJusqua: p.immuniseJusqua ?? null,
       activisionId: p.activisionId ?? null,
       pseudoJeuPasseA: p.pseudoJeuPasseA ?? null,
+      horsLigue: p.horsLigue ?? false,
       sessionsDepuis: p.sessionsDepuis ?? null,
       roleManuel: p.roleManuel ?? false,
       cadeauDernier: p.cadeauDernier ?? null,

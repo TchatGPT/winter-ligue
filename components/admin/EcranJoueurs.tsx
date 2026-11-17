@@ -28,12 +28,14 @@ export interface LigneJoueur {
   boostersPerso: number;
   /** La streameuse ne joue pas. */
   streameuse: boolean;
+  /** Coché par la modération : il ne joue pas dans la ligue (17/11/2026). */
+  horsLigue: boolean;
   games: number;
   score: number;
   inscritLe: string;
 }
 
-export type FiltreJoueurs = 'tous' | 'sansActivision' | 'boosters' | 'modo';
+export type FiltreJoueurs = 'tous' | 'sansActivision' | 'boosters' | 'modo' | 'horsLigue';
 type Filtre = FiltreJoueurs;
 
 /**
@@ -43,6 +45,10 @@ type Filtre = FiltreJoueurs;
  * Activision — celui que la lecture des captures cherche sur le tableau de fin
  * de game : un joueur jamais reconnu, c'est ici qu'on regarde — et on y voit
  * ses games, ses points, ses flocons et ses Boosters Perso en attente.
+ *
+ * « Ne joue pas » (17/11/2026) : la modération coche un compte connecté qui ne
+ * joue pas dans la ligue — jamais coché par défaut. Il quitte le classement
+ * et les tirages, et ses Boosters Perso deviennent des boosters cadeau.
  */
 export function EcranJoueurs({
   joueurs,
@@ -58,12 +64,14 @@ export function EcranJoueurs({
 
   const garde = (p: LigneJoueur, f: Filtre) =>
     f === 'sansActivision'
-      ? !p.streameuse && !p.activisionId
+      ? !p.streameuse && !p.horsLigue && !p.activisionId
       : f === 'boosters'
         ? p.boostersPerso > 0
         : f === 'modo'
           ? p.role === 'admin'
-          : true;
+          : f === 'horsLigue'
+            ? p.horsLigue
+            : true;
 
   const visibles = useMemo(() => {
     const q = plat(recherche.trim());
@@ -106,6 +114,7 @@ export function EcranJoueurs({
                 compte: joueurs.filter((p) => garde(p, 'boosters')).length,
               },
               { cle: 'modo', nom: 'Modération', compte: joueurs.filter((p) => garde(p, 'modo')).length },
+              { cle: 'horsLigue', nom: 'Ne jouent pas', compte: joueurs.filter((p) => garde(p, 'horsLigue')).length },
             ]}
           />
         </div>
@@ -119,7 +128,7 @@ export function EcranJoueurs({
               cle: 'pseudo',
               titre: 'Joueur',
               principale: true,
-              largeur: 'minmax(0, 1.4fr)',
+              largeur: 'minmax(9rem, 15rem)',
               tri: parTexte((p) => p.pseudo),
               rendu: (p) => (
                 <span className="adm-joueur">
@@ -131,13 +140,14 @@ export function EcranJoueurs({
                   ) : (
                     p.role === 'admin' && <Pastille ton="glace">modération</Pastille>
                   )}
+                  {p.horsLigue && <Pastille ton="gris">ne joue pas</Pastille>}
                 </span>
               ),
             },
             {
               cle: 'activision',
               titre: 'Pseudo Activision',
-              largeur: 'minmax(0, 1.5fr)',
+              largeur: 'minmax(9rem, 13rem)',
               tri: parTexte((p) => p.activisionId ?? ''),
               rendu: (p) =>
                 p.streameuse ? (
@@ -164,7 +174,7 @@ export function EcranJoueurs({
               cle: 'games',
               titre: 'Games',
               align: 'droite',
-              largeur: '5.5rem',
+              largeur: 'minmax(5rem, 1fr)',
               tri: parNombre((p) => p.games),
               rendu: (p) => <span className="num">{p.games}</span>,
             },
@@ -172,7 +182,7 @@ export function EcranJoueurs({
               cle: 'score',
               titre: 'Points',
               align: 'droite',
-              largeur: '5.5rem',
+              largeur: 'minmax(5rem, 1fr)',
               tri: parNombre((p) => p.score),
               rendu: (p) => <b className="num text-ice">{p.score}</b>,
             },
@@ -180,7 +190,7 @@ export function EcranJoueurs({
               cle: 'flocons',
               titre: 'Flocons',
               align: 'droite',
-              largeur: '7rem',
+              largeur: 'minmax(6.5rem, 1fr)',
               tri: parNombre((p) => p.snowflakes),
               rendu: (p) => <span className="num">{flakes(p.snowflakes)} ❄</span>,
             },
@@ -188,7 +198,7 @@ export function EcranJoueurs({
               cle: 'boosters',
               titre: 'Boosters Perso',
               align: 'droite',
-              largeur: '8rem',
+              largeur: 'minmax(8rem, 1fr)',
               tri: parNombre((p) => p.boostersPerso),
               rendu: (p) =>
                 p.boostersPerso > 0 ? (
@@ -201,9 +211,48 @@ export function EcranJoueurs({
               cle: 'inscrit',
               titre: 'Arrivé le',
               align: 'droite',
-              largeur: '7.5rem',
+              largeur: 'minmax(7.5rem, 1fr)',
               tri: parTexte((p) => p.inscritLe),
               rendu: (p) => <time className="adm-date">{shortDateTime(p.inscritLe)}</time>,
+            },
+            {
+              cle: 'horsLigue',
+              titre: 'Ne joue pas',
+              align: 'droite',
+              largeur: 'minmax(6.5rem, 1fr)',
+              tri: parNombre((p) => (p.horsLigue ? 1 : 0)),
+              rendu: (p) =>
+                p.streameuse ? (
+                  <span className="text-faint">—</span>
+                ) : (
+                  <label
+                    className="adm-case"
+                    title={
+                      p.horsLigue
+                        ? `${p.pseudo} ne joue pas : décocher le remet dans la ligue.`
+                        : `Cocher si ${p.pseudo} ne joue pas : il quitte le classement, ses Boosters Perso deviennent des boosters cadeau.`
+                    }
+                  >
+                    <input
+                      type="checkbox"
+                      checked={p.horsLigue}
+                      disabled={busy === `hors-ligue:${p.id}`}
+                      onChange={(e) =>
+                        void envoie(
+                          '/api/admin/joueurs/hors-ligue',
+                          { playerId: p.id, horsLigue: e.target.checked },
+                          {
+                            cle: `hors-ligue:${p.id}`,
+                            succes: e.target.checked
+                              ? `${p.pseudo} ne joue pas : hors du classement, ses Boosters Perso sont maintenant des boosters cadeau.`
+                              : `${p.pseudo} joue de nouveau dans la ligue.`,
+                          },
+                        )
+                      }
+                      aria-label={`${p.pseudo} ne joue pas dans la ligue`}
+                    />
+                  </label>
+                ),
             },
           ]}
         />
@@ -236,7 +285,7 @@ function Activision({
         className="field"
         value={valeur}
         onChange={(e) => setValeur(e.target.value)}
-        maxLength={40}
+        maxLength={60}
         placeholder="à renseigner"
         data-vide={joueur.activisionId ? undefined : ''}
         aria-label={`Pseudo Activision de ${joueur.pseudo}`}

@@ -52,6 +52,7 @@ export const COLLECTIONS: Collection[] = [
       c('avatarUrl', 'avatar_url', 'text'),
       c('activisionId', 'activision_id', 'text'),
       c('pseudoJeuPasseA', 'pseudo_jeu_passe_le', 'ts'),
+      c('horsLigue', 'hors_ligue', 'bool'),
       c('snowflakes', 'flocons', 'int'),
       c('subsOfferts', 'subs_offerts', 'int'),
       c('creneauxBonus', 'creneaux_bonus', 'int'),
@@ -449,6 +450,8 @@ alter table joueurs add column if not exists role_manuel boolean not null defaul
 -- Le cadeau du jour : le dernier jour pris, et la série.
 alter table joueurs add column if not exists cadeau_dernier text;
 alter table joueurs add column if not exists pseudo_jeu_passe_le timestamptz;
+-- Un compte qui ne joue pas dans la ligue, coché par la modération (17/11/2026).
+alter table joueurs add column if not exists hors_ligue boolean not null default false;
 alter table joueurs add column if not exists cadeau_serie integer;
 
 -- Il n'y a plus de rôle modérateur à part : les modérateurs sont admins.

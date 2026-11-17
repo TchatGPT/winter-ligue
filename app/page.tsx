@@ -40,7 +40,7 @@ export default async function ClassementPage() {
       evenements: evenementsActifs(db),
       joueurs: moderateur
         ? db.players
-            .filter((p) => p.active && !estLaStreameuse(p, chaineDeLaLigue()))
+            .filter((p) => p.active && !p.horsLigue && !estLaStreameuse(p, chaineDeLaLigue()))
             // Le pseudo Activision, pour que la saisie le montre à côté du nom lu.
             .map((p) => ({ id: p.id, pseudo: p.pseudo, activision: p.activisionId }))
             .sort((a, b) => a.pseudo.localeCompare(b.pseudo, 'fr'))

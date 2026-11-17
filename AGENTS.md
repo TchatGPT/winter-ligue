@@ -293,6 +293,12 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   le joueur le met à jour lui-même sur sa fiche (`PseudoActivision`, `PATCH /api/me`,
   17/11/2026) — jamais un pseudo déjà pris, et le journal garde l'ancien et le nouveau
   (`ACTIVISION_CHANGE`). La modération peut toujours le corriger.
+- **« Ne joue pas »** (17/11/2026, `horsLigue`, `/api/admin/joueurs/hors-ligue`) : dans Modération →
+  Joueurs, une case que la modération coche pour un compte connecté qui ne joue pas — jamais
+  cochée par défaut. Il quitte le classement, les tirages (`joueursEnLice`), la saisie et la file
+  des boosters ; ses Boosters Perso non ouverts forment une réserve de boosters cadeau
+  (`reserveHorsLigue`, source `joueur:<id>`) que le tableau de bord donne comme ceux d'un viewer
+  (`donneBoosterCadeau` les fait changer de main). Décoché, il revient avec ce qui n'a pas été donné.
 - **Le mode visiteur** (16/11/2026, `lib/auth/visiteur.ts`) : sous « M'inscrire avec Twitch »,
   l'accueil propose « Entrer en mode visiteur » (`/api/visiteur`), qui pose un cookie
   `wl_visiteur` — **pas une session** : il ne désigne personne et ne porte aucun rôle. Les pages

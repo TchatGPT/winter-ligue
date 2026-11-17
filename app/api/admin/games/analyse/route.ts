@@ -62,7 +62,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     const elle = db.players.find((p) => estLaStreameuse(p, chaine));
     return {
       // La streameuse n'est jamais proposée : ses lignes sont reconnues à part.
-      joueurs: db.players.filter((p) => p.active && !estLaStreameuse(p, chaine)).map(connu),
+      joueurs: db.players.filter((p) => p.active && !p.horsLigue && !estLaStreameuse(p, chaine)).map(connu),
       streameuse: elle ? connu(elle) : { id: '', pseudo: chaine, activisionId: null, twitchLogin: chaine },
     };
   });

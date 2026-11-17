@@ -45,6 +45,13 @@ export interface Player {
    * revient plus, sur aucun appareil. La modération peut le renseigner ensuite.
    */
   pseudoJeuPasseA?: string | null;
+  /**
+   * Il ne joue pas dans la ligue (17/11/2026) : connecté par Twitch, mais pas
+   * joueur. Coché à la main par la modération, jamais par défaut. Il n'est ni
+   * au classement, ni tiré par une carte ; ses Boosters Perso non ouverts
+   * forment une réserve de boosters cadeau (`reserveHorsLigue`).
+   */
+  horsLigue?: boolean;
   snowflakes: number;
   /**
    * Les subs que ce joueur a offerts à la chaîne, sur la saison.

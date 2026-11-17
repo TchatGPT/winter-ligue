@@ -253,6 +253,9 @@ export const adminSubsSchema = z.union([
   z.object({ action: z.literal('subs'), delta: z.number().int().min(1).max(10_000) }),
 ]);
 
+/** Un compte qui ne joue pas dans la ligue, coché ou décoché par la modération. */
+export const horsLigueSchema = z.object({ playerId: uuid, horsLigue: z.boolean() }).strict();
+
 /** Le − ou le + du compteur de Boosters Perso d'un joueur. */
 export const boostersPersoSchema = z.object({ playerId: uuid, sens: z.enum(['plus', 'moins']) });
 

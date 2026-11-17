@@ -27,7 +27,7 @@ import 'server-only';
 import { chaineDeLaLigue } from '@/lib/auth/twitch';
 import type { Database, OuverturePack, PackDu, Player, SubTwitch } from '@/lib/db/entities';
 import { gamesAuTirage, type TirageJoueurs } from '@/lib/domain/tirage';
-import { persoEnAttente } from '@/lib/domain/twitchSubs';
+import { persoEnAttente, type PersoEnAttente } from '@/lib/domain/twitchSubs';
 import { newId } from '@/lib/db/store';
 import { estUneCourse, getCard, getPack, joueursTires, momentDe, PACKS } from '@/lib/domain/catalog';
 import { pick, tirePack } from '@/lib/domain/rng';
@@ -65,6 +65,7 @@ export class PackError extends Error {
       | 'JOUEUR_REQUIS'
       | 'JOUEUR_INTROUVABLE'
       | 'STREAMEUSE'
+      | 'HORS_LIGUE'
       | 'AUCUN_DU'
       | 'AUCUN_BENEFICIAIRE'
       | 'CARTE_EN_ATTENTE'
@@ -188,6 +189,7 @@ export function acheteBoosterPerso(
   if (estLaStreameuse(joueur, chaineDeLaLigue())) {
     throw new PackError('La streameuse ne tire pas de cartes.', 'STREAMEUSE');
   }
+  if (joueur.horsLigue) throw new PackError('Tu ne joues pas dans la ligue : pas de Booster Perso.', 'HORS_LIGUE');
   if (db.ledger.some((l) => l.playerId === joueurId && l.reason === 'ACHAT_BOOSTER' && l.refId === cle)) {
     return { solde: joueur.snowflakes, dejaAchete: true };
   }
@@ -278,7 +280,39 @@ export function donneBoosterCadeau(
   if (estLaStreameuse(joueur, chaineDeLaLigue())) {
     throw new PackError('La streameuse ne joue pas : pas de Booster Perso pour elle.', 'STREAMEUSE');
   }
+  if (joueur.horsLigue) throw new PackError(`${joueur.pseudo} ne joue pas dans la ligue.`, 'HORS_LIGUE');
   const nombre = choix.nombre ?? 1;
+
+  // Des boosters d'un compte qui ne joue pas : les siens changent de main.
+  if (choix.donateur?.startsWith(SOURCE_HORS_LIGUE)) {
+    const source = db.players.find((p) => SOURCE_HORS_LIGUE + p.id === choix.donateur && p.horsLigue);
+    if (!source) throw new PackError('Ce compte n’a plus de booster cadeau à donner.', 'AUCUN_DU');
+    const siens = db.packsDus
+      .filter((d) => d.packId === 'perso' && d.joueurId === source.id && d.ouvertureId === null)
+      .sort((a, b) => a.creeA.localeCompare(b.creeA));
+    if (siens.length < nombre) {
+      throw new PackError(
+        `Il ne reste que ${siens.length} booster${siens.length > 1 ? 's' : ''} cadeau de ${source.pseudo}.`,
+        'AUCUN_DU',
+      );
+    }
+    for (const du of siens.slice(0, nombre)) {
+      du.joueurId = joueur.id;
+      du.raison = `booster cadeau, de ${source.pseudo}`;
+      du.donDe = choix.donateur;
+    }
+    const boostersPerso = db.packsDus.filter(
+      (p) => p.packId === 'perso' && p.joueurId === joueur.id && p.ouvertureId === null,
+    ).length;
+    audit(
+      db,
+      auteur,
+      'BOOSTER_CADEAU_DONNE',
+      joueur.id,
+      `${joueur.pseudo} reçoit ${nombre} booster${nombre > 1 ? 's' : ''} cadeau de ${source.pseudo}, qui ne joue pas`,
+    );
+    return { boostersPerso, reserve: siens.length - nombre, donateur: source.pseudo, nombre };
+  }
   if (!Number.isInteger(nombre) || nombre < 1) throw new PackError('Nombre de boosters invalide.', 'AUCUN_DU');
 
   const inscrits = new Set(db.players.map((p) => p.twitchId).filter((id): id is string => Boolean(id)));
@@ -348,6 +382,9 @@ export function ajusteBoostersPerso(
   if (!joueur) throw new PackError('Joueur introuvable.', 'JOUEUR_INTROUVABLE');
   if (estLaStreameuse(joueur, chaineDeLaLigue())) {
     throw new PackError('La streameuse ne joue pas : pas de Booster Perso pour elle.', 'STREAMEUSE');
+  }
+  if (joueur.horsLigue) {
+    throw new PackError(`${joueur.pseudo} ne joue pas dans la ligue : ses boosters sont des boosters cadeau.`, 'HORS_LIGUE');
   }
 
   const enFile = () => db.packsDus.filter((p) => p.packId === 'perso' && p.joueurId === joueurId && p.ouvertureId === null);
@@ -419,8 +456,10 @@ export interface PackDuVue {
 
 /** Les packs qui attendent d'être ouverts, le plus ancien en tête. */
 export function fileDesPacks(db: Database): PackDuVue[] {
+  // Ceux d'un compte qui ne joue pas n'y sont pas : ce sont des boosters cadeau.
+  const horsLigue = new Set(db.players.filter((p) => p.horsLigue).map((p) => p.id));
   return db.packsDus
-    .filter((p) => p.ouvertureId === null)
+    .filter((p) => p.ouvertureId === null && !(p.joueurId && horsLigue.has(p.joueurId)))
     .sort((a, b) => a.creeA.localeCompare(b.creeA))
     .map((p) => ({
       id: p.id,
@@ -481,7 +520,40 @@ export function ouvreProchainDu(
  */
 export function joueursEnLice(db: Database): Player[] {
   const chaine = chaineDeLaLigue();
-  return db.players.filter((p) => p.active && !estLaStreameuse(p, chaine));
+  return db.players.filter((p) => p.active && !p.horsLigue && !estLaStreameuse(p, chaine));
+}
+
+/** La clé d'un compte qui ne joue pas, comme source de boosters cadeau (`donDe`). */
+export const SOURCE_HORS_LIGUE = 'joueur:';
+
+/**
+ * Les boosters cadeau qui viennent de comptes qui ne jouent pas (17/11/2026) :
+ * leurs Boosters Perso non ouverts — gagnés par leurs subs, de bienvenue… —
+ * forment une réserve, que la modération donne comme ceux d'un viewer. Les
+ * mêmes champs que `persoEnAttente`, sous la clé `joueur:<id>`.
+ */
+export function reserveHorsLigue(db: Database): PersoEnAttente[] {
+  const sources: PersoEnAttente[] = [];
+  for (const p of db.players) {
+    if (!p.active || !p.horsLigue) continue;
+    const cle = SOURCE_HORS_LIGUE + p.id;
+    const enFile = db.packsDus.filter((d) => d.packId === 'perso' && d.joueurId === p.id && d.ouvertureId === null);
+    const donnes = db.packsDus.filter((d) => d.donDe === cle).length;
+    if (enFile.length === 0 && donnes === 0) continue;
+    const dates = enFile.map((d) => d.creeA).sort();
+    sources.push({
+      twitchId: cle,
+      pseudo: p.pseudo,
+      offerts: 0,
+      niveau3: 0,
+      boosters: enFile.length + donnes,
+      donnes,
+      restants: enFile.length,
+      premier: dates[0] ?? p.joinedAt,
+      dernier: dates.at(-1) ?? p.joinedAt,
+    });
+  }
+  return sources;
 }
 
 /**
@@ -696,6 +768,12 @@ export function ouvrePack(db: Database, demande: DemandeOuverture, ouvertPar: st
       throw new PackError(
         'La streameuse ne joue pas dans la ligue : aucun booster ne s’ouvre pour elle.',
         'STREAMEUSE',
+      );
+    }
+    if (joueur.horsLigue) {
+      throw new PackError(
+        `${joueur.pseudo} ne joue pas dans la ligue : ses boosters se donnent en boosters cadeau.`,
+        'HORS_LIGUE',
       );
     }
     // On rouvre pour lui : la carte d'avant a été vue. Ce qui attendait sa

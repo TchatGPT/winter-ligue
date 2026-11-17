@@ -54,6 +54,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       if (!player) return { error: 'JOUEUR' as const };
       // La streameuse ne joue pas : quoi que propose l'écran, aucune game.
       if (estLaStreameuse(player, chaineDeLaLigue())) return { error: 'STREAMEUSE' as const };
+      if (player.horsLigue) return { error: 'HORS_LIGUE' as const };
 
       if (gamesComptees(db, player.id) >= limiteDe(db, player)) return { error: 'LIMITE' as const };
       // Passé la 35ᵉ game de la Mini Ligue, une par session. Une game passée
@@ -139,6 +140,9 @@ export async function POST(request: Request): Promise<NextResponse> {
     if ('error' in result) {
       if (result.error === 'STREAMEUSE') {
         return fail('CONFLIT', 'La streameuse ne joue pas dans la ligue : aucune game ne lui est attribuée.');
+      }
+      if (result.error === 'HORS_LIGUE') {
+        return fail('CONFLIT', 'Ce compte ne joue pas dans la ligue : décoche « ne joue pas » dans Modération → Joueurs.');
       }
       if (result.error === 'JOKER') return fail('CONFLIT', 'Ce joueur n’a pas de Joker à jouer.');
       if (result.error === 'SESSION') {
