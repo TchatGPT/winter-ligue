@@ -32,7 +32,9 @@ function ligue() {
 describe('un compte qui ne joue pas', () => {
   it('n’est coché par personne à son arrivée', () => {
     const { absent } = ligue();
-    expect(absent.horsLigue ?? false).toBe(false);
+    // Faux, et pas absent : la colonne refuse le vide, et un compte neuf sans
+    // ce champ ne pouvait plus s'écrire en base (17/11/2026).
+    expect(absent.horsLigue).toBe(false);
   });
 
   it('quitte le classement, les tirages et la file des boosters', () => {

@@ -650,7 +650,12 @@ function versLigne(e: Record<string, unknown>, colonnes: Colonne[], sql: postgre
   const ligne: Record<string, unknown> = {};
   for (const { champ, col, type } of colonnes) {
     const v = e[champ];
-    if (v === undefined || v === null) ligne[col] = null;
+    // Une case oui/non absente prend la valeur par défaut de sa colonne, qui
+    // n'accepte pas le vide : `actif` vrai, toutes les autres fausses. Sans
+    // cela, un champ ajouté plus tard (`horsLigue`) faisait échouer la
+    // création d'un compte (17/11/2026).
+    if ((v === undefined || v === null) && type === 'bool') ligne[col] = col === 'actif';
+    else if (v === undefined || v === null) ligne[col] = null;
     else if (type === 'json') ligne[col] = sql.json(v as postgres.JSONValue);
     else ligne[col] = v;
   }

@@ -82,6 +82,7 @@ export function rattacheCompteTwitch(
     active: true,
     role: profil.roleChaine ?? 'joueur',
     roleManuel: false,
+    horsLigue: false,
   };
   db.players.push(cree);
   // Rien à l'inscription aujourd'hui : on n'écrit pas une ligne à zéro.
