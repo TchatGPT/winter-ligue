@@ -205,8 +205,9 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   même repère (12/11/2026). Puis, pour une carte des roues qui prend une game, un
   **troisième tirage** : le serveur choisit à l'ouverture la game, ou les games, que la
   carte touchera (`choisitGamesRoue`, `ouvertures.games`) — au sort sur un rail de
-  games (`TirageGames`), ou désignées par la carte (sa pire, sa meilleure), posées sans
-  rail ; un Finisseur ouvert pour un joueur ne déroule que ses games (`sansJoueurs`).
+  games (`TirageGames`), ou désignées par la carte (sa pire, sa meilleure), sans écran
+  à elles : on passe droit à la carte et à son compte rendu (`gamesARouler`, 17/11/2026) ;
+  un Finisseur ouvert pour un joueur ne déroule que ses games (`sansJoueurs`).
   **Pluie Blanche** (Commu) verse 100 flocons à chaque joueur en lice (12/11/2026 : elle
   ajoutait une game sup), par `credit`, l'ouverture en référence.
   `regleRoue` frappe ces games-là tant qu'elles le peuvent encore (`retenue`). Pas de

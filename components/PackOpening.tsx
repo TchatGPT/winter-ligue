@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { type CSSProperties, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { ChoixJoueurBooster, type CandidatBooster } from '@/components/ChoixJoueurBooster';
 import { CourseRoulette } from '@/components/CourseRoulette';
-import { questionDesGames, TirageGames } from '@/components/TirageGames';
+import { gamesARouler, questionDesGames, TirageGames } from '@/components/TirageGames';
 import { RangeePacks } from '@/components/RangeePacks';
 import { SnowCap } from '@/components/SnowCap';
 import { prechargeSons, reveilleSon } from '@/components/bruitage';
@@ -420,7 +420,8 @@ export function PackOpening({
   /** Ce qui se pose par-dessus le repos : le rail qui tourne, ou la carte tirée. */
   const tirage = ouverture?.tirage?.gagnants.length ? ouverture.tirage : null;
   /** Les games que la carte touche, à dérouler après les joueurs. */
-  const gamesTirees = tirage?.games ?? null;
+  // Seules les games tirées au sort ont leur écran (`gamesARouler`, 17/11/2026).
+  const gamesTirees = gamesARouler(tirage?.games);
   /** Après la carte : les joueurs s'il y en a à tirer, puis les games, puis la révélation. */
   const apresCarte = (): Phase => (tirage && !tirage.sansJoueurs ? 'joueurs' : gamesTirees ? 'games' : 'reveal');
   const apresJoueurs = (): Phase => (gamesTirees ? 'games' : 'reveal');

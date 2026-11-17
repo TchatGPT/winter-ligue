@@ -56,6 +56,20 @@ function PlaqueGame({ pseudo, game }: { pseudo: string; game: GameAuTirage }) {
   );
 }
 
+/**
+ * Les games à dérouler sur un rail, ou rien (17/11/2026) : seules les games
+ * **tirées au sort** ont leur écran. Les games désignées par la carte (sa
+ * pire, sa meilleure) ne s'arrêtent plus sur un écran à elles — on passe
+ * droit à la carte, dont le compte rendu les nomme.
+ */
+export function gamesARouler(games: GamesAuTirage | null | undefined): GamesAuTirage | null {
+  if (!games) return null;
+  const lignes = games.parJoueur.filter((e) => e !== null);
+  // Un rail n'a de sens que si le sort avait le choix.
+  const tournent = games.hasard && lignes.length > 0 && lignes.every((e) => e.visees.length === 1 && e.parmi.length > 1);
+  return tournent ? games : null;
+}
+
 export function TirageGames({
   games,
   sourdine = false,

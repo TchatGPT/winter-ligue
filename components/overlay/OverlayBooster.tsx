@@ -16,7 +16,7 @@ import { bandeDeDepart, useFinVideo, VIDEOS_OUVERTURE } from '@/components/ouver
 import { CARDS, RARITY_META } from '@/lib/domain/catalog';
 import type { BoosterOverlay } from '@/lib/services/overlay';
 import { CourseRoulette } from '@/components/CourseRoulette';
-import { questionDesGames, TirageGames } from '@/components/TirageGames';
+import { gamesARouler, questionDesGames, TirageGames } from '@/components/TirageGames';
 
 /**
  * L'overlay des boosters : ce que le stream voit quand la streameuse en ouvre
@@ -349,7 +349,13 @@ function Ouverture({
             }}
             duree={DUREE_OUVERTURE}
             sourdine={!son}
-            onFini={() => setPhase(booster.tirage?.gagnants.length ? 'joueurs' : 'carte')}
+            onFini={() =>
+              setPhase(
+                booster.tirage?.gagnants.length && (!booster.tirage.sansJoueurs || gamesARouler(booster.tirage.games))
+                  ? 'joueurs'
+                  : 'carte',
+              )
+            }
           />
         </div>
       )}
@@ -381,8 +387,10 @@ function TirageJoueurs({
 }) {
   // Les joueurs d'abord, tous ensemble ; puis les games que la carte touche.
   // Un booster ouvert pour un joueur n'a que ses games à dérouler.
-  const [etape, setEtape] = useState<'joueurs' | 'games'>(tirage.sansJoueurs ? 'games' : 'joueurs');
-  const apresJoueurs = () => (tirage.games ? setEtape('games') : onFini());
+  // Seules les games tirées au sort ont leur écran (`gamesARouler`, 17/11/2026).
+  const games = gamesARouler(tirage.games);
+  const [etape, setEtape] = useState<'joueurs' | 'games'>(tirage.sansJoueurs && games ? 'games' : 'joueurs');
+  const apresJoueurs = () => (games ? setEtape('games') : onFini());
   const meta = RARITY_META[booster.carte.rarity] ?? RARITY_META.C;
   const n = tirage.gagnants.length;
   return (
@@ -392,8 +400,8 @@ function TirageJoueurs({
           {booster.carte.name}
         </span>
         <span className="ov-tirage-question">
-          {etape === 'games' && tirage.games
-            ? questionDesGames(tirage.games)
+          {etape === 'games' && games
+            ? questionDesGames(games)
             : tirage.course
               ? 'Qui ne passera pas la ligne ?'
               : n > 1
@@ -401,9 +409,9 @@ function TirageJoueurs({
                 : 'Sur qui tombe-t-elle ?'}
         </span>
       </div>
-      {etape === 'games' && tirage.games ? (
+      {etape === 'games' && games ? (
         <div className="ov-games">
-          <TirageGames games={tirage.games} sourdine={!son} onFini={onFini} />
+          <TirageGames games={games} sourdine={!son} onFini={onFini} />
         </div>
       ) : tirage.course ? (
         <div className="ov-course">
