@@ -41,7 +41,8 @@ export default async function ClassementPage() {
       joueurs: moderateur
         ? db.players
             .filter((p) => p.active && !estLaStreameuse(p, chaineDeLaLigue()))
-            .map((p) => ({ id: p.id, pseudo: p.pseudo }))
+            // Le pseudo Activision, pour que la saisie le montre à côté du nom lu.
+            .map((p) => ({ id: p.id, pseudo: p.pseudo, activision: p.activisionId }))
             .sort((a, b) => a.pseudo.localeCompare(b.pseudo, 'fr'))
         : [],
       // Les Boosters Perso en attente de chaque joueur : la modération les

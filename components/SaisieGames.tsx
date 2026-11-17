@@ -6,6 +6,7 @@ import { createPortal } from 'react-dom';
 import { SnowCap } from '@/components/SnowCap';
 import { Notice } from '@/components/ui';
 import { CardFrame } from '@/components/CardFrame';
+import { IconActivision } from '@/components/icons';
 import { getCard, RARITY_META } from '@/lib/domain/catalog';
 import { sansTagClan } from '@/lib/domain/correspondance';
 import { GAME_LIMITS, placementPoints } from '@/lib/domain/rules';
@@ -14,6 +15,8 @@ import type { Placement } from '@/lib/domain/types';
 interface Joueur {
   id: string;
   pseudo: string;
+  /** Son pseudo Activision, s'il l'a donné : c'est lui qu'on lit sur la capture. */
+  activision?: string | null;
 }
 
 interface Ligne {
@@ -370,7 +373,7 @@ function FenetreIA({ joueurs, active, ferme }: { joueurs: Joueur[]; active: bool
   return (
     <Fenetre titre="Saisir une game" large ferme={ferme}>
       {/* Une fois lue, sur un téléphone, les résultats passent en tête. */}
-      <div className="saisie" data-lu={lignes && lignes.length > 0 ? '' : undefined}>
+      <div className="saisie" data-lu={lignes && lignes.length > 0 ? '' : undefined} data-lecture={busy === 'lecture' ? '' : undefined}>
         {/* ---- À gauche : la capture, le top, l'analyse ---- */}
         <div className="saisie-gauche">
           {!active && (
@@ -408,6 +411,8 @@ function FenetreIA({ joueurs, active, ferme }: { joueurs: Joueur[]; active: bool
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={apercu} alt="Capture de fin de game" />
                 </button>
+                {/* Pendant l'analyse : un faisceau balaie la capture, ligne à ligne. */}
+                {busy === 'lecture' && <span className="saisie-scan" aria-hidden="true" />}
                 <div className="saisie-capture-actions">
                   <button type="button" onClick={() => setLoupe(true)} aria-label="Voir la capture en grand">
                     ⤢ Agrandir
@@ -458,7 +463,20 @@ function FenetreIA({ joueurs, active, ferme }: { joueurs: Joueur[]; active: bool
 
         {/* ---- À droite : une ligne par joueur, et la validation ---- */}
         <div className="saisie-droite">
-          {lignes && lignes.some((l) => !l.streameuse) ? (
+          {busy === 'lecture' ? (
+            <div className="saisie-analyse" role="status">
+              <p>
+                <span className="saisie-analyse-flocon" aria-hidden="true">
+                  ❄
+                </span>
+                Lecture de la capture…
+                <span>les noms, les kills, le top</span>
+              </p>
+              {[0, 1, 2].map((i) => (
+                <span key={i} className="saisie-fantome" style={{ ['--i' as string]: i } as React.CSSProperties} aria-hidden="true" />
+              ))}
+            </div>
+          ) : lignes && lignes.some((l) => !l.streameuse) ? (
             <div className="saisie-lignes">
               {/* Les colonnes, nommées une fois : on lit chaque ligne sans légende. */}
               <div className="saisie-colonnes" aria-hidden="true">
@@ -598,7 +616,8 @@ function LigneResultat({
         : `meilleur tueur lui-même : ${points(carte.points)} de consolation`
       : (carte?.resultat ?? '');
   const sureTexte = `Lecture sûre à ${Math.round(l.confiance * 100)} %`;
-  const pseudo = joueurs.find((j) => j.id === l.joueurId)?.pseudo ?? '';
+  const choisi = joueurs.find((j) => j.id === l.joueurId);
+  const pseudo = choisi?.pseudo ?? '';
   // Le détail du total, terme à terme : kills + top + carte.
   const detail = jokerJoue
     ? 'game annulée'
@@ -620,10 +639,22 @@ function LigneResultat({
             </option>
           ))}
         </select>
+        {/* Ce qui a été lu, à quel point c'est sûr, et le pseudo Activision du
+            joueur choisi : les deux doivent se ressembler. */}
         <span className="saisie-lu" title={`Lu sur la capture : ${l.lu}`}>
-          {assigne && <i className="saisie-sure" data-sure={sure} title={sureTexte} aria-label={sureTexte} />}
-          lu : {sansTagClan(l.lu) || l.lu}
+          {assigne && (
+            <b className="saisie-sure" data-sure={sure} title={sureTexte}>
+              {Math.round(l.confiance * 100)} %
+            </b>
+          )}
+          <span>lu : {sansTagClan(l.lu) || l.lu}</span>
         </span>
+        {assigne && (
+          <span className="saisie-activision" title="Son pseudo Activision">
+            <IconActivision className="h-2.5 w-auto" />
+            {choisi?.activision ?? <em>pas de pseudo Activision</em>}
+          </span>
+        )}
       </div>
 
       <div className="saisie-kills" role="group" aria-label="Kills">

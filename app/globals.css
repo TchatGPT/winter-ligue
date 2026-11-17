@@ -17874,6 +17874,23 @@ a.rgs-usage b::after {
   color: var(--faint);
 }
 
+/* Les boutons de la saisie : la neige à plat — ni lentille, ni reflet, ni halo. */
+.saisie-fenetre .btn-ice::before,
+.saisie-fenetre .btn-ice::after {
+  display: none;
+}
+.saisie-fenetre .btn-ice:not(:disabled),
+.saisie-fenetre .btn-ice:hover:not(:disabled) {
+  border-color: transparent;
+  background: var(--neige-1);
+  box-shadow: none;
+  text-shadow: none;
+  transform: none;
+}
+.saisie-fenetre .btn-ice:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--neige-1) 88%, var(--ice));
+}
+
 /* La capture : collée, elle se voit en entier, et se change ou se retire. */
 .saisie-capture {
   position: relative;
@@ -18114,19 +18131,145 @@ a.rgs-usage b::after {
   white-space: nowrap;
   color: var(--faint);
 }
-/* La lecture : un point vert si elle est sûre, or si elle l'est moins, rouge sinon. */
+.saisie-lu > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* La lecture, en pour cent : vert si elle est sûre, or si elle l'est moins, rouge sinon. */
 .saisie-sure {
-  width: 0.5rem;
-  height: 0.5rem;
   flex: none;
-  border-radius: 50%;
-  background: var(--aurora);
+  padding: 0 0.35rem;
+  border-radius: var(--r-pilule);
+  background: color-mix(in srgb, var(--aurora) 16%, transparent);
+  font-size: 0.6875rem;
+  font-weight: 800;
+  color: var(--aurora);
 }
 .saisie-sure[data-sure='moyenne'] {
-  background: var(--gold);
+  background: color-mix(in srgb, var(--gold) 16%, transparent);
+  color: var(--gold);
 }
 .saisie-sure[data-sure='faible'] {
-  background: var(--danger);
+  background: color-mix(in srgb, var(--danger) 16%, transparent);
+  color: var(--danger);
+}
+/* Le pseudo Activision du joueur choisi. */
+.saisie-activision {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.35rem;
+  overflow: hidden;
+  padding-left: 0.2rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--ink-2);
+}
+.saisie-activision svg {
+  flex: none;
+  opacity: 0.7;
+}
+.saisie-activision em {
+  font-style: normal;
+  font-weight: 400;
+  color: var(--faint);
+}
+
+/* L'analyse en cours : un faisceau balaie la capture ; à droite, un flocon
+   qui tourne et trois lignes fantômes qui scintillent, à la place des joueurs. */
+.saisie-scan {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background: color-mix(in srgb, var(--bg-deep) 30%, transparent);
+}
+.saisie-scan::before {
+  content: '';
+  position: absolute;
+  right: 0;
+  left: 0;
+  height: 28%;
+  background: linear-gradient(
+    180deg,
+    transparent,
+    color-mix(in srgb, var(--aurora) 22%, transparent) 70%,
+    color-mix(in srgb, var(--aurora) 85%, var(--ink)) 98%,
+    transparent
+  );
+  animation: saisie-scan 1.6s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate;
+}
+@keyframes saisie-scan {
+  from {
+    top: -28%;
+  }
+  to {
+    top: 100%;
+  }
+}
+.saisie-analyse {
+  display: grid;
+  align-content: start;
+  gap: 0.5rem;
+}
+.saisie-analyse p {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.2rem 0.6rem;
+  margin-bottom: 0.25rem;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.saisie-analyse p > span:last-child {
+  font-family: var(--font-sans, inherit);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--faint);
+}
+.saisie-analyse-flocon {
+  display: inline-block;
+  color: var(--aurora);
+  animation: saisie-flocon 2.4s linear infinite;
+}
+@keyframes saisie-flocon {
+  to {
+    rotate: 1turn;
+  }
+}
+.saisie-fantome {
+  display: block;
+  height: 4.2rem;
+  border-radius: var(--r-md);
+  background:
+    linear-gradient(
+      100deg,
+      transparent 30%,
+      color-mix(in srgb, var(--frost) 12%, transparent) 50%,
+      transparent 70%
+    )
+    0 0 / 250% 100%,
+    color-mix(in srgb, var(--bg-deep) 30%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--frost) 8%, transparent);
+  animation: saisie-fantome 1.4s ease-in-out infinite;
+  animation-delay: calc(var(--i) * 0.18s);
+}
+@keyframes saisie-fantome {
+  from {
+    background-position: 100% 0, 0 0;
+  }
+  to {
+    background-position: -50% 0, 0 0;
+  }
 }
 .saisie-kills {
   display: inline-flex;
