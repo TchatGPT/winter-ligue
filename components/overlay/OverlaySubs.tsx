@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { IconSwords } from '@/components/icons';
 import { Scene } from '@/components/overlay/Scene';
 import { useFluxOverlay, type FluxRecu } from '@/components/overlay/useFluxOverlay';
@@ -36,10 +36,54 @@ const DEFILE_MS = 6000;
 
 function minutes(fin: string, maintenant: number): string {
   const s = Math.max(0, Math.round((Date.parse(fin) - maintenant) / 1000));
+  // Au-delà d'un jour, en jours et en heures : « 22 j 19 h », pas « 547:07:14 ».
+  if (s >= 86_400) return `${Math.floor(s / 86_400)} j ${Math.floor((s % 86_400) / 3600)} h`;
   const h = Math.floor(s / 3600);
   const m = Math.floor((s % 3600) / 60);
   const r = s % 60;
   return h > 0 ? `${h}:${String(m).padStart(2, '0')}:${String(r).padStart(2, '0')}` : `${m}:${String(r).padStart(2, '0')}`;
+}
+
+/**
+ * Une ligne qui tient sur une ligne (17/11/2026) : sa taille de départ est
+ * celle de la feuille de style ; si le texte déborde, il rapetisse juste ce
+ * qu'il faut. Jamais de mots l'un sous l'autre.
+ */
+function useUneLigne<T extends HTMLElement>(texte: string) {
+  // L'élément lui-même, pas une référence : la scène (`Scene`) ne rend la
+  // ligne qu'après s'être mesurée — la mesure attend qu'elle soit là.
+  const ref = useRef<T | null>(null);
+  const [present, setPresent] = useState(false);
+  const attache = useCallback((noeud: T | null) => {
+    ref.current = noeud;
+    setPresent(noeud !== null);
+  }, []);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!present || !el) return;
+    const ajuste = () => {
+      el.style.fontSize = '';
+      const base = parseFloat(getComputedStyle(el).fontSize);
+      if (el.scrollWidth > el.clientWidth + 1) {
+        el.style.fontSize = `${Math.max(16, Math.floor((base * el.clientWidth) / el.scrollWidth))}px`;
+      }
+    };
+    ajuste();
+    // Les polices arrivent après le premier rendu, et élargissent le texte :
+    // on remesure à chacune, et si la place change.
+    let vivant = true;
+    const encore = () => vivant && ajuste();
+    void document.fonts?.ready.then(encore);
+    document.fonts?.addEventListener('loadingdone', encore);
+    const taille = new ResizeObserver(encore);
+    taille.observe(el);
+    return () => {
+      vivant = false;
+      document.fonts?.removeEventListener('loadingdone', encore);
+      taille.disconnect();
+    };
+  }, [present, texte]);
+  return attache;
 }
 
 export function OverlaySubs({
@@ -156,6 +200,11 @@ export function OverlaySubs({
   const enCours = vue.enCours.filter((e) => Date.parse(e.endsAt) > horloge);
   const indice = nbPaliers > 0 ? tour % nbPaliers : 0;
   const montre = vue.paliers[indice] ?? null;
+  const ligneProchain = useUneLigne<HTMLParagraphElement>(montre ? `${montre.label}${montre.restant}` : '');
+  // Le minuteur change chaque seconde : la ligne se remesure avec lui, sans
+  // clignoter (avant que l'écran ne se peigne).
+  const minuteur = enCours.length > 0 ? minutes(enCours[0].endsAt, horloge) : '';
+  const ligneEvenement = useUneLigne<HTMLParagraphElement>(enCours.length > 0 ? `${enCours[0].label}${minuteur}` : '');
 
   return (
     <Scene largeur={880} hauteur={360}>
@@ -202,7 +251,7 @@ export function OverlaySubs({
         <div className="ov-subs-suite">
           {montre && (
             <div className="ov-subs-defile" key={`${indice}-${montre.label}`}>
-              <p className="ov-subs-prochain">
+              <p className="ov-subs-prochain" ref={ligneProchain}>
                 <strong>{montre.label}</strong> dans <b>{montre.restant}</b> sub{montre.restant > 1 ? 's' : ''}
               </p>
               <span className="ov-subs-jauge" aria-hidden="true">
@@ -219,9 +268,9 @@ export function OverlaySubs({
               </span>
             )}
             {enCours.length > 0 && (
-              <p className="ov-subs-evenement">
+              <p className="ov-subs-evenement" ref={ligneEvenement}>
                 <span className="ov-subs-pastille" aria-hidden="true" />
-                <strong>{enCours[0].label}</strong> en cours · {minutes(enCours[0].endsAt, horloge)}
+                <strong>{enCours[0].label}</strong> en cours · {minuteur}
               </p>
             )}
           </div>

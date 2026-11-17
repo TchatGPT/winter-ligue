@@ -12146,11 +12146,14 @@
     border-radius: 999px;
     background: var(--aurora);
   }
+  /* Sur une ligne, toujours : `useUneLigne` rapetisse le texte qui déborde. */
   .ov-subs-prochain {
+    overflow: hidden;
     font-family: var(--font-display);
     font-size: 42px;
     font-weight: 700;
     line-height: 1.05;
+    white-space: nowrap;
     text-transform: uppercase;
     color: var(--ink-2);
   }
@@ -12182,13 +12185,21 @@
     color: var(--ink-2);
   }
   .ov-subs-evenement {
-    display: flex;
+    display: block;
+    min-width: 0;
+    flex: 1;
     min-height: 26px;
-    align-items: center;
-    gap: 10px;
+    overflow: hidden;
     font-size: 26px;
     font-weight: 700;
+    line-height: 1.2;
+    white-space: nowrap;
     color: var(--muted);
+  }
+  .ov-subs-evenement .ov-subs-pastille {
+    display: inline-block;
+    margin-right: 10px;
+    vertical-align: 0.12em;
   }
   .ov-subs-evenement strong {
     color: var(--ink);
