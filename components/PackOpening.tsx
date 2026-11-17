@@ -307,6 +307,15 @@ export function PackOpening({
   const palier = SUB_MILESTONES.find((m) => m.kind === 'PACK' && m.packId === pack?.id);
   const prochainPalier = palier ? (Math.floor(totalSubs / palier.every) + 1) * palier.every : null;
 
+  /**
+   * La clé de la demande en cours : gardée tant que le serveur n'a pas répondu.
+   * Une réponse perdue (réseau coupé, délai dépassé) puis un second clic
+   * renvoient la même clé, et le serveur rend l'ouverture déjà faite au lieu
+   * d'en tirer une seconde. Une autre demande (autre booster, autre joueur)
+   * prend une clé neuve.
+   */
+  const demandeEnCours = useRef<{ corps: string; cle: string } | null>(null);
+
   async function ouvre(corps: Record<string, unknown>) {
     if (!pack || busy) return;
     // Le contexte audio se réveille sur ce clic, avant le premier `await`.
@@ -314,13 +323,23 @@ export function PackOpening({
     setError(null);
     setPhase('demande');
 
+    const signature = JSON.stringify(corps);
+    if (demandeEnCours.current?.corps !== signature) {
+      demandeEnCours.current = { corps: signature, cle: crypto.randomUUID() };
+    }
+    const idempotencyKey = demandeEnCours.current.cle;
+
     try {
       const response = await fetch('/api/admin/packs', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ ...corps, idempotencyKey: crypto.randomUUID() }),
+        body: JSON.stringify({ ...corps, idempotencyKey }),
+        // Un serveur qui ne répond pas ne laisse pas l'écran sur « Ouverture… ».
+        signal: AbortSignal.timeout(20_000),
       });
       const payload = await response.json();
+      // Le serveur a répondu : la demande est réglée, la suivante aura sa clé.
+      demandeEnCours.current = null;
       if (!payload.ok) {
         setError(payload.error?.message ?? 'Ouverture impossible.');
         setPhase('repos');

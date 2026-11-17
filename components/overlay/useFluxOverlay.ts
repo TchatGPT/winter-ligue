@@ -52,7 +52,8 @@ export function useFluxOverlay({
       try {
         const reponse = await fetch(
           `/api/overlay?cle=${encodeURIComponent(cle)}&depuis=${encodeURIComponent(depuis)}`,
-          { cache: 'no-store' },
+          // Une lecture qui ne revient pas ne bloque pas les suivantes.
+          { cache: 'no-store', signal: AbortSignal.timeout(8_000) },
         );
         const charge = await reponse.json();
         if (!charge.ok) {

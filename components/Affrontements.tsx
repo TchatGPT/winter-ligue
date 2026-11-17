@@ -59,8 +59,12 @@ import { flakes } from '@/components/ui';
 import { CHANCE, DUEL, chanceDe, libelleMultiplicateur } from '@/lib/domain/rules';
 import { shortDateTime } from '@/lib/format';
 
-/** Le rythme du sondage, quand personne ne joue. */
-const SONDAGE = 2000;
+/**
+ * Le rythme du sondage, quand aucun de ses défis n'attend : la liste des duels
+ * ouverts suit, sans charger le serveur (3 s, 17/11/2026). Un onglet caché ne
+ * sonde pas ; il relit dès qu'on y revient.
+ */
+const SONDAGE = 3000;
 /**
  * Plus serré quand un de ses défis attend : relevé, la course part au même
  * instant chez les deux joueurs, après un compte à rebours — il faut l'apprendre
@@ -483,11 +487,23 @@ export function Affrontements({
   const abordable = solde !== null && solde >= mise;
   const peutJouer = joueur && miseValide && abordable && !occupe;
 
-  const recharge = useCallback(async () => {
+  /**
+   * Une lecture en cours : la suivante ne part pas tant qu'elle n'est pas
+   * revenue. Demandée entre-temps (après un geste), elle repart à son retour.
+   */
+  const lecture = useRef(false);
+  const relire = useRef(false);
+  const recharge = useCallback(async (): Promise<void> => {
+    if (document.hidden) return;
+    if (lecture.current) {
+      relire.current = true;
+      return;
+    }
+    lecture.current = true;
     let suivant: Charge;
     try {
       const avant = Date.now();
-      const reponse = await fetch('/api/affrontements', { cache: 'no-store' });
+      const reponse = await fetch('/api/affrontements', { cache: 'no-store', signal: AbortSignal.timeout(10_000) });
       const charge = await reponse.json();
       if (!charge.ok) return;
       suivant = charge.data as Charge;
@@ -496,6 +512,12 @@ export function Affrontements({
     } catch {
       // Un sondage qui échoue ne mérite pas de message : le suivant passera.
       return;
+    } finally {
+      lecture.current = false;
+      if (relire.current) {
+        relire.current = false;
+        setTimeout(() => void rechargeRef.current(), 0);
+      }
     }
     setEtat(suivant);
 
@@ -522,11 +544,24 @@ export function Affrontements({
     }
   }, [annonceBilan, router]);
 
+  const rechargeRef = useRef(recharge);
+  useEffect(() => {
+    rechargeRef.current = recharge;
+  }, [recharge]);
+
   // Une lecture dès l'arrivée : un duel joué pendant l'absence s'annonce tout
   // de suite, sans attendre le premier sondage.
   useEffect(() => {
     const t = setTimeout(recharge, 0);
-    return () => clearTimeout(t);
+    // De retour sur l'onglet : une lecture tout de suite, sans attendre le sondage.
+    const auRetour = () => {
+      if (!document.hidden) void recharge();
+    };
+    document.addEventListener('visibilitychange', auRetour);
+    return () => {
+      clearTimeout(t);
+      document.removeEventListener('visibilitychange', auRetour);
+    };
   }, [recharge]);
 
   const fenetreOuverte = fenetre !== null;

@@ -862,3 +862,12 @@ export const TESTEURS_CARTES: readonly string[] = [
  * test se retire.
  */
 export const PREFIXE_OUVERTURE_TEST = 'test:';
+
+/**
+ * Les boosters que l'overlay ne joue pas (15/11/2026) : le Commu et le Folie,
+ * la streameuse les ouvre elle-même, à l'écran. L'overlay ne montre que les
+ * boosters ouverts pour un joueur — le Perso et le Finisseur. Écartés dès la
+ * lecture (`fluxOverlay`) : sinon cinq d'affilée remplissaient le lot, et les
+ * suivants ne remontaient plus.
+ */
+export const HORS_OVERLAY: readonly string[] = ['commu', 'folie'];

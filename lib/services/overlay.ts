@@ -5,7 +5,9 @@ import { cleDerivee } from '@/lib/auth/session';
 import { getStore, type FluxOverlay } from '@/lib/db/store';
 import { chaineDeLaLigue } from '@/lib/auth/twitch';
 import { estUneCourse, GEMME_DU_PACK, getCard, getPack, joueursTires, packArt } from '@/lib/domain/catalog';
-import { nextMilestone, type PalierAffiche, paliersAffiches, prochainEvenement } from '@/lib/domain/rules';
+import { HORS_OVERLAY, nextMilestone, type PalierAffiche, paliersAffiches, prochainEvenement } from '@/lib/domain/rules';
+
+export { HORS_OVERLAY };
 import { estLaStreameuse } from '@/lib/domain/streameuse';
 import { gamesAuTirage, type TirageJoueurs } from '@/lib/domain/tirage';
 import type { PackId, Rarity } from '@/lib/domain/types';
@@ -122,12 +124,6 @@ export function vueCarte(cardId: string): CarteOverlay | null {
   };
 }
 
-/**
- * Les boosters que l'overlay ne joue pas (15/11/2026) : le Commu et le Folie,
- * la streameuse les ouvre elle-même, à l'écran. L'overlay ne montre que les
- * boosters ouverts pour un joueur — le Perso et le Finisseur.
- */
-export const HORS_OVERLAY: readonly string[] = ['commu', 'folie'];
 
 export function vueBoosters(flux: FluxOverlay): BoosterOverlay[] {
   const vues: BoosterOverlay[] = [];
