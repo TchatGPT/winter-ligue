@@ -618,10 +618,13 @@ function LigneResultat({
   const sureTexte = `Lecture sûre à ${Math.round(l.confiance * 100)} %`;
   const choisi = joueurs.find((j) => j.id === l.joueurId);
   const pseudo = choisi?.pseudo ?? '';
-  // Le détail du total, terme à terme : kills + top + carte.
+  // Le détail du total, terme à terme, en points écrits en toutes lettres
+  // (« + 4 carte » se lisait « 4K ») : 10 kills + 0 pt de top + 4 pts de carte.
+  const pts = (n: number) => `${n} pt${Math.abs(n) > 1 ? 's' : ''}`;
   const detail = jokerJoue
     ? 'game annulée'
-    : [`${kills} kill${kills > 1 ? 's' : ''}`, `${top} top`, ...(carte && !clone ? [`${carte.points < 0 ? '−' : ''}${Math.abs(carte.points)} carte`] : [])].join(' + ');
+    : `${kills} kill${kills > 1 ? 's' : ''} + ${pts(top)} de top` +
+      (carte && !clone ? ` ${carte.points < 0 ? '−' : '+'} ${pts(Math.abs(carte.points))} de carte` : '');
 
   return (
     <li className="saisie-ligne" data-etat={!assigne ? 'libre' : jokerJoue ? 'joker' : 'compte'}>
