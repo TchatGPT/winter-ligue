@@ -44,6 +44,7 @@ export function FicheCarte({
   legende,
   details = [],
   action,
+  aside,
   onClose,
 }: {
   carte: CarteFiche;
@@ -53,6 +54,11 @@ export function FicheCarte({
   details?: { libelle: string; valeur: string }[];
   /** Une action sous la légende : jouer un Verglas, pour la modération. */
   action?: React.ReactNode;
+  /**
+   * Une liste à côté de la fiche — les déblocages de la carte : sa propre
+   * colonne sur un grand écran, qui défile seule ; dessous ailleurs.
+   */
+  aside?: React.ReactNode;
   onClose: () => void;
 }) {
   // `document.body` n'existe pas au rendu serveur.
@@ -82,13 +88,13 @@ export function FicheCarte({
   return createPortal(
     <div className="fenetre-voile" role="dialog" aria-modal="true" aria-label={carte.nom} onClick={onClose}>
       <div
-        className="fenetre-carte fiche-carte glass glass-reflet relative"
+        className={`fenetre-carte fiche-carte glass glass-reflet relative${aside ? ' fiche-carte-large' : ''}`}
         onClick={(e) => e.stopPropagation()}
       >
         <SnowCap radius="var(--r-lg)" seed={`fiche-${carte.cardId}`} epaisseur={14} />
         <button
           type="button"
-          className="btn btn-sm absolute top-4 right-4 z-10"
+          className="btn btn-sm absolute top-3 right-3 z-10 sm:top-4 sm:right-4"
           onClick={onClose}
           aria-label="Fermer"
         >
@@ -98,9 +104,11 @@ export function FicheCarte({
         {/* Sans barre de défilement : la carte qui penche et son halo débordent de
             quelques pixels, et le faisaient apparaître pour rien. Sur un petit
             écran, on fait défiler quand même, au doigt. */}
-        <div className="fiche-carte-corps min-h-0 overflow-y-auto px-5 pt-9 pb-6 sm:px-8">
-          <div className="flex flex-col items-center gap-5 sm:flex-row sm:items-start">
-            <div className="reveal relative w-[min(340px,72vw,calc((100dvh-9rem)*0.68))] shrink-0">
+        <div className="fiche-carte-corps min-h-0 overflow-y-auto px-5 pt-14 pb-6 sm:px-8 sm:pt-9">
+          <div className="fiche-carte-grille">
+            {/* Sur un téléphone, la carte laisse la place de lire sa description
+                sans défiler ; sur un ordinateur, elle prend la hauteur de l'écran. */}
+            <div className="fiche-carte-visuel reveal relative shrink-0">
               {meta.holo && (
                 <span
                   className="reveal-halo"
@@ -123,32 +131,37 @@ export function FicheCarte({
 
             {/* Ce que dit la carte, dans l'ordre où on le cherche : sa rareté, son
                 nom, ce qu'elle fait en deux mots, puis en clair, puis quand. */}
-            <div className="fiche-infos" style={{ ['--r' as string]: meta.color }}>
-              <span className="fiche-rarete">
-                <EmblemeRarete rarity={meta.code as Rarity} className="fiche-rarete-gemme" />
-                {meta.label}
-              </span>
-              <h2 className="fiche-nom">{carte.nom}</h2>
-              {carte.action && <p className="fiche-action">{carte.action}</p>}
-              <p className="fiche-desc">{carte.description}</p>
-              {(details.length > 0 || (carte.resume && !memeTexte(carte.resume, carte.action))) && (
-                <dl className="fiche-details">
-                  {details.map((d) => (
-                    <div key={d.libelle}>
-                      <dt>{d.libelle}</dt>
-                      <dd>{d.valeur}</dd>
-                    </div>
-                  ))}
-                  {carte.resume && details.length === 0 && !memeTexte(carte.resume, carte.action) && (
-                    <div>
-                      <dt>En bref</dt>
-                      <dd className="num">{carte.resume}</dd>
-                    </div>
+            <div className="fiche-infos-cadre">
+              <div className="fiche-colonnes">
+                <div className="fiche-infos" style={{ ['--r' as string]: meta.color }}>
+                  <span className="fiche-rarete">
+                    <EmblemeRarete rarity={meta.code as Rarity} className="fiche-rarete-gemme" />
+                    {meta.label}
+                  </span>
+                  <h2 className="fiche-nom">{carte.nom}</h2>
+                  {carte.action && <p className="fiche-action">{carte.action}</p>}
+                  <p className="fiche-desc">{carte.description}</p>
+                  {(details.length > 0 || (carte.resume && !memeTexte(carte.resume, carte.action))) && (
+                    <dl className="fiche-details">
+                      {details.map((d) => (
+                        <div key={d.libelle}>
+                          <dt>{d.libelle}</dt>
+                          <dd>{d.valeur}</dd>
+                        </div>
+                      ))}
+                      {carte.resume && details.length === 0 && !memeTexte(carte.resume, carte.action) && (
+                        <div>
+                          <dt>En bref</dt>
+                          <dd className="num">{carte.resume}</dd>
+                        </div>
+                      )}
+                    </dl>
                   )}
-                </dl>
-              )}
-              {legende && <p className="fiche-legende">{legende}</p>}
-              {action && <div className="fiche-action-zone">{action}</div>}
+                  {legende && <p className="fiche-legende">{legende}</p>}
+                  {action && <div className="fiche-action-zone">{action}</div>}
+                </div>
+                {aside && <div className="fiche-aside">{aside}</div>}
+              </div>
             </div>
           </div>
         </div>

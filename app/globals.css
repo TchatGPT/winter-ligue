@@ -3514,43 +3514,61 @@
     outline-offset: 4px;
     border-radius: var(--r-sm);
   }
-  /* Les déblocages d'une carte, sous sa fiche en grand (profil, 15/11/2026) :
-     une ligne chacun, serrée, pour en voir une dizaine sans défiler. */
+  /* Les déblocages d'une carte, sous sa fiche en grand (profil, 15/11/2026 ;
+     refait le 17/11) : groupés par jour, une pastille par déblocage — l'heure
+     et le booster —, plusieurs par ligne. */
+  .historique {
+    display: grid;
+    gap: 0.9rem;
+  }
+  .historique-jour h3 {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.45rem;
+    padding-bottom: 0.35rem;
+    border-bottom: 1px solid color-mix(in srgb, var(--frost) 14%, transparent);
+    font-family: var(--font-display);
+    font-size: 0.875rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink);
+  }
+  .historique-jour h3 span {
+    font-size: 0.75rem;
+    letter-spacing: 0.06em;
+    color: var(--faint);
+  }
   .historique-liste {
     display: grid;
-    gap: 0.25rem;
-    max-height: min(22rem, 45dvh);
-    overflow-y: auto;
+    grid-template-columns: repeat(auto-fill, minmax(6.5rem, 1fr));
+    gap: 0.35rem;
     margin: 0;
     padding: 0;
     list-style: none;
   }
   .historique-liste li {
-    display: grid;
-    grid-template-columns: 1.4rem minmax(0, 1fr) auto;
+    display: flex;
     align-items: baseline;
-    gap: 0.5rem;
-    padding: 0.35rem 0.65rem;
+    justify-content: space-between;
+    gap: 0.4rem;
+    padding: 0.4rem 0.6rem;
     border-radius: var(--r-sm);
     background: color-mix(in srgb, var(--bg-deep) 35%, transparent);
     box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--frost) 10%, transparent);
   }
-  .historique-rang {
+  .historique-heure {
     font-family: var(--font-display);
-    font-size: 0.875rem;
-    font-weight: 900;
+    font-size: 0.9375rem;
+    font-weight: 800;
     color: var(--frost);
   }
-  .historique-quand {
-    overflow: hidden;
-    font-size: 0.8125rem;
-    font-weight: 600;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    color: var(--ink);
-  }
   .historique-pack {
+    overflow: hidden;
     font-size: 0.75rem;
+    text-overflow: ellipsis;
     white-space: nowrap;
     color: var(--muted);
   }
@@ -17747,7 +17765,7 @@ a.rgs-usage b::after {
   overflow-x: hidden;
   scrollbar-width: none;
 }
-@media (min-width: 640px) {
+@media (min-width: 1024px), (min-width: 640px) and (orientation: landscape) {
   .fiche-carte-corps {
     overflow-y: hidden;
   }
@@ -17963,11 +17981,114 @@ a.rgs-usage b::after {
   align-items: center;
   text-align: center;
 }
-@media (min-width: 640px) {
+@media (min-width: 1024px), (min-width: 640px) and (orientation: landscape) {
   .fiche-infos {
     align-items: flex-start;
     padding: 0.4rem 2.6rem 0 0;
     text-align: left;
+  }
+}
+
+/* La fiche d'une carte (refaite le 17/11/2026). Sur un téléphone : la carte,
+   à une taille qui laisse lire sa description dessous sans défiler — son nom,
+   sa rareté et son action sont déjà écrits sur elle, on ne les répète pas.
+   Sur un ordinateur (et un écran couché) : la carte à gauche, à la hauteur de l'écran ; à droite,
+   ce qu'elle dit, dans une colonne qui ne dépasse jamais la carte — ce qui est
+   long, comme la liste des déblocages, défile dedans. */
+.fiche-carte-grille {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.1rem;
+}
+.fiche-carte-visuel {
+  width: min(300px, 70vw, calc((100dvh - 17rem) * 0.68));
+  min-width: 11rem;
+}
+.fiche-infos-cadre {
+  width: 100%;
+}
+@media (max-width: 639px), (max-width: 1023px) and (orientation: portrait) {
+  .fiche-carte .fiche-rarete,
+  .fiche-carte .fiche-nom,
+  .fiche-carte .fiche-action {
+    display: none;
+  }
+  .fiche-carte .fiche-desc {
+    margin-top: 0;
+  }
+}
+@media (min-width: 1024px), (min-width: 640px) and (orientation: landscape) {
+  .fiche-carte-grille {
+    flex-direction: row;
+    align-items: stretch;
+    gap: 1.75rem;
+  }
+  .fiche-carte-visuel {
+    width: min(340px, 42vw, calc((100dvh - 9rem) * 0.68));
+  }
+  /* La colonne ne compte pas dans la hauteur : c'est la carte qui la donne. */
+  .fiche-infos-cadre {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+  }
+  .fiche-colonnes {
+    position: absolute;
+    inset: 0;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--frost) 30%, transparent) transparent;
+  }
+  .fiche-colonnes .fiche-action-zone {
+    padding-bottom: 0.5rem;
+  }
+}
+/* La liste à côté (les déblocages) : sous la fiche, puis, sur un grand écran,
+   sa propre colonne, qui défile seule. */
+.fiche-aside {
+  width: 100%;
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid color-mix(in srgb, var(--frost) 14%, transparent);
+}
+.historique-titre {
+  margin-bottom: 0.75rem;
+  font-size: 0.9375rem;
+  color: var(--muted);
+}
+.historique-titre b {
+  color: var(--ink);
+}
+@media (min-width: 1024px), (min-width: 640px) and (orientation: landscape) {
+  .fiche-aside {
+    padding-right: 0.25rem;
+  }
+}
+@media (min-width: 1024px) {
+  .fiche-carte.fiche-carte-large {
+    max-width: 68rem;
+  }
+  .fiche-carte-large .fiche-colonnes {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 1.75rem;
+    overflow: hidden;
+  }
+  .fiche-carte-large .fiche-colonnes > * {
+    min-height: 0;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--frost) 30%, transparent) transparent;
+  }
+  .fiche-carte-large .fiche-infos {
+    padding-right: 0;
+  }
+  .fiche-carte-large .fiche-aside {
+    margin-top: 0;
+    padding: 0.4rem 2.6rem 0.5rem 1.75rem;
+    border-top: 0;
+    border-left: 1px solid color-mix(in srgb, var(--frost) 14%, transparent);
   }
 }
 /* La rareté comme une tuile des taux (`.taux-ligne`) : la médaille

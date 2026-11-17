@@ -556,25 +556,45 @@ function HistoriqueCarte({
         description: definition?.description ?? '',
         nature: carte.nature,
       }}
-      legende={
+      // Les déblocages, groupés par jour : une pastille chacun, l'heure et le booster.
+      aside={
         <>
-          Débloquée <b className="num">{liste.length > 1 ? `${liste.length} fois` : 'une fois'}</b>
+          <p className="historique-titre">
+            Débloquée <b className="num">{liste.length > 1 ? `${liste.length} fois` : 'une fois'}</b>
+          </p>
+          <div className="historique">
+            {parJour(liste).map(([jour, items]) => (
+              <section key={jour} className="historique-jour">
+                <h3>
+                  {jour}
+                  <span className="num">{items.length > 1 ? `${items.length} fois` : 'une fois'}</span>
+                </h3>
+                <ol className="historique-liste">
+                  {items.map((o, i) => (
+                    <li key={`${o.openedAt}-${i}`}>
+                      <span className="historique-heure num">{longDateTime(o.openedAt).split(', ')[1]}</span>
+                      <span className="historique-pack">{o.pack.replace(/^Booster\s+/, '')}</span>
+                    </li>
+                  ))}
+                </ol>
+              </section>
+            ))}
+          </div>
         </>
-      }
-      action={
-        <ol className="historique-liste">
-          {liste.map((o, i) => (
-            <li key={`${o.openedAt}-${i}`}>
-              <span className="historique-rang num">{liste.length - i}</span>
-              <span className="historique-quand">{longDateTime(o.openedAt)}</span>
-              <span className="historique-pack">{o.pack.replace(/^Booster\s+/, '')}</span>
-            </li>
-          ))}
-        </ol>
       }
       onClose={onClose}
     />
   );
+}
+
+/** Les déblocages groupés par jour (« 16 nov. 2026 »), du plus récent au plus ancien. */
+function parJour<T extends { openedAt: string }>(liste: T[]): [string, T[]][] {
+  const jours = new Map<string, T[]>();
+  for (const o of liste) {
+    const jour = longDateTime(o.openedAt).split(', ')[0];
+    jours.set(jour, [...(jours.get(jour) ?? []), o]);
+  }
+  return [...jours];
 }
 
 /** Les boosters à ouvrir, comptés par type, dans l'ordre où ils sont arrivés. */
