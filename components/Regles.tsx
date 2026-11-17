@@ -20,6 +20,7 @@ import { RarityChip } from '@/components/ui';
 import { CARDS, packArt, RARITY_META } from '@/lib/domain/catalog';
 import {
   ACHAT_PERSO,
+  BOOSTERS_DE_BIENVENUE,
   CADEAU_DU_JOUR,
   CHANCE,
   COMMU_ACCELERE_TOUS_LES,
@@ -210,7 +211,12 @@ export function Regles({
     : [];
 
   const boosters: { id: string; quand: string; pourToi: boolean }[] = [
-    { id: 'perso', quand: `1 sub T3, ou ${PACKS_REGLES.persoTousLes} subs offerts`, pourToi: true },
+    // Trois dès l'inscription, pour tout le monde (17/11/2026).
+    {
+      id: 'perso',
+      quand: `${BOOSTERS_DE_BIENVENUE} dès ton inscription. Puis 1 sub T3, ou ${PACKS_REGLES.persoTousLes} subs offerts`,
+      pourToi: true,
+    },
     { id: 'finisseur', quand: quandFinisseur, pourToi: true },
     { id: 'commu', quand: `Tous les ${palier('commu')} subs de la chaîne`, pourToi: false },
     { id: 'folie', quand: `Tous les ${palier('folie')} subs de la chaîne`, pourToi: false },
