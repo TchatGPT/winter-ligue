@@ -17774,199 +17774,521 @@ a.rgs-usage b::after {
   display: none;
 }
 
-/* ---- La saisie d'une game : une tuile par ligne lue ----
-   Le joueur et ses kills en tête, puis le détail du score — kills + top +
-   carte = total —, puis le Joker s'il en garde un. */
-.saisie-ligne {
-  padding: 0.75rem 0.9rem;
+/* ---- La saisie d'une game (refaite le 17/11/2026) ----
+   Tout se vérifie d'un coup d'œil. Sur un ordinateur, deux colonnes : à
+   gauche la capture, le top et l'analyse ; à droite une ligne par joueur
+   — qui, ses kills, son total, puis kills · top, sa carte, son Joker — et la
+   validation, toujours en bas. Sur un téléphone, une colonne, la validation
+   collée en bas de l'écran. */
+.saisie-voile {
+  align-items: flex-end;
+  padding: 0;
+}
+.saisie-fenetre {
+  max-height: 94dvh;
+  border-bottom-right-radius: 0;
+  border-bottom-left-radius: 0;
+}
+.saisie-fenetre-large {
+  max-width: 72rem;
+}
+@media (min-width: 640px) {
+  .saisie-voile {
+    align-items: center;
+    padding: 1.5rem;
+  }
+  .saisie-fenetre {
+    max-height: min(92dvh, 52rem);
+    border-radius: var(--r-lg);
+  }
+}
+.saisie-entete {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1.25rem 1.25rem 0.85rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--frost) 14%, transparent);
+}
+.saisie-entete h2 {
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.saisie-corps {
+  min-height: 0;
+  flex: 1;
+  overflow-y: auto;
+}
+.saisie {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+}
+.saisie-gauche,
+.saisie-droite {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+@media (min-width: 900px) {
+  .saisie-corps {
+    display: flex;
+    overflow: hidden;
+  }
+  .saisie {
+    min-height: 0;
+    flex: 1;
+    grid-template-columns: minmax(17rem, 23rem) minmax(0, 1fr);
+    gap: 1.25rem;
+    padding: 1.1rem 1.25rem 1.25rem;
+  }
+  /* Chaque colonne défile seule : la validation reste en vue. */
+  .saisie-gauche {
+    min-height: 0;
+    overflow-y: auto;
+    scrollbar-width: thin;
+  }
+  .saisie-droite {
+    min-height: 0;
+  }
+  .saisie-lignes {
+    min-height: 0;
+    flex: 1;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    padding-right: 0.15rem;
+  }
+}
+.saisie-titre {
+  margin-bottom: 0.4rem;
+  font-family: var(--font-display);
+  font-size: 0.8125rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+/* La capture : collée, elle se voit en entier, et se change ou se retire. */
+.saisie-capture {
+  position: relative;
+  display: grid;
+  min-height: 7rem;
+  place-items: center;
+  overflow: hidden;
   border-radius: var(--r-md);
-  background: rgb(0 10 30 / 0.24);
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.1),
-    inset 0 0 0 1px rgb(255 255 255 / 0.06);
+  background: color-mix(in srgb, var(--bg-deep) 40%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--aurora) 45%, transparent);
+}
+.saisie-capture[data-vide] {
+  cursor: pointer;
+  box-shadow: none;
+  outline: 2px dashed color-mix(in srgb, var(--frost) 35%, transparent);
+  outline-offset: -2px;
+  transition: outline-color 0.2s ease;
+}
+.saisie-capture[data-vide]:hover,
+.saisie-capture[data-vide]:focus-visible {
+  outline-color: color-mix(in srgb, var(--frost) 70%, transparent);
+}
+.saisie-capture p {
+  padding: 1rem;
+  text-align: center;
+  font-size: 0.9375rem;
+  color: var(--ink-2);
+}
+.saisie-capture p b {
+  color: var(--ink);
+}
+.saisie-capture p span {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.8125rem;
+  color: var(--faint);
+}
+.saisie-capture img {
+  display: block;
+  width: 100%;
+  max-height: 11rem;
+  object-fit: contain;
+}
+@media (min-width: 900px) {
+  .saisie-capture img {
+    max-height: 15rem;
+  }
+}
+.saisie-capture-actions {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.4rem;
+  display: flex;
+  gap: 0.3rem;
+}
+.saisie-capture-actions button {
+  min-width: 2rem;
+  height: 2rem;
+  padding: 0 0.7rem;
+  border-radius: var(--r-pilule);
+  background: color-mix(in srgb, var(--bg-deep) 75%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--frost) 35%, transparent);
+  backdrop-filter: blur(6px);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--ink);
+  transition: background-color 0.15s ease;
+}
+.saisie-capture-actions button:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--bg-deep) 92%, transparent);
+}
+
+/* Le top : sept pastilles, la place et ce qu'elle rapporte. */
+.saisie-tops {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.35rem;
+}
+@media (min-width: 520px) and (max-width: 899px) {
+  .saisie-tops {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+  }
+}
+.saisie-tops button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.4rem 0.25rem;
+  border-radius: var(--r-sm);
+  background: color-mix(in srgb, var(--bg-deep) 35%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--frost) 18%, transparent);
+  color: var(--ink);
+  transition:
+    background-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+.saisie-tops button:hover:not(:disabled) {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--frost) 50%, transparent);
+}
+.saisie-tops b {
+  font-family: var(--font-display);
+  font-size: 0.875rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.saisie-tops span {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.saisie-tops button[aria-pressed='true'] {
+  background: var(--neige-1);
+  box-shadow: none;
+  color: var(--nuit);
+}
+.saisie-tops button[aria-pressed='true'] span {
+  color: color-mix(in srgb, var(--nuit) 70%, transparent);
+}
+
+.saisie-attente {
+  display: grid;
+  min-height: 8rem;
+  flex: 1;
+  place-items: center;
+  padding: 1.5rem;
+  border-radius: var(--r-md);
+  background: color-mix(in srgb, var(--bg-deep) 22%, transparent);
+  text-align: center;
+  font-size: 0.9375rem;
+  color: var(--faint);
+}
+
+/* Une ligne par joueur. */
+.saisie-lignes {
+  display: grid;
+  align-content: start;
+  gap: 0.45rem;
+}
+.saisie-ligne {
+  padding: 0.55rem 0.7rem;
+  border-radius: var(--r-md);
+  background: color-mix(in srgb, var(--bg-deep) 30%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--frost) 10%, transparent);
 }
 .saisie-ligne[data-etat='hors'],
 .saisie-ligne[data-etat='libre'] {
   opacity: 0.6;
 }
 .saisie-ligne[data-etat='joker'] {
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.1),
-    inset 0 0 0 1.5px color-mix(in srgb, var(--r-ur) 70%, transparent);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--r-ur) 70%, transparent);
 }
-.saisie-ligne-tete {
+.saisie-ligne-haut {
   display: grid;
-  grid-template-columns: minmax(0, 7.5rem) minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto 4.2rem;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.6rem;
+}
+.saisie-qui {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.saisie-joueur {
+  max-width: 17rem;
+  min-height: 0;
+  padding-block: 0.3rem;
+  font-size: 0.9375rem;
+  font-weight: 700;
+}
+.saisie-hors {
+  font-weight: 700;
+  color: var(--ink);
 }
 .saisie-lu {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.35rem;
   overflow: hidden;
-  font-size: 0.8125rem;
-  color: var(--muted);
+  font-size: 0.75rem;
   text-overflow: ellipsis;
   white-space: nowrap;
+  color: var(--faint);
+}
+/* La lecture : un point vert si elle est sûre, or si elle l'est moins, rouge sinon. */
+.saisie-sure {
+  width: 0.5rem;
+  height: 0.5rem;
+  flex: none;
+  border-radius: 50%;
+  background: var(--aurora);
+}
+.saisie-sure[data-sure='moyenne'] {
+  background: var(--gold);
+}
+.saisie-sure[data-sure='faible'] {
+  background: var(--danger);
 }
 .saisie-kills {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-}
-/* Le contrôle des kills : vert s'ils tombent juste, or sinon. */
-.saisie-controle {
-  margin-top: 0.45rem;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: var(--gold);
-}
-.saisie-controle[data-ok] {
-  font-weight: 500;
-  color: var(--aurora);
-}
-/* Les kills d'après la carte (Écho Lointain), à côté de ceux lus sur la capture. */
-.saisie-kills-carte {
-  padding: 0.1rem 0.5rem;
   border-radius: var(--r-pilule);
-  background: color-mix(in srgb, var(--aurora) 16%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--aurora) 45%, transparent);
+  background: color-mix(in srgb, var(--bg-deep) 45%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--frost) 16%, transparent);
+}
+.saisie-kills button {
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 50%;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--ink-2);
+  transition: background-color 0.15s ease;
+}
+.saisie-kills button:hover {
+  background: color-mix(in srgb, var(--frost) 14%, transparent);
+  color: var(--ink);
+}
+.saisie-kills-n {
+  min-width: 2.2ch;
+  text-align: center;
   font-family: var(--font-display);
-  font-size: 1rem;
+  font-size: 1.25rem;
   font-weight: 900;
+  color: var(--ink);
+}
+.saisie-kills-n[data-controle='ok'] {
   color: var(--aurora);
+}
+.saisie-kills-n[data-controle='ecart'] {
+  color: var(--gold);
 }
 .saisie-kills-fixes {
   font-size: 0.875rem;
   color: var(--muted);
 }
-@media (max-width: 520px) {
-  .saisie-ligne-tete {
-    grid-template-columns: minmax(0, 1fr) auto;
-  }
-  .saisie-lu {
-    grid-column: 1 / -1;
-  }
-}
-
-.saisie-calcul {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.35rem 0.5rem;
-  margin-top: 0.7rem;
-  padding-top: 0.6rem;
-  border-top: 1px solid rgb(255 255 255 / 0.1);
-  font-size: 0.875rem;
-  color: var(--ink-2);
-}
-.saisie-terme {
-  padding: 0.15rem 0.55rem;
-  border-radius: var(--r-pilule);
-  background: rgb(255 255 255 / 0.08);
-}
-.saisie-terme b {
-  color: var(--ink);
-}
-.saisie-terme[data-carte='bonus'] b {
-  color: var(--aurora);
-}
-.saisie-terme[data-carte='malus'] b {
-  color: var(--danger);
-}
-.saisie-op {
-  color: var(--faint);
-  font-weight: 700;
-}
 .saisie-total-ligne {
-  margin-left: auto;
+  text-align: right;
   font-family: var(--font-display);
   font-size: 1.375rem;
   font-weight: 900;
+  white-space: nowrap;
   color: var(--gold);
 }
-.saisie-calcul[data-barre] .saisie-terme {
-  text-decoration: line-through;
-  opacity: 0.55;
-}
-.saisie-calcul[data-barre] .saisie-total-ligne {
+.saisie-total-ligne[data-joker] {
   color: var(--r-ur);
 }
-.saisie-carte-detail {
-  margin-top: 0.35rem;
-  font-size: 0.8125rem;
-  color: var(--muted);
-}
-
-/* Le Joker : un bandeau aux couleurs des ultra rares, qu'il est, et un vrai bouton. */
-.saisie-joker {
+.saisie-ligne-bas {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.6rem 1rem;
-  margin-top: 0.7rem;
-  padding: 0.7rem 0.85rem;
-  border-radius: var(--r-sm);
-  background: color-mix(in srgb, var(--r-ur) 14%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--r-ur) 45%, transparent);
+  gap: 0.35rem 0.45rem;
+  margin-top: 0.45rem;
 }
-.saisie-joker > div {
-  flex: 1 1 16rem;
+.saisie-calcul {
+  font-size: 0.8125rem;
+  color: var(--muted);
 }
-.saisie-joker[data-joue] {
-  background: color-mix(in srgb, var(--r-ur) 26%, transparent);
+.saisie-calcul[data-barre] {
+  text-decoration: line-through;
+  opacity: 0.6;
 }
-.saisie-joker-titre {
+.saisie-puce {
+  padding: 0.15rem 0.55rem;
+  border-radius: var(--r-pilule);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+.saisie-puce[data-ton='alerte'] {
+  background: color-mix(in srgb, var(--gold) 16%, transparent);
+  color: var(--gold);
+}
+/* La carte active : sa vignette, son nom, ce qu'elle fait ici, ce qu'elle donne. */
+.saisie-carte {
+  display: inline-flex;
+  min-width: 0;
+  max-width: 100%;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.15rem 0.6rem 0.15rem 0.2rem;
+  border-radius: var(--r-pilule);
+  background: color-mix(in srgb, var(--r) 14%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--r) 45%, transparent);
+  font-size: 0.8125rem;
+  color: var(--ink-2);
+}
+.saisie-carte-vignette {
+  display: block;
+  width: 24px;
+  flex: none;
+}
+.saisie-carte-texte {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.saisie-carte-texte b {
+  color: var(--ink);
+}
+.saisie-carte-donne {
+  flex: none;
   font-family: var(--font-display);
   font-size: 0.9375rem;
+  font-weight: 900;
+  color: var(--aurora);
+}
+.saisie-carte-donne[data-signe='moins'] {
+  color: var(--danger);
+}
+/* Le Joker : un vrai bouton, aux couleurs des ultra rares, qu'il est. */
+.saisie-joker {
+  padding: 0.2rem 0.7rem;
+  border-radius: var(--r-pilule);
+  box-shadow: inset 0 0 0 1.5px var(--r-ur);
+  font-family: var(--font-display);
+  font-size: 0.8125rem;
   font-weight: 900;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--ink);
+  transition: background-color 0.15s ease;
 }
-.saisie-joker-texte {
-  margin-top: 0.15rem;
-  font-size: 0.8125rem;
-  line-height: 1.45;
-  color: var(--ink-2);
+.saisie-joker:hover {
+  background: color-mix(in srgb, var(--r-ur) 18%, transparent);
 }
-.saisie-joker-bouton {
-  flex: none;
-  padding: 0.5rem 1rem;
-  border-radius: var(--r-pilule);
+.saisie-joker[aria-pressed='true'] {
   background: var(--r-ur);
-  font-family: var(--font-display);
-  font-size: 0.875rem;
-  font-weight: 900;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
   color: var(--nuit);
-  transition: filter 0.15s ease, transform 0.15s ease;
-}
-.saisie-joker-bouton:hover {
-  filter: brightness(1.1);
-  transform: translateY(-1px);
-}
-.saisie-joker-bouton[aria-pressed='true'] {
-  background: transparent;
-  box-shadow: inset 0 0 0 1.5px var(--r-ur);
-  color: var(--ink);
 }
 
+/* La validation : toujours en vue — en bas de la colonne, ou de l'écran. */
+.saisie-pied {
+  position: sticky;
+  bottom: 0;
+  display: grid;
+  gap: 0.6rem;
+  margin: 0 -1rem -1rem;
+  padding: 0.75rem 1rem calc(0.85rem + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid color-mix(in srgb, var(--frost) 14%, transparent);
+  background: color-mix(in srgb, var(--bg-deep) 70%, transparent);
+  backdrop-filter: blur(10px);
+}
+@media (min-width: 900px) {
+  .saisie-pied {
+    position: static;
+    margin: 0;
+    padding: 0.75rem 0 0;
+    background: none;
+    backdrop-filter: none;
+  }
+}
+.saisie-pied-ligne {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem 1rem;
+}
 .saisie-total {
   display: flex;
   flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 0.25rem 1rem;
-  margin-top: 0.75rem;
-  padding: 0.6rem 0.9rem;
-  border-radius: var(--r-sm);
-  background: rgb(255 255 255 / 0.06);
+  align-items: baseline;
+  gap: 0.1rem 0.45rem;
   font-size: 0.875rem;
   color: var(--ink-2);
 }
 .saisie-total strong {
   font-family: var(--font-display);
-  font-size: 1.125rem;
+  font-size: 1.25rem;
   color: var(--ink);
+}
+.saisie-total span {
+  font-size: 0.75rem;
+  color: var(--faint);
+}
+.saisie-valider {
+  flex: 1 1 14rem;
+  max-width: 22rem;
+  min-height: 48px;
+}
+/* Sur un téléphone, une fois la capture lue : les résultats en tête, la
+   capture réduite à une bande, dessous. */
+@media (max-width: 899px) {
+  .saisie[data-lu] .saisie-droite {
+    order: -1;
+  }
+  .saisie[data-lu] .saisie-capture img {
+    max-height: 5rem;
+  }
+}
+@media (max-width: 520px) {
+  .saisie-ligne-haut {
+    grid-template-columns: minmax(0, 1fr) auto 3.4rem;
+    gap: 0.45rem;
+  }
+  .saisie-total-ligne {
+    font-size: 1.2rem;
+  }
+  .saisie-valider {
+    max-width: none;
+  }
+}
+@media (max-width: 359px) {
+  .saisie-ligne-haut {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .saisie-qui {
+    grid-column: 1 / -1;
+  }
+  .saisie-kills {
+    justify-self: start;
+  }
 }
 
 /* ---- La fiche d'une carte : le panneau d'informations ----
@@ -19677,71 +19999,6 @@ button.case:focus-visible {
   align-items: center;
   justify-self: start;
   gap: 0.45rem;
-}
-
-/* La carte jouée sur une game, dans la saisie : un encadré à la couleur de sa
-   rareté, la vignette, ce qu'elle fait, et en grand ce qu'elle donne. */
-.saisie-carte {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 0.4rem 0.9rem;
-  margin-top: 0.7rem;
-  padding: 0.65rem 0.9rem 0.65rem 0.65rem;
-  border-radius: var(--r-sm);
-  background: color-mix(in srgb, var(--r) 13%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--r) 45%, transparent);
-}
-.saisie-carte-vignette {
-  display: block;
-  width: 46px;
-}
-.saisie-carte-vignette .cadre {
-  filter: drop-shadow(0 3px 5px rgb(0 0 0 / 0.45));
-}
-.saisie-carte-titre {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.5rem;
-  font-family: var(--font-display);
-  font-size: 1rem;
-  font-weight: 900;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--ink);
-}
-.saisie-carte-titre > span {
-  font-size: 0.75rem;
-  letter-spacing: 0.14em;
-  color: color-mix(in srgb, var(--r) 80%, var(--frost));
-}
-.saisie-carte-desc {
-  margin-top: 0.15rem;
-  font-size: 0.8125rem;
-  line-height: 1.4;
-  color: var(--ink-2);
-}
-.saisie-carte-ici {
-  margin-top: 0.2rem;
-  font-size: 0.8125rem;
-  font-weight: 700;
-  color: var(--ink);
-}
-.saisie-carte-donne {
-  font-family: var(--font-display);
-  font-size: 1.35rem;
-  font-weight: 900;
-  white-space: nowrap;
-  color: var(--aurora);
-}
-@media (max-width: 520px) {
-  .saisie-carte {
-    grid-template-columns: auto minmax(0, 1fr);
-  }
-  .saisie-carte-donne {
-    grid-column: 2;
-  }
 }
 
 /* Lancer un Verglas (modération) : le bouton dans la fiche, puis sa fenêtre. */

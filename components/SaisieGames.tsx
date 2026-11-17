@@ -114,60 +114,41 @@ function Fenetre({
   // se caler sur l'écran, pas sur la carte — sur mobile surtout.
   if (typeof document === 'undefined') return null;
   return createPortal(
-    <div
-      className="fixed inset-0 z-[60] flex items-end justify-center bg-[#04101f]/60 backdrop-blur-md sm:items-center sm:p-4"
-      role="dialog"
-      aria-modal="true"
-      aria-label={titre}
-      onClick={ferme}
-    >
+    <div className="fenetre-voile saisie-voile" role="dialog" aria-modal="true" aria-label={titre} onClick={ferme}>
       <div
-        className={`glass glass-reflet relative flex max-h-[92dvh] w-full flex-col overflow-hidden !rounded-b-none sm:!rounded-b-[var(--r-lg)] ${large ? 'max-w-3xl' : 'max-w-lg'}`}
-        // La même glace bleutée que les cartes de la page. Sur le voile sombre,
-        // le verre seul virait au gris : la teinte est posée en dur ici.
-        style={{ background: 'linear-gradient(160deg, rgb(44 88 132 / 0.94) 0%, rgb(18 44 76 / 0.97) 100%)' }}
+        className={`fenetre-carte saisie-fenetre glass glass-reflet relative${large ? ' saisie-fenetre-large' : ''}`}
         onClick={(e) => e.stopPropagation()}
       >
         <SnowCap radius="var(--r-lg)" seed="fenetre-saisie" epaisseur={14} />
-        <header className="relative flex items-center gap-3 border-b border-white/15 px-5 pt-6 pb-4">
-          <h2 className="font-display text-lg font-black tracking-wider text-ink uppercase">{titre}</h2>
+        <header className="saisie-entete">
+          <h2>{titre}</h2>
           <button type="button" className="btn btn-sm ml-auto" onClick={ferme} aria-label="Fermer">
             ✕
           </button>
         </header>
-        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5 sm:py-5">{children}</div>
+        <div className="saisie-corps">{children}</div>
       </div>
     </div>,
     document.body,
   );
 }
 
-/** Les tuiles du classement, partagé par toute l'équipe. */
+/** Le top de l'équipe, partagé : une pastille par place, ce qu'elle rapporte à côté. */
 function ChoixTop({ valeur, onChange, disabled }: { valeur: Placement; onChange: (p: Placement) => void; disabled?: boolean }) {
   return (
-    <div className="grid grid-cols-4 gap-2 sm:grid-cols-7">
-      {TOPS.map((t) => {
-        const actif = t.valeur === valeur;
-        return (
-          <button
-            key={String(t.valeur)}
-            type="button"
-            disabled={disabled}
-            onClick={() => onChange(t.valeur)}
-            aria-pressed={actif}
-            className={`rounded-2xl border px-2 py-3 text-center transition-colors ${
-              actif
-                ? 'border-white/90 bg-white/90 text-[#06284a] shadow-[0_8px_22px_-10px_rgb(20_70_120/0.6)]'
-                : 'glass glass-soft border-white/20 text-ink hover:border-white/50'
-            }`}
-          >
-            <span className="block font-display text-[15px] font-black tracking-wide uppercase">{t.libelle}</span>
-            <span className={`mt-0.5 block text-[13px] ${actif ? 'text-[#06284a]/80' : 'text-muted'}`}>
-              +{placementPoints(t.valeur)} pts
-            </span>
-          </button>
-        );
-      })}
+    <div className="saisie-tops" role="group" aria-label="Top de l'équipe">
+      {TOPS.map((t) => (
+        <button
+          key={String(t.valeur)}
+          type="button"
+          disabled={disabled}
+          onClick={() => onChange(t.valeur)}
+          aria-pressed={t.valeur === valeur}
+        >
+          <b>{t.libelle}</b>
+          <span className="num">+{placementPoints(t.valeur)}</span>
+        </button>
+      ))}
     </div>
   );
 }
@@ -385,131 +366,133 @@ function FenetreIA({ joueurs, active, ferme }: { joueurs: Joueur[]; active: bool
   const jokersJoues = (lignes ?? []).filter((l) => l.joueurId && l.joker && apercus[l.joueurId]?.joker).length;
 
   return (
-    <Fenetre titre="Saisie équipe — IA" large ferme={ferme}>
-      {!active && (
-        <div className="mb-4">
-          <Notice kind="error">
-            La lecture des captures n’est pas activée : la clé ANTHROPIC_API_KEY manque dans les variables
-            d’environnement du serveur (Vercel). Ajoute-la, puis redéploie.
-          </Notice>
-        </div>
-      )}
+    <Fenetre titre="Saisir une game" large ferme={ferme}>
+      {/* Une fois lue, sur un téléphone, les résultats passent en tête. */}
+      <div className="saisie" data-lu={lignes && lignes.length > 0 ? '' : undefined}>
+        {/* ---- À gauche : la capture, le top, l'analyse ---- */}
+        <div className="saisie-gauche">
+          {!active && (
+            <Notice kind="error">
+              La lecture des captures n’est pas activée : la clé ANTHROPIC_API_KEY manque dans les variables
+              d’environnement du serveur (Vercel). Ajoute-la, puis redéploie.
+            </Notice>
+          )}
 
-      {/* ---- le top, partagé ---- */}
-      <p className="label">
-        Classement top <span className="font-sans font-normal tracking-normal normal-case text-faint">(partagé pour toute l’équipe)</span>
-      </p>
-      <ChoixTop valeur={placement} onChange={setPlacement} disabled={busy !== null} />
-
-      {/* ---- la capture ---- */}
-      <p className="label mt-5">Capture d’écran fin de game</p>
-      <div
-        className="glass glass-soft flex min-h-[150px] cursor-pointer items-center justify-center overflow-hidden rounded-2xl p-2 text-center"
-        style={{ borderStyle: apercu ? 'solid' : 'dashed', borderWidth: 2, borderColor: apercu ? 'var(--aurora)' : 'rgb(255 255 255 / 0.35)' }}
-        onClick={() => !apercu && fichier.current?.click()}
-        onDragOver={(e) => e.preventDefault()}
-        onDrop={(e) => {
-          e.preventDefault();
-          const f = e.dataTransfer.files?.[0];
-          if (f && f.type.startsWith('image/')) void charge(f);
-        }}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') fichier.current?.click();
-        }}
-      >
-        {apercu ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={apercu} alt="Capture de fin de game" className="max-h-[240px] w-auto rounded-xl" />
-        ) : (
-          <div className="px-4 py-6">
-            <span className="block text-3xl opacity-50" aria-hidden="true">
-              🖼
-            </span>
-            <p className="mt-2 text-[14px] text-muted">Ctrl+V pour coller · ou cliquez pour choisir un fichier</p>
+          <div
+            className="saisie-capture"
+            data-vide={apercu ? undefined : ''}
+            onClick={() => !apercu && fichier.current?.click()}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => {
+              e.preventDefault();
+              const f = e.dataTransfer.files?.[0];
+              if (f && f.type.startsWith('image/')) void charge(f);
+            }}
+            role={apercu ? undefined : 'button'}
+            tabIndex={apercu ? undefined : 0}
+            onKeyDown={(e) => {
+              if (!apercu && (e.key === 'Enter' || e.key === ' ')) fichier.current?.click();
+            }}
+          >
+            {apercu ? (
+              <>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={apercu} alt="Capture de fin de game" />
+                <div className="saisie-capture-actions">
+                  <button type="button" disabled={busy !== null} onClick={() => fichier.current?.click()}>
+                    Changer
+                  </button>
+                  <button
+                    type="button"
+                    disabled={busy !== null}
+                    onClick={efface}
+                    aria-label="Retirer la capture"
+                    title="Retirer la capture"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </>
+            ) : (
+              <p>
+                <b>Colle la capture</b> (Ctrl+V)
+                <span>ou clique pour choisir un fichier</span>
+              </p>
+            )}
           </div>
-        )}
-      </div>
-      <input
-        ref={fichier}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={(e) => {
-          const f = e.target.files?.[0];
-          if (f) void charge(f);
-        }}
-      />
+          <input
+            ref={fichier}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) void charge(f);
+            }}
+          />
 
-      <div className="mt-3 flex gap-2">
-        <button type="button" className="btn btn-ice flex-1" disabled={!image || !active || busy !== null} onClick={analyse}>
-          {busy === 'lecture' ? 'Analyse en cours…' : '✦ Analyser'}
-        </button>
-        <button type="button" className="btn btn-sm" disabled={busy !== null} onClick={efface}>
-          ✕ Effacer
-        </button>
-      </div>
-
-      {message && (
-        <div className="mt-4">
-          <Notice kind={message.kind}>{message.text}</Notice>
-        </div>
-      )}
-
-      {/* ---- les résultats ---- */}
-      {lignes && lignes.length > 0 && (
-        <div className="mt-5">
-          <p className="label">Résultats</p>
-          <ul className="space-y-2.5">
-            {lignes.map((l, i) => (
-              <LigneResultat
-                key={`${l.lu}-${i}`}
-                ligne={l}
-                placement={placement}
-                apercu={l.joueurId ? apercus[l.joueurId] : undefined}
-                joueurs={joueurs}
-                meilleur={meilleurTueurDe(lignes)}
-                onChange={(patch) => modifie(i, patch)}
-              />
-            ))}
-          </ul>
-
-          {/* Le total de l'escouade, toutes lignes lues : il doit tomber sur
-              celui de la capture. Un écart, c'est un kill mal lu. */}
-          <div className="saisie-total">
-            <span>
-              Élim. lues, toute l’escouade : <strong className="num">{totalKills}</strong>
-            </span>
-            <span className="text-faint">À comparer avec « Totaux escouade » sur la capture.</span>
+          <div>
+            <p className="saisie-titre">Top de l’équipe</p>
+            <ChoixTop valeur={placement} onChange={setPlacement} disabled={busy !== null} />
           </div>
 
-          {doublons && (
-            <div className="mt-3">
-              <Notice kind="error">Un même joueur est assigné à deux lignes : corrige avant de valider.</Notice>
+          <button type="button" className="btn btn-ice w-full" disabled={!image || !active || busy !== null} onClick={analyse}>
+            {busy === 'lecture' ? 'Analyse en cours…' : lignes ? '✦ Relancer l’analyse' : '✦ Analyser'}
+          </button>
+
+          {message && <Notice kind={message.kind}>{message.text}</Notice>}
+        </div>
+
+        {/* ---- À droite : une ligne par joueur, et la validation ---- */}
+        <div className="saisie-droite">
+          {lignes && lignes.length > 0 ? (
+            <ul className="saisie-lignes">
+              {lignes.map((l, i) => (
+                <LigneResultat
+                  key={`${l.lu}-${i}`}
+                  ligne={l}
+                  placement={placement}
+                  apercu={l.joueurId ? apercus[l.joueurId] : undefined}
+                  joueurs={joueurs}
+                  meilleur={meilleurTueurDe(lignes)}
+                  onChange={(patch) => modifie(i, patch)}
+                />
+              ))}
+            </ul>
+          ) : (
+            <p className="saisie-attente">
+              {lignes
+                ? 'Aucune ligne de joueur n’a été lue sur cette capture.'
+                : 'Colle la capture de fin de game, puis lance l’analyse : les joueurs lus apparaîtront ici.'}
+            </p>
+          )}
+
+          {lignes && lignes.length > 0 && (
+            <div className="saisie-pied">
+              {doublons && <Notice kind="error">Un même joueur est assigné à deux lignes : corrige avant de valider.</Notice>}
+              <div className="saisie-pied-ligne">
+                {/* Le total de l'escouade, toutes lignes lues : il doit tomber sur
+                    celui de la capture. Un écart, c'est un kill mal lu. */}
+                <p className="saisie-total" title="À comparer avec « Totaux escouade » sur la capture">
+                  Élim. de l’escouade <strong className="num">{totalKills}</strong>
+                  <span>à comparer avec la capture</span>
+                </p>
+                <button
+                  type="button"
+                  className="btn btn-ice saisie-valider"
+                  disabled={busy !== null || doublons || assignes.size === 0}
+                  onClick={valide}
+                  title="La carte active d’un joueur compte dans son score et sera consommée par cette game."
+                >
+                  {busy === 'validation'
+                    ? 'Enregistrement…'
+                    : `✓ Valider ${assignes.size} game${assignes.size > 1 ? 's' : ''}${jokersJoues > 0 ? ` · ${jokersJoues} Joker${jokersJoues > 1 ? 's' : ''}` : ''}`}
+                </button>
+              </div>
             </div>
           )}
-          <button
-            type="button"
-            className="btn btn-ice btn-lg mt-4 w-full"
-            disabled={busy !== null || doublons || assignes.size === 0}
-            onClick={valide}
-          >
-            {busy === 'validation'
-              ? 'Enregistrement…'
-              : `✓ Valider toute l’équipe${jokersJoues > 0 ? ` · ${jokersJoues} Joker${jokersJoues > 1 ? 's' : ''} joué${jokersJoues > 1 ? 's' : ''}` : ''}`}
-          </button>
-          <p className="mt-2 text-center text-[13px] text-faint">
-            La carte active d’un joueur compte dans son score et sera consommée par cette game.
-          </p>
         </div>
-      )}
-
-      {lignes && lignes.length === 0 && (
-        <div className="mt-4">
-          <Notice kind="error">Aucune ligne de joueur n’a été lue sur cette capture.</Notice>
-        </div>
-      )}
+      </div>
     </Fenetre>
   );
 }
@@ -548,19 +531,20 @@ function LigneResultat({
   if (l.streameuse) {
     return (
       <li className="saisie-ligne" data-etat="hors">
-        <div className="saisie-ligne-tete">
-          <span className="saisie-lu" title={`Lu sur la capture : ${l.lu}`}>
-            {sansTagClan(l.lu) || l.lu}
-          </span>
-          <span className="text-sm text-muted">Streameuse — hors ligue, aucune game</span>
+        <div className="saisie-ligne-haut">
+          <div className="saisie-qui">
+            <span className="saisie-hors">{sansTagClan(l.lu) || l.lu}</span>
+            <span className="saisie-lu">Streameuse — hors ligue, aucune game</span>
+          </div>
           <span className="saisie-kills-fixes num">{l.kills} élim.</span>
+          <span />
         </div>
       </li>
     );
   }
 
   const assigne = l.joueurId !== null;
-  const couleur = l.confiance >= 0.9 ? 'text-aurora' : l.confiance >= 0.6 ? 'text-gold' : 'text-danger';
+  const sure = l.confiance >= 0.9 ? 'sure' : l.confiance >= 0.6 ? 'moyenne' : 'faible';
   const top = placementPoints(placement);
   const carte = apercu?.carte ?? null;
   const total = apercu?.score ?? l.kills + top;
@@ -570,17 +554,22 @@ function LigneResultat({
   // montre les kills d'après la carte, et la carte sans points à côté.
   const kills = apercu?.kills ?? l.kills;
   const clone = kills !== l.kills;
-  const pseudo = joueurs.find((j) => j.id === l.joueurId)?.pseudo ?? '';
+  // Le contrôle : ÉLIM. = ÉLIM./ASSIST. − ASSIST., recalculé à chaque − / +.
+  const controle = l.attendu === null || l.attendu === undefined ? null : l.attendu === l.kills;
+  const ici =
+    carte?.cardId === 'echo-lointain' && meilleur
+      ? clone
+        ? `copie les ${meilleur.kills} kills de ${meilleur.nom}, meilleur tueur`
+        : `meilleur tueur lui-même : ${points(carte.points)} de consolation`
+      : (carte?.resultat ?? '');
+  const sureTexte = `Lecture sûre à ${Math.round(l.confiance * 100)} %`;
 
   return (
     <li className="saisie-ligne" data-etat={!assigne ? 'libre' : jokerJoue ? 'joker' : 'compte'}>
-      <div className="saisie-ligne-tete">
-        <span className="saisie-lu" title={`Lu sur la capture : ${l.lu}`}>
-          {sansTagClan(l.lu) || l.lu}
-        </span>
-        <div className="min-w-0">
+      <div className="saisie-ligne-haut">
+        <div className="saisie-qui">
           <select
-            className="field !py-1 text-sm"
+            className="field saisie-joueur"
             value={l.joueurId ?? ''}
             onChange={(e) => onChange({ joueurId: e.target.value || null, confiance: e.target.value ? 1 : 0, joker: false })}
             aria-label={`Joueur pour ${l.lu}`}
@@ -592,144 +581,109 @@ function LigneResultat({
               </option>
             ))}
           </select>
-          {assigne && <span className={`mt-0.5 block text-[13px] ${couleur}`}>Lecture sûre à {Math.round(l.confiance * 100)} %</span>}
+          <span className="saisie-lu" title={`Lu sur la capture : ${l.lu}`}>
+            {assigne && <i className="saisie-sure" data-sure={sure} title={sureTexte} aria-label={sureTexte} />}
+            lu : {sansTagClan(l.lu) || l.lu}
+          </span>
         </div>
+
         <div className="saisie-kills" role="group" aria-label="Éliminations">
           <button
             type="button"
-            className="btn btn-sm !min-h-0 !px-2.5 !py-0.5"
             onClick={() => onChange({ kills: Math.max(GAME_LIMITS.minKills, l.kills - 1) })}
             aria-label="Un kill de moins"
           >
             −
           </button>
-          <span className="num min-w-[2ch] text-center font-display text-xl font-bold text-ink">{l.kills}</span>
+          <span
+            className="num saisie-kills-n"
+            data-controle={controle === null ? undefined : controle ? 'ok' : 'ecart'}
+            title={
+              controle === null
+                ? undefined
+                : controle
+                  ? `Vérifié : ${l.kills} = élim./assist. − assist.`
+                  : `Élim./assist. − assist. donne ${l.attendu} : vérifie sur la capture`
+            }
+          >
+            {l.kills}
+          </span>
           <button
             type="button"
-            className="btn btn-sm !min-h-0 !px-2.5 !py-0.5"
             onClick={() => onChange({ kills: Math.min(GAME_LIMITS.maxKills, l.kills + 1) })}
             aria-label="Un kill de plus"
           >
             +
           </button>
-          <span className="text-[13px] text-faint">élim.</span>
-          {/* Le − / + règle les kills lus sur la capture ; la carte les change
-              ensuite. On montre ce qu'elle en fait, sans toucher à ce qu'on envoie. */}
-          {clone && (
-            <span className="saisie-kills-carte num" title={`Avec ${carte?.nom ?? 'la carte'} : ${kills} kills`}>
-              → {kills}
-            </span>
-          )}
         </div>
+
+        <span className="saisie-total-ligne num" data-joker={jokerJoue || undefined}>
+          {!assigne ? '—' : jokerJoue ? '0 pt' : `${total} pts`}
+        </span>
       </div>
 
-      {/* Le contrôle : ÉLIM. = ÉLIM./ASSIST. − ASSIST., recalculé à chaque − / +. */}
-      {l.attendu !== null && l.attendu !== undefined && (
-        <p className="saisie-controle" data-ok={l.attendu === l.kills ? '' : undefined}>
-          {l.attendu === l.kills
-            ? `✓ Élim. vérifiées : ${l.kills} = élim./assist. − assist.`
-            : `⚠ Élim./assist. − assist. donne ${l.attendu}, pas ${l.kills} : vérifie sur la capture.`}
-        </p>
-      )}
-
-      {assigne && (
-        <>
-          {/* Le détail du score : chaque terme, puis le total. */}
-          <div className="saisie-calcul" data-barre={jokerJoue || undefined}>
-            <span className="saisie-terme">
-              <b className="num">{points(kills)}</b> {kills} kill{kills > 1 ? 's' : ''}
+      {(assigne || controle === false) && (
+        <div className="saisie-ligne-bas">
+          {controle === false && (
+            <span className="saisie-puce" data-ton="alerte">
+              ⚠ élim./assist. − assist. = {l.attendu}
             </span>
-            <span className="saisie-op">+</span>
-            <span className="saisie-terme">
-              <b className="num">{points(top)}</b> {placement === null ? 'pas top' : `Top ${placement}`}
-            </span>
-            {carte && (
-              <>
-                <span className="saisie-op">+</span>
-                <span className="saisie-terme" data-carte={carte.points < 0 ? 'malus' : 'bonus'} title={carte.resultat}>
-                  {!clone && <b className="num">{points(carte.points)}</b>} {carte.nom}
-                </span>
-              </>
-            )}
-            <span className="saisie-op">=</span>
-            <span className="saisie-total-ligne num">{jokerJoue ? '0 pt' : `${total} pts`}</span>
-          </div>
-          {/* La carte jouée sur cette game, en clair : ce qu'elle est, ce qu'elle
-              fait, et ce qu'elle donne ici. Écho Lointain nomme le meilleur
-              tueur dont elle copie les kills. */}
-          {carte && !jokerJoue && (
-            <CarteDeLaGame
-              cardId={carte.cardId}
-              donne={clone ? `${l.kills} → ${kills} kills` : points(carte.points)}
-              ici={
-                carte.cardId === 'echo-lointain' && meilleur
-                  ? clone
-                    ? `Elle copie les ${meilleur.kills} kills de ${meilleur.nom}, meilleur tueur de la partie.`
-                    : `Meilleur tueur de la partie lui-même (${l.kills} kills) : ${points(carte.points)} de consolation.`
-                  : carte.resultat
-              }
-            />
           )}
-
+          {assigne && (
+            <span className="saisie-calcul" data-barre={jokerJoue || undefined}>
+              {clone ? `${l.kills} → ${kills}` : kills} kill{kills > 1 ? 's' : ''} · {placement === null ? 'pas top' : `Top ${placement} +${top}`}
+            </span>
+          )}
+          {assigne && carte && !jokerJoue && (
+            <CarteDeLaGame cardId={carte.cardId} donne={clone ? `${kills} kills` : points(carte.points)} ici={ici} />
+          )}
           {/* Le Joker : un choix, pas une case qu'on rate. */}
-          {joker && (
-            <div className="saisie-joker" data-joue={jokerJoue || undefined}>
-              <div className="min-w-0">
-                <p className="saisie-joker-titre">
-                  🃏 {pseudo} a un Joker{jokerJoue ? ' — joué sur cette game' : ''}
-                </p>
-                <p className="saisie-joker-texte">
-                  {jokerJoue
-                    ? `Cette game ne comptera pas : 0 point, 0 flocon. Le Joker est consommé${carte ? `, et ${carte.nom} attend sa game suivante` : ''}.`
-                    : 'Le jouer annule cette game : elle ne comptera pas, et il pourra la rejouer. Sinon, il garde son Joker pour plus tard.'}
-                </p>
-              </div>
-              <button
-                type="button"
-                className="saisie-joker-bouton"
-                aria-pressed={jokerJoue}
-                onClick={() => onChange({ joker: !jokerJoue })}
-              >
-                {jokerJoue ? 'Ne pas jouer le Joker' : 'Jouer le Joker'}
-              </button>
-            </div>
+          {assigne && joker && (
+            <button
+              type="button"
+              className="saisie-joker"
+              aria-pressed={jokerJoue}
+              onClick={() => onChange({ joker: !jokerJoue })}
+              title={
+                jokerJoue
+                  ? `Cette game ne comptera pas : 0 point, 0 flocon${carte ? `, et ${carte.nom} attend la suivante` : ''}.`
+                  : 'Le jouer annule cette game : elle ne comptera pas. Sinon, il garde son Joker.'
+              }
+            >
+              🃏 {jokerJoue ? 'Joker joué · annuler' : 'Jouer le Joker'}
+            </button>
           )}
-        </>
+        </div>
       )}
     </li>
   );
 }
 
 /**
- * La carte active d'un joueur, dans sa ligne de saisie : sa vignette, son nom
- * et sa rareté, ce qu'elle fait en général, puis ce qu'elle fait sur cette
- * game — et, en grand, ce qu'elle lui donne.
+ * La carte active d'un joueur, dans sa ligne : sa vignette, son nom, ce
+ * qu'elle fait sur cette game et ce qu'elle lui donne. Ce qu'elle fait en
+ * général est au survol.
  */
 function CarteDeLaGame({ cardId, donne, ici }: { cardId: string; donne: string; ici: string }) {
   const def = getCard(cardId);
   if (!def) return null;
   const meta = RARITY_META[def.rarity];
   return (
-    <div className="saisie-carte" style={{ ['--r' as string]: meta.color }}>
+    <span
+      className="saisie-carte"
+      style={{ ['--r' as string]: meta.color }}
+      title={`${def.name} (${meta.label}) — ${def.description}${ici ? `\nSur cette game : ${ici}` : ''}`}
+    >
       <span className="saisie-carte-vignette" aria-hidden="true">
-        <CardFrame
-          cardId={def.id}
-          name={def.name}
-          rarity={def.rarity}
-          glyph={def.glyph}
-          nature={def.nature}
-          largeur="46px"
-        />
+        <CardFrame cardId={def.id} name={def.name} rarity={def.rarity} glyph={def.glyph} nature={def.nature} largeur="24px" />
       </span>
-      <div className="min-w-0">
-        <p className="saisie-carte-titre">
-          {def.name}
-          <span>{meta.label}</span>
-        </p>
-        <p className="saisie-carte-desc">{def.description}</p>
-        <p className="saisie-carte-ici">Sur cette game : {ici}</p>
-      </div>
-      <span className="saisie-carte-donne num">{donne}</span>
-    </div>
+      <span className="saisie-carte-texte">
+        <b>{def.name}</b>
+        {ici && <span> · {ici}</span>}
+      </span>
+      <b className="saisie-carte-donne num" data-signe={donne.startsWith('−') ? 'moins' : undefined}>
+        {donne}
+      </b>
+    </span>
   );
 }
