@@ -82,6 +82,11 @@ export function DestinCarte({ o }: { o: Destin }) {
 
   if (o.effets.length > 0 && o.enAttente === 0) return <CompteRendu effets={o.effets} autres={autres} />;
 
+  // Ouverte sans personne à toucher : pas encore assez de joueurs avec une game.
+  if (!o.pseudo && !o.tous && o.beneficiaires.length === 0 && o.effets.length === 0 && o.enAttente === 0) {
+    return <Notice>Sans effet : aucun joueur n’a encore de game pour cette carte.</Notice>;
+  }
+
   return (
     <Notice kind={o.nature === 'malus' ? 'error' : 'success'}>
       {o.effets.length > 0 && <CompteRendu effets={o.effets} autres={autres} />}

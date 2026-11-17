@@ -795,11 +795,12 @@ export function ouvrePack(db: Database, demande: DemandeOuverture, ouvertPar: st
   const card = getCard(cardId)!;
 
   const beneficiaires = joueur ? [joueur] : beneficiairesDe(db, card);
-  if (beneficiaires.length === 0) {
+  // Une carte des roues (Commu, Folie) sans assez de joueurs avec une game
+  // s'ouvre quand même, et ne tombe sur personne (17/11/2026) : le booster ne
+  // reste pas bloqué dans la file.
+  if (beneficiaires.length === 0 && card.effect.kind !== 'roue') {
     throw new PackError(
-      card.effect.kind === 'roue'
-        ? 'Pas assez de joueurs avec une game pour cette carte : le booster reste dans la file.'
-        : card.cible === 'DEUX'
+      card.cible === 'DEUX'
         ? 'Il faut deux joueurs actifs pour cette carte.'
         : 'Aucun joueur libre pour recevoir la carte : chacun a déjà une carte qui attend sa prochaine game. Le booster reste dans la file.',
       'AUCUN_BENEFICIAIRE',

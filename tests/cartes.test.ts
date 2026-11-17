@@ -628,6 +628,22 @@ describe('sur qui une carte tombe', () => {
     expect(b.id).toBe(a.id);
     expect(db.ouvertures).toHaveLength(1);
   });
+
+  it('ouvre un Commu ou un Folie même sans game jouée : la carte ne tombe alors sur personne', () => {
+    // Le booster ne reste plus bloqué dans la file (17/11/2026).
+    for (const packId of ['commu', 'folie'] as const) {
+      for (let i = 0; i < 40; i += 1) {
+        const db = ligue();
+        db.games = [];
+        const o = ouvrePack(db, { packId, idempotencyKey: `vide-${packId}-${i}` }, 'test');
+        const card = getCard(o.cardId)!;
+        if (o.beneficiaires.length === 0) {
+          expect(card.effect.kind).toBe('roue');
+          expect(db.cartesEnAttente.filter((c) => c.ouvertureId === o.id)).toHaveLength(0);
+        }
+      }
+    }
+  });
 });
 
 describe('ce que la carte dit d’elle', () => {

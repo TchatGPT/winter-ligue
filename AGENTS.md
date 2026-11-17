@@ -101,7 +101,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   arrive en points hors game. Leur
   tirage a ses cibles (`TROIS`, `SIX`, `DIX_PREMIERS`, `CINQ_DERNIERS`,
   `beneficiairesRoue`) et ignore la règle « pas de stock » : rien n'en reste en
-  attente. Une game qu'elles ont touchée ne se corrige pas : elle se supprime. Les
+  attente. Sans assez de joueurs avec une game, elle s'ouvre quand même et ne tombe sur
+  personne (« sans effet », 17/11/2026) : le booster ne reste pas bloqué. Une game qu'elles ont touchée ne se corrige pas : elle se supprime. Les
   cartes retirées restent dans `tests/stubs/cartes-retirees.ts` : les tests y
   trouvent chaque genre d'effet (`avecCartesRetirees` ; `avecAnciensBoosters` pour
   les tirer d'un booster ; `avecBoostersDAvant` pour les règles qui ne visent que

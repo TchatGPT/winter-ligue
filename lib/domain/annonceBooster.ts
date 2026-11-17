@@ -53,7 +53,10 @@ export function messageOuverture(a: AnnonceOuverture): string {
   const nom = (g: AnnonceOuverture['gagnants'][number]) => (g.twitchLogin ? `@${g.twitchLogin}` : g.pseudo);
 
   let message: string;
-  if (a.touteLaLigue || a.gagnants.length === 0) {
+  if (!a.touteLaLigue && a.gagnants.length === 0) {
+    // Une carte des roues sans joueur à toucher : elle s'ouvre, sans effet.
+    message = `${tete} ${carte[0].toUpperCase()}${carte.slice(1)} tombe sans effet : aucun joueur n’a encore de game pour elle.`;
+  } else if (a.touteLaLigue) {
     message = `${tete} Toute la ligue a obtenu ${carte}, qui fait : ${sansPointFinal(a.carte.action)}.`;
   } else if (a.gagnants.length === 1) {
     message = `${tete} ${nom(a.gagnants[0])} a obtenu ${carte}, qui fait : ${sansPointFinal(a.carte.description)}.`;

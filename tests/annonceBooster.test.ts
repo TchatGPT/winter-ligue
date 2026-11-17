@@ -47,6 +47,12 @@ describe('l’annonce d’une ouverture dans le tchat', () => {
     );
   });
 
+  it('dit qu’une carte tombe sans effet quand personne n’a de game pour elle', () => {
+    expect(messageOuverture({ ...base, gagnants: [] })).toBe(
+      '🎁 Booster Perso ouvert ! La carte Congère (Commune) tombe sans effet : aucun joueur n’a encore de game pour elle.',
+    );
+  });
+
   it('ne dépasse jamais la longueur d’un message Twitch', () => {
     const long = { ...base, carte: { ...base.carte, description: 'x'.repeat(900) } };
     expect(messageOuverture(long).length).toBeLessThanOrEqual(LONGUEUR_MESSAGE_MAX);
