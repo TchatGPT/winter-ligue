@@ -337,7 +337,9 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   forment la réserve des **boosters cadeau** (`persoEnAttente`) que la modération redonne
   à des joueurs (`donneBoosterCadeau`, qui retient `donDe`) : le viewer dit à qui les
   donner, et la modération répartit les siens — de quel viewer, à quel joueur, combien
-  (03/11/2026) ; s'il s'inscrit, il ne reçoit que ce qui n'a pas été redonné. Pour l'offrir à un autre,
+  (03/11/2026) ; s'il s'inscrit, il ne reçoit que ce qui n'a pas été redonné. Les cadeaux
+  **anonymes** y vont aussi (18/11/2026) : tous ensemble, un donateur « Anonyme »
+  (`DONATEUR_ANONYME`, `donateurDe`), même règle — cinq subs offerts d'un coup, ou un T3. Pour l'offrir à un autre,
   la modération fait − chez l'un et + chez l'autre, sous le pseudo dans le classement
   (`ajusteBoostersPerso`) ; plus de − / + dans Modération → Joueurs.
 - Les duels se jouent entre joueurs : il n'y a plus de bot. `CAMP_BOT` ne sert plus

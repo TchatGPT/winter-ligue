@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Database } from '@/lib/db/entities';
 import { emptyDatabase } from '@/lib/db/store';
 import { BOOSTERS_DE_BIENVENUE, RAISON_BIENVENUE } from '@/lib/domain/rules';
-import { bilanDesSubs, persoEnAttente, TYPE_TCHAT } from '@/lib/domain/twitchSubs';
+import { bilanDesSubs, DONATEUR_ANONYME, persoEnAttente, TYPE_TCHAT } from '@/lib/domain/twitchSubs';
 import { rattacheCompteTwitch } from '@/lib/services/comptes';
 import { donneBoosterCadeau } from '@/lib/services/packs';
 import { ajouteSubsTwitch, remetSubsAZero } from '@/lib/services/subs';
@@ -152,6 +152,25 @@ describe('ce qu’un sub vaut à un joueur', () => {
     });
     expect(boostersPerso(db)).toHaveLength(0);
     expect(db.config.totalSubs).toBe(6);
+  });
+
+  it('un cadeau anonyme de cinq subs donne un booster cadeau, sous « Anonyme », que la modération redonne', () => {
+    const db = base();
+    const anonyme = (id: string, total: number) => {
+      const a = annonce('community_sub_gift', { id, total, sub_tier: '1000' }, 'tw-inconnu');
+      return { ...a, evenement: { ...a.evenement, chatter_is_anonymous: true } };
+    };
+    ajouteSubsTwitch(db, anonyme('cg-a', 5));
+    // Trois de plus, ensuite : moins de cinq d'un coup, ils ne comptent pas.
+    ajouteSubsTwitch(db, anonyme('cg-b', 3));
+    const inscrits = new Set(db.players.map((p) => p.twitchId).filter((t): t is string => t !== null));
+    const reserve = persoEnAttente(db.subsTwitch, inscrits);
+    expect(reserve).toEqual([expect.objectContaining({ twitchId: DONATEUR_ANONYME, pseudo: 'Anonyme', boosters: 1, restants: 1 })]);
+    // Personne n'en reçoit d'office : la modération le redonne.
+    expect(boostersPerso(db)).toHaveLength(0);
+    const r = donneBoosterCadeau(db, joueur(db).id, db.subsTwitch, 'modo', { donateur: DONATEUR_ANONYME });
+    expect(r).toMatchObject({ donateur: 'Anonyme', nombre: 1, reserve: 0 });
+    expect(persoEnAttente(db.subsTwitch, inscrits, new Map([[DONATEUR_ANONYME, 1]]))[0].restants).toBe(0);
   });
 
   it('les subs offerts par un non-inscrit comptent pour les boosters de la ligue', () => {

@@ -3,6 +3,8 @@ import {
   boostersDuGeste,
   boostersParLigne,
   dejaVu,
+  donateurDe,
+  DONATEUR_ANONYME,
   FRAICHEUR_MS,
   gesteDuMessage,
   ligneDuGeste,
@@ -300,6 +302,18 @@ describe('le registre des subs', () => {
       ligne('j', '2026-12-02T11:00:00.000Z', 'resub', 'y', 'Yann', 1, 3),
     ];
     expect(persoEnAttente(registre, new Set(['i']))).toEqual([
+      // Les cadeaux anonymes, ensemble, sous « Anonyme » (18/11/2026) : 50 T3, 50 boosters cadeau.
+      {
+        twitchId: DONATEUR_ANONYME,
+        pseudo: 'Anonyme',
+        offerts: 0,
+        niveau3: 50,
+        boosters: 50,
+        donnes: 0,
+        restants: 50,
+        premier: '2026-12-01T23:00:00.000Z',
+        dernier: '2026-12-01T23:00:00.000Z',
+      },
       {
         twitchId: 'x',
         pseudo: 'Xavier_',
@@ -367,11 +381,12 @@ describe('le registre des subs', () => {
     ];
     const parLigne = boostersParLigne(registre);
     // 5 puis 7 : un booster chacune (12 subs) ; les 3 de plus ne comptent pas, moins de cinq d'un coup.
-    expect(Object.fromEntries(parLigne)).toEqual({ x1: 1, x2: 1, x3: 0, y1: 1, y2: 2, z1: 0, a1: 0 });
+    // Le cadeau anonyme de 50 subs : dix boosters cadeau, pour « Anonyme ».
+    expect(Object.fromEntries(parLigne)).toEqual({ x1: 1, x2: 1, x3: 0, y1: 1, y2: 2, z1: 0, a1: 10 });
     // La réserve compte la même chose, en bloc.
     const reserve = persoEnAttente(registre, new Set());
     for (const p of reserve) {
-      const siens = registre.filter((l) => l.twitchId === p.twitchId).reduce((n, l) => n + parLigne.get(l.id)!, 0);
+      const siens = registre.filter((l) => donateurDe(l) === p.twitchId).reduce((n, l) => n + parLigne.get(l.id)!, 0);
       expect(siens).toBe(p.boosters);
     }
   });

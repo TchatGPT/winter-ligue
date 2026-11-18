@@ -281,6 +281,21 @@ export interface LigneSub {
   niveau: number;
 }
 
+/**
+ * Les cadeaux anonymes (18/11/2026) : on ne sait pas de qui ils viennent, mais
+ * leurs boosters ne se perdent plus — tous ensemble, ils forment un donateur,
+ * « Anonyme », dont les boosters vont à la réserve des boosters cadeau, comme
+ * ceux d'un viewer qui n'est pas inscrit. Même règle : cinq subs offerts, ou un
+ * sub de niveau 3, valent un booster.
+ */
+export const DONATEUR_ANONYME = 'anonyme';
+
+/** Qui a payé une ligne du registre : son compte Twitch, « Anonyme », ou personne. */
+export function donateurDe(l: Pick<LigneSub, 'twitchId' | 'pseudo'>): string | null {
+  if (l.twitchId) return l.twitchId;
+  return l.pseudo === 'Anonyme' ? DONATEUR_ANONYME : null;
+}
+
 /** La ligne du registre pour un message compté. */
 export function ligneDuGeste(message: { id: string; maintenant: number }, g: GesteSub): LigneSub {
   return {
@@ -322,8 +337,8 @@ export function bilanDesSubs(registre: readonly LigneSub[], twitchId: string | n
  * payée, par identifiant de ligne : ce que valent ses subs juste après elle,
  * moins ce qu'ils valaient juste avant (`packsPersoAcquis`), dans l'ordre où
  * ils sont arrivés. Les cinq subs offerts qui font un booster peuvent venir de
- * plusieurs annonces : c'est celle qui franchit le palier qui le vaut. Un
- * cadeau anonyme ne vaut rien à personne — on ne sait pas de qui.
+ * plusieurs annonces : c'est celle qui franchit le palier qui le vaut. Les
+ * cadeaux anonymes comptent ensemble, pour « Anonyme » (`DONATEUR_ANONYME`).
  *
  * Le booster va à qui a payé s'il est inscrit ; sinon, c'est un booster
  * cadeau (`persoEnAttente`). Les deux comptes tombent donc juste ensemble.
@@ -333,16 +348,17 @@ export function boostersParLigne(registre: readonly LigneSub[]): Map<string, num
   const parLigne = new Map<string, number>();
   const ordre = [...registre].sort((a, b) => a.le.localeCompare(b.le) || a.id.localeCompare(b.id));
   for (const l of ordre) {
-    if (!l.twitchId || !compteSub(l)) {
+    const qui = donateurDe(l);
+    if (!qui || !compteSub(l)) {
       parLigne.set(l.id, 0);
       continue;
     }
-    const avant = cumul.get(l.twitchId) ?? { offerts: 0, niveau3: 0 };
+    const avant = cumul.get(qui) ?? { offerts: 0, niveau3: 0 };
     const apres = {
       offerts: avant.offerts + (l.niveau !== 3 && l.genre === 'cadeau' ? l.nombre : 0),
       niveau3: avant.niveau3 + (l.niveau === 3 ? l.nombre : 0),
     };
-    cumul.set(l.twitchId, apres);
+    cumul.set(qui, apres);
     parLigne.set(l.id, packsPersoAcquis(apres.offerts, apres.niveau3) - packsPersoAcquis(avant.offerts, avant.niveau3));
   }
   return parLigne;
@@ -370,7 +386,8 @@ export interface PersoEnAttente {
  * de niveau 3 — sans être inscrit à la ligue. Ses Boosters Perso forment la
  * réserve des boosters cadeau : la modération les redonne à des joueurs de la
  * ligue (`donnes`, par compte Twitch), et ce qui reste lui est versé s'il
- * s'inscrit. Les cadeaux anonymes n'y figurent pas — on ne sait pas de qui.
+ * s'inscrit. Les cadeaux anonymes y figurent ensemble, sous « Anonyme »
+ * (18/11/2026) : la modération les redonne comme les autres.
  */
 export function persoEnAttente(
   registre: readonly LigneSub[],
@@ -379,11 +396,12 @@ export function persoEnAttente(
 ): PersoEnAttente[] {
   const parPersonne = new Map<string, PersoEnAttente>();
   for (const l of registre) {
-    if (!l.twitchId || inscrits.has(l.twitchId) || !compteSub(l)) continue;
+    const qui = donateurDe(l);
+    if (!qui || inscrits.has(qui) || !compteSub(l)) continue;
     const niveau3 = l.niveau === 3 ? l.nombre : 0;
     const offerts = l.niveau !== 3 && l.genre === 'cadeau' ? l.nombre : 0;
     if (niveau3 === 0 && offerts === 0) continue;
-    const deja = parPersonne.get(l.twitchId);
+    const deja = parPersonne.get(qui);
     if (deja) {
       deja.niveau3 += niveau3;
       deja.offerts += offerts;
@@ -393,8 +411,8 @@ export function persoEnAttente(
       }
       if (l.le < deja.premier) deja.premier = l.le;
     } else {
-      parPersonne.set(l.twitchId, {
-        twitchId: l.twitchId,
+      parPersonne.set(qui, {
+        twitchId: qui,
         pseudo: l.pseudo,
         offerts,
         niveau3,

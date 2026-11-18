@@ -4,7 +4,7 @@ import { exigeRole } from '@/lib/auth/acces';
 import { chaineDeLaLigue, isTwitchEnabled } from '@/lib/auth/twitch';
 import { getStore } from '@/lib/db/store';
 import { estLaStreameuse } from '@/lib/domain/streameuse';
-import { boostersParLigne, persoEnAttente } from '@/lib/domain/twitchSubs';
+import { boostersParLigne, DONATEUR_ANONYME, persoEnAttente } from '@/lib/domain/twitchSubs';
 import { evenementsActifs } from '@/lib/services/evenements';
 import { boostersCadeauDonnes, reserveHorsLigue, SOURCE_HORS_LIGUE } from '@/lib/services/packs';
 import { etatSubsTwitch } from '@/lib/services/twitchSubs';
@@ -88,6 +88,7 @@ export default async function AdminAccueilPage() {
   const donateurs = [...persoEnAttente(registre, inscrits, new Map(ligue.donnes)), ...ligue.horsLigue];
   const pseudoTwitch = new Map<string | null, string>([
     ...registre.map((s) => [s.twitchId, s.pseudo] as [string | null, string]),
+    [DONATEUR_ANONYME, 'Anonyme'],
     ...ligue.pseudosHorsLigue,
   ]);
   const gagnes = boostersParLigne(registre);
