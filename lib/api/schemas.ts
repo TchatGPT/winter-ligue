@@ -10,7 +10,7 @@ import { z } from 'zod';
 import { MANCHES_POSSIBLES } from '@/lib/domain/bataille';
 import { LONGUEUR_ACTIVISION, sansSuffixeActivision } from '@/lib/domain/activision';
 import { UTILISATIONS_MAX } from '@/lib/domain/codes';
-import { DUEL, ECONOMY, GAME_LIMITS } from '@/lib/domain/rules';
+import { DUEL, GAME_LIMITS, SOLDE_MAX_ABSOLU } from '@/lib/domain/rules';
 import { sansInvisibles } from '@/lib/domain/texte';
 import { PACK_IDS } from '@/lib/domain/types';
 
@@ -239,7 +239,8 @@ export const utiliseCodeSchema = z.object({ code: z.string().trim().min(1).max(4
 
 /** Un code créé par la modération : un montant, un nombre d'utilisations ; le code est tiré au sort. */
 export const creeCodeSchema = z.object({
-  montant: z.number().int().min(1).max(ECONOMY.soldeMax),
+  // La borne de la saison est revérifiée par `creeCode`.
+  montant: z.number().int().min(1).max(SOLDE_MAX_ABSOLU),
   utilisationsMax: z.number().int().min(1).max(UTILISATIONS_MAX),
 });
 

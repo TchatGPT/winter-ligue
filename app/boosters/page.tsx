@@ -3,7 +3,7 @@ import { exigeLecteur } from '@/lib/auth/acces';
 import { getStore } from '@/lib/db/store';
 import { CARDS, cartesDuPack, getCard, impactMax, momentDe } from '@/lib/domain/catalog';
 import type { CarteSaison } from '@/components/CartesParRarete';
-import { chanceDe } from '@/lib/domain/rules';
+import { chanceDe, soldeMaxDe } from '@/lib/domain/rules';
 import { carteQuiAttend } from '@/lib/services/effects';
 import { fileDesPacks, joueursEnLice, resolvedPacks } from '@/lib/services/packs';
 
@@ -23,7 +23,8 @@ export default async function PacksPage(){
   // n'ouvre que ce qui est dû, et la route le revérifie.
   const aLaMain = session?.role === 'admin';
 
-  const { packs, file, joueurs, totalSubs } = await getStore().read((db) => ({
+  const { packs, file, joueurs, totalSubs, soldeMax } = await getStore().read((db) => ({
+    soldeMax: soldeMaxDe(db.config.numero),
     // Les taux réglés par l'administration, pas ceux du catalogue : la page
     // doit annoncer ce que le serveur appliquera.
     packs: resolvedPacks(db).map(
@@ -53,7 +54,7 @@ export default async function PacksPage(){
               pseudo: p.pseudo,
               avatarUrl: p.avatarUrl ?? null,
               snowflakes: p.snowflakes,
-              chance: chanceDe(p.snowflakes),
+              chance: chanceDe(p.snowflakes, soldeMaxDe(db.config.numero)),
               // Sa carte en attente, s'il en a une : aucun booster ne s'ouvre
               // pour lui tant qu'elle n'a pas joué.
               attend: ((c) => (c ? (getCard(c.cardId)?.name ?? 'une carte') : null))(carteQuiAttend(db, p.id)),
@@ -94,6 +95,7 @@ export default async function PacksPage(){
         moderateur={moderateur}
         aLaMain={aLaMain}
         totalSubs={totalSubs}
+        soldeMax={soldeMax}
       />
     </div>
   );

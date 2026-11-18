@@ -56,6 +56,12 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   limite. Comptes, grand livre et journal restent ; le registre des subs ne compte que
   ce qui suit la remise à zéro (`config.remiseA`).
 - Les constantes de saison vivent dans `lib/domain/rules.ts`, nulle part ailleurs.
+- **Le solde maximum de flocons suit la saison** (18/11/2026, `ParametresSaison.soldeMax`,
+  `soldeMaxDe`) : **30 000 en Mini Ligue, 50 000 en saison 2** ; ce que rapportent les games ne
+  change pas. Les paliers de chance s'y ramènent (`paliersChance` : ×4 au solde maximum), et
+  tout ce qui parle de « solde plein » le lit — crédit et ajustement (`credit`, `adjust`), duels
+  fermés, cadeau du jour, codes cadeaux, règles, fiche, menu. `SOLDE_MAX_ABSOLU` ne sert qu'aux
+  bornes des formulaires et à la lecture de la base.
 - **Au palier du Finisseur** (30ᵉ game en saison 1, 60ᵉ en saison 2), les Boosters Perso
   d'un joueur s'ouvrent en Boosters Finisseur — il n'ouvre plus de Perso ; repassé sous le
   palier, ce sont de nouveau des Perso (`packEffectif`, `auPalierFinisseur`, 15/11/2026).

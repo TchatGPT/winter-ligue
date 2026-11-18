@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Database } from '@/lib/db/entities';
 import { emptyDatabase } from '@/lib/db/store';
 import { boosterDuJour, jourDeParis, jourDuCycle, montantDuJour, serieDuJour, veille } from '@/lib/domain/cadeauDuJour';
-import { CADEAU_DU_JOUR, ECONOMY } from '@/lib/domain/rules';
+import { CADEAU_DU_JOUR, SOLDE_MAX_ABSOLU, soldeMaxDe } from '@/lib/domain/rules';
 import { CadeauError, etatCadeau, prendsCadeauDuJour } from '@/lib/services/cadeauDuJour';
 import { rattacheCompteTwitch } from '@/lib/services/comptes';
 
@@ -40,7 +40,7 @@ describe('le calendrier du cadeau', () => {
     const total = Array.from({ length: 90 }, (_, i) => montantDuJour(i + 1)).reduce((a, b) => a + b, 0);
     expect(total).toBe(78 * CADEAU_DU_JOUR.parJour);
     expect(Array.from({ length: 90 }, (_, i) => boosterDuJour(i + 1)).filter(Boolean)).toHaveLength(12);
-    expect(total).toBeLessThan(ECONOMY.soldeMax / 5);
+    expect(total).toBeLessThan(SOLDE_MAX_ABSOLU / 5);
   });
 });
 
@@ -87,7 +87,7 @@ describe('prendre le cadeau du jour', () => {
   it('garde le jour du booster ouvert à solde plein, et ferme les jours de flocons', () => {
     const { db, id } = base();
     for (let j = 0; j < 6; j += 1) prendsCadeauDuJour(db, id, new Date(T0.getTime() + j * JOUR));
-    db.players[0].snowflakes = ECONOMY.soldeMax;
+    db.players[0].snowflakes = soldeMaxDe(1);
     const septieme = new Date(T0.getTime() + 6 * JOUR);
     expect(etatCadeau(db, id, septieme)).toMatchObject({ booster: true, plein: false });
     expect(prendsCadeauDuJour(db, id, septieme).booster).toBe(true);

@@ -763,7 +763,7 @@ export function Affrontements({
   const gainReel =
     solde !== null && miseValide ? Math.max(0, Math.min(mise * 2, soldeMax - (solde - mise)) - mise) : mise;
   const gainPerdu = miseValide ? mise - gainReel : 0;
-  const chance = solde !== null ? chanceDe(solde) : null;
+  const chance = solde !== null ? chanceDe(solde, soldeMax) : null;
   /** Solde plein : ni lancer ni relever de duel tant qu'il n'est pas repassé dessous. */
   const plein = solde !== null && solde >= soldeMax;
   /** On ne peut pas miser du tout : pas de joueur derrière la session, plus assez de flocons, ou un solde plein. */
@@ -1033,7 +1033,7 @@ export function Affrontements({
               <div className="duels-avis">
                 <p>
                   <strong>Ton solde est plein : {flakes(soldeMax)} ❄.</strong> Ta chance est au maximum,{' '}
-                  <strong className="text-aurora">{libelleMultiplicateur(chanceDe(soldeMax))}</strong> : tu n’as plus
+                  <strong className="text-aurora">{libelleMultiplicateur(chanceDe(soldeMax, soldeMax))}</strong> : tu n’as plus
                   rien à gagner en duel.
                 </p>
               </div>

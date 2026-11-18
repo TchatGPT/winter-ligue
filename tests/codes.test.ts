@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Database } from '@/lib/db/entities';
 import { emptyDatabase } from '@/lib/db/store';
 import { annonceDuCode, etatDuCode, normaliseCode } from '@/lib/domain/codes';
-import { ECONOMY } from '@/lib/domain/rules';
+import { soldeMaxDe } from '@/lib/domain/rules';
 import { CodeError, creeCode, desactiveCode, supprimeCode, utiliseCode, vueCodes } from '@/lib/services/codes';
 import { rattacheCompteTwitch } from '@/lib/services/comptes';
 
@@ -72,7 +72,7 @@ describe('créer un code', () => {
   it('revérifie le montant et les utilisations, quoi qu’ait laissé passer l’écran', () => {
     const { db, modo } = base();
     refuse(() => creeCode(db, { montant: 0, utilisationsMax: 5 }, modo), 'CODE_INVALIDE');
-    refuse(() => creeCode(db, { montant: ECONOMY.soldeMax + 1, utilisationsMax: 5 }, modo), 'CODE_INVALIDE');
+    refuse(() => creeCode(db, { montant: soldeMaxDe(1) + 1, utilisationsMax: 5 }, modo), 'CODE_INVALIDE');
     refuse(() => creeCode(db, { montant: 10, utilisationsMax: 0 }, modo), 'CODE_INVALIDE');
     refuse(() => creeCode(db, { montant: 2.5, utilisationsMax: 1 }, modo), 'CODE_INVALIDE');
   });
@@ -120,11 +120,11 @@ describe('utiliser un code', () => {
 
   it('s’arrête au plafond du solde, comme tout crédit', () => {
     const { db, modo, a } = base();
-    const { code } = creeCode(db, { montant: ECONOMY.soldeMax, utilisationsMax: 1 }, modo);
+    const { code } = creeCode(db, { montant: soldeMaxDe(1), utilisationsMax: 1 }, modo);
     const avant = solde(db, a);
     const r = utiliseCode(db, a, code, CHAINE);
-    expect(solde(db, a)).toBe(ECONOMY.soldeMax);
-    expect(r.recu).toBe(ECONOMY.soldeMax - avant);
+    expect(solde(db, a)).toBe(soldeMaxDe(1));
+    expect(r.recu).toBe(soldeMaxDe(1) - avant);
   });
 });
 

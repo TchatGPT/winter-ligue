@@ -20,6 +20,7 @@ export function SessionBadge({
   role,
   pseudo,
   balance,
+  soldeMax,
   cadeau = null,
   visiteur = null,
   stacked = false,
@@ -27,6 +28,8 @@ export function SessionBadge({
   role: 'admin' | 'joueur' | null;
   pseudo: string | null;
   balance: number | null;
+  /** Le solde maximum de la saison : la chance de l'achat d'un booster en dépend. */
+  soldeMax: number;
   /** Le cadeau du jour, s'il y a un joueur. */
   cadeau?: EtatCadeau | null;
   /**
@@ -121,6 +124,7 @@ export function SessionBadge({
         {balance !== null && (
           <AchatBooster
             solde={balance}
+            soldeMax={soldeMax}
             className="solde-capsule glass glass-soft flex w-full flex-col items-center px-2 py-3 text-center"
             title="Tes flocons — échange-les contre un Booster Perso"
           >
@@ -168,6 +172,7 @@ export function SessionBadge({
         >
           <AchatBooster
             solde={balance}
+            soldeMax={soldeMax}
             className="solde-pastille flex items-center gap-1.5"
             title="Tes flocons — échange-les contre un Booster Perso"
           >

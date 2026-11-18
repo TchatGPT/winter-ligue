@@ -16,7 +16,9 @@ import {
   DEFAULT_MAX_GAMES_PER_PLAYER,
   ECONOMY,
   multiplicateurChance,
-  PALIERS_CHANCE,
+  paliersChance,
+  parametresSaison,
+  soldeMaxDe,
   nextMilestone,
   packsPersoAcquis,
   paliersDuCompteur,
@@ -165,27 +167,49 @@ describe('tables de raretés', () => {
 });
 
 describe('la chance', () => {
-  it('monte par paliers avec le solde, de ×1 à ×4, et s’arrête au plafond', () => {
-    expect(chanceDe(0)).toBe(0);
-    expect(chanceDe(-500)).toBe(0);
-    expect(chanceDe(Number.NaN)).toBe(0);
-    expect(multiplicateurChance(0)).toBe(1);
-    expect(multiplicateurChance(999)).toBe(1);
-    expect(multiplicateurChance(1_000)).toBe(1.1);
-    expect(multiplicateurChance(17_999)).toBe(1.9);
-    expect(multiplicateurChance(18_000)).toBe(2);
-    expect(multiplicateurChance(32_000)).toBe(3);
-    expect(multiplicateurChance(ECONOMY.soldeMax)).toBe(4);
-    expect(chanceDe(ECONOMY.soldeMax)).toBe(CHANCE.max);
-    expect(chanceDe(ECONOMY.soldeMax * 10)).toBe(CHANCE.max);
+  it('a un solde maximum par saison : 30 000 en Mini Ligue, 50 000 en saison 2', () => {
+    expect(soldeMaxDe(1)).toBe(30_000);
+    expect(soldeMaxDe(2)).toBe(50_000);
+    expect(parametresSaison(undefined).soldeMax).toBe(30_000);
   });
 
-  it('a des paliers qui montent, du premier au plafond', () => {
-    expect(PALIERS_CHANCE[0]).toEqual({ des: 0, multiplicateur: 1 });
-    expect(PALIERS_CHANCE.at(-1)).toEqual({ des: ECONOMY.soldeMax, multiplicateur: 1 + CHANCE.max });
-    for (let i = 1; i < PALIERS_CHANCE.length; i += 1) {
-      expect(PALIERS_CHANCE[i].des).toBeGreaterThan(PALIERS_CHANCE[i - 1].des);
-      expect(PALIERS_CHANCE[i].multiplicateur).toBeGreaterThan(PALIERS_CHANCE[i - 1].multiplicateur);
+  it('monte par paliers avec le solde, de ×1 à ×4, et s’arrête au plafond (saison 2, 50 000)', () => {
+    const max = soldeMaxDe(2);
+    expect(chanceDe(0, max)).toBe(0);
+    expect(chanceDe(-500, max)).toBe(0);
+    expect(chanceDe(Number.NaN, max)).toBe(0);
+    expect(multiplicateurChance(0, max)).toBe(1);
+    expect(multiplicateurChance(999, max)).toBe(1);
+    expect(multiplicateurChance(1_000, max)).toBe(1.1);
+    expect(multiplicateurChance(17_999, max)).toBe(1.9);
+    expect(multiplicateurChance(18_000, max)).toBe(2);
+    expect(multiplicateurChance(32_000, max)).toBe(3);
+    expect(multiplicateurChance(max, max)).toBe(4);
+    expect(chanceDe(max, max)).toBe(CHANCE.max);
+    expect(chanceDe(max * 10, max)).toBe(CHANCE.max);
+  });
+
+  it('en Mini Ligue, ×4 à 30 000 : les mêmes paliers, ramenés au solde maximum', () => {
+    const max = soldeMaxDe(1);
+    expect(multiplicateurChance(599, max)).toBe(1);
+    expect(multiplicateurChance(600, max)).toBe(1.1);
+    expect(multiplicateurChance(10_800, max)).toBe(2);
+    expect(multiplicateurChance(29_999, max)).toBe(3.5);
+    expect(multiplicateurChance(30_000, max)).toBe(4);
+    // Ce qui suffisait à ×4 en saison 2 ne compte pas double ici : ×4 reste le plus haut.
+    expect(chanceDe(50_000, max)).toBe(CHANCE.max);
+  });
+
+  it('a des paliers qui montent, du premier au plafond, à chaque saison', () => {
+    for (const numero of [1, 2]) {
+      const max = soldeMaxDe(numero);
+      const paliers = paliersChance(max);
+      expect(paliers[0]).toEqual({ des: 0, multiplicateur: 1 });
+      expect(paliers.at(-1)).toEqual({ des: max, multiplicateur: 1 + CHANCE.max });
+      for (let i = 1; i < paliers.length; i += 1) {
+        expect(paliers[i].des).toBeGreaterThan(paliers[i - 1].des);
+        expect(paliers[i].multiplicateur).toBeGreaterThan(paliers[i - 1].multiplicateur);
+      }
     }
   });
 

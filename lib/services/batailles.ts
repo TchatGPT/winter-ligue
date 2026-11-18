@@ -33,7 +33,7 @@ import {
   score,
 } from '@/lib/domain/bataille';
 import { secureInt } from '@/lib/domain/rng';
-import { DUEL, ECONOMY } from '@/lib/domain/rules';
+import { DUEL, soldeMaxDe } from '@/lib/domain/rules';
 import { credit, debit } from '@/lib/services/ledger';
 
 export class BatailleError extends Error {
@@ -80,15 +80,16 @@ export function verifieAttente(db: Database, hoteId: string): void {
 }
 
 /**
- * À solde plein (`ECONOMY.soldeMax`), on ne lance ni ne relève de duel —
+ * À solde plein (`soldeMaxDe`, celui de la saison), on ne lance ni ne relève de duel —
  * décidé par l'organisation le 13/10/2026. Un duel déjà lancé se joue
  * normalement.
  */
 function verifieSoldePasPlein(db: Database, joueurId: string): void {
   const joueur = db.players.find((p) => p.id === joueurId);
-  if (joueur && joueur.snowflakes >= ECONOMY.soldeMax) {
+  const max = soldeMaxDe(db.config.numero);
+  if (joueur && joueur.snowflakes >= max) {
     throw new BatailleError(
-      `Ton solde est plein (${ECONOMY.soldeMax.toLocaleString('fr-FR')} ❄) : ta chance est au maximum, tu n’as plus rien à gagner en duel.`,
+      `Ton solde est plein (${max.toLocaleString('fr-FR')} ❄) : ta chance est au maximum, tu n’as plus rien à gagner en duel.`,
       'SOLDE_PLEIN',
     );
   }

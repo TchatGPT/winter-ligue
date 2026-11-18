@@ -22,7 +22,7 @@ import { cache } from 'react';
 import { synchroniseCatalogue } from './lecture';
 import { chargeBase, empreintes, enregistreBase, lisJournal, lisSubsTwitch, SCHEMA_SQL, TABLES } from './tables';
 import { dirname, join } from 'node:path';
-import { DEFAULT_MAX_GAMES_PER_PLAYER, ECONOMY, EVENEMENT_KINDS, HORS_OVERLAY, PREFIXE_OUVERTURE_TEST, SEASON } from '@/lib/domain/rules';
+import { DEFAULT_MAX_GAMES_PER_PLAYER, EVENEMENT_KINDS, HORS_OVERLAY, PREFIXE_OUVERTURE_TEST, SEASON, SOLDE_MAX_ABSOLU } from '@/lib/domain/rules';
 import type { AuditEntry, Database, GamesTirees, PlayerRole, SubTwitch } from './entities';
 import type { Rarity } from '@/lib/domain/types';
 
@@ -812,7 +812,7 @@ function migrate(db: Partial<Database>): Database {
       roleManuel: p.roleManuel ?? false,
       cadeauDernier: p.cadeauDernier ?? null,
       cadeauSerie: p.cadeauSerie ?? 0,
-      snowflakes: Math.min(p.snowflakes ?? 0, ECONOMY.soldeMax),
+      snowflakes: Math.min(p.snowflakes ?? 0, SOLDE_MAX_ABSOLU),
     })),
     games: (db.games ?? []).map((g) => {
       const ancienne = g as typeof g & { frozen?: boolean };

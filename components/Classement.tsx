@@ -117,8 +117,11 @@ export function Classement({
   rows,
   outils,
   boostersPerso,
+  soldeMax,
 }: {
   rows: RankingRow[];
+  /** Le solde maximum de la saison : la chance affichée sous chaque solde en dépend. */
+  soldeMax: number;
   outils?: React.ReactNode;
   boostersPerso?: BoostersPersoModeration;
 }) {
@@ -397,7 +400,7 @@ export function Classement({
                 </td>
                 <td className="tableau-verre-secondaire num text-right text-ink-2">{row.totals.bestScore}</td>
                 <td className="num text-right text-ink-2">
-                  <Flocons solde={row.snowflakes} />
+                  <Flocons solde={row.snowflakes} soldeMax={soldeMax} />
                 </td>
               </tr>
             ))}
@@ -450,7 +453,7 @@ export function Classement({
                 <Detail label="Moyenne" valeur={row.totals.averageScore} />
                 <Detail label="Top 1/2/3" valeur={<Podiums totals={row.totals} />} />
                 <Detail label="Meilleure" valeur={row.totals.bestScore} />
-                <Detail label="Flocons" valeur={<Flocons solde={row.snowflakes} />} />
+                <Detail label="Flocons" valeur={<Flocons solde={row.snowflakes} soldeMax={soldeMax} />} />
               </dl>
             </details>
           </li>
@@ -815,8 +818,8 @@ function MainDuJoueur({
  * Dans la même colonne : la chance suit le solde, une colonne de plus élargissait
  * le tableau sans rien dire de neuf au tri.
  */
-function Flocons({ solde }: { solde: number }) {
-  const chance = multiplicateurChance(solde);
+function Flocons({ solde, soldeMax }: { solde: number; soldeMax: number }) {
+  const chance = multiplicateurChance(solde, soldeMax);
   return (
     <>
       <span className="block">{flakes(solde)}</span>

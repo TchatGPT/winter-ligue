@@ -30,7 +30,7 @@ import {
 } from '@/lib/domain/codes';
 import { ACTEURS_SYSTEME } from '@/lib/domain/acteurs';
 import { secureInt } from '@/lib/domain/rng';
-import { ECONOMY } from '@/lib/domain/rules';
+import { soldeMaxDe } from '@/lib/domain/rules';
 import { estLaStreameuse } from '@/lib/domain/streameuse';
 import { audit, credit } from './ledger';
 
@@ -86,8 +86,9 @@ export function creeCode(
   auteur: string,
 ): CodeCadeau {
   const { montant, utilisationsMax } = reglages;
-  if (!Number.isInteger(montant) || montant < 1 || montant > ECONOMY.soldeMax) {
-    throw new CodeError(`Le montant va de 1 à ${ECONOMY.soldeMax.toLocaleString('fr-FR')} flocons.`, 'CODE_INVALIDE');
+  const max = soldeMaxDe(db.config.numero);
+  if (!Number.isInteger(montant) || montant < 1 || montant > max) {
+    throw new CodeError(`Le montant va de 1 à ${max.toLocaleString('fr-FR')} flocons.`, 'CODE_INVALIDE');
   }
   if (!Number.isInteger(utilisationsMax) || utilisationsMax < 1 || utilisationsMax > UTILISATIONS_MAX) {
     throw new CodeError(`Un code sert de 1 à ${UTILISATIONS_MAX} fois.`, 'CODE_INVALIDE');

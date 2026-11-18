@@ -3,7 +3,7 @@ import type { Database, PackDu, Player } from '@/lib/db/entities';
 import { emptyDatabase } from '@/lib/db/store';
 import { getCard, PACKS, poolDuPack } from '@/lib/domain/catalog';
 import { tirePack } from '@/lib/domain/rng';
-import { chanceDe, CHANCE, ECONOMY, poidsAvecChance, WEIGHT_TOTAL } from '@/lib/domain/rules';
+import { chanceDe, CHANCE, poidsAvecChance, soldeMaxDe, WEIGHT_TOTAL } from '@/lib/domain/rules';
 import type { PackDefinition, Rarity } from '@/lib/domain/types';
 import { ouvreProchainDu, PackError } from '@/lib/services/packs';
 
@@ -52,7 +52,7 @@ describe('le tirage réel d’un booster', () => {
       suitLesTaux(mesure(pack, pousses), pousses);
     });
     it(`${pack.name} : à mi-chemin du plafond, sort aux taux de son palier`, () => {
-      const pousses = poidsAvecChance(pack.weights, chanceDe(ECONOMY.soldeMax / 2));
+      const pousses = poidsAvecChance(pack.weights, chanceDe(soldeMaxDe(1) / 2, soldeMaxDe(1)));
       suitLesTaux(mesure(pack, pousses), pousses);
     });
   }
@@ -87,7 +87,7 @@ function du(id: string, packId: PackDu['packId'], joueurId: string | null, creeA
 
 function ligue(): Database {
   const db = emptyDatabase();
-  db.players.push(joueur('riche', ECONOMY.soldeMax), joueur('pauvre', 0));
+  db.players.push(joueur('riche', soldeMaxDe(1)), joueur('pauvre', 0));
   db.packsDus.push(
     du('perso-2', 'perso', 'riche', '2027-01-02T00:00:00.000Z'),
     du('perso-1', 'perso', 'riche', '2027-01-01T00:00:00.000Z'),
@@ -100,7 +100,7 @@ describe('l’ouverture d’un booster de la file', () => {
   it('ouvre le plus ancien dû au joueur, avec la chance de son solde, et le marque ouvert', () => {
     const db = ligue();
     const o = ouvreProchainDu(db, { packId: 'perso', joueurId: 'riche', idempotencyKey: 'a' }, 'test');
-    expect(o.chance).toBe(chanceDe(ECONOMY.soldeMax));
+    expect(o.chance).toBe(chanceDe(soldeMaxDe(1), soldeMaxDe(1)));
     expect(o.chance).toBe(CHANCE.max);
     expect(db.packsDus.find((p) => p.id === 'perso-1')!.ouvertureId).toBe(o.id);
     expect(db.packsDus.find((p) => p.id === 'perso-2')!.ouvertureId).toBeNull();

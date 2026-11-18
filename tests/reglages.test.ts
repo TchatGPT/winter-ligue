@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { Database, Player } from '@/lib/db/entities';
 import { emptyDatabase } from '@/lib/db/store';
 import { cartesDuPack, getCard, momentDe, PACKS } from '@/lib/domain/catalog';
-import { CHANCE, ECONOMY, RARITY_WEIGHTS_BASE, WEIGHT_TOTAL } from '@/lib/domain/rules';
+import { CHANCE, RARITY_WEIGHTS_BASE, soldeMaxDe, WEIGHT_TOTAL } from '@/lib/domain/rules';
 import { RARITIES, type Rarity } from '@/lib/domain/types';
 import { addSubs } from '@/lib/services/subs';
 import {
@@ -245,7 +245,7 @@ describe('ouvrir un booster', () => {
 
   it('pousse les raretés avec le solde, sans dépenser un flocon', () => {
     const db = base();
-    db.players.push(joueur('riche', ECONOMY.soldeMax), joueur('pauvre', 0));
+    db.players.push(joueur('riche', soldeMaxDe(1)), joueur('pauvre', 0));
     const riche = ouvrePack(db, { packId: 'perso', joueurId: 'riche', idempotencyKey: 'r' }, 'modo');
     const pauvre = ouvrePack(db, { packId: 'perso', joueurId: 'pauvre', idempotencyKey: 'p' }, 'modo');
     expect(riche.chance).toBe(CHANCE.max);
@@ -255,7 +255,7 @@ describe('ouvrir un booster', () => {
 
   it('n’applique aucune chance à un booster collectif', () => {
     const db = base();
-    db.players.push(joueur('a', ECONOMY.soldeMax), joueur('b', ECONOMY.soldeMax));
+    db.players.push(joueur('a', soldeMaxDe(1)), joueur('b', soldeMaxDe(1)));
     for (let i = 0; i < 20; i += 1) {
       joueLesCartes(db);
       const o = ouvrePack(db, { packId: 'folie', idempotencyKey: `k${i}` }, 'modo');

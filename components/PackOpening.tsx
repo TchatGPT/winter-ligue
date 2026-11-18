@@ -16,7 +16,7 @@ import { CarteInclinable } from '@/components/CarteInclinable';
 import { DestinCarte } from '@/components/DestinCarte';
 import { CardTile, Notice, flakes, rarityMeta } from '@/components/ui';
 import { packArt } from '@/lib/domain/catalog';
-import { ECONOMY, HORS_OVERLAY, libelleMultiplicateur, PACKS_REGLES, rarityPercent, SUB_MILESTONES } from '@/lib/domain/rules';
+import { HORS_OVERLAY, libelleMultiplicateur, PACKS_REGLES, rarityPercent, SUB_MILESTONES } from '@/lib/domain/rules';
 import { CE_QUI_COMPTE, CE_QUI_NE_COMPTE_PAS } from '@/lib/domain/twitchSubs';
 import { IconCoche, IconCroix } from '@/components/icons';
 import type { PackDefinition, PackId, Rarity } from '@/lib/domain/types';
@@ -153,6 +153,7 @@ export function PackOpening({
   moderateur,
   aLaMain = false,
   totalSubs = 0,
+  soldeMax,
 }: {
   packs: PackVitrine[];
   /** Toutes les cartes de la saison, montrées par rareté sous les boosters. */
@@ -170,6 +171,8 @@ export function PackOpening({
   aLaMain?: boolean;
   /** Les subs de la saison : pour annoncer le prochain palier d'un booster collectif. */
   totalSubs?: number;
+  /** Le solde maximum de la saison : 30 000 en Mini Ligue, 50 000 en saison 2. */
+  soldeMax: number;
 }) {
   const router = useRouter();
   const [selected, setSelected] = useState<PackId>(packs[0]?.id ?? 'perso');
@@ -578,7 +581,7 @@ export function PackOpening({
                         Multiplicateur de chance de <strong className="text-ink">{joueur.pseudo}</strong> :{' '}
                         <strong className="num text-aurora">{libelleMultiplicateur(joueur.chance)}</strong>{' '}
                         <span className="text-faint">
-                          · ❄ {flakes(joueur.snowflakes)} sur {flakes(ECONOMY.soldeMax)}
+                          · ❄ {flakes(joueur.snowflakes)} sur {flakes(soldeMax)}
                         </span>
                       </p>
                     )}

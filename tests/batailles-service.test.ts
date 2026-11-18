@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Database, Player } from '@/lib/db/entities';
 import { emptyDatabase } from '@/lib/db/store';
 import { gagnantEchange } from '@/lib/domain/bataille';
-import { DUEL, ECONOMY } from '@/lib/domain/rules';
+import { DUEL, soldeMaxDe } from '@/lib/domain/rules';
 import {
   annuleBataille,
   batailleslibres,
@@ -209,24 +209,24 @@ describe('résoudre un duel', () => {
   it('ne dépasse jamais le plafond de flocons', () => {
     // Ce qui déborde est perdu, et le grand livre écrit ce qui a été versé.
     // Juste sous le plafond : à solde plein, on ne joue pas.
-    const depart = ECONOMY.soldeMax - 500;
+    const depart = soldeMaxDe(1) - 500;
     const db = base({ hote: depart, autre: depart });
     const b = creeBataille(db, 'hote', DUEL.miseMax, 1);
     rejointBataille(db, 'autre', b.id);
-    expect(solde(db, b.vainqueurId!)).toBe(ECONOMY.soldeMax);
+    expect(solde(db, b.vainqueurId!)).toBe(soldeMaxDe(1));
     for (const id of ['hote', 'autre']) {
       expect(mouvements(db, id)).toBe(solde(db, id) - depart);
     }
   });
 
   it('ne se lance ni ne se relève à solde plein', () => {
-    const db = base({ hote: ECONOMY.soldeMax, autre: DEPART, plein: ECONOMY.soldeMax });
+    const db = base({ hote: soldeMaxDe(1), autre: DEPART, plein: soldeMaxDe(1) });
     expect(() => creeBataille(db, 'hote', MISE, 1)).toThrow(BatailleError);
     const b = creeBataille(db, 'autre', MISE, 1);
     expect(() => rejointBataille(db, 'plein', b.id)).toThrow(BatailleError);
     expect(b.statut).toBe('ATTENTE');
-    expect(solde(db, 'hote')).toBe(ECONOMY.soldeMax);
-    expect(solde(db, 'plein')).toBe(ECONOMY.soldeMax);
+    expect(solde(db, 'hote')).toBe(soldeMaxDe(1));
+    expect(solde(db, 'plein')).toBe(soldeMaxDe(1));
   });
 });
 

@@ -100,6 +100,12 @@ export interface ParametresSaison {
   /** Combien de joueurs vont en finale ; zéro : pas de finale. */
   finalistes: number;
   /**
+   * Le solde maximum de flocons (18/11/2026) : 30 000 en Mini Ligue, 50 000 en
+   * saison 2. Ce que rapportent les games ne change pas ; la chance pleine (×4)
+   * s'atteint à ce solde, et les paliers de chance suivent (`paliersChance`).
+   */
+  soldeMax: number;
+  /**
    * Ses dates, telles que l'accueil les écrit sous « Saison N » : indicatives,
    * l'organisation les arrête au fil de la saison (12/11/2026).
    */
@@ -120,6 +126,7 @@ export const SAISONS: readonly ParametresSaison[] = [
     finisseurA: 30,
     uneParSessionApres: 30,
     finalistes: 0,
+    soldeMax: 30_000,
     periode: 'du 22 novembre au 4 janvier',
     debut: '2026-11-22T00:00:00.000+01:00',
     fin: '2027-01-04T00:00:00.000+01:00',
@@ -131,6 +138,7 @@ export const SAISONS: readonly ParametresSaison[] = [
     finisseurA: 60,
     uneParSessionApres: 60,
     finalistes: 6,
+    soldeMax: 50_000,
     periode: 'du 4 janvier à mi-mars',
     debut: '2027-01-04T00:00:00.000+01:00',
     fin: '2027-03-15T00:00:00.000+01:00',
@@ -146,6 +154,14 @@ export function saisonDuMoment(now = new Date()): ParametresSaison {
 export function parametresSaison(numero: number | undefined): ParametresSaison {
   return SAISONS.find((s) => s.numero === numero) ?? SAISONS[0];
 }
+
+/** Le solde maximum de flocons de la saison en cours. */
+export function soldeMaxDe(numero: number | undefined): number {
+  return parametresSaison(numero).soldeMax;
+}
+
+/** Le plus haut solde maximum, toutes saisons : la borne des formulaires. */
+export const SOLDE_MAX_ABSOLU = Math.max(...SAISONS.map((s) => s.soldeMax));
 
 /**
  * Qui peut lancer une nouvelle saison et remettre la ligue à zéro : son
@@ -186,14 +202,9 @@ export const ECONOMY = {
   participation: 0,
   /** Rien à l'inscription : on part de zéro, et la première game rapporte. */
   welcomeGrant: 0,
-  /**
-   * Le solde maximum. Ce qui dépasse est perdu.
-   *
-   * Cinquante mille : en jouant toute la saison, les meilleurs finissent vers
-   * trente-cinq mille. Le plafond — et la chance pleine, ×4 — ne s'atteint
-   * qu'en gagnant des duels, à pile ou face, en risquant ce qu'on a.
-   */
-  soldeMax: 50_000,
+  // Le solde maximum dépend de la saison : `ParametresSaison.soldeMax`,
+  // `soldeMaxDe` (18/11/2026). Le solde n'y dépasse jamais ; le plafond — et
+  // la chance pleine, ×4 — ne s'atteint qu'en gagnant des duels.
 } as const;
 
 /* --------------------------- Subs Twitch --------------------------------- */
@@ -616,7 +627,7 @@ export const WEIGHT_TOTAL = 100_000;
  * Les Boosters Commu et Folie ne s'ouvrent pour personne : aucune chance ne
  * s'y applique.
  */
-export const PALIERS_CHANCE: readonly { des: number; multiplicateur: number }[] = [
+const PALIERS_CHANCE_50K: readonly { des: number; multiplicateur: number }[] = [
   { des: 0, multiplicateur: 1 },
   { des: 1_000, multiplicateur: 1.1 },
   { des: 2_000, multiplicateur: 1.2 },
@@ -634,34 +645,43 @@ export const PALIERS_CHANCE: readonly { des: number; multiplicateur: number }[] 
   { des: 50_000, multiplicateur: 4 },
 ];
 
+/**
+ * Les paliers de chance d'une saison (18/11/2026) : ceux d'un solde maximum de
+ * 50 000, ramenés à son solde maximum — ×4 à 30 000 en Mini Ligue —, arrondis
+ * à la centaine. Le dernier tombe pile sur le solde maximum.
+ */
+export function paliersChance(soldeMax: number): readonly { des: number; multiplicateur: number }[] {
+  const echelle = soldeMax / 50_000;
+  return PALIERS_CHANCE_50K.map((p) => ({ des: Math.round((p.des * echelle) / 100) * 100, multiplicateur: p.multiplicateur }));
+}
+
 export const CHANCE = {
-  /** Le solde auquel le multiplicateur est plein : le plafond de flocons. */
-  floconsPourPlein: ECONOMY.soldeMax,
   /** La chance maximale : ×4. */
   max: 3,
 } as const;
 
 /** Le palier de chance d'un solde : le plus haut dont il atteint le seuil. */
-export function palierDeChance(solde: number): { des: number; multiplicateur: number } {
+export function palierDeChance(solde: number, soldeMax: number): { des: number; multiplicateur: number } {
   const s = Number.isFinite(solde) ? solde : 0;
-  let palier = PALIERS_CHANCE[0];
-  for (const p of PALIERS_CHANCE) if (s >= p.des) palier = p;
+  const paliers = paliersChance(soldeMax);
+  let palier = paliers[0];
+  for (const p of paliers) if (s >= p.des) palier = p;
   return palier;
 }
 
-/** La chance d'un joueur, entre 0 et `CHANCE.max`, d'après son solde. */
-export function chanceDe(solde: number): number {
-  return Math.round((palierDeChance(solde).multiplicateur - 1) * 100) / 100;
+/** La chance d'un joueur, entre 0 et `CHANCE.max`, d'après son solde et le solde maximum de la saison. */
+export function chanceDe(solde: number, soldeMax: number): number {
+  return Math.round((palierDeChance(solde, soldeMax).multiplicateur - 1) * 100) / 100;
 }
 
 /** Le multiplicateur de chance, de 1 à 4, tel qu'on l'affiche : « ×2,5 ». */
-export function multiplicateurChance(solde: number): number {
-  return palierDeChance(solde).multiplicateur;
+export function multiplicateurChance(solde: number, soldeMax: number): number {
+  return palierDeChance(solde, soldeMax).multiplicateur;
 }
 
 /** Le palier suivant, pour dire combien il manque ; null au plafond. */
-export function palierSuivant(solde: number): { des: number; multiplicateur: number } | null {
-  return PALIERS_CHANCE.find((p) => p.des > (Number.isFinite(solde) ? solde : 0)) ?? null;
+export function palierSuivant(solde: number, soldeMax: number): { des: number; multiplicateur: number } | null {
+  return paliersChance(soldeMax).find((p) => p.des > (Number.isFinite(solde) ? solde : 0)) ?? null;
 }
 
 /** « ×1,4 », « ×2 », « ×2,5 ». */

@@ -73,6 +73,7 @@ export async function Sidebar() {
               role={session?.role ?? null}
               pseudo={player?.pseudo ?? null}
               balance={player?.snowflakes ?? null}
+              soldeMax={parametresSaison(numero).soldeMax}
               cadeau={cadeau}
               visiteur={visiteur ? inscription : null}
               stacked
@@ -98,6 +99,7 @@ export async function Sidebar() {
               role={session?.role ?? null}
               pseudo={player?.pseudo ?? null}
               balance={player?.snowflakes ?? null}
+              soldeMax={parametresSaison(numero).soldeMax}
               cadeau={cadeau}
               visiteur={visiteur ? inscription : null}
             />

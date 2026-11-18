@@ -12,7 +12,7 @@ import 'server-only';
 import type { Database, Player } from '@/lib/db/entities';
 import { newId } from '@/lib/db/store';
 import type { LedgerReason } from '@/lib/domain/economy';
-import { ECONOMY } from '@/lib/domain/rules';
+import { soldeMaxDe } from '@/lib/domain/rules';
 
 export class LedgerError extends Error {
   constructor(
@@ -51,7 +51,8 @@ function record(
 /**
  * Crédite un joueur. Le montant doit être un entier positif.
  *
- * Le solde ne dépasse jamais `ECONOMY.soldeMax` : ce qui déborde est perdu, et
+ * Le solde ne dépasse jamais le solde maximum de la saison (`soldeMaxDe` :
+ * 30 000 en Mini Ligue, 50 000 en saison 2) : ce qui déborde est perdu, et
  * c'est le delta réellement appliqué qui est écrit au grand livre — pas le
  * montant demandé —, sans quoi le solde ne se reconstruirait plus depuis
  * l'historique.
@@ -67,7 +68,7 @@ export function credit(
     throw new LedgerError('Montant de crédit invalide.', 'MONTANT_INVALIDE');
   }
   const player = requirePlayer(db, playerId);
-  const applied = Math.max(0, Math.min(amount, ECONOMY.soldeMax - player.snowflakes));
+  const applied = Math.max(0, Math.min(amount, soldeMaxDe(db.config.numero) - player.snowflakes));
   player.snowflakes += applied;
   record(db, player, applied, reason, refId);
   return player.snowflakes;
@@ -105,7 +106,10 @@ export function adjust(
   refId: string | null = null,
 ): number {
   const player = requirePlayer(db, playerId);
-  const applied = Math.min(Math.max(delta, -player.snowflakes), ECONOMY.soldeMax - player.snowflakes);
+  // Jamais sous zéro, jamais au-delà du solde maximum — et un solde déjà
+  // au-dessus (d'une saison au maximum plus haut) ne fait pas d'un gain une perte.
+  const plafond = Math.max(0, soldeMaxDe(db.config.numero) - player.snowflakes);
+  const applied = Math.min(Math.max(delta, -player.snowflakes), plafond);
   player.snowflakes += applied;
   record(db, player, applied, 'AJUSTEMENT_ADMIN', refId);
   return player.snowflakes;

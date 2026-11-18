@@ -13,7 +13,7 @@ import 'server-only';
 
 import type { Database } from '@/lib/db/entities';
 import { boosterDuJour, jourDeParis, jourDuCycle, montantDuJour, serieDuJour } from '@/lib/domain/cadeauDuJour';
-import { CADEAU_DU_JOUR, ECONOMY } from '@/lib/domain/rules';
+import { CADEAU_DU_JOUR, soldeMaxDe } from '@/lib/domain/rules';
 import { credit } from './ledger';
 import { ajoutePackDu } from './packs';
 
@@ -31,7 +31,7 @@ export interface EtatCadeau {
   /** Il l'a déjà pris aujourd'hui. */
   dejaPris: boolean;
   /**
-   * Son solde est plein (`ECONOMY.soldeMax`) : le cadeau en flocons est fermé
+   * Son solde est plein (`soldeMaxDe`) : le cadeau en flocons est fermé
    * jusqu'à ce qu'il repasse dessous, s'il y repasse — décidé par
    * l'organisation le 13/10/2026. Le jour du booster reste ouvert : un booster
    * lui sert encore.
@@ -59,7 +59,7 @@ export function etatCadeau(db: Readonly<Database>, joueurId: string, now = new D
   const booster = boosterDuJour(serie);
   return {
     dejaPris,
-    plein: !booster && joueur.snowflakes >= ECONOMY.soldeMax,
+    plein: !booster && joueur.snowflakes >= soldeMaxDe(db.config.numero),
     serie,
     jour: jourDuCycle(serie),
     montant: montantDuJour(serie),
@@ -86,7 +86,7 @@ export function prendsCadeauDuJour(
   if (etat.dejaPris) throw new CadeauError('Tu as déjà pris ton cadeau aujourd’hui : reviens demain.', 'DEJA_PRIS');
   if (etat.plein) {
     throw new CadeauError(
-      `Ton solde est plein (${ECONOMY.soldeMax.toLocaleString('fr-FR')} ❄) : ta chance est au maximum, le cadeau du jour ne t’apporterait rien.`,
+      `Ton solde est plein (${soldeMaxDe(db.config.numero).toLocaleString('fr-FR')} ❄) : ta chance est au maximum, le cadeau du jour ne t’apporterait rien.`,
       'SOLDE_PLEIN',
     );
   }

@@ -85,6 +85,7 @@ export default async function ClassementPage() {
           bouton de saisie avec. */}
         <Classement
           rows={ranking}
+          soldeMax={subs.saison.soldeMax}
           boostersPerso={subs.boostersPerso ? { parJoueur: subs.boostersPerso } : undefined}
           outils={
             moderateur ? (

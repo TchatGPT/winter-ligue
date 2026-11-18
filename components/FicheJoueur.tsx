@@ -12,7 +12,7 @@ import { ColonnesSaison, DetailGame, GrilleGames, numerotation } from '@/compone
 import { SnowCap } from '@/components/SnowCap';
 import { flakes } from '@/components/ui';
 import { getCard, getPack } from '@/lib/domain/catalog';
-import { CHANCE, ECONOMY, libelleMultiplicateur, PACKS_REGLES } from '@/lib/domain/rules';
+import { CHANCE, libelleMultiplicateur, PACKS_REGLES } from '@/lib/domain/rules';
 import type { BilanSubs } from '@/lib/domain/twitchSubs';
 import { decimal, longDateTime, shortDateTime } from '@/lib/format';
 import type { FicheJoueur as DonneesFiche } from '@/lib/services/profile';
@@ -413,7 +413,7 @@ export function FicheJoueur({
               <div className="profil-chance-tete">
                 <span>Solde</span>
                 <strong>
-                  {flakes(p.snowflakes)} <small>/ {flakes(ECONOMY.soldeMax)} ❄</small>
+                  {flakes(p.snowflakes)} <small>/ {flakes(p.soldeMax)} ❄</small>
                 </strong>
               </div>
               <div className="jauge-chance" aria-hidden="true">

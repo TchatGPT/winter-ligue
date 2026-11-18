@@ -6,7 +6,6 @@ import { EcranAdmin, Filtres, Panneau, Pastille, Tableau, parNombre, parTexte } 
 import { IconCorbeille, IconInterdit } from '@/components/icons';
 import { flakes } from '@/components/ui';
 import { UTILISATIONS_MAX } from '@/lib/domain/codes';
-import { ECONOMY } from '@/lib/domain/rules';
 import { shortDateTime } from '@/lib/format';
 
 export interface LigneCode {
@@ -39,7 +38,7 @@ const MONTANTS = [50, 100, 250, 500, 1000];
  * supprimé, un code ne sert plus — ce qu'il a versé reste versé, et le journal
  * garde la trace.
  */
-export function EcranCodes({ codes }: { codes: LigneCode[] }) {
+export function EcranCodes({ codes, soldeMax }: { codes: LigneCode[]; soldeMax: number }) {
   const { busy, message, envoie, setMessage } = useAction();
   const [montant, setMontant] = useState(100);
   const [utilisationsMax, setUtilisationsMax] = useState(10);
@@ -111,7 +110,7 @@ export function EcranCodes({ codes }: { codes: LigneCode[] }) {
               type="number"
               className="field num"
               min={1}
-              max={ECONOMY.soldeMax}
+              max={soldeMax}
               value={Number.isFinite(montant) ? montant : ''}
               onChange={(e) => setMontant(Math.floor(Number(e.target.value)))}
               required

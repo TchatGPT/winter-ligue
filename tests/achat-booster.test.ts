@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Database } from '@/lib/db/entities';
 import { emptyDatabase } from '@/lib/db/store';
-import { ACHAT_PERSO, multiplicateurChance } from '@/lib/domain/rules';
+import { ACHAT_PERSO, multiplicateurChance, soldeMaxDe } from '@/lib/domain/rules';
 import { rattacheCompteTwitch } from '@/lib/services/comptes';
 import { credit } from '@/lib/services/ledger';
 import { acheteBoosterPerso, PackError } from '@/lib/services/packs';
@@ -56,8 +56,8 @@ describe('acheter un Booster Perso', () => {
 
   it('coûte de la chance : le solde qui baisse fait baisser le multiplicateur', () => {
     const { db, id } = base(10_000);
-    const avant = multiplicateurChance(db.players[0].snowflakes);
+    const avant = multiplicateurChance(db.players[0].snowflakes, soldeMaxDe(1));
     acheteBoosterPerso(db, id, CLE_A);
-    expect(multiplicateurChance(db.players[0].snowflakes)).toBeLessThan(avant);
+    expect(multiplicateurChance(db.players[0].snowflakes, soldeMaxDe(1))).toBeLessThan(avant);
   });
 });

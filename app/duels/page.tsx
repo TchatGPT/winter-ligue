@@ -5,7 +5,7 @@ import { exigeLecteur } from '@/lib/auth/acces';
 import { playerIdOf } from '@/lib/auth/session';
 import { getStore } from '@/lib/db/store';
 import { MANCHES_MAX, MANCHES_MIN } from '@/lib/domain/bataille';
-import { DUEL, ECONOMY } from '@/lib/domain/rules';
+import { DUEL, soldeMaxDe } from '@/lib/domain/rules';
 import { tableauBatailles, topSemaine } from '@/lib/services/batailles';
 
 export const dynamic = 'force-dynamic';
@@ -30,13 +30,14 @@ export default async function DuelsPage() {
   const { session } = await exigeLecteur();
   const playerId = playerIdOf(session);
 
-  const { batailles, top, balance, pseudo } = await getStore().read((db) => {
+  const { batailles, top, balance, pseudo, soldeMax } = await getStore().read((db) => {
     const moi = playerId ? db.players.find((p) => p.id === playerId) : undefined;
     return {
       batailles: tableauBatailles(db),
       top: topSemaine(db),
       balance: moi?.snowflakes ?? null,
       pseudo: moi?.pseudo ?? null,
+      soldeMax: soldeMaxDe(db.config.numero),
     };
   });
 
@@ -59,7 +60,7 @@ export default async function DuelsPage() {
         }}
         moiPseudo={pseudo}
         visiteur={session === null}
-        soldeMax={ECONOMY.soldeMax}
+        soldeMax={soldeMax}
       />
     </div>
   );

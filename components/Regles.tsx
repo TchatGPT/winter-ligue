@@ -29,7 +29,7 @@ import {
   EVENEMENTS_SUBS,
   JOKERS,
   PACKS_REGLES,
-  PALIERS_CHANCE,
+  paliersChance,
   PLACEMENT_POINTS,
   SUB_MILESTONES,
   poidsAvecChance,
@@ -196,6 +196,8 @@ export function Regles({
   const palier = (id: 'commu' | 'folie') => SUB_MILESTONES.find((m) => m.packId === id)?.every;
   const avalanche = EVENEMENTS_SUBS.find((e) => e.kind === 'FLOCONS_A_TOUS');
   const tempete = EVENEMENTS_SUBS.find((e) => e.kind === 'COMMU_ACCELERE');
+  // Les paliers de la saison en cours : ×4 à 30 000 ❄ en Mini Ligue, à 50 000 en saison 2.
+  const PALIERS_CHANCE = paliersChance(saison.soldeMax);
   const chanceMax = PALIERS_CHANCE.at(-1)!.multiplicateur;
 
   // Ce que la chance change au Booster Perso : ses taux à trois soldes — rien,
@@ -495,7 +497,7 @@ export function Regles({
             Départ à <b>0 ❄</b>
           </li>
           <li>
-            Solde maximum : <b>{nombre(ECONOMY.soldeMax)} ❄</b>
+            Solde maximum : <b>{nombre(saison.soldeMax)} ❄</b>
           </li>
           {avalanche && (
             <li>

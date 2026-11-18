@@ -25,11 +25,14 @@ const fois = (m: number) => `×${m.toLocaleString('fr-FR', { maximumFractionDigi
  */
 export function AchatBooster({
   solde,
+  soldeMax,
   className,
   title,
   children,
 }: {
   solde: number;
+  /** Le solde maximum de la saison, d'où sortent les paliers de chance. */
+  soldeMax: number;
   className: string;
   title?: string;
   /** Ce qu'on touche : la capsule du solde, ou le chiffre de la pastille. */
@@ -64,8 +67,8 @@ export function AchatBooster({
   const { prix } = ACHAT_PERSO;
   const assez = solde >= prix;
   const apres = solde - prix;
-  const chanceAvant = multiplicateurChance(solde);
-  const chanceApres = multiplicateurChance(Math.max(0, apres));
+  const chanceAvant = multiplicateurChance(solde, soldeMax);
+  const chanceApres = multiplicateurChance(Math.max(0, apres), soldeMax);
   const achete = message?.kind === 'ok';
   const visuel = packArt('perso');
 

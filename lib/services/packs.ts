@@ -34,6 +34,7 @@ import { pick, tirePack } from '@/lib/domain/rng';
 import {
   ACHAT_PERSO,
   chanceDe,
+  soldeMaxDe,
   parametresSaison,
   packsPersoAcquis,
   poidsAvecChance,
@@ -801,7 +802,7 @@ export function ouvrePack(db: Database, demande: DemandeOuverture, ouvertPar: st
         'CARTE_EN_ATTENTE',
       );
     }
-    chance = chanceDe(joueur.snowflakes);
+    chance = chanceDe(joueur.snowflakes, soldeMaxDe(db.config.numero));
   }
 
   const cardId = tirePack(pack, poidsAvecChance(pack.weights, chance));

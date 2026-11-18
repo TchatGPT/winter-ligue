@@ -11,7 +11,7 @@ import { chaineDeLaLigue } from '@/lib/auth/twitch';
 import { CAMP_BOT, type Database, type Game } from '@/lib/db/entities';
 import { getCard, getPack } from '@/lib/domain/catalog';
 import { getStore } from '@/lib/db/store';
-import { chanceDe, parametresSaison } from '@/lib/domain/rules';
+import { chanceDe, parametresSaison, soldeMaxDe } from '@/lib/domain/rules';
 import { estLaStreameuse } from '@/lib/domain/streameuse';
 import { type BilanSubs, bilanDesSubs } from '@/lib/domain/twitchSubs';
 import { cartesJoueesSur } from './effects';
@@ -129,6 +129,8 @@ export interface ProfileView {
   snowflakes: number;
   /** La chance que le solde donne aux packs ouverts pour ce joueur, de 0 à 1. */
   chance: number;
+  /** Le solde maximum de la saison : 30 000 en Mini Ligue, 50 000 en saison 2. */
+  soldeMax: number;
   /** Packs en file pour ce joueur, pas encore ouverts. */
   packsDus: { id: string; pack: string; raison: string; creeA: string }[];
   /** Les dernières ouvertures qui l'ont concerné. */
@@ -167,7 +169,8 @@ function buildProfile(db: Database, playerId: string): ProfileView | null {
     avatarUrl: player.avatarUrl,
     twitchLogin: player.twitchLogin,
     snowflakes: player.snowflakes,
-    chance: chanceDe(player.snowflakes),
+    chance: chanceDe(player.snowflakes, soldeMaxDe(db.config.numero)),
+    soldeMax: soldeMaxDe(db.config.numero),
     packsDus: db.packsDus
       .filter((p) => p.joueurId === playerId && p.ouvertureId === null)
       .map((p) => ({ id: p.id, pack: p.packId, raison: p.raison, creeA: p.creeA })),
