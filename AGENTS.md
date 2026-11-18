@@ -23,6 +23,13 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 3. **Toute mutation passe par `getStore().transaction()`.** Jamais de
    lecture-modification-écriture hors transaction : c'est ce qui empêche les courses
    concurrentes sur les flocons.
+   **La base est gardée en mémoire par chaque serveur** (18/11/2026, `baseAJour`) et ne se
+   recharge que si sa révision a bougé : un déclencheur sur chaque table que lit
+   `chargeBase` avance `revision_base` à toute écriture, d'où qu'elle vienne
+   (`SQL_REVISION`). Une table qu'on ajoute à `chargeBase` reçoit le sien d'office ; une
+   écriture qui ne passerait pas par une table chargée ne serait pas vue. Chaque rendu
+   reçoit sa copie (`structuredClone`) ; les overlays lisent toujours en direct
+   (`fluxOverlay`).
 4. **Aucun mouvement de flocons sans passer par `credit()` / `debit()` / `adjust()`.**
    Modifier `player.snowflakes` directement contourne le grand livre.
 5. **Toute route d'API commence par `guard()`** — origine, débit, session, validation Zod.
