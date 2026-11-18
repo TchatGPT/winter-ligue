@@ -562,12 +562,68 @@ function versObjet(ligne: Record<string, unknown>, colonnes: Colonne[]): Record<
 const CHARGEES = COLLECTIONS.filter((col) => col.cle !== 'audit' && col.cle !== 'subsTwitch');
 
 /**
+ * La révision de la base (18/11/2026) : un compteur qu'avance toute écriture
+ * dans une table que lit `chargeBase` — par le site, par un script, ou à la
+ * main dans Supabase —, grâce à un déclencheur par table. Un serveur garde la
+ * base en mémoire et ne la recharge que si la révision a bougé : une petite
+ * requête au lieu de toute la ligue, sans jamais servir une donnée en retard.
+ */
+export const SQL_REVISION = `
+create table if not exists revision_base (
+  id integer primary key check (id = 1),
+  n bigint not null default 0
+);
+insert into revision_base (id, n) values (1, 0) on conflict (id) do nothing;
+
+create or replace function avance_revision() returns trigger
+  language plpgsql set search_path = public as $f$
+begin
+  update revision_base set n = n + 1 where id = 1;
+  return null;
+end $f$;
+
+do $$
+declare t text;
+begin
+  foreach t in array array[${['saison', ...CHARGEES.map((c) => c.table)].map((t) => `'${t}'`).join(', ')}] loop
+    execute format('drop trigger if exists avance_revision on public.%I', t);
+    execute format(
+      'create trigger avance_revision after insert or update or delete or truncate on public.%I
+         for each statement execute function avance_revision()', t);
+  end loop;
+end $$;
+`;
+
+/** La révision lue dans la même requête que la base : elles vont ensemble. */
+export interface BaseLue {
+  base: Partial<Database>;
+  /** Nulle si la table des révisions n'existe pas encore : rien ne se garde alors en mémoire. */
+  revision: string | null;
+}
+
+/** La révision actuelle de la base, ou null si elle n'en a pas encore. */
+export async function lisRevision(sql: postgres.Sql | postgres.TransactionSql): Promise<string | null> {
+  // La table existe : `prepare` pose le schéma avant toute lecture.
+  const [ligne] = await sql<{ n: string | null }[]>`select n::text as n from revision_base where id = 1`;
+  return ligne?.n ?? null;
+}
+
+/**
  * Charge toute la base en une seule requête : chaque table revient agrégée en
  * JSON dans un seul document. Un aller-retour réseau, quel que soit le nombre
  * de tables.
  */
 export async function chargeBase(sql: postgres.Sql | postgres.TransactionSql): Promise<Partial<Database>> {
+  return (await chargeBaseEtRevision(sql)).base;
+}
+
+/**
+ * La base et sa révision, dans une seule requête : ce que la requête a lu est
+ * exactement la base à cette révision.
+ */
+export async function chargeBaseEtRevision(sql: postgres.Sql | postgres.TransactionSql): Promise<BaseLue> {
   const morceaux = [
+    `'revision', (select n::text from revision_base where id = 1)`,
     `'saison', (select row_to_json(s) from saison s where id = 1)`,
     ...CHARGEES.map((col) => `'${col.table}', coalesce((select json_agg(t) from ${col.table} t), '[]'::json)`),
   ].join(',\n');
@@ -596,7 +652,7 @@ export async function chargeBase(sql: postgres.Sql | postgres.TransactionSql): P
   }
   base.audit = [];
   base.subsTwitch = [];
-  return base;
+  return { base, revision: typeof doc.revision === 'string' ? doc.revision : null };
 }
 
 /** Les derniers subs du registre, le plus récent en tête. */

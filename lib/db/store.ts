@@ -20,7 +20,18 @@ import { tmpdir } from 'node:os';
 import postgres from 'postgres';
 import { cache } from 'react';
 import { synchroniseCatalogue } from './lecture';
-import { chargeBase, empreintes, enregistreBase, lisJournal, lisSubsTwitch, SCHEMA_SQL, TABLES } from './tables';
+import {
+  type BaseLue,
+  chargeBaseEtRevision,
+  empreintes,
+  enregistreBase,
+  lisJournal,
+  lisRevision,
+  lisSubsTwitch,
+  SCHEMA_SQL,
+  SQL_REVISION,
+  TABLES,
+} from './tables';
 import { dirname, join } from 'node:path';
 import { DEFAULT_MAX_GAMES_PER_PLAYER, EVENEMENT_KINDS, HORS_OVERLAY, PREFIXE_OUVERTURE_TEST, SEASON, SOLDE_MAX_ABSOLU } from '@/lib/domain/rules';
 import type { AuditEntry, Database, GamesTirees, PlayerRole, SubTwitch } from './entities';
@@ -142,7 +153,14 @@ export interface Sonde {
   /** Le démarrage de ce serveur : la connexion (poignée de main chiffrée comprise), puis le schéma et le catalogue. */
   demarrage: { connexionMs: number | null; schemaMs: number | null };
   /** Les chargements de la base pour les pages : le dernier, le plus long, et ce qu'il a ramené. */
-  lectures: { nombre: number; derniereMs: number | null; maxMs: number; lignes: number | null };
+  lectures: {
+    nombre: number;
+    /** Les pages servies depuis la base gardée en mémoire, sans la recharger (18/11/2026). */
+    enMemoire?: number;
+    derniereMs: number | null;
+    maxMs: number;
+    lignes: number | null;
+  };
   transactions: { nombre: number; derniereMs: number | null; maxMs: number };
   /** La plus longue attente dans la file depuis le démarrage. */
   attenteMaxMs: number;
@@ -427,17 +445,21 @@ export function baseDistante(): boolean {
  * schéma est réappliqué.
  */
 const EMPREINTE_SCHEMA = createHash('sha256')
-  .update(JSON.stringify({ SCHEMA_SQL, TABLES }))
+  .update(JSON.stringify({ SCHEMA_SQL, SQL_REVISION, TABLES }))
   .digest('hex')
   .slice(0, 16);
 
 /**
- * Le chargement de la base, gardé le temps d'un rendu : la page, le menu et le
- * contrôle d'accès le demandaient chacun, et la base était relue trois fois
- * pour une seule page. `generation` change à chaque transaction, si bien qu'un
- * rendu ne relit jamais une base d'avant sa propre écriture.
+ * La base d'un rendu : la page, le menu et le contrôle d'accès la demandaient
+ * chacun, et la base était relue trois fois pour une seule page. `generation`
+ * change à chaque transaction, si bien qu'un rendu ne relit jamais une base
+ * d'avant sa propre écriture.
+ *
+ * Chaque rendu reçoit sa propre copie de la base gardée en mémoire
+ * (`baseAJour`) : ce qu'une page ferait dessus — un tri, un calcul — ne
+ * déborde jamais sur la page d'un autre visiteur.
  */
-const chargeDuRendu = cache((store: PostgresStore, _generation: number) => store.chargeDirect());
+const chargeDuRendu = cache(async (store: PostgresStore, _generation: number) => structuredClone(await store.baseAJour()));
 
 class PostgresStore implements Store {
   private readonly sql: postgres.Sql;
@@ -446,11 +468,20 @@ class PostgresStore implements Store {
   private file: Promise<unknown> = Promise.resolve();
   /** Avance à chaque transaction : c'est la clé de `chargeDuRendu`. */
   private generation = 0;
+  /**
+   * La base telle que ce serveur l'a lue, et sa révision (18/11/2026). Elle ne
+   * sert que tant que la révision en base n'a pas bougé : toute écriture, d'où
+   * qu'elle vienne, la fait avancer (`SQL_REVISION`). Jamais modifiée : on n'en
+   * donne que des copies.
+   */
+  private memoire: { revision: string; base: Partial<Database> } | null = null;
   /** Ce que la base coûte à ce serveur depuis son démarrage : voir `Sonde`. */
   private readonly mesures = {
     connexionMs: null as number | null,
     schemaMs: null as number | null,
     lectures: 0,
+    /** Les pages servies depuis la mémoire, sans recharger la base. */
+    lecturesEnMemoire: 0,
     lectureMs: null as number | null,
     lectureMaxMs: 0,
     lignes: null as number | null,
@@ -559,6 +590,7 @@ class PostgresStore implements Store {
         // Deux instances qui démarrent ensemble ne créent pas les tables en même temps.
         await tx`select pg_advisory_xact_lock(724241)`;
         await tx.unsafe(SCHEMA_SQL);
+        await tx.unsafe(SQL_REVISION);
 
         // La sécurité : RLS partout, et aucun droit pour l'API publique. Avant
         // tout import : une fois des lignes écrites, les clés étrangères
@@ -567,7 +599,7 @@ class PostgresStore implements Store {
           do $$
           declare t text;
           begin
-            foreach t in array array[${TABLES.map((t) => `'${t}'`).join(', ')}, 'league_state'] loop
+            foreach t in array array[${TABLES.map((t) => `'${t}'`).join(', ')}, 'league_state', 'revision_base'] loop
               if to_regclass('public.' || t) is not null then
                 execute format('alter table public.%I enable row level security', t);
                 if exists (select 1 from pg_roles where rolname = 'anon') then
@@ -590,23 +622,46 @@ class PostgresStore implements Store {
     }
   }
 
-  /** La base, chargée d'un coup — sans mémoire. Voir `chargeDuRendu`. */
-  chargeDirect(): Promise<Partial<Database>> {
+  /**
+   * La base à jour (18/11/2026) : celle gardée en mémoire si la révision en
+   * base n'a pas bougé depuis — une petite requête —, sinon toute la base,
+   * rechargée. Le résultat ne se modifie pas : `chargeDuRendu` en fait une
+   * copie par rendu. Dans la file, deux pages qui arrivent ensemble sur une
+   * base changée ne la rechargent qu'une fois : la seconde trouve la mémoire
+   * à jour.
+   */
+  baseAJour(): Promise<Partial<Database>> {
     return this.enFile(async () => {
       await this.prepare();
-      const debut = performance.now();
-      const base = await chargeBase(this.sql);
-      const ms = Math.round(performance.now() - debut);
-      let lignes = 0;
-      for (const valeur of Object.values(base)) if (Array.isArray(valeur)) lignes += valeur.length;
-      const m = this.mesures;
-      m.lectures += 1;
-      m.lectureMs = ms;
-      m.lectureMaxMs = Math.max(m.lectureMaxMs, ms);
-      m.lignes = lignes;
-      if (ms > LENTE_MS.lecture) console.warn(`[perf] chargement de la base : ${ms} ms pour ${lignes} lignes`);
-      return base;
+      const revision = await lisRevision(this.sql);
+      if (revision !== null && this.memoire?.revision === revision) {
+        this.mesures.lecturesEnMemoire += 1;
+        return this.memoire.base;
+      }
+      return this.retiens(await this.chargeMesuree(this.sql)).base;
     });
+  }
+
+  /** Charge toute la base et sa révision, et note ce que ça a coûté. */
+  private async chargeMesuree(sql: postgres.Sql | postgres.TransactionSql): Promise<BaseLue> {
+    const debut = performance.now();
+    const lue = await chargeBaseEtRevision(sql);
+    const ms = Math.round(performance.now() - debut);
+    let lignes = 0;
+    for (const valeur of Object.values(lue.base)) if (Array.isArray(valeur)) lignes += valeur.length;
+    const m = this.mesures;
+    m.lectures += 1;
+    m.lectureMs = ms;
+    m.lectureMaxMs = Math.max(m.lectureMaxMs, ms);
+    m.lignes = lignes;
+    if (ms > LENTE_MS.lecture) console.warn(`[perf] chargement de la base : ${ms} ms pour ${lignes} lignes`);
+    return lue;
+  }
+
+  /** Garde en mémoire une base fraîchement lue, avec sa révision. */
+  private retiens(lue: BaseLue): BaseLue {
+    this.memoire = lue.revision !== null ? { revision: lue.revision, base: lue.base } : null;
+    return lue;
   }
 
   async read<T>(fn: (db: Readonly<Database>) => T): Promise<T> {
@@ -623,7 +678,15 @@ class PostgresStore implements Store {
       const debut = performance.now();
       const resultat = await this.sql.begin(async (tx) => {
         await tx`select 1 from saison where id = 1 for update`;
-        const db = migrate(await chargeBase(tx));
+        // Sous le verrou : si la base n'a pas bougé depuis ce que ce serveur
+        // garde en mémoire, on part d'une copie, sans la relire. Sinon, on la
+        // relit — et on la garde, telle que lue, avant d'y toucher.
+        const revision = await lisRevision(tx);
+        const brute =
+          revision !== null && this.memoire?.revision === revision
+            ? structuredClone(this.memoire.base)
+            : structuredClone(this.retiens(await this.chargeMesuree(tx)).base);
+        const db = migrate(brute);
         const avant = empreintes(db);
         const valeur = await fn(db);
         await enregistreBase(tx, db, avant);
@@ -657,7 +720,13 @@ class PostgresStore implements Store {
         attenteMs,
         allerRetourMs: Math.round(performance.now() - debut),
         demarrage: { connexionMs: m.connexionMs, schemaMs: m.schemaMs },
-        lectures: { nombre: m.lectures, derniereMs: m.lectureMs, maxMs: m.lectureMaxMs, lignes: m.lignes },
+        lectures: {
+          nombre: m.lectures,
+          enMemoire: m.lecturesEnMemoire,
+          derniereMs: m.lectureMs,
+          maxMs: m.lectureMaxMs,
+          lignes: m.lignes,
+        },
         transactions: { nombre: m.transactions, derniereMs: m.transactionMs, maxMs: m.transactionMaxMs },
         attenteMaxMs: m.attenteMaxMs,
       };
