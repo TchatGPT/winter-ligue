@@ -1,15 +1,18 @@
 import { EcranSaison, type RetourSubs } from '@/components/admin/EcranSaison';
 import { exigeRole } from '@/lib/auth/acces';
-import { isTwitchEnabled } from '@/lib/auth/twitch';
 import { getStore } from '@/lib/db/store';
 import { playerIdOf } from '@/lib/auth/session';
 import { estResponsableSaison } from '@/lib/services/saisons';
-import { etatSubsTwitch } from '@/lib/services/twitchSubs';
+import { bilanSaison } from '@/lib/services/bilanSaison';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Saison — Modération' };
 
-/** Ce que le retour du branchement des subs peut dire. Le texte vient d'ici, jamais de l'adresse. */
+/**
+ * Ce que le retour du branchement des subs peut dire — depuis le bandeau du
+ * tableau de bord, si Twitch venait à se débrancher. Le texte vient d'ici,
+ * jamais de l'adresse.
+ */
 const RETOURS: Record<string, RetourSubs> = {
   branche: {
     kind: 'success',
@@ -31,30 +34,13 @@ export default async function AdminSaisonPage({
   searchParams: Promise<{ [cle: string]: string | string[] | undefined }>;
 }) {
   const session = await exigeRole('admin');
-  const twitchConfigure = isTwitchEnabled();
-  const [data, etatTwitch] = await Promise.all([
-    getStore().read((db) => ({
-      config: {
-        maxGamesPerPlayer: db.config.maxGamesPerPlayer,
-        totalSubs: db.config.totalSubs,
-        numero: db.config.numero ?? 1,
-      },
-      responsable: estResponsableSaison(db, playerIdOf(session)),
-      packsEnFile: db.packsDus.filter((p) => p.ouvertureId === null).length,
-    })),
-    // L'état se lit chez Twitch : c'est lui qui garde les abonnements.
-    twitchConfigure ? etatSubsTwitch().catch(() => null) : Promise.resolve(null),
-  ]);
+  const data = await getStore().read((db) => ({
+    numero: db.config.numero ?? 1,
+    bilan: bilanSaison(db),
+    responsable: estResponsableSaison(db, playerIdOf(session)),
+  }));
   const brut = (await searchParams).subs;
   const retour = typeof brut === 'string' ? (RETOURS[brut] ?? null) : null;
 
-  return (
-    <EcranSaison
-      config={data.config}
-      packsEnFile={data.packsEnFile}
-      estAdmin={session.role === 'admin'}
-      responsable={data.responsable}
-      twitch={{ configure: twitchConfigure, etat: etatTwitch, retour }}
-    />
-  );
+  return <EcranSaison numero={data.numero} bilan={data.bilan} responsable={data.responsable} retour={retour} />;
 }

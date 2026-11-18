@@ -30,7 +30,7 @@ export const SECTIONS: Section[] = [
   { href: '/admin', label: 'Tableau de bord', icone: 'jauge' },
   { href: '/admin/joueurs', label: 'Joueurs', icone: 'user' },
   { href: '/admin/codes', label: 'Codes cadeaux', icone: 'cadeau' },
-  { href: '/admin/saison', label: 'Subs & saison', icone: 'snowflake' },
+  { href: '/admin/saison', label: 'Saison', icone: 'snowflake' },
   { href: '/admin/overlays', label: 'Overlays', icone: 'antenne' },
   { href: '/admin/alertes', label: 'Alertes', icone: 'shield' },
   { href: '/admin/journal', label: 'Journal', icone: 'book' },

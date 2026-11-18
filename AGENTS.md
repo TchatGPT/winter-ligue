@@ -52,7 +52,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   vérifié à la saisie), **pas de finale** (`finalistes: 0`). **Saison 2** (4 janvier →
   mi-mars) : 65 games — le Booster Finisseur à la 60ᵉ, puis cinq games, une par session
   (12/11/2026). L'accueil écrit la saison en cours et ses dates indicatives (`periode`).
-  On change de saison par le panneau « Saison en cours » de Modération → Subs & saison
+  On change de saison par le panneau « Saison en cours » de Modération → Saison
   — vers la suivante, ou en revenant à une d'avant pour la montrer, c'est la même remise
   à zéro —, réservé à `RESPONSABLES_SAISON` (Jex3_, son
   identifiant Twitch lu en base — le panneau n'existe que pour lui), après une fenêtre de
@@ -62,6 +62,13 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   flocons à zéro (par `adjust`, au grand livre), redonne trois Jokers, et règle la
   limite. Comptes, grand livre et journal restent ; le registre des subs ne compte que
   ce qui suit la remise à zéro (`config.remiseA`).
+- **Modération → Saison** (18/11/2026, ex-« Subs & saison ») : le bilan de la saison en image
+  (`VisuelBilan`, chiffres de `bilanSaison`) — la carte du champion sur l'illustration de
+  l'Aurore Triomphale, le reste du top 6 (ou les finalistes), les chiffres de la ligue, ses
+  distinctions, et les boosters en 3D du rendu de l'accueil (`public/bilan/boosters-3d.webp`) —,
+  à copier pour Discord ou à télécharger ; et le changement de saison. Le compteur de subs à
+  la main, la limite de games, la sauvegarde et le branchement Twitch n'y sont plus (le bandeau
+  du tableau de bord mène droit au branchement, si Twitch se débranchait).
 - Les constantes de saison vivent dans `lib/domain/rules.ts`, nulle part ailleurs.
 - **Le solde maximum de flocons suit la saison** (18/11/2026, `ParametresSaison.soldeMax`,
   `soldeMaxDe`) : **30 000 en Mini Ligue, 50 000 en saison 2** ; ce que rapportent les games ne

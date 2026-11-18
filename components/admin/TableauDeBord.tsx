@@ -312,9 +312,10 @@ function AlerteTwitch() {
           Les subs Prime comptent encore comme des subs payés, tant que Lriaa n’a pas rebranché les subs.
         </p>
       </div>
-      <Link href="/admin/saison" className="btn btn-sm btn-ice no-underline">
-        Voir comment
-      </Link>
+      {/* Le branchement : à faire par Lriaa, Twitch ouvert sur son compte. */}
+      <a href="/api/auth/twitch?returnTo=/admin/saison&subs=1" className="btn btn-sm btn-ice no-underline">
+        Brancher les subs
+      </a>
     </div>
   );
 }

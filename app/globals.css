@@ -14894,7 +14894,31 @@ main:has(> .accueil .acc-scene[data-phase='fini']) {
   grid-template-areas: 'creer' 'liste';
 }
 .adm-grille[data-grille='saison'] {
-  grid-template-areas: 'twitch' 'compteur' 'regles' 'sauvegarde' 'changement';
+  grid-template-areas: 'bilan' 'changement';
+  overflow-y: auto;
+}
+/* Le bilan de la saison en image (18/11/2026) : l'image à sa largeur, les boutons dessous. */
+.bilan-visuel {
+  display: grid;
+  gap: 0.9rem;
+}
+.bilan-visuel-image {
+  display: block;
+  width: 100%;
+  max-width: 80rem;
+  height: auto;
+  aspect-ratio: 1600 / 1000;
+  border-radius: var(--r-lg);
+  box-shadow: 0 18px 50px -24px var(--bg);
+}
+.bilan-visuel-gestes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+}
+.bilan-visuel-etat {
+  font-size: 0.875rem;
 }
 .adm-grille[data-grille='overlays'] {
   grid-template-areas: 'obs' 'booster' 'subs';
@@ -14938,14 +14962,11 @@ main:has(> .accueil .acc-scene[data-phase='fini']) {
     grid-template-columns: minmax(0, 24rem) minmax(0, 1fr);
     grid-template-areas: 'creer liste';
   }
-  /* Le changement de saison sous le reste ; la grille défile si elle déborde. */
+  /* Le bilan à gauche, le changement de saison à droite ; la grille défile si elle déborde. */
   .adm-grille[data-grille='saison'] {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-rows: repeat(3, max-content);
-    grid-template-areas:
-      'twitch compteur'
-      'regles sauvegarde'
-      'changement changement';
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    grid-template-rows: max-content;
+    grid-template-areas: 'bilan changement';
     overflow-y: auto;
   }
   /* Deux overlays depuis le 16/11/2026 : celui des boosters, en 16:9, prend
