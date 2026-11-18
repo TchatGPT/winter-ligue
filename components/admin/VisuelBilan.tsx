@@ -463,7 +463,10 @@ export function VisuelBilan({ bilan }: { bilan: BilanSaison }) {
 
   return (
     <div className="bilan-visuel">
-      <canvas ref={canvas} width={L} height={H} className="bilan-visuel-image" aria-label="Le bilan de la saison en image" />
+      {/* Le cadre prend la place qui reste : l'image s'y ajuste, sans déformer. */}
+      <div className="bilan-visuel-cadre">
+        <canvas ref={canvas} width={L} height={H} className="bilan-visuel-image" aria-label="Le bilan de la saison en image" />
+      </div>
       <div className="bilan-visuel-gestes">
         <button type="button" className="btn btn-ice" disabled={!pret} onClick={() => void copie()}>
           Copier l’image

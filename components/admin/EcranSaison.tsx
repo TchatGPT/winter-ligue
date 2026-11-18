@@ -53,7 +53,7 @@ export function EcranSaison({
         zone="bilan"
         ton="glace"
         titre="Bilan de la saison"
-        sousTitre="Les chiffres de la saison en une image, aux couleurs de la ligue : copie-la, et colle-la dans Discord."
+        sousTitre="Les chiffres de la saison en une image : copie-la, et colle-la dans Discord."
       >
         <VisuelBilan bilan={bilan} />
       </Panneau>
@@ -64,7 +64,6 @@ export function EcranSaison({
           ton="glace"
           surtitre="Saison en cours"
           titre={parametresSaison(numero).nom}
-          sousTitre={resumeSaison(parametresSaison(numero))}
         >
           <NouvelleSaison
             numero={numero}
@@ -93,6 +92,18 @@ function resumeSaison(s: ParametresSaison): string {
   ]
     .filter(Boolean)
     .join(' · ');
+}
+
+/** Les règles d'une saison, une par tuile, dans le choix de la saison. */
+function detailsSaison(s: ParametresSaison): [string, string][] {
+  return [
+    ['Dates', s.periode],
+    ['Games', String(s.games)],
+    ['Booster Finisseur', `à la ${s.finisseurA}ᵉ`],
+    ['Ensuite', s.uneParSessionApres !== null ? 'une game par session' : 'libre'],
+    ['Finale', s.finalistes > 0 ? `à ${s.finalistes}` : 'pas de finale'],
+    ['Solde maximum', `${s.soldeMax.toLocaleString('fr-FR')} ❄`],
+  ];
 }
 
 /**
@@ -147,7 +158,18 @@ function NouvelleSaison({
               {s.nom}
               {s.numero === numero && <Pastille ton="glace">en cours</Pastille>}
             </span>
-            <span className="adm-saison-regle">{resumeSaison(s)}</span>
+            {/* Sur un écran bas, une ligne au lieu des tuiles. */}
+            <span className="adm-saison-resume">
+              {resumeSaison(s)} · solde max {s.soldeMax.toLocaleString('fr-FR')} ❄
+            </span>
+            <dl className="adm-saison-details">
+              {detailsSaison(s).map(([nom, valeur]) => (
+                <div key={nom}>
+                  <dt>{nom}</dt>
+                  <dd>{valeur}</dd>
+                </div>
+              ))}
+            </dl>
           </button>
         ))}
       </div>
