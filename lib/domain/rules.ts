@@ -866,18 +866,6 @@ export const ACHAT_PERSO = {
 } as const;
 
 /**
- * Les testeurs de la ligue : leur identifiant Twitch — celui qui ne change
- * pas, comme pour rattacher un compte : un pseudo se renomme, et un autre
- * pourrait reprendre l'ancien. Eux seuls voient la page de test de la
- * modération, où l'on se donne la carte de son choix pour voir ce qu'elle
- * fait (décidé le 02/11/2026). Ni un rôle, ni un jeton : le compte est lu en
- * base, et un autre modérateur n'y a pas accès.
- */
-export const TESTEURS_CARTES: readonly string[] = [
-  '207954362', // Jex3_
-];
-
-/**
  * La clé d'une ouverture faite par la page de test commence ainsi : ce n'est
  * pas un vrai tirage, l'overlay du live ne la joue pas, et seule une carte de
  * test se retire.

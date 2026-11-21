@@ -75,7 +75,6 @@ export const annonceOuvertureSchema = z.object({ ouvertureId: uuid });
 export const verglasSchema = z.object({ carteId: uuid, cibleId: uuid }).strict();
 
 /** Les données fictives de la page de test : les ajouter, ou les retirer. */
-export const donneesFictivesSchema = z.object({ action: z.enum(['ajoute', 'retire']) }).strict();
 
 /** Jouer une Cryogénisation gardée : la carte seule, le serveur choisit la game. */
 export const figerSchema = z.object({ carteId: uuid }).strict();

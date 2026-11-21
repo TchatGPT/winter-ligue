@@ -259,26 +259,10 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   passe au grand livre (`debit`, `ACHAT_BOOSTER`, la clé d'achat en référence — une même
   clé n'achète qu'une fois) et le booster est mis en file. Les flocons dépensés font
   baisser la chance : la fenêtre montre la chance avant et après, avant l'achat.
-- **La page de test** (`/admin/test`, décidée le 02/11/2026) : un testeur de la ligue
-  (`TESTEURS_CARTES`, son identifiant Twitch lu en base — ni un rôle, ni un pseudo qui se
-  renomme) s'y donne la carte de son choix, d'un booster de son choix
-  (`donneCarteDeTest`, `/api/admin/test/cartes`), et peut retirer la carte **de test**
-  qui attend sa game (`retireCarteDeTest`) — jamais une carte d'un vrai booster.
-  Exception à « aucun admin n'agit sur son propre compte », réservée à cette liste et à
-  son propre compte. La carte est posée comme à une ouverture, déjà révélée (rien dans
-  le tchat), marquée (`PREFIXE_OUVERTURE_TEST`) pour que l'overlay du live
-  (`fluxOverlay`) ne la joue pas, et compte pour de vrai ; pas de stock, même là. Le
-  journal garde chaque carte (`CARTE_TEST`). La même page ajoute ou retire les
-  **données fictives** (12/11/2026, `lib/services/donneesFictives.ts`,
-  `/api/admin/test/fictives`, ou `scripts/fictifs.ts`) : une ligue qui a déjà vécu, faite
-  par les services du site — 24 joueurs `fictif-…`, leurs games, cartes consommées et
-  Jokers servis, des subs et leurs paliers, des boosters ouverts et à ouvrir, des duels,
-  des cartes actives et gardées. Les vrais joueurs sont mis de côté pendant la création
-  (rien ne tombe sur eux) ; tout ce qui est fictif est marqué, et le retrait l'efface,
-  subs du compteur compris. Le bouton remplit aussi la fiche du testeur qui l'appuie :
-  des games marquées (`NOTE_FICTIVE`), dont le retrait reprend les flocons et rend les
-  cartes. « Refaire à neuf » retire puis recrée. À retirer avant le
-  lancement.
+- **Plus de page de test** (retirée au lancement, le 21/11/2026) : ni « Test des cartes », ni
+  données fictives sur le site, ni testeurs. `lib/services/donneesFictives.ts` ne sert plus qu'aux
+  tests (une ligue qui a vécu, en mémoire) ; `PREFIXE_OUVERTURE_TEST` reste lu par l'overlay et le
+  tchat, pour les ouvertures d'avant.
 - **Une carte n'a aucune valeur en flocons** : elle ne s'achète, ne s'échange ni ne se
   revend — ni cote, ni marché, ni collection, ni exemplaires en réserve. Elle se joue sur
   une game, puis disparaît.

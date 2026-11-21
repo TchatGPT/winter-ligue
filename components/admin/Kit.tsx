@@ -36,13 +36,10 @@ export const SECTIONS: Section[] = [
   { href: '/admin/journal', label: 'Journal', icone: 'book' },
 ];
 
-/** La page de test : seuls les testeurs de la ligue la voient (`TESTEURS_CARTES`). */
-const SECTION_TEST: Section = { href: '/admin/test', label: 'Test des cartes', icone: 'layers' };
-
 /** La barre de la modération : son nom et ses sections. */
-export function BarreAdmin({ testeur = false }: { testeur?: boolean }) {
+export function BarreAdmin() {
   const chemin = usePathname();
-  const sections = testeur ? [...SECTIONS, SECTION_TEST] : SECTIONS;
+  const sections = SECTIONS;
   return (
     <header className="glass adm-barre">
       <p className="adm-barre-nom">
