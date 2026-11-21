@@ -285,7 +285,8 @@ export async function getOverview(): Promise<LeagueOverview> {
     const bestPlayer = best ? (db.players.find((p) => p.id === best.playerId) ?? null) : null;
 
     return {
-      playerCount: db.players.filter((p) => p.active).length,
+      // Les joueurs du classement : ni la streameuse, ni qui ne joue pas (21/11/2026).
+      playerCount: db.players.filter((p) => p.active && !p.horsLigue && !estLaStreameuse(p, chaineDeLaLigue())).length,
       gameCount: counted.length,
       totalKills: counted.reduce((sum, g) => sum + g.kills, 0),
       bestScore: best ? best.score : 0,
