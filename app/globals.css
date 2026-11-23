@@ -11965,9 +11965,11 @@
     text-transform: uppercase;
     color: var(--aurora);
   }
+  /* 92 px depuis le 23/11/2026 (132 avant) : le chiffre écrasait le reste,
+     et l'overlay ne pouvait pas être agrandi dans OBS. */
   .ov-subs-nombre {
     font-family: var(--font-display);
-    font-size: 132px;
+    font-size: 92px;
     font-weight: 900;
     line-height: 0.92;
     color: var(--ink);
