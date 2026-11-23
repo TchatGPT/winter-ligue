@@ -102,11 +102,15 @@ describe('utiliser un code', () => {
     expect(vueCodes(db)[0]).toMatchObject({ utilisations: 1, utilisationsMax: 1, etat: 'epuise' });
   });
 
-  it('ne sert ni à celui qui l’a créé, ni à la streameuse', () => {
-    const { db, modo, streameuse } = base();
+  it('sert aussi au modo qui l’a créé, une fois, s’il joue ; jamais à la streameuse ni à qui ne joue pas', () => {
+    const { db, modo, a, streameuse } = base();
     const { code } = creeCode(db, { montant: 100, utilisationsMax: 10 }, modo);
-    refuse(() => utiliseCode(db, modo, code, CHAINE), 'SON_CODE');
+    expect(utiliseCode(db, modo, code, CHAINE).recu).toBe(100);
+    expect(solde(db, modo)).toBe(100);
+    refuse(() => utiliseCode(db, modo, code, CHAINE), 'DEJA_UTILISE');
     refuse(() => utiliseCode(db, streameuse, code, CHAINE), 'STREAMEUSE');
+    db.players.find((p) => p.id === a)!.horsLigue = true;
+    refuse(() => utiliseCode(db, a, code, CHAINE), 'HORS_LIGUE');
   });
 
   it('refuse un code inconnu ou désactivé', () => {

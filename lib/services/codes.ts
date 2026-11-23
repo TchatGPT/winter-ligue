@@ -42,7 +42,7 @@ export class CodeError extends Error {
       | 'CODE_INCONNU'
       | 'CODE_EPUISE'
       | 'DEJA_UTILISE'
-      | 'SON_CODE'
+      | 'HORS_LIGUE'
       | 'STREAMEUSE'
       | 'JOUEUR_INTROUVABLE',
   ) {
@@ -167,7 +167,11 @@ export function utiliseCode(
   if (estLaStreameuse(joueur, chaine)) {
     throw new CodeError('La streameuse ne joue pas : les codes sont pour les joueurs.', 'STREAMEUSE');
   }
-  if (code.creePar === joueurId) throw new CodeError('Tu as créé ce code : il est pour les autres.', 'SON_CODE');
+  // Le modo qui a créé le code s'en sert comme les autres, s'il joue dans la
+  // ligue (23/11/2026) : une fois, comme tout le monde.
+  if (joueur.horsLigue) {
+    throw new CodeError('Tu ne joues pas dans la ligue : les codes sont pour les joueurs.', 'HORS_LIGUE');
+  }
 
   const deja = utilisations(db, code.id);
   if (deja.some((l) => l.playerId === joueurId)) throw new CodeError('Tu as déjà utilisé ce code.', 'DEJA_UTILISE');

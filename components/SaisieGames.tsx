@@ -27,8 +27,10 @@ interface Ligne {
   assists: number | null;
   joueurId: string | null;
   confiance: number;
-  /** ÉLIM./ASSIST. moins ASSIST., lus sur la capture : ils doivent tomber sur les kills. */
+  /** ÉLIM./ASSIST. moins ASSIST., lus sur la capture : les kills retenus (23/11/2026). */
   attendu?: number | null;
+  /** La colonne ÉLIM., lue à part : le contrôle, qui doit tomber sur `attendu`. */
+  elim?: number | null;
   /** La modération sert le Joker du joueur : cette game ne comptera pas. */
   joker?: boolean;
 }
@@ -607,8 +609,11 @@ function LigneResultat({
   // montre les kills d'après la carte, et la carte sans points à côté.
   const kills = apercu?.kills ?? l.kills;
   const clone = kills !== l.kills;
-  // Le contrôle : ÉLIM. = ÉLIM./ASSIST. − ASSIST., recalculé à chaque − / +.
-  const controle = l.attendu === null || l.attendu === undefined ? null : l.attendu === l.kills;
+  // Le contrôle : ÉLIM./ASSIST. − ASSIST. doit tomber sur les kills, recalculé à
+  // chaque − / + — et sur la colonne ÉLIM., lue à part. Sinon, un chiffre a été
+  // mal lu : l'écran le dit.
+  const ecartElim = l.attendu != null && l.elim != null && l.elim !== l.attendu;
+  const controle = l.attendu === null || l.attendu === undefined ? null : l.attendu === l.kills && !ecartElim;
   const ici =
     carte?.cardId === 'echo-lointain' && meilleur
       ? clone
@@ -671,7 +676,9 @@ function LigneResultat({
               ? undefined
               : controle
                 ? `Vérifié : ${l.kills} = élim./assist. − assist.`
-                : `Élim./assist. − assist. donne ${l.attendu} : vérifie sur la capture`
+                : ecartElim
+                  ? `Élim./assist. − assist. donne ${l.attendu}, la colonne élim. dit ${l.elim} : vérifie sur la capture`
+                  : `Élim./assist. − assist. donne ${l.attendu} : vérifie sur la capture`
           }
         >
           {l.kills}
@@ -688,7 +695,9 @@ function LigneResultat({
       <div className="saisie-effet">
         {controle === false && (
           <span className="saisie-puce" data-ton="alerte" title="Élim./assist. − assist., lus sur la capture">
-            ⚠ La capture donne {l.attendu} kills
+            {ecartElim
+              ? `⚠ Élim./assist. − assist. = ${l.attendu}, mais élim. = ${l.elim} : vérifie la capture`
+              : `⚠ La capture donne ${l.attendu} kills`}
           </span>
         )}
         {!assigne ? (

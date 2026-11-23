@@ -323,7 +323,12 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - **Les flocons se donnent par codes cadeaux** (`lib/services/codes.ts`) : la modération
   fixe le montant et le nombre d'utilisations, chaque joueur tape le code une fois, et
   chaque utilisation est un `credit()` avec le code en référence — c'est le grand livre
-  qui compte les utilisations. Plus d'attribution de flocons à la main.
+  qui compte les utilisations. Plus d'attribution de flocons à la main. Le modo qui crée un code
+  s'en sert aussi, une fois, s'il joue (23/11/2026) ; jamais la streameuse ni un compte « ne joue pas ».
+- **La saisie par capture** (`lib/services/reconnaissance.ts`) : le modèle recopie les en-têtes et
+  les nombres de chaque ligne, sans rien décider ; les kills se calculent ici (`killsDeLaLigne`,
+  23/11/2026) — **ÉLIM./ASSIST. moins ASSIST.**, contrôlés par la colonne ÉLIM. : un écart, et
+  l'écran de saisie le signale. Le modèle prenait ÉLIM./ASSIST. pour les kills.
 - Les taux de rareté ne se règlent plus depuis le site : ce sont ceux du catalogue, et
   les réglages déjà en base restent lus par `resolvedBooster()`.
 - **Les subs de Twitch** arrivent par EventSub (`/api/twitch/eventsub`), par les annonces

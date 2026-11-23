@@ -4,6 +4,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod';
 import { z } from 'zod';
 import { correspond, type JoueurConnu } from '@/lib/domain/correspondance';
+import { killsDeLaLigne } from '@/lib/domain/lectureCapture';
 import { GAME_LIMITS, topDePosition } from '@/lib/domain/rules';
 import type { Placement } from '@/lib/domain/types';
 
@@ -26,20 +27,25 @@ import type { Placement } from '@/lib/domain/types';
 export const MEDIA_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'] as const;
 export type MediaType = (typeof MEDIA_TYPES)[number];
 
-/** Ce que le modèle doit renvoyer, ligne par ligne. */
+/**
+ * Ce que le modèle doit renvoyer : les en-têtes des colonnes et, ligne par
+ * ligne, les nombres tels qu'ils sont écrits (23/11/2026). Le modèle ne décide
+ * plus quelle colonne fait les kills — il confondait ÉLIM./ASSIST. et ÉLIM. :
+ * `killsDeLaLigne` le fait ici.
+ */
 const Lecture = z.object({
   /** La position de l'escouade si la capture la montre, sinon null. */
   placement: z.number().int().min(1).max(200).nullable(),
+  /** Les en-têtes des colonnes après NOM, de gauche à droite, tels qu'écrits. */
+  entetes: z.array(z.string()),
   joueurs: z.array(
     z.object({
       /** Le pseudo tel qu'il est écrit sur l'écran, marque de clan comprise. */
       lu: z.string(),
-      /** Les éliminations directes : la colonne ÉLIM., seule. */
+      /** Les nombres de la ligne, un par en-tête, dans le même ordre ; null si illisible. */
+      valeurs: z.array(z.number().int().min(0).nullable()),
+      /** Les éliminations directes selon le modèle : ne sert que si les en-têtes manquent. */
       kills: z.number().int().min(0).max(200),
-      /** La colonne ÉLIM./ASSIST., si elle existe : elle sert à vérifier les kills. */
-      elimAssist: z.number().int().min(0).max(400).nullable(),
-      /** La colonne ASSIST., si elle existe. */
-      assists: z.number().int().min(0).max(200).nullable(),
       /** L'identifiant du joueur de la ligue reconnu, ou null. */
       joueurId: z.string().nullable(),
     }),
@@ -54,10 +60,12 @@ export interface Proposition {
   assists: number | null;
   /**
    * Les kills que donnent les deux autres colonnes : ÉLIM./ASSIST. moins
-   * ASSIST. Ils doivent tomber sur ÉLIM. ; sinon, un chiffre a été mal lu, et
-   * l'écran le dit. Nul si la capture n'a pas ces colonnes.
+   * ASSIST. — ce sont eux que la saisie retient (23/11/2026). Nul si la
+   * capture n'a pas ces colonnes.
    */
   attendu: number | null;
+  /** La colonne ÉLIM., lue à part : elle doit tomber sur `attendu`, sinon l'écran le dit. */
+  elim: number | null;
   joueurId: string | null;
   /** De 0 à 1 : 1 quand le modèle et la comparaison de noms sont d'accord. */
   confiance: number;
@@ -100,11 +108,10 @@ ${liste}
 
 La streameuse, ${streameuse.pseudo}${streameuse.activisionId ? ` (pseudo en jeu : ${streameuse.activisionId})` : ''}, joue dans l'escouade mais n'est PAS dans la ligue : mets toujours joueurId à null pour sa ligne.
 
-Lis le tableau des joueurs de l'escouade. Les colonnes, de gauche à droite, sont en général : NOM | SCORE | ÉLIM./ASSIST. | ÉLIM. | ASSIST. Certaines captures n'ont qu'une colonne ÉLIM.
-- Ignore SCORE.
-- kills = la colonne ÉLIM. seule (les éliminations directes) : jamais ÉLIM./ASSIST., jamais ASSIST. Si seule une colonne ÉLIM./ASSIST. existe, kills = cette valeur moins ASSIST. quand ASSIST. existe, sinon cette valeur.
-- elimAssist = la colonne ÉLIM./ASSIST. si elle existe, sinon null. Elle sert à vérifier : ÉLIM. doit valoir ÉLIM./ASSIST. moins ASSIST.
-- assists = la colonne ASSIST. si elle existe, sinon null.
+Lis le tableau des joueurs de l'escouade, colonne par colonne, sans rien calculer. Les colonnes, de gauche à droite, sont en général : NOM | SCORE | ÉLIM./ASSIST. | ÉLIM. | ASSIST.
+- entetes = les en-têtes des colonnes qui suivent NOM, de gauche à droite, recopiés tels qu'ils sont écrits (par exemple ["SCORE", "ÉLIM./ASSIST.", "ÉLIM.", "ASSIST."]).
+- valeurs = pour chaque joueur, les nombres de ces colonnes, dans le même ordre que entetes, un par en-tête (null si un nombre est illisible). Attention : ÉLIM./ASSIST. et ÉLIM. sont deux colonnes différentes, côte à côte ; recopie chacune dans sa case.
+- kills = la colonne ÉLIM. seule, au cas où les en-têtes seraient illisibles.
 - Retourne toutes les lignes de joueurs, y compris celles grisées (joueur déconnecté), sauf la ligne « TOTAUX ESCOUADE ».
 - Ce qui est entre crochets devant un pseudo est une marque de clan, pas le pseudo : « [VI]LD » se lit « LD », « [ # ]亅乇乇メヨ » se lit « 亅乇乇メヨ ». Ne t'en sers jamais pour reconnaître un joueur. Recopie quand même le nom complet dans « lu ».
 - Les pseudos peuvent être écrits avec des caractères d'autres alphabets qui imitent des lettres : recopie-les tels quels.
@@ -152,13 +159,15 @@ export async function analyseCapture(
 
   const connus = new Set(joueurs.map((j) => j.id));
   const propositions: Proposition[] = lecture.joueurs.map((ligne) => {
-    const kills = Math.min(GAME_LIMITS.maxKills, Math.max(GAME_LIMITS.minKills, ligne.kills));
-    const attendu =
-      ligne.elimAssist !== null && ligne.assists !== null ? Math.max(0, ligne.elimAssist - ligne.assists) : null;
+    // Les kills : ÉLIM./ASSIST. − ASSIST., contrôlés par ÉLIM. (`killsDeLaLigne`).
+    const lus = killsDeLaLigne(lecture.entetes, ligne.valeurs, ligne.kills);
+    const kills = Math.min(GAME_LIMITS.maxKills, Math.max(GAME_LIMITS.minKills, lus.kills ?? ligne.kills));
+    const { attendu, elim } = lus;
+    const assists = lus.assists;
     // La streameuse d'abord : sa ligne est reconnue par son nom, et n'est
     // jamais attribuée — quoi qu'en dise le modèle.
     if (correspond(ligne.lu, [streameuse]).joueurId !== null) {
-      return { streameuse: true, lu: ligne.lu, kills, assists: ligne.assists, attendu, joueurId: null, confiance: 0 };
+      return { streameuse: true, lu: ligne.lu, kills, assists, attendu, elim, joueurId: null, confiance: 0 };
     }
     // Le modèle propose un id ; la comparaison de noms le confirme ou le
     // remplace. Un id qui n'est pas dans la liste est ignoré : il n'a pas
@@ -177,7 +186,7 @@ export async function analyseCapture(
       joueurId = parNom.joueurId;
       confiance = parNom.confiance;
     }
-    return { streameuse: false, lu: ligne.lu, kills, assists: ligne.assists, attendu, joueurId, confiance };
+    return { streameuse: false, lu: ligne.lu, kills, assists, attendu, elim, joueurId, confiance };
   });
 
   return { placement: topDePosition(lecture.placement), propositions, modele: nomModele };
