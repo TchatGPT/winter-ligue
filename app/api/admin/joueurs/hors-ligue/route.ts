@@ -14,9 +14,9 @@ export const dynamic = 'force-dynamic';
 /**
  * « Ne joue pas » (17/11/2026) : la modération coche un compte connecté par
  * Twitch qui ne joue pas dans la ligue — jamais par défaut. Il quitte le
- * classement et les tirages ; ses Boosters Perso non ouverts deviennent des
- * boosters cadeau (`reserveHorsLigue`), que la modération donne à des
- * joueurs. Décoché, il revient, avec ce qui n'a pas été donné.
+ * classement et les tirages ; ses Boosters Perso non ouverts, sauf ceux de
+ * bienvenue, deviennent des boosters cadeau (`reserveHorsLigue`), que la
+ * modération donne à des joueurs. Décoché, il revient, avec ce qui n'a pas été donné.
  */
 export async function POST(request: Request): Promise<NextResponse> {
   const g = await guard(request, {

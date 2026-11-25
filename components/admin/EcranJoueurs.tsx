@@ -48,7 +48,7 @@ type Filtre = FiltreJoueurs;
  *
  * « Ne joue pas » (17/11/2026) : la modération coche un compte connecté qui ne
  * joue pas dans la ligue — jamais coché par défaut. Il quitte le classement
- * et les tirages, et ses Boosters Perso deviennent des boosters cadeau.
+ * et les tirages, et ses Boosters Perso, sauf ceux de bienvenue, deviennent des boosters cadeau.
  */
 export function EcranJoueurs({
   joueurs,
@@ -230,7 +230,7 @@ export function EcranJoueurs({
                     title={
                       p.horsLigue
                         ? `${p.pseudo} ne joue pas : décocher le remet dans la ligue.`
-                        : `Cocher si ${p.pseudo} ne joue pas : il quitte le classement, ses Boosters Perso deviennent des boosters cadeau.`
+                        : `Cocher si ${p.pseudo} ne joue pas : il quitte le classement, ses Boosters Perso (sauf ceux de bienvenue) deviennent des boosters cadeau.`
                     }
                   >
                     <input
@@ -244,7 +244,7 @@ export function EcranJoueurs({
                           {
                             cle: `hors-ligue:${p.id}`,
                             succes: e.target.checked
-                              ? `${p.pseudo} ne joue pas : hors du classement, ses Boosters Perso sont maintenant des boosters cadeau.`
+                              ? `${p.pseudo} ne joue pas : hors du classement, ses Boosters Perso (sauf ceux de bienvenue) sont maintenant des boosters cadeau.`
                               : `${p.pseudo} joue de nouveau dans la ligue.`,
                           },
                         )

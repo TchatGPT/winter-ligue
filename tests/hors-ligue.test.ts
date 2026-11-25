@@ -5,6 +5,7 @@ import { BOOSTERS_DE_BIENVENUE } from '@/lib/domain/rules';
 import { rattacheCompteTwitch } from '@/lib/services/comptes';
 import { classementDe } from '@/lib/services/league';
 import {
+  ajoutePackDu,
   ajusteBoostersPerso,
   donneBoosterCadeau,
   fileDesPacks,
@@ -46,19 +47,32 @@ describe('un compte qui ne joue pas', () => {
     expect(() => ajusteBoostersPerso(db, absent.id, 'plus', 'modo')).toThrow('ne joue pas');
   });
 
-  it('a ses Boosters Perso en boosters cadeau, qui se donnent à un joueur', () => {
+  it('ne donne jamais ses boosters de bienvenue (25/11/2026)', () => {
     const { db, joueur, absent } = ligue();
     absent.horsLigue = true;
+    expect(reserveHorsLigue(db)).toEqual([]);
+    expect(() =>
+      donneBoosterCadeau(db, joueur.id, [], 'modo', { donateur: SOURCE_HORS_LIGUE + absent.id }),
+    ).toThrow('Il ne reste que 0');
+    // Ils restent à lui : décoché, il les retrouve.
+    absent.horsLigue = false;
+    expect(fileDesPacks(db).filter((d) => d.joueurId === absent.id)).toHaveLength(BOOSTERS_DE_BIENVENUE);
+  });
+
+  it('a ses Boosters Perso gagnés en boosters cadeau, qui se donnent à un joueur', () => {
+    const { db, joueur, absent } = ligue();
+    absent.horsLigue = true;
+    for (let i = 0; i < 3; i += 1) ajoutePackDu(db, 'perso', absent.id, '5 subs T1 offerts par Bruno');
     const source = SOURCE_HORS_LIGUE + absent.id;
     expect(reserveHorsLigue(db)).toEqual([
-      expect.objectContaining({ twitchId: source, pseudo: 'Bruno', restants: BOOSTERS_DE_BIENVENUE, donnes: 0 }),
+      expect.objectContaining({ twitchId: source, pseudo: 'Bruno', restants: 3, donnes: 0 }),
     ]);
 
     const r = donneBoosterCadeau(db, joueur.id, [], 'modo', { donateur: source, nombre: 2 });
-    expect(r).toMatchObject({ nombre: 2, reserve: BOOSTERS_DE_BIENVENUE - 2, donateur: 'Bruno' });
+    expect(r).toMatchObject({ nombre: 2, reserve: 1, donateur: 'Bruno' });
     const recus = db.packsDus.filter((d) => d.joueurId === joueur.id && d.donDe === source);
     expect(recus).toHaveLength(2);
-    expect(reserveHorsLigue(db)[0]).toMatchObject({ restants: BOOSTERS_DE_BIENVENUE - 2, donnes: 2 });
+    expect(reserveHorsLigue(db)[0]).toMatchObject({ restants: 1, donnes: 2 });
 
     // Plus qu'il n'en reste : refusé.
     expect(() => donneBoosterCadeau(db, joueur.id, [], 'modo', { donateur: source, nombre: 5 })).toThrow('Il ne reste que');
@@ -69,10 +83,11 @@ describe('un compte qui ne joue pas', () => {
   it('décoché, revient dans la ligue avec ce qui n’a pas été donné', () => {
     const { db, joueur, absent } = ligue();
     absent.horsLigue = true;
+    for (let i = 0; i < 2; i += 1) ajoutePackDu(db, 'perso', absent.id, '5 subs T1 offerts par Bruno');
     donneBoosterCadeau(db, joueur.id, [], 'modo', { donateur: SOURCE_HORS_LIGUE + absent.id, nombre: 1 });
     absent.horsLigue = false;
     expect(reserveHorsLigue(db)).toEqual([]);
-    expect(fileDesPacks(db).filter((d) => d.joueurId === absent.id)).toHaveLength(BOOSTERS_DE_BIENVENUE - 1);
+    expect(fileDesPacks(db).filter((d) => d.joueurId === absent.id)).toHaveLength(BOOSTERS_DE_BIENVENUE + 1);
     expect(joueursEnLice(db).map((p) => p.id)).toContain(absent.id);
   });
 });

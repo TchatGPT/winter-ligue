@@ -38,6 +38,7 @@ import {
   parametresSaison,
   packsPersoAcquis,
   poidsAvecChance,
+  RAISON_BIENVENUE,
   tailleDeLaQueue,
   WEIGHT_TOTAL,
 } from '@/lib/domain/rules';
@@ -289,9 +290,7 @@ export function donneBoosterCadeau(
   if (choix.donateur?.startsWith(SOURCE_HORS_LIGUE)) {
     const source = db.players.find((p) => SOURCE_HORS_LIGUE + p.id === choix.donateur && p.horsLigue);
     if (!source) throw new PackError('Ce compte n’a plus de booster cadeau à donner.', 'AUCUN_DU');
-    const siens = db.packsDus
-      .filter((d) => d.packId === 'perso' && d.joueurId === source.id && d.ouvertureId === null)
-      .sort((a, b) => a.creeA.localeCompare(b.creeA));
+    const siens = boostersADonner(db, source.id);
     if (siens.length < nombre) {
       throw new PackError(
         `Il ne reste que ${siens.length} booster${siens.length > 1 ? 's' : ''} cadeau de ${source.pseudo}.`,
@@ -529,8 +528,22 @@ export function joueursEnLice(db: Database): Player[] {
 export const SOURCE_HORS_LIGUE = 'joueur:';
 
 /**
+ * Les Boosters Perso d'un compte qui ne joue pas qui peuvent se donner : ceux
+ * qu'il a gagnés, par ses subs surtout. Jamais ceux de bienvenue (25/11/2026) :
+ * reçus d'office à l'inscription, ils restent à lui — s'il se met à jouer, il
+ * les retrouve — et ne font pas des boosters cadeau.
+ */
+function boostersADonner(db: Database, joueurId: string): PackDu[] {
+  return db.packsDus
+    .filter(
+      (d) => d.packId === 'perso' && d.joueurId === joueurId && d.ouvertureId === null && d.raison !== RAISON_BIENVENUE,
+    )
+    .sort((a, b) => a.creeA.localeCompare(b.creeA));
+}
+
+/**
  * Les boosters cadeau qui viennent de comptes qui ne jouent pas (17/11/2026) :
- * leurs Boosters Perso non ouverts — gagnés par leurs subs, de bienvenue… —
+ * leurs Boosters Perso non ouverts, sans ceux de bienvenue (`boostersADonner`),
  * forment une réserve, que la modération donne comme ceux d'un viewer. Les
  * mêmes champs que `persoEnAttente`, sous la clé `joueur:<id>`.
  */
@@ -539,7 +552,7 @@ export function reserveHorsLigue(db: Database): PersoEnAttente[] {
   for (const p of db.players) {
     if (!p.active || !p.horsLigue) continue;
     const cle = SOURCE_HORS_LIGUE + p.id;
-    const enFile = db.packsDus.filter((d) => d.packId === 'perso' && d.joueurId === p.id && d.ouvertureId === null);
+    const enFile = boostersADonner(db, p.id);
     const donnes = db.packsDus.filter((d) => d.donDe === cle).length;
     if (enFile.length === 0 && donnes === 0) continue;
     const dates = enFile.map((d) => d.creeA).sort();
