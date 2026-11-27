@@ -31,7 +31,7 @@ import type { CarteEnAttente, Database, Game, GameMontree, GamesTirees, Player }
 import { newId } from '@/lib/db/store';
 import { COUP_DE_VERGLAS, getCard, momentDe, PACTE_SUBI, TROC_SUBI } from '@/lib/domain/catalog';
 import { rewardForGame } from '@/lib/domain/economy';
-import { CRENEAUX_BONUS, GAME_LIMITS, JOKERS, placementPoints } from '@/lib/domain/rules';
+import { CRENEAUX_BONUS, GAME_LIMITS, gamesPourFiger, JOKERS, placementPoints } from '@/lib/domain/rules';
 import { pick } from '@/lib/domain/rng';
 import { rank, totalsFor } from '@/lib/domain/scoring';
 import type { ActionRoue, CardDefinition, CardEffect } from '@/lib/domain/types';
@@ -840,7 +840,7 @@ export function choisitGamesRoue(db: Database, card: CardDefinition, joueurs: re
         false,
         joueurs.map((p) => {
           const toutes = comptees(db, p.id);
-          if (toutes.length < action.minGames) return null;
+          if (toutes.length < gamesPourFiger(action.minGames, db.config.numero)) return null;
           const pire = parScore(toutes)[0];
           const libres = gamesPrenables(db, p.id).filter((g) => g.id !== pire?.id);
           const meilleure = parScore(libres).at(-1);
@@ -1206,7 +1206,7 @@ function regleRoue(
         const pire = [...toutes].sort((x, y) => x.score - y.score)[0];
         const meilleure = [...toutes].sort((x, y) => y.score - x.score)[0];
         let libres = gamesPrenables(db, m.joueur.id).filter((g) => g.id !== pire?.id);
-        if (action.quoi === 'fige_meilleure' && toutes.length < action.minGames) libres = [];
+        if (action.quoi === 'fige_meilleure' && toutes.length < gamesPourFiger(action.minGames, db.config.numero)) libres = [];
         if (action.quoi === 'fige_hasard' && action.meilleureExclue) libres = libres.filter((g) => g.id !== meilleure?.id);
         if (libres.length === 0) {
           pour(m, sansEffet('aucune game à figer, sans effet'));

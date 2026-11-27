@@ -529,7 +529,7 @@ export const CARDS: readonly CardDefinition[] = [
     subtitle: '3 joueurs figent leur meilleure game',
     rarity: 'L',
     glyph: '🧊',
-    description: '3 joueurs au hasard, parmi ceux qui ont 30 games, figent leur meilleure game.',
+    description: '3 joueurs au hasard, parmi ceux qui ont 15 games (30 en saison 2), figent leur meilleure game.',
     effect: { kind: 'roue', action: { quoi: 'fige_meilleure', minGames: 30 } },
     nature: 'bonus',
     power: 91,

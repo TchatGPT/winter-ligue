@@ -100,7 +100,9 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   Glace** (ex-Roulette russe, renommé le 15/11/2026) **se court comme un duel à six** (`CourseRoulette`, `ecritCourseRoulette`) — le
   perdant, seul à ne pas passer la ligne, est tiré à l'ouverture et mis **en tête des
   bénéficiaires**, que l'écran, l'overlay et la carte lisent ; la **Cryogénisation**
-  (Folie, `fige_garde`) se garde et fige la meilleure game quand la modération la joue
+  (Folie, `fige_garde`) se garde et fige la meilleure game quand la modération la joue ; la
+  **Glaciation** ne tire que des joueurs à **15 games en Mini Ligue, 30 en saison 2**
+  (`glaciationApres`, `gamesPourFiger`, 27/11/2026)
   (`/api/admin/cartes/figer`, `joueFigeGarde`). **La pire game d'un joueur ne se fige
   jamais**, par aucune carte.
   Elles se règlent tout de suite, une fois la carte révélée, **une seule fois pour

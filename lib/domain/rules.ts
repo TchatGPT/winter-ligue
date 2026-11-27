@@ -106,6 +106,11 @@ export interface ParametresSaison {
    */
   soldeMax: number;
   /**
+   * Les games qu'il faut pour être tiré par la Glaciation (« 3 joueurs figent
+   * leur meilleure game », 27/11/2026) : 15 en Mini Ligue, 30 en saison 2.
+   */
+  glaciationApres: number;
+  /**
    * Ses dates, telles que l'accueil les écrit sous « Saison N » : indicatives,
    * l'organisation les arrête au fil de la saison (12/11/2026).
    */
@@ -127,6 +132,7 @@ export const SAISONS: readonly ParametresSaison[] = [
     uneParSessionApres: 30,
     finalistes: 0,
     soldeMax: 30_000,
+    glaciationApres: 15,
     periode: 'du 22 novembre au 4 janvier',
     debut: '2026-11-22T00:00:00.000+01:00',
     fin: '2027-01-04T00:00:00.000+01:00',
@@ -139,6 +145,7 @@ export const SAISONS: readonly ParametresSaison[] = [
     uneParSessionApres: 60,
     finalistes: 6,
     soldeMax: 50_000,
+    glaciationApres: 30,
     periode: 'du 4 janvier à mi-mars',
     debut: '2027-01-04T00:00:00.000+01:00',
     fin: '2027-03-15T00:00:00.000+01:00',
@@ -153,6 +160,15 @@ export function saisonDuMoment(now = new Date()): ParametresSaison {
 /** Les réglages d'une saison ; la dernière connue pour un numéro inconnu. */
 export function parametresSaison(numero: number | undefined): ParametresSaison {
   return SAISONS.find((s) => s.numero === numero) ?? SAISONS[0];
+}
+
+/**
+ * Les games qu'il faut pour qu'une carte « fige ta meilleure game » de la ligue
+ * tombe sur un joueur : celles de la saison pour la Glaciation (15, puis 30) ;
+ * aucune pour une carte sans seuil (la Statue de Givre du Finisseur).
+ */
+export function gamesPourFiger(minGames: number, numero: number | undefined): number {
+  return minGames > 0 ? parametresSaison(numero).glaciationApres : 0;
 }
 
 /** Le solde maximum de flocons de la saison en cours. */

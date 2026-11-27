@@ -34,6 +34,7 @@ import { pick, tirePack } from '@/lib/domain/rng';
 import {
   ACHAT_PERSO,
   chanceDe,
+  gamesPourFiger,
   soldeMaxDe,
   parametresSaison,
   packsPersoAcquis,
@@ -706,7 +707,7 @@ function beneficiairesRoue(db: Database, card: CardDefinition): Player[] {
     // Personne n'a encore assez de games : la carte tombe quand même, et reste
     // sans effet. Refuser l'ouverture laissait le booster dans la file, et le
     // rouvrir retirait la carte — un tirage qu'on pouvait refaire.
-    const assez = pool.filter((p) => comptees(p) >= action.minGames);
+    const assez = pool.filter((p) => comptees(p) >= gamesPourFiger(action.minGames, db.config.numero));
     if (assez.length > 0) pool = assez;
   }
   // Jamais un immunisé tiré pour une carte que son immunité parerait (17/11/2026) :

@@ -90,7 +90,10 @@ export type ActionRoue =
   | { quoi: 'par_top1'; points: number }
   /** « Vol de score » : le total du joueur juste au-dessus, en points hors game. */
   | { quoi: 'vol_score' }
-  /** « Fige la meilleure game » : jamais la pire ; `minGames` games jouées au moins. */
+  /**
+   * « Fige la meilleure game » : jamais la pire. `minGames` à 0 : aucun seuil ;
+   * au-dessus, le seuil de la saison (`gamesPourFiger` : 15, puis 30).
+   */
   | { quoi: 'fige_meilleure'; minGames: number }
   /** « Fige une game au hasard » : jamais la pire, ni la meilleure si `meilleureExclue`. */
   | { quoi: 'fige_hasard'; meilleureExclue: boolean }

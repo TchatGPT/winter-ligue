@@ -370,6 +370,26 @@ describe('les cartes du Finisseur', () => {
   });
 });
 
+describe('la Glaciation', () => {
+  const figee = (db: Database, id: string) =>
+    db.games.some((g) => g.playerId === id && g.applied.some((x) => x.cardId === 'trois-glacons'));
+
+  it('fige la meilleure game à partir de 15 games en Mini Ligue, de 30 en saison 2 (27/11/2026)', () => {
+    const db = base('a', 'b');
+    for (let i = 0; i < 15; i += 1) game(db, 'a', 5 + i);
+    for (let i = 0; i < 14; i += 1) game(db, 'b', 5 + i);
+    ouvre(db, 'trois-glacons', ['a', 'b']);
+    expect(figee(db, 'a')).toBe(true);
+    expect(figee(db, 'b')).toBe(false);
+
+    const s2 = base('a');
+    s2.config.numero = 2;
+    for (let i = 0; i < 15; i += 1) game(s2, 'a', 5 + i);
+    ouvre(s2, 'trois-glacons', ['a']);
+    expect(figee(s2, 'a')).toBe(false);
+  });
+});
+
 describe('la Cryogénisation', () => {
   it('se garde, puis fige la meilleure game libre quand on la joue — jamais la pire', () => {
     const db = base('a');
