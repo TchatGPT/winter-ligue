@@ -6,7 +6,7 @@ import { JOKERS } from '@/lib/domain/rules';
 import { scoreGame } from '@/lib/domain/scoring';
 import type { Placement } from '@/lib/domain/types';
 import { jokersDe, joueEchangeCible, joueFigeGarde, regleCartesSansAttendre } from '@/lib/services/effects';
-import { pointsHorsGame } from '@/lib/services/league';
+import { estUnClone, gamesComptees, pointsHorsGame } from '@/lib/services/league';
 
 /**
  * Les cartes de la Summer : les actions de ses roues, en cartes du Commu, du
@@ -282,13 +282,23 @@ describe('les cartes qui tirent des joueurs', () => {
     expect(total(db, 'haut')).toBe(40);
   });
 
-  it('« Clone meilleure → joueur aléatoire » ajoute la meilleure game de la ligue', () => {
+  it('« Clone meilleure → joueur aléatoire » clone la meilleure game de la ligue dans ses games, sans prendre de place (27/11/2026)', () => {
     const db = base('a', 'b');
-    game(db, 'a', 33);
+    const source = game(db, 'a', 33, 1);
+    source.applied.push({ id: 'x', cardId: 'ouragan-blanc', ouvertureId: 'ox', points: 53, at: source.createdAt });
+    source.bonusPoints = 53;
+    source.score = 33 + 20 + 53;
     game(db, 'b', 6);
     ouvre(db, 'miroir-des-cimes', ['b']);
-    expect(total(db, 'b')).toBe(6 + 33);
-    expect(total(db, 'a')).toBe(33);
+    // Une game de plus chez b, la copie exacte : mêmes kills, même top, même score.
+    const clones = db.games.filter((g) => g.playerId === 'b' && estUnClone(g));
+    expect(clones).toHaveLength(1);
+    expect(clones[0]).toMatchObject({ kills: 33, placement: 1, score: source.score });
+    expect(total(db, 'b')).toBe(6 + source.score);
+    expect(pointsHorsGame(db, 'b')).toBe(0);
+    // Pas une game jouée : elle ne prend pas de place, ni pour le Finisseur.
+    expect(gamesComptees(db, 'b')).toBe(1);
+    expect(total(db, 'a')).toBe(source.score);
   });
 
   it('« Échange meilleure ↔ pire » tombe si celui qui y perdrait est immunisé', () => {

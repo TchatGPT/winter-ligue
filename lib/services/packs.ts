@@ -56,7 +56,7 @@ import {
 } from '@/lib/domain/types';
 import { carteQuiAttend, choisitGamesRoue, estFigee, gamesSansCarte, regleCartesSansAttendre } from './effects';
 import { audit, debit } from './ledger';
-import { aJoueToutesSesGames, estImmunise, gamesOf, pointsHorsGame } from './league';
+import { aJoueToutesSesGames, estImmunise, gamesComptees, pointsHorsGame } from './league';
 
 export class PackError extends Error {
   constructor(
@@ -416,7 +416,7 @@ export function ajusteBoostersPerso(
  * modération, le pack n'en tombe pas une seconde fois.
  */
 export function verifieFinisseur(db: Database, joueurId: string): PackDu | null {
-  const jouees = gamesOf(db, joueurId).filter((g) => !g.skipped).length;
+  const jouees = gamesComptees(db, joueurId);
   const seuil = Math.min(parametresSaison(db.config.numero).finisseurA, db.config.maxGamesPerPlayer);
   if (jouees < seuil) return null;
   const deja = db.packsDus.some((p) => p.packId === 'finisseur' && p.joueurId === joueurId);
@@ -429,7 +429,7 @@ export function verifieFinisseur(db: Database, joueurId: string): PackDu | null 
  * Mini Ligue, la 60ᵉ de la saison 2 ; ses games jouées, sans les Jokers) ?
  */
 export function auPalierFinisseur(db: Database, joueurId: string): boolean {
-  const jouees = gamesOf(db, joueurId).filter((g) => !g.skipped).length;
+  const jouees = gamesComptees(db, joueurId);
   const seuil = Math.min(parametresSaison(db.config.numero).finisseurA, db.config.maxGamesPerPlayer);
   return jouees >= seuil;
 }
@@ -707,7 +707,7 @@ function beneficiairesRoue(db: Database, card: CardDefinition): Player[] {
     // Personne n'a encore assez de games : la carte tombe quand même, et reste
     // sans effet. Refuser l'ouverture laissait le booster dans la file, et le
     // rouvrir retirait la carte — un tirage qu'on pouvait refaire.
-    const assez = pool.filter((p) => comptees(p) >= gamesPourFiger(action.minGames, db.config.numero));
+    const assez = pool.filter((p) => gamesComptees(db, p.id) >= gamesPourFiger(action.minGames, db.config.numero));
     if (assez.length > 0) pool = assez;
   }
   // Jamais un immunisé tiré pour une carte que son immunité parerait (17/11/2026) :

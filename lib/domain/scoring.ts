@@ -79,6 +79,8 @@ export interface ScoredGame {
   score: number;
   skipped: boolean;
   playedAt: string;
+  /** Une game clonée par une carte (Mirage Polaire) : au total, pas dans les games jouées. */
+  clone?: boolean;
 }
 
 export interface PlayerTotals {
@@ -127,7 +129,7 @@ export function totalsFor(games: readonly ScoredGame[], horsGame = 0): PlayerTot
   return {
     totalScore: round2(totalScore + horsGame),
     horsGame,
-    countedGames: counted.length,
+    countedGames: counted.filter((g) => !g.clone).length,
     totalKills,
     top1,
     top2,

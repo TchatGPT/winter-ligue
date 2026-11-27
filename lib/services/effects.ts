@@ -37,7 +37,16 @@ import { rank, totalsFor } from '@/lib/domain/scoring';
 import type { ActionRoue, CardDefinition, CardEffect } from '@/lib/domain/types';
 import { shortDateTime } from '@/lib/format';
 import { declencheTempete, facteurCartes } from '@/lib/services/evenements';
-import { aJoueToutesSesGames, estImmunise, gamesOf, limiteDe, pointsHorsGame, recomputeGame } from './league';
+import {
+  aJoueToutesSesGames,
+  CARTE_CLONE,
+  estImmunise,
+  estUnClone,
+  gamesComptees,
+  limiteDe,
+  pointsHorsGame,
+  recomputeGame,
+} from './league';
 import { credit } from './ledger';
 
 /** Ce que la saisie sait de la partie, au-delà de la game elle-même. */
@@ -656,6 +665,34 @@ function meilleureDeLaLigue(db: Database): { game: Game; pseudo: string } | null
 }
 
 /**
+ * Le clone d'une game chez un joueur (Mirage Polaire, 27/11/2026) : mêmes
+ * kills, même top, et ses points de cartes recopiés tels quels — le clone vaut
+ * exactement la game d'origine. La trace (`copieDe`) dit d'où il vient, et
+ * fait de lui un clone (`estUnClone`) : une game de plus, sans place prise.
+ */
+function cloneLaGame(db: Database, source: Game, joueurId: string, ouvertureId: string, now: Date): Game {
+  const le = now.toISOString();
+  const clone: Game = {
+    id: newId(),
+    playerId: joueurId,
+    kills: source.kills,
+    placement: source.placement,
+    bonusPoints: source.bonusPoints,
+    skipped: false,
+    score: 0,
+    note: null,
+    playedAt: le,
+    createdAt: le,
+    applied: [
+      { id: newId(), cardId: CARTE_CLONE, ouvertureId, points: source.bonusPoints, at: le, copieDe: origineDe(source) },
+    ],
+  };
+  db.games.push(clone);
+  recomputeGame(db, clone);
+  return clone;
+}
+
+/**
  * Fait prendre à une game un score donné, au grand livre des points de la
  * game (`applyPoints`) : la carte s'y inscrit, même à zéro point.
  */
@@ -840,7 +877,7 @@ export function choisitGamesRoue(db: Database, card: CardDefinition, joueurs: re
         false,
         joueurs.map((p) => {
           const toutes = comptees(db, p.id);
-          if (toutes.length < gamesPourFiger(action.minGames, db.config.numero)) return null;
+          if (gamesComptees(db, p.id) < gamesPourFiger(action.minGames, db.config.numero)) return null;
           const pire = parScore(toutes)[0];
           const libres = gamesPrenables(db, p.id).filter((g) => g.id !== pire?.id);
           const meilleure = parScore(libres).at(-1);
@@ -1102,15 +1139,25 @@ function regleRoue(
     }
 
     case 'clone_ligue': {
+      // Un vrai clone de la meilleure game de la ligue (27/11/2026 ; des points
+      // hors game avant) : une game de plus dans ses games, mêmes kills, même
+      // top, même score. Elle compte dans son total, sans prendre de place
+      // (`estUnClone`), et ne rapporte aucun flocon.
       const meilleure = meilleureDeLaLigue(db);
       for (const m of groupe) {
         if (!meilleure) {
           pour(m, sansEffet('aucune game dans la ligue, sans effet'));
           continue;
         }
-        // Hors de toute game : `pointsHorsGame()` les ajoute au total.
-        m.pendante.points = meilleure.game.score;
-        pour(m, sansEffet(`${pts(meilleure.game.score)} : la meilleure game de la ligue, celle de ${meilleure.pseudo}`));
+        const clone = cloneLaGame(db, meilleure.game, m.joueur.id, o, now);
+        pour(
+          m,
+          regleSur(
+            `la meilleure game de la ligue, celle de ${meilleure.pseudo} (${meilleure.game.score} pts), clonée dans ses games → ${pts(clone.score)}`,
+            clone.score,
+            clone.id,
+          ),
+        );
       }
       break;
     }
@@ -1139,7 +1186,8 @@ function regleRoue(
         .sort((x, y) => y.openedAt.localeCompare(x.openedAt))[0];
       const depuis = precedente?.openedAt ?? '';
       for (const m of groupe) {
-        const tops = comptees(db, m.joueur.id).filter((g) => g.placement === 1 && g.createdAt > depuis).length;
+        // Les Top 1 joués : pas le Top 1 d'un clone, déjà compté chez qui l'a joué.
+        const tops = comptees(db, m.joueur.id).filter((g) => g.placement === 1 && g.createdAt > depuis && !estUnClone(g)).length;
         if (tops === 0) {
           pour(m, sansEffet(depuis ? 'aucun Top 1 depuis la dernière fois, sans effet' : 'aucun Top 1, sans effet'));
           continue;
@@ -1159,7 +1207,7 @@ function regleRoue(
         .sort((x, y) => y.openedAt.localeCompare(x.openedAt))[0];
       const depuis = precedente?.openedAt ?? '';
       for (const m of groupe) {
-        const petites = comptees(db, m.joueur.id).filter((g) => g.kills < action.moinsDe && g.createdAt > depuis).length;
+        const petites = comptees(db, m.joueur.id).filter((g) => g.kills < action.moinsDe && g.createdAt > depuis && !estUnClone(g)).length;
         if (petites === 0) {
           pour(
             m,
@@ -1206,7 +1254,7 @@ function regleRoue(
         const pire = [...toutes].sort((x, y) => x.score - y.score)[0];
         const meilleure = [...toutes].sort((x, y) => y.score - x.score)[0];
         let libres = gamesPrenables(db, m.joueur.id).filter((g) => g.id !== pire?.id);
-        if (action.quoi === 'fige_meilleure' && toutes.length < gamesPourFiger(action.minGames, db.config.numero)) libres = [];
+        if (action.quoi === 'fige_meilleure' && gamesComptees(db, m.joueur.id) < gamesPourFiger(action.minGames, db.config.numero)) libres = [];
         if (action.quoi === 'fige_hasard' && action.meilleureExclue) libres = libres.filter((g) => g.id !== meilleure?.id);
         if (libres.length === 0) {
           pour(m, sansEffet('aucune game à figer, sans effet'));
@@ -1734,8 +1782,7 @@ export function joueVerglas(
 export type RefusEchangeChoisi = 'CARTE' | 'TROP_TOT' | 'MA_GAME' | 'AUTRE_GAME';
 
 /** Les games jouées par un joueur, sans celles qu'un Joker a annulées. */
-export const gamesJouees = (db: Database, joueurId: string) =>
-  gamesOf(db, joueurId).filter((g) => !g.skipped).length;
+export const gamesJouees = (db: Database, joueurId: string) => gamesComptees(db, joueurId);
 
 /**
  * Joue un Pacte du Givre gardé par un joueur : une de ses games et une game

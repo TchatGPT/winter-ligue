@@ -35,9 +35,22 @@ export function recomputePlayerGames(db: Database, playerId: string): void {
   }
 }
 
-/** Le nombre de games qui comptent pour ce joueur : les games passées n'en sont pas. */
+/** La carte qui clone la meilleure game de la ligue chez un joueur (Mirage Polaire). */
+export const CARTE_CLONE = 'miroir-des-cimes';
+
+/**
+ * Une game clonée par le Mirage Polaire (27/11/2026) : elle est dans les games
+ * du joueur et compte dans son total, mais ce n'est pas une game jouée — elle
+ * ne prend pas de place (`gamesComptees`), ne compte ni pour le Booster
+ * Finisseur ni pour la règle d'une game par session.
+ */
+export function estUnClone(game: Pick<Game, 'applied'>): boolean {
+  return game.applied.some((a) => a.cardId === CARTE_CLONE && a.copieDe);
+}
+
+/** Le nombre de games jouées qui comptent pour ce joueur : ni les games passées, ni un clone. */
 export function gamesComptees(db: Database, playerId: string): number {
-  return db.games.filter((g) => g.playerId === playerId && !g.skipped).length;
+  return db.games.filter((g) => g.playerId === playerId && !g.skipped && !estUnClone(g)).length;
 }
 
 /**
@@ -54,7 +67,7 @@ export function prochaineGamePossible(db: Database, playerId: string, now = new 
   // celles qu'il a reçues : la session se compte sur ce qu'il a joué.
   const origine = (g: (typeof db.games)[number]) => g.applied.find((a) => a.de)?.de ?? g.playerId;
   const comptees = db.games
-    .filter((g) => origine(g) === playerId && !g.skipped)
+    .filter((g) => origine(g) === playerId && !g.skipped && !estUnClone(g))
     .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
   // La game qu'on saisit serait la (n + 1)ᵉ : la règle vaut dès la 36ᵉ.
   if (comptees.length < seuil) return null;
@@ -95,6 +108,7 @@ function toScored(game: Game): ScoredGame {
     score: game.score,
     skipped: game.skipped,
     playedAt: game.playedAt,
+    clone: estUnClone(game),
   };
 }
 
@@ -172,7 +186,7 @@ export interface RankingRow {
 export function objectifGamesDe(db: Database, player: Player): number {
   const limite = limiteDe(db, player);
   const seuil = Math.min(parametresSaison(db.config.numero).finisseurA, db.config.maxGamesPerPlayer);
-  const jouees = db.games.filter((g) => g.playerId === player.id && !g.skipped).length;
+  const jouees = gamesComptees(db, player.id);
   const finisseur = db.packsDus.some((p) => p.packId === 'finisseur' && p.joueurId === player.id);
   return jouees >= seuil || finisseur ? limite : seuil;
 }

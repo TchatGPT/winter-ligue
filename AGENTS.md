@@ -119,8 +119,11 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   kills, top, score et cartes posées partent avec la game, qui garde la trace de son passage
   (`de`, `vers` dans `applied`, « game passée de X à Y » sur la fiche) ; ses flocons restent à
   qui l'a jouée, une game transférée ne se corrige ni ne se supprime, et la règle d'une game
-  par session se compte sur les games jouées (`origineDe`). Un clone ou un vol de score
-  arrive en points hors game. Leur
+  par session se compte sur les games jouées (`origineDe`). Un vol de score arrive en
+  points hors game ; le **Mirage Polaire** clone la meilleure game de la ligue **dans les games**
+  du joueur tiré (27/11/2026, `cloneLaGame`, `estUnClone`) : mêmes kills, top et score, au total,
+  sans flocons, **sans prendre de place** — ni pour la limite (`gamesComptees`), ni pour le
+  Finisseur, ni pour une game par session, ni pour l'Aurore et Premières Neiges. Leur
   tirage a ses cibles (`TROIS`, `SIX`, `DIX_PREMIERS`, `CINQ_DERNIERS`,
   `beneficiairesRoue`) et ignore la règle « pas de stock » : rien n'en reste en
   attente. Sans assez de joueurs avec une game, elle s'ouvre quand même et ne tombe sur

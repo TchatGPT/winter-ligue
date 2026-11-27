@@ -596,7 +596,7 @@ export const CARDS: readonly CardDefinition[] = [
     subtitle: 'Clone meilleure → joueur aléatoire',
     rarity: 'UR',
     glyph: '🪞',
-    description: 'Un joueur au hasard gagne le score de la meilleure game de la ligue.',
+    description: 'Un joueur au hasard reçoit un clone de la meilleure game de la ligue, en game de plus.',
     effect: { kind: 'roue', action: { quoi: 'clone_ligue' } },
     nature: 'bonus',
     power: 66,
