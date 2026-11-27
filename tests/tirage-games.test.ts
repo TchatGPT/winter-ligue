@@ -141,7 +141,7 @@ describe('le tirage des games', () => {
     }
   });
 
-  it('« Tonnerre de Neige » double aussi une game qui porte déjà un bonus — jamais une figée ni une déjà multipliée (15/11/2026)', () => {
+  it('« Tonnerre de Neige » double aussi une game qui porte un bonus ou un ×Perso — jamais une figée ni une déjà multipliée par la ligue (27/11/2026)', () => {
     for (let essai = 0; essai < 8; essai += 1) {
       const db = emptyDatabase();
       db.players.push(joueur('a'));
@@ -149,12 +149,14 @@ describe('le tirage des games', () => {
       bonus.applied.push({ id: 'b', cardId: 'congere', ouvertureId: 'o', points: 4, at: bonus.createdAt });
       const figee = game(db, 'a', 8);
       figee.applied.push({ id: 'f', cardId: 'cryogenisation', ouvertureId: 'o', points: 0, at: figee.createdAt });
-      const doublee = game(db, 'a', 9);
-      doublee.applied.push({ id: 'x', cardId: 'ouragan-blanc', ouvertureId: 'o', points: 9, at: doublee.createdAt });
+      const perso = game(db, 'a', 9);
+      perso.applied.push({ id: 'x', cardId: 'ouragan-blanc', ouvertureId: 'o', points: 9, at: perso.createdAt });
+      const halo = game(db, 'a', 7);
+      halo.applied.push({ id: 'h', cardId: 'cime-eclatante', ouvertureId: 'o', points: 4, at: halo.createdAt });
       const o = ouvre(db, 'triple-echo', ['a']);
-      expect(o.games!.parJoueur[0]!.parmi.map((g) => g.id)).toEqual([bonus.id]);
+      expect(o.games!.parJoueur[0]!.parmi.map((g) => g.id).sort()).toEqual([bonus.id, perso.id].sort());
       revele(db, o);
-      expect(touchee(db, 'triple-echo', 'a').map((g) => g.id)).toEqual([bonus.id]);
+      expect([bonus.id, perso.id]).toContain(touchee(db, 'triple-echo', 'a')[0].id);
     }
   });
 

@@ -592,15 +592,17 @@ export function estFigee(game: Game): boolean {
 }
 
 /**
- * Une game déjà multipliée : un multiplicateur du Perso (« Game ×1,2 »…), un
- * multiplicateur sur une game jouée, ou un « ×2 / ×1,5 » des roues. La
- * « Meilleure game ×1,5 » la laisse et passe à la suivante (13/11/2026).
+ * Une game déjà multipliée **par une carte de la ligue** (Commu, Folie) : un
+ * « ×2 / ×1,5 » des roues — Halo Solaire, Réveil du Glacier, Tonnerre de Neige.
+ * Les multiplicateurs de la ligue la laissent, et passent à la suivante. Un
+ * multiplicateur du Booster Perso (Vent Porteur, Souffle Polaire…) ne bloque
+ * pas (27/11/2026 ; il bloquait depuis le 13/11) : la meilleure game d'un
+ * joueur, même déjà ×1,8 par son Perso, prend le ×1,5 de la ligue.
  */
-export function estMultipliee(game: Game): boolean {
+export function estMultiplieeParLaLigue(game: Game): boolean {
   return game.applied.some((a) => {
     const c = getCard(a.cardId);
     if (!c) return false;
-    if (c.effect.kind === 'multiplicateur_game' || c.effect.kind === 'multiplie_jouee') return true;
     return (
       c.effect.kind === 'roue' &&
       (c.effect.action.quoi === 'meilleure_fois' ||
@@ -614,14 +616,14 @@ export function estMultipliee(game: Game): boolean {
 const comptees = (db: Database, joueurId: string) => db.games.filter((g) => g.playerId === joueurId && !g.skipped);
 
 /**
- * Les games qu'une carte des roues peut **multiplier** (Tonnerre de Neige,
- * Réveil du Glacier — décidé le 15/11/2026) : toute game comptée qui marque,
- * même si une carte y est déjà passée (un bonus de points ne bloque rien),
- * sauf une game figée et une game qui a déjà un multiplicateur — comme la
- * meilleure game ×1,5.
+ * Les games qu'une carte des roues peut **multiplier** (Halo Solaire, Réveil
+ * du Glacier, Tonnerre de Neige — 15/11/2026) : toute game comptée qui marque,
+ * même si une carte y est déjà passée — un bonus, ou un multiplicateur du
+ * Booster Perso (27/11/2026) —, sauf une game figée et une game déjà
+ * multipliée par la ligue (`estMultiplieeParLaLigue`).
  */
 function gamesAMultiplier(db: Database, joueurId: string): Game[] {
-  return comptees(db, joueurId).filter((g) => g.score > 0 && !estFigee(g) && !estMultipliee(g));
+  return comptees(db, joueurId).filter((g) => g.score > 0 && !estFigee(g) && !estMultiplieeParLaLigue(g));
 }
 
 /** La pire game comptée d'un joueur : elle ne se fige jamais. */
@@ -975,11 +977,11 @@ function regleRoue(
       break;
 
     case 'meilleure_fois':
-      // La meilleure game de chacun qui n'a pas déjà de multiplicateur — ni
-      // du Perso, ni des roues : sinon, la suivante (13/11/2026) —, et
-      // jamais une game figée.
+      // La meilleure game de chacun, même multipliée par son Booster Perso ;
+      // pas une game déjà multipliée par la ligue — sinon, la suivante
+      // (27/11/2026) —, et jamais une game figée.
       for (const m of groupe) {
-        const candidates = comptees(db, m.joueur.id).filter((g) => g.score > 0 && !estFigee(g) && !estMultipliee(g));
+        const candidates = gamesAMultiplier(db, m.joueur.id);
         if (candidates.length === 0) {
           pour(m, sansEffet('aucune game à multiplier, sans effet'));
           continue;

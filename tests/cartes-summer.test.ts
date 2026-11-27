@@ -198,23 +198,25 @@ describe('les cartes de toute la ligue', () => {
     expect(jokersDe(db, 'a')).toHaveLength(JOKERS.max);
   });
 
-  it('« Meilleure game ×1,5 » laisse une game déjà multipliée, et prend la meilleure qui ne l’est pas (13/11/2026)', () => {
+  it('« Meilleure game ×1,5 » prend la meilleure game, même multipliée par le Perso ; jamais deux fois la même (27/11/2026)', () => {
     const db = base('a');
     const meilleure = game(db, 'a', 20);
     const seconde = game(db, 'a', 10);
     game(db, 'a', 6);
-    // Déjà ×1,2 par une carte du Perso : le ×1,5 passe à la suivante.
+    // Déjà ×1,2 par une carte du Perso : ça ne bloque pas le ×1,5 de la ligue.
     meilleure.applied.push({ id: 'x', cardId: 'vent-porteur', ouvertureId: 'ox', points: 4, at: '2027-01-15T20:00:00.000Z' });
     meilleure.bonusPoints = 4;
     meilleure.score = 24;
     ouvre(db, 'cime-eclatante', ['a']);
-    expect(meilleure.score).toBe(24);
-    expect(seconde.score).toBe(15);
-    // Une seconde : ni l'une ni l'autre, déjà multipliées.
+    expect(meilleure.score).toBe(36);
+    expect(seconde.score).toBe(10);
+    // Une seconde : la meilleure a déjà son ×1,5 de la ligue, la suivante le prend.
     ouvre(db, 'cime-eclatante', ['a']);
-    expect(meilleure.score).toBe(24);
+    expect(meilleure.score).toBe(36);
     expect(seconde.score).toBe(15);
-    expect(total(db, 'a')).toBe(24 + 15 + 9);
+    // Une troisième : la dernière.
+    ouvre(db, 'cime-eclatante', ['a']);
+    expect(total(db, 'a')).toBe(36 + 15 + 9);
   });
 
   it('« +5 pts par Top 1 » compte les Top 1 depuis la dernière fois que la carte est tombée', () => {

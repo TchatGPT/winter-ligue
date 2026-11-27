@@ -94,9 +94,9 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   Neige** passé en ultra rare, ×2 pour deux joueurs, et la **Morsure du Froid** (÷2) sur deux
   joueurs tirés, sa game tirée à l’ouverture ; **Premières Neiges** (+3 par game de moins
   de 5 kills) ne compte, comme l’Aurore Triomphale, que les games jouées depuis sa dernière
-  sortie : une petite game ne rapporte qu’une fois ; la **Meilleure game ×1,5** ne se pose jamais sur une game qui a
-  déjà un multiplicateur (Perso ou roues, `estMultipliee`, 13/11/2026) : elle prend la
-  meilleure qui n'en a pas ; jamais une game figée ; le **Duel de
+  sortie : une petite game ne rapporte qu’une fois ; la **Meilleure game ×1,5** ne se pose jamais sur une game
+  déjà multipliée **par la ligue** (Commu, Folie : `estMultiplieeParLaLigue`) — un ×Perso ne bloque
+  pas (27/11/2026 ; il bloquait depuis le 13/11) — : elle prend alors la suivante ; jamais une game figée ; le **Duel de
   Glace** (ex-Roulette russe, renommé le 15/11/2026) **se court comme un duel à six** (`CourseRoulette`, `ecritCourseRoulette`) — le
   perdant, seul à ne pas passer la ligne, est tiré à l'ouverture et mis **en tête des
   bénéficiaires**, que l'écran, l'overlay et la carte lisent ; la **Cryogénisation**
@@ -112,8 +112,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   fige (`estFigee`) et l'immunité du joueur le font.
   Les bonus qu'on pose sur sa propre game gardent « une game, une carte »
   (`gamesSansCarte`). Les **multiplicateurs des roues** (Tonnerre de Neige, Réveil du
-  Glacier) prennent toute game qui marque, même déjà touchée par un bonus, sauf une
-  game figée ou déjà multipliée (`gamesAMultiplier`, 15/11/2026). Les **échanges font changer les games de main** (16/11/2026, `transfereGame`) :
+  Glacier) prennent toute game qui marque, même déjà touchée par un bonus ou un ×Perso, sauf une
+  game figée ou déjà multipliée par la ligue (`gamesAMultiplier`, 15/11 et 27/11/2026). Les **échanges font changer les games de main** (16/11/2026, `transfereGame`) :
   kills, top, score et cartes posées partent avec la game, qui garde la trace de son passage
   (`de`, `vers` dans `applied`, « game passée de X à Y » sur la fiche) ; ses flocons restent à
   qui l'a jouée, une game transférée ne se corrige ni ne se supprime, et la règle d'une game
