@@ -248,8 +248,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   compte rendu : plus de verdict sous le rail (17/11/2026).
 - Les paliers de subs profitent à **tous les joueurs actifs** (boosters de la ligue,
   évènements). Seule l'**Avalanche** verse des flocons : la même somme
-  (`AVALANCHE_FLOCONS`) à chaque joueur qui a au moins une game, tout de suite
-  (`verseFloconsATous`, décidé le 02/11/2026). Ne jamais ajouter de
+  (`AVALANCHE_FLOCONS`) à chaque joueur du classement (`joueursEnLice`), **même sans game**
+  (27/11/2026 ; il en fallait une avant), tout de suite (`verseFloconsATous`, décidé le 02/11/2026). Ne jamais ajouter de
   récompense individuelle : c'est l'invariant anti-pay-to-win, et il est testé.
 - **Le cadeau du jour** verse 40 ❄ par jour et, le septième jour d'affilée, met un
   Booster Perso en file au lieu de flocons (`boosterDuJour`, décidé le 02/11/2026) ;

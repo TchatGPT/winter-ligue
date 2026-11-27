@@ -285,7 +285,7 @@ export function packsPersoAcquis(offerts: number, niveau3 = 0): number {
  * Ce qu'un évènement change, le temps qu'il dure.
  *
  *  - `FLOCONS_A_TOUS`    — des flocons versés tout de suite, la même somme à
- *    chaque joueur qui a joué : l'Avalanche, depuis le 02/11/2026 ;
+ *    chaque joueur du classement, même sans game (27/11/2026) : l'Avalanche ;
  *  - `FLOCONS_DOUBLES`   — les gains de game doublés (l'ancienne Avalanche) ;
  *  - `CARTES_RENFORCEES` — les points des cartes majorés de moitié (plus aucun
  *    palier ne déclenche ces deux-là, mais d'anciens évènements les portent) ;
@@ -336,7 +336,7 @@ export const AVALANCHE_FLOCONS = 100;
  * et fait tomber le Booster Commu bien plus souvent.
  *
  * Tous profitent à tout le monde, et pareil : l'Avalanche verse la même somme
- * à chaque joueur qui a joué, quel que soit celui qui a payé les subs.
+ * à chaque joueur du classement, quel que soit celui qui a payé les subs.
  */
 export const EVENEMENTS_SUBS: readonly EvenementSubs[] = [
   {

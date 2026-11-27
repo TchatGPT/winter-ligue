@@ -63,7 +63,7 @@ function joueur(id: string): Player {
   };
 }
 
-/** Une game saisie pour ce joueur : sans game, l'Avalanche ne lui verse rien. */
+/** Une game saisie pour ce joueur. */
 function joue(db: Database, playerId: string): void {
   db.games.push({
     id: `g-${playerId}-${db.games.length}`,
@@ -316,7 +316,7 @@ describe('les cartes pendant un blizzard', () => {
 });
 
 describe('addSubs déclenche les évènements', () => {
-  it('verse l’Avalanche dans la même saisie, à chaque joueur qui a joué', () => {
+  it('verse l’Avalanche dans la même saisie, à chaque joueur du classement, même sans game', () => {
     const db = emptyDatabase();
     db.players.push(joueur('a'), joueur('b'), joueur('sans-game'));
     joue(db, 'a');
@@ -325,13 +325,12 @@ describe('addSubs déclenche les évènements', () => {
     expect(r.totalSubs).toBe(avalanche.every);
     expect(r.evenements.map((e) => e.label)).toContain(avalanche.label);
     const evt = db.evenements.find((e) => e.kind === 'FLOCONS_A_TOUS')!;
-    for (const id of ['a', 'b']) {
+    // Sans game aussi (27/11/2026) : tout joueur inscrit au classement la reçoit.
+    for (const id of ['a', 'b', 'sans-game']) {
       expect(db.players.find((p) => p.id === id)!.snowflakes).toBe(AVALANCHE_FLOCONS);
     }
     // Chaque versement passe au grand livre, l'Avalanche en référence.
-    expect(db.ledger.filter((l) => l.reason === 'AVALANCHE' && l.refId === evt.id)).toHaveLength(2);
-    // Sans game, rien : un compte ouvert pour l'occasion ne la touche pas.
-    expect(db.players.find((p) => p.id === 'sans-game')!.snowflakes).toBe(0);
+    expect(db.ledger.filter((l) => l.reason === 'AVALANCHE' && l.refId === evt.id)).toHaveLength(3);
     // Ni les gains de game doublés : c'était l'ancienne Avalanche.
     expect(facteurGain(db)).toBe(1);
     // Un sub de plus ne verse rien : le palier suivant n'est pas atteint.

@@ -10,7 +10,7 @@ import 'server-only';
  * ## Pourquoi c'est compatible avec l'invariant anti-pay-to-win
  *
  * Un évènement est collectif. Il ne verse rien à personne en particulier :
- * l'Avalanche donne la même somme à chaque joueur qui a joué, exactement comme
+ * l'Avalanche donne la même somme à chaque joueur du classement, exactement comme
  * les boosters de la ligue tombent pour tous. Celui qui a payé les subs n'en
  * tire pas un flocon de plus que les autres.
  *
@@ -29,7 +29,6 @@ import 'server-only';
 
 import type { Database, EvenementActif } from '@/lib/db/entities';
 import { newId } from '@/lib/db/store';
-import { gamesOf } from './league';
 import { credit } from './ledger';
 import { joueursEnLice } from './packs';
 import {
@@ -120,10 +119,9 @@ export function declencheTempete(db: Database, now = new Date()): EvenementActif
 
 /**
  * Verse les flocons des évènements qui en donnent — l'Avalanche — à chaque
- * joueur de la ligue qui a au moins une game : la même somme pour tous, par
- * `credit()`, l'évènement en référence. Rien sans game, comme pour le cadeau du
- * jour : des comptes ouverts pour l'occasion ne doivent pas s'en servir pour
- * nourrir un compte principal en duel. Renvoie le nombre de versements.
+ * joueur du classement (`joueursEnLice`), qu'il ait déjà joué ou non (décidé le
+ * 27/11/2026 ; jusque-là, il fallait une game) : la même somme pour tous, par
+ * `credit()`, l'évènement en référence. Renvoie le nombre de versements.
  */
 export function verseFloconsATous(db: Database, evenements: readonly EvenementActif[]): number {
   let versements = 0;
@@ -131,7 +129,6 @@ export function verseFloconsATous(db: Database, evenements: readonly EvenementAc
     const montant = EVENEMENTS_SUBS.find((r) => r.kind === e.kind && r.label === e.label)?.flocons ?? 0;
     if (montant <= 0) continue;
     for (const joueur of joueursEnLice(db)) {
-      if (!gamesOf(db, joueur.id).some((g) => !g.skipped)) continue;
       credit(db, joueur.id, montant, 'AVALANCHE', e.id);
       versements += 1;
     }
